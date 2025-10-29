@@ -1,0 +1,359 @@
+import { useState } from "react";
+import { Heart, MessageCircle, Share, Bookmark, MoreVertical, Zap, Copy, Flag, ExternalLink, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { CommentsModal } from "@/components/modals/CommentsModal";
+import { useNavigate } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+
+interface PostCardProps {
+  post: {
+    id: string;
+    author: {
+      name: string;
+      avatar?: string;
+      username: string;
+      isVerified?: boolean;
+      impactScore?: number;
+    };
+    content: string;
+    image?: string;
+    timestamp: string;
+    likes: number;
+    comments: number;
+    category?: string;
+    impactScore?: number;
+  };
+}
+
+export function PostCard({ post }: PostCardProps) {
+  const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  const { toast } = useToast();
+  const [isLiked, setIsLiked] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [likesCount, setLikesCount] = useState(post.likes);
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [hasRated, setHasRated] = useState(false);
+  const [impactScore, setImpactScore] = useState(post.impactScore || 0);
+  const [showLikers, setShowLikers] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [showReportDialog, setShowReportDialog] = useState(false);
+
+  const handleLike = () => {
+    setIsLiked(!isLiked);
+    setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
+    
+    // Simuler l'animation de like
+    if (!isLiked) {
+      toast({
+        title: "Post aimé !",
+        description: "Vous avez aimé ce post",
+        duration: 2000,
+      });
+    }
+  };
+
+  const handleSave = () => {
+    setIsSaved(!isSaved);
+    toast({
+      title: isSaved ? "Post retiré des sauvegardes" : "Post sauvegardé !",
+      description: isSaved ? "Le post a été retiré de vos sauvegardes" : "Le post a été ajouté à vos sauvegardes",
+      duration: 2000,
+    });
+  };
+
+  const handleImpactRate = (rating: number) => {
+    if (hasRated) return;
+    setHasRated(true);
+    setImpactScore((prev) => prev + rating);
+    toast({
+      title: "Impact évalué !",
+      description: `Vous avez donné ${rating} point(s) d'impact à ce post`,
+      duration: 2000,
+    });
+  };
+
+  const handleShare = () => {
+    setShowShareDialog(true);
+  };
+
+  const handleCopyLink = () => {
+    const postUrl = `${window.location.origin}/post/${post.id}`;
+    navigator.clipboard.writeText(postUrl);
+    toast({
+      title: "Lien copié !",
+      description: "Le lien du post a été copié dans le presse-papiers",
+      duration: 2000,
+    });
+  };
+
+  const handleReport = () => {
+    setShowReportDialog(true);
+  };
+
+  const handleProfileClick = () => {
+    navigate(`/profile/${post.author.username}`);
+  };
+
+  const handleImageDoubleClick = () => {
+    if (!isLiked) {
+      handleLike();
+    }
+  };
+
+  const cardClasses = cn(
+    "transition-all duration-300",
+    isMobile 
+      ? "rounded-none border-x-0 border-t-0 shadow-none bg-card" 
+      : "campus-card hover:campus-glow"
+  );
+
+  return (
+    <>
+      <Card className={cardClasses}>
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between">
+            <div 
+              className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={handleProfileClick}
+            >
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={post.author.avatar} />
+                <AvatarFallback className="bg-input text-muted-foreground font-semibold">
+                  {post.author.name.slice(0, 1).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="font-semibold text-sm hover:underline">{post.author.name}</h4>
+                  {post.author.isVerified && (
+                    <div className="w-4 h-4 campus-gradient rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs">✓</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs text-muted-foreground">@{post.author.username}</p>
+                  <span className="text-xs text-muted-foreground">•</span>
+                  <p className="text-xs text-muted-foreground">{post.timestamp}</p>
+                </div>
+              </div>
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleSave}>
+                  <Bookmark className="h-4 w-4 mr-2" />
+                  {isSaved ? "Retirer des sauvegardes" : "Enregistrer"}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleShare}>
+                  <Share className="h-4 w-4 mr-2" />
+                  Partager
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleCopyLink}>
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copier le lien
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-destructive" onClick={handleReport}>
+                  <Flag className="h-4 w-4 mr-2" />
+                  Signaler
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </CardHeader>
+
+      <CardContent className="pt-0">
+        <div className="space-y-3">
+          {post.category && (
+            <Badge variant="secondary" className="text-xs">
+              {post.category}
+            </Badge>
+          )}
+          
+          <p className="text-sm leading-relaxed">{post.content}</p>
+          
+          {post.image && (
+            <div className="rounded-lg overflow-hidden md:overflow-hidden w-full relative">
+              <img 
+                src={post.image} 
+                alt="Post content" 
+                className="w-full h-64 object-cover hover:scale-105 transition-transform duration-300 cursor-pointer"
+                onDoubleClick={handleImageDoubleClick}
+              />
+              {/* Animation de like sur double-clic */}
+              {isLiked && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <Heart className="h-16 w-16 text-red-500 fill-current animate-ping" />
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* Impact Score Rating */}
+          
+
+          <div className="flex items-center justify-between pt-2 border-t">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLike}
+                className={`gap-2 ${isLiked ? 'text-red-500 hover:text-red-600' : 'hover:text-red-500'}`}
+              >
+                <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
+                <span className="text-xs">{likesCount}</span>
+              </Button>
+              
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="gap-2 hover:text-primary"
+                onClick={() => setCommentsOpen(true)}
+              >
+                <MessageCircle className="h-4 w-4" />
+                <span className="text-xs">{post.comments}</span>
+              </Button>
+              
+              <Button variant="ghost" size="sm" className="gap-2 hover:text-primary" onClick={handleShare}>
+                <Share className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Impact Score Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-2 text-primary"
+                  disabled={hasRated}
+                >
+                  <Zap className="h-4 w-4" />
+                  {hasRated ? <span className="text-sm text-primary">{impactScore}</span> : <span className="text-sm text-primary">{impactScore}</span>}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleImpactRate(10)}>
+                  <Zap className="h-4 w-4 fill-current text-primary" /> <Zap className="h-4 w-4 fill-current text-primary" /> <Zap className="h-4 w-4 fill-current text-primary" /> Impact élevé (+10)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleImpactRate(5)}>
+                  <Zap className="h-4 w-4 fill-current text-primary" /> <Zap className="h-4 w-4 fill-current text-primary" /> Impact moyen (+5)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleImpactRate(1)}>
+                  <Zap className="h-4 w-4 fill-current text-primary" /> Impact faible (+1)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+    
+    <CommentsModal 
+      open={commentsOpen} 
+      onOpenChange={setCommentsOpen}
+      postId={post.id}
+    />
+
+    {/* Modal de partage */}
+    <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Partager ce post</DialogTitle>
+          <DialogDescription>
+            Choisissez comment vous souhaitez partager ce post avec d'autres personnes.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <Button variant="outline" className="h-20 flex flex-col gap-2">
+              <MessageCircle className="h-6 w-6" />
+              <span>Message privé</span>
+            </Button>
+            <Button variant="outline" className="h-20 flex flex-col gap-2">
+              <ExternalLink className="h-6 w-6" />
+              <span>Réseaux sociaux</span>
+            </Button>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" className="flex-1" onClick={handleCopyLink}>
+              <Copy className="h-4 w-4 mr-2" />
+              Copier le lien
+            </Button>
+            <Button variant="outline" className="flex-1">
+              <Users className="h-4 w-4 mr-2" />
+              Partager avec des amis
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    {/* Modal de signalement */}
+    <Dialog open={showReportDialog} onOpenChange={setShowReportDialog}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Signaler ce post</DialogTitle>
+          <DialogDescription>
+            Aidez-nous à maintenir une communauté respectueuse en signalant ce contenu.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Pourquoi signalez-vous ce post ?
+          </p>
+          <div className="space-y-2">
+            {[
+              "Contenu inapproprié",
+              "Spam ou publicité",
+              "Harcèlement",
+              "Fausses informations",
+              "Violence",
+              "Autre"
+            ].map((reason) => (
+              <Button
+                key={reason}
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => {
+                  toast({
+                    title: "Post signalé",
+                    description: `Le post a été signalé pour : ${reason}`,
+                    duration: 3000,
+                  });
+                  setShowReportDialog(false);
+                }}
+              >
+                {reason}
+              </Button>
+            ))}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
+  );
+}
