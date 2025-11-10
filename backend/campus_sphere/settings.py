@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from decouple import config as env_config, Csv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,12 +21,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-+m-+8mz$fo_nh-e#nue2ruc&!n!#g^e+w(#@(w!l%=x4_0j+$g"
+SECRET_KEY = env_config('SECRET_KEY', default="django-insecure-+m-+8mz$fo_nh-e#nue2ruc&!n!#g^e+w(#@(w!l%=x4_0j+$g")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env_config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = env_config('ALLOWED_HOSTS', default='', cast=Csv())
 
 
 # Application definition
@@ -99,12 +100,35 @@ WSGI_APPLICATION = "campus_sphere.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+# Supabase PostgreSQL Configuration
+# ⚠️ IMPORTANT: Ne mettez JAMAIS de valeurs par défaut sensibles ici !
+# Utilisez un fichier .env pour stocker vos credentials
+
+# Support pour DATABASE_URL (recommandé) ou paramètres individuels
+DATABASE_URL = env_config('DATABASE_URL', default=None)
+
+if DATABASE_URL:
+    # Utiliser DATABASE_URL si fourni (plus fiable)
+    import dj_database_url
+    DATABASES = {
+        "default": dj_database_url.parse(DATABASE_URL, conn_max_age=600)
     }
-}
+else:
+    # Fallback vers paramètres individuels
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": env_config('DB_NAME', default='postgres'),
+            "USER": env_config('DB_USER', default='postgres'),
+            "PASSWORD": env_config('DB_PASSWORD', default=''),
+            "HOST": env_config('DB_HOST', default='localhost'),
+            "PORT": env_config('DB_PORT', default='5432'),
+            "OPTIONS": {
+                "sslmode": env_config('DB_SSLMODE', default='require'),
+            },
+            "CONN_MAX_AGE": 600,  # Connection pooling
+        }
+    }
 
 # Redis Configuration
 # REDIS_URL = "redis://localhost:6379"  # Commented out - Redis not configured
@@ -154,6 +178,8 @@ USE_TZ = True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
     "https://campus-sphere.com",
 ]
 

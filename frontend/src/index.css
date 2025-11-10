@@ -1,0 +1,257 @@
+/* Import responsive optimizations */
+@import './styles/responsive.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CampusSphere Design System - Modern student social network */
+
+/* Import custom font */
+@font-face {
+  font-family: 'Automata';
+  src: url('/fonts/AUTOMATA.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Raleway';
+  src: url('/fonts/Raleway.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@layer base {
+  :root {
+    /* Core CampusSphere Brand Colors */
+    --background: 0 0% 100%;
+    --foreground: 220 13% 13%;
+    
+    /* CampusSphere Orange Primary */
+    --primary: 33 100% 51%; /* #ff9800 */
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 33 100% 65%;
+    --primary-glow: 33 100% 75%;
+    
+    /* Surface Colors */
+    --card: 0 0% 100%;
+    --card-foreground: 220 13% 13%;
+    --card-elevated: 0 0% 98%;
+    
+    /* Interactive Elements */
+    --secondary: 220 13% 96%;
+    --secondary-foreground: 220 13% 13%;
+    --accent: 33 100% 95%;
+    --accent-foreground: 33 100% 20%;
+    
+    /* Neutral Palette */
+    --muted: 220 13% 96%;
+    --muted-foreground: 220 9% 46%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 33 100% 51%;
+    
+    /* Status Colors */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 45 93% 47%;
+    --warning-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Popover & Dropdown */
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 13% 13%;
+    
+    /* Campus-specific gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(33 100% 51%), hsl(33 100% 65%));
+    --gradient-hero: linear-gradient(135deg, hsl(33 100% 51%) 0%, hsl(24 100% 50%) 50%, hsl(15 100% 49%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(0 0% 98%) 100%);
+    --gradient-glass: linear-gradient(145deg, hsl(0 0% 100% / 0.7) 0%, hsl(0 0% 100% / 0.1) 100%);
+    
+    /* Elegant shadows */
+    --shadow-soft: 0 2px 8px hsl(220 13% 13% / 0.04);
+    --shadow-medium: 0 4px 16px hsl(220 13% 13% / 0.08);
+    --shadow-large: 0 8px 32px hsl(220 13% 13% / 0.12);
+    --shadow-glow: 0 0 20px hsl(33 100% 51% / 0.2);
+    
+    /* Animation & Transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    /* Dark theme for CampusSphere */
+    --background: 220 27% 8%;
+    --foreground: 220 9% 93%;
+    
+    /* Orange primary stays vibrant in dark */
+    --primary: 33 100% 51%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 33 100% 60%;
+    --primary-glow: 33 100% 70%;
+    
+    /* Dark surfaces */
+    --card: 220 27% 12%;
+    --card-foreground: 220 9% 93%;
+    --card-elevated: 220 27% 15%;
+    
+    /* Dark interactive elements */
+    --secondary: 220 27% 15%;
+    --secondary-foreground: 220 9% 93%;
+    --accent: 33 100% 15%;
+    --accent-foreground: 33 100% 80%;
+    
+    /* Dark neutrals */
+    --muted: 220 27% 15%;
+    --muted-foreground: 220 9% 63%;
+    --border: 220 27% 18%;
+    --input: 220 27% 18%;
+    --ring: 33 100% 51%;
+    
+    /* Status colors for dark */
+    --success: 142 76% 45%;
+    --warning: 45 93% 55%;
+    --destructive: 0 84% 65%;
+    
+    /* Dark popover */
+    --popover: 220 27% 12%;
+    --popover-foreground: 220 9% 93%;
+    
+    /* Dark gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(33 100% 51%), hsl(33 100% 60%));
+    --gradient-hero: linear-gradient(135deg, hsl(33 100% 51%) 0%, hsl(24 100% 55%) 50%, hsl(15 100% 55%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(220 27% 12%) 0%, hsl(220 27% 15%) 100%);
+    --gradient-glass: linear-gradient(145deg, hsl(220 27% 12% / 0.8) 0%, hsl(220 27% 8% / 0.3) 100%);
+    
+    /* Dark shadows with orange glow */
+    --shadow-soft: 0 2px 8px hsl(220 27% 4% / 0.3);
+    --shadow-medium: 0 4px 16px hsl(220 27% 4% / 0.4);
+    --shadow-large: 0 8px 32px hsl(220 27% 4% / 0.5);
+    --shadow-glow: 0 0 25px hsl(33 100% 51% / 0.3);
+    
+    /* Sidebar dark theme */
+    --sidebar-background: 220 27% 10%;
+    --sidebar-foreground: 220 9% 85%;
+    --sidebar-primary: 33 100% 51%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 27% 15%;
+    --sidebar-accent-foreground: 220 9% 85%;
+    --sidebar-border: 220 27% 18%;
+    --sidebar-ring: 33 100% 51%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}
+
+@layer components {
+  /* CampusSphere Component Utilities */
+  
+  .campus-gradient {
+    background: var(--gradient-primary);
+  }
+  
+  .campus-hero-gradient {
+    background: var(--gradient-hero);
+  }
+  
+  .campus-card {
+    background: var(--gradient-card);
+    box-shadow: var(--shadow-soft);
+    border-radius: var(--radius);
+    transition: var(--transition-smooth);
+  }
+  
+  .campus-card:hover {
+    box-shadow: var(--shadow-medium);
+    transform: translateY(-2px);
+  }
+  
+  .campus-glass {
+    background: var(--gradient-glass);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border: 1px solid hsl(var(--border));
+  }
+  
+  .campus-glow {
+    box-shadow: var(--shadow-glow);
+  }
+  
+  .campus-animate-fade-in {
+    animation: fadeIn 0.5s ease-out;
+  }
+  
+  .campus-animate-slide-up {
+    animation: slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+@layer utilities {
+  /* Custom animations for CampusSphere */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes pulse-glow {
+    0%, 100% {
+      box-shadow: 0 0 5px hsl(var(--primary) / 0.3);
+    }
+    50% {
+      box-shadow: 0 0 20px hsl(var(--primary) / 0.6);
+    }
+  }
+  
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+  
+  .progress-bar {
+    width: var(--progress-width, 0%);
+  }
+}
