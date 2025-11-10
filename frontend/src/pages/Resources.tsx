@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { listResources, getCurrentUser } from "@/services/api";
+import { resourceService, taskService } from "@/services/api/contentServices";
+import { authService } from "@/services/api/authService";
 import { Search, Filter, Upload, Download, FileText, Heart, Star, Eye, Bookmark, Loader2, RefreshCw, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -49,7 +50,7 @@ export function Resources() {
     (async () => {
       try {
         setLoading(true);
-        const data = await listResources();
+        const data = await resourceService.getResources();
         if (isMounted) {
           const mapped = (data || []).map((r: any) => ({
             id: String(r.id),

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getCurrentUser, getUserByUsername, getUserPosts } from "@/services/api";
+import { authService, userService, api, endpoints } from "@/services/api";
 import { MapPin, Camera, Calendar, Link, Users, BookOpen, Award, Settings, FileText, Briefcase, GraduationCap, Loader2, Check, Download, UserPlus, UserMinus, ExternalLink, Upload, X, Zap, Smile } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,7 +47,7 @@ export function Profile() {
     let isMounted = true;
     (async () => {
       try {
-        const data = await getCurrentUser();
+        const data = await authService.getCurrentUser();
         if (isMounted) {
           setCurrentUser(data);
           if (!username) {
@@ -71,7 +71,7 @@ export function Profile() {
     (async () => {
       try {
         setLoading(true);
-        const users = await getUserByUsername(username);
+        const users = await userService.searchUsers(username);
         if (isMounted && users && users.length > 0) {
           setTargetUser(users[0]);
         }
@@ -93,7 +93,8 @@ export function Profile() {
     let isMounted = true;
     (async () => {
       try {
-        const posts = await getUserPosts(targetUser.id);
+        const resp = await api.get(endpoints.posts.list, { params: { user: targetUser.id } });
+        const posts = resp.data;
         if (isMounted) {
           setUserPosts(posts || []);
         }

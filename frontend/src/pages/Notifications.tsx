@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { listNotifications, markNotificationRead, markAllNotificationsRead } from "@/services/api";
+import { api, endpoints } from "@/services/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,8 @@ export function Notifications() {
     (async () => {
       try {
         setLoading(true);
-        const data = await listNotifications();
+        const resp = await api.get(endpoints.notifications.list);
+        const data = resp.data;
         if (isMounted) {
           // Map backend notifications to frontend format
           const mapped = (data || []).map((n: any) => ({
@@ -77,7 +78,7 @@ export function Notifications() {
 
   const markAsRead = async (id: string) => {
     try {
-      await markNotificationRead(id);
+      await api.post(endpoints.notifications.markRead(id));
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
       toast({
         title: "Notification marquée comme lue",
@@ -94,7 +95,8 @@ export function Notifications() {
 
   const handleMarkAllAsRead = async () => {
     try {
-      await markAllNotificationsRead();
+      // Mark each notification as read via API
+      await Promise.all(notifications.map(n => api.post(endpoints.notifications.markRead(n.id))));
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       toast({
         title: "Toutes les notifications ont été marquées comme lues",

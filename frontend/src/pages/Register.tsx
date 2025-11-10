@@ -13,7 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { register } from "@/services/api";
+import { authService } from "@/services/api";
 import { AddEducationModal } from "@/components/modals/AddEducationModal";
 import { AddExperienceModal } from "@/components/modals/AddExperienceModal";
 import { UniversityCombobox } from "@/components/forms/UniversityCombobox";
@@ -336,7 +336,7 @@ export function Register() {
       };
 
       // Appeler l'API d'inscription
-      const response = await register(registrationData);
+      const response = await authService.register(registrationData);
       
       // Sauvegarder le token d'accès
       if (response.data?.tokens?.accessToken) {

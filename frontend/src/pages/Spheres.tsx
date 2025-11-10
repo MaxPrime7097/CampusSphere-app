@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { listSpheres, getCurrentUser, joinSphere, getSphere } from "@/services/api";
+import { sphereService } from "@/services/api/sphereService";
+import { authService } from "@/services/api/authService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +12,7 @@ import { Plus, Search, Users, TrendingUp, Clock, Sparkles, Loader2, Check, Refre
 import { useToast } from "@/hooks/use-toast";
 import { CreateSphereModal } from "@/components/modals/CreateSphereModal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { User, Sphere, ApiError } from "@/types/api";
 
 
 export function Spheres() {
@@ -19,56 +21,113 @@ export function Spheres() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
 
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userJoinedSpheres, setUserJoinedSpheres] = useState<string[]>([]);
 
   // Load current user
-  useEffect(() => {
-    let isMounted = true;
-    (async () => {
-      try {
-        const data = await getCurrentUser();
-        if (isMounted) setCurrentUser(data);
-      } catch (e) {
-        // User not logged in
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-  
-  // Chargement des sphères depuis l'API
-  const [allSpheres, setAllSpheres] = useState<any[]>([]);
-  const [loadingSpheres, setLoadingSpheres] = useState<boolean>(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const loadSpheres = useCallback(async (signal?: AbortSignal) => {
+    setLoadingSpheres(true);
+    try {
+      const data = await sphereService.getAllSpheres();
+      setAllSpheres(data || []);
 
+      // Mettre à jour les sphères rejointes
+      if (currentUser) {
+        const userSpheres = data.filter(sphere => 
+          sphere.members?.some(member => member.id === currentUser.id)
+        );
+        setUserJoinedSpheres(userSpheres.map(s => s.id));
+      }
+    } catch (error) {
+      const err = error as ApiError;
+      console.error('Error loading spheres:', err);
+      setLoadError(err.message || "Erreur de chargement des sphères");
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger la liste des sphères",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingSpheres(false);
+    }
+  }, [currentUser, toast]);
+
+  // Charger l'utilisateur courant
   useEffect(() => {
     let isMounted = true;
     const controller = new AbortController();
+
     (async () => {
       try {
-        setLoadingSpheres(true);
-        const data = await listSpheres(undefined, undefined);
-        if (isMounted) setAllSpheres(data || []);
-      } catch (e: any) {
-        if (isMounted) setLoadError(e?.message || "Erreur de chargement");
-      } finally {
-        if (isMounted) setLoadingSpheres(false);
+        const response = await authService.getCurrentUser();
+        if (isMounted && response) {
+          setCurrentUser(response);
+        }
+      } catch (error) {
+        const err = error as ApiError;
+        console.error('Error loading current user:', err);
+        // User not logged in - no need to show error
       }
     })();
+
     return () => {
       isMounted = false;
       controller.abort();
     };
   }, []);
+  
+  // Chargement des sphères depuis l'API
+  const [allSpheres, setAllSpheres] = useState<Sphere[]>([]);
+  const [loadingSpheres, setLoadingSpheres] = useState<boolean>(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const loadSpheres = async (signal?: AbortSignal) => {
+    setLoadingSpheres(true);
+    try {
+      const data = await listSpheres(undefined, getAccessToken());
+      setAllSpheres(data || []);
+
+      // Mettre à jour les sphères rejointes
+      if (currentUser) {
+        const userSpheres = data.filter(sphere => 
+          sphere.members?.some(member => member.id === currentUser.id)
+        );
+        setUserJoinedSpheres(userSpheres.map(s => s.id));
+      }
+    } catch (error) {
+      const err = error as ApiError;
+      console.error('Error loading spheres:', err);
+      setLoadError(err.message || "Erreur de chargement des sphères");
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger la liste des sphères",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingSpheres(false);
+    }
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+    const controller = new AbortController();
+
+    if (isMounted) {
+      loadSpheres(controller.signal);
+    }
+
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, [currentUser, loadSpheres]);
   const [activeTab, setActiveTab] = useState("discover");
   const [isLoading, setIsLoading] = useState(false);
   const [isJoining, setIsJoining] = useState<string | null>(null);
 
   const filteredSpheres = allSpheres.filter(sphere => {
-    const matchesSearch = sphere.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         sphere.description?.toLowerCase().includes(searchQuery.toLowerCase()) || false;
+    const matchesSearch = (sphere.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         sphere.description?.toLowerCase().includes(searchQuery.toLowerCase())) ?? false;
     const matchesCategory = filterCategory === "all" || sphere.category === filterCategory;
     return matchesSearch && matchesCategory;
   });
@@ -78,24 +137,30 @@ export function Spheres() {
     
     switch (activeTab) {
       case "top":
-        return sorted.sort((a: any, b: any) => (b.impact_score || 0) - (a.impact_score || 0));
+        return sorted.sort((a, b) => (b.impact_score || 0) - (a.impact_score || 0));
       case "my-spheres":
-        return sorted.filter((sphere: any) => userJoinedSpheres.includes(String(sphere.id)));
+        return sorted.filter(sphere => userJoinedSpheres.includes(String(sphere.id)));
       default:
         return sorted;
     }
   };
 
   const handleJoinSphere = async (sphereId: string, sphereName: string) => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      toast({
+        title: "Connexion requise",
+        description: "Vous devez être connecté pour rejoindre une sphère",
+        variant: "destructive"
+      });
+      return;
+    }
 
     setIsJoining(sphereId);
     
     try {
-      const result = await joinSphere(sphereId);
-      const status = result?.data?.status;
-      
-      if (status === 'pending') {
+  const result = await sphereService.joinSphere(sphereId);
+
+  if (result?.status === 'pending' || result?.data?.status === 'pending') {
         toast({
           title: "Demande envoyée !",
           description: `Votre demande d'adhésion à "${sphereName}" est en attente d'approbation`,
@@ -103,20 +168,22 @@ export function Spheres() {
         });
       } else {
         toast({
-          title: "Sphère rejoint !",
+          title: "Sphère rejointe !",
           description: `Vous avez rejoint "${sphereName}" avec succès`,
           duration: 3000,
         });
         setUserJoinedSpheres(prev => [...prev, sphereId]);
       }
       
-      // Reload spheres to get updated member count
-      const data = await listSpheres();
-      setAllSpheres(data || []);
-    } catch (e: any) {
+      // Recharger la liste des sphères pour avoir les nombres de membres à jour
+      await loadSpheres();
+      
+    } catch (error) {
+      const err = error as ApiError;
+      console.error('Error joining sphere:', err);
       toast({
         title: "Erreur",
-        description: e?.message || "Impossible de rejoindre la sphère",
+        description: err.message || "Impossible de rejoindre la sphère",
         variant: "destructive",
       });
     } finally {
@@ -124,25 +191,35 @@ export function Spheres() {
     }
   };
 
-  const handleLeaveSphere = (sphereId: string, sphereName: string) => {
+  const handleLeaveSphere = async (sphereId: string, sphereName: string) => {
     if (!currentUser) return;
     
-    // Simuler la sortie de sphère
-    const success = true;
-    
-    if (success) {
+    try {
+  await sphereService.leaveSphere(sphereId);
+      setUserJoinedSpheres(prev => prev.filter(id => id !== sphereId));
+      
       toast({
         title: "Sphère quittée",
         description: `Vous avez quitté "${sphereName}"`,
         duration: 2000,
       });
+      
+      // Recharger la liste des sphères
+      await loadSpheres();
+      
+    } catch (error) {
+      const err = error as ApiError;
+      console.error('Error leaving sphere:', err);
+      toast({
+        title: "Erreur",
+        description: err.message || "Impossible de quitter la sphère",
+        variant: "destructive"
+      });
     }
   };
 
   const handleCancelRequest = async (sphereId: string, sphereName: string) => {
-    if (!currentUser) return;
-    
-    // TODO: Add cancel request endpoint to API
+    // TODO: Ajouter l'endpoint d'annulation de demande à l'API
     toast({
       title: "Indisponible",
       description: "L'annulation de demande n'est pas disponible pour le moment",
@@ -150,17 +227,27 @@ export function Spheres() {
     });
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setIsLoading(true);
     
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      await loadSpheres();
       toast({
         title: "Sphères actualisées",
         description: "La liste des sphères a été mise à jour",
         duration: 2000,
       });
-    }, 1000);
+    } catch (error) {
+      const err = error as ApiError;
+      console.error('Error refreshing spheres:', err);
+      toast({
+        title: "Erreur", 
+        description: "Impossible d'actualiser la liste des sphères",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const categories = [

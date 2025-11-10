@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { searchUsers, getCurrentUser } from "@/services/api";
+import { userService, authService } from "@/services/api";
 import { Users, UserPlus, Search, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

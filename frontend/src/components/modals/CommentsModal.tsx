@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { getCurrentUser } from "@/services/api";
+import { authService } from "@/services/api";
 import {
   Dialog,
   DialogContent,
