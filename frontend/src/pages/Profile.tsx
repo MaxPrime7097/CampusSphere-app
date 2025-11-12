@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { authService, userService, api, endpoints } from "@/services/api";
+import { getCurrentUser, getUserByUsername, getUserPosts, uploadAvatar, uploadCoverPhoto, updateUserProfile, getUserConnections } from "@/services/api";
 import { MapPin, Camera, Calendar, Link, Users, BookOpen, Award, Settings, FileText, Briefcase, GraduationCap, Loader2, Check, Download, UserPlus, UserMinus, ExternalLink, Upload, X, Zap, Smile } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,6 +40,7 @@ export function Profile() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [targetUser, setTargetUser] = useState<any>(null);
   const [userPosts, setUserPosts] = useState<any[]>([]);
+  const [userConnections, setUserConnections] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Load current user
@@ -47,7 +48,7 @@ export function Profile() {
     let isMounted = true;
     (async () => {
       try {
-        const data = await authService.getCurrentUser();
+        const data = await getCurrentUser();
         if (isMounted) {
           setCurrentUser(data);
           if (!username) {
@@ -71,7 +72,7 @@ export function Profile() {
     (async () => {
       try {
         setLoading(true);
-        const users = await userService.searchUsers(username);
+        const users = await getUserByUsername(username);
         if (isMounted && users && users.length > 0) {
           setTargetUser(users[0]);
         }
@@ -93,8 +94,7 @@ export function Profile() {
     let isMounted = true;
     (async () => {
       try {
-        const resp = await api.get(endpoints.posts.list, { params: { user: targetUser.id } });
-        const posts = resp.data;
+        const posts = await getUserPosts(targetUser.id);
         if (isMounted) {
           setUserPosts(posts || []);
         }
@@ -205,17 +205,39 @@ export function Profile() {
       // Social stats
     stats: {
         posts: userPosts.length || 0,
-        connections: 23, // TODO: Load from connections API
+        connections: userConnections.length || 0,
         contributions: 0 // TODO: Load from user resources
     },
     badges: ["Contributeur actif", "Mentor", "Top étudiant"]
   };
-  }, [targetUser, userPosts]);
+  }, [targetUser, userPosts, userConnections]);
 
-  // Connexions (TODO: Load from connections API)
-  const userConnections = useMemo(() => {
-    return []; // Placeholder - will be loaded from API
-  }, []);
+  // Load connections
+  useEffect(() => {
+    if (!targetUser?.id) return;
+    
+    let isMounted = true;
+    (async () => {
+      try {
+        const connections = await getUserConnections(targetUser.id);
+        if (isMounted && connections) {
+          const mapped = (connections || []).map((conn: any) => ({
+            id: String(conn.id || conn.user_id),
+            name: conn.user_info?.name || conn.name || "Utilisateur",
+            username: conn.user_info?.username || conn.username || "user",
+            avatar: conn.user_info?.avatar || conn.avatar || "/placeholder-avatar.jpg",
+            mutual: 0, // TODO: Calculate mutual connections if API provides this
+          }));
+          setUserConnections(mapped);
+        }
+      } catch (e) {
+        // Error loading connections
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, [targetUser?.id]);
 
   // Posts utilisateur
   const userPostsData = useMemo(() => {
@@ -224,18 +246,18 @@ export function Profile() {
     return userPosts.map((post: any) => ({
       id: post.id,
       author: {
-        name: currentUser?.name || "",
-        avatar: currentUser?.avatar || "",
-        username: currentUser?.username || "",
-        isVerified: currentUser?.isVerified || false
+        name: targetUser?.name || currentUser?.name || "",
+        avatar: targetUser?.avatar || currentUser?.avatar || "",
+        username: targetUser?.username || currentUser?.username || "",
+        isVerified: targetUser?.isVerified || currentUser?.isVerified || false
       },
-      content: post.content,
-      timestamp: new Date(post.createdAt).toLocaleDateString('fr-FR'),
-      likes: post.stats.likes,
-      comments: post.stats.comments,
-      category: "Général"
+      content: post.content || post.text || "",
+      timestamp: post.created_at || post.createdAt ? new Date(post.created_at || post.createdAt).toLocaleDateString('fr-FR') : "Récemment",
+      likes: post.likes_count || post.likes || 0,
+      comments: post.comments_count || post.comments || 0,
+      category: post.category || "Général"
     }));
-  }, [currentUser, userData]);
+  }, [currentUser, targetUser, userPosts]);
 
   // Utiliser directement les données calculées au lieu de les stocker dans des states
   // setUserPosts(userPostsData);
@@ -282,13 +304,52 @@ export function Profile() {
     setShowEditModal(true);
   };
 
-  const handleSaveProfile = () => {
-    toast({
-      title: "Profil mis à jour !",
-      description: "Vos modifications ont été sauvegardées",
-      duration: 3000,
-    });
-    setShowEditModal(false);
+  const handleSaveProfile = async () => {
+    if (!currentUser?.id) return;
+    
+    try {
+      // Get form values (you'll need to add refs or state for form inputs)
+      const firstNameInput = document.getElementById('firstName') as HTMLInputElement;
+      const lastNameInput = document.getElementById('lastName') as HTMLInputElement;
+      const usernameInput = document.getElementById('username') as HTMLInputElement;
+      const bioInput = document.getElementById('bio') as HTMLTextAreaElement;
+      const emailInput = document.getElementById('email') as HTMLInputElement;
+      const phoneInput = document.getElementById('phone') as HTMLInputElement;
+      const townInput = document.getElementById('town') as HTMLInputElement;
+      const languageInput = document.getElementById('language') as HTMLInputElement;
+      
+      const updateData: any = {};
+      if (firstNameInput?.value) updateData.first_name = firstNameInput.value;
+      if (lastNameInput?.value) updateData.last_name = lastNameInput.value;
+      if (usernameInput?.value) updateData.username = usernameInput.value;
+      if (bioInput?.value) updateData.bio = bioInput.value;
+      if (emailInput?.value) updateData.email = emailInput.value;
+      if (phoneInput?.value) updateData.phone_number = phoneInput.value;
+      if (townInput?.value) updateData.town = townInput.value;
+      if (languageInput?.value) updateData.language = languageInput.value;
+      
+      await updateUserProfile(updateData);
+      
+      toast({
+        title: "Profil mis à jour !",
+        description: "Vos modifications ont été sauvegardées",
+        duration: 3000,
+      });
+      setShowEditModal(false);
+      
+      // Reload user data
+      const userData = await getCurrentUser();
+      setCurrentUser(userData);
+      if (isOwnProfile) {
+        setTargetUser(userData);
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error?.message || "Impossible de mettre à jour le profil",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleCoverPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -312,9 +373,11 @@ export function Profile() {
     }
   };
 
-  const handleSaveCoverPhoto = () => {
-    if (coverPhotoFile) {
-      // Simuler l'upload
+  const handleSaveCoverPhoto = async () => {
+    if (!coverPhotoFile || !currentUser?.id) return;
+    
+    try {
+      await uploadCoverPhoto(currentUser.id, coverPhotoFile);
       toast({
         title: "Photo de couverture mise à jour !",
         description: "Votre nouvelle photo de couverture a été sauvegardée",
@@ -323,6 +386,18 @@ export function Profile() {
       setShowCoverPhotoModal(false);
       setCoverPhotoFile(null);
       setCoverPhotoPreview(null);
+      // Reload user data to get updated cover photo
+      const userData = await getCurrentUser();
+      setCurrentUser(userData);
+      if (isOwnProfile) {
+        setTargetUser(userData);
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error?.message || "Impossible de mettre à jour la photo de couverture",
+        variant: "destructive",
+      });
     }
   };
 
@@ -357,9 +432,11 @@ export function Profile() {
     }
   };
 
-  const handleSaveAvatar = () => {
-    if (avatarFile) {
-      // Simuler l'upload
+  const handleSaveAvatar = async () => {
+    if (!avatarFile || !currentUser?.id) return;
+    
+    try {
+      await uploadAvatar(currentUser.id, avatarFile);
       toast({
         title: "Avatar mis à jour !",
         description: "Votre nouvel avatar a été sauvegardé",
@@ -368,6 +445,18 @@ export function Profile() {
       setShowAvatarModal(false);
       setAvatarFile(null);
       setAvatarPreview(null);
+      // Reload user data to get updated avatar
+      const userData = await getCurrentUser();
+      setCurrentUser(userData);
+      if (isOwnProfile) {
+        setTargetUser(userData);
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error?.message || "Impossible de mettre à jour l'avatar",
+        variant: "destructive",
+      });
     }
   };
 
@@ -381,20 +470,34 @@ export function Profile() {
     });
   };
 
-  const handleMoodChange = () => {
-    if (!newMood.trim()) return;
+  const handleMoodChange = async () => {
+    if (!newMood.trim() || !currentUser?.id) return;
     
-    // Sauvegarder le nouveau mood dans localStorage
-    localStorage.setItem("userCurrentMood", newMood);
-    
-    toast({
-      title: "Mood mis à jour !",
-      description: "Votre mood du moment a été changé",
-      duration: 2000,
-    });
-    
-    setNewMood("");
-    setShowMoodModal(false);
+    try {
+      await updateUserProfile({ current_mood: newMood });
+      
+      toast({
+        title: "Mood mis à jour !",
+        description: "Votre mood du moment a été changé",
+        duration: 2000,
+      });
+      
+      setNewMood("");
+      setShowMoodModal(false);
+      
+      // Reload user data
+      const userData = await getCurrentUser();
+      setCurrentUser(userData);
+      if (isOwnProfile) {
+        setTargetUser(userData);
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error?.message || "Impossible de mettre à jour le mood",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

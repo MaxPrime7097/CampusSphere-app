@@ -114,21 +114,36 @@ if DATABASE_URL:
         "default": dj_database_url.parse(DATABASE_URL, conn_max_age=600)
     }
 else:
-    # Fallback vers paramètres individuels
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": env_config('DB_NAME', default='postgres'),
-            "USER": env_config('DB_USER', default='postgres'),
-            "PASSWORD": env_config('DB_PASSWORD', default=''),
-            "HOST": env_config('DB_HOST', default='localhost'),
-            "PORT": env_config('DB_PORT', default='5432'),
-            "OPTIONS": {
-                "sslmode": env_config('DB_SSLMODE', default='require'),
-            },
-            "CONN_MAX_AGE": 600,  # Connection pooling
+    # Vérifier si les paramètres PostgreSQL sont fournis
+    DB_NAME = env_config('DB_NAME', default=None)
+    DB_USER = env_config('DB_USER', default=None)
+    DB_PASSWORD = env_config('DB_PASSWORD', default=None)
+    DB_HOST = env_config('DB_HOST', default=None)
+    
+    # Si les paramètres PostgreSQL sont fournis, utiliser PostgreSQL
+    if DB_NAME and DB_USER and DB_PASSWORD and DB_HOST:
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.postgresql",
+                "NAME": DB_NAME,
+                "USER": DB_USER,
+                "PASSWORD": DB_PASSWORD,
+                "HOST": DB_HOST,
+                "PORT": env_config('DB_PORT', default='5432'),
+                "OPTIONS": {
+                    "sslmode": env_config('DB_SSLMODE', default='require'),
+                },
+                "CONN_MAX_AGE": 600,  # Connection pooling
+            }
         }
-    }
+    else:
+        # Fallback vers SQLite pour le développement
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.sqlite3",
+                "NAME": BASE_DIR / "db.sqlite3",
+            }
+        }
 
 # Redis Configuration
 # REDIS_URL = "redis://localhost:6379"  # Commented out - Redis not configured
@@ -180,31 +195,10 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost:8080",
     "http://127.0.0.1:8080",
-    "http://192.168.56.1:8080",
     "https://campus-sphere.com",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_ALL_ORIGINS = True  # En développement seulement
-CORS_ALLOW_METHODS = [
-    'DELETE',
-    'GET',
-    'OPTIONS',
-    'PATCH',
-    'POST',
-    'PUT',
-]
-CORS_ALLOW_HEADERS = [
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-requested-with',
-]
 
 # Django REST Framework Configuration
 REST_FRAMEWORK = {

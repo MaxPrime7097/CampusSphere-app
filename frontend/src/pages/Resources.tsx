@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { resourceService, taskService } from "@/services/api/contentServices";
-import { authService } from "@/services/api/authService";
+import { listResources, getCurrentUser, downloadResource, saveResource, getSavedResources } from "@/services/api";
 import { Search, Filter, Upload, Download, FileText, Heart, Star, Eye, Bookmark, Loader2, RefreshCw, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -50,7 +49,7 @@ export function Resources() {
     (async () => {
       try {
         setLoading(true);
-        const data = await resourceService.getResources();
+        const data = await listResources();
         if (isMounted) {
           const mapped = (data || []).map((r: any) => ({
             id: String(r.id),
@@ -105,17 +104,23 @@ export function Resources() {
   ];
 
 
-  // Charger les données sauvegardées depuis localStorage
+  // Charger les ressources sauvegardées depuis l'API
   useEffect(() => {
-    const savedLikes = localStorage.getItem('likedResources');
-    const savedBookmarks = localStorage.getItem('savedResources');
-    
-    if (savedLikes) {
-      setLikedResources(new Set(JSON.parse(savedLikes)));
-    }
-    if (savedBookmarks) {
-      setSavedResources(new Set(JSON.parse(savedBookmarks)));
-    }
+    let isMounted = true;
+    (async () => {
+      try {
+        const saved = await getSavedResources();
+        if (isMounted && saved) {
+          const savedIds = new Set(saved.map((r: any) => String(r.id || r.resource_id)));
+          setSavedResources(savedIds);
+        }
+      } catch (e) {
+        // Error loading saved resources
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const filteredResources = resources.filter(resource => {
@@ -169,57 +174,104 @@ export function Resources() {
     localStorage.setItem('likedResources', JSON.stringify([...newLikedResources]));
   };
 
-  const handleSave = (e: React.MouseEvent, resourceId: string) => {
+  const handleSave = async (e: React.MouseEvent, resourceId: string) => {
     e.stopPropagation();
     
-    const newSavedResources = new Set(savedResources);
-    if (newSavedResources.has(resourceId)) {
-      newSavedResources.delete(resourceId);
-      toast({ 
-        title: "Ressource retirée", 
-        description: "Cette ressource a été retirée de vos sauvegardes",
-        duration: 2000,
-      });
-    } else {
-      newSavedResources.add(resourceId);
-      toast({ 
-        title: "Ressource sauvegardée !", 
-        description: "Cette ressource a été ajoutée à vos sauvegardes",
-        duration: 2000,
+    try {
+      const newSavedResources = new Set(savedResources);
+      if (newSavedResources.has(resourceId)) {
+        // TODO: Add unsave endpoint if available
+        newSavedResources.delete(resourceId);
+        toast({ 
+          title: "Ressource retirée", 
+          description: "Cette ressource a été retirée de vos sauvegardes",
+          duration: 2000,
+        });
+      } else {
+        await saveResource(resourceId);
+        newSavedResources.add(resourceId);
+        toast({ 
+          title: "Ressource sauvegardée !", 
+          description: "Cette ressource a été ajoutée à vos sauvegardes",
+          duration: 2000,
+        });
+      }
+      
+      setSavedResources(newSavedResources);
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error?.message || "Impossible de sauvegarder la ressource",
+        variant: "destructive",
       });
     }
-    
-    setSavedResources(newSavedResources);
-    localStorage.setItem('savedResources', JSON.stringify([...newSavedResources]));
   };
 
-  const handleDownload = (e: React.MouseEvent, resourceId: string) => {
+  const handleDownload = async (e: React.MouseEvent, resourceId: string) => {
     e.stopPropagation();
     
     setIsLoading(true);
     
-    // Simuler le téléchargement
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const result = await downloadResource(resourceId);
+      // If API returns a URL, open it, otherwise the browser should handle the download
+      if (result.url || result.file_url) {
+        window.open(result.url || result.file_url, '_blank');
+      }
       toast({ 
         title: "Téléchargement démarré !", 
         description: "Votre fichier va être téléchargé dans quelques instants",
         duration: 3000,
       });
-    }, 1500);
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error?.message || "Impossible de télécharger la ressource",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setIsLoading(true);
     
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const data = await listResources();
+      const mapped = (data || []).map((r: any) => ({
+        id: String(r.id),
+        title: r.title,
+        description: r.description || '',
+        subject: r.subject || 'other',
+        type: r.type || 'notes',
+        authorId: r.author || r.created_by,
+        authorName: r.author_info?.name || r.author_name || 'Unknown',
+        visibility: r.visibility || 'public',
+        fileUrl: r.file_url || r.file || '',
+        fileSize: r.file_size || '0 MB',
+        tags: r.tags || [],
+        impactScore: r.impact_score || 0,
+        createdAt: r.created_at || new Date().toISOString(),
+        downloadCount: r.download_count || 0,
+        viewCount: r.view_count || 0,
+      }));
+      setResources(mapped);
+      
       toast({
         title: "Ressources actualisées",
         description: "La liste des ressources a été mise à jour",
         duration: 2000,
       });
-    }, 1000);
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error?.message || "Impossible de rafraîchir les ressources",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

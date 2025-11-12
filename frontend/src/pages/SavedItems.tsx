@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PostCard } from "@/components/feed/PostCard";
 import { Card, CardContent } from "@/components/ui/card";
 import { BookOpen, Calendar, ShoppingBag, Loader2 } from "lucide-react";
-import { api } from "@/services/api/config";
+import { getSavedResources } from "@/services/api";
 
 export function SavedItems() {
   const [savedPosts, setSavedPosts] = useState<any[]>([]);
@@ -15,8 +15,7 @@ export function SavedItems() {
     (async () => {
       try {
         setLoading(true);
-  const res = await api.get('/resources/saved/');
-  const resources = res.data;
+        const resources = await getSavedResources();
         if (isMounted) {
           // Map saved resources
           const mapped = (resources || []).map((r: any) => ({

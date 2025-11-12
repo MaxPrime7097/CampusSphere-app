@@ -1,8 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { sphereService } from "@/services/api/sphereService";
-import { taskService } from "@/services/api/contentServices";
-import { authService } from "@/services/api/authService";
+import { getSphere, listSphereMembers, listSphereTasks, joinSphere, leaveSphere, getCurrentUser, completeTask } from "@/services/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -66,10 +64,10 @@ export function SphereDetail() {
       try {
         setLoading(true);
         const [sphereData, membersData, tasksData, me] = await Promise.all([
-          sphereService.getSphere(String(id)),
-          sphereService.getMembers(String(id)),
-          taskService.getTasks(String(id)),
-          authService.getCurrentUser().catch(() => null),
+          getSphere(String(id)),
+          listSphereMembers(String(id)),
+          listSphereTasks(String(id)),
+          getCurrentUser().catch(() => null),
         ]);
 
         if (!isMounted) return;
@@ -168,8 +166,8 @@ export function SphereDetail() {
   const handleJoinSphere = async () => {
     setIsJoining(true);
     try {
-      const result = await sphereService.joinSphere(String(id));
-      const status = result?.status || result?.data?.status;
+      const result = await joinSphere(String(id));
+      const status = result?.data?.status;
       if (status === 'pending') {
         setIsPendingRequest(true);
         setIsMember(false);
@@ -187,8 +185,8 @@ export function SphereDetail() {
           duration: 3000,
         });
         // Reload sphere data to get updated membership
-  const sphereData = await sphereService.getSphere(String(id));
-  setSphere(sphereData);
+        const sphereData = await getSphere(String(id));
+        setSphere(sphereData);
       }
     } catch (e: any) {
       toast({
@@ -335,37 +333,38 @@ export function SphereDetail() {
     });
   };
 
-  const handleTaskComplete = (taskId: string) => {
+  const handleTaskComplete = async (taskId: string) => {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
-    // Vérifier que l'utilisateur actuel est assigné à cette tâche
-    // TODO: Get current user ID from API and verify assignment
-    // For now, allow completion if task exists and user is assigned
+    try {
+      await completeTask(taskId);
+      
+      // Mettre à jour la tâche
+      const updatedTasks = tasks.map(t => 
+        t.id === taskId 
+          ? { 
+              ...t, 
+              status: "done", 
+              isCompleted: true,
+              completedAt: new Date().toISOString().split('T')[0]
+            }
+          : t
+      );
+      setTasks(updatedTasks);
 
-    // Mettre à jour la tâche
-    const updatedTasks = tasks.map(t => 
-      t.id === taskId 
-        ? { 
-            ...t, 
-            status: "done", 
-            isCompleted: true,
-            completedAt: new Date().toISOString().split('T')[0]
-          }
-        : t
-    );
-    setTasks(updatedTasks);
-
-    // Ajouter des points d'impact (simulation)
-    const currentImpact = parseInt(localStorage.getItem("userImpactScore") || "0");
-    const newImpact = currentImpact + task.impactPoints;
-    localStorage.setItem("userImpactScore", newImpact.toString());
-
-    toast({
-      title: "Tâche terminée ! 🎉",
-      description: `Félicitations ! Vous avez gagné ${task.impactPoints} points d'impact`,
-      duration: 3000,
-    });
+      toast({
+        title: "Tâche terminée ! 🎉",
+        description: `Félicitations ! Vous avez gagné ${task.impactPoints} points d'impact`,
+        duration: 3000,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error?.message || "Impossible de terminer la tâche",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

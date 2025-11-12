@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { authService } from "@/services/api";
+import { getCurrentUser, getPostComments, createComment, likeComment } from "@/services/api";
 import {
   Dialog,
   DialogContent,
@@ -51,58 +51,56 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
   const [showMentions, setShowMentions] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
 
-  // Load comments (TODO: Load from API when endpoint available)
+  // Load comments from API
   useEffect(() => {
-    // Placeholder comments - will be replaced with API call when endpoint available
-    const placeholderComments: Comment[] = [
-      {
-        id: "1",
-        author: {
-          name: "Sophie Martin",
-          avatar: "/placeholder-avatar.jpg",
-          username: "sophie_m",
-          isVerified: true,
-          impactScore: 892
-        },
-        content: "Vraiment intéressant ! Merci du partage 👍",
-        timestamp: "1h ago",
-        likes: 3,
-        isLiked: false,
-        replies: [
-          {
-            id: "1-1",
+    if (!open || !postId) return;
+    
+    let isMounted = true;
+    (async () => {
+      try {
+        const data = await getPostComments(postId);
+        if (isMounted && data) {
+          const mapped = (data || []).map((comment: any) => ({
+            id: String(comment.id),
             author: {
-              name: "Max Prime",
-              avatar: "/placeholder-avatar.jpg",
-              username: "cypher",
-              isVerified: true,
-              impactScore: 1205
+              name: comment.author?.name || comment.author_name || "Utilisateur",
+              avatar: comment.author?.avatar || "/placeholder-avatar.jpg",
+              username: comment.author?.username || "user",
+              isVerified: Boolean(comment.author?.isVerified),
+              impactScore: Number(comment.author?.impactScore || 0),
             },
-            content: "De rien Sophie ! Content que ça t'aide 😊",
-            timestamp: "45min ago",
-            likes: 1,
-            isLiked: true,
-            isReply: true,
-            parentId: "1"
-          }
-        ]
-      },
-      {
-        id: "2",
-        author: {
-          name: "Lucas Dubois",
-          avatar: "/placeholder-avatar.jpg",
-          username: "lucas_d",
-          impactScore: 654
-        },
-        content: "Je suis complètement d'accord avec toi !",
-        timestamp: "2h ago",
-        likes: 1,
-        isLiked: false
+            content: comment.content || "",
+            timestamp: comment.created_at || new Date().toISOString(),
+            likes: Number(comment.likes_count || comment.likes || 0),
+            isLiked: Boolean(comment.is_liked),
+            replies: comment.replies?.map((reply: any) => ({
+              id: String(reply.id),
+              author: {
+                name: reply.author?.name || reply.author_name || "Utilisateur",
+                avatar: reply.author?.avatar || "/placeholder-avatar.jpg",
+                username: reply.author?.username || "user",
+                isVerified: Boolean(reply.author?.isVerified),
+                impactScore: Number(reply.author?.impactScore || 0),
+              },
+              content: reply.content || "",
+              timestamp: reply.created_at || new Date().toISOString(),
+              likes: Number(reply.likes_count || reply.likes || 0),
+              isLiked: Boolean(reply.is_liked),
+              isReply: true,
+              parentId: String(comment.id),
+            })) || [],
+          }));
+          setComments(mapped);
+        }
+      } catch (error) {
+        // Error loading comments - show empty state
+        console.error("Error loading comments:", error);
       }
-    ];
-    setComments(placeholderComments);
-  }, []);
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, [open, postId]);
   const { toast } = useToast();
   
   const commentSchema = z.object({
@@ -128,23 +126,21 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
     setIsSubmitting(true);
     
     try {
-      // Simuler l'envoi avec délai
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Ajouter le nouveau commentaire
-      // TODO: Get current user from API
+      // Create comment via API
+      const result = await createComment(postId, { content: newComment });
       const currentUser = await getCurrentUser().catch(() => null);
+      
       const newCommentObj: Comment = {
-        id: Date.now().toString(),
+        id: String(result.id || Date.now()),
         author: {
-          name: currentUser?.name || "Utilisateur",
-          avatar: currentUser?.avatar || "/placeholder-avatar.jpg",
-          username: currentUser?.username || "user",
-          isVerified: currentUser?.isVerified || false,
-          impactScore: currentUser?.impactScore || 0
+          name: currentUser?.data?.name || currentUser?.name || "Utilisateur",
+          avatar: currentUser?.data?.avatar || currentUser?.avatar || "/placeholder-avatar.jpg",
+          username: currentUser?.data?.username || currentUser?.username || "user",
+          isVerified: Boolean(currentUser?.data?.isVerified || currentUser?.isVerified),
+          impactScore: Number(currentUser?.data?.impactScore || currentUser?.impactScore || 0)
         },
         content: newComment,
-        timestamp: "Maintenant",
+        timestamp: result.created_at || new Date().toISOString(),
         likes: 0,
         isLiked: false
       };
@@ -156,54 +152,65 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
         title: t('modals.comments.validation.posted'),
         description: "Votre commentaire a été publié avec succès",
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: "Une erreur est survenue lors de l'ajout du commentaire",
+        description: error?.message || "Une erreur est survenue lors de l'ajout du commentaire",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleLikeComment = (commentId: string, isReply: boolean = false, parentId?: string) => {
-    setComments(prev => prev.map(comment => {
-      if (isReply && parentId) {
-        // Gérer les likes des réponses
-        if (comment.id === parentId) {
-          return {
-            ...comment,
-            replies: comment.replies?.map(reply => 
-              reply.id === commentId 
-                ? { 
-                    ...reply, 
-                    likes: reply.isLiked ? reply.likes - 1 : reply.likes + 1,
-                    isLiked: !reply.isLiked
-                  }
-                : reply
-            )
-          };
+  const handleLikeComment = async (commentId: string, isReply: boolean = false, parentId?: string) => {
+    try {
+      await likeComment(commentId);
+      
+      setComments(prev => prev.map(comment => {
+        if (isReply && parentId) {
+          // Gérer les likes des réponses
+          if (comment.id === parentId) {
+            return {
+              ...comment,
+              replies: comment.replies?.map(reply => 
+                reply.id === commentId 
+                  ? { 
+                      ...reply, 
+                      likes: reply.isLiked ? reply.likes - 1 : reply.likes + 1,
+                      isLiked: !reply.isLiked
+                    }
+                  : reply
+              )
+            };
+          }
+          return comment;
+        } else {
+          // Gérer les likes des commentaires principaux
+          if (comment.id === commentId) {
+            return {
+              ...comment,
+              likes: comment.isLiked ? comment.likes - 1 : comment.likes + 1,
+              isLiked: !comment.isLiked
+            };
+          }
+          return comment;
         }
-        return comment;
-      } else {
-        // Gérer les likes des commentaires principaux
-        if (comment.id === commentId) {
-          return {
-            ...comment,
-            likes: comment.isLiked ? comment.likes - 1 : comment.likes + 1,
-            isLiked: !comment.isLiked
-          };
-        }
-        return comment;
-      }
-    }));
+      }));
 
-    toast({
-      title: "Like ajouté",
-      description: "Votre réaction a été enregistrée",
-      duration: 1500,
-    });
+      toast({
+        title: "Like ajouté",
+        description: "Votre réaction a été enregistrée",
+        duration: 1500,
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: error?.message || "Impossible d'aimer ce commentaire",
+        duration: 2000,
+      });
+    }
   };
 
   const handleReply = async (parentId: string) => {
@@ -212,21 +219,21 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
     setIsSubmitting(true);
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 800));
-
-      // TODO: Get current user from API
+      // Create reply comment via API (with parent_id if backend supports it)
+      const result = await createComment(postId, { content: replyContent, parent_id: parentId });
       const currentUser = await getCurrentUser().catch(() => null);
+      
       const newReply: Comment = {
-        id: `${parentId}-${Date.now()}`,
+        id: String(result.id || `${parentId}-${Date.now()}`),
         author: {
-          name: currentUser?.name || "Utilisateur",
-          avatar: currentUser?.avatar || "/placeholder-avatar.jpg",
-          username: currentUser?.username || "user",
-          isVerified: currentUser?.isVerified || false,
-          impactScore: currentUser?.impactScore || 0
+          name: currentUser?.data?.name || currentUser?.name || "Utilisateur",
+          avatar: currentUser?.data?.avatar || currentUser?.avatar || "/placeholder-avatar.jpg",
+          username: currentUser?.data?.username || currentUser?.username || "user",
+          isVerified: Boolean(currentUser?.data?.isVerified || currentUser?.isVerified),
+          impactScore: Number(currentUser?.data?.impactScore || currentUser?.impactScore || 0)
         },
         content: replyContent,
-        timestamp: "Maintenant",
+        timestamp: result.created_at || new Date().toISOString(),
         likes: 0,
         isLiked: false,
         isReply: true,
@@ -246,11 +253,11 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
         title: "Réponse ajoutée",
         description: "Votre réponse a été publiée avec succès",
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: "Une erreur est survenue lors de l'ajout de la réponse",
+        description: error?.message || "Une erreur est survenue lors de l'ajout de la réponse",
       });
     } finally {
       setIsSubmitting(false);

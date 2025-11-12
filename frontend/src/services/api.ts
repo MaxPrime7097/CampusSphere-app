@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
-export function getAccessToken(): string | undefined {
+function getAccessToken(): string | undefined {
   try {
     const token = localStorage.getItem("access");
     return token || undefined;
@@ -313,7 +313,7 @@ export async function getPostComments(postId: number | string, token?: string) {
   return apiFetch<any[]>(`api/posts/${postId}/comments/`, { token: token || getAccessToken() });
 }
 
-export async function createComment(postId: number | string, data: { content: string }, token?: string) {
+export async function createComment(postId: number | string, data: { content: string; parent_id?: number | string }, token?: string) {
   return apiFetch<any>(`api/posts/${postId}/comments/`, {
     method: "POST",
     body: data,

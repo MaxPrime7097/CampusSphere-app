@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { userService, authService } from "@/services/api";
+import { searchUsers, getCurrentUser, getUserConnections, createConnection, deleteConnection } from "@/services/api";
 import { Users, UserPlus, Search, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,8 +7,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 export function Connections() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [connections, setConnections] = useState<any[]>([]);
   const [suggestions, setSuggestions] = useState<any[]>([]);
@@ -30,38 +34,30 @@ export function Connections() {
     };
   }, []);
 
-  // Load connections and suggestions
+  // Load connections
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser?.id) return;
     
     let isMounted = true;
     (async () => {
       try {
         setLoading(true);
-        // TODO: Load actual connections from API
-        const users = await searchUsers("");
-        if (isMounted && users) {
-          const mapped = (users || [])
-            .filter((u: any) => u.id !== currentUser.id)
-            .map((u: any) => ({
-              id: String(u.id),
-              name: u.name || u.first_name + ' ' + u.last_name,
-              username: u.username,
-              avatar: u.avatar || '/placeholder-avatar.jpg',
-              university: u.university || '',
-              faculty: u.faculty || '',
-              field: u.faculty || '',
-              isVerified: u.is_verified || false,
-              impactScore: u.impact_score || 0,
-              mutualFriends: 0 // TODO: Load from connections API
-            }));
-          setConnections(mapped.slice(0, 10));
-          setSuggestions(mapped.slice(10, 20).map(u => ({
-            ...u,
-            reason: u.university === currentUser.university ? 
-              `Même université - ${u.university}` : 
-              `Même filière - ${u.faculty}`
-          })));
+        // Load user's connections
+        const connectionsData = await getUserConnections(currentUser.id);
+        if (isMounted && connectionsData) {
+          const mapped = (connectionsData || []).map((conn: any) => ({
+            id: String(conn.id || conn.user_id),
+            name: conn.user_info?.name || conn.name || "Utilisateur",
+            username: conn.user_info?.username || conn.username || "user",
+            avatar: conn.user_info?.avatar || conn.avatar || '/placeholder-avatar.jpg',
+            university: conn.user_info?.university || conn.university || '',
+            faculty: conn.user_info?.faculty || conn.faculty || '',
+            field: conn.user_info?.faculty || conn.faculty || '',
+            isVerified: conn.user_info?.is_verified || conn.is_verified || false,
+            impactScore: conn.user_info?.impact_score || conn.impact_score || 0,
+            mutualFriends: 0 // TODO: Calculate mutual connections if API provides this
+          }));
+          setConnections(mapped);
         }
       } catch (e) {
         // Error loading connections
@@ -73,6 +69,46 @@ export function Connections() {
       isMounted = false;
     };
   }, [currentUser]);
+
+  // Load suggestions
+  useEffect(() => {
+    if (!currentUser) return;
+    
+    let isMounted = true;
+    (async () => {
+      try {
+        // Load user suggestions (using search as fallback)
+        const users = await searchUsers("");
+        if (isMounted && users) {
+          const connectionIds = new Set(connections.map(c => c.id));
+          const mapped = (users || [])
+            .filter((u: any) => u.id !== currentUser.id && !connectionIds.has(String(u.id)))
+            .map((u: any) => ({
+              id: String(u.id),
+              name: u.name || u.first_name + ' ' + u.last_name,
+              username: u.username,
+              avatar: u.avatar || '/placeholder-avatar.jpg',
+              university: u.university || '',
+              faculty: u.faculty || '',
+              field: u.faculty || '',
+              isVerified: u.is_verified || false,
+              impactScore: u.impact_score || 0,
+              reason: u.university === currentUser.university ? 
+                `Même université - ${u.university}` : 
+                u.faculty === currentUser.faculty ?
+                `Même filière - ${u.faculty}` :
+                "Suggestions pour vous"
+            }));
+          setSuggestions(mapped.slice(0, 20));
+        }
+      } catch (e) {
+        // Error loading suggestions
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUser, connections]);
 
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -163,7 +199,12 @@ export function Connections() {
                         </div>
                       </div>
 
-                      <Button variant="outline" className="w-full" size="sm">
+                      <Button 
+                        variant="outline" 
+                        className="w-full" 
+                        size="sm"
+                        onClick={() => navigate(`/profile/${connection.username}`)}
+                      >
                         Voir le profil
                       </Button>
                     </div>
@@ -216,7 +257,29 @@ export function Connections() {
                         <span className="font-semibold text-primary">⚡ {suggestion.impactScore}</span>
                       </div>
 
-                      <Button className="w-full campus-gradient text-white" size="sm">
+                      <Button 
+                        className="w-full campus-gradient text-white" 
+                        size="sm"
+                        onClick={async () => {
+                          try {
+                            await createConnection(suggestion.id);
+                            toast({
+                              title: "Demande envoyée",
+                              description: `Demande de connexion envoyée à ${suggestion.name}`,
+                              duration: 2000,
+                            });
+                            // Move to connections list
+                            setConnections([...connections, suggestion]);
+                            setSuggestions(suggestions.filter(s => s.id !== suggestion.id));
+                          } catch (error: any) {
+                            toast({
+                              title: "Erreur",
+                              description: error?.message || "Impossible d'envoyer la demande",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                      >
                         <UserPlus className="h-4 w-4 mr-2" />
                         Se connecter
                       </Button>

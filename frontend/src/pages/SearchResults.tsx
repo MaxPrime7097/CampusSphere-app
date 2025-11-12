@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { utilsService } from "@/services/api/utilsService";
+import { globalSearch } from "@/services/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -41,8 +41,9 @@ export function SearchResults() {
     
     (async () => {
       try {
-        const data = await utilsService.search(searchTerm, 'all');
-        if (isMounted && data) {
+        const result = await globalSearch(searchTerm, 'all', 20);
+        if (isMounted && result.success) {
+          const data = result.data || {};
           setSearchResults({
             users: (data.users || []).map((u: any) => ({
               id: String(u.id),

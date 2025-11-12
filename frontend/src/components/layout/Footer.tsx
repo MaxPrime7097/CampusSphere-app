@@ -47,10 +47,9 @@ export function Footer() {
                 <ul className="font-nunito font-semibold space-y-2 text-sm text-muted-foreground">
                   <li><a href="/cs-inc/policies/privacy" className="hover:text-foreground transition-colors">Politique de Confidentialité</a></li>
                   <li><a href="/cs-inc/policies/terms" className="hover:text-foreground transition-colors">Conditions d'Utilisation</a></li>
+                  <li><a href="/cs-inc/policies/community-guidelines" className="hover:text-foreground transition-colors">Règles de la Communauté</a></li>
                   <li><a href="/cs-inc/policies/cookiepolicy" className="hover:text-foreground transition-colors">Politique de Cookies</a></li>
-                  <li><a href="/cs-inc/policies/community-guidelines" className="hover:text-foreground transition-colors">Règles de la communauté</a></li>
-                  <li><a href="/cs-inc/policies/datadeletion" className="hover:text-foreground transition-colors">Suppression de données</a></li>
-                  <li><a href="/cs-inc/policies/copyright" className="hover:text-foreground transition-colors">Politique de droits d'auteur</a></li>
+                  <li><a href="/cs-inc/policies/copyright" className="hover:text-foreground transition-colors">Politique de Droits d'auteur</a></li>
                 </ul>
             </div>
           </div>

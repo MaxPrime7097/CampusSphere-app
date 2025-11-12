@@ -22,6 +22,7 @@ import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { likePost } from "@/services/api";
 
 interface PostCardProps {
   post: {
@@ -57,15 +58,24 @@ export function PostCard({ post }: PostCardProps) {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
 
-  const handleLike = () => {
-    setIsLiked(!isLiked);
-    setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
-    
-    // Simuler l'animation de like
-    if (!isLiked) {
+  const handleLike = async () => {
+    try {
+      await likePost(post.id);
+      setIsLiked(!isLiked);
+      setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
+      
+      if (!isLiked) {
+        toast({
+          title: "Post aimé !",
+          description: "Vous avez aimé ce post",
+          duration: 2000,
+        });
+      }
+    } catch (error: any) {
       toast({
-        title: "Post aimé !",
-        description: "Vous avez aimé ce post",
+        title: "Erreur",
+        description: error?.message || "Impossible d'aimer ce post",
+        variant: "destructive",
         duration: 2000,
       });
     }

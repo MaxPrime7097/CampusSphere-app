@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { api, endpoints, authService } from "@/services/api";
+import { getUserConversations, getConversationMessages, sendMessage, getCurrentUser } from "@/services/api";
 import { useTranslation } from "react-i18next";
-import type { Message } from "@/types/message";
-import type { Conversation, ConversationResponse } from "@/types/conversation";
 import { Search, Send, Phone, Video, MoreVertical, MessageSquare, Loader2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,21 +21,16 @@ export function Messages() {
   const { conversationId } = useParams<{ conversationId: string }>();
   const [newMessage, setNewMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState([]);
   const [isSending, setIsSending] = useState(false);
   const [showNewConversationModal, setShowNewConversationModal] = useState(false);
   const [newConversationName, setNewConversationName] = useState("");
-  const [newConversationType, setNewConversationType] = useState<"direct" | "group">("direct");
+  const [newConversationType, setNewConversationType] = useState("direct");
   const { toast } = useToast();
 
-  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [conversations, setConversations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState<{
-    id: string;
-    username: string;
-    avatar?: string;
-    name: string;
-  } | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   const messageSchema = z.object({
     content: z.string()
@@ -51,7 +44,7 @@ export function Messages() {
     let isMounted = true;
     (async () => {
       try {
-        const data = await authService.getCurrentUser();
+        const data = await getCurrentUser();
         if (isMounted) setCurrentUser(data);
       } catch (e) {
         // User not logged in
@@ -68,26 +61,25 @@ export function Messages() {
     (async () => {
       try {
         setLoading(true);
-        const resp = await api.get<ConversationResponse>(endpoints.messages.conversations);
-        const { conversations: data } = resp.data;
+        const data = await getUserConversations();
         if (isMounted) {
-          const mapped = (data || []).map((conv): Conversation => ({
+          const mapped = (data || []).map((conv: any) => ({
             id: String(conv.id),
-            type: (conv.conversation_type || conv.type || 'direct') as 'direct' | 'group',
+            type: conv.conversation_type || conv.type || 'private',
             participants: conv.participants || [],
             lastMessage: conv.last_message?.content || conv.last_message || '',
             lastMessageAt: conv.last_message_at || conv.lastMessageAt || new Date().toISOString(),
             name: conv.name || conv.participants?.[0]?.name || 'Conversation',
             avatar: conv.avatar || conv.participants?.[0]?.avatar || '/placeholder-avatar.jpg',
-            unreadCount: conv.unread_count || 0,
+            unread: conv.unread_count || 0,
             isOnline: false,
           }));
           setConversations(mapped);
         }
-      } catch (e: Error) {
+      } catch (e: any) {
         toast({
           title: "Erreur",
-          description: e.message || "Impossible de charger les conversations",
+          description: e?.message || "Impossible de charger les conversations",
           variant: "destructive",
         });
       } finally {
@@ -109,25 +101,20 @@ export function Messages() {
     let isMounted = true;
     (async () => {
       try {
-        const resp = await api.get<MessageResponse>(endpoints.messages.messages(conversationId));
-        const { messages: data } = resp.data;
+        const data = await getConversationMessages(conversationId);
         if (isMounted) {
-          const mapped = (data || []).map((msg): Message & { isCurrentUser: boolean } => ({
+          const mapped = (data || []).map((msg: any) => ({
             id: String(msg.id),
-            content: msg.content,
-            sender: {
-              id: msg.sender.id,
-              username: msg.sender.username,
-              avatar: msg.sender.avatar,
-            },
-            conversation_id: msg.conversation_id,
-            created_at: msg.created_at,
-            updated_at: msg.updated_at,
-            isCurrentUser: msg.sender.id === currentUser?.id,
+            sender: msg.sender?.name || msg.sender_name || 'Unknown',
+            senderId: msg.sender?.id || msg.sender_id,
+            content: msg.content || '',
+            timestamp: msg.created_at || msg.timestamp || new Date().toISOString(),
+            isCurrentUser: msg.sender?.id === currentUser?.id,
+            avatar: msg.sender?.avatar || '/placeholder-avatar.jpg',
           }));
           setMessages(mapped);
         }
-      } catch (e: Error) {
+      } catch (e: any) {
         toast({
           title: "Erreur",
           description: "Impossible de charger les messages",
@@ -188,11 +175,11 @@ export function Messages() {
         description: "Votre message a été envoyé avec succès",
         duration: 2000,
       });
-    } catch (e: Error) {
+    } catch (e: any) {
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: e.message || "Impossible d'envoyer le message",
+        description: e?.message || "Impossible d'envoyer le message",
       });
     } finally {
       setIsSending(false);

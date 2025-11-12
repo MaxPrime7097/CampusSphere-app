@@ -1,7 +1,8 @@
 {
 	"dependencies": {
-		"three": "^0.181.0",
+		"@lottiefiles/dotlottie-react": "^0.17.7",
+		"@react-three/drei": "^10.7.6",
 		"@react-three/fiber": "^9.4.0",
-		"@react-three/drei": "^10.7.6"
+		"three": "^0.181.0"
 	}
 }

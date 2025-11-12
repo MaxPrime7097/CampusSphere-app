@@ -35,7 +35,11 @@ class UserLoginSerializer(serializers.Serializer):
         password = data.get('password')
 
         if email and password:
-            user = authenticate(email=email, password=password)
+            # Django's default authentication backend expects the credential
+            # keyword to be the USERNAME_FIELD (which in this project is 'email'),
+            # but ModelBackend expects a 'username' kwarg. Use 'username' here
+            # to ensure authentication works with the default backend.
+            user = authenticate(username=email, password=password)
             if not user:
                 raise serializers.ValidationError("Invalid credentials")
             if not user.is_active:

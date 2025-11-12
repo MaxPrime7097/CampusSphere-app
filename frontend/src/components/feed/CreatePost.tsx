@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CreatePostModal } from "@/components/modals/CreatePostModal";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { authService } from "@/services/api";
+import { getCurrentUser } from "@/services/api";
 
 interface PostData {
   content: string;

@@ -6,6 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
+import { PoliciesButton }  from "@/components/layout/PoliciesButton"
 
 export function Privacy(): JSX.Element {
   const navigate = useNavigate();
@@ -25,12 +26,8 @@ export function Privacy(): JSX.Element {
         <div className="container mx-auto max-w-9xl">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="text-center lg:text-left space-y-8 campus-animate-fade-in">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5">
-                <Shield className="h-4 w-4 text-primary" />
-                <span className="font-poppins text-sm font-medium">Vos données sont protégées</span>
-              </div>
-
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold font-automata leading-tight">
+             
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-automata leading-tight">
                 <span className="campus-gradient bg-clip-text text-transparent">
                   Politique de
                 </span>
@@ -44,25 +41,8 @@ export function Privacy(): JSX.Element {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <DropdownMenu>
-                  <DropdownMenuTrigger>
-                    <Button
-                      onClick={() => document.getElementById('privacy-content')?.scrollIntoView({ behavior: 'smooth' })}
-                      className="font-poppins campus-gradient text-white hover:opacity-90 text-lg px-8 py-8 rounded-lg transition-all duration-300 hover:scale-105"
-                    >
-                      Politiques
-                      <ChevronDown className="h-4 w-4 "/>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => navigate('/cs-inc/policies/privacy')}>
-                      Politique de Confidentialité
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/cs-inc/policies/terms')}>
-                      Conditions d'Utilisation
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                
+              <PoliciesButton />
 
                 <Button
                   variant="secondary"
@@ -76,12 +56,12 @@ export function Privacy(): JSX.Element {
 
             <div className="relative hidden lg:block campus-animate-slide-up">
               <div className="absolute inset-0 campus-gradient opacity-30 blur-3xl"></div>
-              <div className="relative campus-glass rounded-3xl p-8 campus-glow">
-                <img
-                  src="/Illustrations/Privacy policy-amico.svg"
-                  alt="Politique de Confidentialité CampusSphere"
+              <div className="relative campus-glass flex justify-center align-items-center h-96 rounded-3xl p-8 campus-glow">
+              <img
+                  src="/icons/politique-de-confidentialite.png"
+                  alt="CampusSphere illustration"
                   loading="lazy"
-                  className="w-full h-auto rounded-2xl"
+                  className="h-full w-auto rounded-2xl"
                 />
               </div>
             </div>
@@ -174,7 +154,7 @@ export function Privacy(): JSX.Element {
                 <p className="mt-4">
                   Pour exercer ces droits, contactez-nous à{" "}
                   <a href="mailto:privacy@campus-sphere.com" className="text-primary hover:underline">
-                    privacy@campus-sphere.com
+                    policies@campus-sphere.com
                   </a>
                 </p>
               </div>
@@ -209,7 +189,7 @@ export function Privacy(): JSX.Element {
                   <li><p className="mt-4">
                   Pour exercer ces droits, contactez-nous à{" "}
                   <a href="mailto:privacy@campus-sphere.com" className="text-primary hover:underline">
-                    privacy@campus-sphere.com
+                    policies@campus-sphere.com
                   </a>
                 </p></li>
                   <li>Adresse: Douala, Cameroun</li>

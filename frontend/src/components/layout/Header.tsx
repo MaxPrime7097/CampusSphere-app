@@ -16,7 +16,7 @@ export function Header() {
             </span>
           </div>
 
-          <div className="hidden lg:flex items-center gap-4">
+          <div className="hidden lg:flex items-center gap-4 font-nunito font-semibold">
             <a href="/cs-inc/about" className="text-muted-foreground hover:text-foreground transition-colors">À propos</a>
             <a href="/cs-inc/contact" className="text-muted-foreground hover:text-foreground transition-colors">Contact</a>
             <a href="/cs-inc/faq" className="text-muted-foreground hover:text-foreground transition-colors">FAQ</a>
@@ -25,12 +25,21 @@ export function Header() {
                 Politiques
                 <ChevronDown className="h-4 w-4" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent>
+              <DropdownMenuContent className="font-nunito font-semibold">
                 <DropdownMenuItem onClick={() => navigate('/cs-inc/policies/privacy')}>
                   Politique de Confidentialité
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate('/cs-inc/policies/terms')}>
                   Conditions d'Utilisation
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/cs-inc/policies/community-guidelines')}>
+                  Règles de la Communauté
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/cs-inc/policies/cookiepolicy')}>
+                  Politique de Cookies
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/cs-inc/policies/copyright')}>
+                  Politique de Droits d'auteur
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

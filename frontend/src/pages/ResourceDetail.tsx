@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { api, endpoints } from "@/services/api/config";
+import { getResource } from "@/services/api";
 import { Download, Share2, ChevronLeft, Eye, Flag, FileText, Loader2, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -54,8 +54,7 @@ export function ResourceDetail() {
     let isMounted = true;
     (async () => {
       try {
-  const res = await api.get(endpoints.resources.details(String(id)));
-  const data = res.data;
+        const data = await getResource(id);
         if (isMounted && data) {
           setResource({
             id: String(data.id),

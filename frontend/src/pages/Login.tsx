@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { authService } from "@/services/api";
+import { login } from "@/services/api";
 import Sphere3D from "@/components/layout/Sphere3D"
 
 export function Login() {
@@ -61,7 +61,7 @@ export function Login() {
     
     try {
       // Appeler l'API de connexion
-      const response = await authService.login({
+      const response = await login({
         email: formData.email,
         password: formData.password
       });
