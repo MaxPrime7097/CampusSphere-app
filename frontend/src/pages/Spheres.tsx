@@ -222,20 +222,27 @@ export function Spheres() {
             </CreateSphereModal>
           </div>
         </div>
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
-            <TabsTrigger value="discover" className="gap-2">
-              Découvrir
-            </TabsTrigger>
-            <TabsTrigger value="my-spheres" className="gap-2">
-              Mes sphères ({userSpheres.length > 0 ? userSpheres.length : userJoinedSpheres.length})
-            </TabsTrigger>
-            <TabsTrigger value="top" className="gap-2">
-              Top
-            </TabsTrigger>
-          </TabsList>
 
-          <TabsContent value="discover" className="space-y-4">
+        <ul className="grid grid-flow-col text-center border-b border-gray-200 text-gray-500">
+          <li>
+            <a href="#page1" className="flex justify-center border-b-4 border-transparent hover:text-indigo-600 hover:border-indigo-600 py-4">Pilot Training</a>
+          </li>
+          <li>
+            <a href="#page2" className="flex justify-center border-b-4 border-transparent hover:text-indigo-600 hover:border-indigo-600 py-4">Titan maintenance</a>
+          </li>
+          <li>
+            <a href="#page3" className="flex justify-center border-b-4 border-transparent hover:text-indigo-600 hover:border-indigo-600 py-4">Loadout</a>
+          </li>
+          <li>
+            <a href="#page4" className="flex justify-center border-b-4 border-transparent hover:text-indigo-600 hover:border-indigo-600 py-4">Server Browser</a>
+          </li>
+          <li>
+            <a href="#page5" className="flex justify-center border-b-4 border-transparent hover:text-indigo-600 hover:border-indigo-600 py-4">Settings</a>
+          </li>
+        </ul>
+        
+        <div className="container mx-auto max-w-9xl">
+          <section id="page1" className="space-y-4">
             {/* Filters */}
             <div className="rounded-lg border bg-card p-3">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -351,9 +358,9 @@ export function Spheres() {
                 )}
               </div>
             )}
-          </TabsContent>
+          </section>
 
-          <TabsContent value="my-spheres" className="space-y-4">
+          <section id="page2" className="space-y-4">
             <div className="rounded-lg border bg-card p-3 mb-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -387,12 +394,12 @@ export function Spheres() {
                     <div className="space-y-1 mb-3">
                       <div className="flex justify-between text-xs">
                         <span className="text-muted-foreground">Progression</span>
-                        <span className="font-semibold">75%</span>
+                        <span className="font-semibold">{sphere.progression}%</span>
                       </div>
                       <div className="w-full bg-muted rounded-full h-1.5">
                         <div
                           className={`h-1.5 rounded-full bg-gradient-to-r ${sphere.color} progress-bar`}
-                          style={{ '--progress-width': `75%` } as React.CSSProperties}
+                          style={{ '--progress-width': `${sphere.progression}%` } as React.CSSProperties}
                         />
                       </div>
                     </div>
@@ -407,9 +414,9 @@ export function Spheres() {
                 </Card>
               ))}
             </div>
-          </TabsContent>
+          </section>
 
-          <TabsContent value="top" className="space-y-4">
+          <section id="page3" className="space-y-4">
             <Card className="campus-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -457,8 +464,8 @@ export function Spheres() {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+          </section>
+        </div>
       </div>
     </div>
   );

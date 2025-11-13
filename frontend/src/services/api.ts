@@ -12,6 +12,195 @@ function getAccessToken(): string | undefined {
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
+function toArray<T>(value: T[] | null | undefined): T[] {
+  if (!value) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
+function toNumber(value: unknown, fallback = 0): number {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : fallback;
+}
+
+function unwrapItem<T = any>(response: any): T | null {
+  if (!response) return null;
+  if (response?.success !== undefined && response?.data !== undefined) {
+    return response.data as T;
+  }
+  return response as T;
+}
+
+function unwrapList<T = any>(response: any): T[] {
+  if (!response) return [];
+  if (Array.isArray(response)) return response as T[];
+  if (response?.success !== undefined && Array.isArray(response?.data)) {
+    return response.data as T[];
+  }
+  if (Array.isArray(response?.results)) {
+    return response.results as T[];
+  }
+  if (Array.isArray(response?.data?.results)) {
+    return response.data.results as T[];
+  }
+  return [];
+}
+
+function normalizeUser(user: any) {
+  if (!user) return null;
+
+  const firstName = user.firstName ?? user.first_name ?? "";
+  const lastName = user.lastName ?? user.last_name ?? "";
+  const fullNameFromApi = user.full_name ?? user.name ?? "";
+  const constructedName = `${firstName || ""} ${lastName || ""}`.trim();
+  const name = fullNameFromApi || constructedName || user.username || "Utilisateur";
+
+  return {
+    ...user,
+    id: user.id,
+    firstName,
+    lastName,
+    name,
+    username: user.username ?? "",
+    email: user.email ?? "",
+    avatar: user.avatar ?? user.profileImage ?? null,
+    coverPhoto: user.coverPhoto ?? user.cover_photo ?? null,
+    bio: user.bio ?? "",
+    university: user.university ?? "",
+    faculty: user.faculty ?? "",
+    studyYear: user.studyYear ?? user.study_year ?? "",
+    studentId: user.studentId ?? user.student_id ?? "",
+    campus: user.campus ?? "",
+    town: user.town ?? "",
+    language: user.language ?? "",
+    impactScore: user.impactScore ?? user.impact_score ?? 0,
+    currentMood: user.currentMood ?? user.current_mood ?? "",
+    skills: toArray(user.skills),
+    interests: toArray(user.interests),
+    previousEducation: toArray(user.previousEducation ?? user.previous_education),
+    experiences: toArray(user.experiences),
+    portfolioLinks: toArray(user.portfolioLinks ?? user.portfolio_links),
+    joinedSpheresCount: user.joinedSpheresCount ?? user.joined_spheres_count ?? 0,
+    connectionsCount: user.connectionsCount ?? user.connections_count ?? 0,
+    dateJoined: user.dateJoined ?? user.date_joined ?? null,
+    updatedAt: user.updatedAt ?? user.updated_at ?? null,
+    stats: {
+      posts: toNumber(user.posts_count ?? user.stats?.posts, 0),
+      connections: toNumber(user.connections_count ?? user.stats?.connections, 0),
+      contributions: toNumber(user.contributions_count ?? user.stats?.contributions, 0),
+    },
+  };
+}
+
+function normalizeUsers(users: any[] = []) {
+  return users.map((user) => normalizeUser(user)).filter(Boolean);
+}
+
+function normalizeSphere(sphere: any) {
+  if (!sphere) return null;
+
+  const createdByInfo = normalizeUser(sphere.created_by_info ?? sphere.createdByInfo ?? sphere.creator_info);
+
+  return {
+    ...sphere,
+    name: sphere.name ?? "",
+    description: sphere.description ?? "",
+    category: sphere.category ?? "",
+    type: sphere.type ?? "",
+    color: sphere.color ?? "",
+    icon: sphere.icon ?? "",
+    objective: sphere.objective ?? "",
+    targetAudience: sphere.target_audience ?? sphere.targetAudience ?? "",
+    duration: sphere.duration ?? "",
+    collaborationTypes: toArray(sphere.collaboration_types ?? sphere.collaborationTypes),
+    isPrivate: sphere.is_private ?? sphere.isPrivate ?? false,
+    requireApproval: sphere.require_approval ?? sphere.requireApproval ?? false,
+    memberCount: toNumber(sphere.member_count ?? sphere.memberCount, 0),
+    impactScore: toNumber(sphere.impact_score ?? sphere.impactScore, 0),
+    createdBy: sphere.created_by ?? sphere.createdBy ?? createdByInfo?.id ?? null,
+    createdByInfo,
+    isMember: sphere.is_member ?? sphere.isMember ?? false,
+    membershipStatus: sphere.membership_status ?? sphere.membershipStatus ?? null,
+    userRole: sphere.user_role ?? sphere.userRole ?? null,
+    createdAt: sphere.created_at ?? sphere.createdAt ?? null,
+    updatedAt: sphere.updated_at ?? sphere.updatedAt ?? null,
+  };
+}
+
+function normalizeSpheres(spheres: any[] = []) {
+  return spheres.map((sphere) => normalizeSphere(sphere)).filter(Boolean);
+}
+
+function normalizeResource(resource: any) {
+  if (!resource) return null;
+
+  const authorInfo = normalizeUser(resource.author_info ?? resource.authorInfo);
+
+  return {
+    ...resource,
+    title: resource.title ?? "",
+    description: resource.description ?? "",
+    subject: resource.subject ?? "other",
+    type: resource.type ?? "notes",
+    category: resource.category ?? "",
+    tags: toArray(resource.tags),
+    visibility: resource.visibility ?? "public",
+    fileUrl: resource.file_url ?? resource.fileUrl ?? "",
+    fileSize: resource.file_size ?? resource.fileSize ?? "",
+    isSaved: resource.is_saved ?? resource.isSaved ?? false,
+    downloadCount: toNumber(resource.download_count ?? resource.downloadCount, 0),
+    viewCount: toNumber(resource.view_count ?? resource.viewCount, 0),
+    impactScore: toNumber(resource.impact_score ?? resource.impactScore, 0),
+    author: authorInfo,
+    authorId: resource.author ?? resource.author_id ?? authorInfo?.id ?? null,
+    authorName: authorInfo?.name ?? resource.author_name ?? "",
+    createdAt: resource.created_at ?? resource.createdAt ?? null,
+    updatedAt: resource.updated_at ?? resource.updatedAt ?? null,
+  };
+}
+
+function normalizeResources(resources: any[] = []) {
+  return resources.map((resource) => normalizeResource(resource)).filter(Boolean);
+}
+
+function normalizePost(post: any) {
+  if (!post) return null;
+
+  const authorInfo = normalizeUser(post.author_info ?? post.authorInfo ?? post.author);
+  const sphereInfo = normalizeSphere(post.sphere_info ?? post.sphereInfo);
+
+  return {
+    ...post,
+    content: post.content ?? "",
+    category: post.category ?? "",
+    visibility: post.visibility ?? "public",
+    subject: post.subject ?? "",
+    type: post.type ?? "",
+    audience: post.audience ?? "",
+    location: post.location ?? "",
+    tags: toArray(post.tags),
+    files: toArray(post.files),
+    allowComments: post.allow_comments ?? post.allowComments ?? true,
+    isPinned: post.is_pinned ?? post.isPinned ?? false,
+    likesCount: toNumber(post.likes_count ?? post.likesCount, 0),
+    commentsCount: toNumber(post.comments_count ?? post.commentsCount, 0),
+    impactScore: toNumber(post.impact_score ?? post.impactScore, 0),
+    isLiked: post.is_liked ?? post.isLiked ?? false,
+    canEdit: post.can_edit ?? post.canEdit ?? false,
+    canDelete: post.can_delete ?? post.canDelete ?? false,
+    recentComments: toArray(post.recent_comments ?? post.recentComments),
+    author: authorInfo,
+    authorId: post.author ?? authorInfo?.id ?? null,
+    sphere: sphereInfo,
+    sphereId: post.sphere ?? sphereInfo?.id ?? null,
+    createdAt: post.created_at ?? post.createdAt ?? null,
+    updatedAt: post.updated_at ?? post.updatedAt ?? null,
+  };
+}
+
+function normalizePosts(posts: any[] = []) {
+  return posts.map((post) => normalizePost(post)).filter(Boolean);
+}
+
 async function apiFetch<T>(
   path: string,
   options: {
@@ -106,15 +295,21 @@ export async function refreshToken(refresh: string) {
 // ============================================================================
 
 export async function getCurrentUser(token?: string) {
-  return apiFetch<{ success: boolean; data: any; timestamp: string }>("api/users/auth/me/", { token: token || getAccessToken() });
+  const response = await apiFetch<{ success: boolean; data: any; timestamp: string }>(
+    "api/users/auth/me/",
+    { token: token || getAccessToken() }
+  );
+  return normalizeUser(response?.data ?? response);
 }
 
 export async function getUser(id: number | string, token?: string) {
-  return apiFetch<any>(`api/users/${id}/`, { token: token || getAccessToken() });
+  const data = await apiFetch<any>(`api/users/${id}/`, { token: token || getAccessToken() });
+  return normalizeUser(unwrapItem(data));
 }
 
 export async function getUserProfile(token?: string) {
-  return apiFetch<any>("api/users/profile/", { token: token || getAccessToken() });
+  const data = await apiFetch<any>("api/users/profile/", { token: token || getAccessToken() });
+  return normalizeUser(unwrapItem(data));
 }
 
 export async function updateUserProfile(data: Partial<{
@@ -136,11 +331,17 @@ export async function updateUserProfile(data: Partial<{
 }
 
 export async function searchUsers(query: string, token?: string) {
-  return apiFetch<any[]>(`api/users/search/?q=${encodeURIComponent(query)}`, { token: token || getAccessToken() });
+  const users = await apiFetch<any[]>(`api/users/search/?q=${encodeURIComponent(query)}`, {
+    token: token || getAccessToken(),
+  });
+  return normalizeUsers(users);
 }
 
 export async function getUserByUsername(username: string, token?: string) {
-  return apiFetch<any[]>(`api/users/search/?q=${encodeURIComponent(username)}`, { token: token || getAccessToken() });
+  const users = await apiFetch<any[]>(`api/users/search/?q=${encodeURIComponent(username)}`, {
+    token: token || getAccessToken(),
+  });
+  return normalizeUsers(users);
 }
 
 // Connections
@@ -171,11 +372,13 @@ export async function listSpheres(params?: Record<string, string | number>, toke
   const query = params
     ? `?${new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)]))}`
     : "";
-  return apiFetch<any[]>(`api/spheres/${query}`, { token: token || getAccessToken() });
+  const response = await apiFetch<any>(`api/spheres/${query}`, { token: token || getAccessToken() });
+  return normalizeSpheres(unwrapList(response));
 }
 
 export async function getSphere(id: number | string, token?: string) {
-  return apiFetch<any>(`api/spheres/${id}/`, { token: token || getAccessToken() });
+  const response = await apiFetch<any>(`api/spheres/${id}/`, { token: token || getAccessToken() });
+  return normalizeSphere(unwrapItem(response));
 }
 
 export async function createSphere(data: {
@@ -233,7 +436,8 @@ export async function listSphereMembers(id: number | string, token?: string) {
 }
 
 export async function getUserSpheres(token?: string) {
-  return apiFetch<any[]>("api/spheres/user/spheres/", { token: token || getAccessToken() });
+  const response = await apiFetch<any>("api/spheres/user/spheres/", { token: token || getAccessToken() });
+  return normalizeSpheres(unwrapList(response));
 }
 
 // ============================================================================
@@ -244,11 +448,13 @@ export async function listPosts(params?: Record<string, string | number>, token?
   const query = params
     ? `?${new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)]))}`
     : "";
-  return apiFetch<any[]>(`api/posts/${query}`, { token: token || getAccessToken() });
+  const response = await apiFetch<any>(`api/posts/${query}`, { token: token || getAccessToken() });
+  return normalizePosts(unwrapList(response));
 }
 
 export async function getPost(id: number | string, token?: string) {
-  return apiFetch<any>(`api/posts/${id}/`, { token: token || getAccessToken() });
+  const response = await apiFetch<any>(`api/posts/${id}/`, { token: token || getAccessToken() });
+  return normalizePost(unwrapItem(response));
 }
 
 export async function createPost(data: {
@@ -301,11 +507,13 @@ export async function pinPost(id: number | string, token?: string) {
 }
 
 export async function getUserPosts(userId: number | string, token?: string) {
-  return apiFetch<any[]>(`api/posts/user/${userId}/`, { token: token || getAccessToken() });
+  const response = await apiFetch<any>(`api/posts/user/${userId}/`, { token: token || getAccessToken() });
+  return normalizePosts(unwrapList(response));
 }
 
 export async function getSpherePosts(sphereId: number | string, token?: string) {
-  return apiFetch<any[]>(`api/posts/sphere/${sphereId}/`, { token: token || getAccessToken() });
+  const response = await apiFetch<any>(`api/posts/sphere/${sphereId}/`, { token: token || getAccessToken() });
+  return normalizePosts(unwrapList(response));
 }
 
 // Comments
@@ -336,11 +544,13 @@ export async function listResources(params?: Record<string, string | number>, to
   const query = params
     ? `?${new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)]))}`
     : "";
-  return apiFetch<any[]>(`api/resources/${query}`, { token: token || getAccessToken() });
+  const response = await apiFetch<any>(`api/resources/${query}`, { token: token || getAccessToken() });
+  return normalizeResources(unwrapList(response));
 }
 
 export async function getResource(id: number | string, token?: string) {
-  return apiFetch<any>(`api/resources/${id}/`, { token: token || getAccessToken() });
+  const response = await apiFetch<any>(`api/resources/${id}/`, { token: token || getAccessToken() });
+  return normalizeResource(unwrapItem(response));
 }
 
 export async function createResource(data: FormData, token?: string) {
@@ -383,11 +593,13 @@ export async function saveResource(id: number | string, token?: string) {
 }
 
 export async function getSavedResources(token?: string) {
-  return apiFetch<any[]>("api/resources/saved/", { token: token || getAccessToken() });
+  const response = await apiFetch<any>("api/resources/saved/", { token: token || getAccessToken() });
+  return normalizeResources(unwrapList(response));
 }
 
 export async function getUserResources(userId: number | string, token?: string) {
-  return apiFetch<any[]>(`api/resources/user/${userId}/`, { token: token || getAccessToken() });
+  const response = await apiFetch<any>(`api/resources/user/${userId}/`, { token: token || getAccessToken() });
+  return normalizeResources(unwrapList(response));
 }
 
 // ============================================================================
@@ -398,11 +610,13 @@ export async function listTasks(params?: Record<string, string | number>, token?
   const query = params
     ? `?${new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)]))}`
     : "";
-  return apiFetch<any[]>(`api/tasks/${query}`, { token: token || getAccessToken() });
+  const response = await apiFetch<any>(`api/tasks/${query}`, { token: token || getAccessToken() });
+  return unwrapList(response);
 }
 
 export async function getTask(id: number | string, token?: string) {
-  return apiFetch<any>(`api/tasks/${id}/`, { token: token || getAccessToken() });
+  const response = await apiFetch<any>(`api/tasks/${id}/`, { token: token || getAccessToken() });
+  return unwrapItem(response);
 }
 
 export async function createTask(data: {
@@ -458,12 +672,14 @@ export async function assignTask(id: number | string, userId: number | string, t
 }
 
 export async function listSphereTasks(sphereId: number | string, token?: string) {
-  return apiFetch<any[]>(`api/tasks/sphere/${sphereId}/`, { token: token || getAccessToken() });
+  const response = await apiFetch<any>(`api/tasks/sphere/${sphereId}/`, { token: token || getAccessToken() });
+  return unwrapList(response);
 }
 
 export async function getUserTasks(userId?: number | string, token?: string) {
   const path = userId ? `api/tasks/user/${userId}/` : "api/tasks/user/";
-  return apiFetch<any[]>(path, { token: token || getAccessToken() });
+  const response = await apiFetch<any>(path, { token: token || getAccessToken() });
+  return unwrapList(response);
 }
 
 // ============================================================================

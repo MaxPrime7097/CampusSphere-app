@@ -20,6 +20,7 @@ export function Header() {
             <a href="/cs-inc/about" className="text-muted-foreground hover:text-foreground transition-colors">À propos</a>
             <a href="/cs-inc/contact" className="text-muted-foreground hover:text-foreground transition-colors">Contact</a>
             <a href="/cs-inc/faq" className="text-muted-foreground hover:text-foreground transition-colors">FAQ</a>
+            <a href="/cs-inc/policies" className="text-muted-foreground hover:text-foreground transition-colors">Politiques</a>
             <DropdownMenu>
               <DropdownMenuTrigger className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
                 Politiques

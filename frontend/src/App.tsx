@@ -24,6 +24,7 @@ import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { About } from "./pages/About";
 import { Contact } from "./pages/Contact";
 import { FAQ } from "./pages/FAQ";
+import { Policies } from "./pages/Policies";
 import { ForgotPassword } from "./pages/ForgotPassword";
 import { Privacy } from "./pages/Privacy";
 import { Terms } from "./pages/Terms";
@@ -134,6 +135,7 @@ const App = () => (
           <Route path="/cs-inc/about" element={<About />} />
           <Route path="/cs-inc/contact" element={<Contact />} />
           <Route path="/cs-inc/faq" element={<FAQ />} />
+          <Route path="/cs-inc/policies" element={<Policies />} />
           <Route path="/cs-inc/policies/privacy" element={<Privacy />} />
           <Route path="/cs-inc/policies/terms" element={<Terms />} />
           <Route path="/cs-inc/policies/community-guidelines" element={<CommunityGuidelines />} />

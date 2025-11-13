@@ -36,8 +36,7 @@ export function CookiePolicy(): JSX.Element {
               </h1>
 
               <p className="font-nunito font-semibold text-xl md:text-2xl text-muted-foreground leading-relaxed">
-                Découvrez les règles qui régissent l'utilisation de CampusSphere.
-                Ensemble, nous maintenons une communauté respectueuse et productive.
+                Découvrez comment nous utilisons les cookies pour améliorer votre expérience sur CampusSphere.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
