@@ -11,11 +11,14 @@ import { Plus, Search, Users, TrendingUp, Clock, Sparkles, Loader2, Check, Refre
 import { useToast } from "@/hooks/use-toast";
 import { CreateSphereModal } from "@/components/modals/CreateSphereModal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 
 export function Spheres() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
 
@@ -186,6 +189,13 @@ export function Spheres() {
     ...Array.from(new Set(allSpheres.map(s => s.category))).map(cat => ({ id: cat, label: cat }))
   ];
 
+  const cardClasses = cn(
+    "transition-all duration-300",
+    isMobile 
+      ? "rounded-none border-x-0 border-t-0 shadow-none bg-card" 
+      : "campus-card hover:campus-glow"
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
       <div className="w-full max-w-6xl mx-auto py-4 md:py-6 px-3 md:px-4">
@@ -244,7 +254,8 @@ export function Spheres() {
         <div className="container mx-auto max-w-9xl">
           <section id="page1" className="space-y-4">
             {/* Filters */}
-            <div className="rounded-lg border bg-card p-3">
+            <Card className={cardClasses}>
+              <CardContent className="p-3">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -268,7 +279,8 @@ export function Spheres() {
                     </SelectContent>
                   </Select>
                 </div>
-            </div>
+            </CardContent>
+            </Card>
 
             {loadError && (
               <div className="text-sm text-red-500">{loadError}</div>
@@ -277,7 +289,7 @@ export function Spheres() {
               {(loadingSpheres ? Array.from({ length: 4 }).map((_, i) => ({ id: `skeleton-${i}`, name: "", category: "", memberCount: 0, color: "from-muted to-muted", requireApproval: false })) : getSortedSpheres()).map((sphere) => (
                 <Card
                   key={sphere.id}
-                  className="campus-card hover:campus-glow transition-all duration-300 cursor-pointer"
+                  className={cardClasses}
                   onClick={() => navigate(`/spheres/${sphere.id}`)}
                 >
                   <CardContent className="p-0">
@@ -361,23 +373,24 @@ export function Spheres() {
           </section>
 
           <section id="page2" className="space-y-4">
-            <div className="rounded-lg border bg-card p-3 mb-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Rechercher mes sphères..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-
+            <Card className={cardClasses}>
+              <CardContent className="p-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Rechercher mes sphères..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </CardContent>
+            </Card>
             <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
               {getSortedSpheres().map((sphere) => (
                 <Card
                   key={sphere.id}
-                  className="campus-card hover:campus-glow transition-all duration-300"
+                  className={cardClasses}
                 >
                   <CardHeader className="pb-3">
                     <div className={`h-16 w-16 rounded-full bg-gradient-to-br ${sphere.color} mx-auto mb-2 flex items-center justify-center text-white font-bold text-xl`}>
@@ -417,7 +430,7 @@ export function Spheres() {
           </section>
 
           <section id="page3" className="space-y-4">
-            <Card className="campus-card">
+            <Card className={cardClasses}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5 text-primary" />
@@ -431,7 +444,7 @@ export function Spheres() {
                     .map((sphere, index) => (
                       <Card
                         key={sphere.id}
-                        className="campus-card cursor-pointer hover:campus-glow transition-all"
+                        className={cardClasses}
                         onClick={() => navigate(`/spheres/${sphere.id}`)}
                       >
                         <CardContent className="p-4">

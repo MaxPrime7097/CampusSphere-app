@@ -4,9 +4,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
-import { Landing } from "./pages/Landing";
-import { Login } from "./pages/Login";
-import { Register } from "./pages/Register";
+import { Landing } from "./pages/public/Landing";
+import { Login } from "./pages/public/Login";
+import { Register } from "./pages/public/Register";
 import { Home } from "./pages/Home";
 import { Profile } from "./pages/Profile";
 import { Messages } from "./pages/Messages";
@@ -21,19 +21,18 @@ import { ResourceDetail } from "./pages/ResourceDetail";
 import { Spheres } from "./pages/Spheres";
 import { SphereDetail } from "./pages/SphereDetail";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
-import { About } from "./pages/About";
-import { Contact } from "./pages/Contact";
-import { FAQ } from "./pages/FAQ";
-import { Policies } from "./pages/Policies";
-import { ForgotPassword } from "./pages/ForgotPassword";
-import { Privacy } from "./pages/Privacy";
-import { Terms } from "./pages/Terms";
+import { About } from "./pages/public/About";
+import { Contact } from "./pages/public/Contact";
+import { FAQ } from "./pages/public/FAQ";
+import { ForgotPassword } from "./pages/public/ForgotPassword";
+import { Privacy } from "./pages/public/Privacy";
+import { Terms } from "./pages/public/Terms";
 import { Connections } from "./pages/Connections";
-import { CommunityGuidelines } from "./pages/CommunityGuidelines";
-import { Copyright } from "./pages/Copyright";
-import { CookiePolicy } from "./pages/CookiePolicy";
-import { DataDeletion } from "./pages/DataDeletion";
-import { Waitinglist } from "./pages/Waitinglist";
+import { CommunityGuidelines } from "./pages/public/CommunityGuidelines";
+import { Copyright } from "./pages/public/Copyright";
+import { CookiePolicy } from "./pages/public/CookiePolicy";
+import { DataDeletion } from "./pages/public/DataDeletion";
+import { Waitinglist } from "./pages/public/Waitinglist";
 
 
 const queryClient = new QueryClient();
@@ -45,8 +44,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          {/* Public routes */}
-          <Route path="/cs-inc" element={<Landing />} />
+          {/* Auth routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -132,10 +130,10 @@ const App = () => (
           <Route path="/cs-inc/private/admin" element={<AdminDashboard />} />
         
           {/* Public pages */}
+          <Route path="/cs-inc" element={<Landing />} />
           <Route path="/cs-inc/about" element={<About />} />
           <Route path="/cs-inc/contact" element={<Contact />} />
           <Route path="/cs-inc/faq" element={<FAQ />} />
-          <Route path="/cs-inc/policies" element={<Policies />} />
           <Route path="/cs-inc/policies/privacy" element={<Privacy />} />
           <Route path="/cs-inc/policies/terms" element={<Terms />} />
           <Route path="/cs-inc/policies/community-guidelines" element={<CommunityGuidelines />} />

@@ -1,4 +1,4 @@
-import { Home, MessageSquare, User, FolderOpen, Circle, Bell } from "lucide-react";
+import { Home, MessageSquare, FolderOpen, Users, Bell } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -16,7 +16,7 @@ const navigationItems = [
   {
     title: "Sphères",
     url: "/spheres",
-    icon: Circle
+    icon: Users
   },
   {
     title: "Messages",

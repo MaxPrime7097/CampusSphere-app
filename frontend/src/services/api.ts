@@ -10,6 +10,42 @@ function getAccessToken(): string | undefined {
   }
 }
 
+function getRefreshToken(): string | undefined {
+  try {
+    const token = localStorage.getItem("refresh");
+    return token || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function setTokens(access?: string | null, refresh?: string | null) {
+  try {
+    if (access == null) {
+      localStorage.removeItem("access");
+    } else {
+      localStorage.setItem("access", access);
+    }
+
+    if (refresh == null) {
+      localStorage.removeItem("refresh");
+    } else {
+      localStorage.setItem("refresh", refresh);
+    }
+  } catch {
+    // ignore storage errors
+  }
+}
+
+function clearTokens() {
+  try {
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
+  } catch {
+    // ignore
+  }
+}
+
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 function toArray<T>(value: T[] | null | undefined): T[] {
@@ -201,6 +237,25 @@ function normalizePosts(posts: any[] = []) {
   return posts.map((post) => normalizePost(post)).filter(Boolean);
 }
 
+let refreshPromise: Promise<string | null> | null = null;
+
+async function performRefreshRaw(refresh: string): Promise<string | null> {
+  try {
+    const url = `${API_BASE_URL.replace(/\/$/, "")}/api/auth/refresh/`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh }),
+      credentials: "include",
+    });
+    if (!res.ok) return null;
+    const json = await res.json().catch(() => null as any);
+    return json?.access || json?.accessToken || json?.data?.access || null;
+  } catch {
+    return null;
+  }
+}
+
 async function apiFetch<T>(
   path: string,
   options: {
@@ -209,32 +264,76 @@ async function apiFetch<T>(
     token?: string;
     headers?: Record<string, string>;
     signal?: AbortSignal;
+    _retry?: boolean;
   } = {}
 ): Promise<T> {
-  const { method = "GET", body, token, headers = {}, signal } = options;
+  const { method = "GET", body, token, headers = {}, signal, _retry = false } = options as any;
   const url = path.startsWith("http") ? path : `${API_BASE_URL.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
+
+  // Resolve effective token (explicit param takes precedence)
+  const effectiveToken = token ?? getAccessToken();
+
+  // Build headers: avoid setting Content-Type when sending FormData so the browser
+  // can set the correct multipart boundary automatically.
+  const builtHeaders: Record<string, string> = {
+    ...(effectiveToken ? { Authorization: `Bearer ${effectiveToken}` } : {}),
+    ...headers,
+  };
+
+  if (!(body instanceof FormData) && !Object.prototype.hasOwnProperty.call(builtHeaders, "Content-Type")) {
+    builtHeaders["Content-Type"] = "application/json";
+  }
 
   const res = await fetch(url, {
     method,
-    headers: {
-      "Content-Type": body instanceof FormData ? undefined as unknown as string : "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...headers,
-    },
+    headers: builtHeaders,
     body: body instanceof FormData ? (body as FormData) : body ? JSON.stringify(body) : undefined,
     credentials: "include",
     signal,
   });
 
+  const contentType = (res.headers.get("content-type") || "").toLowerCase();
+
   if (!res.ok) {
+    // Try to parse JSON error payload for a meaningful message, otherwise fall back to text.
+    if (contentType.includes("application/json")) {
+      try {
+        const errJson = await res.json();
+        const errMsg = errJson?.detail || errJson?.message || JSON.stringify(errJson);
+
+        // If unauthorized and we haven't retried yet, try to refresh the access token once.
+        if (res.status === 401 && !_retry) {
+          const refresh = getRefreshToken();
+          if (refresh) {
+            if (!refreshPromise) {
+              refreshPromise = performRefreshRaw(refresh);
+            }
+            const newAccess = await refreshPromise.catch(() => null);
+            refreshPromise = null;
+            if (newAccess) {
+              setTokens(newAccess, refresh);
+              // retry original request once with new token
+              return apiFetch<T>(path, { ...options, token: newAccess, _retry: true });
+            }
+            clearTokens();
+          }
+        }
+
+        throw new Error(errMsg || `Request failed: ${res.status}`);
+      } catch (e) {
+        const text = await res.text().catch(() => "");
+        throw new Error(text || `Request failed: ${res.status}`);
+      }
+    }
+
     const text = await res.text().catch(() => "");
     throw new Error(text || `Request failed: ${res.status}`);
   }
 
-  const contentType = res.headers.get("content-type") || "";
   if (contentType.includes("application/json")) {
     return (await res.json()) as T;
   }
+
   return (await res.text()) as unknown as T;
 }
 
@@ -275,19 +374,17 @@ export async function login(payload: { email: string; password: string }) {
     { method: "POST", body: payload }
   );
   
-  // Sauvegarder les tokens
-  if (response.data?.tokens?.accessToken) {
-    localStorage.setItem("access", response.data.tokens.accessToken);
-    if (response.data.tokens.refreshToken) {
-      localStorage.setItem("refresh", response.data.tokens.refreshToken);
-    }
-  }
-  
+  // Sauvegarder les tokens (normalisé)
+  const dataAny = (response as any)?.data ?? (response as any);
+  const access = dataAny?.tokens?.accessToken || dataAny?.tokens?.access || dataAny?.access || null;
+  const refresh = dataAny?.tokens?.refreshToken || dataAny?.tokens?.refresh || null;
+  setTokens(access, refresh);
+
   return response;
 }
 
 export async function refreshToken(refresh: string) {
-  return apiFetch<{ access: string }>("api/auth/refresh/", { method: "POST", body: { refresh } });
+  return performRefreshRaw(refresh);
 }
 
 // ============================================================================

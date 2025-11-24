@@ -1,5 +1,3 @@
-// cardData.ts (or wherever you manage your data)
-
 // Define the type for clarity
 export type CardData = [string, number, number][]
 

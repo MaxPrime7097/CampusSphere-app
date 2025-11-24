@@ -11,10 +11,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UploadResourceModal } from "@/components/modals/UploadResourceModal";
+import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function Resources() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("all");
   const [selectedType, setSelectedType] = useState("all");
@@ -274,6 +277,13 @@ export function Resources() {
     }
   };
 
+  const cardClasses = cn(
+    "transition-all duration-300",
+    isMobile 
+      ? "rounded-none border-x-0 border-t-0 shadow-none bg-card" 
+      : "campus-card hover:campus-glow"
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
       <div className="container max-w-6xl mx-auto py-4 md:py-6 px-4">
@@ -320,7 +330,7 @@ export function Resources() {
 
           <TabsContent value="all" className="space-y-4">
             {/* Filters */}
-            <Card className="campus-card">
+            <Card className={cardClasses}>
               <CardContent className="p-3 md:p-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   <div className="relative">
@@ -367,7 +377,7 @@ export function Resources() {
               {getSortedResources().map((resource) => (
                 <Card 
                   key={resource.id}
-                  className="campus-card hover:campus-glow transition-all duration-300 cursor-pointer"
+                  className={cardClasses}
                   onClick={() => navigate(`/resources/${resource.id}`)}
                 >
                   <CardContent className="p-0">
@@ -445,7 +455,7 @@ export function Resources() {
               {getSortedResources().map((resource) => (
                 <Card 
                   key={resource.id}
-                  className="campus-card hover:campus-glow transition-all duration-300 cursor-pointer"
+                  className={cardClasses}
                   onClick={() => navigate(`/resources/${resource.id}`)}
                 >
                   <CardContent className="p-0">
@@ -523,7 +533,7 @@ export function Resources() {
               {getSortedResources().map((resource) => (
                 <Card 
                   key={resource.id}
-                  className="campus-card hover:campus-glow transition-all duration-300 cursor-pointer"
+                  className={cardClasses}
                   onClick={() => navigate(`/resources/${resource.id}`)}
                 >
                   <CardContent className="p-0">
