@@ -33,6 +33,7 @@ import { Copyright } from "./pages/public/Copyright";
 import { CookiePolicy } from "./pages/public/CookiePolicy";
 import { DataDeletion } from "./pages/public/DataDeletion";
 import { Waitinglist } from "./pages/public/Waitinglist";
+import { Policies } from "./pages/public/Policies";
 
 
 const queryClient = new QueryClient();
@@ -134,6 +135,7 @@ const App = () => (
           <Route path="/cs-inc/about" element={<About />} />
           <Route path="/cs-inc/contact" element={<Contact />} />
           <Route path="/cs-inc/faq" element={<FAQ />} />
+          <Route path="/cs-inc/policies" element={<Policies />} />
           <Route path="/cs-inc/policies/privacy" element={<Privacy />} />
           <Route path="/cs-inc/policies/terms" element={<Terms />} />
           <Route path="/cs-inc/policies/community-guidelines" element={<CommunityGuidelines />} />

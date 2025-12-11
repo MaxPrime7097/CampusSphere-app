@@ -45,7 +45,6 @@ export function Contact(): JSX.Element {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="text-center lg:text-left space-y-8 campus-animate-fade-in">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5">
-                <Sparkles className="h-4 w-4 text-primary" />
                 <span className="text-sm font-medium font-poppins">Nous sommes là pour vous aider</span>
               </div>
 
@@ -223,16 +222,16 @@ export function Contact(): JSX.Element {
           </div>
 
           <div className="flex justify-center gap-5 mb-0">
-            <a href="https://www.facebook.com/profile.php?id=61583216355151" className="w-16 h-16 campus-gradient rounded-full flex items-center justify-center text-white hover:scale-110 transition-all duration-300 hover:shadow-lg group">
+            <a href="https://www.facebook.com/profile.php?id=61583216355151" target='blank' className="w-16 h-16 campus-gradient rounded-full flex items-center justify-center text-white hover:scale-110 transition-all duration-300 hover:shadow-lg group">
               <FaFacebook className="w-8 h-8 group-hover:animate-pulse" />
             </a>
-            <a href="https://www.linkedin.com/company/campussphere/" className="w-16 h-16 campus-gradient rounded-full flex items-center justify-center text-white hover:scale-110 transition-all duration-300 hover:shadow-lg group">
+            <a href="https://www.linkedin.com/company/campussphere/" target='blank' className="w-16 h-16 campus-gradient rounded-full flex items-center justify-center text-white hover:scale-110 transition-all duration-300 hover:shadow-lg group">
               <FaLinkedin className="w-8 h-8 group-hover:animate-pulse" />
             </a>
-            <a href="https://www.instagram.com/campussphere/" className="w-16 h-16 campus-gradient rounded-full flex items-center justify-center text-white hover:scale-110 transition-all duration-300 hover:shadow-lg group">
+            <a href="https://www.instagram.com/campussphere/" target='blank' className="w-16 h-16 campus-gradient rounded-full flex items-center justify-center text-white hover:scale-110 transition-all duration-300 hover:shadow-lg group">
               <FaInstagram className="w-8 h-8 group-hover:animate-pulse" />
             </a>
-            <a href="#" className="w-16 h-16 campus-gradient rounded-full flex items-center justify-center text-white hover:scale-110 transition-all duration-300 hover:shadow-lg group">
+            <a href="#" target='blank' className="w-16 h-16 campus-gradient rounded-full flex items-center justify-center text-white hover:scale-110 transition-all duration-300 hover:shadow-lg group">
               <FaTiktok className="w-8 h-8 group-hover:animate-pulse" />
             </a>
           </div>

@@ -49,7 +49,6 @@ export function About(): JSX.Element {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="text-center lg:text-left space-y-8 campus-animate-fade-in">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5">
-                <Star className="h-4 w-4 text-primary" />
                 <span className="text-sm font-medium font-poppins">Notre histoire depuis 2025</span>
               </div>
 
