@@ -82,7 +82,7 @@ export function ProfileBubble() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem 
-          onClick={() => navigate("/profile")}
+          onClick={() => navigate(`/profile/${user.username || 'current'}`)}
           className="cursor-pointer"
         >
           <User className="mr-2 h-4 w-4" />

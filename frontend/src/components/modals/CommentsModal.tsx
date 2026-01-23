@@ -59,8 +59,8 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
     (async () => {
       try {
         const data = await getPostComments(postId);
-        if (isMounted && data) {
-          const mapped = (data || []).map((comment: any) => ({
+        if (isMounted && Array.isArray(data)) {
+          const mapped = data.map((comment: any) => ({
             id: String(comment.id),
             author: {
               name: comment.author?.name || comment.author_name || "Utilisateur",

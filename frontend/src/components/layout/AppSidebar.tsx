@@ -29,12 +29,10 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-const navigationItems = [
-  { title: "Accueil", url: "/", icon: Home },
-  { title: "Profil", url: "/profile", icon: User },
-  { title: "Ressources", url: "/resources", icon: FolderOpen },
-  { title: "Sphères", url: "/spheres", icon: Users },
-];
+import { useEffect, useState } from "react";
+import { getCurrentUser } from "@/services/api";
+
+
 
 const quickActions = [
   { title: "Messages", url: "/messages", icon: MessageSquare },
@@ -61,6 +59,42 @@ export function AppSidebar() {
     }
     return currentPath.startsWith(path);
   };
+
+  const [user, setUser] = useState<any>({
+    name: "Utilisateur",
+    username: "user",
+    avatar: "/placeholder-avatar.jpg",
+    email: "user@university.cm"
+  }); 
+
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      try {
+        const data = await getCurrentUser();
+        if (isMounted && data) {
+          setUser({
+            name: data.name || data.first_name + ' ' + data.last_name || "Utilisateur",
+            username: data.username || "user",
+            avatar: data.avatar || "/placeholder-avatar.jpg",
+            email: data.email || "user@university.cm"
+          });
+        }
+      } catch (e) {
+        // User not logged in or error
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+  
+  const navigationItems = [
+    { title: "Accueil", url: "/", icon: Home },
+    { title: "Profil", url: `/profile/${user?.username || "current"}`, icon: User },
+    { title: "Ressources", url: "/resources", icon: FolderOpen },
+    { title: "Sphères", url: "/spheres", icon: Users },
+  ];
 
   return (
     <Sidebar className={isCollapsed ? "w-20" : "w-60"} collapsible="icon">

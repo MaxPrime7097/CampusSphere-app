@@ -428,22 +428,23 @@ export async function updateUserProfile(data: Partial<{
 }
 
 export async function searchUsers(query: string, token?: string) {
-  const users = await apiFetch<any[]>(`api/users/search/?q=${encodeURIComponent(query)}`, {
+  const response = await apiFetch<any>(`api/users/search/?q=${encodeURIComponent(query)}`, {
     token: token || getAccessToken(),
   });
-  return normalizeUsers(users);
+  return normalizeUsers(unwrapList(response));
 }
 
 export async function getUserByUsername(username: string, token?: string) {
-  const users = await apiFetch<any[]>(`api/users/search/?q=${encodeURIComponent(username)}`, {
+  const response = await apiFetch<any>(`api/users/by-username/${encodeURIComponent(username)}/`, {
     token: token || getAccessToken(),
   });
-  return normalizeUsers(users);
+  return normalizeUser(unwrapItem(response));
 }
 
 // Connections
 export async function getUserConnections(userId: number | string, token?: string) {
-  return apiFetch<any[]>(`api/users/${userId}/connections/`, { token: token || getAccessToken() });
+  const response = await apiFetch<any>(`api/users/${userId}/connections/`, { token: token || getAccessToken() });
+  return normalizeUsers(unwrapList(response));
 }
 
 export async function createConnection(userId: number | string, token?: string) {
@@ -615,7 +616,8 @@ export async function getSpherePosts(sphereId: number | string, token?: string) 
 
 // Comments
 export async function getPostComments(postId: number | string, token?: string) {
-  return apiFetch<any[]>(`api/posts/${postId}/comments/`, { token: token || getAccessToken() });
+  const response = await apiFetch<any>(`api/posts/${postId}/comments/`, { token: token || getAccessToken() });
+  return unwrapList(response);
 }
 
 export async function createComment(postId: number | string, data: { content: string; parent_id?: number | string }, token?: string) {

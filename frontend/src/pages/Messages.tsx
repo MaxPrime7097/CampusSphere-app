@@ -226,8 +226,8 @@ export function Messages() {
   const selectedConv = conversations.find(c => c.id === conversationId);
 
   return (
-    <div className="h-[calc(100vh-4rem)] md:h-[calc(100vh-8rem)] bg-gradient-to-br from-background to-accent/20">
-      <div className="flex h-full max-w-[100vw]">
+    <div className="h-full w-full bg-gradient-to-br from-background to-accent/20">
+      <div className="flex h-full w-full mx-0 overflow-hidden">
         {/* Conversations List */}
         <div className={`w-full md:w-80 lg:w-96 border-r bg-card/50 flex-shrink-0 ${conversationId ? 'hidden md:flex' : 'flex'} flex-col`}>
           <div className="p-3 md:p-4 border-b flex-shrink-0">

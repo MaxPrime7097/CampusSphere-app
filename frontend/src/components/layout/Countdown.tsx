@@ -4,7 +4,7 @@ export default function Countdown() {
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
-    const launchDate = new Date("2026-01-03T19:00:00").getTime();
+    const launchDate = new Date("2026-02-11T19:00:00").getTime();
 
     const timer = setInterval(() => {
       const now = new Date().getTime();

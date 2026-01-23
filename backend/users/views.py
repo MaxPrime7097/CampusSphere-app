@@ -1,3 +1,4 @@
+import logging
 from rest_framework import generics, status, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -13,6 +14,8 @@ from .serializers import (
     UserSearchSerializer
 )
 from campus_sphere.cache import CacheManager, CacheKeys
+
+logger = logging.getLogger(__name__)
 
 
 class UserRegistrationView(generics.CreateAPIView):
@@ -79,7 +82,7 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
 class UserDetailView(generics.RetrieveAPIView):
     queryset = User.objects.all()
     serializer_class = UserProfileSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
     lookup_field = 'id'
 
     def get_object(self):
@@ -97,20 +100,11 @@ class UserSearchView(generics.ListAPIView):
     queryset = User.objects.all()
     serializer_class = UserSearchSerializer
     permission_classes = [permissions.IsAuthenticated]
-    filter_backends = [SearchFilter]  # Removed DjangoFilterBackend - not installed
-    # filterset_fields = ['university', 'faculty', 'study_year']  # Commented out - django_filters not installed
+    filter_backends = [SearchFilter]
     search_fields = ['first_name', 'last_name', 'username', 'email']
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        q = self.request.query_params.get('q', '')
-        if q:
-            queryset = queryset.filter(
-                models.Q(first_name__icontains=q) |
-                models.Q(last_name__icontains=q) |
-                models.Q(username__icontains=q) |
-                models.Q(email__icontains=q)
-            )
         return queryset.exclude(id=self.request.user.id)
 
 
@@ -168,3 +162,29 @@ def current_user_profile(request):
         'data': user_data,
         'timestamp': request.user.updated_at.isoformat()
     })
+
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def get_user_by_username(request, username):
+    """Get user profile by username"""
+    try:
+        user = User.objects.get(username=username)
+        cache_key = CacheKeys.user_profile(user.id)
+
+        user_data = CacheManager.get_or_set(
+            cache_key,
+            lambda: UserProfileSerializer(user).data,
+            CacheManager.USER_PROFILE_TTL
+        )
+
+        return Response({
+            'success': True,
+            'data': user_data,
+            'timestamp': user.updated_at.isoformat()
+        })
+    except User.DoesNotExist:
+        return Response({
+            'success': False,
+            'error': 'User not found'
+        }, status=404)

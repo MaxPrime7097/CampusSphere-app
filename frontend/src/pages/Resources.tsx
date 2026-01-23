@@ -1,15 +1,35 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { listResources, getCurrentUser, downloadResource, saveResource, getSavedResources } from "@/services/api";
-import { Search, Filter, Upload, Download, FileText, Heart, Star, Eye, Bookmark, Loader2, RefreshCw, Zap } from "lucide-react";
+import {
+  listResources,
+  getCurrentUser,
+  downloadResource,
+  saveResource,
+  getSavedResources,
+} from "@/services/api";
+import {
+  Search,
+  Upload,
+  Download,
+  FileText,
+  Eye,
+  Bookmark,
+  Loader2,
+  RefreshCw,
+  Zap,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { UploadResourceModal } from "@/components/modals/UploadResourceModal";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -18,10 +38,14 @@ export function Resources() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("all");
   const [selectedType, setSelectedType] = useState("all");
+
+  // ✅ Same tab state
   const [activeTab, setActiveTab] = useState("all");
+
   const [isLoading, setIsLoading] = useState(false);
   const [likedResources, setLikedResources] = useState<Set<string>>(new Set());
   const [savedResources, setSavedResources] = useState<Set<string>>(new Set());
@@ -30,62 +54,56 @@ export function Resources() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  // Load current user
+  const loadResources = async () => {
+    try {
+      setLoading(true);
+      const data = await listResources();
+      if (Array.isArray(data)) {
+        const mapped = data.map((r: any) => ({
+          id: String(r.id),
+          title: r.title,
+          description: r.description || "",
+          subject: r.subject || "other",
+          type: r.type || "notes",
+          authorId: r.author || r.created_by,
+          authorName: r.author_info?.name || r.author_name || "Unknown",
+          visibility: r.visibility || "public",
+          fileUrl: r.file_url || r.file || "",
+          fileSize: r.file_size || "0 MB",
+          tags: r.tags || [],
+          impactScore: r.impact_score || 0,
+          createdAt: r.created_at || new Date().toISOString(),
+          downloadCount: r.download_count || 0,
+          viewCount: r.view_count || 0,
+        }));
+        setResources(mapped);
+      }
+    } catch (e: any) {
+      toast({
+        title: "Erreur",
+        description: e?.message || "Impossible de charger les ressources",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     let isMounted = true;
     (async () => {
       try {
         const data = await getCurrentUser();
         if (isMounted) setCurrentUser(data);
-      } catch (e) {
-        // User not logged in
-      }
+      } catch (e) {}
     })();
     return () => {
       isMounted = false;
     };
   }, []);
 
-  // Load resources
   useEffect(() => {
-    let isMounted = true;
-    (async () => {
-      try {
-        setLoading(true);
-        const data = await listResources();
-        if (isMounted) {
-          const mapped = (data || []).map((r: any) => ({
-            id: String(r.id),
-            title: r.title,
-            description: r.description || '',
-            subject: r.subject || 'other',
-            type: r.type || 'notes',
-            authorId: r.author || r.created_by,
-            authorName: r.author_info?.name || r.author_name || 'Unknown',
-            visibility: r.visibility || 'public',
-            fileUrl: r.file_url || r.file || '',
-            fileSize: r.file_size || '0 MB',
-            tags: r.tags || [],
-            impactScore: r.impact_score || 0,
-            createdAt: r.created_at || new Date().toISOString(),
-            downloadCount: r.download_count || 0,
-            viewCount: r.view_count || 0,
-          }));
-          setResources(mapped);
-        }
-      } catch (e: any) {
-        toast({
-          title: "Erreur",
-          description: e?.message || "Impossible de charger les ressources",
-          variant: "destructive",
-        });
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
+    loadResources();
   }, []);
 
   const subjects = [
@@ -94,7 +112,7 @@ export function Resources() {
     { value: "cs", label: "Informatique" },
     { value: "physics", label: "Physique" },
     { value: "economics", label: "Économie" },
-    { value: "language", label: "Langues" }
+    { value: "language", label: "Langues" },
   ];
 
   const types = [
@@ -103,11 +121,9 @@ export function Resources() {
     { value: "summary", label: "Résumés" },
     { value: "exercises", label: "Exercices" },
     { value: "projects", label: "Projets" },
-    { value: "slides", label: "Présentations" }
+    { value: "slides", label: "Présentations" },
   ];
 
-
-  // Charger les ressources sauvegardées depuis l'API
   useEffect(() => {
     let isMounted = true;
     (async () => {
@@ -117,33 +133,33 @@ export function Resources() {
           const savedIds = new Set(saved.map((r: any) => String(r.id || r.resource_id)));
           setSavedResources(savedIds);
         }
-      } catch (e) {
-        // Error loading saved resources
-      }
+      } catch (e) {}
     })();
     return () => {
       isMounted = false;
     };
   }, []);
 
-  const filteredResources = resources.filter(resource => {
-    const matchesSearch = resource.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         resource.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         resource.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredResources = resources.filter((resource) => {
+    const matchesSearch =
+      resource.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      resource.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      resource.tags.some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+
     const matchesSubject = selectedSubject === "all" || resource.subject === selectedSubject;
     const matchesType = selectedType === "all" || resource.type === selectedType;
+
     return matchesSearch && matchesSubject && matchesType;
   });
 
   const getSortedResources = () => {
     const sorted = [...filteredResources];
-    
+
     switch (activeTab) {
       case "suggestions":
         return sorted.sort((a, b) => b.impactScore - a.impactScore);
       case "recent":
         return sorted.sort((a, b) => {
-          // Simuler un tri par date (plus récent en premier)
           const dateA = new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000);
           const dateB = new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000);
           return dateB.getTime() - dateA.getTime();
@@ -153,53 +169,28 @@ export function Resources() {
     }
   };
 
-  const handleLike = (e: React.MouseEvent, resourceId: string) => {
-    e.stopPropagation();
-    
-    const newLikedResources = new Set(likedResources);
-    if (newLikedResources.has(resourceId)) {
-      newLikedResources.delete(resourceId);
-      toast({ 
-        title: "Like retiré", 
-        description: "Vous n'aimez plus cette ressource",
-        duration: 2000,
-      });
-    } else {
-      newLikedResources.add(resourceId);
-      toast({ 
-        title: "Ressource aimée !", 
-        description: "Cette ressource a été ajoutée à vos favoris",
-        duration: 2000,
-      });
-    }
-    
-    setLikedResources(newLikedResources);
-    localStorage.setItem('likedResources', JSON.stringify([...newLikedResources]));
-  };
-
   const handleSave = async (e: React.MouseEvent, resourceId: string) => {
     e.stopPropagation();
-    
+
     try {
       const newSavedResources = new Set(savedResources);
       if (newSavedResources.has(resourceId)) {
-        // TODO: Add unsave endpoint if available
         newSavedResources.delete(resourceId);
-        toast({ 
-          title: "Ressource retirée", 
+        toast({
+          title: "Ressource retirée",
           description: "Cette ressource a été retirée de vos sauvegardes",
           duration: 2000,
         });
       } else {
         await saveResource(resourceId);
         newSavedResources.add(resourceId);
-        toast({ 
-          title: "Ressource sauvegardée !", 
+        toast({
+          title: "Ressource sauvegardée !",
           description: "Cette ressource a été ajoutée à vos sauvegardes",
           duration: 2000,
         });
       }
-      
+
       setSavedResources(newSavedResources);
     } catch (error: any) {
       toast({
@@ -212,17 +203,15 @@ export function Resources() {
 
   const handleDownload = async (e: React.MouseEvent, resourceId: string) => {
     e.stopPropagation();
-    
     setIsLoading(true);
-    
+
     try {
       const result = await downloadResource(resourceId);
-      // If API returns a URL, open it, otherwise the browser should handle the download
       if (result.url || result.file_url) {
-        window.open(result.url || result.file_url, '_blank');
+        window.open(result.url || result.file_url, "_blank");
       }
-      toast({ 
-        title: "Téléchargement démarré !", 
+      toast({
+        title: "Téléchargement démarré !",
         description: "Votre fichier va être téléchargé dans quelques instants",
         duration: 3000,
       });
@@ -239,20 +228,20 @@ export function Resources() {
 
   const handleRefresh = async () => {
     setIsLoading(true);
-    
+
     try {
       const data = await listResources();
       const mapped = (data || []).map((r: any) => ({
         id: String(r.id),
         title: r.title,
-        description: r.description || '',
-        subject: r.subject || 'other',
-        type: r.type || 'notes',
+        description: r.description || "",
+        subject: r.subject || "other",
+        type: r.type || "notes",
         authorId: r.author || r.created_by,
-        authorName: r.author_info?.name || r.author_name || 'Unknown',
-        visibility: r.visibility || 'public',
-        fileUrl: r.file_url || r.file || '',
-        fileSize: r.file_size || '0 MB',
+        authorName: r.author_info?.name || r.author_name || "Unknown",
+        visibility: r.visibility || "public",
+        fileUrl: r.file_url || r.file || "",
+        fileSize: r.file_size || "0 MB",
         tags: r.tags || [],
         impactScore: r.impact_score || 0,
         createdAt: r.created_at || new Date().toISOString(),
@@ -260,7 +249,7 @@ export function Resources() {
         viewCount: r.view_count || 0,
       }));
       setResources(mapped);
-      
+
       toast({
         title: "Ressources actualisées",
         description: "La liste des ressources a été mise à jour",
@@ -279,16 +268,16 @@ export function Resources() {
 
   const cardClasses = cn(
     "transition-all duration-300",
-    isMobile 
-      ? "rounded-none border-x-0 border-t-0 shadow-none bg-card" 
+    isMobile
+      ? "rounded-none border-x-0 border-t-0 shadow-none bg-card"
       : "campus-card hover:campus-glow"
   );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
-      <div className="container max-w-6xl mx-auto py-4 md:py-6 px-4">
+      <div className="container max-w-6xl mx-auto py-4 md:py-6 px-0">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 campus-animate-fade-in">
+        <div className="flex flex-col px-4 sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 campus-animate-fade-in px-0">
           <div>
             <h1 className="text-3xl font-bold bg-clip-text text-muted-foreground">
               Ressources Étudiantes
@@ -298,9 +287,9 @@ export function Resources() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleRefresh}
               disabled={isLoading}
               className="gap-2"
@@ -312,8 +301,11 @@ export function Resources() {
               )}
               Actualiser
             </Button>
-            <UploadResourceModal>
-              <Button size="sm" className="campus-gradient text-white hover:opacity-90 gap-2 w-full sm:w-auto">
+            <UploadResourceModal onResourceUploaded={loadResources}>
+              <Button
+                size="sm"
+                className="campus-gradient text-white hover:opacity-90 gap-2 w-full sm:w-auto"
+              >
                 <Upload className="h-4 w-4" />
                 <span className="inline">Uploader</span>
               </Button>
@@ -321,14 +313,32 @@ export function Resources() {
           </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
-            <TabsTrigger value="all">Toutes</TabsTrigger>
-            <TabsTrigger value="suggestions">Suggestions</TabsTrigger>
-            <TabsTrigger value="recent">Récentes</TabsTrigger>
-          </TabsList>
+        {/* Tab Navigation */}
+        <ul className="grid grid-flow-col text-center border-b border-gray-200 text-gray-500 mb-6">
+          {[
+            { id: "all", label: "Toutes" },
+            { id: "suggestions", label: "Suggestions" },
+            { id: "recent", label: "Récentes" },
+          ].map((tab) => (
+            <li key={tab.id}>
+              <button
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  "w-full flex justify-center border-b-4 py-4 transition-all duration-200 text-sm font-medium",
+                  activeTab === tab.id
+                    ? "border-primary text-primary"
+                    : "border-transparent hover:text-primary hover:border-primary"
+                )}
+              >
+                {tab.label}
+              </button>
+            </li>
+          ))}
+        </ul>
 
-          <TabsContent value="all" className="space-y-4">
+        {/* ======= CONTENT ======= */}
+        {activeTab === "all" && (
+          <>
             {/* Filters */}
             <Card className={cardClasses}>
               <CardContent className="p-3 md:p-4">
@@ -342,7 +352,7 @@ export function Resources() {
                       className="pl-10"
                     />
                   </div>
-                  
+
                   <Select value={selectedSubject} onValueChange={setSelectedSubject}>
                     <SelectTrigger>
                       <SelectValue placeholder="Matière" />
@@ -375,7 +385,7 @@ export function Resources() {
             {/* Resources Grid */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {getSortedResources().map((resource) => (
-                <Card 
+                <Card
                   key={resource.id}
                   className={cardClasses}
                   onClick={() => navigate(`/resources/${resource.id}`)}
@@ -385,90 +395,94 @@ export function Resources() {
                       <FileText className="h-12 w-12 text-muted-foreground" />
                     </div>
                     <div className="px-2 py-2">
-                    <h3 className="flex-1 font-semibold text-sm line-clamp-2 mb-2">
-                      {resource.title}
-                    </h3>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-                      <p className="text-left">
-                        Par {resource.authorName || 'Utilisateur'}
-                      </p>
-                      <span className="flex items-center gap-1 text-primary">
-                        <Zap className="h-3 w-3" />
-                        {resource.impactScore || 0}
-                      </span>
-                    </div>
-                    <Badge variant="outline" className="text-xs mb-2">
-                      {types.find(t => t.value === resource.type)?.label}
-                    </Badge>
-                    <div className="flex gap-1">
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="h-7 flex-1 text-xs gap-1"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          // TODO: Implémenter la prévisualisation du fichier
-                          toast({
-                            title: "Prévisualisation",
-                            description: "Fonctionnalité de prévisualisation à venir",
-                            duration: 2000,
-                          });
-                        }}
-                      >
-                        <Eye className="h-3 w-3" />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        className={`h-7 flex-1 text-xs gap-1 ${
-                          savedResources.has(resource.id) 
-                            ? 'text-blue-500 hover:text-blue-600' 
-                            : ''
-                        }`}
-                        onClick={(e) => handleSave(e, resource.id)}
-                      >
-                        <Bookmark className={`h-3 w-3 ${savedResources.has(resource.id) ? 'fill-current' : ''}`} />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="default" 
-                        className="h-7 flex-1 text-xs gap-1 campus-gradient text-white"
-                        onClick={(e) => handleDownload(e, resource.id)}
-                        disabled={isLoading}
-                      >
-                        {isLoading ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <Download className="h-3 w-3" />
-                        )}
-                      </Button>
+                      <h3 className="flex-1 font-semibold text-sm line-clamp-2 mb-2">
+                        {resource.title}
+                      </h3>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+                        <p className="text-left">
+                          Par {resource.authorName || "Utilisateur"}
+                        </p>
+                        <span className="flex items-center gap-1 text-primary">
+                          <Zap className="h-3 w-3" />
+                          {resource.impactScore || 0}
+                        </span>
+                      </div>
+                      <Badge variant="outline" className="text-xs mb-2">
+                        {types.find((t) => t.value === resource.type)?.label}
+                      </Badge>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 flex-1 text-xs gap-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toast({
+                              title: "Prévisualisation",
+                              description: "Fonctionnalité de prévisualisation à venir",
+                              duration: 2000,
+                            });
+                          }}
+                        >
+                          <Eye className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className={`h-7 flex-1 text-xs gap-1 ${
+                            savedResources.has(resource.id)
+                              ? "text-blue-500 hover:text-blue-600"
+                              : ""
+                          }`}
+                          onClick={(e) => handleSave(e, resource.id)}
+                        >
+                          <Bookmark
+                            className={`h-3 w-3 ${
+                              savedResources.has(resource.id) ? "fill-current" : ""
+                            }`}
+                          />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="default"
+                          className="h-7 flex-1 text-xs gap-1 campus-gradient text-white"
+                          onClick={(e) => handleDownload(e, resource.id)}
+                          disabled={isLoading}
+                        >
+                          {isLoading ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Download className="h-3 w-3" />
+                          )}
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
-          </TabsContent>
+          </>
+        )}
 
-          <TabsContent value="suggestions" className="space-y-4">
+        {activeTab === "suggestions" && (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              {getSortedResources().map((resource) => (
-                <Card 
-                  key={resource.id}
-                  className={cardClasses}
-                  onClick={() => navigate(`/resources/${resource.id}`)}
-                >
-                  <CardContent className="p-0">
-                    <div className="h-24 rounded-t-lg bg-input flex items-center justify-center mb-0">
-                      <FileText className="h-12 w-12 text-muted-foreground" />
-                    </div>
-                    <div className="px-2 py-2">
+            {getSortedResources().map((resource) => (
+              <Card
+                key={resource.id}
+                className={cardClasses}
+                onClick={() => navigate(`/resources/${resource.id}`)}
+              >
+                <CardContent className="p-0">
+                  <div className="h-24 rounded-t-lg bg-input flex items-center justify-center mb-0">
+                    <FileText className="h-12 w-12 text-muted-foreground" />
+                  </div>
+                  <div className="px-2 py-2">
                     <h3 className="flex-1 font-semibold text-sm line-clamp-2 mb-2">
                       {resource.title}
                     </h3>
                     <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
                       <p className="text-left">
-                        Par {resource.authorName || 'Utilisateur'}
+                        Par {resource.authorName || "Utilisateur"}
                       </p>
                       <span className="flex items-center gap-1 text-primary">
                         <Zap className="h-3 w-3" />
@@ -476,16 +490,15 @@ export function Resources() {
                       </span>
                     </div>
                     <Badge variant="outline" className="text-xs mb-2">
-                      {types.find(t => t.value === resource.type)?.label}
+                      {types.find((t) => t.value === resource.type)?.label}
                     </Badge>
                     <div className="flex gap-1">
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
+                      <Button
+                        size="sm"
+                        variant="outline"
                         className="h-7 flex-1 text-xs gap-1"
                         onClick={(e) => {
                           e.stopPropagation();
-                          // TODO: Implémenter la prévisualisation du fichier
                           toast({
                             title: "Prévisualisation",
                             description: "Fonctionnalité de prévisualisation à venir",
@@ -495,21 +508,25 @@ export function Resources() {
                       >
                         <Eye className="h-3 w-3" />
                       </Button>
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
+                      <Button
+                        size="sm"
+                        variant="ghost"
                         className={`h-7 flex-1 text-xs gap-1 ${
-                          savedResources.has(resource.id) 
-                            ? 'text-blue-500 hover:text-blue-600' 
-                            : ''
+                          savedResources.has(resource.id)
+                            ? "text-blue-500 hover:text-blue-600"
+                            : ""
                         }`}
                         onClick={(e) => handleSave(e, resource.id)}
                       >
-                        <Bookmark className={`h-3 w-3 ${savedResources.has(resource.id) ? 'fill-current' : ''}`} />
+                        <Bookmark
+                          className={`h-3 w-3 ${
+                            savedResources.has(resource.id) ? "fill-current" : ""
+                          }`}
+                        />
                       </Button>
-                      <Button 
-                        size="sm" 
-                        variant="default" 
+                      <Button
+                        size="sm"
+                        variant="default"
                         className="h-7 flex-1 text-xs gap-1 campus-gradient text-white"
                         onClick={(e) => handleDownload(e, resource.id)}
                         disabled={isLoading}
@@ -520,33 +537,33 @@ export function Resources() {
                           <Download className="h-3 w-3" />
                         )}
                       </Button>
-                      </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
-          <TabsContent value="recent" className="space-y-4">
+        {activeTab === "recent" && (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              {getSortedResources().map((resource) => (
-                <Card 
-                  key={resource.id}
-                  className={cardClasses}
-                  onClick={() => navigate(`/resources/${resource.id}`)}
-                >
-                  <CardContent className="p-0">
-                    <div className="h-24 rounded-t-lg bg-input flex items-center justify-center mb-0">
-                      <FileText className="h-12 w-12 text-muted-foreground" />
-                    </div>
-                    <div className="px-2 py-2">
+            {getSortedResources().map((resource) => (
+              <Card
+                key={resource.id}
+                className={cardClasses}
+                onClick={() => navigate(`/resources/${resource.id}`)}
+              >
+                <CardContent className="p-0">
+                  <div className="h-24 rounded-t-lg bg-input flex items-center justify-center mb-0">
+                    <FileText className="h-12 w-12 text-muted-foreground" />
+                  </div>
+                  <div className="px-2 py-2">
                     <h3 className="flex-1 font-semibold text-sm line-clamp-2 mb-2">
                       {resource.title}
                     </h3>
                     <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
                       <p className="text-left">
-                        Par {resource.authorName || 'Utilisateur'}
+                        Par {resource.authorName || "Utilisateur"}
                       </p>
                       <span className="flex items-center gap-1 text-primary">
                         <Zap className="h-3 w-3" />
@@ -554,16 +571,15 @@ export function Resources() {
                       </span>
                     </div>
                     <Badge variant="outline" className="text-xs mb-2">
-                      {types.find(t => t.value === resource.type)?.label}
+                      {types.find((t) => t.value === resource.type)?.label}
                     </Badge>
                     <div className="flex gap-1">
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
+                      <Button
+                        size="sm"
+                        variant="outline"
                         className="h-7 flex-1 text-xs gap-1"
                         onClick={(e) => {
                           e.stopPropagation();
-                          // TODO: Implémenter la prévisualisation du fichier
                           toast({
                             title: "Prévisualisation",
                             description: "Fonctionnalité de prévisualisation à venir",
@@ -573,21 +589,25 @@ export function Resources() {
                       >
                         <Eye className="h-3 w-3" />
                       </Button>
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
+                      <Button
+                        size="sm"
+                        variant="ghost"
                         className={`h-7 flex-1 text-xs gap-1 ${
-                          savedResources.has(resource.id) 
-                            ? 'text-blue-500 hover:text-blue-600' 
-                            : ''
+                          savedResources.has(resource.id)
+                            ? "text-blue-500 hover:text-blue-600"
+                            : ""
                         }`}
                         onClick={(e) => handleSave(e, resource.id)}
                       >
-                        <Bookmark className={`h-3 w-3 ${savedResources.has(resource.id) ? 'fill-current' : ''}`} />
+                        <Bookmark
+                          className={`h-3 w-3 ${
+                            savedResources.has(resource.id) ? "fill-current" : ""
+                          }`}
+                        />
                       </Button>
-                      <Button 
-                        size="sm" 
-                        variant="default" 
+                      <Button
+                        size="sm"
+                        variant="default"
                         className="h-7 flex-1 text-xs gap-1 campus-gradient text-white"
                         onClick={(e) => handleDownload(e, resource.id)}
                         disabled={isLoading}
@@ -598,14 +618,13 @@ export function Resources() {
                           <Download className="h-3 w-3" />
                         )}
                       </Button>
-                      </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-        </Tabs>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
         {filteredResources.length === 0 && (
           <div className="text-center py-12">

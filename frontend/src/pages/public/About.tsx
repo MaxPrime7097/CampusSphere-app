@@ -16,7 +16,7 @@ export function About(): JSX.Element {
     },
     {
       name: "Kana Tommi",
-      role: "CMO & Community Manager",
+      role: "CMO & Graphic Designer",
       description: "Co-fondateur, responsable marketing et communauté, Tommi attire les premiers utilisateurs et anime nos réseaux.",
       avatar: "/Team/placeholder-avatar.jpg",
     },
@@ -29,6 +29,12 @@ export function About(): JSX.Element {
     {
       name: "Nounga Nathan",
       role: "CPO & Head of Design",
+      description: "Responsable produit et design, Nathan façonne l’expérience utilisateur et guide la roadmap produit.",
+      avatar: "/Team/placeholder-avatar.jpg",
+    },
+    {
+      name: "Gwenaelle Stelvana",
+      role: "CFO & Community Manager",
       description: "Responsable produit et design, Nathan façonne l’expérience utilisateur et guide la roadmap produit.",
       avatar: "/Team/placeholder-avatar.jpg",
     }
@@ -305,7 +311,7 @@ export function About(): JSX.Element {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
             {teamMembers.map((member, index) => (
               <div className="campus-card text-center hover:scale-105 transition-all duration-300 campus-animate-slide-up animation-delay-1s">
               <div className="aspect-square bg-gradient-to-br from-primary/20 to-primary/5 rounded-t-lg flex items-center justify-center">
@@ -314,7 +320,7 @@ export function About(): JSX.Element {
               <div className="p-6">
               <div className="font-bold text-lg mb-1 font-poppins">{member.name}</div>
               <div className="text-sm text-muted-foreground mb-3 font-nunito font-semibold">{member.role}</div>
-              <p className="align-left justify-left text-sm text-muted-foreground font-nunito">{member.description}</p>
+              {/*<p className="align-left justify-left text-sm text-muted-foreground font-nunito">{member.description}</p>*/}
               </div>
             </div>
             ))}
