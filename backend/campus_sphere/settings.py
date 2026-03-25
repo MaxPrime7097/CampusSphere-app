@@ -44,7 +44,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "corsheaders",
     "channels",
-    # "django_filters",  # Commented out - not installed
+    "django_filters",
 
     # Local apps
     "users",
@@ -56,8 +56,6 @@ INSTALLED_APPS = [
     "notifications",
 
     # Security apps
-    # "axes",  # Commented out - not installed
-    # "ratelimit",  # Commented out - not installed
     "upload",
 ]
 
@@ -72,7 +70,6 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 
     # Security middleware
-    # "axes.middleware.AxesMiddleware",  # Commented out - not installed
 ]
 
 ROOT_URLCONF = "campus_sphere.urls"
@@ -209,12 +206,12 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',  # Changed to AllowAny for public endpoints
+        'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
     'DEFAULT_FILTER_BACKENDS': [
-        # 'django_filters.rest_framework.DjangoFilterBackend',  # Commented out - django_filters not installed
+        'django_filters.rest_framework.DjangoFilterBackend',
         'rest_framework.filters.SearchFilter',
         'rest_framework.filters.OrderingFilter',
     ],
@@ -301,9 +298,9 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # AXES_LOCKOUT_TEMPLATE = 'axes/lockout.html'
 
 # Production Settings
-SECURE_SSL_REDIRECT = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+SECURE_SSL_REDIRECT = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
 
 # File Upload Security
 FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB
