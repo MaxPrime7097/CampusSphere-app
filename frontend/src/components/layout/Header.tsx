@@ -21,29 +21,6 @@ export function Header() {
             <a href="/cs-inc/contact" className="text-muted-foreground hover:text-foreground transition-colors">Contact</a>
             <a href="/cs-inc/faq" className="text-muted-foreground hover:text-foreground transition-colors">FAQ</a>
             <a href="/cs-inc/policies" className="text-muted-foreground hover:text-foreground transition-colors">Politiques</a>
-            <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
-                Politiques
-                <ChevronDown className="h-4 w-4" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="font-nunito font-semibold">
-                <DropdownMenuItem onClick={() => navigate('/cs-inc/policies/privacy')}>
-                  Politique de Confidentialité
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/cs-inc/policies/terms')}>
-                  Conditions d'Utilisation
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/cs-inc/policies/community-guidelines')}>
-                  Règles de la Communauté
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/cs-inc/policies/cookiepolicy')}>
-                  Politique de Cookies
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/cs-inc/policies/copyright')}>
-                  Politique de Droits d'auteur
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
             <a href="/login" className="text-muted-foreground hover:text-foreground transition-colors hidden">Connexion</a>
             <button
               onClick={() => navigate('/register')}

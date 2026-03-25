@@ -133,7 +133,6 @@ export function FAQ(): JSX.Element {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="text-center lg:text-left space-y-8 campus-animate-fade-in">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5">
-                <HelpCircle className="h-4 w-4 text-primary" />
                 <span className="font-poppins text-sm font-medium">Vos questions, nos réponses</span>
               </div>
 

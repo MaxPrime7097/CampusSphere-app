@@ -31,9 +31,10 @@ const ACCEPTED_FILE_TYPES = [
 
 interface UploadResourceModalProps {
   children: React.ReactNode;
+  onResourceUploaded?: () => void;
 }
 
-export function UploadResourceModal({ children }: UploadResourceModalProps) {
+export function UploadResourceModal({ children, onResourceUploaded }: UploadResourceModalProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -190,51 +191,44 @@ export function UploadResourceModal({ children }: UploadResourceModalProps) {
     setUploadProgress(0);
 
     try {
-      // Simuler l'upload avec progression
-      const uploadInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 100) {
-            clearInterval(uploadInterval);
-            setIsUploading(false);
-            
-            const resourceData = {
-              title,
-              description,
-              subject,
-              type,
-              file,
-              tags,
-              visibility,
-              audience,
-              uploadDate: new Date().toISOString(),
-              author: "Vous",
-              downloads: 0,
-              rating: 0,
-              reviews: []
-            };
-            
-            console.log("Resource uploaded:", resourceData);
-            
-            toast({ 
-              title: "Ressource uploadée avec succès !", 
-              description: `"${title}" est maintenant disponible dans la bibliothèque`,
-              duration: 3000,
-            });
-            
-            // Reset form
-            resetForm();
-            
-            return 100;
-          }
-          return prev + 10;
-        });
-      }, 200);
-    } catch (error) {
+      // Import API function dynamically to avoid circular deps
+      const { createResource } = await import('@/services/api');
+      
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('description', description);
+      formData.append('subject', subject);
+      formData.append('type', type);
+      formData.append('file', file);
+      formData.append('tags', JSON.stringify(tags));
+      formData.append('visibility', visibility || 'public');
+      formData.append('audience', audience || '');
+
+      await createResource(formData);
+      
+      setIsUploading(false);
+      setUploadProgress(100);
+      
+      toast({ 
+        title: "Ressource uploadée avec succès !", 
+        description: `"${title}" est maintenant disponible dans la bibliothèque`,
+        duration: 3000,
+      });
+      
+      // Reset form and close modal
+      resetForm();
+      setOpen(false);
+      
+      // Trigger refresh in parent
+      if (onResourceUploaded) {
+        onResourceUploaded();
+      }
+    } catch (error: any) {
       setIsUploading(false);
       toast({
         variant: "destructive",
         title: "Erreur d'upload",
-        description: "Une erreur est survenue lors de l'upload de la ressource",
+        description: error?.message || "Une erreur est survenue lors de l'upload de la ressource",
       });
     }
   };

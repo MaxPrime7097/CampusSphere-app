@@ -18,24 +18,12 @@ export function PublicMenu() {
       <DropdownMenuTrigger asChild>
         <span className="relative h-10 w-10 rounded-full p-0 hover:bg-accent cursor-pointer"><Menu className="h-4 w-4" /></span>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56" align="end" forceMount>
+      <DropdownMenuContent className="font-nunito font-semibold w-56" align="end" forceMount>
         <DropdownMenuItem 
           onClick={() => navigate("/cs-inc/about")}
           className="cursor-pointer"
         >
           <span>À propos</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem 
-          onClick={() => navigate("/cs-inc/policies/privacy")}
-          className="cursor-pointer"
-        >
-         <span>Politique de confidentialité</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem 
-          onClick={() => navigate("/cs-inc/policies/terms")}
-          className="cursor-pointer"
-        >
-          <span>Conditions d'utilisation</span>
         </DropdownMenuItem>
         <DropdownMenuItem 
           onClick={() => navigate("/cs-inc/contact")}
@@ -49,18 +37,24 @@ export function PublicMenu() {
         >
           <span>FAQ</span>
         </DropdownMenuItem>
+        <DropdownMenuItem 
+          onClick={() => navigate("/cs-inc/policies")}
+          className="cursor-pointer"
+        >
+          <span>Politiques</span>
+        </DropdownMenuItem>
         <DropdownMenuSeparator className="mb-1" />
         <DropdownMenuItem 
-          onClick={() => navigate("/register")}
+          onClick={() => navigate("/cs-inc/waitlist")}
           className="cursor-pointer "
         >
-          <span className="text-primary">S'inscrire</span>
+          <span className="text-primary">Rejoindre la liste d'attente</span>
         </DropdownMenuItem>
         <DropdownMenuItem 
           onClick={() => navigate("/login")}
           className="cursor-pointer"
         >
-          <span className="text-primary">Se connecter</span>
+          <span className="hidden text-primary">Se connecter</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
