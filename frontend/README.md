@@ -5,6 +5,7 @@
 [![Node.js](https://img.shields.io/badge/node.js-18+-green.svg)](https://nodejs.org/)
 [![React](https://img.shields.io/badge/react-18+-blue.svg)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/typescript-5+-blue.svg)](https://www.typescriptlang.org/)
+[![Quality Gates](https://img.shields.io/badge/quality%20gates-check%20%2B%20tests%20%2B%20build-informational)](#-quality-gates)
 
 > **CampusSphere** est une plateforme collaborative destinée aux étudiants camerounais pour partager des ressources, collaborer dans des sphères thématiques, et créer des connexions académiques et professionnelles.
 
@@ -136,12 +137,12 @@ POST   /api/resources      # Upload de ressource
 - **Zod** pour la validation des formulaires
 - **Lucide React** pour les icônes
 
-### **Backend** (À implémenter)
-- **Node.js** + **Express.js**
-- **PostgreSQL** pour la base de données
-- **Redis** pour le cache et les sessions
-- **JWT** pour l'authentification
-- **Multer** pour l'upload de fichiers
+### **Backend** (Implémenté)
+- **Django 5.2** + **Django REST Framework**
+- **JWT (Simple JWT)** pour l'authentification
+- **PostgreSQL ou SQLite** selon l'environnement
+- **Django Channels** (optionnel) pour le temps réel
+- **Upload de fichiers** via endpoints DRF
 
 ### **Services Externes**
 - **Cloudinary** pour le CDN et l'optimisation d'images
@@ -194,6 +195,64 @@ npm run lint:fix         # Correction automatique
 # Tests (à implémenter)
 npm run test             # Tests unitaires
 npm run test:coverage    # Tests avec couverture
+```
+
+## ⚡ Quick start réel (frontend + backend)
+
+### 1) Backend (Django API)
+
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate   # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+
+# Variables minimales pour démarrer en local
+export SECRET_KEY=dev-secret-key
+export DEBUG=True
+export ALLOWED_HOSTS=localhost,127.0.0.1
+
+python manage.py migrate
+python manage.py runserver 127.0.0.1:8000
+```
+
+### 2) Frontend (Vite + React)
+
+```bash
+cd frontend
+npm install
+echo "VITE_API_URL=http://127.0.0.1:8000" > .env
+npm run dev
+```
+
+### 3) Vérifications rapides
+
+```bash
+# Backend
+cd backend
+SECRET_KEY=test DEBUG=True ALLOWED_HOSTS=localhost python manage.py check
+SECRET_KEY=test DEBUG=True ALLOWED_HOSTS=localhost python manage.py test
+
+# Frontend
+cd frontend
+npm run build
+npm run lint
+```
+
+## ✅ Quality Gates
+
+Le projet est considéré "vert" quand ces commandes passent:
+
+```bash
+# Backend
+cd backend
+SECRET_KEY=test DEBUG=True ALLOWED_HOSTS=localhost python manage.py check
+SECRET_KEY=test DEBUG=True ALLOWED_HOSTS=localhost python manage.py test
+
+# Frontend
+cd frontend
+npm run build
+npm run lint
 ```
 
 ## 📊 Données Mock
