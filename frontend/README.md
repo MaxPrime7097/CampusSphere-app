@@ -1,66 +1,35 @@
-# 🎓 CampusSphere - Plateforme Collaborative Étudiante
+# CampusSphere Frontend (React/Vite)
 
+<<<<<<< codex/analyze-code-and-provide-overall-status-ftifph
+Frontend web de CampusSphere.
+=======
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/your-org/campus-sphere)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node.js-18+-green.svg)](https://nodejs.org/)
 [![React](https://img.shields.io/badge/react-18+-blue.svg)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/typescript-5+-blue.svg)](https://www.typescriptlang.org/)
 [![Quality Gates](https://img.shields.io/badge/quality%20gates-check%20%2B%20tests%20%2B%20build-informational)](#-quality-gates)
+>>>>>>> main
 
-> **CampusSphere** est une plateforme collaborative destinée aux étudiants camerounais pour partager des ressources, collaborer dans des sphères thématiques, et créer des connexions académiques et professionnelles.
+## Stack
 
-## 🌟 Fonctionnalités Principales
+- React 18 + TypeScript
+- Vite
+- Tailwind CSS + composants UI
+- React Router
 
-### 👥 **Sphères Collaboratives**
-- Création et gestion de sphères thématiques
-- Système de permissions (publiques, privées avec approbation)
-- Chat intégré pour la collaboration en temps réel
-- Système de tâches avec attribution et progression
-- Partage de ressources au sein des sphères
+## Installation & démarrage
 
-### 📚 **Gestion des Ressources**
-- Upload et partage de documents (PDF, DOC, PPT, ZIP)
-- Système de tags et catégorisation
-- Recherche avancée avec filtres
-- Score d'impact basé sur les interactions
-- Actions: Prévisualiser, Enregistrer, Télécharger
-
-### 💬 **Communication**
-- Feed principal avec posts et interactions
-- Messagerie privée et de groupe
-- Système de mentions et notifications
-- Chat intégré dans les sphères
-
-### 👤 **Profils Étudiants**
-- Profils complets avec informations académiques
-- Photo de couverture et avatar personnalisables
-- Gestion des formations et expériences
-- Score d'impact et mood du moment
-- Système de connexions
-
-### 🎯 **Système d'Impact**
-- Points basés sur les contributions
-- Création de posts: +10 pts
-- Upload de ressources: +15 pts
-- Completion de tâches: +5 pts
-- Interactions et téléchargements: +1-2 pts
-
-## 🚀 Démarrage Rapide
-
-### Prérequis
-- Node.js 18+
-- npm 9+
-- Git
-
-### Installation
 ```bash
-# Cloner le repository
-git clone https://github.com/your-org/campus-sphere.git
-cd campus-sphere
-
-# Installer les dépendances
 npm install
 
+<<<<<<< codex/analyze-code-and-provide-overall-status-ftifph
+cat > .env << 'EOT'
+VITE_API_URL=http://127.0.0.1:8000
+VITE_APP_NAME=CampusSphere
+VITE_APP_ENV=development
+EOT
+=======
 # Démarrer le serveur de développement
 npm run dev
 
@@ -172,31 +141,23 @@ POST   /api/resources      # Upload de ressource
 --background: #ffffff     /* Blanc */
 --foreground: #0f172a     /* Noir */
 ```
+>>>>>>> main
 
-### **Gradients**
-```css
-.campus-gradient {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-}
+npm run dev
 ```
 
-## 🔧 Scripts Disponibles
+## Scripts
 
 ```bash
-# Développement
-npm run dev              # Serveur de développement
-npm run build            # Build de production
-npm run preview          # Preview du build
-
-# Qualité du code
-npm run lint             # Linting ESLint
-npm run lint:fix         # Correction automatique
-
-# Tests (à implémenter)
-npm run test             # Tests unitaires
-npm run test:coverage    # Tests avec couverture
+npm run dev
+npm run build
+npm run lint
+npm run preview
 ```
 
+<<<<<<< codex/analyze-code-and-provide-overall-status-ftifph
+## Contrat API attendu
+=======
 ## ⚡ Quick start réel (frontend + backend)
 
 ### 1) Backend (Django API)
@@ -256,121 +217,36 @@ npm run lint
 ```
 
 ## 📊 Données Mock
+>>>>>>> main
 
-L'application utilise des données mock pour la démonstration :
+Le frontend consomme le backend Django via `VITE_API_URL`.
 
-### **Utilisateurs**
-- 50+ utilisateurs avec profils complets
-- Universités camerounaises (13 principales)
-- Filières académiques (29 domaines)
-- Niveaux d'études (BTS, Licence, Master, Doctorat)
+Auth:
+- `POST /api/users/auth/register/`
+- `POST /api/users/auth/login/`
+- `GET /api/users/auth/me/`
+- `POST /api/auth/refresh/`
 
-### **Sphères**
-- Sphères publiques et privées
-- Différentes catégories (Académique, Événement, Marketplace)
-- Système de permissions et approbation
+Autres domaines:
+- `/api/users/`
+- `/api/spheres/`
+- `/api/posts/`
+- `/api/resources/`
+- `/api/tasks/`
+- `/api/conversations/`
+- `/api/notifications/`
 
-### **Ressources**
-- Documents PDF, DOC, PPT, ZIP
-- Métadonnées complètes (matière, type, audience)
-- Système de tags et recherche
+## Vérification avant prod
 
-## 🚀 Déploiement
-
-### **Frontend (Vercel)**
 ```bash
-# Déploiement automatique
-vercel --prod
-
-# Variables d'environnement
-VITE_API_URL=https://api.campus-sphere.com
-VITE_APP_NAME=CampusSphere
+npm run build
+npm run lint
 ```
 
-### **Backend (Railway)**
-```bash
-# Déploiement
-railway up
+## Déploiement
 
-# Variables d'environnement
-DATABASE_URL=postgresql://...
-JWT_SECRET=your-secret-key
-REDIS_URL=redis://...
-```
-
-## 🤝 Contribution
-
-### **Structure du Projet**
-```
-src/
-├── components/           # Composants réutilisables
-│   ├── ui/              # Composants UI de base
-│   ├── forms/           # Composants de formulaires
-│   ├── layout/          # Composants de mise en page
-│   ├── modals/          # Modales et dialogues
-│   ├── feed/            # Composants du feed
-│   └── chat/            # Composants de chat
-├── pages/               # Pages principales
-├── hooks/               # Hooks personnalisés
-├── lib/                 # Utilitaires
-└── styles/              # Styles CSS
-```
-
-### **Guidelines**
-1. Utilisez TypeScript pour tous les nouveaux composants
-2. Suivez les conventions de nommage (PascalCase pour les composants)
-3. Documentez les props avec des interfaces TypeScript
-4. Utilisez les composants Shadcn/UI existants
-5. Respectez le système de design CampusSphere
-
-## 📈 Roadmap
-
-### **Phase 1 - MVP** ✅
-- [x] Authentification et profils
-- [x] Sphères collaboratives
-- [x] Posts et ressources
-- [x] Messagerie basique
-- [x] Système d'impact score
-
-### **Phase 2 - Améliorations** 🔄
-- [ ] Notifications push
-- [ ] Recherche avancée
-- [ ] Système de recommandations
-- [ ] Analytics utilisateur
-- [ ] Mobile app (React Native)
-
-### **Phase 3 - Fonctionnalités Avancées** 📅
-- [ ] Calendrier d'événements
-- [ ] Système de badges
-- [ ] Marketplace étudiant
-- [ ] Intégration universités
-- [ ] API publique
-
-## 🐛 Problèmes Connus
-
-- Les modales de création de tâches et d'upload nécessitent des corrections
-- Le système de notifications est en cours d'implémentation
-- L'upload de fichiers nécessite une configuration backend
-
-## 📞 Support
-
-Pour toute question ou problème :
-- **Issues**: [GitHub Issues](https://github.com/your-org/campus-sphere/issues)
-- **Documentation**: Consultez les fichiers de documentation
-- **Email**: support@campus-sphere.com
-
-## 📄 Licence
-
-Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
-
-## 🙏 Remerciements
-
-- **Shadcn/UI** pour les composants UI
-- **Tailwind CSS** pour le système de design
-- **Lucide React** pour les icônes
-- **Vite** pour l'outil de build
-- **React** pour le framework frontend
-
----
-
+<<<<<<< codex/analyze-code-and-provide-overall-status-ftifph
+Voir `../DEPLOYMENT.md` pour la procédure Vercel + Render complète.
+=======
 **CampusSphere** - Connecter, Partager, Grandir ensemble sur le campus camerounais 🎓✨
+>>>>>>> main
