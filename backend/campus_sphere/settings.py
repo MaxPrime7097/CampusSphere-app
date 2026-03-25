@@ -26,7 +26,11 @@ SECRET_KEY = env_config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env_config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = env_config('ALLOWED_HOSTS', default='', cast=Csv())
+ALLOWED_HOSTS = env_config(
+    'ALLOWED_HOSTS',
+    default='localhost,127.0.0.1',
+    cast=Csv(),
+)
 
 
 # Application definition
@@ -188,15 +192,18 @@ USE_I18N = True
 
 USE_TZ = True
 
-# CORS Configuration
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:8080",
-    "http://127.0.0.1:8080",
-    "https://your-vercel-domain.vercel.app",
-    "https://your-render-domain.onrender.com",
-]
+# CORS / CSRF Configuration
+CORS_ALLOWED_ORIGINS = env_config(
+    "CORS_ALLOWED_ORIGINS",
+    default="http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080",
+    cast=Csv(),
+)
+
+CSRF_TRUSTED_ORIGINS = env_config(
+    "CSRF_TRUSTED_ORIGINS",
+    default="http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080",
+    cast=Csv(),
+)
 
 CORS_ALLOW_CREDENTIALS = True
 
@@ -280,12 +287,13 @@ AUTH_USER_MODEL = 'users.User'
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
-SECURE_HSTS_SECONDS = 31536000  # 1 year
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
+SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0  # 1 year in production only
+SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
+SECURE_HSTS_PRELOAD = not DEBUG
 
 # Security Middleware
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = not DEBUG
 
 # Rate Limiting
 # RATELIMIT_VIEW = 'campus_sphere.views.ratelimit_error'  # Commented out - ratelimit not installed
@@ -301,6 +309,8 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_SSL_REDIRECT = not DEBUG
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
 
 # File Upload Security
 FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB
