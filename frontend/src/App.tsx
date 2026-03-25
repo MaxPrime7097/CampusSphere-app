@@ -1,8 +1,9 @@
+import type { ReactNode } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
 import { Landing } from "./pages/public/Landing";
 import { Login } from "./pages/public/Login";
@@ -38,6 +39,12 @@ import { Policies } from "./pages/public/Policies";
 
 const queryClient = new QueryClient();
 
+const Protected = ({ children }: { children: ReactNode }) => {
+  const token = localStorage.getItem("access");
+  if (!token) return <Navigate to="/login" replace />;
+  return children;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -52,79 +59,109 @@ const App = () => (
           
           {/* Protected routes with layout */}
           <Route path="/" element={
-            <AppLayout>
-              <Home />
-            </AppLayout>
+            <Protected>
+              <AppLayout>
+                <Home />
+              </AppLayout>
+            </Protected>
           } />
           <Route path="/profile" element={
-            <AppLayout>
-              <Profile />
-            </AppLayout>
+            <Protected>
+              <AppLayout>
+                <Profile />
+              </AppLayout>
+            </Protected>
           } />
           <Route path="/profile/:username" element={
-            <AppLayout>
-              <Profile />
-            </AppLayout>
+            <Protected>
+              <AppLayout>
+                <Profile />
+              </AppLayout>
+            </Protected>
           } />
           <Route path="/messages" element={
-            <AppLayout>
-              <Messages />
-            </AppLayout>
+            <Protected>
+              <AppLayout>
+                <Messages />
+              </AppLayout>
+            </Protected>
           } />
           <Route path="/messages/:conversationId" element={
-            <AppLayout>
-              <Messages />
-            </AppLayout>
+            <Protected>
+              <AppLayout>
+                <Messages />
+              </AppLayout>
+            </Protected>
           } />
           <Route path="/settings" element={
-            <AppLayout>
-              <Settings />
-            </AppLayout>
+            <Protected>
+              <AppLayout>
+                <Settings />
+              </AppLayout>
+            </Protected>
           } />
           <Route path="/notifications" element={
-            <AppLayout>
-              <Notifications />
-            </AppLayout>
+            <Protected>
+              <AppLayout>
+                <Notifications />
+              </AppLayout>
+            </Protected>
           } />
           <Route path="/search" element={
-            <AppLayout>
-              <SearchResults />
-            </AppLayout>
+            <Protected>
+              <AppLayout>
+                <SearchResults />
+              </AppLayout>
+            </Protected>
           } />
           <Route path="/profile/edit" element={
-            <AppLayout>
-              <EditProfile />
-            </AppLayout>
+            <Protected>
+              <AppLayout>
+                <EditProfile />
+              </AppLayout>
+            </Protected>
           } />
           <Route path="/saved" element={
-            <AppLayout>
-              <SavedItems />
-            </AppLayout>
+            <Protected>
+              <AppLayout>
+                <SavedItems />
+              </AppLayout>
+            </Protected>
           } />
           <Route path="/resources" element={
-            <AppLayout>
-              <Resources />
-            </AppLayout>
+            <Protected>
+              <AppLayout>
+                <Resources />
+              </AppLayout>
+            </Protected>
           } />
           <Route path="/resources/:id" element={
-            <AppLayout>
-              <ResourceDetail />
-            </AppLayout>
+            <Protected>
+              <AppLayout>
+                <ResourceDetail />
+              </AppLayout>
+            </Protected>
           } />
            <Route path="/spheres" element={
-            <AppLayout>
-              <Spheres />
-            </AppLayout>
+            <Protected>
+              <AppLayout>
+                <Spheres />
+              </AppLayout>
+            </Protected>
           } />
           <Route path="/spheres/:id" element={
-            <AppLayout>
-              <SphereDetail />
-            </AppLayout>
+            <Protected>
+              <AppLayout>
+                <SphereDetail />
+              </AppLayout>
+            </Protected>
           } />
           <Route path="/connections" element={
-            <AppLayout>
-              <Connections />
-            </AppLayout>
+            <Protected>
+              <AppLayout>
+                <Connections />
+              </AppLayout>
+            </Protected>
           } />
 
           {/* Admin routes */}
