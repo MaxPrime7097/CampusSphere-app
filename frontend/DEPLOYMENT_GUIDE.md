@@ -21,9 +21,9 @@
 
 CampusSphere est une application web full-stack composée de :
 - **Frontend**: React + TypeScript + Vite
-- **Backend**: Node.js + Express + PostgreSQL
-- **CDN**: Pour les assets statiques et fichiers uploadés
-- **Cache**: Redis pour les sessions et données fréquemment accédées
+- **Backend**: API Django (Django + Django REST Framework + PostgreSQL), déployée sur Railway
+- **CDN / stockage fichiers**: S3 / Cloudinary ou équivalent (recommandé en production)
+- **Cache / file d'attente**: Redis (pour WebSockets + tâches asynchrones, optionnel)
 
 ### Architecture de déploiement recommandée
 ```
@@ -91,54 +91,17 @@ VITE_GA_TRACKING_ID=G-XXXXXXXXXX
 VITE_SENTRY_DSN=https://xxx@sentry.io/xxx
 ```
 
-### Variables d'environnement Backend
-```env
-# .env.production
-NODE_ENV=production
-PORT=3001
+### Variables d'environnement Backend (référence)
 
-# Base de données
-DATABASE_URL=postgresql://username:password@host:5432/campus_sphere
-DATABASE_HOST=db.railway.app
-DATABASE_PORT=5432
-DATABASE_NAME=campus_sphere
-DATABASE_USER=postgres
-DATABASE_PASSWORD=your_password
+Le backend Django est configuré depuis le dossier `backend/` et documenté en détail dans `backend/README.md`.
+Les variables importantes à définir dans Railway sont par exemple :
 
-# JWT
-JWT_SECRET=your-super-secret-jwt-key-production
-JWT_EXPIRES_IN=7d
-JWT_REFRESH_EXPIRES_IN=30d
-
-# Upload
-UPLOAD_MAX_SIZE=52428800  # 50MB
-UPLOAD_ALLOWED_TYPES=pdf,doc,docx,ppt,pptx,zip,jpg,jpeg,png,gif
-UPLOAD_PATH=./uploads
-CDN_URL=https://res.cloudinary.com/campus-sphere
-
-# Email
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=noreply@campus-sphere.com
-SMTP_PASS=your-app-password
-
-# Redis
-REDIS_URL=redis://username:password@host:port
-
-# CORS
-CORS_ORIGIN=https://campus-sphere.com,https://www.campus-sphere.com
-
-# Rate Limiting
-RATE_LIMIT_WINDOW_MS=900000  # 15 minutes
-RATE_LIMIT_MAX_REQUESTS=100
-
-# Monitoring
-SENTRY_DSN=https://xxx@sentry.io/xxx
-LOG_LEVEL=info
-
-# WebSocket
-WS_PORT=3002
-```
+- `SECRET_KEY`
+- `DEBUG`
+- `ALLOWED_HOSTS`
+- `DATABASE_URL`
+- `REDIS_URL` (si WebSockets / Celery activés)
+- Les variables d'envoi d'e-mails (SMTP\_*) et de stockage (S3 / Cloudinary) si vous les utilisez
 
 ---
 
@@ -293,154 +256,14 @@ docker run -p 80:80 campus-sphere-frontend
 
 ## 🔧 Déploiement Backend
 
-### Option 1: Railway (Recommandé)
+Le backend Node/Express décrit dans une version précédente de ce guide n'est plus d'actualité.
+Le backend actuel est une API **Django** située dans le dossier `backend/` et documentée dans `backend/README.md`.
 
-#### 1. Configuration Railway
-```bash
-# Installer Railway CLI
-npm install -g @railway/cli
+En pratique :
 
-# Login
-railway login
-
-# Initialiser le projet
-railway init
-
-# Déployer
-railway up
-```
-
-#### 2. Configuration railway.json
-```json
-{
-  "build": {
-    "builder": "NIXPACKS"
-  },
-  "deploy": {
-    "startCommand": "npm start",
-    "healthcheckPath": "/health",
-    "healthcheckTimeout": 100,
-    "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 10
-  }
-}
-```
-
-#### 3. Variables d'environnement Railway
-```bash
-# Ajouter les variables d'environnement
-railway variables set NODE_ENV=production
-railway variables set DATABASE_URL=${{Postgres.DATABASE_URL}}
-railway variables set JWT_SECRET=your-secret-key
-railway variables set REDIS_URL=${{Redis.REDIS_URL}}
-```
-
-### Option 2: Heroku
-
-#### 1. Configuration Heroku
-```bash
-# Installer Heroku CLI
-npm install -g heroku
-
-# Login
-heroku login
-
-# Créer l'app
-heroku create campus-sphere-api
-
-# Ajouter les add-ons
-heroku addons:create heroku-postgresql:hobby-dev
-heroku addons:create heroku-redis:hobby-dev
-```
-
-#### 2. Procfile
-```
-web: npm start
-worker: npm run worker
-```
-
-#### 3. Déploiement
-```bash
-# Déployer
-git push heroku main
-
-# Configurer les variables
-heroku config:set NODE_ENV=production
-heroku config:set JWT_SECRET=your-secret-key
-```
-
-### Option 3: Docker
-
-#### 1. Dockerfile Backend
-```dockerfile
-FROM node:18-alpine
-
-WORKDIR /app
-
-# Installer les dépendances
-COPY package*.json ./
-RUN npm ci --only=production
-
-# Copier le code source
-COPY . .
-
-# Créer un utilisateur non-root
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nodejs -u 1001
-
-# Changer les permissions
-RUN chown -R nodejs:nodejs /app
-USER nodejs
-
-# Exposer le port
-EXPOSE 3001
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3001/health || exit 1
-
-# Démarrer l'application
-CMD ["npm", "start"]
-```
-
-#### 2. docker-compose.yml
-```yaml
-version: '3.8'
-
-services:
-  api:
-    build: .
-    ports:
-      - "3001:3001"
-    environment:
-      - NODE_ENV=production
-      - DATABASE_URL=postgresql://postgres:password@db:5432/campus_sphere
-      - REDIS_URL=redis://redis:6379
-    depends_on:
-      - db
-      - redis
-    restart: unless-stopped
-
-  db:
-    image: postgres:15-alpine
-    environment:
-      - POSTGRES_DB=campus_sphere
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
-
-  redis:
-    image: redis:7-alpine
-    volumes:
-      - redis_data:/data
-    restart: unless-stopped
-
-volumes:
-  postgres_data:
-  redis_data:
-```
+- Déployez le frontend sur **Vercel** (ce guide)
+- Déployez le backend Django sur **Railway** à partir du dossier `backend/`
+- Renseignez `VITE_API_URL` côté Vercel avec l'URL publique Railway (ex : `https://votre-api.up.railway.app`)
 
 ---
 

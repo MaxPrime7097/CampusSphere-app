@@ -21,10 +21,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env_config('SECRET_KEY', default="django-insecure-+m-+8mz$fo_nh-e#nue2ruc&!n!#g^e+w(#@(w!l%=x4_0j+$g")
+SECRET_KEY = env_config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env_config('DEBUG', default=True, cast=bool)
+DEBUG = env_config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = env_config('ALLOWED_HOSTS', default='', cast=Csv())
 
@@ -43,7 +43,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt",
     "corsheaders",
-    # "channels",  # Commented out - not installed
+    "channels",
     # "django_filters",  # Commented out - not installed
 
     # Local apps
@@ -94,8 +94,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "campus_sphere.wsgi.application"
 
-# ASGI Application for WebSockets
-# ASGI_APPLICATION = "campus_sphere.asgi.application"  # Commented out - channels not installed
+# ASGI Application for WebSockets (used by Daphne / Channels)
+ASGI_APPLICATION = "campus_sphere.asgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -145,18 +145,20 @@ else:
             }
         }
 
-# Redis Configuration
-# REDIS_URL = "redis://localhost:6379"  # Commented out - Redis not configured
+#
+# Redis / Channels (enabled when REDIS_URL is provided)
+#
+REDIS_URL = env_config("REDIS_URL", default=None)
 
-# Channels Configuration
-# CHANNEL_LAYERS = {  # Commented out - channels not installed
-#     "default": {
-#         "BACKEND": "channels_redis.core.RedisChannelLayer",
-#         "CONFIG": {
-#             "hosts": [REDIS_URL],
-#         },
-#     },
-# }
+if REDIS_URL:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [REDIS_URL],
+            },
+        },
+    }
 
 
 # Password validation
@@ -195,7 +197,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost:8080",
     "http://127.0.0.1:8080",
-    "https://campus-sphere.com",
+    "https://your-vercel-domain.vercel.app",
+    "https://your-render-domain.onrender.com",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -267,6 +270,12 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Production settings for Vercel + Render
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
+
 # Custom User Model
 AUTH_USER_MODEL = 'users.User'
 
@@ -278,6 +287,9 @@ SECURE_HSTS_SECONDS = 31536000  # 1 year
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
+# Security Middleware
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 # Rate Limiting
 # RATELIMIT_VIEW = 'campus_sphere.views.ratelimit_error'  # Commented out - ratelimit not installed
 
@@ -287,6 +299,11 @@ SECURE_HSTS_PRELOAD = True
 # AXES_RESET_ON_SUCCESS = True
 # AXES_LOCKOUT_URL = '/locked/'
 # AXES_LOCKOUT_TEMPLATE = 'axes/lockout.html'
+
+# Production Settings
+SECURE_SSL_REDIRECT = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
 
 # File Upload Security
 FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB
@@ -300,8 +317,8 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'your-email@gmail.com'  # Replace with actual email
-EMAIL_HOST_PASSWORD = 'your-app-password'  # Replace with actual app password
+EMAIL_HOST_USER = env_config('EMAIL_HOST_USER', default='your-email@gmail.com')
+EMAIL_HOST_PASSWORD = env_config('EMAIL_HOST_PASSWORD', default='your-app-password')
 DEFAULT_FROM_EMAIL = 'CampusSphere <noreply@campus-sphere.com>'
 
 # Celery Configuration for Background Tasks
@@ -311,6 +328,12 @@ DEFAULT_FROM_EMAIL = 'CampusSphere <noreply@campus-sphere.com>'
 # CELERY_TASK_SERIALIZER = 'json'
 # CELERY_RESULT_SERIALIZER = 'json'
 # CELERY_TIMEZONE = TIME_ZONE
+
+# Static Files
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Logging Configuration
 LOGGING = {
@@ -327,31 +350,25 @@ LOGGING = {
         },
     },
     'handlers': {
-        'file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': 'logs/campus_sphere.log',
-            'formatter': 'verbose',
-        },
         'console': {
-            'level': 'DEBUG',
+            'level': 'INFO',
             'class': 'logging.StreamHandler',
             'formatter': 'simple',
         },
     },
     'root': {
-        'handlers': ['console', 'file'],
+        'handlers': ['console'],
         'level': 'INFO',
     },
     'loggers': {
         'django': {
-            'handlers': ['console', 'file'],
+            'handlers': ['console'],
             'level': 'INFO',
             'propagate': False,
         },
         'campus_sphere': {
-            'handlers': ['console', 'file'],
-            'level': 'DEBUG',
+            'handlers': ['console'],
+            'level': 'INFO',
             'propagate': False,
         },
     },

@@ -1,0 +1,62 @@
+# Render.com Configuration for CampusSphere Backend
+
+# Service configuration
+# This will create a web service on Render
+
+# Build and deployment settings
+build:
+  # Build command for Django app
+  # Install dependencies and collect static files
+  command: |
+    python -m venv venv
+    source venv/bin/activate
+    pip install -r requirements.txt
+    python manage.py collectstatic --noinput
+
+  # Port the application will listen on
+  port: 8000
+
+# Start command for the service
+# Gunicorn will serve the Django application
+start:
+  # Activate virtual environment and start Gunicorn
+  command: |
+    source venv/bin/activate
+    gunicorn campus_sphere.wsgi:application --bind 0.0.0.0:8000
+
+# Environment variables
+# These should be set in Render's dashboard
+# env:
+#   - name: DEBUG
+#     value: "False"
+#   - name: SECRET_KEY
+#     value: "your-secret-key"
+#   - name: ALLOWED_HOSTS
+#     value: "your-render-domain.onrender.com,your-vercel-domain.vercel.app"
+#   - name: DATABASE_URL
+#     value: "postgresql://..."
+#   - name: REDIS_URL
+#     value: "redis://..."
+#   - name: JWT_SECRET
+#     value: "your-jwt-secret"
+
+# Health check configuration
+# Render will use this to check if your service is healthy
+healthcheck:
+  # Path for health check endpoint
+  path: /health/
+
+  # Port to check (same as service port)
+  port: 8000
+
+  # Check interval in seconds
+  interval: 30
+
+  # Timeout in seconds
+  timeout: 5
+
+  # Number of consecutive successes required to consider healthy
+  threshold: 2
+
+  # Number of consecutive failures required to consider unhealthy
+  initial_status: 1
