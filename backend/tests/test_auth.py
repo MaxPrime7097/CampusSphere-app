@@ -11,9 +11,9 @@ User = get_user_model()
 
 class AuthTests(APITestCase):
     def setUp(self):
-        self.register_url = reverse('user-registration')
-        self.login_url = reverse('user-login')
-        self.me_url = reverse('current-user-profile')
+        self.register_url = reverse('users:register')
+        self.login_url = reverse('users:login')
+        self.me_url = reverse('users:current-user')
 
         self.user_data = {
             'first_name': 'John',
@@ -21,6 +21,7 @@ class AuthTests(APITestCase):
             'username': 'johndoe',
             'email': 'john@example.com',
             'password': 'password123',
+            'confirm_password': 'password123',
             'university': 'douala',
             'faculty': 'informatique',
             'study_year': 'l3',

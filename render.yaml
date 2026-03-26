@@ -44,7 +44,7 @@ start:
 # Render will use this to check if your service is healthy
 healthcheck:
   # Path for health check endpoint
-  path: /health/
+  path: /api/health/
 
   # Port to check (same as service port)
   port: 8000

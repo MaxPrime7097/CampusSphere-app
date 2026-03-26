@@ -46,15 +46,40 @@ export function Connections() {
         const connectionsData = await getUserConnections(currentUser.id);
         if (isMounted && connectionsData) {
           const mapped = (connectionsData || []).map((conn: any) => ({
-            id: String(conn.id || conn.user_id),
-            name: conn.user_info?.name || conn.name || "Utilisateur",
-            username: conn.user_info?.username || conn.username || "user",
-            avatar: conn.user_info?.avatar || conn.avatar || '/placeholder-avatar.jpg',
-            university: conn.user_info?.university || conn.university || '',
-            faculty: conn.user_info?.faculty || conn.faculty || '',
-            field: conn.user_info?.faculty || conn.faculty || '',
-            isVerified: conn.user_info?.is_verified || conn.is_verified || false,
-            impactScore: conn.user_info?.impact_score || conn.impact_score || 0,
+            id: String(
+              conn.requester === currentUser.id
+                ? conn.recipient_info?.id || conn.recipient
+                : conn.requester_info?.id || conn.requester
+            ),
+            name:
+              (conn.requester === currentUser.id
+                ? conn.recipient_info?.full_name
+                : conn.requester_info?.full_name) || "Utilisateur",
+            username:
+              (conn.requester === currentUser.id
+                ? conn.recipient_info?.username
+                : conn.requester_info?.username) || "user",
+            avatar:
+              (conn.requester === currentUser.id
+                ? conn.recipient_info?.avatar
+                : conn.requester_info?.avatar) || '/placeholder-avatar.jpg',
+            university:
+              (conn.requester === currentUser.id
+                ? conn.recipient_info?.university
+                : conn.requester_info?.university) || '',
+            faculty:
+              (conn.requester === currentUser.id
+                ? conn.recipient_info?.faculty
+                : conn.requester_info?.faculty) || '',
+            field:
+              (conn.requester === currentUser.id
+                ? conn.recipient_info?.faculty
+                : conn.requester_info?.faculty) || '',
+            isVerified: false,
+            impactScore:
+              (conn.requester === currentUser.id
+                ? conn.recipient_info?.impact_score
+                : conn.requester_info?.impact_score) || 0,
             mutualFriends: 0 // TODO: Calculate mutual connections if API provides this
           }));
           setConnections(mapped);
@@ -262,7 +287,7 @@ export function Connections() {
                         size="sm"
                         onClick={async () => {
                           try {
-                            await createConnection(suggestion.id);
+                            await createConnection(suggestion.id, currentUser.id);
                             toast({
                               title: "Demande envoyée",
                               description: `Demande de connexion envoyée à ${suggestion.name}`,

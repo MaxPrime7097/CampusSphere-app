@@ -3,6 +3,7 @@ from rest_framework import generics, status, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.exceptions import PermissionDenied
 from rest_framework_simplejwt.tokens import RefreshToken
 # from django_filters.rest_framework import DjangoFilterBackend  # Commented out - django_filters not installed
 from rest_framework.filters import SearchFilter
@@ -113,7 +114,13 @@ class ConnectionListView(generics.ListCreateAPIView):
     # filter_backends = [DjangoFilterBackend]  # Commented out - django_filters not installed
     # filterset_fields = ['status']  # Commented out - django_filters not installed
 
+    def _validate_user_scope(self):
+        path_user_id = self.kwargs.get('id')
+        if path_user_id is not None and path_user_id != self.request.user.id:
+            raise PermissionDenied("You can only access your own connections endpoint")
+
     def get_queryset(self):
+        self._validate_user_scope()
         return Connection.objects.filter(
             models.Q(requester=self.request.user) | models.Q(recipient=self.request.user)
         ).select_related('requester', 'recipient')
@@ -124,13 +131,20 @@ class ConnectionListView(generics.ListCreateAPIView):
         return ConnectionSerializer
 
     def perform_create(self, serializer):
+        self._validate_user_scope()
         serializer.save(requester=self.request.user)
 
 
 class ConnectionDetailView(generics.DestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    def _validate_user_scope(self):
+        path_user_id = self.kwargs.get('id')
+        if path_user_id is not None and path_user_id != self.request.user.id:
+            raise PermissionDenied("You can only access your own connections endpoint")
+
     def get_queryset(self):
+        self._validate_user_scope()
         return Connection.objects.filter(
             models.Q(requester=self.request.user) | models.Q(recipient=self.request.user)
         )

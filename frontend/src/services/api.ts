@@ -444,13 +444,18 @@ export async function getUserByUsername(username: string, token?: string) {
 // Connections
 export async function getUserConnections(userId: number | string, token?: string) {
   const response = await apiFetch<any>(`api/users/${userId}/connections/`, { token: token || getAccessToken() });
-  return normalizeUsers(unwrapList(response));
+  return unwrapList(response);
 }
 
-export async function createConnection(userId: number | string, token?: string) {
-  return apiFetch<any>(`api/users/${userId}/connections/`, {
+export async function createConnection(
+  recipientId: number | string,
+  currentUserId?: number | string,
+  token?: string
+) {
+  const scopedUserId = currentUserId ?? recipientId;
+  return apiFetch<any>(`api/users/${scopedUserId}/connections/`, {
     method: "POST",
-    body: {},
+    body: { recipient: recipientId },
     token: token || getAccessToken(),
   });
 }
@@ -564,9 +569,14 @@ export async function createPost(data: {
   subject?: string;
   type?: string;
 }, token?: string) {
+  const payload = { ...data } as any;
+  if (payload.sphere_id !== undefined && payload.sphere === undefined) {
+    payload.sphere = payload.sphere_id;
+    delete payload.sphere_id;
+  }
   return apiFetch<any>("api/posts/", {
     method: "POST",
-    body: data,
+    body: payload,
     token: token || getAccessToken(),
   });
 }
@@ -727,9 +737,14 @@ export async function createTask(data: {
   status?: string;
   assigned_to?: number;
 }, token?: string) {
+  const payload = { ...data } as any;
+  if (payload.sphere_id !== undefined && payload.sphere === undefined) {
+    payload.sphere = payload.sphere_id;
+    delete payload.sphere_id;
+  }
   return apiFetch<any>("api/tasks/", {
     method: "POST",
-    body: data,
+    body: payload,
     token: token || getAccessToken(),
   });
 }
@@ -765,7 +780,7 @@ export async function completeTask(id: number | string, token?: string) {
 export async function assignTask(id: number | string, userId: number | string, token?: string) {
   return apiFetch<any>(`api/tasks/${id}/assign/`, {
     method: "POST",
-    body: { user_id: userId },
+    body: { assigned_to_id: userId },
     token: token || getAccessToken(),
   });
 }
@@ -800,11 +815,17 @@ export async function getConversation(id: number | string, token?: string) {
 export async function createConversation(data: {
   name?: string;
   participants?: (number | string)[];
-  is_group?: boolean;
+  type?: "private" | "group";
 }, token?: string) {
+  const participantIds = data.participants ?? [];
+  const payload = {
+    type: data.type ?? (participantIds.length <= 1 ? "private" : "group"),
+    name: data.name,
+    participant_ids: participantIds,
+  };
   return apiFetch<any>("api/conversations/", {
     method: "POST",
-    body: data,
+    body: payload,
     token: token || getAccessToken(),
   });
 }
@@ -831,7 +852,7 @@ export async function markConversationRead(conversationId: number | string, toke
 export async function createPrivateConversation(userId: number | string, token?: string) {
   return apiFetch<any>("api/conversations/private/create/", {
     method: "POST",
-    body: { user_id: userId },
+    body: { recipient_id: userId },
     token: token || getAccessToken(),
   });
 }
@@ -858,7 +879,7 @@ export async function addParticipant(conversationId: number | string, userId: nu
 
 export async function removeParticipant(conversationId: number | string, userId: number | string, token?: string) {
   return apiFetch<any>(`api/conversations/${conversationId}/participants/${userId}/remove/`, {
-    method: "POST",
+    method: "DELETE",
     token: token || getAccessToken(),
   });
 }
