@@ -7,7 +7,6 @@ Plateforme collaborative étudiante (frontend React/Vite + backend Django/DRF) a
 - **Frontend**: React 18, TypeScript, Vite, Tailwind
 - **Backend**: Django 5.2, Django REST Framework, Simple JWT
 - **DB**: PostgreSQL (prod) / SQLite (dev fallback)
-- **Fichiers**: Local disk (dev) ou AWS S3 (prod via `USE_S3=True`)
 - **Infra cible**: Vercel (frontend) + Render (backend)
 
 ## Arborescence
@@ -87,7 +86,6 @@ npm run lint
 Suivre **DEPLOYMENT.md** (document de référence) pour:
 
 - Variables d'environnement backend/frontend
-- Activation S3 pour les uploads media
 - Procédure Render + Vercel
 - Checklist de validation post-déploiement
 - Mesures de sécurité et rollback

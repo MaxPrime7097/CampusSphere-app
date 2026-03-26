@@ -2,7 +2,11 @@
 
 Ce fichier est un raccourci.
 
+<<<<<<< codex/analyze-code-and-provide-overall-status-dfoazs
 👉 Utilisez **`DEPLOYMENT.md`** comme document principal pour le déploiement production (Render + Vercel), les variables d'environnement (y compris S3) et la checklist post-déploiement.
+=======
+👉 Utilisez **`DEPLOYMENT.md`** comme document principal pour le déploiement production (Render + Vercel), les variables d'environnement et la checklist post-déploiement.
+>>>>>>> main
 
 ## Raccourci commandes
 

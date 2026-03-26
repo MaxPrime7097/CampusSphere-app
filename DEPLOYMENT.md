@@ -74,6 +74,7 @@ Optionnel:
 REDIS_URL=redis://...
 EMAIL_HOST_USER=...
 EMAIL_HOST_PASSWORD=...
+<<<<<<< codex/analyze-code-and-provide-overall-status-dfoazs
 USE_S3=True
 AWS_ACCESS_KEY_ID=...
 AWS_SECRET_ACCESS_KEY=...
@@ -82,6 +83,8 @@ AWS_S3_REGION_NAME=...
 # optionnel:
 # AWS_S3_CUSTOM_DOMAIN=cdn.example.com
 # AWS_QUERYSTRING_AUTH=False
+=======
+>>>>>>> main
 ```
 
 ### Étape D — Health check Render
@@ -114,6 +117,7 @@ VITE_APP_ENV=production
 - Vérifier login/register
 - Vérifier chargement des pages protégées
 - Vérifier appels API (Network) vers backend Render
+<<<<<<< codex/analyze-code-and-provide-overall-status-dfoazs
 
 ---
 
@@ -138,6 +142,32 @@ npm run lint
 
 ---
 
+=======
+
+---
+
+## 5) Commandes de validation recommandées
+
+### Backend
+
+```bash
+cd backend
+SECRET_KEY=testkeyfortests12345678901234567890 DEBUG=True ALLOWED_HOSTS=localhost python manage.py check
+SECRET_KEY=testkeyfortests12345678901234567890 DEBUG=True ALLOWED_HOSTS=localhost python manage.py test
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run build
+npm run lint
+```
+
+---
+
+>>>>>>> main
 ## 6) Points de sécurité production
 
 - Ne jamais exposer `SECRET_KEY`
@@ -146,6 +176,7 @@ npm run lint
 - `CORS_ALLOWED_ORIGINS` et `CSRF_TRUSTED_ORIGINS` stricts (pas de `*`)
 - HTTPS obligatoire côté plateformes (Vercel/Render)
 
+<<<<<<< codex/analyze-code-and-provide-overall-status-dfoazs
 ## 7) Activation S3 (stockage fichiers)
 
 Le backend supporte maintenant le stockage media local **ou** S3 selon `USE_S3`.
@@ -174,9 +205,18 @@ AWS_S3_FILE_OVERWRITE=False
 ---
 
 ## 8) Rollback rapide
+=======
+---
+
+## 7) Rollback rapide
+>>>>>>> main
 
 - Garder un tag Git de release (`v1.x.x`)
 - En cas d'incident:
   - rollback frontend via Vercel (previous deployment)
   - rollback backend via Render (previous deploy)
   - rollback DB uniquement si migration destructive
+<<<<<<< codex/analyze-code-and-provide-overall-status-dfoazs
+=======
+
+>>>>>>> main

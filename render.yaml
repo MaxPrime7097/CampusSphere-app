@@ -1,62 +1,47 @@
 # Render.com Configuration for CampusSphere Backend
+services:
+  - type: web
+    name: campus-sphere-backend
+    runtime: python
+    plan: free
+    
+    # Build and deployment settings
+    # Render manages the environment automatically; manual venv creation is optional but included here per your logic
+    buildCommand: |
+      python -m venv venv
+      source venv/bin/activate
+      pip install -r requirements.txt
+      python manage.py collectstatic --noinput
 
-# Service configuration
-# This will create a web service on Render
+    # Start command for the service
+    # Gunicorn will serve the Django application
+    startCommand: |
+      source venv/bin/activate
+      gunicorn campus_sphere.wsgi:application --bind 0.0.0.0:8000
 
-# Build and deployment settings
-build:
-  # Build command for Django app
-  # Install dependencies and collect static files
-  command: |
-    python -m venv venv
-    source venv/bin/activate
-    pip install -r requirements.txt
-    python manage.py collectstatic --noinput
+    # Environment variables
+    envVars:
+      - key: PORT
+        value: "8000"
+      # Uncomment and update these as needed
+      # - key: DEBUG
+      #   value: "False"
+      # - key: SECRET_KEY
+      #   value: "your-secret-key"
+      # - key: ALLOWED_HOSTS
+      #   value: "your-render-domain.onrender.com,your-vercel-domain.vercel.app"
+      # - key: DATABASE_URL
+      #   value: "postgresql://..."
+      # - key: REDIS_URL
+      #   value: "redis://..."
+      # - key: JWT_SECRET
+      #   value: "your-jwt-secret"
 
-  # Port the application will listen on
-  port: 8000
+    # Health check configuration
+    # Note: Render Blueprints use specific keys for health check parameters
+    healthCheckPath: /api/health/
 
-# Start command for the service
-# Gunicorn will serve the Django application
-start:
-  # Activate virtual environment and start Gunicorn
-  command: |
-    source venv/bin/activate
-    gunicorn campus_sphere.wsgi:application --bind 0.0.0.0:8000
-
-# Environment variables
-# These should be set in Render's dashboard
-# env:
-#   - name: DEBUG
-#     value: "False"
-#   - name: SECRET_KEY
-#     value: "your-secret-key"
-#   - name: ALLOWED_HOSTS
-#     value: "your-render-domain.onrender.com,your-vercel-domain.vercel.app"
-#   - name: DATABASE_URL
-#     value: "postgresql://..."
-#   - name: REDIS_URL
-#     value: "redis://..."
-#   - name: JWT_SECRET
-#     value: "your-jwt-secret"
-
-# Health check configuration
-# Render will use this to check if your service is healthy
-healthcheck:
-  # Path for health check endpoint
-  path: /api/health/
-
-  # Port to check (same as service port)
-  port: 8000
-
-  # Check interval in seconds
-  interval: 30
-
-  # Timeout in seconds
-  timeout: 5
-
-  # Number of consecutive successes required to consider healthy
-  threshold: 2
-
-  # Number of consecutive failures required to consider unhealthy
-  initial_status: 1
+# Optional: If you want Render to also manage your Database
+databases:
+  - name: campus-sphere-db
+    plan: free # or 'standard'    
