@@ -17,12 +17,12 @@ services:
     # Gunicorn will serve the Django application
     startCommand: |
       source venv/bin/activate
-      gunicorn campus_sphere.wsgi:application --bind 0.0.0.0:8000
+      gunicorn campus_sphere.wsgi:application --bind 0.0.0.0:10000
 
     # Environment variables
     envVars:
       - key: PORT
-        value: "8000"
+        value: "10000"
       # Uncomment and update these as needed
       # - key: DEBUG
       #   value: "False"
