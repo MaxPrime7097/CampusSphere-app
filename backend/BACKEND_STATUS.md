@@ -118,7 +118,7 @@
 7. **❌ WebSocket Support** - Not implemented (channels not installed)
 8. **❌ Email System** - Basic configuration present but not fully operational
 9. **❌ Redis Caching** - Not implemented (Redis not configured)
-10. **❌ Testing Suite** - Unit and integration tests not implemented
+10. **⚠️ Testing Suite** - Présente mais partiellement instable (certaines routes/tests à réaligner)
 11. **❌ Security Enhancements** - Rate limiting and advanced validation not implemented (axes/ratelimit not installed)
 12. **❌ Deployment Configuration** - Production settings not configured
 
@@ -127,7 +127,7 @@
 - ✅ **Django System Checks**: Pass with no issues
 - ✅ **Database Migrations**: All applied successfully
 - ✅ **Server Startup**: Backend starts successfully on http://127.0.0.1:8000/
-- ✅ **API Endpoints**: All endpoints properly configured and accessible
+- ✅ **API Endpoints**: Endpoints principaux configurés et accessibles
 - ✅ **Authentication**: JWT authentication system fully operational
 - ✅ **Models**: All database models properly defined and related
 - ✅ **Serializers**: Complete data validation and transformation
@@ -212,9 +212,9 @@
 - **Search**: `/api/search/` - Global search and suggestions
 - **Utility**: `/api/health/`, `/api/info/`, `/api/filters/`
 
-### **Ready for Production Deployment**
+### **Readiness actuelle**
 
-The CampusSphere backend is **fully operational** with all core features implemented and tested. The system can handle:
+Le backend CampusSphere est **fonctionnel pour le développement et la recette**, avec des ajustements encore nécessaires avant une mise en production stricte.
 
 - ✅ User registration and authentication
 - ✅ Profile management and social connections
@@ -225,7 +225,7 @@ The CampusSphere backend is **fully operational** with all core features impleme
 - ✅ Search and filtering capabilities
 - ✅ Role-based permissions and access control
 - ✅ Impact scoring and gamification
-- ✅ Comprehensive API with proper documentation
+- ✅ Comprehensive API with documentation
 
 ### **Optional Enhancements (Not Critical)**
 
@@ -233,13 +233,52 @@ The CampusSphere backend is **fully operational** with all core features impleme
 2. **Redis Caching** - For performance optimization (requires Redis setup)
 3. **Email System** - For notifications (requires email service configuration)
 4. **Advanced Security** - Rate limiting, brute force protection (requires additional packages)
-5. **Testing Suite** - Unit and integration tests (requires testing framework setup)
+5. **Testing Suite Stabilization** - Align route names/assertions and keep tests green in CI
 6. **PostgreSQL** - For full-text search and advanced features (requires database migration)
 7. **Production Deployment** - Docker, nginx, SSL configuration (requires infrastructure setup)
 
+## ⚡ Quick start réel (backend + frontend)
+
+### Backend (Django)
+
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate   # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+export SECRET_KEY=dev-secret-key
+export DEBUG=True
+export ALLOWED_HOSTS=localhost,127.0.0.1
+python manage.py migrate
+python manage.py runserver 127.0.0.1:8000
+```
+
+### Frontend (Vite)
+
+```bash
+cd frontend
+npm install
+echo "VITE_API_URL=http://127.0.0.1:8000" > .env
+npm run dev
+```
+
+### Quality gates minimaux
+
+```bash
+# Backend
+cd backend
+SECRET_KEY=test DEBUG=True ALLOWED_HOSTS=localhost python manage.py check
+SECRET_KEY=test DEBUG=True ALLOWED_HOSTS=localhost python manage.py test
+
+# Frontend
+cd frontend
+npm run build
+npm run lint
+```
+
 ## 🚀 READY FOR DEVELOPMENT
 
-The backend foundation is solid and ready for continued development. All core user and sphere management functionality is implemented and tested. The system can handle:
+The backend foundation is solid and ready for continued development. All core user and sphere management functionality is implemented.
 
 - ✅ User registration and authentication
 - ✅ Profile management and connections
@@ -249,4 +288,4 @@ The backend foundation is solid and ready for continued development. All core us
 - ✅ File upload support
 - ✅ Impact scoring system
 
-The next phase can focus on implementing the remaining content management systems (posts, resources, tasks) and real-time features (messaging, notifications).
+The next phase should focus on test stability, CI enforcement, and production hardening (security/caching/realtime).

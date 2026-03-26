@@ -26,7 +26,11 @@ SECRET_KEY = env_config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env_config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = env_config('ALLOWED_HOSTS', default='', cast=Csv())
+ALLOWED_HOSTS = env_config(
+    'ALLOWED_HOSTS',
+    default='localhost,127.0.0.1',
+    cast=Csv(),
+)
 
 
 # Application definition
@@ -44,7 +48,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "corsheaders",
     "channels",
-    # "django_filters",  # Commented out - not installed
+    "django_filters",
 
     # Local apps
     "users",
@@ -56,8 +60,6 @@ INSTALLED_APPS = [
     "notifications",
 
     # Security apps
-    # "axes",  # Commented out - not installed
-    # "ratelimit",  # Commented out - not installed
     "upload",
 ]
 
@@ -72,7 +74,6 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 
     # Security middleware
-    # "axes.middleware.AxesMiddleware",  # Commented out - not installed
 ]
 
 ROOT_URLCONF = "campus_sphere.urls"
@@ -191,15 +192,18 @@ USE_I18N = True
 
 USE_TZ = True
 
-# CORS Configuration
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:8080",
-    "http://127.0.0.1:8080",
-    "https://your-vercel-domain.vercel.app",
-    "https://your-render-domain.onrender.com",
-]
+# CORS / CSRF Configuration
+CORS_ALLOWED_ORIGINS = env_config(
+    "CORS_ALLOWED_ORIGINS",
+    default="http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080",
+    cast=Csv(),
+)
+
+CSRF_TRUSTED_ORIGINS = env_config(
+    "CSRF_TRUSTED_ORIGINS",
+    default="http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080",
+    cast=Csv(),
+)
 
 CORS_ALLOW_CREDENTIALS = True
 
@@ -209,12 +213,12 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',  # Changed to AllowAny for public endpoints
+        'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
     'DEFAULT_FILTER_BACKENDS': [
-        # 'django_filters.rest_framework.DjangoFilterBackend',  # Commented out - django_filters not installed
+        'django_filters.rest_framework.DjangoFilterBackend',
         'rest_framework.filters.SearchFilter',
         'rest_framework.filters.OrderingFilter',
     ],
@@ -255,9 +259,47 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
 
-# File Upload Configuration
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+# File Storage Configuration (Local or S3)
+USE_S3 = env_config("USE_S3", default=False, cast=bool)
+
+if USE_S3:
+    AWS_ACCESS_KEY_ID = env_config("AWS_ACCESS_KEY_ID")
+    AWS_SECRET_ACCESS_KEY = env_config("AWS_SECRET_ACCESS_KEY")
+    AWS_STORAGE_BUCKET_NAME = env_config("AWS_STORAGE_BUCKET_NAME")
+    AWS_S3_REGION_NAME = env_config("AWS_S3_REGION_NAME", default="eu-west-1")
+    AWS_S3_SIGNATURE_VERSION = env_config("AWS_S3_SIGNATURE_VERSION", default="s3v4")
+    AWS_S3_FILE_OVERWRITE = env_config("AWS_S3_FILE_OVERWRITE", default=False, cast=bool)
+    AWS_DEFAULT_ACL = None
+    AWS_QUERYSTRING_AUTH = env_config("AWS_QUERYSTRING_AUTH", default=False, cast=bool)
+
+    AWS_S3_CUSTOM_DOMAIN = env_config("AWS_S3_CUSTOM_DOMAIN", default="")
+    if AWS_S3_CUSTOM_DOMAIN:
+        MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
+    else:
+        MEDIA_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com/media/"
+
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": {
+                "location": "media",
+            },
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
+else:
+    MEDIA_URL = "/media/"
+    MEDIA_ROOT = BASE_DIR / "media"
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
@@ -283,12 +325,13 @@ AUTH_USER_MODEL = 'users.User'
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
-SECURE_HSTS_SECONDS = 31536000  # 1 year
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
+SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0  # 1 year in production only
+SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
+SECURE_HSTS_PRELOAD = not DEBUG
 
 # Security Middleware
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = not DEBUG
 
 # Rate Limiting
 # RATELIMIT_VIEW = 'campus_sphere.views.ratelimit_error'  # Commented out - ratelimit not installed
@@ -301,9 +344,11 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # AXES_LOCKOUT_TEMPLATE = 'axes/lockout.html'
 
 # Production Settings
-SECURE_SSL_REDIRECT = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+SECURE_SSL_REDIRECT = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
 
 # File Upload Security
 FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB
@@ -332,8 +377,6 @@ DEFAULT_FROM_EMAIL = 'CampusSphere <noreply@campus-sphere.com>'
 # Static Files
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
 
 # Logging Configuration
 LOGGING = {
