@@ -377,6 +377,7 @@ DEFAULT_FROM_EMAIL = 'CampusSphere <noreply@campus-sphere.com>'
 # Static Files
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'storages.backends.s3boto3.S3StaticStorage'
 
 # Logging Configuration
 LOGGING = {
