@@ -1,5 +1,8 @@
 # CampusSphere Frontend (React/Vite)
 
+<<<<<<< codex/analyze-code-and-provide-overall-status-dfoazs
+Frontend web de CampusSphere.
+=======
 <<<<<<< codex/analyze-code-and-provide-overall-status-ftifph
 Frontend web de CampusSphere.
 =======
@@ -9,6 +12,7 @@ Frontend web de CampusSphere.
 [![React](https://img.shields.io/badge/react-18+-blue.svg)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/typescript-5+-blue.svg)](https://www.typescriptlang.org/)
 [![Quality Gates](https://img.shields.io/badge/quality%20gates-check%20%2B%20tests%20%2B%20build-informational)](#-quality-gates)
+>>>>>>> main
 >>>>>>> main
 
 ## Stack
@@ -23,12 +27,17 @@ Frontend web de CampusSphere.
 ```bash
 npm install
 
+<<<<<<< codex/analyze-code-and-provide-overall-status-dfoazs
+=======
 <<<<<<< codex/analyze-code-and-provide-overall-status-ftifph
+>>>>>>> main
 cat > .env << 'EOT'
 VITE_API_URL=http://127.0.0.1:8000
 VITE_APP_NAME=CampusSphere
 VITE_APP_ENV=development
 EOT
+<<<<<<< codex/analyze-code-and-provide-overall-status-dfoazs
+=======
 =======
 # Démarrer le serveur de développement
 npm run dev
@@ -142,6 +151,7 @@ POST   /api/resources      # Upload de ressource
 --foreground: #0f172a     /* Noir */
 ```
 >>>>>>> main
+>>>>>>> main
 
 npm run dev
 ```
@@ -155,6 +165,37 @@ npm run lint
 npm run preview
 ```
 
+<<<<<<< codex/analyze-code-and-provide-overall-status-dfoazs
+## Contrat API attendu
+
+Le frontend consomme le backend Django via `VITE_API_URL`.
+
+Auth:
+- `POST /api/users/auth/register/`
+- `POST /api/users/auth/login/`
+- `GET /api/users/auth/me/`
+- `POST /api/auth/refresh/`
+
+Autres domaines:
+- `/api/users/`
+- `/api/spheres/`
+- `/api/posts/`
+- `/api/resources/`
+- `/api/tasks/`
+- `/api/conversations/`
+- `/api/notifications/`
+
+## Vérification avant prod
+
+```bash
+npm run build
+npm run lint
+```
+
+## Déploiement
+
+Voir `../DEPLOYMENT.md` pour la procédure Vercel + Render complète.
+=======
 <<<<<<< codex/analyze-code-and-provide-overall-status-ftifph
 ## Contrat API attendu
 =======
@@ -249,4 +290,5 @@ npm run lint
 Voir `../DEPLOYMENT.md` pour la procédure Vercel + Render complète.
 =======
 **CampusSphere** - Connecter, Partager, Grandir ensemble sur le campus camerounais 🎓✨
+>>>>>>> main
 >>>>>>> main

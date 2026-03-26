@@ -259,9 +259,47 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
 
-# File Upload Configuration
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+# File Storage Configuration (Local or S3)
+USE_S3 = env_config("USE_S3", default=False, cast=bool)
+
+if USE_S3:
+    AWS_ACCESS_KEY_ID = env_config("AWS_ACCESS_KEY_ID")
+    AWS_SECRET_ACCESS_KEY = env_config("AWS_SECRET_ACCESS_KEY")
+    AWS_STORAGE_BUCKET_NAME = env_config("AWS_STORAGE_BUCKET_NAME")
+    AWS_S3_REGION_NAME = env_config("AWS_S3_REGION_NAME", default="eu-west-1")
+    AWS_S3_SIGNATURE_VERSION = env_config("AWS_S3_SIGNATURE_VERSION", default="s3v4")
+    AWS_S3_FILE_OVERWRITE = env_config("AWS_S3_FILE_OVERWRITE", default=False, cast=bool)
+    AWS_DEFAULT_ACL = None
+    AWS_QUERYSTRING_AUTH = env_config("AWS_QUERYSTRING_AUTH", default=False, cast=bool)
+
+    AWS_S3_CUSTOM_DOMAIN = env_config("AWS_S3_CUSTOM_DOMAIN", default="")
+    if AWS_S3_CUSTOM_DOMAIN:
+        MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
+    else:
+        MEDIA_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com/media/"
+
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": {
+                "location": "media",
+            },
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
+else:
+    MEDIA_URL = "/media/"
+    MEDIA_ROOT = BASE_DIR / "media"
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
@@ -339,8 +377,6 @@ DEFAULT_FROM_EMAIL = 'CampusSphere <noreply@campus-sphere.com>'
 # Static Files
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
 
 # Logging Configuration
 LOGGING = {
