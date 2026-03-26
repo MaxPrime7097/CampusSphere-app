@@ -6,7 +6,11 @@ from django.conf.urls.static import static
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework.permissions import AllowAny
 
+def home(request):
+    return JsonResponse({"message": "Bienvenue sur l'API CampusSphere", "status": "running"})
+
 urlpatterns = [
+    path('', home),
     path('admin/', admin.site.urls),
     path('api/auth/refresh/', TokenRefreshView.as_view(permission_classes=[AllowAny]), name='token_refresh'),
     path('api/users/', include('users.urls')),
