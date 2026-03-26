@@ -3,6 +3,7 @@ services:
   - type: web
     name: campus-sphere-backend
     runtime: python
+    plan: free
     
     # Build and deployment settings
     # Render manages the environment automatically; manual venv creation is optional but included here per your logic
