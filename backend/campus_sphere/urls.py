@@ -5,6 +5,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework.permissions import AllowAny
+from django.http import JsonResponse
 
 def home(request):
     return JsonResponse({"message": "Bienvenue sur l'API CampusSphere", "status": "running"})
