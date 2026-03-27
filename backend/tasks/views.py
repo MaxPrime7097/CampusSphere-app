@@ -40,6 +40,16 @@ class TaskListView(generics.ListCreateAPIView):
             return TaskCreateSerializer
         return TaskSerializer
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+        task = Task.objects.select_related('assigned_to', 'created_by', 'sphere').get(pk=serializer.instance.pk)
+        output_serializer = TaskSerializer(task, context={'request': request})
+        headers = self.get_success_headers(output_serializer.data)
+        return Response(output_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
 
 class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]

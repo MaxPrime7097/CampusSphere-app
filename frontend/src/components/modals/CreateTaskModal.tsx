@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+import { createTask } from "@/services/api";
 
 interface TaskData {
   id: string;
@@ -34,9 +35,10 @@ interface CreateTaskModalProps {
   children: React.ReactNode;
   onTaskCreated?: (taskData: TaskData) => void;
   sphereMembers?: Array<{ id: string; name: string; username: string; avatar: string }>;
+  sphereId: string | number;
 }
 
-export function CreateTaskModal({ children, onTaskCreated, sphereMembers = [] }: CreateTaskModalProps) {
+export function CreateTaskModal({ children, onTaskCreated, sphereMembers = [], sphereId }: CreateTaskModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [title, setTitle] = useState("");
@@ -115,29 +117,23 @@ export function CreateTaskModal({ children, onTaskCreated, sphereMembers = [] }:
     setIsSubmitting(true);
 
     try {
-      // Simuler la création avec délai
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const descriptionParts = [
+        description.trim(),
+        `Catégorie: ${category}`,
+        estimatedHours ? `Temps estimé: ${estimatedHours}h` : null,
+        tags.length > 0 ? `Tags: ${tags.join(", ")}` : null,
+      ].filter(Boolean);
 
-      const taskData = {
-        id: Date.now().toString(),
-        title,
-        description,
-        dueDate,
+      const taskData = await createTask({
+        title: title.trim(),
+        description: descriptionParts.join("\n\n"),
+        due_date: dueDate,
         priority,
-        assignedTo: assignedTo === "unassigned" ? null : assignedTo,
-        category,
-        estimatedHours: estimatedHours ? parseInt(estimatedHours) : null,
-        tags,
-        status: "todo",
-        createdAt: new Date().toISOString(),
-        createdBy: "Vous",
-        progress: 0,
-        comments: []
-      };
+        sphere_id: sphereId,
+        assigned_to: assignedTo && assignedTo !== "unassigned" ? assignedTo : undefined,
+        impact_points: priority === "urgent" ? 30 : priority === "high" ? 20 : priority === "medium" ? 15 : 10,
+      } as any);
 
-      console.log("Creating task:", taskData);
-
-      // Appeler le callback si fourni
       if (onTaskCreated) {
         onTaskCreated(taskData);
       }
@@ -148,14 +144,13 @@ export function CreateTaskModal({ children, onTaskCreated, sphereMembers = [] }:
         duration: 3000,
       });
 
-      // Réinitialiser le formulaire
       resetForm();
 
-    } catch (error) {
+    } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: "Une erreur est survenue lors de la création de la tâche",
+        description: error?.message || "Une erreur est survenue lors de la création de la tâche",
       });
     } finally {
       setIsSubmitting(false);

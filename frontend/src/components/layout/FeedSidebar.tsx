@@ -1,190 +1,193 @@
-import { TrendingUp, Calendar, Users, BookOpen, Sparkles, RefreshCw } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { TrendingUp, Users, BookOpen, ArrowRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { listResources, listSpheres } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
-
-const trendingTopics = [
-  { tag: "#IA2025", posts: 234 },
-  { tag: "#ProjectPython", posts: 189 },
-  { tag: "#StudyGroup", posts: 156 },
-  { tag: "#CampusLife", posts: 142 }
-];
-
-const upcomingEvents = [
-  { id: "1", title: "Conférence IA", date: "Demain 14h", participants: 45 },
-  { id: "2", title: "Hackathon 48h", date: "Samedi 9h", participants: 120 },
-  { id: "3", title: "Job Fair", date: "Lundi 10h", participants: 200 }
-];
-
-const topContributors = [
-  { name: "Max Prime", avatar: "/placeholder-avatar.jpg", score: 1245, field: "IA" },
-  { name: "Emma Laurent", avatar: "/placeholder-avatar.jpg", score: 1189, field: "Physique" },
-  { name: "Lucas Martin", avatar: "/placeholder-avatar.jpg", score: 1098, field: "Maths" }
-];
+import { formatRelativeTime } from "@/lib/date";
 
 export function FeedSidebar() {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [topics, setTopics] = useState(trendingTopics);
-  const [events, setEvents] = useState(upcomingEvents);
-  const [contributors, setContributors] = useState(topContributors);
+  const [popularSpheres, setPopularSpheres] = useState<any[]>([]);
+  const [recentResources, setRecentResources] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleTopicClick = (tag: string) => {
-    navigate(`/search?q=${encodeURIComponent(tag)}`);
+  useEffect(() => {
+    let isMounted = true;
+
+    (async () => {
+      try {
+        const [spheres, resources] = await Promise.all([
+          listSpheres(),
+          listResources({ ordering: "-created_at" }),
+        ]);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setPopularSpheres(
+          [...(spheres || [])]
+            .sort((a: any, b: any) => Number(b.memberCount || 0) - Number(a.memberCount || 0))
+            .slice(0, 4)
+        );
+        setRecentResources((resources || []).slice(0, 4));
+      } catch (error: any) {
+        if (!isMounted) {
+          return;
+        }
+
+        toast({
+          title: "Sidebar incomplète",
+          description: error?.message || "Impossible de charger les données latérales",
+          variant: "destructive",
+        });
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [toast]);
+
+  const openSphere = (sphereId: string | number, sphereName: string) => {
+    navigate(`/spheres/${sphereId}`);
     toast({
-      title: "Recherche lancée",
-      description: `Recherche pour le tag ${tag}`,
+      title: "Sphère ouverte",
+      description: `Ouverture de "${sphereName}"`,
       duration: 2000,
     });
   };
 
-  const handleEventClick = (eventId: string, eventTitle: string) => {
-    toast({
-      title: "Événement sélectionné",
-      description: `Détails de l'événement : ${eventTitle}`,
-      duration: 2000,
-    });
-  };
+  const openResource = (resourceId?: string | number, resourceTitle?: string) => {
+    if (resourceId) {
+      navigate(`/resources/${resourceId}`);
+      toast({
+        title: "Ressource ouverte",
+        description: `Ouverture de "${resourceTitle}"`,
+        duration: 2000,
+      });
+      return;
+    }
 
-  const handleContributorClick = (username: string) => {
-    navigate(`/profile/${username}`);
-  };
-
-  const handleResourceClick = () => {
-    navigate('/resources');
-  };
-
-  const refreshData = () => {
-    // Simuler un refresh des données
-    const shuffledTopics = [...trendingTopics].sort(() => Math.random() - 0.5);
-    const shuffledEvents = [...upcomingEvents].sort(() => Math.random() - 0.5);
-    const shuffledContributors = [...topContributors].sort(() => Math.random() - 0.5);
-    
-    setTopics(shuffledTopics);
-    setEvents(shuffledEvents);
-    setContributors(shuffledContributors);
-    
-    toast({
-      title: "Données mises à jour",
-      description: "Les informations ont été actualisées",
-      duration: 2000,
-    });
+    navigate("/resources");
   };
 
   return (
     <div className="space-y-4 sticky top-20">
-      {/* Trending Topics */}
       <Card className="campus-card">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-primary" />
-            Tendances du moment
+            Sphères actives
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {topics.map((topic) => (
-            <div 
-              key={topic.tag} 
-              className="flex items-center justify-between cursor-pointer hover:bg-accent/50 p-2 rounded-lg transition-colors"
-              onClick={() => handleTopicClick(topic.tag)}
+          {isLoading && <p className="text-sm text-muted-foreground">Chargement...</p>}
+          {!isLoading && popularSpheres.length === 0 && (
+            <p className="text-sm text-muted-foreground">Aucune sphère à afficher.</p>
+          )}
+          {popularSpheres.map((sphere) => (
+            <button
+              key={sphere.id}
+              type="button"
+              className="w-full flex items-center justify-between hover:bg-accent/50 p-2 rounded-lg transition-colors text-left"
+              onClick={() => openSphere(sphere.id, sphere.name)}
             >
-              <span className="font-medium text-sm text-primary">{topic.tag}</span>
-              <Badge variant="secondary" className="text-xs">{topic.posts} posts</Badge>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      {/* Upcoming Events */}
-      <Card className="campus-card">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-primary" />
-            Événements à venir
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {events.map((event) => (
-            <div 
-              key={event.id} 
-              className="space-y-1 cursor-pointer hover:bg-accent/50 p-2 rounded-lg transition-colors"
-              onClick={() => handleEventClick(event.id, event.title)}
-            >
-              <div className="font-medium text-sm">{event.title}</div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">{event.date}</span>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Users className="h-3 w-3" />
-                  {event.participants}
+              <div className="min-w-0">
+                <div className="font-medium text-sm truncate">{sphere.name}</div>
+                <div className="text-xs text-muted-foreground truncate">
+                  {sphere.category || "Sphère collaborative"}
                 </div>
               </div>
-            </div>
+              <Badge variant="secondary" className="text-xs">
+                {sphere.memberCount || 0} membres
+              </Badge>
+            </button>
           ))}
         </CardContent>
       </Card>
 
-      {/* Top Contributors */}
       <Card className="campus-card">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" />
-            Top Contributeurs
+            <BookOpen className="h-4 w-4 text-primary" />
+            Ressources récentes
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {contributors.map((contributor, index) => (
-            <div 
-              key={contributor.name} 
-              className="flex items-center gap-3 cursor-pointer hover:bg-accent/50 p-2 rounded-lg transition-colors"
-              onClick={() => handleContributorClick(contributor.name.toLowerCase().replace(' ', '_'))}
+          {isLoading && <p className="text-sm text-muted-foreground">Chargement...</p>}
+          {!isLoading && recentResources.length === 0 && (
+            <p className="text-sm text-muted-foreground">Aucune ressource récente.</p>
+          )}
+          {recentResources.map((resource) => (
+            <button
+              key={resource.id}
+              type="button"
+              className="w-full space-y-1 hover:bg-accent/50 p-2 rounded-lg transition-colors text-left"
+              onClick={() => openResource(resource.id, resource.title)}
             >
-              <div className="flex items-center justify-center w-6 h-6 rounded-full campus-gradient text-white text-xs font-bold">
-                {index + 1}
+              <div className="font-medium text-sm line-clamp-2">{resource.title}</div>
+              <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                <span className="truncate">{resource.authorName || "Auteur inconnu"}</span>
+                <span>{formatRelativeTime(resource.createdAt)}</span>
               </div>
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={contributor.avatar} />
-                <AvatarFallback className="campus-gradient text-white text-xs">
-                  {contributor.name.slice(0, 2)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-sm truncate">{contributor.name}</div>
-                <div className="text-xs text-muted-foreground">{contributor.field}</div>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <span>{resource.type || "resource"}</span>
+                <span>{resource.downloadCount || 0} téléchargements</span>
+                <span>{resource.impactScore || 0} impact</span>
               </div>
-              <div className="flex items-center gap-1">
-                <span className="text-xs font-bold text-primary">⚡{contributor.score}</span>
-              </div>
-            </div>
+            </button>
           ))}
         </CardContent>
       </Card>
 
-      {/* Quick Resource */}
-      <Card className="campus-card campus-gradient text-white cursor-pointer hover:opacity-90 transition-opacity" onClick={handleResourceClick}>
+      <Card className="campus-card">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <Users className="h-4 w-4 text-primary" />
+            Accès rapide
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <Button variant="outline" className="w-full justify-between" onClick={() => navigate("/spheres")}>
+            Explorer les sphères
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" className="w-full justify-between" onClick={() => navigate("/resources")}>
+            Explorer les ressources
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" className="w-full justify-between" onClick={() => navigate("/notifications")}>
+            Voir les notifications
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card
+        className="campus-card campus-gradient text-white cursor-pointer hover:opacity-90 transition-opacity"
+        onClick={() => openResource()}
+      >
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
             <BookOpen className="h-5 w-5 flex-shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <div className="font-semibold text-sm">Besoin d'aide ?</div>
+              <div className="font-semibold text-sm">Bibliothèque partagée</div>
               <p className="text-xs opacity-90">
-                Explore la bibliothèque de ressources partagées par la communauté
+                Consulte les ressources réellement publiées par la communauté.
               </p>
             </div>
           </div>
         </CardContent>
       </Card>
-
-      {/* Refresh Button */}
-      <div className="flex justify-center">
-        <Button variant="outline" size="sm" onClick={refreshData} className="w-full">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Actualiser
-        </Button>
-      </div>
     </div>
   );
 }

@@ -23,7 +23,6 @@ import { useToast } from "@/hooks/use-toast";
 import { PostCard } from "@/components/feed/PostCard";
 import { CreateTaskModal } from "@/components/modals/CreateTaskModal";
 import { AddMemberModal } from "@/components/modals/AddMemberModal";
-import { SimpleFileModal } from "@/components/modals/SimpleFileModal";
 import { SphereSettingsModal } from "@/components/modals/SphereSettingsModal";
 import { ManageMembersModal } from "@/components/modals/ManageMembersModal";
 import { MiniChat } from "@/components/chat/MiniChat";
@@ -43,9 +42,7 @@ export function SphereDetail() {
   const [isPendingRequest, setIsPendingRequest] = useState(false);
   const [activeTab, setActiveTab] = useState("chat");
   const [tasks, setTasks] = useState([]);
-  const [files, setFiles] = useState([]);
-  const [showTaskModal, setShowTaskModal] = useState(false);
-  const [newTask, setNewTask] = useState({ title: "", description: "", assignedTo: "" });
+  const files: any[] = [];
   const [isChatExpanded, setIsChatExpanded] = useState(false);
   const handleProfileClick = () => {
     navigate(`/profile/${creator?.username || 'unknown'}`);
@@ -57,6 +54,21 @@ export function SphereDetail() {
   const [pendingMembers, setPendingMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  const mapTask = (t: any) => ({
+    id: String(t.id),
+    title: t.title,
+    description: t.description || '',
+    status: t.status || (t.is_completed ? 'done' : 'pending'),
+    isCompleted: t.is_completed || false,
+    assignedTo: t.assigned_to_info?.name || t.assigned_to_info?.first_name + ' ' + t.assigned_to_info?.last_name || 'Non assigné',
+    assignedToId: t.assigned_to || null,
+    impactPoints: t.impact_points || 0,
+    createdAt: t.created_at || new Date().toISOString(),
+    completedAt: t.is_completed ? t.updated_at : null,
+    dueDate: t.due_date,
+    priority: t.priority || 'medium',
+  });
 
   const loadSphereData = async () => {
     try {
@@ -77,28 +89,16 @@ export function SphereDetail() {
         role: m.role_display || m.role || 'member',
         status: m.status || 'active',
         joinedAt: m.joined_at,
+        requestedAt: m.joined_at,
         name: m.user_info?.name || m.user_info?.first_name + ' ' + m.user_info?.last_name || 'Unknown',
         username: m.user_info?.username || 'unknown',
         avatar: m.user_info?.avatar || '/placeholder-avatar.jpg',
         isCreator: sphereData?.created_by_info?.id === m.user_info?.id,
       }));
-      setMembers(mappedMembers);
+      setMembers(mappedMembers.filter((m: any) => m.status === 'active'));
       setPendingMembers(mappedMembers.filter((m: any) => m.status === 'pending'));
 
-      const mappedTasks = (tasksData || []).map((t: any) => ({
-        id: String(t.id),
-        title: t.title,
-        description: t.description || '',
-        status: t.status || (t.is_completed ? 'done' : 'pending'),
-        isCompleted: t.is_completed || false,
-        assignedTo: t.assigned_to_info?.name || t.assigned_to_info?.first_name + ' ' + t.assigned_to_info?.last_name || 'Non assigné',
-        assignedToId: t.assigned_to || null,
-        impactPoints: t.impact_points || 0,
-        createdAt: t.created_at || new Date().toISOString(),
-        completedAt: t.is_completed ? t.updated_at : null,
-        dueDate: t.due_date,
-        priority: t.priority || 'medium',
-      }));
+      const mappedTasks = (tasksData || []).map(mapTask);
       setTasks(mappedTasks);
 
       if (sphereData?.is_member) {
@@ -112,7 +112,6 @@ export function SphereDetail() {
         setIsPendingRequest(false);
       }
 
-      setFiles([]);
     } catch (e: any) {
       setLoadError(e?.message || "Erreur de chargement de la sphère");
     } finally {
@@ -228,41 +227,19 @@ export function SphereDetail() {
 
   // Fonctions pour la gestion des rôles (admin uniquement, sauf pour le créateur)
   const handleChangeRole = async (memberId: string, newRole: string) => {
-    try {
-      // Simuler le changement de rôle
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast({
-        title: "Rôle modifié",
-        description: `Le rôle a été changé en ${newRole}`,
-        duration: 3000,
-      });
-    } catch (error) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de modifier le rôle",
-        variant: "destructive"
-      });
-    }
+    toast({
+      title: "Indisponible",
+      description: `Le changement de rôle vers ${newRole} n'est pas encore supporté par l'API`,
+      duration: 3000,
+    });
   };
 
   const handleRemoveMember = async (memberId: string) => {
-    try {
-      // Simuler la suppression
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast({
-        title: "Membre supprimé",
-        description: "Le membre a été retiré de la sphère",
-        duration: 3000,
-      });
-    } catch (error) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de supprimer le membre",
-        variant: "destructive"
-      });
-    }
+    toast({
+      title: "Indisponible",
+      description: "La suppression d'un membre n'est pas encore supportée par l'API",
+      duration: 3000,
+    });
   };
 
   const handleShare = () => {
@@ -278,42 +255,13 @@ export function SphereDetail() {
     }, 1000);
   };
 
-  const handleCreateTask = () => {
-    if (!newTask.title.trim()) {
-      toast({
-        variant: "destructive",
-        title: "Titre requis",
-        description: "Veuillez saisir un titre pour la tâche",
-      });
+  const handleCreateTask = (createdTask: any) => {
+    if (!createdTask) {
       return;
     }
 
-    const task = {
-      id: `${tasks.length + 1}`,
-      title: newTask.title,
-      description: newTask.description,
-      status: "todo",
-      assignedTo: newTask.assignedTo || "Non assigné"
-    };
-
-    setTasks([...tasks, task]);
-    setNewTask({ title: "", description: "", assignedTo: "" });
-    setShowTaskModal(false);
-    
-    toast({
-      title: "Tâche créée !",
-      description: "La nouvelle tâche a été ajoutée au projet",
-      duration: 2000,
-    });
-  };
-
-
-  const handleDownloadFile = (fileName: string) => {
-    toast({
-      title: "Téléchargement démarré !",
-      description: `Le fichier "${fileName}" va être téléchargé`,
-      duration: 2000,
-    });
+    const mappedTask = mapTask(createdTask);
+    setTasks((prev) => [mappedTask, ...prev.filter((task) => task.id !== mappedTask.id)]);
   };
 
   const handleMembersAdded = (addedMembers: unknown) => {
@@ -678,13 +626,15 @@ export function SphereDetail() {
               <div className="flex flex-row items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold">Gestion des tâches</h3>
                 {isMember && (
-                  <CreateTaskModal 
+                  <CreateTaskModal
                     onTaskCreated={handleCreateTask}
-                    sphereMembers={[
-                      { id: "1", name: "Marie Dubois", username: "marie.dubois", avatar: "" },
-                      { id: "2", name: "Jean Mballa", username: "jean.mballa", avatar: "" },
-                      { id: "3", name: "Fatou Ndiaye", username: "fatou.ndiaye", avatar: "" }
-                    ]}
+                    sphereId={sphereFallback.id}
+                    sphereMembers={members.map((member) => ({
+                      id: member.user_info?.id || member.user?.id || member.id,
+                      name: member.name,
+                      username: member.username,
+                      avatar: member.avatar || "",
+                    }))}
                   >
                     <Button size="sm" className="campus-gradient text-white gap-2">
                       <Plus className="h-4 w-4" />
@@ -788,40 +738,14 @@ export function SphereDetail() {
             <div className="rounded-lg border bg-card p-6">
               <div className="flex flex-row items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold">Fichiers</h3>
-                {isMember && (
-                  <SimpleFileModal>
-                  <Button size="sm" className="campus-gradient text-white gap-2">
-                    <Upload className="h-4 w-4" />
-                    Ajouter
-                  </Button>
-                  </SimpleFileModal>
-                )}
               </div>
-              <div className="space-y-3">
-                {files.map((file) => (
-                  <div key={file.id} className="rounded-lg border bg-card p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-input rounded-lg flex items-center justify-center">
-                            <FileText className="h-5 w-5 text-muted-foreground" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-sm">{file.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {file.type} • {file.size} • {file.uploadedBy}
-                            </p>
-                          </div>
-                        </div>
-                        <Button 
-                          size="sm" 
-                          variant="ghost"
-                          onClick={() => handleDownloadFile(file.name)}
-                        >
-                          <Download className="h-4 w-4 mr-1" />
-                        </Button>
-                      </div>
-                  </div>
-                ))}
+              <div className="rounded-lg border border-dashed bg-muted/30 p-6 text-center">
+                <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+                <p className="font-medium mb-2">Partage de fichiers indisponible</p>
+                <p className="text-sm text-muted-foreground">
+                  Le backend ne propose pas encore d&apos;API pour les fichiers de sphère.
+                  Cette section s&apos;activera dès que l&apos;upload et le téléchargement seront disponibles.
+                </p>
               </div>
             </div>
           </TabsContent>
