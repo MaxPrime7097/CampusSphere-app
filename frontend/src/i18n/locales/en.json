@@ -1,0 +1,194 @@
+{
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Manage your preferences and account",
+    "notifications": {
+      "title": "Notifications",
+      "posts": "Posts and Interactions",
+      "postsDesc": "Likes, comments and mentions",
+      "messages": "Messages",
+      "messagesDesc": "New private and group messages",
+      "events": "Events",
+      "eventsDesc": "Reminders and new events",
+      "marketing": "Marketing Communications",
+      "marketingDesc": "News and usage tips"
+    },
+    "appearance": {
+      "title": "Appearance & Language",
+      "darkTheme": "Dark Theme",
+      "darkThemeDesc": "Toggle between light and dark theme",
+      "light": "Light",
+      "dark": "Dark",
+      "language": "Interface Language",
+      "timezone": "Timezone"
+    },
+    "account": {
+      "title": "Account",
+      "personalInfo": "Personal Information",
+      "password": "Password",
+      "emailAuth": "Email & Authentication",
+      "deleteAccount": "Delete Account"
+    },
+    "privacy": {
+      "title": "Privacy",
+      "profileVisibility": "Profile Visibility",
+      "postVisibility": "Post Visibility",
+      "dataDownloads": "Data & Downloads",
+      "blockedUsers": "Blocked Users",
+      "public": "Public",
+      "friends": "Friends only",
+      "private": "Private",
+      "onlyMe": "Only me",
+      "updated": "Privacy updated"
+    },
+    "about": {
+      "version": "Version 1.0.0",
+      "terms": "Terms of Service",
+      "privacyPolicy": "Privacy Policy",
+      "support": "Support"
+    },
+    "deleteDialog": {
+      "title": "Are you absolutely sure?",
+      "description": "This action cannot be undone. This will permanently delete your account and remove all your data from our servers.",
+      "cancel": "Cancel",
+      "confirm": "Delete Account"
+    },
+    "toast": {
+      "themeUpdated": "Theme updated",
+      "switchedTo": "Switched to",
+      "languageUpdated": "Language updated",
+      "languageChanged": "Interface language has been changed",
+      "accountDeletion": "Account deletion initiated",
+      "accountDeletionDesc": "Your account deletion request has been received",
+      "comingSoon": "Coming soon"
+    }
+  },
+  "messages": {
+    "title": "Messages",
+    "searchPlaceholder": "Search conversations...",
+    "typeMessage": "Type your message...",
+    "selectConversation": "Select a conversation to start chatting",
+    "noConversations": "No conversations found",
+    "validation": {
+      "tooShort": "Message cannot be empty",
+      "tooLong": "Message cannot exceed 1000 characters",
+      "sent": "Message sent"
+    }
+  },
+  "modals": {
+    "uploadResource": {
+      "title": "Upload Resource",
+      "file": "File",
+      "chooseFile": "Choose a file",
+      "fileRequired": "File is required",
+      "fileTooLarge": "File must not exceed 50 MB",
+      "invalidFileType": "Invalid file type",
+      "title_field": "Title",
+      "titleRequired": "Title is required",
+      "titleTooLong": "Title cannot exceed 100 characters",
+      "description": "Description",
+      "descriptionTooLong": "Description cannot exceed 500 characters",
+      "subject": "Subject",
+      "subjectRequired": "Subject is required",
+      "type": "Type",
+      "typeRequired": "Type is required",
+      "tags": "Tags (max 5)",
+      "tagTooLong": "Tag cannot exceed 20 characters",
+      "maxTags": "You cannot add more than 5 tags",
+      "addTag": "Add",
+      "cancel": "Cancel",
+      "publish": "Publish",
+      "subjects": {
+        "math": "Mathematics",
+        "physics": "Physics",
+        "chemistry": "Chemistry",
+        "biology": "Biology",
+        "cs": "Computer Science",
+        "literature": "Literature",
+        "history": "History",
+        "other": "Other"
+      },
+      "types": {
+        "notes": "Course Notes",
+        "slides": "Slides",
+        "exercises": "Exercises",
+        "exams": "Exams",
+        "tutorials": "Tutorials",
+        "other": "Other"
+      },
+      "toast": {
+        "success": "Resource published",
+        "successDesc": "Your resource has been shared successfully"
+      }
+    },
+    "comments": {
+      "title": "Comments",
+      "placeholder": "Write a comment...",
+      "reply": "Reply",
+      "validation": {
+        "tooShort": "Comment cannot be empty",
+        "tooLong": "Comment cannot exceed 500 characters",
+        "posted": "Comment posted"
+      }
+    },
+    "createGroup": {
+      "title": "Create New Group",
+      "name": "Group Name",
+      "nameRequired": "Name is required",
+      "nameTooLong": "Name cannot exceed 50 characters",
+      "description": "Description",
+      "descriptionTooLong": "Description cannot exceed 200 characters",
+      "category": "Category",
+      "categoryRequired": "Category is required",
+      "privateGroup": "Private Group",
+      "requireApproval": "Require Approval",
+      "cancel": "Cancel",
+      "create": "Create Group",
+      "categories": {
+        "academic": "Academic",
+        "sports": "Sports",
+        "arts": "Arts",
+        "tech": "Technology",
+        "social": "Social",
+        "other": "Other"
+      },
+      "toast": {
+        "created": "Group created",
+        "createdDesc": "Your group has been created successfully"
+      }
+    },
+    "createEvent": {
+      "title": "Create New Event",
+      "eventTitle": "Event Title",
+      "titleRequired": "Title is required",
+      "titleTooLong": "Title cannot exceed 100 characters",
+      "description": "Description",
+      "descriptionTooLong": "Description cannot exceed 500 characters",
+      "location": "Location",
+      "locationPlaceholder": "Room, auditorium, campus...",
+      "locationRequired": "Location is required",
+      "category": "Category",
+      "categoryRequired": "Category is required",
+      "date": "Date",
+      "dateRequired": "Date is required",
+      "time": "Time",
+      "timeRequired": "Time is required",
+      "maxAttendees": "Max Attendees",
+      "maxAttendeesInvalid": "Number of attendees must be at least 1",
+      "cancel": "Cancel",
+      "create": "Create Event",
+      "categories": {
+        "academic": "Academic",
+        "social": "Social",
+        "sports": "Sports",
+        "culture": "Culture",
+        "career": "Career",
+        "other": "Other"
+      },
+      "toast": {
+        "created": "Event created",
+        "createdDesc": "Your event has been created successfully"
+      }
+    }
+  }
+}

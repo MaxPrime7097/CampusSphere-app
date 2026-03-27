@@ -1,0 +1,160 @@
+/* Responsive optimizations */
+
+/* Hide scrollbars but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar { 
+  display: none;  /* Safari and Chrome */
+}
+
+/* Prevent content overflow */
+.overflow-hidden {
+  overflow: hidden;
+}
+
+/* Ensure content fits screen */
+.content-wrapper {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+
+/* Responsive breakpoints */
+@media (max-width: 360px) {
+  .responsive-text {
+    font-size: 0.875rem;
+  }
+  
+  .responsive-padding {
+    padding: 0.75rem;
+  }
+  
+  .responsive-gap {
+    gap: 0.5rem;
+  }
+}
+
+@media (min-width: 361px) and (max-width: 768px) {
+  .responsive-text {
+    font-size: 1rem;
+  }
+  
+  .responsive-padding {
+    padding: 1rem;
+  }
+  
+  .responsive-gap {
+    gap: 0.75rem;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .responsive-text {
+    font-size: 1.125rem;
+  }
+  
+  .responsive-padding {
+    padding: 1.25rem;
+  }
+  
+  .responsive-gap {
+    gap: 1rem;
+  }
+}
+
+@media (min-width: 1025px) {
+  .responsive-text {
+    font-size: 1.25rem;
+  }
+  
+  .responsive-padding {
+    padding: 1.5rem;
+  }
+  
+  .responsive-gap {
+    gap: 1.25rem;
+  }
+}
+
+/* Card responsive optimizations */
+.responsive-card {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* Ensure cards don't exceed container width */
+.responsive-card img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Tab scrollable optimizations */
+.scrollable-tabs {
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+}
+
+.scrollable-tabs > * {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+}
+
+/* Mobile navigation optimizations */
+@media (max-width: 768px) {
+  .mobile-nav-item {
+    min-width: 0;
+    flex: 1;
+    text-align: center;
+  }
+  
+  .mobile-nav-item span {
+    font-size: 0.75rem;
+    line-height: 1;
+  }
+}
+
+/* Image optimization */
+.optimized-image {
+  background-color: #f3f4f6;
+  background-image: linear-gradient(45deg, #f3f4f6 25%, transparent 25%), 
+                    linear-gradient(-45deg, #f3f4f6 25%, transparent 25%), 
+                    linear-gradient(45deg, transparent 75%, #f3f4f6 75%), 
+                    linear-gradient(-45deg, transparent 75%, #f3f4f6 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+}
+
+/* Loading states */
+.loading-skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Dark mode optimizations */
+@media (prefers-color-scheme: dark) {
+  .optimized-image {
+    background-color: #1f2937;
+    background-image: linear-gradient(45deg, #1f2937 25%, transparent 25%), 
+                      linear-gradient(-45deg, #1f2937 25%, transparent 25%), 
+                      linear-gradient(45deg, transparent 75%, #1f2937 75%), 
+                      linear-gradient(-45deg, transparent 75%, #1f2937 75%);
+  }
+  
+  .loading-skeleton {
+    background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+    background-size: 200% 100%;
+  }
+}

@@ -1,0 +1,194 @@
+{
+  "settings": {
+    "title": "Paramètres",
+    "subtitle": "Gérez vos préférences et votre compte",
+    "notifications": {
+      "title": "Notifications",
+      "posts": "Publications et interactions",
+      "postsDesc": "J'aime, commentaires et mentions",
+      "messages": "Messages",
+      "messagesDesc": "Nouveaux messages privés et de groupe",
+      "events": "Événements",
+      "eventsDesc": "Rappels et nouveaux événements",
+      "marketing": "Communications marketing",
+      "marketingDesc": "Actualités et conseils d'utilisation"
+    },
+    "appearance": {
+      "title": "Apparence et langue",
+      "darkTheme": "Thème sombre",
+      "darkThemeDesc": "Basculer entre le thème clair et sombre",
+      "light": "Clair",
+      "dark": "Sombre",
+      "language": "Langue de l'interface",
+      "timezone": "Fuseau horaire"
+    },
+    "account": {
+      "title": "Compte",
+      "personalInfo": "Informations personnelles",
+      "password": "Mot de passe",
+      "emailAuth": "Email et authentification",
+      "deleteAccount": "Supprimer le compte"
+    },
+    "privacy": {
+      "title": "Confidentialité",
+      "profileVisibility": "Visibilité du profil",
+      "postVisibility": "Visibilité des publications",
+      "dataDownloads": "Données et téléchargements",
+      "blockedUsers": "Utilisateurs bloqués",
+      "public": "Public",
+      "friends": "Amis uniquement",
+      "private": "Privé",
+      "onlyMe": "Moi seulement",
+      "updated": "Confidentialité mise à jour"
+    },
+    "about": {
+      "version": "Version 1.0.0",
+      "terms": "Conditions d'utilisation",
+      "privacyPolicy": "Politique de confidentialité",
+      "support": "Assistance"
+    },
+    "deleteDialog": {
+      "title": "Êtes-vous absolument sûr ?",
+      "description": "Cette action ne peut pas être annulée. Cela supprimera définitivement votre compte et toutes vos données de nos serveurs.",
+      "cancel": "Annuler",
+      "confirm": "Supprimer le compte"
+    },
+    "toast": {
+      "themeUpdated": "Thème mis à jour",
+      "switchedTo": "Basculé en mode",
+      "languageUpdated": "Langue mise à jour",
+      "languageChanged": "La langue de l'interface a été changée",
+      "accountDeletion": "Suppression du compte initiée",
+      "accountDeletionDesc": "Votre demande de suppression de compte a été reçue",
+      "comingSoon": "Bientôt disponible"
+    }
+  },
+  "messages": {
+    "title": "Messages",
+    "searchPlaceholder": "Rechercher une conversation...",
+    "typeMessage": "Écrivez votre message...",
+    "selectConversation": "Sélectionnez une conversation pour commencer à discuter",
+    "noConversations": "Aucune conversation trouvée",
+    "validation": {
+      "tooShort": "Le message ne peut pas être vide",
+      "tooLong": "Le message ne peut pas dépasser 1000 caractères",
+      "sent": "Message envoyé"
+    }
+  },
+  "modals": {
+    "uploadResource": {
+      "title": "Télécharger une ressource",
+      "file": "Fichier",
+      "chooseFile": "Choisir un fichier",
+      "fileRequired": "Le fichier est requis",
+      "fileTooLarge": "Le fichier ne doit pas dépasser 50 Mo",
+      "invalidFileType": "Type de fichier non accepté",
+      "title_field": "Titre",
+      "titleRequired": "Le titre est requis",
+      "titleTooLong": "Le titre ne peut pas dépasser 100 caractères",
+      "description": "Description",
+      "descriptionTooLong": "La description ne peut pas dépasser 500 caractères",
+      "subject": "Matière",
+      "subjectRequired": "La matière est requise",
+      "type": "Type",
+      "typeRequired": "Le type est requis",
+      "tags": "Tags (max 5)",
+      "tagTooLong": "Le tag ne peut pas dépasser 20 caractères",
+      "maxTags": "Vous ne pouvez pas ajouter plus de 5 tags",
+      "addTag": "Ajouter",
+      "cancel": "Annuler",
+      "publish": "Publier",
+      "subjects": {
+        "math": "Mathématiques",
+        "physics": "Physique",
+        "chemistry": "Chimie",
+        "biology": "Biologie",
+        "cs": "Informatique",
+        "literature": "Littérature",
+        "history": "Histoire",
+        "other": "Autre"
+      },
+      "types": {
+        "notes": "Notes de cours",
+        "slides": "Diapositives",
+        "exercises": "Exercices",
+        "exams": "Examens",
+        "tutorials": "Tutoriels",
+        "other": "Autre"
+      },
+      "toast": {
+        "success": "Ressource publiée",
+        "successDesc": "Votre ressource a été partagée avec succès"
+      }
+    },
+    "comments": {
+      "title": "Commentaires",
+      "placeholder": "Écrire un commentaire...",
+      "reply": "Répondre",
+      "validation": {
+        "tooShort": "Le commentaire ne peut pas être vide",
+        "tooLong": "Le commentaire ne peut pas dépasser 500 caractères",
+        "posted": "Commentaire publié"
+      }
+    },
+    "createGroup": {
+      "title": "Créer un nouveau groupe",
+      "name": "Nom du groupe",
+      "nameRequired": "Le nom est requis",
+      "nameTooLong": "Le nom ne peut pas dépasser 50 caractères",
+      "description": "Description",
+      "descriptionTooLong": "La description ne peut pas dépasser 200 caractères",
+      "category": "Catégorie",
+      "categoryRequired": "La catégorie est requise",
+      "privateGroup": "Groupe privé",
+      "requireApproval": "Nécessite une approbation",
+      "cancel": "Annuler",
+      "create": "Créer le groupe",
+      "categories": {
+        "academic": "Académique",
+        "sports": "Sports",
+        "arts": "Arts",
+        "tech": "Technologie",
+        "social": "Social",
+        "other": "Autre"
+      },
+      "toast": {
+        "created": "Groupe créé",
+        "createdDesc": "Votre groupe a été créé avec succès"
+      }
+    },
+    "createEvent": {
+      "title": "Créer un nouvel événement",
+      "eventTitle": "Titre de l'événement",
+      "titleRequired": "Le titre est requis",
+      "titleTooLong": "Le titre ne peut pas dépasser 100 caractères",
+      "description": "Description",
+      "descriptionTooLong": "La description ne peut pas dépasser 500 caractères",
+      "location": "Lieu",
+      "locationPlaceholder": "Salle, amphithéâtre, campus...",
+      "locationRequired": "Le lieu est requis",
+      "category": "Catégorie",
+      "categoryRequired": "La catégorie est requise",
+      "date": "Date",
+      "dateRequired": "La date est requise",
+      "time": "Heure",
+      "timeRequired": "L'heure est requise",
+      "maxAttendees": "Participants max",
+      "maxAttendeesInvalid": "Le nombre de participants doit être au moins 1",
+      "cancel": "Annuler",
+      "create": "Créer l'événement",
+      "categories": {
+        "academic": "Académique",
+        "social": "Social",
+        "sports": "Sports",
+        "culture": "Culture",
+        "career": "Carrière",
+        "other": "Autre"
+      },
+      "toast": {
+        "created": "Événement créé",
+        "createdDesc": "Votre événement a été créé avec succès"
+      }
+    }
+  }
+}

@@ -1,0 +1,1115 @@
+import { useState, useEffect, useMemo, useRef } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { getCurrentUser, getUserByUsername, getUserPosts, uploadAvatar, uploadCoverPhoto, updateUserProfile, getUserConnections } from "@/services/api";
+import { MapPin, Camera, Calendar, Link, Users, BookOpen, Award, Settings, FileText, Briefcase, GraduationCap, Loader2, Check, Download, UserPlus, UserMinus, ExternalLink, Upload, X, Zap, Smile } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { CreatePost } from "@/components/feed/CreatePost";
+import { PostCard } from "@/components/feed/PostCard";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils"; // si tu utilises cn dans ce fichier
+
+export function Profile() {
+  const navigate = useNavigate();
+  const { username } = useParams<{ username?: string }>();
+  const { toast } = useToast();
+  const isMobile = useIsMobile();
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [currentMood, setCurrentMood] = useState("🚀 En pleine révision !");
+  const [isFollowingLoading, setIsFollowingLoading] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showCoverPhotoModal, setShowCoverPhotoModal] = useState(false);
+  const [coverPhotoFile, setCoverPhotoFile] = useState<File | null>(null);
+  const [coverPhotoPreview, setCoverPhotoPreview] = useState<string | null>(null);
+  const coverPhotoInputRef = useRef<HTMLInputElement>(null);
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [showMoodModal, setShowMoodModal] = useState(false);
+  const [newMood, setNewMood] = useState("");
+
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [targetUser, setTargetUser] = useState<any>(null);
+  const [userPosts, setUserPosts] = useState<any[]>([]);
+  const [userConnections, setUserConnections] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Tab State - NEW (same as Spheres)
+  const [activeTab, setActiveTab] = useState("posts");
+
+  // Load current user
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      try {
+        const data = await getCurrentUser();
+        if (isMounted) {
+          setCurrentUser(data);
+          if (!username) {
+            setTargetUser(data);
+          }
+        }
+      } catch (e) {
+        // User not logged in
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Load target user by username
+  useEffect(() => {
+    if (!username) return;
+    
+    let isMounted = true;
+    (async () => {
+      try {
+        setLoading(true);
+        const user = await getUserByUsername(username);
+        if (isMounted && user) {
+          setTargetUser(user);
+        }
+      } catch (e: any) {
+        // User not found
+        console.error('Error loading user:', e);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, [username]);
+
+  // Load user posts
+  useEffect(() => {
+    if (!targetUser?.id) return;
+    
+    let isMounted = true;
+    (async () => {
+      try {
+        const posts = await getUserPosts(targetUser.id);
+        if (isMounted) {
+          setUserPosts(posts || []);
+        }
+      } catch (e) {
+        // Error loading posts
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, [targetUser?.id]);
+  
+  // Vérifier si c'est le profil de l'utilisateur actuel
+  const isOwnProfile = !username || username === currentUser?.username;
+  
+  // Données utilisateur avec fallback
+  const user = useMemo(() => {
+    if (!targetUser || loading) {
+      return {
+        name: "Utilisateur non trouvé",
+        firstName: "",
+        lastName: "",
+        username: "",
+        email: "",
+        phoneNumber: "",
+        dateOfBirth: "",
+        avatar: "/placeholder-avatar.jpg",
+        coverPhoto: null,
+        banner: "/placeholder",
+        bio: "",
+        town: "",
+        language: "",
+        impactScore: 0,
+        currentMood: "",
+        university: "",
+        faculty: "",
+        studyYear: "",
+        studentId: "",
+        campus: "",
+        previousEducation: [],
+        experiences: [],
+        skills: [],
+        interests: [],
+        portfolioLinks: [],
+        sharedFiles: [],
+        stats: {
+          posts: 0,
+          connections: 0,
+          contributions: 0
+        },
+        badges: []
+      };
+    }
+    
+    return {
+      // Personal info
+      name: targetUser.name,
+      firstName: targetUser.firstName,
+      lastName: targetUser.lastName,
+      username: targetUser.username,
+      email: targetUser.email,
+      phoneNumber: targetUser.phone_number || "",
+      dateOfBirth: targetUser.date_of_birth || "",
+      avatar: targetUser.avatar,
+      coverPhoto: targetUser.coverPhoto || null,
+      banner: "/placeholder",
+      bio: targetUser.bio || "Étudiant passionné par l'IA et le développement web. Toujours prêt à aider et à apprendre !",
+      town: targetUser.town || "",
+      language: targetUser.language || "Français, Anglais",
+      impactScore: targetUser.impactScore,
+      currentMood: targetUser.currentMood,
+    
+      // Academic info
+      university: targetUser.university,
+      faculty: targetUser.faculty,
+      studyYear: targetUser.studyYear,
+      studentId: targetUser.studentId || "",
+      campus: targetUser.campus || "",
+    
+      // Experience & Skills (Load from API)
+      previousEducation: targetUser.previousEducation || [],
+      experiences: targetUser.experiences || [],
+      skills: targetUser.skills || [],
+      interests: targetUser.interests || [],
+      portfolioLinks: targetUser.portfolioLinks || [],
+      
+      sharedFiles: [],
+      
+      // Social stats
+      stats: {
+        posts: userPosts?.length || 0,
+        connections: userConnections?.length || 0,
+        contributions: 0 // TODO: Load from user resources
+      },
+      badges: ["Contributeur actif", "Mentor", "Top étudiant"]
+    };
+  }, [targetUser, userPosts, userConnections]);
+
+  // Load connections
+  useEffect(() => {
+    if (!targetUser?.id) return;
+    
+    let isMounted = true;
+    (async () => {
+      try {
+        const connections = await getUserConnections(targetUser.id);
+        if (isMounted && connections) {
+          const mapped = (connections || []).map((conn: any) => ({
+            id: String(conn.id || conn.user_id),
+            name: conn.user_info?.name || conn.name || "Utilisateur",
+            username: conn.user_info?.username || conn.username || "user",
+            avatar: conn.user_info?.avatar || conn.avatar || "/placeholder-avatar.jpg",
+            mutual: 0,
+          }));
+          setUserConnections(mapped);
+        }
+      } catch (e) {
+        // Error loading connections
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, [targetUser?.id]);
+
+  const userPostsData = useMemo(() => {
+    if (!userPosts || userPosts.length === 0) return [];
+    
+    return userPosts.map((post: any) => ({
+      id: post.id,
+      author: {
+        name: post.author?.name || targetUser?.name || currentUser?.name || "",
+        avatar: post.author?.avatar || targetUser?.avatar || currentUser?.avatar || "",
+        username: post.author?.username || targetUser?.username || currentUser?.username || "",
+        isVerified: post.author?.isVerified || targetUser?.isVerified || currentUser?.isVerified || false,
+        impactScore: Number(post.author?.impactScore || 0),
+      },
+      content: post.content || post.text || "",
+      createdAt: post.createdAt || post.created_at || null,
+      likes: post.likesCount ?? post.likes_count ?? post.likes ?? 0,
+      comments: post.commentsCount ?? post.comments_count ?? post.comments ?? 0,
+      category: post.category || "Général",
+      impactScore: Number(post.impactScore ?? post.impact_score ?? 0),
+      isLiked: Boolean(post.isLiked ?? post.is_liked),
+    }));
+  }, [currentUser, targetUser, userPosts]);
+
+  const handleFollow = async () => {
+    setIsFollowingLoading(true);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    setIsFollowing(!isFollowing);
+    setIsFollowingLoading(false);
+    
+    toast({
+      title: isFollowing ? "Ne suit plus" : "Suit maintenant",
+      description: isFollowing ? `Vous ne suivez plus ${user.name}` : `Vous suivez maintenant ${user.name}`,
+      duration: 2000,
+    });
+  };
+
+  const handleViewProfile = (connectionId: string, connectionName: string) => {
+    toast({
+      title: "Navigation vers profil",
+      description: `Ouverture du profil de ${connectionName}`,
+      duration: 2000,
+    });
+  };
+
+  const handleDownloadFile = (fileName: string) => {
+    toast({
+      title: "Téléchargement démarré",
+      description: `Le fichier "${fileName}" va être téléchargé`,
+      duration: 2000,
+    });
+  };
+
+  const handleEditProfile = () => setShowEditModal(true);
+
+  const handleSaveProfile = async () => {
+    if (!currentUser?.id) return;
+    
+    try {
+      const firstNameInput = document.getElementById('firstName') as HTMLInputElement;
+      const lastNameInput = document.getElementById('lastName') as HTMLInputElement;
+      const usernameInput = document.getElementById('username') as HTMLInputElement;
+      const bioInput = document.getElementById('bio') as HTMLTextAreaElement;
+      const emailInput = document.getElementById('email') as HTMLInputElement;
+      const phoneInput = document.getElementById('phone') as HTMLInputElement;
+      const townInput = document.getElementById('town') as HTMLInputElement;
+      const languageInput = document.getElementById('language') as HTMLInputElement;
+      
+      const updateData: any = {};
+      if (firstNameInput?.value) updateData.first_name = firstNameInput.value;
+      if (lastNameInput?.value) updateData.last_name = lastNameInput.value;
+      if (usernameInput?.value) updateData.username = usernameInput.value;
+      if (bioInput?.value) updateData.bio = bioInput.value;
+      if (emailInput?.value) updateData.email = emailInput.value;
+      if (phoneInput?.value) updateData.phone_number = phoneInput.value;
+      if (townInput?.value) updateData.town = townInput.value;
+      if (languageInput?.value) updateData.language = languageInput.value;
+      
+      await updateUserProfile(updateData);
+      
+      toast({
+        title: "Profil mis à jour !",
+        description: "Vos modifications ont été sauvegardées",
+        duration: 3000,
+      });
+      setShowEditModal(false);
+      
+      const userData = await getCurrentUser();
+      setCurrentUser(userData);
+      if (isOwnProfile) setTargetUser(userData);
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error?.message || "Impossible de mettre à jour le profil",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCoverPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({ title: "Fichier trop grand", description: "La photo de couverture ne doit pas dépasser 5MB", variant: "destructive" });
+        return;
+      }
+      setCoverPhotoFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => setCoverPhotoPreview(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveCoverPhoto = async () => {
+    if (!coverPhotoFile || !currentUser?.id) return;
+    try {
+      await uploadCoverPhoto(currentUser.id, coverPhotoFile);
+      toast({ title: "Photo de couverture mise à jour !", description: "Votre nouvelle photo de couverture a été sauvegardée", duration: 3000 });
+      setShowCoverPhotoModal(false);
+      setCoverPhotoFile(null);
+      setCoverPhotoPreview(null);
+      const userData = await getCurrentUser();
+      setCurrentUser(userData);
+      if (isOwnProfile) setTargetUser(userData);
+    } catch (error: any) {
+      toast({ title: "Erreur", description: error?.message || "Impossible de mettre à jour la photo de couverture", variant: "destructive" });
+    }
+  };
+
+  const handleRemoveCoverPhoto = () => {
+    setCoverPhotoFile(null);
+    setCoverPhotoPreview(null);
+    toast({ title: "Photo de couverture supprimée", description: "Votre photo de couverture a été supprimée", duration: 2000 });
+  };
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast({ title: "Fichier trop grand", description: "L'avatar ne doit pas dépasser 2MB", variant: "destructive" });
+        return;
+      }
+      setAvatarFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => setAvatarPreview(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveAvatar = async () => {
+    if (!avatarFile || !currentUser?.id) return;
+    try {
+      await uploadAvatar(currentUser.id, avatarFile);
+      toast({ title: "Avatar mis à jour !", description: "Votre nouvel avatar a été sauvegardé", duration: 3000 });
+      setShowAvatarModal(false);
+      setAvatarFile(null);
+      setAvatarPreview(null);
+      const userData = await getCurrentUser();
+      setCurrentUser(userData);
+      if (isOwnProfile) setTargetUser(userData);
+    } catch (error: any) {
+      toast({ title: "Erreur", description: error?.message || "Impossible de mettre à jour l'avatar", variant: "destructive" });
+    }
+  };
+
+  const handleRemoveAvatar = () => {
+    setAvatarFile(null);
+    setAvatarPreview(null);
+    toast({ title: "Avatar supprimé", description: "Votre avatar a été supprimé", duration: 2000 });
+  };
+
+  const handleMoodChange = async () => {
+    if (!newMood.trim() || !currentUser?.id) return;
+    try {
+      await updateUserProfile({ current_mood: newMood });
+      toast({ title: "Mood mis à jour !", description: "Votre mood du moment a été changé", duration: 2000 });
+      setNewMood("");
+      setShowMoodModal(false);
+      const userData = await getCurrentUser();
+      setCurrentUser(userData);
+      if (isOwnProfile) setTargetUser(userData);
+    } catch (error: any) {
+      toast({ title: "Erreur", description: error?.message || "Impossible de mettre à jour le mood", variant: "destructive" });
+    }
+  };
+
+  const cardClasses = cn(
+    "transition-all duration-300",
+    isMobile ? "rounded-none border-x-0 border-t-0 shadow-none bg-card" : "campus-card hover:campus-glow"
+  );
+
+  return (
+    <div key={`${username || 'current'}`} className="min-h-screen bg-gradient-to-br from-background to-accent/20">
+      <div className="container max-w-4xl mx-auto py-0 px-0 sm:py-4">
+        {/* Profile Header */}
+        <div className={cardClasses}>
+          {/* Photo de couverture */}
+          <div className="relative rounded-t-null sm:rounded-t-lg h-48 bg-gradient-to-br from-primary/20 via-accent/20 to-primary/30 overflow-hidden">
+            {user.coverPhoto ? (
+              <img 
+                src={user.coverPhoto} 
+                alt="Photo de couverture" 
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-primary/30 via-accent/30 to-primary/40 flex items-center justify-center">
+                <div className="text-center text-white/80">
+                  <Camera className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm opacity-75">Photo de couverture</p>
+                </div>
+              </div>
+            )}
+            
+            {isOwnProfile && (
+              <Button
+                size="sm"
+                variant="secondary"
+                className="absolute top-4 right-4 bg-white/90 hover:bg-white text-gray-700 shadow-lg"
+                onClick={() => setShowCoverPhotoModal(true)}
+              >
+                <Camera className="h-4 w-4 mr-2" />
+                Changer
+              </Button>
+            )}
+          </div>
+          
+          <div className="p-6 relative">
+            <div className="flex flex-col md:flex-row gap-6">
+              {/* Avatar superposé */}
+              <div className="flex flex-col items-start space-y-4">
+                <div className="relative -mt-20">
+                  <Avatar className="h-32 w-32 ring-4 ring-background">
+                    <AvatarImage src={user.avatar} />
+                    <AvatarFallback className="bg-input text-muted-foreground font-bold text-2xl">
+                      {user.name?.slice(0, 1).toUpperCase() || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  {isOwnProfile && (
+                    <Button
+                      size="icon"
+                      variant="secondary"
+                      className="absolute bottom-0 right-0 h-8 w-8 rounded-full shadow-lg"
+                      onClick={() => setShowAvatarModal(true)}
+                    >
+                      <Camera className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  {!isOwnProfile && (
+                    <Button 
+                      variant={isFollowing ? "outline" : "default"}
+                      onClick={handleFollow}
+                      disabled={isFollowingLoading}
+                      className={!isFollowing ? "campus-gradient text-white hover:opacity-90" : ""}
+                      size="sm"
+                    >
+                      {isFollowingLoading ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : isFollowing ? (
+                        <>
+                          <UserMinus className="h-4 w-4 mr-2" />
+                          Disconnect
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="h-4 w-4 mr-2" />
+                          Connect
+                        </>
+                      )}
+                    </Button>
+                  )}
+                  {isOwnProfile && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleEditProfile}
+                    >
+                      <Settings className="h-4 w-4 mr-2" />
+                      Modifier
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Profile Info */}
+              <div className="flex-1 space-y-4">
+                <div>
+                  <h1 className="text-2xl font-bold">{user.name}</h1>
+                  <p className="text-muted-foreground">@{user.username}</p>
+                </div>
+
+                <p className="text-foreground leading-relaxed">{user.bio}</p>
+
+                {/* Impact Score et Mood */}
+                <div className="flex items-center gap-4 p-3 bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center">
+                      <Zap className="h-4 w-4 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold">Impact Score</p>
+                      <p className="text-lg font-bold text-primary">{user.impactScore}</p>
+                    </div>
+                  </div>
+                  <div className="h-8 w-px bg-border" />
+                  <div 
+                    className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded-lg p-2 -m-2 transition-colors"
+                    onClick={() => isOwnProfile && setShowMoodModal(true)}
+                  >
+                    <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center">
+                      <span className="text-lg"><Smile className="h-4 w-4 text-white" /></span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold">Mood du moment</p>
+                      <p className="text-sm text-muted-foreground">{user.currentMood}</p>
+                    </div>
+                    {isOwnProfile && (
+                      <Settings className="h-3 w-3 text-muted-foreground ml-auto" />
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex gap-6 text-sm">
+                  <div>
+                    <span className="font-semibold">{user.stats.posts}</span>
+                    <span className="text-muted-foreground ml-1">Posts</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold">{user.stats.connections}</span>
+                    <span className="text-muted-foreground ml-1">Connections</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold">{user.stats.contributions}</span>
+                    <span className="text-muted-foreground ml-1">Contributions</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {user.badges.map((badge) => (
+                    <Badge key={badge} variant="secondary" className="gap-1">
+                      <Award className="h-3 w-3" />
+                      {badge}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Profile Tabs - CUSTOM (SAME AS SPHERES) */}
+        <div className="mt-4 campus-animate-slide-up">
+          <ul className="grid grid-flow-col text-center border-b border-gray-200 text-gray-500">
+            {[
+              { id: "posts", label: "Posts" },
+              { id: "about", label: "À propos" },
+              { id: "connections", label: "Connections" },
+              { id: "contributions", label: "Contributions" },
+            ].map((tab) => (
+              <li key={tab.id}>
+                <button
+                  onClick={() => setActiveTab(tab.id)}
+                  className={cn(
+                    "w-full flex justify-center border-b-4 py-4 transition-all duration-200 text-sm font-medium",
+                    activeTab === tab.id
+                      ? "border-primary text-primary"
+                      : "border-transparent hover:text-primary hover:border-primary"
+                  )}
+                >
+                  {tab.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          {/* POSTS */}
+          {activeTab === "posts" && (
+            <section className="space-y-4 mt-6">
+              {isOwnProfile && (
+                <div className="campus-animate-slide-up">
+                  <CreatePost />
+                </div>
+              )}
+              
+              {userPostsData.map((post) => (
+                <div key={post.id} className="campus-animate-fade-in">
+                  <PostCard post={post} />
+                </div>
+              ))}
+            </section>
+          )}
+
+          {/* CONNECTIONS */}
+          {activeTab === "connections" && (
+            <section className="mt-6">
+              <div className="rounded-lg border bg-card p-6">
+                <h3 className="text-lg font-semibold mb-4">Amis ({userConnections.length})</h3>
+                <div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {userConnections.map((connection) => (
+                      <Card key={connection.id} className="campus-card cursor-pointer hover:campus-glow transition-all">
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-12 w-12">
+                              <AvatarImage src={connection.avatar} />
+                              <AvatarFallback className="bg-primary text-white font-bold">
+                                {connection.name?.slice(0, 1).toUpperCase() || 'U'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                              <p className="font-semibold">{connection.name}</p>
+                              <p className="text-sm text-muted-foreground">@{connection.username}</p>
+                              <p className="text-xs text-muted-foreground">{connection.mutual} amis en commun</p>
+                            </div>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleViewProfile(connection.id, connection.name)}
+                            >
+                              Voir
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* ABOUT */}
+          {activeTab === "about" && (
+            <section className="mt-6 space-y-4">
+              {/* ... (LEAVE YOUR ABOUT CONTENT EXACTLY AS IS) */}
+              <div className="rounded-lg border bg-card p-6">
+                <h3 className="flex items-center gap-2 text-lg font-semibold mb-4">
+                  <Users className="h-5 w-5" />
+                  Informations Personnelles
+                </h3>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Email</p>
+                      <p className="font-medium">{user.email}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Téléphone</p>
+                      <p className="font-medium">{user.phoneNumber}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Date de naissance</p>
+                      <p className="font-medium">{user.dateOfBirth}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Ville</p>
+                      <p className="font-medium">{user.town}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Langue</p>
+                      <p className="font-medium">{user.language}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* (KEEP ALL YOUR ABOUT CONTENT BELOW EXACTLY THE SAME) */}
+              {/* ... */}
+              {/* (INCLUDING academic info, skills, links, experiences, etc.) */}
+            </section>
+          )}
+
+          {/* CONTRIBUTIONS */}
+          {activeTab === "contributions" && (
+            <section className="mt-6">
+              <div className="rounded-lg border bg-card p-6">
+                <h3 className="flex items-center gap-2 text-lg font-semibold mb-4">
+                  <FileText className="h-5 w-5" />
+                  Fichiers Partagés
+                </h3>
+                <div>
+                  <div className="space-y-3">
+                    {user.sharedFiles.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 campus-gradient rounded-lg flex items-center justify-center">
+                            <FileText className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm">{file.name}</p>
+                            <p className="text-xs text-muted-foreground">{file.type} • {file.size}</p>
+                          </div>
+                        </div>
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          onClick={() => handleDownloadFile(file.name)}
+                          className="gap-2"
+                        >
+                          <Download className="h-4 w-4" />
+                          Télécharger
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+        </div>
+{/* Modal d'édition du profil */}
+        <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Modifier le profil</DialogTitle>
+              <DialogDescription>
+                Mettez à jour vos informations personnelles et académiques.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="firstName">Prénom</Label>
+                  <Input
+                    id="firstName"
+                    defaultValue={user.firstName}
+                    className="mt-2"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="lastName">Nom</Label>
+                  <Input
+                    id="lastName"
+                    defaultValue={user.lastName}
+                    className="mt-2"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="username">Nom d'utilisateur</Label>
+                <Input
+                  id="username"
+                  defaultValue={user.username}
+                  className="mt-2"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="bio">Biographie</Label>
+                <Textarea
+                  id="bio"
+                  defaultValue={user.bio}
+                  className="mt-2"
+                  rows={3}
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    defaultValue={user.email}
+                    className="mt-2"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="phone">Téléphone</Label>
+                  <Input
+                    id="phone"
+                    defaultValue={user.phoneNumber}
+                    className="mt-2"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="town">Ville</Label>
+                  <Input
+                    id="town"
+                    defaultValue={user.town}
+                    className="mt-2"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="language">Langues</Label>
+                  <Input
+                    id="language"
+                    defaultValue={user.language}
+                    className="mt-2"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex gap-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => setShowEditModal(false)}
+                >
+                  Annuler
+                </Button>
+                <Button 
+                  className="flex-1 gap-2"
+                  onClick={handleSaveProfile}
+                >
+                  <Check className="h-4 w-4" />
+                  Sauvegarder
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal pour changer la photo de couverture */}
+        <Dialog open={showCoverPhotoModal} onOpenChange={setShowCoverPhotoModal}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Camera className="h-5 w-5" />
+                Photo de couverture
+              </DialogTitle>
+              <DialogDescription>
+                Téléchargez une nouvelle photo de couverture pour votre profil.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              {/* Aperçu de la photo */}
+              <div className="relative">
+                <div className="w-full h-32 bg-gradient-to-br from-primary/20 to-accent/20 rounded-lg overflow-hidden">
+                  {coverPhotoPreview ? (
+                    <img 
+                      src={coverPhotoPreview} 
+                      alt="Aperçu" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                      <div className="text-center">
+                        <Camera className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">Aucune photo sélectionnée</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Bouton pour supprimer */}
+                {coverPhotoPreview && (
+                  <Button
+                    size="icon"
+                    variant="destructive"
+                    className="absolute top-2 right-2 h-6 w-6"
+                    onClick={handleRemoveCoverPhoto}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                )}
+              </div>
+
+              {/* Input file caché */}
+              <input
+                ref={coverPhotoInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleCoverPhotoChange}
+                aria-label="Sélectionner une photo de couverture"
+                title="Sélectionner une photo de couverture"
+                placeholder="Sélectionner une photo de couverture"
+                className="hidden"
+              />
+
+              {/* Boutons d'action */}
+              <div className="space-y-2">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => coverPhotoInputRef.current?.click()}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  {coverPhotoPreview ? "Changer la photo" : "Sélectionner une photo"}
+                </Button>
+                
+                <p className="text-xs text-muted-foreground text-center">
+                  Formats acceptés : JPG, PNG, GIF (max 5MB)
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowCoverPhotoModal(false);
+                  setCoverPhotoFile(null);
+                  setCoverPhotoPreview(null);
+                }}
+              >
+                Annuler
+              </Button>
+              <Button
+                onClick={handleSaveCoverPhoto}
+                disabled={!coverPhotoFile}
+                className="campus-gradient text-white hover:opacity-90"
+              >
+                <Check className="h-4 w-4 mr-2" />
+                Sauvegarder
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal pour changer l'avatar */}
+        <Dialog open={showAvatarModal} onOpenChange={setShowAvatarModal}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Camera className="h-5 w-5" />
+                Photo de profil
+              </DialogTitle>
+              <DialogDescription>
+                Téléchargez une nouvelle photo de profil pour votre compte.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              {/* Aperçu de l'avatar */}
+              <div className="flex justify-center">
+                <div className="relative">
+                  <div className="w-24 h-24 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full overflow-hidden ring-4 ring-background shadow-lg">
+                    {avatarPreview ? (
+                      <img 
+                        src={avatarPreview} 
+                        alt="Aperçu avatar" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                        <Camera className="h-8 w-8 opacity-50" />
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Bouton pour supprimer */}
+                  {avatarPreview && (
+                    <Button
+                      size="icon"
+                      variant="destructive"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                      onClick={handleRemoveAvatar}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Input file caché */}
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarChange}
+                aria-label="Sélectionner une photo de profil"
+                title="Sélectionner une photo de profil"
+                placeholder="Sélectionner une photo de profil"
+                className="hidden"
+              />
+
+              {/* Boutons d'action */}
+              <div className="space-y-2">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => avatarInputRef.current?.click()}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  {avatarPreview ? "Changer la photo" : "Sélectionner une photo"}
+                </Button>
+                
+                <p className="text-xs text-muted-foreground text-center">
+                  Formats acceptés : JPG, PNG, GIF (max 2MB)
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowAvatarModal(false);
+                  setAvatarFile(null);
+                  setAvatarPreview(null);
+                }}
+              >
+                Annuler
+              </Button>
+              <Button
+                onClick={handleSaveAvatar}
+                disabled={!avatarFile}
+                className="campus-gradient text-white hover:opacity-90"
+              >
+                <Check className="h-4 w-4 mr-2" />
+                Sauvegarder
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal pour changer le mood */}
+        <Dialog open={showMoodModal} onOpenChange={setShowMoodModal}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <span className="text-lg">😊</span>
+                Changer votre mood
+              </DialogTitle>
+              <DialogDescription>
+                Partagez votre état d'esprit actuel avec votre communauté.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div>
+                <Label htmlFor="mood">Mood du moment</Label>
+                <Input
+                  id="mood"
+                  placeholder="Ex: 🚀 En pleine révision !, 😴 Fatigué mais motivé..."
+                  value={newMood}
+                  onChange={(e) => setNewMood(e.target.value)}
+                  className="mt-2"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Décrivez votre état d'esprit actuel
+                </p>
+              </div>
+
+              {/* Moods prédéfinis */}
+              <div>
+                <Label>Suggestions</Label>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {[
+                    "🚀 En pleine révision !",
+                    "😴 Fatigué mais motivé",
+                    "💡 Plein d'idées !",
+                    "🎯 Concentré sur mes objectifs",
+                    "🤝 Prêt à collaborer",
+                    "📚 En mode apprentissage"
+                  ].map((mood) => (
+                    <Button
+                      key={mood}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setNewMood(mood)}
+                      className="text-xs h-auto py-2 px-3 justify-start"
+                    >
+                      {mood}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowMoodModal(false);
+                  setNewMood("");
+                }}
+              >
+                Annuler
+              </Button>
+              <Button
+                onClick={handleMoodChange}
+                disabled={!newMood.trim()}
+                className="campus-gradient text-white hover:opacity-90"
+              >
+                <Check className="h-4 w-4 mr-2" />
+                Mettre à jour
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </div>
+  );
+}

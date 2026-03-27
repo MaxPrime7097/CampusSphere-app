@@ -1,0 +1,17 @@
+{
+  "extends": [
+    "development"
+  ],
+  "hints": {
+    "meta-viewport": "off",
+    "axe/name-role-value": [
+      "default",
+      {
+        "link-name": "off"
+      }
+    ],
+    "typescript-config/strict": "off",
+    "typescript-config/consistent-casing": "off",
+    "typescript-config/is-valid": "off"
+  }
+}
