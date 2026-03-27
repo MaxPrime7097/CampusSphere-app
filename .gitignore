@@ -51,3 +51,6 @@ backend/media/
 *.swo
 *~
 
+
+# Yarn Berry local state
+.yarn/install-state.gz
