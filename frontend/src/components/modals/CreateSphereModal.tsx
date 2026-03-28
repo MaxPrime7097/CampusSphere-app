@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Sparkles, Loader2, Check, Users, Lock, Globe, Shield, Bell, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+import { createSphere } from "@/services/api";
 
 interface SphereData {
   id: string;
@@ -147,42 +148,30 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
   const handleSubmit = async () => {
     try {
       sphereSchema.parse({ name, description, objective, category, color, targetAudience, expectedDuration });
+
+      if (collaborationType.length === 0) {
+        toast({
+          title: "Type de collaboration requis",
+          description: "Veuillez sélectionner au moins un type de collaboration",
+          variant: "destructive",
+        });
+        return;
+      }
       
       setIsCreating(true);
-      
-      // Simuler la création de sphère
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const sphereData = {
-        id: Date.now().toString(),
-        name,
-        description,
-        objective,
+
+      const sphereData = await createSphere({
+        name: name.trim(),
+        description: description.trim(),
         category,
         color,
-        isPrivate: false,
-        requireApproval,
-        allowMemberPosts,
-        allowResourceSharing,
-        allowTaskCreation,
-        maxMembers,
-        tags,
-        targetAudience,
-        expectedDuration,
-        collaborationType,
-        members: 1,
-        status: "Actif",
-        progress: 0,
-        impactScore: 0,
-        createdAt: new Date().toISOString(),
-        admin: {
-          name: "Vous",
-          username: "current_user",
-          avatar: "/placeholder-avatar.jpg"
-        }
-      };
-
-      console.log("Creating sphere:", sphereData);
+        is_private: false,
+        require_approval: requireApproval,
+        objective: objective.trim(),
+        target_audience: targetAudience,
+        duration: expectedDuration,
+        collaboration_types: collaborationType,
+      } as any);
 
       if (onSphereCreated) {
         onSphereCreated(sphereData);
@@ -204,7 +193,15 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
           description: error.errors[0].message,
           variant: "destructive"
         });
+        return;
       }
+
+      const message = (error as any)?.message || "Impossible de créer la sphère";
+      toast({
+        title: "Erreur",
+        description: message,
+        variant: "destructive",
+      });
     }
   };
 

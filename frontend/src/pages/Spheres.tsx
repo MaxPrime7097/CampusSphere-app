@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { listSpheres, getCurrentUser, joinSphere, getUserSpheres } from "@/services/api";
+import { listSpheres, getCurrentUser, joinSphere, getUserSpheres, leaveSphere } from "@/services/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -101,6 +101,10 @@ export function Spheres() {
       } else {
         toast({ title: "Sphère rejoint !", description: `Succès pour ${sphereName}` });
         setUserJoinedSpheres(prev => [...prev, sphereId]);
+        const joinedSphere = allSpheres.find((sphere) => String(sphere.id) === String(sphereId));
+        if (joinedSphere) {
+          setUserSpheres((prev) => [joinedSphere, ...prev.filter((sphere) => String(sphere.id) !== String(sphereId))]);
+        }
       }
     } catch (e: any) {
       toast({ title: "Erreur", description: e?.message, variant: "destructive" });
@@ -109,13 +113,39 @@ export function Spheres() {
     }
   };
 
-  const handleLeaveSphere = (sphereId: string, sphereName: string) => {
-    toast({ title: "Sphère quittée", description: `Vous avez quitté "${sphereName}"` });
+  const handleLeaveSphere = async (sphereId: string, sphereName: string) => {
+    try {
+      await leaveSphere(sphereId);
+      toast({ title: "Sphère quittée", description: `Vous avez quitté "${sphereName}"` });
+      setUserJoinedSpheres((prev) => prev.filter((id) => String(id) !== String(sphereId)));
+      setUserSpheres((prev) => prev.filter((sphere) => String(sphere.id) !== String(sphereId)));
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e?.message || "Impossible de quitter la sphère", variant: "destructive" });
+    }
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setIsLoading(true);
-    setTimeout(() => setIsLoading(false), 1000);
+    try {
+      const [spheresData, userSpheresData] = await Promise.all([listSpheres(), getUserSpheres()]);
+      setAllSpheres(spheresData || []);
+      const sphereIds = (userSpheresData || []).map((s: any) => String(s.id));
+      setUserJoinedSpheres(sphereIds);
+      setUserSpheres(userSpheresData || []);
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e?.message || "Impossible d'actualiser", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSphereCreated = (sphere: any) => {
+    if (!sphere) return;
+    setAllSpheres((prev) => [sphere, ...prev.filter((item) => String(item.id) !== String(sphere.id))]);
+    setUserJoinedSpheres((prev) =>
+      prev.includes(String(sphere.id)) ? prev : [String(sphere.id), ...prev]
+    );
+    setUserSpheres((prev) => [sphere, ...prev.filter((item) => String(item.id) !== String(sphere.id))]);
   };
 
   const categories = [
@@ -142,7 +172,7 @@ export function Spheres() {
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
               Actualiser
             </Button>
-            <CreateSphereModal>
+            <CreateSphereModal onSphereCreated={handleSphereCreated}>
               <Button size="sm" className="campus-gradient text-white hover:opacity-90 gap-2 w-full sm:w-auto">
                 <Plus className="h-4 w-4" /> <span>Créer</span>
               </Button>

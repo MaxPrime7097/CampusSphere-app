@@ -36,7 +36,7 @@ export function About(): JSX.Element {
       role: "CFO & Community Manager",
       name: "Gwenaëlle Stelvana",
       description: "Responsable produit et design, Nathan façonne l’expérience utilisateur et guide la roadmap produit.",
-      avatar: "/Team/Gwen.jpg",
+      avatar: "/Team/Gwen.png",
     }
   ];
   return (
@@ -315,7 +315,7 @@ export function About(): JSX.Element {
             {teamMembers.map((member, index) => (
               <div className="campus-card text-center hover:scale-105 transition-all duration-300 campus-animate-slide-up animation-delay-1s">
               <div className="aspect-square bg-gradient-to-br from-primary/20 to-primary/5 rounded-t-lg flex items-center justify-center">
-                <img src={member.avatar} alt={member.name} className="w-full h-full rounded-t-lg" />
+                <img src={member.avatar} alt={member.name} className="w-full h-full rounded-t-lg object-cover" />
               </div>
               <div className="p-6">
               <div className="font-bold text-lg mb-1 font-poppins">{member.name}</div>

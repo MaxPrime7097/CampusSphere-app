@@ -485,12 +485,20 @@ export async function createSphere(data: {
   category?: string;
   type?: string;
   is_private?: boolean;
+  require_approval?: boolean;
+  color?: string;
+  icon?: string;
+  objective?: string;
+  target_audience?: string;
+  duration?: string;
+  collaboration_types?: string[];
 }, token?: string) {
-  return apiFetch<any>("api/spheres/", {
+  const response = await apiFetch<any>("api/spheres/", {
     method: "POST",
     body: data,
     token: token || getAccessToken(),
   });
+  return normalizeSphere(unwrapItem(response));
 }
 
 export async function updateSphere(id: number | string, data: Partial<{
