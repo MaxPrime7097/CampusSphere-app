@@ -54,7 +54,7 @@ export function Footer() {
             </div>
           </div>
           <div className="border-t mt-8 pt-8 text-center text-sm text-muted-foreground">
-            <p>&copy; 2025 CampusSphere. Tous droits réservés. Construit avec passion pour les étudiants.</p>
+            <p>&copy; 2026 CampusSphere. Tous droits réservés. Construit avec passion pour les étudiants.</p>
           </div>
         </div>
     </footer>

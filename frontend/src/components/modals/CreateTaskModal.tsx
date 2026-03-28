@@ -21,15 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { createTask } from "@/services/api";
 
-interface TaskData {
-  id: string;
-  title: string;
-  description: string;
-  assignee?: string;
-  priority: string;
-  dueDate?: string;
-  tags: string[];
-}
+type TaskData = any;
 
 interface CreateTaskModalProps {
   children: React.ReactNode;
