@@ -220,6 +220,7 @@ function normalizePost(post: any) {
     likesCount: toNumber(post.likes_count ?? post.likesCount, 0),
     commentsCount: toNumber(post.comments_count ?? post.commentsCount, 0),
     impactScore: toNumber(post.impact_score ?? post.impactScore, 0),
+    userImpactRating: post.user_impact_rating ?? post.userImpactRating ?? null,
     isLiked: post.is_liked ?? post.isLiked ?? false,
     isSaved: post.is_saved ?? post.isSaved ?? false,
     canEdit: post.can_edit ?? post.canEdit ?? false,
@@ -413,6 +414,7 @@ export async function getUserProfile(token?: string) {
 export async function updateUserProfile(data: Partial<{
   first_name: string;
   last_name: string;
+  username: string;
   bio: string;
   university: string;
   faculty: string;
@@ -426,6 +428,48 @@ export async function updateUserProfile(data: Partial<{
     body: data,
     token: token || getAccessToken(),
   });
+}
+
+export async function changeUserPassword(payload: { current_password: string; new_password: string }, token?: string) {
+  return apiFetch<any>("api/users/auth/change-password/", {
+    method: "POST",
+    body: payload,
+    token: token || getAccessToken(),
+  });
+}
+
+export async function changeUserEmail(payload: { current_email: string; new_email: string }, token?: string) {
+  const response = await apiFetch<any>("api/users/auth/change-email/", {
+    method: "POST",
+    body: payload,
+    token: token || getAccessToken(),
+  });
+  return normalizeUser(unwrapItem(response));
+}
+
+export async function logoutUser(token?: string) {
+  const refresh = getRefreshToken();
+  try {
+    await apiFetch<any>("api/users/auth/logout/", {
+      method: "POST",
+      body: refresh ? { refresh } : {},
+      token: token || getAccessToken(),
+    });
+  } finally {
+    clearTokens();
+  }
+}
+
+export async function deleteUserAccount(confirmationText: string, token?: string) {
+  try {
+    await apiFetch<any>("api/users/auth/delete-account/", {
+      method: "DELETE",
+      body: { confirmation_text: confirmationText },
+      token: token || getAccessToken(),
+    });
+  } finally {
+    clearTokens();
+  }
 }
 
 export async function searchUsers(query: string, token?: string) {
@@ -708,28 +752,14 @@ export async function likePost(id: number | string, token?: string) {
   });
 }
 
-export async function savePost(id: number | string, token?: string) {
-  return apiFetch<any>(`api/posts/${id}/save/`, {
-    method: "POST",
-    token: token || getAccessToken(),
-  });
-}
-
-export async function unsavePost(id: number | string, token?: string) {
-  return apiFetch<any>(`api/posts/${id}/save/`, {
-    method: "DELETE",
-    token: token || getAccessToken(),
-  });
-}
-
-export async function reportPost(
+export async function impactRatePost(
   id: number | string,
-  data: { reason: string; details?: string },
+  value: number | null,
   token?: string
 ) {
-  return apiFetch<any>(`api/posts/${id}/report/`, {
+  return apiFetch<any>(`api/posts/${id}/impact-rate/`, {
     method: "POST",
-    body: data,
+    body: { value },
     token: token || getAccessToken(),
   });
 }
@@ -762,7 +792,7 @@ export async function getPostComments(postId: number | string, token?: string) {
   return unwrapList(response);
 }
 
-export async function createComment(postId: number | string, data: { content: string; parent_id?: number | string }, token?: string) {
+export async function createComment(postId: number | string, data: { content: string; parent?: number | string }, token?: string) {
   return apiFetch<any>(`api/posts/${postId}/comments/`, {
     method: "POST",
     body: data,
