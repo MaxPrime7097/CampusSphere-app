@@ -1,69 +1,59 @@
-import { cn } from "@/lib/utils";
 import {
-  Menu, 
-  Home, 
-  User,
-  FolderOpen, 
-  Users, 
-  Calendar, 
-  ShoppingBag,  
-  LibraryBig, 
-  Bookmark, 
-  MessageSquare,
-  Settings,
-  Info,
-  LifeBuoy,
-  BookLock,
-  ScrollText
+  Menu
 } from "lucide-react";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { NavLink, useNavigate } from "react-router-dom";
+import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
-  Sidebar,
-  SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarHeader,
   useSidebar,
 } from "@/components/ui/sidebar";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
-  SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-
-const quickActions = [
-  { title: "Enregistrements", url: "/saved", icon: Bookmark },
-  { title: "Paramètres", url: "/settings", icon: Settings },
-];
-
-const utils = [
-  {title: "À propos", url: "/cs-inc/about", icon: Info },
-  {title: "Politique de confidentialité", url: "/cs-inc/policies/privacy", icon: BookLock },
-  {title: "Conditions d'utilisation", url: "/cs-inc/policies/terms", icon: ScrollText },
-  {title: "Aide", url: "/cs-inc/contact", icon: LifeBuoy },
-];
+import { useEffect, useState } from "react";
+import { getCurrentUser } from "@/services/api";
+import { getNavigationSections, type NavigationUser } from "./navigationConfig";
 
 export function MenuDropdown() {
   const { state } = useSidebar();
-  const location = useLocation();
-  const currentPath = location.pathname;
   const isCollapsed = state === "collapsed";
   const navigate = useNavigate();
+  const [user, setUser] = useState<NavigationUser>({});
 
-  const isActive = (path: string) => currentPath === path;
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      try {
+        const data = await getCurrentUser();
+        if (isMounted && data) {
+          setUser(data);
+        }
+      } catch {
+        // User not logged in or error
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const getNavClasses = ({ isActive }: { isActive: boolean }) =>
     isActive 
       ? "bg-accent text-foreground font-medium" 
       : "hover:bg-accent text-primary";
+  const { quickActions, utilities, navigationItems } = getNavigationSections(user);
+  const profileUrl = navigationItems.find((item) => item.title === "Profil")?.url || "/profile/current";
 
   return (
   <Sheet>
@@ -78,7 +68,7 @@ export function MenuDropdown() {
             Menu
           </h1>
         </SheetHeader>
-        <Card className="campus-card mt-5" onClick= {() => navigate("/profile")}>
+        <Card className="campus-card mt-5" onClick= {() => navigate(profileUrl)}>
           <CardContent className="pt-4 md:pt-6 p-4 md:p-6">
             <div 
               className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
@@ -109,7 +99,7 @@ export function MenuDropdown() {
           <SidebarGroupContent>
             <SidebarMenu>
               {quickActions.map((item) => (
-               <Card className="py-2">
+               <Card className="py-2" key={item.title}>
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} className={getNavClasses}>
@@ -128,8 +118,8 @@ export function MenuDropdown() {
           <SidebarGroupLabel>Utilitaires</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {utils.map((item) => (
-               <Card className="py-2">
+              {utilities.map((item) => (
+               <Card className="py-2" key={item.title}>
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} end className={getNavClasses}>

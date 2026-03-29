@@ -1,19 +1,3 @@
-import { 
-  Home, 
-  User,
-  FolderOpen, 
-  Users, 
-  Calendar, 
-  ShoppingBag,  
-  LibraryBig, 
-  Bookmark, 
-  MessageSquare,
-  Settings,
-  Info,
-  LifeBuoy,
-  BookLock,
-  ScrollText
-} from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 
 import {
@@ -25,27 +9,12 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarHeader,
   useSidebar,
 } from "@/components/ui/sidebar";
 
 import { useEffect, useState } from "react";
 import { getCurrentUser } from "@/services/api";
-
-
-
-const quickActions = [
-  { title: "Messages", url: "/messages", icon: MessageSquare },
-  { title: "Enregistrements", url: "/saved", icon: Bookmark },
-  { title: "Paramètres", url: "/settings", icon: Settings },
-];
-
-const utils = [
-  {title: "À propos", url: "/cs-inc/about", icon: Info },
-  {title: "Politique de confidentialité", url: "/cs-inc/policies/privacy", icon: BookLock },
-  {title: "Conditions d'utilisation", url: "/cs-inc/policies/terms", icon: ScrollText },
-  {title: "Aide", url: "/cs-inc/contact", icon: LifeBuoy },
-];
+import { getNavigationSections, type NavigationUser } from "./navigationConfig";
 
 export function AppSidebar() {
   const { state } = useSidebar();
@@ -60,12 +29,7 @@ export function AppSidebar() {
     return currentPath.startsWith(path);
   };
 
-  const [user, setUser] = useState<any>({
-    name: "Utilisateur",
-    username: "user",
-    avatar: "/placeholder-avatar.jpg",
-    email: "user@university.cm"
-  }); 
+  const [user, setUser] = useState<NavigationUser>({});
 
   useEffect(() => {
     let isMounted = true;
@@ -73,14 +37,9 @@ export function AppSidebar() {
       try {
         const data = await getCurrentUser();
         if (isMounted && data) {
-          setUser({
-            name: data.name || data.first_name + ' ' + data.last_name || "Utilisateur",
-            username: data.username || "user",
-            avatar: data.avatar || "/placeholder-avatar.jpg",
-            email: data.email || "user@university.cm"
-          });
+          setUser(data);
         }
-      } catch (e) {
+      } catch {
         // User not logged in or error
       }
     })();
@@ -89,12 +48,7 @@ export function AppSidebar() {
     };
   }, []);
   
-  const navigationItems = [
-    { title: "Accueil", url: "/", icon: Home },
-    { title: "Profil", url: `/profile/${user?.username || "current"}`, icon: User },
-    { title: "Ressources", url: "/resources", icon: FolderOpen },
-    { title: "Sphères", url: "/spheres", icon: Users },
-  ];
+  const { navigationItems, quickActions, utilities } = getNavigationSections(user);
 
   return (
     <Sidebar className={isCollapsed ? "w-20" : "w-60"} collapsible="icon">
@@ -141,7 +95,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>Utilitaires</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {utils.map((item) => (
+              {utilities.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} end 
