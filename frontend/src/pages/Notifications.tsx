@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { listNotifications, markNotificationRead, markAllNotificationsRead } from "@/services/api";
+import { listNotifications, markNotificationRead, markAllNotificationsRead, deleteNotification as deleteNotificationApi } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 export function Notifications() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statusText, setStatusText] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -107,13 +108,28 @@ export function Notifications() {
     }
   };
 
-  const deleteNotification = (id: string) => {
-    // TODO: Add delete endpoint to API if available
+  const deleteNotification = async (id: string) => {
+    const previousNotifications = [...notifications];
+    const targetNotification = notifications.find((notification) => notification.id === id);
+    setStatusText("Suppression de la notification...");
     setNotifications(prev => prev.filter(n => n.id !== id));
-    toast({
-      title: "Notification supprimée",
-      duration: 1000,
-    });
+
+    try {
+      await deleteNotificationApi(id);
+      setStatusText("Notification supprimée.");
+      toast({
+        title: "Notification supprimée",
+        duration: 1000,
+      });
+    } catch (error: any) {
+      setNotifications(previousNotifications);
+      setStatusText(null);
+      toast({
+        title: "Erreur",
+        description: error?.message || `Impossible de supprimer la notification${targetNotification?.title ? ` "${targetNotification.title}"` : ""}`,
+        variant: "destructive",
+      });
+    }
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -131,6 +147,7 @@ export function Notifications() {
               <p className="text-muted-foreground">
                 {unreadCount > 0 ? `${unreadCount} nouvelles notifications` : "Aucune nouvelle notification"}
               </p>
+              {statusText && <p className="text-xs text-muted-foreground mt-1">{statusText}</p>}
             </div>
           </div>
           

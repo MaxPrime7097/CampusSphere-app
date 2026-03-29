@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { searchUsers, getCurrentUser, getUserConnections, createConnection, deleteConnection } from "@/services/api";
+import { searchUsers, getCurrentUser, getUserConnections, createConnection, deleteConnection, getMutualConnectionCounts } from "@/services/api";
 import { Users, UserPlus, Search, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ export function Connections() {
   const [connections, setConnections] = useState<any[]>([]);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mutualCountStatus, setMutualCountStatus] = useState<string | null>(null);
 
   // Load current user
   useEffect(() => {
@@ -80,9 +81,36 @@ export function Connections() {
               (conn.requester === currentUser.id
                 ? conn.recipient_info?.impact_score
                 : conn.requester_info?.impact_score) || 0,
-            mutualFriends: 0 // TODO: Calculate mutual connections if API provides this
+            mutualFriends: 0
           }));
           setConnections(mapped);
+
+          try {
+            setMutualCountStatus("Calcul des amis communs...");
+            const mutualCounts = await getMutualConnectionCounts({
+              currentUserId: currentUser.id,
+              connectionUserIds: mapped.map((connection: any) => connection.id),
+            });
+
+            if (isMounted) {
+              setConnections((prev) =>
+                prev.map((connection) => ({
+                  ...connection,
+                  mutualFriends: mutualCounts.counts[String(connection.id)] ?? 0,
+                }))
+              );
+              setMutualCountStatus("Amis communs mis à jour.");
+            }
+          } catch {
+            if (isMounted) {
+              setMutualCountStatus(null);
+              toast({
+                title: "Information",
+                description: "Le calcul des amis communs n'est pas disponible pour le moment.",
+                duration: 2000,
+              });
+            }
+          }
         }
       } catch (e) {
         // Error loading connections
@@ -151,6 +179,9 @@ export function Connections() {
           <p className="text-muted-foreground">
             Gérez vos connexions et découvrez de nouveaux étudiants
           </p>
+          {mutualCountStatus && (
+            <p className="text-xs text-muted-foreground mt-1">{mutualCountStatus}</p>
+          )}
         </div>
 
         {/* Search Bar */}
