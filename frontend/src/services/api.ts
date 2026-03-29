@@ -220,6 +220,7 @@ function normalizePost(post: any) {
     likesCount: toNumber(post.likes_count ?? post.likesCount, 0),
     commentsCount: toNumber(post.comments_count ?? post.commentsCount, 0),
     impactScore: toNumber(post.impact_score ?? post.impactScore, 0),
+    userImpactRating: post.user_impact_rating ?? post.userImpactRating ?? null,
     isLiked: post.is_liked ?? post.isLiked ?? false,
     canEdit: post.can_edit ?? post.canEdit ?? false,
     canDelete: post.can_delete ?? post.canDelete ?? false,
@@ -703,6 +704,18 @@ export async function deletePost(id: number | string, token?: string) {
 export async function likePost(id: number | string, token?: string) {
   return apiFetch<any>(`api/posts/${id}/like/`, {
     method: "POST",
+    token: token || getAccessToken(),
+  });
+}
+
+export async function impactRatePost(
+  id: number | string,
+  value: number | null,
+  token?: string
+) {
+  return apiFetch<any>(`api/posts/${id}/impact-rate/`, {
+    method: "POST",
+    body: { value },
     token: token || getAccessToken(),
   });
 }

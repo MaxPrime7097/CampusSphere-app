@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Heart, MessageCircle, Share, Bookmark, MoreVertical, Zap, Copy, Flag, ExternalLink, Users } from "lucide-react";
+import { Heart, MessageCircle, Share, Bookmark, MoreVertical, Zap, Copy, Flag, ExternalLink, Users, Plus, Minus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -22,7 +22,7 @@ import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { likePost } from "@/services/api";
+import { impactRatePost, likePost } from "@/services/api";
 import { formatRelativeTime } from "@/lib/date";
 
 interface PostCardProps {
@@ -43,6 +43,7 @@ interface PostCardProps {
     comments: number;
     category?: string;
     impactScore?: number;
+    userImpactRating?: number | null;
     isLiked?: boolean;
   };
 }
@@ -54,6 +55,8 @@ export function PostCard({ post }: PostCardProps) {
   const [isLiked, setIsLiked] = useState(Boolean(post.isLiked));
   const [isSaved, setIsSaved] = useState(false);
   const [likesCount, setLikesCount] = useState(post.likes);
+  const [impactScore, setImpactScore] = useState(Number(post.impactScore || 0));
+  const [userImpactRating, setUserImpactRating] = useState<number | null>(post.userImpactRating ?? null);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
@@ -61,7 +64,9 @@ export function PostCard({ post }: PostCardProps) {
   useEffect(() => {
     setIsLiked(Boolean(post.isLiked));
     setLikesCount(post.likes);
-  }, [post.id, post.isLiked, post.likes]);
+    setImpactScore(Number(post.impactScore || 0));
+    setUserImpactRating(post.userImpactRating ?? null);
+  }, [post.id, post.isLiked, post.likes, post.impactScore, post.userImpactRating]);
 
   const handleLike = async () => {
     try {
@@ -83,6 +88,24 @@ export function PostCard({ post }: PostCardProps) {
       toast({
         title: "Erreur",
         description: error?.message || "Impossible d'aimer ce post",
+        variant: "destructive",
+        duration: 2000,
+      });
+    }
+  };
+
+  const handleImpactRate = async (value: number | null) => {
+    try {
+      const response = await impactRatePost(post.id, value);
+      const nextImpactScore = Number(response?.data?.impactScore ?? impactScore);
+      const nextUserImpactRating = response?.data?.userImpactRating ?? null;
+
+      setImpactScore(nextImpactScore);
+      setUserImpactRating(nextUserImpactRating);
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error?.message || "Impossible de noter l'impact du post",
         variant: "destructive",
         duration: 2000,
       });
@@ -251,9 +274,35 @@ export function PostCard({ post }: PostCardProps) {
               </Button>
             </div>
 
-            <div className="flex items-center gap-2 rounded-md border px-3 py-1.5 text-primary">
+            <div className="flex items-center gap-2 rounded-md border px-2 py-1 text-primary">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-1"
+                onClick={() => handleImpactRate(Math.max((userImpactRating ?? 0) - 1, 1))}
+                disabled={userImpactRating === null}
+              >
+                <Minus className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-1"
+                onClick={() => handleImpactRate(Math.min((userImpactRating ?? 0) + 1, 5))}
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-1"
+                onClick={() => handleImpactRate(null)}
+                disabled={userImpactRating === null}
+              >
+                <X className="h-3.5 w-3.5" />
+              </Button>
               <Zap className="h-4 w-4" />
-              <span className="text-sm font-medium">{post.impactScore || 0}</span>
+              <span className="text-sm font-medium">{impactScore}</span>
             </div>
           </div>
         </div>

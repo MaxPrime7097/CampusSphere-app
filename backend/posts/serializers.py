@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.utils import timezone
-from .models import Post, PostLike, Comment, CommentLike
+from .models import Post, PostLike, PostImpactRating, Comment, CommentLike
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -67,6 +67,7 @@ class PostSerializer(serializers.ModelSerializer):
     likes_count = serializers.IntegerField(read_only=True)
     comments_count = serializers.IntegerField(read_only=True)
     is_liked = serializers.SerializerMethodField()
+    user_impact_rating = serializers.SerializerMethodField()
     can_edit = serializers.SerializerMethodField()
     can_delete = serializers.SerializerMethodField()
     recent_comments = serializers.SerializerMethodField()
@@ -78,7 +79,7 @@ class PostSerializer(serializers.ModelSerializer):
             'category', 'visibility', 'subject', 'type', 'audience', 'location',
             'tags', 'files', 'allow_comments', 'is_pinned', 'likes_count',
             'comments_count', 'impact_score', 'is_liked', 'can_edit', 'can_delete',
-            'recent_comments', 'created_at', 'updated_at'
+            'user_impact_rating', 'recent_comments', 'created_at', 'updated_at'
         ]
         read_only_fields = [
             'id', 'author', 'likes_count', 'comments_count', 'impact_score',
@@ -127,6 +128,13 @@ class PostSerializer(serializers.ModelSerializer):
         recent_comments = obj.comments.filter(parent=None)[:3]  # Top-level comments only
         return CommentSerializer(recent_comments, many=True, context=self.context).data
 
+    def get_user_impact_rating(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            rating = obj.impact_ratings.filter(user=request.user).only('value').first()
+            return rating.value if rating else None
+        return None
+
 
 class PostCreateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -174,3 +182,28 @@ class PostLikeSerializer(serializers.ModelSerializer):
     def get_user_info(self, obj):
         from users.serializers import UserProfileSerializer
         return UserProfileSerializer(obj.user).data
+
+
+class PostImpactRatingSerializer(serializers.ModelSerializer):
+    user_info = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = PostImpactRating
+        fields = ['id', 'post', 'user', 'user_info', 'value', 'created_at']
+        read_only_fields = ['id', 'post', 'user', 'user_info', 'created_at']
+
+    def get_user_info(self, obj):
+        from users.serializers import UserProfileSerializer
+        return UserProfileSerializer(obj.user).data
+
+    def validate_value(self, value):
+        if value is None:
+            return value
+        if value < 1 or value > 5:
+            raise serializers.ValidationError("Impact rating value must be between 1 and 5")
+        return value
+
+
+class PostImpactRatingActionSerializer(serializers.Serializer):
+    # Null means remove user's existing rating
+    value = serializers.IntegerField(min_value=1, max_value=5, required=False, allow_null=True)
