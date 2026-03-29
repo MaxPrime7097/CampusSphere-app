@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getCurrentUser, getUserByUsername, getUserPosts, uploadAvatar, uploadCoverPhoto, updateUserProfile, getUserConnections } from "@/services/api";
+import { getCurrentUser, getUserByUsername, getUserPosts, uploadAvatar, uploadCoverPhoto, updateUserProfile, getUserConnections, getUserResources } from "@/services/api";
 import { MapPin, Camera, Calendar, Link, Users, BookOpen, Award, Settings, FileText, Briefcase, GraduationCap, Loader2, Check, Download, UserPlus, UserMinus, ExternalLink, Upload, X, Zap, Smile } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +15,99 @@ import { CreatePost } from "@/components/feed/CreatePost";
 import { PostCard } from "@/components/feed/PostCard";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils"; // si tu utilises cn dans ce fichier
+
+const NOT_AVAILABLE_TEXT = "Not available";
+
+function mapProfileToViewModel({
+  profile,
+  posts,
+  connections,
+  resources,
+  resourcesAvailable,
+  loading,
+}: {
+  profile: any;
+  posts: any[];
+  connections: any[];
+  resources: any[];
+  resourcesAvailable: boolean;
+  loading: boolean;
+}) {
+  if (!profile || loading) {
+    return {
+      name: "Utilisateur non trouvé",
+      firstName: "",
+      lastName: "",
+      username: "",
+      email: "",
+      phoneNumber: "",
+      dateOfBirth: "",
+      avatar: "/placeholder-avatar.jpg",
+      coverPhoto: null,
+      bio: "",
+      town: "",
+      language: "",
+      impactScore: null,
+      currentMood: "",
+      university: "",
+      faculty: "",
+      studyYear: "",
+      studentId: "",
+      campus: "",
+      previousEducation: [],
+      experiences: [],
+      skills: [],
+      interests: [],
+      portfolioLinks: [],
+      sharedFiles: [],
+      stats: {
+        posts: 0,
+        connections: 0,
+        contributions: null as number | null,
+      },
+      badges: [],
+    };
+  }
+
+  return {
+    name: profile.name ?? `${profile.firstName || ""} ${profile.lastName || ""}`.trim() || profile.username || NOT_AVAILABLE_TEXT,
+    firstName: profile.firstName ?? "",
+    lastName: profile.lastName ?? "",
+    username: profile.username ?? "",
+    email: profile.email ?? "",
+    phoneNumber: profile.phone_number ?? profile.phoneNumber ?? "",
+    dateOfBirth: profile.date_of_birth ?? profile.dateOfBirth ?? "",
+    avatar: profile.avatar ?? "/placeholder-avatar.jpg",
+    coverPhoto: profile.coverPhoto ?? null,
+    bio: profile.bio ?? "",
+    town: profile.town ?? "",
+    language: profile.language ?? "",
+    impactScore: profile.impactScore ?? null,
+    currentMood: profile.currentMood ?? "",
+    university: profile.university ?? "",
+    faculty: profile.faculty ?? "",
+    studyYear: profile.studyYear ?? "",
+    studentId: profile.studentId ?? "",
+    campus: profile.campus ?? "",
+    previousEducation: profile.previousEducation ?? [],
+    experiences: profile.experiences ?? [],
+    skills: profile.skills ?? [],
+    interests: profile.interests ?? [],
+    portfolioLinks: profile.portfolioLinks ?? [],
+    sharedFiles: (resources || []).map((resource: any) => ({
+      id: resource.id,
+      name: resource.title || NOT_AVAILABLE_TEXT,
+      type: resource.type || NOT_AVAILABLE_TEXT,
+      size: resource.fileSize || NOT_AVAILABLE_TEXT,
+    })),
+    stats: {
+      posts: posts?.length || 0,
+      connections: connections?.length || 0,
+      contributions: resourcesAvailable ? resources.length : null,
+    },
+    badges: [],
+  };
+}
 
 export function Profile() {
   const navigate = useNavigate();
@@ -40,6 +133,8 @@ export function Profile() {
   const [targetUser, setTargetUser] = useState<any>(null);
   const [userPosts, setUserPosts] = useState<any[]>([]);
   const [userConnections, setUserConnections] = useState<any[]>([]);
+  const [userResources, setUserResources] = useState<any[]>([]);
+  const [resourcesAvailable, setResourcesAvailable] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Tab State - NEW (same as Spheres)
@@ -115,86 +210,15 @@ export function Profile() {
   
   // Données utilisateur avec fallback
   const user = useMemo(() => {
-    if (!targetUser || loading) {
-      return {
-        name: "Utilisateur non trouvé",
-        firstName: "",
-        lastName: "",
-        username: "",
-        email: "",
-        phoneNumber: "",
-        dateOfBirth: "",
-        avatar: "/placeholder-avatar.jpg",
-        coverPhoto: null,
-        banner: "/placeholder",
-        bio: "",
-        town: "",
-        language: "",
-        impactScore: 0,
-        currentMood: "",
-        university: "",
-        faculty: "",
-        studyYear: "",
-        studentId: "",
-        campus: "",
-        previousEducation: [],
-        experiences: [],
-        skills: [],
-        interests: [],
-        portfolioLinks: [],
-        sharedFiles: [],
-        stats: {
-          posts: 0,
-          connections: 0,
-          contributions: 0
-        },
-        badges: []
-      };
-    }
-    
-    return {
-      // Personal info
-      name: targetUser.name,
-      firstName: targetUser.firstName,
-      lastName: targetUser.lastName,
-      username: targetUser.username,
-      email: targetUser.email,
-      phoneNumber: targetUser.phone_number || "",
-      dateOfBirth: targetUser.date_of_birth || "",
-      avatar: targetUser.avatar,
-      coverPhoto: targetUser.coverPhoto || null,
-      banner: "/placeholder",
-      bio: targetUser.bio || "Étudiant passionné par l'IA et le développement web. Toujours prêt à aider et à apprendre !",
-      town: targetUser.town || "",
-      language: targetUser.language || "Français, Anglais",
-      impactScore: targetUser.impactScore,
-      currentMood: targetUser.currentMood,
-    
-      // Academic info
-      university: targetUser.university,
-      faculty: targetUser.faculty,
-      studyYear: targetUser.studyYear,
-      studentId: targetUser.studentId || "",
-      campus: targetUser.campus || "",
-    
-      // Experience & Skills (Load from API)
-      previousEducation: targetUser.previousEducation || [],
-      experiences: targetUser.experiences || [],
-      skills: targetUser.skills || [],
-      interests: targetUser.interests || [],
-      portfolioLinks: targetUser.portfolioLinks || [],
-      
-      sharedFiles: [],
-      
-      // Social stats
-      stats: {
-        posts: userPosts?.length || 0,
-        connections: userConnections?.length || 0,
-        contributions: 0 // TODO: Load from user resources
-      },
-      badges: ["Contributeur actif", "Mentor", "Top étudiant"]
-    };
-  }, [targetUser, userPosts, userConnections]);
+    return mapProfileToViewModel({
+      profile: targetUser,
+      posts: userPosts,
+      connections: userConnections,
+      resources: userResources,
+      resourcesAvailable,
+      loading,
+    });
+  }, [targetUser, userPosts, userConnections, userResources, resourcesAvailable, loading]);
 
   // Load connections
   useEffect(() => {
@@ -216,6 +240,30 @@ export function Profile() {
         }
       } catch (e) {
         // Error loading connections
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, [targetUser?.id]);
+
+  // Load user resources
+  useEffect(() => {
+    if (!targetUser?.id) return;
+
+    let isMounted = true;
+    (async () => {
+      try {
+        const resources = await getUserResources(targetUser.id);
+        if (isMounted) {
+          setUserResources(resources || []);
+          setResourcesAvailable(true);
+        }
+      } catch (e) {
+        if (isMounted) {
+          setUserResources([]);
+          setResourcesAvailable(false);
+        }
       }
     })();
     return () => {
@@ -513,7 +561,7 @@ export function Profile() {
                   <p className="text-muted-foreground">@{user.username}</p>
                 </div>
 
-                <p className="text-foreground leading-relaxed">{user.bio}</p>
+                <p className="text-foreground leading-relaxed">{user.bio || NOT_AVAILABLE_TEXT}</p>
 
                 {/* Impact Score et Mood */}
                 <div className="flex items-center gap-4 p-3 bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg">
@@ -523,7 +571,7 @@ export function Profile() {
                     </div>
                     <div>
                       <p className="text-sm font-semibold">Impact Score</p>
-                      <p className="text-lg font-bold text-primary">{user.impactScore}</p>
+                      <p className="text-lg font-bold text-primary">{user.impactScore ?? NOT_AVAILABLE_TEXT}</p>
                     </div>
                   </div>
                   <div className="h-8 w-px bg-border" />
@@ -536,7 +584,7 @@ export function Profile() {
                     </div>
                     <div>
                       <p className="text-sm font-semibold">Mood du moment</p>
-                      <p className="text-sm text-muted-foreground">{user.currentMood}</p>
+                      <p className="text-sm text-muted-foreground">{user.currentMood || NOT_AVAILABLE_TEXT}</p>
                     </div>
                     {isOwnProfile && (
                       <Settings className="h-3 w-3 text-muted-foreground ml-auto" />
@@ -554,13 +602,13 @@ export function Profile() {
                     <span className="text-muted-foreground ml-1">Connections</span>
                   </div>
                   <div>
-                    <span className="font-semibold">{user.stats.contributions}</span>
+                    <span className="font-semibold">{user.stats.contributions ?? NOT_AVAILABLE_TEXT}</span>
                     <span className="text-muted-foreground ml-1">Contributions</span>
                   </div>
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  {user.badges.map((badge) => (
+                  {user.badges.map((badge: string) => (
                     <Badge key={badge} variant="secondary" className="gap-1">
                       <Award className="h-3 w-3" />
                       {badge}
@@ -666,23 +714,23 @@ export function Profile() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-muted-foreground">Email</p>
-                      <p className="font-medium">{user.email}</p>
+                      <p className="font-medium">{user.email || NOT_AVAILABLE_TEXT}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Téléphone</p>
-                      <p className="font-medium">{user.phoneNumber}</p>
+                      <p className="font-medium">{user.phoneNumber || NOT_AVAILABLE_TEXT}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Date de naissance</p>
-                      <p className="font-medium">{user.dateOfBirth}</p>
+                      <p className="font-medium">{user.dateOfBirth || NOT_AVAILABLE_TEXT}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Ville</p>
-                      <p className="font-medium">{user.town}</p>
+                      <p className="font-medium">{user.town || NOT_AVAILABLE_TEXT}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Langue</p>
-                      <p className="font-medium">{user.language}</p>
+                      <p className="font-medium">{user.language || NOT_AVAILABLE_TEXT}</p>
                     </div>
                   </div>
                 </div>
@@ -704,28 +752,34 @@ export function Profile() {
                 </h3>
                 <div>
                   <div className="space-y-3">
-                    {user.sharedFiles.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 campus-gradient rounded-lg flex items-center justify-center">
-                            <FileText className="h-5 w-5 text-white" />
+                    {user.sharedFiles.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        {resourcesAvailable ? "Aucune contribution pour le moment." : NOT_AVAILABLE_TEXT}
+                      </p>
+                    ) : (
+                      user.sharedFiles.map((file: any, index: number) => (
+                        <div key={file.id || index} className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 campus-gradient rounded-lg flex items-center justify-center">
+                              <FileText className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-sm">{file.name}</p>
+                              <p className="text-xs text-muted-foreground">{file.type} • {file.size}</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium text-sm">{file.name}</p>
-                            <p className="text-xs text-muted-foreground">{file.type} • {file.size}</p>
-                          </div>
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={() => handleDownloadFile(file.name)}
+                            className="gap-2"
+                          >
+                            <Download className="h-4 w-4" />
+                            Télécharger
+                          </Button>
                         </div>
-                        <Button 
-                          size="sm" 
-                          variant="ghost"
-                          onClick={() => handleDownloadFile(file.name)}
-                          className="gap-2"
-                        >
-                          <Download className="h-4 w-4" />
-                          Télécharger
-                        </Button>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
