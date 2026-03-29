@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Heart, MessageCircle, Share, Bookmark, MoreVertical, Zap, Copy, Flag, ExternalLink, Users } from "lucide-react";
+import { Heart, MessageCircle, Share, Bookmark, MoreVertical, Zap, Copy, Flag, ExternalLink, Users, Plus, Minus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -23,6 +23,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { likePost, reportPost, savePost, unsavePost } from "@/services/api";
+import { impactRatePost, likePost } from "@/services/api";
 import { formatRelativeTime } from "@/lib/date";
 
 interface PostCardProps {
@@ -43,6 +44,7 @@ interface PostCardProps {
     comments: number;
     category?: string;
     impactScore?: number;
+    userImpactRating?: number | null;
     isLiked?: boolean;
     isSaved?: boolean;
   };
@@ -55,16 +57,26 @@ export function PostCard({ post }: PostCardProps) {
   const [isLiked, setIsLiked] = useState(Boolean(post.isLiked));
   const [isSaved, setIsSaved] = useState(Boolean(post.isSaved));
   const [likesCount, setLikesCount] = useState(post.likes);
+  const [impactScore, setImpactScore] = useState(Number(post.impactScore || 0));
+  const [userImpactRating, setUserImpactRating] = useState<number | null>(post.userImpactRating ?? null);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [isReporting, setIsReporting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isCopyingLink, setIsCopyingLink] = useState(false);
+  const [isReporting, setIsReporting] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
+  const [reportedReason, setReportedReason] = useState<string | null>(null);
 
   useEffect(() => {
     setIsLiked(Boolean(post.isLiked));
     setIsSaved(Boolean(post.isSaved));
     setLikesCount(post.likes);
   }, [post.id, post.isLiked, post.isSaved, post.likes]);
+    setImpactScore(Number(post.impactScore || 0));
+    setUserImpactRating(post.userImpactRating ?? null);
+  }, [post.id, post.isLiked, post.likes, post.impactScore, post.userImpactRating]);
 
   const handleLike = async () => {
     try {
@@ -117,27 +129,66 @@ export function PostCard({ post }: PostCardProps) {
       toast({
         title: "Erreur",
         description: error?.message || "Impossible de modifier la sauvegarde du post",
+  const handleImpactRate = async (value: number | null) => {
+    try {
+      const response = await impactRatePost(post.id, value);
+      const nextImpactScore = Number(response?.data?.impactScore ?? impactScore);
+      const nextUserImpactRating = response?.data?.userImpactRating ?? null;
+
+      setImpactScore(nextImpactScore);
+      setUserImpactRating(nextUserImpactRating);
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error?.message || "Impossible de noter l'impact du post",
         variant: "destructive",
         duration: 2000,
       });
     }
   };
 
+  const handleSave = () => {
+    setIsSaved(!isSaved);
+    toast({
+      title: nextSavedState ? "Post sauvegardé !" : "Post retiré des sauvegardes",
+      description: nextSavedState
+        ? "Le post a été ajouté à vos sauvegardes (mock local)."
+        : "Le post a été retiré de vos sauvegardes (mock local).",
+      duration: 2000,
+    });
+
+    setIsSaving(false);
+  };
+
   const handleShare = () => {
     setShowShareDialog(true);
   };
 
-  const handleCopyLink = () => {
+  const handleCopyLink = async () => {
+    if (isCopyingLink) return;
+    setIsCopyingLink(true);
+
     const postUrl = `${window.location.origin}/post/${post.id}`;
-    navigator.clipboard.writeText(postUrl);
-    toast({
-      title: "Lien copié !",
-      description: "Le lien du post a été copié dans le presse-papiers",
-      duration: 2000,
-    });
+    try {
+      await navigator.clipboard.writeText(postUrl);
+      toast({
+        title: "Lien copié !",
+        description: "Le lien du post a été copié dans le presse-papiers",
+        duration: 2000,
+      });
+    } catch {
+      toast({
+        title: "Erreur",
+        description: "Impossible de copier le lien pour le moment.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCopyingLink(false);
+    }
   };
 
   const handleReport = () => {
+    setReportError(null);
     setShowReportDialog(true);
   };
 
@@ -161,6 +212,31 @@ export function PostCard({ post }: PostCardProps) {
         description: error?.message || "Impossible de signaler ce post",
         variant: "destructive",
         duration: 2500,
+  const handleSubmitReport = async (reason: string) => {
+    if (isReporting) return;
+
+    setReportError(null);
+    setIsReporting(true);
+
+    // Optimistic UI: immediate close + local reported state, then reconcile if API fails.
+    setReportedReason(reason);
+    setShowReportDialog(false);
+
+    try {
+      await reportPost(post.id, { reason });
+      toast({
+        title: "Post signalé",
+        description: `Le post a été signalé pour : ${reason}`,
+        duration: 3000,
+      });
+    } catch (error: any) {
+      setReportedReason(null);
+      setReportError(error?.message || "Impossible d'envoyer le signalement.");
+      setShowReportDialog(true);
+      toast({
+        title: "Échec du signalement",
+        description: error?.message || "Veuillez réessayer dans un instant.",
+        variant: "destructive",
       });
     } finally {
       setIsReporting(false);
@@ -224,17 +300,21 @@ export function PostCard({ post }: PostCardProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleSave}>
+                <DropdownMenuItem onClick={handleSave} disabled={isSaving}>
                   <Bookmark className="h-4 w-4 mr-2" />
-                  {isSaved ? "Retirer des sauvegardes" : "Enregistrer"}
+                  {isSaving
+                    ? "Mise à jour..."
+                    : isSaved
+                      ? "Retirer des sauvegardes"
+                      : "Enregistrer"}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleShare}>
                   <Share className="h-4 w-4 mr-2" />
                   Partager
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleCopyLink}>
+                <DropdownMenuItem onClick={handleCopyLink} disabled={isCopyingLink}>
                   <Copy className="h-4 w-4 mr-2" />
-                  Copier le lien
+                  {isCopyingLink ? "Copie..." : "Copier le lien"}
                 </DropdownMenuItem>
                 <DropdownMenuItem className="text-destructive" onClick={handleReport}>
                   <Flag className="h-4 w-4 mr-2" />
@@ -302,9 +382,35 @@ export function PostCard({ post }: PostCardProps) {
               </Button>
             </div>
 
-            <div className="flex items-center gap-2 rounded-md border px-3 py-1.5 text-primary">
+            <div className="flex items-center gap-2 rounded-md border px-2 py-1 text-primary">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-1"
+                onClick={() => handleImpactRate(Math.max((userImpactRating ?? 0) - 1, 1))}
+                disabled={userImpactRating === null}
+              >
+                <Minus className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-1"
+                onClick={() => handleImpactRate(Math.min((userImpactRating ?? 0) + 1, 5))}
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-1"
+                onClick={() => handleImpactRate(null)}
+                disabled={userImpactRating === null}
+              >
+                <X className="h-3.5 w-3.5" />
+              </Button>
               <Zap className="h-4 w-4" />
-              <span className="text-sm font-medium">{post.impactScore || 0}</span>
+              <span className="text-sm font-medium">{impactScore}</span>
             </div>
           </div>
         </div>
@@ -324,6 +430,7 @@ export function PostCard({ post }: PostCardProps) {
           <DialogTitle>Partager ce post</DialogTitle>
           <DialogDescription>
             Choisissez comment vous souhaitez partager ce post avec d'autres personnes.
+            Les options de partage direct sont actuellement en mode mock (UI uniquement).
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
@@ -338,9 +445,9 @@ export function PostCard({ post }: PostCardProps) {
             </Button>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" className="flex-1" onClick={handleCopyLink}>
+            <Button variant="outline" className="flex-1" onClick={handleCopyLink} disabled={isCopyingLink}>
               <Copy className="h-4 w-4 mr-2" />
-              Copier le lien
+              {isCopyingLink ? "Copie..." : "Copier le lien"}
             </Button>
             <Button variant="outline" className="flex-1">
               <Users className="h-4 w-4 mr-2" />
@@ -358,9 +465,20 @@ export function PostCard({ post }: PostCardProps) {
           <DialogTitle>Signaler ce post</DialogTitle>
           <DialogDescription>
             Aidez-nous à maintenir une communauté respectueuse en signalant ce contenu.
+            Les signalements sont persistés côté serveur.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
+          {reportedReason && (
+            <p className="text-sm rounded-md border border-primary/30 bg-primary/5 p-2">
+              Signalement déjà envoyé pour : <strong>{reportedReason}</strong>
+            </p>
+          )}
+          {reportError && (
+            <p className="text-sm rounded-md border border-destructive/30 bg-destructive/5 p-2 text-destructive">
+              {reportError}
+            </p>
+          )}
           <p className="text-sm text-muted-foreground">
             Pourquoi signalez-vous ce post ?
           </p>
@@ -380,9 +498,10 @@ export function PostCard({ post }: PostCardProps) {
                 onClick={() => {
                   void submitReport(reason);
                 }}
+                onClick={() => handleSubmitReport(reason)}
                 disabled={isReporting}
               >
-                {reason}
+                {isReporting ? "Envoi..." : reason}
               </Button>
             ))}
           </div>

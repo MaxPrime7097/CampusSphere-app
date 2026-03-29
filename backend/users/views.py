@@ -11,7 +11,8 @@ from .models import User, Connection
 from .serializers import (
     UserRegistrationSerializer, UserLoginSerializer, UserProfileSerializer,
     UserUpdateSerializer, ConnectionSerializer, ConnectionCreateSerializer,
-    UserSearchSerializer
+    UserSearchSerializer, ChangePasswordSerializer, ChangeEmailSerializer,
+    LogoutSerializer, DeleteAccountSerializer
 )
 from campus_sphere.cache import CacheManager, CacheKeys
 
@@ -77,6 +78,74 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
         if self.request.method in ['PUT', 'PATCH']:
             return UserUpdateSerializer
         return UserProfileSerializer
+
+
+class LogoutView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = LogoutSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        refresh_token = serializer.validated_data.get('refresh')
+        if refresh_token:
+            try:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+            except Exception:
+                logger.info("Refresh token blacklist skipped during logout", exc_info=True)
+
+        return Response({
+            'success': True,
+            'message': 'Logout successful'
+        }, status=status.HTTP_200_OK)
+
+
+class ChangePasswordView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+
+        request.user.set_password(serializer.validated_data['new_password'])
+        request.user.save(update_fields=['password', 'updated_at'])
+
+        return Response({
+            'success': True,
+            'message': 'Password updated successfully'
+        }, status=status.HTTP_200_OK)
+
+
+class ChangeEmailView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangeEmailSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+
+        request.user.email = serializer.validated_data['new_email']
+        request.user.save(update_fields=['email', 'updated_at'])
+
+        return Response({
+            'success': True,
+            'data': UserProfileSerializer(request.user).data,
+            'message': 'Email updated successfully'
+        }, status=status.HTTP_200_OK)
+
+
+class DeleteAccountView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request):
+        serializer = DeleteAccountSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        request.user.delete()
+        return Response({
+            'success': True,
+            'message': 'Account deleted successfully'
+        }, status=status.HTTP_200_OK)
 
 
 class UserDetailView(generics.RetrieveAPIView):
