@@ -502,6 +502,13 @@ export async function deleteConnection(userId: number | string, connectionId: nu
   });
 }
 
+export async function getConnectionRecommendations(token?: string) {
+  const response = await apiFetch<any>("api/users/connections/recommendations/", {
+    token: token || getAccessToken(),
+  });
+  return normalizeUsers(unwrapList(response));
+}
+
 // ============================================================================
 // SPHERES
 // ============================================================================
