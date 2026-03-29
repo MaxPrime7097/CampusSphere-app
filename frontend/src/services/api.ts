@@ -221,6 +221,7 @@ function normalizePost(post: any) {
     commentsCount: toNumber(post.comments_count ?? post.commentsCount, 0),
     impactScore: toNumber(post.impact_score ?? post.impactScore, 0),
     isLiked: post.is_liked ?? post.isLiked ?? false,
+    isSaved: post.is_saved ?? post.isSaved ?? false,
     canEdit: post.can_edit ?? post.canEdit ?? false,
     canDelete: post.can_delete ?? post.canDelete ?? false,
     recentComments: toArray(post.recent_comments ?? post.recentComments),
@@ -707,6 +708,32 @@ export async function likePost(id: number | string, token?: string) {
   });
 }
 
+export async function savePost(id: number | string, token?: string) {
+  return apiFetch<any>(`api/posts/${id}/save/`, {
+    method: "POST",
+    token: token || getAccessToken(),
+  });
+}
+
+export async function unsavePost(id: number | string, token?: string) {
+  return apiFetch<any>(`api/posts/${id}/save/`, {
+    method: "DELETE",
+    token: token || getAccessToken(),
+  });
+}
+
+export async function reportPost(
+  id: number | string,
+  data: { reason: string; details?: string },
+  token?: string
+) {
+  return apiFetch<any>(`api/posts/${id}/report/`, {
+    method: "POST",
+    body: data,
+    token: token || getAccessToken(),
+  });
+}
+
 export async function pinPost(id: number | string, token?: string) {
   return apiFetch<any>(`api/posts/${id}/pin/`, {
     method: "POST",
@@ -721,6 +748,11 @@ export async function getUserPosts(userId: number | string, token?: string) {
 
 export async function getSpherePosts(sphereId: number | string, token?: string) {
   const response = await apiFetch<any>(`api/posts/sphere/${sphereId}/`, { token: token || getAccessToken() });
+  return normalizePosts(unwrapList(response));
+}
+
+export async function getSavedPosts(token?: string) {
+  const response = await apiFetch<any>("api/posts/saved/", { token: token || getAccessToken() });
   return normalizePosts(unwrapList(response));
 }
 
