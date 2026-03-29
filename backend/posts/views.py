@@ -33,6 +33,22 @@ def user_can_access_post(user, post):
     return False
 
 
+def can_user_access_post(user, post):
+    if post.visibility == 'public' or post.author == user:
+        return True
+    if post.visibility == 'sphere' and post.sphere:
+        from spheres.models import SphereMember
+        return SphereMember.objects.filter(sphere=post.sphere, user=user, status='active').exists()
+    if post.visibility == 'friends':
+        from users.models import Connection
+        return Connection.objects.filter(
+            models.Q(requester=user, recipient=post.author) |
+            models.Q(requester=post.author, recipient=user),
+            status='accepted'
+        ).exists()
+    return False
+
+
 class PostListView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [SearchFilter, OrderingFilter]  # Removed DjangoFilterBackend - not installed

@@ -156,3 +156,27 @@ class CommentLike(models.Model):
 
     def __str__(self):
         return f"{self.user.username} liked comment {self.comment.id}"
+
+
+class PostReport(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('reviewed', 'Reviewed'),
+        ('dismissed', 'Dismissed'),
+        ('action_taken', 'Action Taken'),
+    ]
+
+    post = models.ForeignKey(Post, related_name='reports', on_delete=models.CASCADE)
+    reporter = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='post_reports', on_delete=models.CASCADE)
+    reason = models.CharField(max_length=120)
+    details = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['post', 'reporter']
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.reporter.username} reported post {self.post.id} ({self.reason})"
