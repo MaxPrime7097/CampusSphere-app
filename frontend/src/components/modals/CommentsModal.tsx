@@ -220,8 +220,8 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
     setIsSubmitting(true);
     
     try {
-      // Create reply comment via API (with parent_id if backend supports it)
-      const result = await createComment(postId, { content: replyContent, parent_id: parentId });
+      // Create reply comment via API with parent linkage
+      const result = await createComment(postId, { content: replyContent, parent: parentId });
       const currentUser = await getCurrentUser().catch(() => null);
       
       const newReply: Comment = {

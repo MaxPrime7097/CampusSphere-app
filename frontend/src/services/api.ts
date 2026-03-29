@@ -730,7 +730,7 @@ export async function getPostComments(postId: number | string, token?: string) {
   return unwrapList(response);
 }
 
-export async function createComment(postId: number | string, data: { content: string; parent_id?: number | string }, token?: string) {
+export async function createComment(postId: number | string, data: { content: string; parent?: number | string }, token?: string) {
   return apiFetch<any>(`api/posts/${postId}/comments/`, {
     method: "POST",
     body: data,

@@ -35,9 +35,25 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 class CommentCreateSerializer(serializers.ModelSerializer):
+    parent_id = serializers.PrimaryKeyRelatedField(
+        queryset=Comment.objects.all(),
+        source='parent',
+        required=False,
+        allow_null=True,
+        write_only=True
+    )
+
     class Meta:
         model = Comment
-        fields = ['content', 'parent']
+        fields = ['content', 'parent', 'parent_id']
+
+    def validate(self, attrs):
+        parent = attrs.get('parent')
+        if parent and parent.post_id != self.context['post'].id:
+            raise serializers.ValidationError({
+                'parent': 'Parent comment must belong to the same post.'
+            })
+        return attrs
 
     def create(self, validated_data):
         validated_data['author'] = self.context['request'].user
