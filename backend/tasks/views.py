@@ -13,6 +13,7 @@ from .serializers import (
     TaskAssignSerializer
 )
 from spheres.permissions import IsSphereMember, IsSphereModerator
+from users.impact_policy import TASK_COMPLETED, apply_impact_points
 
 
 class TaskListView(generics.ListCreateAPIView):
@@ -159,13 +160,13 @@ class TaskCompleteView(APIView):
         
         # Award impact points to assigned user or completer
         recipient = task.assigned_to if task.assigned_to else user
-        recipient.impact_score += impact_points_earned
-        recipient.save(update_fields=['impact_score'])
+        apply_impact_points(recipient, impact_points_earned)
 
         return Response({
             'success': True,
             'data': {
                 'task': TaskSerializer(task, context={'request': request}).data,
+                'impactEvent': TASK_COMPLETED,
                 'impactPointsEarned': impact_points_earned,
                 'newImpactScore': recipient.impact_score
             },

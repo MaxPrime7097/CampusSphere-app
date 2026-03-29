@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.utils import timezone
 from .models import Resource, ResourceSave, ResourceView
+from users.impact_policy import RESOURCE_UPLOADED, apply_impact_event
 
 
 class ResourceSerializer(serializers.ModelSerializer):
@@ -109,9 +110,8 @@ class ResourceCreateSerializer(serializers.ModelSerializer):
         
         resource = super().create(validated_data)
         
-        # Update author's impact score
-        resource.author.impact_score += 15
-        resource.author.save(update_fields=['impact_score'])
+        # Apply impact for uploading a resource.
+        apply_impact_event(resource.author, RESOURCE_UPLOADED)
         
         return resource
 
