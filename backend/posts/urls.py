@@ -10,7 +10,7 @@ urlpatterns = [
 
     # Post interactions
     path('<int:pk>/like/', views.PostLikeView.as_view(), name='post-like'),
-    path('<int:pk>/report/', views.PostReportView.as_view(), name='post-report'),
+    path('<int:pk>/impact-rate/', views.PostImpactRatingView.as_view(), name='post-impact-rate'),
     path('<int:pk>/pin/', views.PostPinView.as_view(), name='post-pin'),
 
     # Comments

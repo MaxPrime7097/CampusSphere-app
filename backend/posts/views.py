@@ -7,13 +7,30 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from django.shortcuts import get_object_or_404
 from django.db import models
 from django.utils import timezone
-from .models import Post, PostLike, Comment, CommentLike
+from .models import Post, PostLike, PostImpactRating, Comment, CommentLike
 from .serializers import (
     PostSerializer, PostCreateSerializer, PostUpdateSerializer,
     CommentSerializer, CommentCreateSerializer, PostLikeSerializer,
-    PostReportCreateSerializer
+    PostImpactRatingActionSerializer
 )
 from spheres.permissions import IsSphereMemberOrPublic
+from users.impact_policy import POST_CREATED, COMMENT_CREATED, apply_impact_event
+
+
+def user_can_access_post(user, post):
+    if post.visibility == 'public' or post.author == user:
+        return True
+    if post.visibility == 'sphere' and post.sphere:
+        from spheres.models import SphereMember
+        return SphereMember.objects.filter(sphere=post.sphere, user=user, status='active').exists()
+    if post.visibility == 'friends':
+        from users.models import Connection
+        return Connection.objects.filter(
+            models.Q(requester=user, recipient=post.author) |
+            models.Q(requester=post.author, recipient=user),
+            status='accepted'
+        ).exists()
+    return False
 
 
 def can_user_access_post(user, post):
@@ -77,9 +94,8 @@ class PostListView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         post = serializer.save()
-        # Update author's impact score
-        post.author.impact_score += 10
-        post.author.save(update_fields=['impact_score'])
+        # Apply impact for creating a post.
+        apply_impact_event(post.author, POST_CREATED)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -169,7 +185,8 @@ class PostLikeView(APIView):
         post = get_object_or_404(Post, pk=pk)
         user = request.user
 
-        if not can_user_access_post(user, post):
+        # Check if user can access this post (same logic as PostDetailView)
+        if not user_can_access_post(user, post):
             return Response(
                 {'error': 'You don\'t have permission to access this post'},
                 status=status.HTTP_403_FORBIDDEN
@@ -197,42 +214,47 @@ class PostLikeView(APIView):
         })
 
 
-class PostReportView(APIView):
+class PostImpactRatingView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
         post = get_object_or_404(Post, pk=pk)
         user = request.user
 
-        if not can_user_access_post(user, post):
+        if not user_can_access_post(user, post):
             return Response(
                 {'error': 'You don\'t have permission to access this post'},
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        serializer = PostReportCreateSerializer(data=request.data)
+        serializer = PostImpactRatingActionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        value = serializer.validated_data.get('value')
 
-        report, created = post.reports.update_or_create(
-            reporter=user,
-            defaults={
-                'reason': serializer.validated_data['reason'],
-                'details': serializer.validated_data.get('details', ''),
-                'status': 'pending',
-            }
-        )
+        if value is None:
+            PostImpactRating.objects.filter(post=post, user=user).delete()
+            message = 'Impact rating removed'
+            user_rating = None
+        else:
+            PostImpactRating.objects.update_or_create(
+                post=post,
+                user=user,
+                defaults={'value': value}
+            )
+            message = 'Impact rating saved'
+            user_rating = value
+
+        post.recompute_impact_score()
 
         return Response({
             'success': True,
             'data': {
-                'reported': True,
-                'created': created,
-                'reportId': report.id,
-                'reason': report.reason,
-                'status': report.status,
+                'impactScore': post.impact_score,
+                'userImpactRating': user_rating,
+                'message': message
             },
             'timestamp': timezone.now().isoformat()
-        }, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+        })
 
 
 class PostPinView(APIView):
@@ -306,9 +328,8 @@ class PostCommentsView(generics.ListCreateAPIView):
         # Update post comment count
         post.update_counts()
         
-        # Update author's impact score
-        comment.author.impact_score += 2
-        comment.author.save(update_fields=['impact_score'])
+        # Apply impact for creating a comment.
+        apply_impact_event(comment.author, COMMENT_CREATED)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
