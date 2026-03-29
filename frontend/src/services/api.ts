@@ -412,6 +412,7 @@ export async function getUserProfile(token?: string) {
 export async function updateUserProfile(data: Partial<{
   first_name: string;
   last_name: string;
+  username: string;
   bio: string;
   university: string;
   faculty: string;
@@ -425,6 +426,48 @@ export async function updateUserProfile(data: Partial<{
     body: data,
     token: token || getAccessToken(),
   });
+}
+
+export async function changeUserPassword(payload: { current_password: string; new_password: string }, token?: string) {
+  return apiFetch<any>("api/users/auth/change-password/", {
+    method: "POST",
+    body: payload,
+    token: token || getAccessToken(),
+  });
+}
+
+export async function changeUserEmail(payload: { current_email: string; new_email: string }, token?: string) {
+  const response = await apiFetch<any>("api/users/auth/change-email/", {
+    method: "POST",
+    body: payload,
+    token: token || getAccessToken(),
+  });
+  return normalizeUser(unwrapItem(response));
+}
+
+export async function logoutUser(token?: string) {
+  const refresh = getRefreshToken();
+  try {
+    await apiFetch<any>("api/users/auth/logout/", {
+      method: "POST",
+      body: refresh ? { refresh } : {},
+      token: token || getAccessToken(),
+    });
+  } finally {
+    clearTokens();
+  }
+}
+
+export async function deleteUserAccount(confirmationText: string, token?: string) {
+  try {
+    await apiFetch<any>("api/users/auth/delete-account/", {
+      method: "DELETE",
+      body: { confirmation_text: confirmationText },
+      token: token || getAccessToken(),
+    });
+  } finally {
+    clearTokens();
+  }
 }
 
 export async function searchUsers(query: string, token?: string) {
