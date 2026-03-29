@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Users, FileText, Flag, TrendingUp, Shield, AlertCircle, CheckCircle, XCircle, Search, Filter, BarChart3, Clock } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Users, FileText, TrendingUp, Shield, AlertCircle, CheckCircle, XCircle, Search, Filter, BarChart3, Clock, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -7,82 +7,111 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
+import {
+  getAdminModerationQueue,
+  getAdminReportedContent,
+  getAdminUserManagementSummary,
+  type AdminModerationQueueItem,
+  type AdminReportedContentItem,
+  type AdminUserManagementSummary,
+} from "@/services/api";
 
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [searchQuery, setSearchQuery] = useState("");
+  const [stats, setStats] = useState<AdminUserManagementSummary | null>(null);
+  const [pendingResources, setPendingResources] = useState<AdminModerationQueueItem[]>([]);
+  const [reportedContent, setReportedContent] = useState<AdminReportedContentItem[]>([]);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
+  const [isLoadingModeration, setIsLoadingModeration] = useState(true);
+  const [isLoadingReports, setIsLoadingReports] = useState(true);
+  const [statsError, setStatsError] = useState<string | null>(null);
+  const [moderationError, setModerationError] = useState<string | null>(null);
+  const [reportsError, setReportsError] = useState<string | null>(null);
 
-  const stats = {
-    totalUsers: 1234,
-    newUsersToday: 23,
-    pendingResources: 12,
-    reportedContent: 5,
-    activeGroups: 89,
-    totalResources: 456
+  const filteredPendingResources = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return pendingResources;
+    return pendingResources.filter((resource) =>
+      [resource.title, resource.type, resource.subject, resource.uploader.name]
+        .join(" ")
+        .toLowerCase()
+        .includes(query)
+    );
+  }, [pendingResources, searchQuery]);
+
+  const filteredReportedContent = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return reportedContent;
+    return reportedContent.filter((report) =>
+      [report.type, report.content, report.reason, report.reporter.name]
+        .join(" ")
+        .toLowerCase()
+        .includes(query)
+    );
+  }, [reportedContent, searchQuery]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    (async () => {
+      try {
+        setIsLoadingStats(true);
+        setStatsError(null);
+        const summary = await getAdminUserManagementSummary();
+        if (isMounted) setStats(summary);
+      } catch (error: any) {
+        if (isMounted) setStatsError(error?.message || "Impossible de charger les statistiques admin.");
+      } finally {
+        if (isMounted) setIsLoadingStats(false);
+      }
+    })();
+
+    (async () => {
+      try {
+        setIsLoadingModeration(true);
+        setModerationError(null);
+        const queue = await getAdminModerationQueue();
+        if (isMounted) setPendingResources(queue);
+      } catch (error: any) {
+        if (isMounted) setModerationError(error?.message || "Impossible de charger la file de modération.");
+      } finally {
+        if (isMounted) setIsLoadingModeration(false);
+      }
+    })();
+
+    (async () => {
+      try {
+        setIsLoadingReports(true);
+        setReportsError(null);
+        const reports = await getAdminReportedContent();
+        if (isMounted) setReportedContent(reports);
+      } catch (error: any) {
+        if (isMounted) setReportsError(error?.message || "Impossible de charger les contenus signalés.");
+      } finally {
+        if (isMounted) setIsLoadingReports(false);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const getInitials = (value: string) =>
+    value
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? "")
+      .join("") || "?";
+
+  const formatRelativeDate = (value: string | null) => {
+    if (!value) return "Date inconnue";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
   };
-
-  const pendingResources = [
-    {
-      id: "1",
-      title: "Notes Analyse Complexe M1",
-      uploader: { name: "Marie D.", avatar: "/placeholder-avatar.jpg" },
-      uploadDate: "il y a 2h",
-      type: "Notes",
-      subject: "Mathématiques",
-      size: "4.2 MB"
-    },
-    {
-      id: "2",
-      title: "TD Corrigés Thermodynamique",
-      uploader: { name: "Thomas M.", avatar: "/placeholder-avatar.jpg" },
-      uploadDate: "il y a 5h",
-      type: "Exercices",
-      subject: "Physique",
-      size: "2.8 MB"
-    }
-  ];
-
-  const reportedContent = [
-    {
-      id: "1",
-      type: "Post",
-      content: "Message potentiellement offensant...",
-      reporter: { name: "Alex C.", avatar: "/placeholder-avatar.jpg" },
-      reason: "Contenu inapproprié",
-      date: "il y a 1h",
-      status: "pending"
-    },
-    {
-      id: "2",
-      type: "Commentaire",
-      content: "Spam publicitaire...",
-      reporter: { name: "Sophie L.", avatar: "/placeholder-avatar.jpg" },
-      reason: "Spam",
-      date: "il y a 3h",
-      status: "pending"
-    }
-  ];
-
-  const recentUsers = [
-    {
-      id: "1",
-      name: "Emma Leroy",
-      avatar: "/placeholder-avatar.jpg",
-      email: "emma.l@example.com",
-      joinDate: "il y a 2h",
-      university: "Paris-Saclay",
-      verified: false
-    },
-    {
-      id: "2",
-      name: "Lucas Moreau",
-      avatar: "/placeholder-avatar.jpg",
-      email: "lucas.m@example.com",
-      joinDate: "il y a 5h",
-      university: "Sorbonne",
-      verified: true
-    }
-  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5">
@@ -140,10 +169,10 @@ export function AdminDashboard() {
             <CardContent>
               <div className="flex items-end gap-2 mb-3">
                 <span className="text-4xl font-bold campus-gradient bg-clip-text text-transparent">
-                  {stats.totalUsers}
+                  {isLoadingStats ? "…" : (stats?.totalUsers ?? "—")}
                 </span>
                 <Badge className="mb-1 bg-green-100 text-green-800">
-                  +{stats.newUsersToday} aujourd'hui
+                  +{isLoadingStats ? "…" : (stats?.newUsersToday ?? "—")} aujourd'hui
                 </Badge>
               </div>
               <Progress value={75} className="h-2" />
@@ -163,7 +192,7 @@ export function AdminDashboard() {
             <CardContent>
               <div className="flex items-end gap-2 mb-3">
                 <span className="text-4xl font-bold text-orange-600">
-                  {stats.pendingResources}
+                  {isLoadingStats ? "…" : (stats?.pendingResources ?? "—")}
                 </span>
                 <Badge variant="outline" className="mb-1">
                   Ressources
@@ -186,7 +215,7 @@ export function AdminDashboard() {
             <CardContent>
               <div className="flex items-end gap-2 mb-3">
                 <span className="text-4xl font-bold text-red-600">
-                  {stats.reportedContent}
+                  {isLoadingStats ? "…" : (stats?.reportedContent ?? "—")}
                 </span>
                 <Badge variant="destructive" className="mb-1">
                   Urgent
@@ -206,7 +235,7 @@ export function AdminDashboard() {
             <CardContent className="p-4">
               <div className="text-center">
                 <Users className="h-5 w-5 mx-auto mb-2 text-primary" />
-                <div className="text-2xl font-bold">{stats.activeGroups}</div>
+                <div className="text-2xl font-bold">{isLoadingStats ? "…" : (stats?.activeGroups ?? "—")}</div>
                 <p className="text-xs text-muted-foreground">Groupes actifs</p>
               </div>
             </CardContent>
@@ -216,7 +245,7 @@ export function AdminDashboard() {
             <CardContent className="p-4">
               <div className="text-center">
                 <FileText className="h-5 w-5 mx-auto mb-2 text-primary" />
-                <div className="text-2xl font-bold">{stats.totalResources}</div>
+                <div className="text-2xl font-bold">{isLoadingStats ? "…" : (stats?.totalResources ?? "—")}</div>
                 <p className="text-xs text-muted-foreground">Ressources</p>
               </div>
             </CardContent>
@@ -267,7 +296,7 @@ export function AdminDashboard() {
                   </div>
                   <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                     <span className="text-sm">Inscriptions</span>
-                    <Badge className="bg-green-100 text-green-800">+{stats.newUsersToday}</Badge>
+                    <Badge className="bg-green-100 text-green-800">+{isLoadingStats ? "…" : (stats?.newUsersToday ?? "—")}</Badge>
                   </div>
                   <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                     <span className="text-sm">Groupes créés</span>
@@ -312,40 +341,11 @@ export function AdminDashboard() {
               </Card>
             </div>
 
-            {/* Recent Users */}
-            <Card className="campus-card">
-              <CardHeader>
-                <CardTitle>Nouveaux Utilisateurs</CardTitle>
-                <CardDescription>Inscriptions récentes nécessitant une vérification</CardDescription>
-              </CardHeader>
-              <CardContent className="p-4">
-                <div className="space-y-3">
-                  {recentUsers.map((user) => (
-                    <div key={user.id} className="flex items-center justify-between p-3 rounded-lg border">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <Avatar className="h-10 w-10 flex-shrink-0">
-                          <AvatarImage src={user.avatar} />
-                          <AvatarFallback>{user.name.slice(0, 2)}</AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium text-sm truncate">{user.name}</p>
-                            {user.verified && (
-                              <Badge variant="secondary" className="text-xs">Vérifié</Badge>
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                          <p className="text-xs text-muted-foreground">{user.university}</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2 ml-2">
-                        <Button variant="outline" size="sm">Voir</Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            {statsError && (
+              <Card className="campus-card border-destructive/40">
+                <CardContent className="py-6 text-sm text-destructive">{statsError}</CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="users" className="space-y-4">
@@ -372,44 +372,53 @@ export function AdminDashboard() {
                 <CardTitle className="text-base md:text-lg">Ressources en Attente de Validation</CardTitle>
               </CardHeader>
               <CardContent className="p-4">
-                <div className="space-y-3">
-                  {pendingResources.map((resource) => (
-                    <div key={resource.id} className="p-4 rounded-lg border">
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-2 mb-2">
-                            <Badge variant="outline">{resource.type}</Badge>
-                            <Badge variant="secondary">{resource.subject}</Badge>
+                {isLoadingModeration ? (
+                  <div className="py-8 flex items-center justify-center gap-2 text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Chargement de la file de modération...
+                  </div>
+                ) : moderationError ? (
+                  <div className="py-4 text-sm text-destructive">{moderationError}</div>
+                ) : filteredPendingResources.length === 0 ? (
+                  <div className="py-8 text-sm text-muted-foreground">Aucune ressource en attente de modération.</div>
+                ) : (
+                  <div className="space-y-3">
+                    {filteredPendingResources.map((resource) => (
+                      <div key={resource.id} className="p-4 rounded-lg border">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 mb-2">
+                              <Badge variant="outline">{resource.type}</Badge>
+                              <Badge variant="secondary">{resource.subject}</Badge>
+                            </div>
+                            <h4 className="font-medium text-sm md:text-base mb-1">{resource.title}</h4>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <Avatar className="h-5 w-5">
+                                <AvatarImage src={resource.uploader.avatar || undefined} />
+                                <AvatarFallback className="text-xs">{getInitials(resource.uploader.name)}</AvatarFallback>
+                              </Avatar>
+                              <span>{resource.uploader.name}</span>
+                              <span>·</span>
+                              <span>{formatRelativeDate(resource.uploadDate)}</span>
+                              <span>·</span>
+                              <span>{resource.size}</span>
+                            </div>
                           </div>
-                          <h4 className="font-medium text-sm md:text-base mb-1">{resource.title}</h4>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Avatar className="h-5 w-5">
-                              <AvatarImage src={resource.uploader.avatar} />
-                              <AvatarFallback className="text-xs">
-                                {resource.uploader.name.slice(0, 2)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span>{resource.uploader.name}</span>
-                            <span>·</span>
-                            <span>{resource.uploadDate}</span>
-                            <span>·</span>
-                            <span>{resource.size}</span>
+                          <div className="flex gap-2">
+                            <Button size="sm" className="campus-gradient text-white gap-1">
+                              <CheckCircle className="h-3 w-3" />
+                              Approuver
+                            </Button>
+                            <Button size="sm" variant="outline" className="text-red-600 border-red-600 gap-1">
+                              <XCircle className="h-3 w-3" />
+                              Rejeter
+                            </Button>
                           </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button size="sm" className="campus-gradient text-white gap-1">
-                            <CheckCircle className="h-3 w-3" />
-                            Approuver
-                          </Button>
-                          <Button size="sm" variant="outline" className="text-red-600 border-red-600 gap-1">
-                            <XCircle className="h-3 w-3" />
-                            Rejeter
-                          </Button>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -423,39 +432,46 @@ export function AdminDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4">
-                <div className="space-y-3">
-                  {reportedContent.map((report) => (
-                    <div key={report.id} className="p-4 rounded-lg border border-red-200 bg-red-50/50 dark:bg-red-950/20 dark:border-red-900">
-                      <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-2 mb-2">
-                            <Badge variant="destructive">{report.type}</Badge>
-                            <Badge variant="outline">{report.reason}</Badge>
+                {isLoadingReports ? (
+                  <div className="py-8 flex items-center justify-center gap-2 text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Chargement des signalements...
+                  </div>
+                ) : reportsError ? (
+                  <div className="py-4 text-sm text-destructive">{reportsError}</div>
+                ) : filteredReportedContent.length === 0 ? (
+                  <div className="py-8 text-sm text-muted-foreground">Aucun contenu signalé pour le moment.</div>
+                ) : (
+                  <div className="space-y-3">
+                    {filteredReportedContent.map((report) => (
+                      <div key={report.id} className="p-4 rounded-lg border border-red-200 bg-red-50/50 dark:bg-red-950/20 dark:border-red-900">
+                        <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 mb-2">
+                              <Badge variant="destructive">{report.type}</Badge>
+                              <Badge variant="outline">{report.reason}</Badge>
+                            </div>
+                            <p className="text-sm mb-2 italic text-muted-foreground truncate">"{report.content}"</p>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <span>Signalé par</span>
+                              <Avatar className="h-4 w-4">
+                                <AvatarImage src={report.reporter.avatar || undefined} />
+                                <AvatarFallback className="text-xs">{getInitials(report.reporter.name)}</AvatarFallback>
+                              </Avatar>
+                              <span>{report.reporter.name}</span>
+                              <span>·</span>
+                              <span>{formatRelativeDate(report.date)}</span>
+                            </div>
                           </div>
-                          <p className="text-sm mb-2 italic text-muted-foreground truncate">
-                            "{report.content}"
-                          </p>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span>Signalé par</span>
-                            <Avatar className="h-4 w-4">
-                              <AvatarImage src={report.reporter.avatar} />
-                              <AvatarFallback className="text-xs">
-                                {report.reporter.name.slice(0, 2)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span>{report.reporter.name}</span>
-                            <span>·</span>
-                            <span>{report.date}</span>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline">Examiner</Button>
+                            <Button size="sm" variant="destructive">Supprimer</Button>
                           </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline">Examiner</Button>
-                          <Button size="sm" variant="destructive">Supprimer</Button>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

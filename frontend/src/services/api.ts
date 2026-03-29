@@ -1127,6 +1127,103 @@ export async function getUploadStats(token?: string) {
 }
 
 // ============================================================================
+// ADMIN
+// ============================================================================
+
+export interface AdminModerationQueueItem {
+  id: string;
+  title: string;
+  type: string;
+  subject: string;
+  size: string;
+  uploadDate: string | null;
+  uploader: {
+    name: string;
+    avatar: string | null;
+  };
+}
+
+export interface AdminReportedContentItem {
+  id: string;
+  type: string;
+  content: string;
+  reason: string;
+  date: string | null;
+  status: string;
+  reporter: {
+    name: string;
+    avatar: string | null;
+  };
+}
+
+export interface AdminUserManagementSummary {
+  totalUsers: number;
+  newUsersToday: number;
+  pendingResources: number;
+  reportedContent: number;
+  activeGroups: number;
+  totalResources: number;
+}
+
+function mapAdminModerationQueueItem(item: any): AdminModerationQueueItem {
+  const uploader = normalizeUser(item?.uploader ?? item?.author ?? item?.uploaded_by ?? item?.uploader_info);
+  return {
+    id: String(item?.id ?? ""),
+    title: item?.title ?? item?.name ?? "Ressource sans titre",
+    type: item?.type ?? item?.resource_type ?? "Ressource",
+    subject: item?.subject ?? item?.category ?? "Non défini",
+    size: item?.size ?? item?.file_size ?? item?.fileSize ?? "—",
+    uploadDate: item?.upload_date ?? item?.created_at ?? item?.createdAt ?? null,
+    uploader: {
+      name: uploader?.name ?? item?.uploader_name ?? "Utilisateur inconnu",
+      avatar: uploader?.avatar ?? item?.uploader_avatar ?? null,
+    },
+  };
+}
+
+function mapAdminReportedContentItem(item: any): AdminReportedContentItem {
+  const reporter = normalizeUser(item?.reporter ?? item?.reported_by ?? item?.reporter_info);
+  return {
+    id: String(item?.id ?? ""),
+    type: item?.type ?? item?.content_type ?? "Contenu",
+    content: item?.content ?? item?.excerpt ?? item?.message ?? "",
+    reason: item?.reason ?? item?.report_reason ?? "Non précisé",
+    date: item?.date ?? item?.reported_at ?? item?.created_at ?? item?.createdAt ?? null,
+    status: item?.status ?? "pending",
+    reporter: {
+      name: reporter?.name ?? item?.reporter_name ?? "Utilisateur inconnu",
+      avatar: reporter?.avatar ?? item?.reporter_avatar ?? null,
+    },
+  };
+}
+
+function mapAdminSummary(summary: any): AdminUserManagementSummary {
+  return {
+    totalUsers: toNumber(summary?.totalUsers ?? summary?.total_users, 0),
+    newUsersToday: toNumber(summary?.newUsersToday ?? summary?.new_users_today, 0),
+    pendingResources: toNumber(summary?.pendingResources ?? summary?.pending_resources, 0),
+    reportedContent: toNumber(summary?.reportedContent ?? summary?.reported_content, 0),
+    activeGroups: toNumber(summary?.activeGroups ?? summary?.active_groups, 0),
+    totalResources: toNumber(summary?.totalResources ?? summary?.total_resources, 0),
+  };
+}
+
+export async function getAdminModerationQueue(token?: string): Promise<AdminModerationQueueItem[]> {
+  const response = await apiFetch<any>("api/admin/moderation-queue/", { token: token || getAccessToken() });
+  return unwrapList(response).map(mapAdminModerationQueueItem);
+}
+
+export async function getAdminReportedContent(token?: string): Promise<AdminReportedContentItem[]> {
+  const response = await apiFetch<any>("api/admin/reported-content/", { token: token || getAccessToken() });
+  return unwrapList(response).map(mapAdminReportedContentItem);
+}
+
+export async function getAdminUserManagementSummary(token?: string): Promise<AdminUserManagementSummary> {
+  const response = await apiFetch<any>("api/admin/user-management-summary/", { token: token || getAccessToken() });
+  return mapAdminSummary(unwrapItem(response));
+}
+
+// ============================================================================
 // HEALTH & INFO
 // ============================================================================
 
