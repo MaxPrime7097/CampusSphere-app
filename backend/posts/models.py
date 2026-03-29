@@ -97,6 +97,19 @@ class PostLike(models.Model):
         return f"{self.user.username} liked {self.post.id}"
 
 
+class PostSave(models.Model):
+    post = models.ForeignKey(Post, related_name='saves', on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='saved_posts', on_delete=models.CASCADE)
+    saved_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        unique_together = ['post', 'user']
+        ordering = ['-saved_at']
+
+    def __str__(self):
+        return f"{self.user.username} saved post {self.post.id}"
+
+
 class PostImpactRating(models.Model):
     post = models.ForeignKey(Post, related_name='impact_ratings', on_delete=models.CASCADE)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='post_impact_ratings', on_delete=models.CASCADE)
