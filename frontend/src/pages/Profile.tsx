@@ -69,8 +69,12 @@ function mapProfileToViewModel({
     };
   }
 
+  const NOT_AVAILABLE_TEXT = "N/A";
+  const fullName = `${profile.firstName || ""} ${profile.lastName || ""}`.trim();
+  const displayName = fullName || profile.username || NOT_AVAILABLE_TEXT;
+
   return {
-    name: profile.name ?? `${profile.firstName || ""} ${profile.lastName || ""}`.trim() || profile.username || NOT_AVAILABLE_TEXT,
+    name: profile.name ?? displayName,
     firstName: profile.firstName ?? "",
     lastName: profile.lastName ?? "",
     username: profile.username ?? "",
