@@ -13,6 +13,7 @@ from .serializers import (
     ResourceSerializer, ResourceCreateSerializer, ResourceUpdateSerializer,
     ResourceSaveSerializer
 )
+from users.impact_policy import RESOURCE_DOWNLOADED, apply_impact_event
 
 
 class ResourceListView(generics.ListCreateAPIView):
@@ -162,10 +163,9 @@ class ResourceDownloadView(APIView):
         # Track download
         resource.increment_downloads()
         
-        # Update user's impact score (1 point for downloading)
+        # Apply impact for downloading another user's resource.
         if resource.author != user:
-            user.impact_score += 1
-            user.save(update_fields=['impact_score'])
+            apply_impact_event(user, RESOURCE_DOWNLOADED)
 
         try:
             response = HttpResponse(resource.file.read(), content_type=resource.file_type)

@@ -13,6 +13,7 @@ from .serializers import (
     CommentSerializer, CommentCreateSerializer, PostLikeSerializer
 )
 from spheres.permissions import IsSphereMemberOrPublic
+from users.impact_policy import POST_CREATED, COMMENT_CREATED, apply_impact_event
 
 
 class PostListView(generics.ListCreateAPIView):
@@ -60,9 +61,8 @@ class PostListView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         post = serializer.save()
-        # Update author's impact score
-        post.author.impact_score += 10
-        post.author.save(update_fields=['impact_score'])
+        # Apply impact for creating a post.
+        apply_impact_event(post.author, POST_CREATED)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -266,9 +266,8 @@ class PostCommentsView(generics.ListCreateAPIView):
         # Update post comment count
         post.update_counts()
         
-        # Update author's impact score
-        comment.author.impact_score += 2
-        comment.author.save(update_fields=['impact_score'])
+        # Apply impact for creating a comment.
+        apply_impact_event(comment.author, COMMENT_CREATED)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
