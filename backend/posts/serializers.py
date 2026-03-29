@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.utils import timezone
-from .models import Post, PostLike, Comment, CommentLike
+from .models import Post, PostLike, PostSave, PostReport, Comment, CommentLike
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -51,6 +51,7 @@ class PostSerializer(serializers.ModelSerializer):
     likes_count = serializers.IntegerField(read_only=True)
     comments_count = serializers.IntegerField(read_only=True)
     is_liked = serializers.SerializerMethodField()
+    is_saved = serializers.SerializerMethodField()
     can_edit = serializers.SerializerMethodField()
     can_delete = serializers.SerializerMethodField()
     recent_comments = serializers.SerializerMethodField()
@@ -62,6 +63,7 @@ class PostSerializer(serializers.ModelSerializer):
             'category', 'visibility', 'subject', 'type', 'audience', 'location',
             'tags', 'files', 'allow_comments', 'is_pinned', 'likes_count',
             'comments_count', 'impact_score', 'is_liked', 'can_edit', 'can_delete',
+            'is_saved',
             'recent_comments', 'created_at', 'updated_at'
         ]
         read_only_fields = [
@@ -89,6 +91,12 @@ class PostSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
             return obj.author == request.user
+        return False
+
+    def get_is_saved(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj.saves.filter(user=request.user).exists()
         return False
 
     def get_can_delete(self, obj):
@@ -158,3 +166,35 @@ class PostLikeSerializer(serializers.ModelSerializer):
     def get_user_info(self, obj):
         from users.serializers import UserProfileSerializer
         return UserProfileSerializer(obj.user).data
+
+
+class PostSaveSerializer(serializers.ModelSerializer):
+    post_info = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PostSave
+        fields = ['id', 'post', 'post_info', 'saved_at']
+        read_only_fields = ['id', 'saved_at']
+
+    def get_post_info(self, obj):
+        return PostSerializer(obj.post, context=self.context).data
+
+
+class PostReportSerializer(serializers.ModelSerializer):
+    reporter_info = serializers.SerializerMethodField()
+    post_info = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PostReport
+        fields = [
+            'id', 'post', 'post_info', 'reporter', 'reporter_info',
+            'reason', 'details', 'status', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'reporter', 'status', 'created_at', 'updated_at']
+
+    def get_reporter_info(self, obj):
+        from users.serializers import UserProfileSerializer
+        return UserProfileSerializer(obj.reporter).data
+
+    def get_post_info(self, obj):
+        return PostSerializer(obj.post, context=self.context).data

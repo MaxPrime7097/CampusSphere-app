@@ -7,12 +7,28 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from django.shortcuts import get_object_or_404
 from django.db import models
 from django.utils import timezone
-from .models import Post, PostLike, Comment, CommentLike
+from .models import Post, PostLike, PostSave, PostReport, Comment, CommentLike
 from .serializers import (
     PostSerializer, PostCreateSerializer, PostUpdateSerializer,
-    CommentSerializer, CommentCreateSerializer, PostLikeSerializer
+    CommentSerializer, CommentCreateSerializer, PostLikeSerializer, PostReportSerializer
 )
 from spheres.permissions import IsSphereMemberOrPublic
+
+
+def user_can_access_post(user, post):
+    if post.visibility == 'public' or post.author == user:
+        return True
+    if post.visibility == 'sphere' and post.sphere:
+        from spheres.models import SphereMember
+        return SphereMember.objects.filter(sphere=post.sphere, user=user, status='active').exists()
+    if post.visibility == 'friends':
+        from users.models import Connection
+        return Connection.objects.filter(
+            models.Q(requester=user, recipient=post.author) |
+            models.Q(requester=post.author, recipient=user),
+            status='accepted'
+        ).exists()
+    return False
 
 
 class PostListView(generics.ListCreateAPIView):
@@ -152,22 +168,7 @@ class PostLikeView(APIView):
         post = get_object_or_404(Post, pk=pk)
         user = request.user
 
-        # Check if user can access this post (same logic as PostDetailView)
-        can_access = False
-        if post.visibility == 'public' or post.author == user:
-            can_access = True
-        elif post.visibility == 'sphere' and post.sphere:
-            from spheres.models import SphereMember
-            can_access = SphereMember.objects.filter(sphere=post.sphere, user=user, status='active').exists()
-        elif post.visibility == 'friends':
-            from users.models import Connection
-            can_access = Connection.objects.filter(
-                models.Q(requester=user, recipient=post.author) |
-                models.Q(requester=post.author, recipient=user),
-                status='accepted'
-            ).exists()
-
-        if not can_access:
+        if not user_can_access_post(user, post):
             return Response(
                 {'error': 'You don\'t have permission to access this post'},
                 status=status.HTTP_403_FORBIDDEN
@@ -190,6 +191,87 @@ class PostLikeView(APIView):
             'data': {
                 'liked': liked,
                 'likesCount': post.get_likes_count()
+            },
+            'timestamp': timezone.now().isoformat()
+        })
+
+
+class PostSaveView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        post = get_object_or_404(Post, pk=pk)
+        user = request.user
+
+        if not user_can_access_post(user, post):
+            return Response(
+                {'error': 'You don\'t have permission to access this post'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        save, created = PostSave.objects.get_or_create(post=post, user=user)
+        if not created:
+            save.delete()
+            saved = False
+        else:
+            saved = True
+
+        return Response({
+            'success': True,
+            'data': {
+                'saved': saved,
+            },
+            'timestamp': timezone.now().isoformat()
+        })
+
+    def delete(self, request, pk):
+        post = get_object_or_404(Post, pk=pk)
+        user = request.user
+        save = get_object_or_404(PostSave, post=post, user=user)
+        save.delete()
+        return Response({
+            'success': True,
+            'data': {
+                'saved': False,
+            },
+            'timestamp': timezone.now().isoformat()
+        })
+
+
+class PostReportView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        post = get_object_or_404(Post, pk=pk)
+        user = request.user
+
+        if not user_can_access_post(user, post):
+            return Response(
+                {'error': 'You don\'t have permission to access this post'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        reason = (request.data.get('reason') or '').strip()
+        details = (request.data.get('details') or '').strip()
+        if not reason:
+            return Response(
+                {'error': 'Report reason is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        report, created = PostReport.objects.update_or_create(
+            post=post,
+            reporter=user,
+            defaults={'reason': reason, 'details': details, 'status': 'pending'}
+        )
+
+        serializer = PostReportSerializer(report, context={'request': request})
+        return Response({
+            'success': True,
+            'data': {
+                'reported': True,
+                'isNew': created,
+                'report': serializer.data,
             },
             'timestamp': timezone.now().isoformat()
         })
@@ -382,5 +464,20 @@ def user_posts(request, user_id):
     paginator.page_size = 20
     page = paginator.paginate_queryset(posts, request)
     
+    serializer = PostSerializer(page, many=True, context={'request': request})
+    return paginator.get_paginated_response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def user_saved_posts(request):
+    saves = PostSave.objects.filter(user=request.user).select_related('post__author', 'post__sphere')
+    posts = [save.post for save in saves]
+
+    from rest_framework.pagination import PageNumberPagination
+    paginator = PageNumberPagination()
+    paginator.page_size = 20
+    page = paginator.paginate_queryset(posts, request)
+
     serializer = PostSerializer(page, many=True, context={'request': request})
     return paginator.get_paginated_response(serializer.data)
