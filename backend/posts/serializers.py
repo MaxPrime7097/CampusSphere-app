@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.utils import timezone
-from .models import Post, PostLike, Comment, CommentLike
+from .models import Post, PostLike, Comment, CommentLike, PostReport
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -158,3 +158,15 @@ class PostLikeSerializer(serializers.ModelSerializer):
     def get_user_info(self, obj):
         from users.serializers import UserProfileSerializer
         return UserProfileSerializer(obj.user).data
+
+
+class PostReportCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PostReport
+        fields = ['reason', 'details']
+
+    def validate_reason(self, value):
+        reason = (value or '').strip()
+        if len(reason) < 3:
+            raise serializers.ValidationError("Report reason is too short")
+        return reason

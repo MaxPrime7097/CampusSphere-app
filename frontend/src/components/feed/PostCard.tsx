@@ -22,7 +22,7 @@ import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { likePost } from "@/services/api";
+import { likePost, reportPost } from "@/services/api";
 import { formatRelativeTime } from "@/lib/date";
 
 interface PostCardProps {
@@ -57,6 +57,11 @@ export function PostCard({ post }: PostCardProps) {
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isCopyingLink, setIsCopyingLink] = useState(false);
+  const [isReporting, setIsReporting] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
+  const [reportedReason, setReportedReason] = useState<string | null>(null);
 
   useEffect(() => {
     setIsLiked(Boolean(post.isLiked));
@@ -89,31 +94,86 @@ export function PostCard({ post }: PostCardProps) {
     }
   };
 
-  const handleSave = () => {
-    setIsSaved(!isSaved);
+  const handleSave = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+
+    const nextSavedState = !isSaved;
+    setIsSaved(nextSavedState);
+
+    // NOTE: mock behavior (no backend persistence yet), but optimistic UI is kept.
     toast({
-      title: isSaved ? "Post retiré des sauvegardes" : "Post sauvegardé !",
-      description: isSaved ? "Le post a été retiré de vos sauvegardes" : "Le post a été ajouté à vos sauvegardes",
+      title: nextSavedState ? "Post sauvegardé !" : "Post retiré des sauvegardes",
+      description: nextSavedState
+        ? "Le post a été ajouté à vos sauvegardes (mock local)."
+        : "Le post a été retiré de vos sauvegardes (mock local).",
       duration: 2000,
     });
+
+    setIsSaving(false);
   };
 
   const handleShare = () => {
     setShowShareDialog(true);
   };
 
-  const handleCopyLink = () => {
+  const handleCopyLink = async () => {
+    if (isCopyingLink) return;
+    setIsCopyingLink(true);
+
     const postUrl = `${window.location.origin}/post/${post.id}`;
-    navigator.clipboard.writeText(postUrl);
-    toast({
-      title: "Lien copié !",
-      description: "Le lien du post a été copié dans le presse-papiers",
-      duration: 2000,
-    });
+    try {
+      await navigator.clipboard.writeText(postUrl);
+      toast({
+        title: "Lien copié !",
+        description: "Le lien du post a été copié dans le presse-papiers",
+        duration: 2000,
+      });
+    } catch {
+      toast({
+        title: "Erreur",
+        description: "Impossible de copier le lien pour le moment.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCopyingLink(false);
+    }
   };
 
   const handleReport = () => {
+    setReportError(null);
     setShowReportDialog(true);
+  };
+
+  const handleSubmitReport = async (reason: string) => {
+    if (isReporting) return;
+
+    setReportError(null);
+    setIsReporting(true);
+
+    // Optimistic UI: immediate close + local reported state, then reconcile if API fails.
+    setReportedReason(reason);
+    setShowReportDialog(false);
+
+    try {
+      await reportPost(post.id, { reason });
+      toast({
+        title: "Post signalé",
+        description: `Le post a été signalé pour : ${reason}`,
+        duration: 3000,
+      });
+    } catch (error: any) {
+      setReportedReason(null);
+      setReportError(error?.message || "Impossible d'envoyer le signalement.");
+      setShowReportDialog(true);
+      toast({
+        title: "Échec du signalement",
+        description: error?.message || "Veuillez réessayer dans un instant.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsReporting(false);
+    }
   };
 
   const handleProfileClick = () => {
@@ -173,17 +233,21 @@ export function PostCard({ post }: PostCardProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleSave}>
+                <DropdownMenuItem onClick={handleSave} disabled={isSaving}>
                   <Bookmark className="h-4 w-4 mr-2" />
-                  {isSaved ? "Retirer des sauvegardes" : "Enregistrer"}
+                  {isSaving
+                    ? "Mise à jour..."
+                    : isSaved
+                      ? "Retirer des sauvegardes"
+                      : "Enregistrer"}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleShare}>
                   <Share className="h-4 w-4 mr-2" />
                   Partager
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleCopyLink}>
+                <DropdownMenuItem onClick={handleCopyLink} disabled={isCopyingLink}>
                   <Copy className="h-4 w-4 mr-2" />
-                  Copier le lien
+                  {isCopyingLink ? "Copie..." : "Copier le lien"}
                 </DropdownMenuItem>
                 <DropdownMenuItem className="text-destructive" onClick={handleReport}>
                   <Flag className="h-4 w-4 mr-2" />
@@ -273,6 +337,7 @@ export function PostCard({ post }: PostCardProps) {
           <DialogTitle>Partager ce post</DialogTitle>
           <DialogDescription>
             Choisissez comment vous souhaitez partager ce post avec d'autres personnes.
+            Les options de partage direct sont actuellement en mode mock (UI uniquement).
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
@@ -287,9 +352,9 @@ export function PostCard({ post }: PostCardProps) {
             </Button>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" className="flex-1" onClick={handleCopyLink}>
+            <Button variant="outline" className="flex-1" onClick={handleCopyLink} disabled={isCopyingLink}>
               <Copy className="h-4 w-4 mr-2" />
-              Copier le lien
+              {isCopyingLink ? "Copie..." : "Copier le lien"}
             </Button>
             <Button variant="outline" className="flex-1">
               <Users className="h-4 w-4 mr-2" />
@@ -307,9 +372,20 @@ export function PostCard({ post }: PostCardProps) {
           <DialogTitle>Signaler ce post</DialogTitle>
           <DialogDescription>
             Aidez-nous à maintenir une communauté respectueuse en signalant ce contenu.
+            Les signalements sont persistés côté serveur.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
+          {reportedReason && (
+            <p className="text-sm rounded-md border border-primary/30 bg-primary/5 p-2">
+              Signalement déjà envoyé pour : <strong>{reportedReason}</strong>
+            </p>
+          )}
+          {reportError && (
+            <p className="text-sm rounded-md border border-destructive/30 bg-destructive/5 p-2 text-destructive">
+              {reportError}
+            </p>
+          )}
           <p className="text-sm text-muted-foreground">
             Pourquoi signalez-vous ce post ?
           </p>
@@ -326,16 +402,10 @@ export function PostCard({ post }: PostCardProps) {
                 key={reason}
                 variant="outline"
                 className="w-full justify-start"
-                onClick={() => {
-                  toast({
-                    title: "Post signalé",
-                    description: `Le post a été signalé pour : ${reason}`,
-                    duration: 3000,
-                  });
-                  setShowReportDialog(false);
-                }}
+                onClick={() => handleSubmitReport(reason)}
+                disabled={isReporting}
               >
-                {reason}
+                {isReporting ? "Envoi..." : reason}
               </Button>
             ))}
           </div>

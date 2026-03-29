@@ -707,6 +707,18 @@ export async function likePost(id: number | string, token?: string) {
   });
 }
 
+export async function reportPost(
+  id: number | string,
+  data: { reason: string; details?: string },
+  token?: string
+) {
+  return apiFetch<any>(`api/posts/${id}/report/`, {
+    method: "POST",
+    body: data,
+    token: token || getAccessToken(),
+  });
+}
+
 export async function pinPost(id: number | string, token?: string) {
   return apiFetch<any>(`api/posts/${id}/pin/`, {
     method: "POST",
