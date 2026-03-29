@@ -94,3 +94,8 @@ Suivre **DEPLOYMENT.md** (document de référence) pour:
 
 - Les placeholders (`your-...`) doivent être remplacés par vos vrais domaines/envs avant prod.
 - Le frontend dépend d'un environnement Node complet pour `vite` et `eslint`.
+
+
+## Impact policy
+
+Impact scoring rules are centralized for backend/frontend/product alignment in `documentation/IMPACT_POLICY.md` and implemented in `backend/users/impact_policy.py`.
