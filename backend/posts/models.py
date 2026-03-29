@@ -78,6 +78,11 @@ class Post(models.Model):
         self.comments_count = self.get_comments_count()
         self.save(update_fields=['likes_count', 'comments_count'])
 
+    def recompute_impact_score(self):
+        # Product rule: post impact score is the sum of all explicit user impact ratings
+        self.impact_score = sum(self.impact_ratings.values_list('value', flat=True))
+        self.save(update_fields=['impact_score'])
+
 
 class PostLike(models.Model):
     post = models.ForeignKey(Post, related_name='likes', on_delete=models.CASCADE)
@@ -90,6 +95,20 @@ class PostLike(models.Model):
 
     def __str__(self):
         return f"{self.user.username} liked {self.post.id}"
+
+
+class PostImpactRating(models.Model):
+    post = models.ForeignKey(Post, related_name='impact_ratings', on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='post_impact_ratings', on_delete=models.CASCADE)
+    value = models.IntegerField()
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        unique_together = ['post', 'user']
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} rated impact {self.value} on post {self.post.id}"
 
 
 class Comment(models.Model):

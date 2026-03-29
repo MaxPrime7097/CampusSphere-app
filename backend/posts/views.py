@@ -7,12 +7,29 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from django.shortcuts import get_object_or_404
 from django.db import models
 from django.utils import timezone
-from .models import Post, PostLike, Comment, CommentLike
+from .models import Post, PostLike, PostImpactRating, Comment, CommentLike
 from .serializers import (
     PostSerializer, PostCreateSerializer, PostUpdateSerializer,
-    CommentSerializer, CommentCreateSerializer, PostLikeSerializer
+    CommentSerializer, CommentCreateSerializer, PostLikeSerializer,
+    PostImpactRatingActionSerializer
 )
 from spheres.permissions import IsSphereMemberOrPublic
+
+
+def user_can_access_post(user, post):
+    if post.visibility == 'public' or post.author == user:
+        return True
+    if post.visibility == 'sphere' and post.sphere:
+        from spheres.models import SphereMember
+        return SphereMember.objects.filter(sphere=post.sphere, user=user, status='active').exists()
+    if post.visibility == 'friends':
+        from users.models import Connection
+        return Connection.objects.filter(
+            models.Q(requester=user, recipient=post.author) |
+            models.Q(requester=post.author, recipient=user),
+            status='accepted'
+        ).exists()
+    return False
 
 
 class PostListView(generics.ListCreateAPIView):
@@ -153,21 +170,7 @@ class PostLikeView(APIView):
         user = request.user
 
         # Check if user can access this post (same logic as PostDetailView)
-        can_access = False
-        if post.visibility == 'public' or post.author == user:
-            can_access = True
-        elif post.visibility == 'sphere' and post.sphere:
-            from spheres.models import SphereMember
-            can_access = SphereMember.objects.filter(sphere=post.sphere, user=user, status='active').exists()
-        elif post.visibility == 'friends':
-            from users.models import Connection
-            can_access = Connection.objects.filter(
-                models.Q(requester=user, recipient=post.author) |
-                models.Q(requester=post.author, recipient=user),
-                status='accepted'
-            ).exists()
-
-        if not can_access:
+        if not user_can_access_post(user, post):
             return Response(
                 {'error': 'You don\'t have permission to access this post'},
                 status=status.HTTP_403_FORBIDDEN
@@ -190,6 +193,49 @@ class PostLikeView(APIView):
             'data': {
                 'liked': liked,
                 'likesCount': post.get_likes_count()
+            },
+            'timestamp': timezone.now().isoformat()
+        })
+
+
+class PostImpactRatingView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        post = get_object_or_404(Post, pk=pk)
+        user = request.user
+
+        if not user_can_access_post(user, post):
+            return Response(
+                {'error': 'You don\'t have permission to access this post'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        serializer = PostImpactRatingActionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        value = serializer.validated_data.get('value')
+
+        if value is None:
+            PostImpactRating.objects.filter(post=post, user=user).delete()
+            message = 'Impact rating removed'
+            user_rating = None
+        else:
+            PostImpactRating.objects.update_or_create(
+                post=post,
+                user=user,
+                defaults={'value': value}
+            )
+            message = 'Impact rating saved'
+            user_rating = value
+
+        post.recompute_impact_score()
+
+        return Response({
+            'success': True,
+            'data': {
+                'impactScore': post.impact_score,
+                'userImpactRating': user_rating,
+                'message': message
             },
             'timestamp': timezone.now().isoformat()
         })
