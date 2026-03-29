@@ -7,7 +7,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from django.shortcuts import get_object_or_404
 from django.db import models
 from django.utils import timezone
-from .models import Post, PostLike, PostImpactRating, Comment, CommentLike
+from .models import Post, PostLike, PostSave, PostImpactRating, Comment, CommentLike
 from .serializers import (
     PostSerializer, PostCreateSerializer, PostUpdateSerializer,
     CommentSerializer, CommentCreateSerializer, PostLikeSerializer,
