@@ -222,6 +222,7 @@ function normalizePost(post: any) {
     impactScore: toNumber(post.impact_score ?? post.impactScore, 0),
     userImpactRating: post.user_impact_rating ?? post.userImpactRating ?? null,
     isLiked: post.is_liked ?? post.isLiked ?? false,
+    isSaved: post.is_saved ?? post.isSaved ?? false,
     canEdit: post.can_edit ?? post.canEdit ?? false,
     canDelete: post.can_delete ?? post.canDelete ?? false,
     recentComments: toArray(post.recent_comments ?? post.recentComments),
@@ -777,6 +778,11 @@ export async function getUserPosts(userId: number | string, token?: string) {
 
 export async function getSpherePosts(sphereId: number | string, token?: string) {
   const response = await apiFetch<any>(`api/posts/sphere/${sphereId}/`, { token: token || getAccessToken() });
+  return normalizePosts(unwrapList(response));
+}
+
+export async function getSavedPosts(token?: string) {
+  const response = await apiFetch<any>("api/posts/saved/", { token: token || getAccessToken() });
   return normalizePosts(unwrapList(response));
 }
 

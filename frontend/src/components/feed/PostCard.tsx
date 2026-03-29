@@ -45,6 +45,7 @@ interface PostCardProps {
     impactScore?: number;
     userImpactRating?: number | null;
     isLiked?: boolean;
+    isSaved?: boolean;
   };
 }
 
@@ -53,7 +54,7 @@ export function PostCard({ post }: PostCardProps) {
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const [isLiked, setIsLiked] = useState(Boolean(post.isLiked));
-  const [isSaved, setIsSaved] = useState(false);
+  const [isSaved, setIsSaved] = useState(Boolean(post.isSaved));
   const [likesCount, setLikesCount] = useState(post.likes);
   const [impactScore, setImpactScore] = useState(Number(post.impactScore || 0));
   const [userImpactRating, setUserImpactRating] = useState<number | null>(post.userImpactRating ?? null);
@@ -68,6 +69,7 @@ export function PostCard({ post }: PostCardProps) {
 
   useEffect(() => {
     setIsLiked(Boolean(post.isLiked));
+    setIsSaved(Boolean(post.isSaved));
     setLikesCount(post.likes);
     setImpactScore(Number(post.impactScore || 0));
     setUserImpactRating(post.userImpactRating ?? null);

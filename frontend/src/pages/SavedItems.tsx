@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PostCard } from "@/components/feed/PostCard";
 import { Card, CardContent } from "@/components/ui/card";
 import { BookOpen, Calendar, ShoppingBag, Loader2 } from "lucide-react";
-import { getSavedResources } from "@/services/api";
+import { getSavedPosts, getSavedResources } from "@/services/api";
 
 export function SavedItems() {
   const [savedPosts, setSavedPosts] = useState<any[]>([]);
@@ -15,8 +15,26 @@ export function SavedItems() {
     (async () => {
       try {
         setLoading(true);
-        const resources = await getSavedResources();
+        const [posts, resources] = await Promise.all([getSavedPosts(), getSavedResources()]);
         if (isMounted) {
+          const mappedPosts = (posts || []).map((post: any) => ({
+            id: String(post.id),
+            author: {
+              name: post.author?.name || "Utilisateur",
+              avatar: post.author?.avatar || "/placeholder-avatar.jpg",
+              username: post.author?.username || "user",
+            },
+            content: post.content || "",
+            createdAt: post.createdAt || post.created_at || null,
+            likes: Number(post.likesCount ?? post.likes_count ?? 0),
+            comments: Number(post.commentsCount ?? post.comments_count ?? 0),
+            category: post.category || "Général",
+            impactScore: Number(post.impactScore ?? post.impact_score ?? 0),
+            isLiked: Boolean(post.isLiked ?? post.is_liked),
+            isSaved: true,
+          }));
+          setSavedPosts(mappedPosts);
+
           // Map saved resources
           const mapped = (resources || []).map((r: any) => ({
             id: String(r.id),

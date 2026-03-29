@@ -445,3 +445,18 @@ def user_posts(request, user_id):
     
     serializer = PostSerializer(page, many=True, context={'request': request})
     return paginator.get_paginated_response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def user_saved_posts(request):
+    saves = PostSave.objects.filter(user=request.user).select_related('post__author', 'post__sphere')
+    posts = [save.post for save in saves]
+
+    from rest_framework.pagination import PageNumberPagination
+    paginator = PageNumberPagination()
+    paginator.page_size = 20
+    page = paginator.paginate_queryset(posts, request)
+
+    serializer = PostSerializer(page, many=True, context={'request': request})
+    return paginator.get_paginated_response(serializer.data)

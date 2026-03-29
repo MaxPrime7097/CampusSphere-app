@@ -108,6 +108,12 @@ class PostSerializer(serializers.ModelSerializer):
             return obj.author == request.user
         return False
 
+    def get_is_saved(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj.saves.filter(user=request.user).exists()
+        return False
+
     def get_can_delete(self, obj):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
