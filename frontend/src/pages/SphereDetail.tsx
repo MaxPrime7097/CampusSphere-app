@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getSphere, listSphereMembers, listSphereTasks, joinSphere, leaveSphere, getCurrentUser, completeTask } from "@/services/api";
+import { getSphere, listSphereMembers, listSphereTasks, joinSphere, leaveSphere, getCurrentUser, completeTask, updateSphereMember, removeSphereMember } from "@/services/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -52,6 +52,8 @@ export function SphereDetail() {
   const [sphere, setSphere] = useState<any | null>(null);
   const [members, setMembers] = useState<any[]>([]);
   const [pendingMembers, setPendingMembers] = useState<any[]>([]);
+  const [memberActionStatus, setMemberActionStatus] = useState<string | null>(null);
+  const [processingMemberIds, setProcessingMemberIds] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -192,36 +194,71 @@ export function SphereDetail() {
 
   // Fonctions pour la gestion des demandes d'adhésion (admin uniquement)
   const handleApproveRequest = async (memberId: string) => {
+    const memberToApprove = pendingMembers.find((member) => String(member.id) === String(memberId));
+    if (!memberToApprove) {
+      return;
+    }
+
+    const previousPending = [...pendingMembers];
+    const previousMembers = [...members];
+
     try {
-      // TODO: Add approve member endpoint to API
+      setProcessingMemberIds((prev) => ({ ...prev, [memberId]: true }));
+      setMemberActionStatus(`Approbation de ${memberToApprove.name}...`);
+
+      setPendingMembers((prev) => prev.filter((member) => String(member.id) !== String(memberId)));
+      setMembers((prev) => [{ ...memberToApprove, status: "active" }, ...prev]);
+
+      await updateSphereMember(String(id), memberId, { status: "active" });
+
+      setMemberActionStatus(`${memberToApprove.name} a été approuvé(e).`);
       toast({
-        title: "Indisponible",
-        description: "L'approbation des membres via l'API sera ajoutée prochainement",
+        title: "Demande approuvée",
+        description: `${memberToApprove.name} est maintenant membre de la sphère`,
         duration: 3000,
       });
-    } catch (error) {
+    } catch (error: any) {
+      setPendingMembers(previousPending);
+      setMembers(previousMembers);
+      setMemberActionStatus(null);
       toast({
         title: "Erreur",
-        description: "Impossible d'approuver la demande",
+        description: error?.message || "Impossible d'approuver la demande",
         variant: "destructive"
       });
+    } finally {
+      setProcessingMemberIds((prev) => ({ ...prev, [memberId]: false }));
     }
   };
 
   const handleRejectRequest = async (memberId: string) => {
+    const memberToReject = pendingMembers.find((member) => String(member.id) === String(memberId));
+    if (!memberToReject) {
+      return;
+    }
+
+    const previousPending = [...pendingMembers];
     try {
-      // TODO: Add reject/remove member endpoint to API
+      setProcessingMemberIds((prev) => ({ ...prev, [memberId]: true }));
+      setMemberActionStatus(`Rejet de ${memberToReject.name}...`);
+      setPendingMembers((prev) => prev.filter((member) => String(member.id) !== String(memberId)));
+      await removeSphereMember(String(id), memberId);
+      setMemberActionStatus(`${memberToReject.name} a été refusé(e).`);
       toast({
-        title: "Indisponible",
-        description: "Le rejet des membres via l'API sera ajouté prochainement",
+        title: "Demande rejetée",
+        description: `${memberToReject.name} a été retiré des demandes en attente`,
         duration: 3000,
       });
-    } catch (error) {
+    } catch (error: any) {
+      setPendingMembers(previousPending);
+      setMemberActionStatus(null);
       toast({
         title: "Erreur",
-        description: "Impossible de rejeter la demande",
+        description: error?.message || "Impossible de rejeter la demande",
         variant: "destructive"
       });
+    } finally {
+      setProcessingMemberIds((prev) => ({ ...prev, [memberId]: false }));
     }
   };
 
@@ -235,11 +272,34 @@ export function SphereDetail() {
   };
 
   const handleRemoveMember = async (memberId: string) => {
-    toast({
-      title: "Indisponible",
-      description: "La suppression d'un membre n'est pas encore supportée par l'API",
-      duration: 3000,
-    });
+    const memberToRemove = members.find((member) => String(member.id) === String(memberId));
+    if (!memberToRemove) {
+      return;
+    }
+
+    const previousMembers = [...members];
+    try {
+      setProcessingMemberIds((prev) => ({ ...prev, [memberId]: true }));
+      setMemberActionStatus(`Suppression de ${memberToRemove.name}...`);
+      setMembers((prev) => prev.filter((member) => String(member.id) !== String(memberId)));
+      await removeSphereMember(String(id), memberId);
+      setMemberActionStatus(`${memberToRemove.name} a été retiré(e) de la sphère.`);
+      toast({
+        title: "Membre supprimé",
+        description: `${memberToRemove.name} n'est plus membre de cette sphère`,
+        duration: 3000,
+      });
+    } catch (error: any) {
+      setMembers(previousMembers);
+      setMemberActionStatus(null);
+      toast({
+        title: "Erreur",
+        description: error?.message || "Impossible de supprimer ce membre",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessingMemberIds((prev) => ({ ...prev, [memberId]: false }));
+    }
   };
 
   const handleShare = () => {
@@ -825,6 +885,7 @@ export function SphereDetail() {
                               </DropdownMenuItem>
                               <DropdownMenuItem 
                                 onClick={() => handleRemoveMember(member.id)}
+                                disabled={Boolean(processingMemberIds[String(member.id)])}
                                 className="text-red-600"
                               >
                                 <UserMinus className="h-4 w-4 mr-2" />
@@ -846,9 +907,14 @@ export function SphereDetail() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">Demandes en attente ({pendingMembers.length})</h3>
-                <p className="text-sm text-muted-foreground">
-                  Seuls les administrateurs peuvent gérer les demandes
-                </p>
+                <div className="text-right">
+                  <p className="text-sm text-muted-foreground">
+                    Seuls les administrateurs peuvent gérer les demandes
+                  </p>
+                  {memberActionStatus && (
+                    <p className="text-xs text-muted-foreground mt-1">{memberActionStatus}</p>
+                  )}
+                </div>
               </div>
               
               {pendingMembers.length === 0 ? (
@@ -890,6 +956,7 @@ export function SphereDetail() {
                                 size="sm" 
                                 className="bg-green-600 hover:bg-green-700 text-white"
                                 onClick={() => handleApproveRequest(member.id)}
+                                disabled={Boolean(processingMemberIds[String(member.id)])}
                               >
                                 <UserCheck className="h-4 w-4" />
                               </Button>
@@ -897,6 +964,7 @@ export function SphereDetail() {
                                 size="sm" 
                                 variant="destructive"
                                 onClick={() => handleRejectRequest(member.id)}
+                                disabled={Boolean(processingMemberIds[String(member.id)])}
                               >
                                 <UserX className="h-4 w-4" />
                               </Button>

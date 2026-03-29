@@ -447,6 +447,46 @@ export async function getUserConnections(userId: number | string, token?: string
   return unwrapList(response);
 }
 
+export interface MutualConnectionCountRequest {
+  currentUserId: number | string;
+  connectionUserIds: Array<number | string>;
+}
+
+export interface MutualConnectionCountResponse {
+  counts: Record<string, number>;
+}
+
+export async function getMutualConnectionCounts(
+  data: MutualConnectionCountRequest,
+  token?: string
+): Promise<MutualConnectionCountResponse> {
+  const currentConnections = await getUserConnections(data.currentUserId, token);
+  const currentConnectionIds = new Set(
+    (currentConnections || []).map((conn: any) => String(conn.requester === data.currentUserId ? conn.recipient : conn.requester))
+  );
+
+  const results = await Promise.allSettled(
+    (data.connectionUserIds || []).map(async (connectionUserId) => {
+      const connectionUserConnections = await getUserConnections(connectionUserId, token);
+      const mutualCount = (connectionUserConnections || []).reduce((count: number, conn: any) => {
+        const counterpartId = String(conn.requester === connectionUserId ? conn.recipient : conn.requester);
+        return currentConnectionIds.has(counterpartId) ? count + 1 : count;
+      }, 0);
+
+      return { userId: String(connectionUserId), mutualCount };
+    })
+  );
+
+  const counts = results.reduce<Record<string, number>>((acc, result) => {
+    if (result.status === "fulfilled") {
+      acc[result.value.userId] = result.value.mutualCount;
+    }
+    return acc;
+  }, {});
+
+  return { counts };
+}
+
 export async function createConnection(recipientId: number | string, token?: string) {
   return apiFetch<any>(`api/users/${recipientId}/connections/`, {
     method: "POST",
@@ -552,6 +592,41 @@ export async function addSphereMember(
       user: data.user,
       role: data.role ?? "member",
     },
+    token: token || getAccessToken(),
+  });
+}
+
+export interface UpdateSphereMemberRequest {
+  status?: "active" | "pending" | "inactive" | "banned";
+  role?: "admin" | "moderator" | "member";
+}
+
+export interface SphereMemberActionResponse {
+  success?: boolean;
+  message?: string;
+  data?: {
+    id?: number | string;
+    status?: string;
+    role?: string;
+  };
+}
+
+export async function updateSphereMember(
+  sphereId: number | string,
+  memberId: number | string,
+  data: UpdateSphereMemberRequest,
+  token?: string
+) {
+  return apiFetch<SphereMemberActionResponse>(`api/spheres/${sphereId}/members/${memberId}/`, {
+    method: "PATCH",
+    body: data,
+    token: token || getAccessToken(),
+  });
+}
+
+export async function removeSphereMember(sphereId: number | string, memberId: number | string, token?: string) {
+  return apiFetch<SphereMemberActionResponse>(`api/spheres/${sphereId}/members/${memberId}/`, {
+    method: "DELETE",
     token: token || getAccessToken(),
   });
 }
@@ -950,6 +1025,18 @@ export async function markNotificationRead(id: number | string, token?: string) 
 export async function markAllNotificationsRead(token?: string) {
   return apiFetch<any>("api/notifications/read-all/", {
     method: "PUT",
+    token: token || getAccessToken(),
+  });
+}
+
+export interface DeleteNotificationResponse {
+  success?: boolean;
+  message?: string;
+}
+
+export async function deleteNotification(id: number | string, token?: string) {
+  return apiFetch<DeleteNotificationResponse>(`api/notifications/${id}/`, {
+    method: "DELETE",
     token: token || getAccessToken(),
   });
 }
