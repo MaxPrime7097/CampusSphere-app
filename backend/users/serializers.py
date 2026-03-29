@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from django.utils import timezone
+from django.contrib.auth.password_validation import validate_password
 from .models import User, Connection
 
 
@@ -69,12 +69,71 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(min_length=3, max_length=50, required=False)
+
     class Meta:
         model = User
         fields = [
-            'first_name', 'last_name', 'bio', 'university', 'faculty', 'study_year',
+            'first_name', 'last_name', 'username', 'bio', 'university', 'faculty', 'study_year',
             'skills', 'interests', 'current_mood'
         ]
+
+    def validate_username(self, value):
+        user = self.instance
+        if User.objects.exclude(id=user.id).filter(username__iexact=value).exists():
+            raise serializers.ValidationError("This username is already in use")
+        return value
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    current_password = serializers.CharField(write_only=True)
+    new_password = serializers.CharField(write_only=True, min_length=8)
+
+    def validate_current_password(self, value):
+        user = self.context['request'].user
+        if not user.check_password(value):
+            raise serializers.ValidationError("Current password is incorrect")
+        return value
+
+    def validate_new_password(self, value):
+        user = self.context['request'].user
+        validate_password(value, user=user)
+        return value
+
+
+class ChangeEmailSerializer(serializers.Serializer):
+    current_email = serializers.EmailField()
+    new_email = serializers.EmailField()
+
+    def validate(self, attrs):
+        user = self.context['request'].user
+        current_email = attrs.get('current_email', '').strip().lower()
+        new_email = attrs.get('new_email', '').strip().lower()
+
+        if current_email != user.email.lower():
+            raise serializers.ValidationError({'current_email': 'Current email does not match your account'})
+
+        if current_email == new_email:
+            raise serializers.ValidationError({'new_email': 'New email must be different from current email'})
+
+        if User.objects.exclude(id=user.id).filter(email__iexact=new_email).exists():
+            raise serializers.ValidationError({'new_email': 'This email is already in use'})
+
+        attrs['new_email'] = new_email
+        return attrs
+
+
+class LogoutSerializer(serializers.Serializer):
+    refresh = serializers.CharField(required=False, allow_blank=True)
+
+
+class DeleteAccountSerializer(serializers.Serializer):
+    confirmation_text = serializers.CharField()
+
+    def validate_confirmation_text(self, value):
+        if value.strip().upper() != 'SUPPRIMER':
+            raise serializers.ValidationError('Please type SUPPRIMER to confirm account deletion')
+        return value
 
 
 class ConnectionSerializer(serializers.ModelSerializer):
