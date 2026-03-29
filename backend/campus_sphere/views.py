@@ -1,7 +1,6 @@
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
-from rest_framework import status
 from django.utils import timezone
 from .search import SearchService, FilterService
 
@@ -123,63 +122,6 @@ def filter_options(request):
             'error': 'Failed to get filter options',
             'timestamp': timezone.now().isoformat()
         }, status=500)
-
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def admin_reported_content(request):
-    if not request.user.is_staff:
-        return Response({'detail': 'Admin access required.'}, status=status.HTTP_403_FORBIDDEN)
-
-    from posts.models import PostReport
-    reports = PostReport.objects.select_related('post', 'reporter').order_by('-created_at')
-
-    data = [
-        {
-            'id': report.id,
-            'type': 'Post',
-            'content': report.post.content[:280],
-            'reason': report.reason,
-            'date': report.created_at.isoformat(),
-            'status': report.status,
-            'reporter': {
-                'name': report.reporter.get_full_name() or report.reporter.username,
-                'avatar': getattr(report.reporter, 'avatar', None),
-            }
-        }
-        for report in reports
-    ]
-    return Response({'success': True, 'data': data, 'timestamp': timezone.now().isoformat()})
-
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def admin_moderation_queue(request):
-    if not request.user.is_staff:
-        return Response({'detail': 'Admin access required.'}, status=status.HTTP_403_FORBIDDEN)
-    return Response({'success': True, 'data': [], 'timestamp': timezone.now().isoformat()})
-
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def admin_user_management_summary(request):
-    if not request.user.is_staff:
-        return Response({'detail': 'Admin access required.'}, status=status.HTTP_403_FORBIDDEN)
-
-    from django.contrib.auth import get_user_model
-    from posts.models import PostReport
-    User = get_user_model()
-    today = timezone.now().date()
-
-    data = {
-        'total_users': User.objects.count(),
-        'new_users_today': User.objects.filter(date_joined__date=today).count(),
-        'pending_resources': 0,
-        'reported_content': PostReport.objects.filter(status='pending').count(),
-        'active_groups': 0,
-        'total_resources': 0,
-    }
-    return Response({'success': True, 'data': data, 'timestamp': timezone.now().isoformat()})
 
 
 @api_view(['GET'])

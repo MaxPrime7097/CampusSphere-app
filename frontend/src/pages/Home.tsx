@@ -30,7 +30,6 @@ function mapPostToCard(post: any) {
     category: post.category || "Général",
     impactScore: Number(post.impactScore ?? post.impact_score ?? 0),
     isLiked: Boolean(post.isLiked ?? post.is_liked),
-    isSaved: Boolean(post.isSaved ?? post.is_saved),
   };
 }
 
