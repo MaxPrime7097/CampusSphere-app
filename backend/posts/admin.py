@@ -1,16 +1,9 @@
 from django.contrib import admin
-from . import models
+from .models import Post, PostLike, PostSave, PostReport, Comment, CommentLike
 
-
-def safe_register(model_name: str):
-    model = getattr(models, model_name, None)
-    if model is None:
-        return
-    try:
-        admin.site.register(model)
-    except admin.sites.AlreadyRegistered:
-        pass
-
-
-for _model_name in ("Post", "PostLike", "PostSave", "PostReport", "Comment", "CommentLike"):
-    safe_register(_model_name)
+admin.site.register(Post)
+admin.site.register(PostLike)
+admin.site.register(PostSave)
+admin.site.register(PostReport)
+admin.site.register(Comment)
+admin.site.register(CommentLike)

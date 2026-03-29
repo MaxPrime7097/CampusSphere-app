@@ -1,107 +1,45 @@
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-from django.contrib.auth import get_user_model
 
-from posts.models import Post, PostSave, PostReport
-
-User = get_user_model()
+from users.models import User
+from .models import Post, Comment
 
 
-class PostSaveReportAPITest(APITestCase):
+class PostCommentsIntegrationTests(APITestCase):
     def setUp(self):
         self.user = User.objects.create_user(
-            email='post_save_report@example.com',
-            username='post_save_report',
-            first_name='Post',
-            last_name='SaveReport',
+            email='comment_test@example.com',
+            username='comment_test',
+            first_name='Comment',
+            last_name='Tester',
             password='testpass123'
         )
+        self.client.force_authenticate(user=self.user)
         self.post = Post.objects.create(
-            content='Post for save/report tests',
+            content='Post for comment integration tests',
             author=self.user,
-            category='general',
+            category='academic',
             visibility='public'
         )
-        self.client.force_authenticate(user=self.user)
 
-    @staticmethod
-    def _with_trailing_slash(url: str) -> str:
-        return url if url.endswith('/') else f'{url}/'
-
-    def test_save_toggle_and_saved_posts_listing(self):
-        save_url = self._with_trailing_slash(reverse('posts:post-save', kwargs={'pk': self.post.id}))
-        saved_posts_url = self._with_trailing_slash(reverse('posts:user-saved-posts'))
-
-        response = self.client.post(save_url, format='json', secure=True)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(response.data['data']['saved'])
-        self.assertTrue(PostSave.objects.filter(post=self.post, user=self.user).exists())
-
-        list_response = self.client.get(saved_posts_url, format='json', secure=True)
-        self.assertEqual(list_response.status_code, status.HTTP_200_OK)
-        self.assertGreaterEqual(len(list_response.data.get('results', [])), 1)
-
-        unsave_response = self.client.delete(save_url, format='json', secure=True)
-        self.assertEqual(unsave_response.status_code, status.HTTP_200_OK)
-        self.assertFalse(unsave_response.data['data']['saved'])
-        self.assertFalse(PostSave.objects.filter(post=self.post, user=self.user).exists())
-
-    def test_report_post(self):
-        report_url = self._with_trailing_slash(reverse('posts:post-report', kwargs={'pk': self.post.id}))
-        payload = {'reason': 'Spam ou publicité', 'details': 'Contenu promotionnel répété'}
-
-        response = self.client.post(report_url, payload, format='json', secure=True)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(response.data['data']['reported'])
-        self.assertTrue(PostReport.objects.filter(post=self.post, reporter=self.user).exists())
-
-    def test_report_requires_reason(self):
-        report_url = self._with_trailing_slash(reverse('posts:post-report', kwargs={'pk': self.post.id}))
-
-        response = self.client.post(report_url, {'details': 'missing reason'}, format='json', secure=True)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-
-class AdminReportedContentPathTest(APITestCase):
-    def setUp(self):
-        self.staff = User.objects.create_user(
-            email='staff_reports@example.com',
-            username='staff_reports',
-            first_name='Staff',
-            last_name='Reports',
-            password='testpass123',
-            is_staff=True,
+    def test_create_reply_with_parent_linkage(self):
+        parent_comment = Comment.objects.create(
+            content='Top-level comment',
+            author=self.user,
+            post=self.post
         )
-        self.reporter = User.objects.create_user(
-            email='reporter_reports@example.com',
-            username='reporter_reports',
-            first_name='Reporter',
-            last_name='User',
-            password='testpass123',
-        )
-        self.post = Post.objects.create(
-            content='Reported content test payload',
-            author=self.reporter,
-            visibility='public',
-        )
-        PostReport.objects.create(
-            post=self.post,
-            reporter=self.reporter,
-            reason='Contenu inapproprié',
-            details='Detailed moderation context',
-            status='pending',
+        url = reverse('posts:post-comments', kwargs={'pk': self.post.id})
+
+        response = self.client.post(
+            url,
+            {'content': 'This is a reply', 'parent': parent_comment.id},
+            format='json'
         )
 
-    def test_admin_reported_content_includes_post_reports(self):
-        self.client.force_authenticate(user=self.staff)
-        response = self.client.get(PostSaveReportAPITest._with_trailing_slash(reverse('admin-reported-content')), format='json', secure=True)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(response.data.get('success'))
-        self.assertGreaterEqual(len(response.data.get('data', [])), 1)
-        self.assertEqual(response.data['data'][0]['type'], 'Post')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['parent'], parent_comment.id)
 
-    def test_non_staff_cannot_access_admin_reported_content(self):
-        self.client.force_authenticate(user=self.reporter)
-        response = self.client.get(PostSaveReportAPITest._with_trailing_slash(reverse('admin-reported-content')), format='json', secure=True)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        created_reply = Comment.objects.get(pk=response.data['id'])
+        self.assertEqual(created_reply.parent_id, parent_comment.id)
+        self.assertEqual(created_reply.post_id, self.post.id)

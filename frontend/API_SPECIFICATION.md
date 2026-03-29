@@ -556,9 +556,14 @@ Authorization: Bearer <jwt_token>
 **Body**:
 ```json
 {
-  "content": "Excellent cours, merci pour le partage !"
+  "content": "Excellent cours, merci pour le partage !",
+  "parent": 42
 }
 ```
+
+**API contract note**:
+- Use `parent` to create a reply linked to an existing comment.
+- `parent_id` is still accepted temporarily for backward compatibility during rollout.
 
 ### POST /api/posts/:id/pin
 **Description**: Épingler/désépingler un post

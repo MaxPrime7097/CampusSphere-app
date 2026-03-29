@@ -1,17 +1,25 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { User, Bell, Shield, Globe, Moon, Sun, ChevronRight, TriangleAlert, UserX, LogOut, Loader2, Mail, Lock, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { NotificationSettings } from "@/components/NotificationSettings";
+import {
+  changeUserEmail,
+  changeUserPassword,
+  deleteUserAccount,
+  getCurrentUser,
+  logoutUser,
+  updateUserProfile,
+} from "@/services/api";
 
 export function Settings() {
   const navigate = useNavigate();
@@ -26,10 +34,10 @@ export function Settings() {
   
   // États pour les formulaires
   const [personalInfo, setPersonalInfo] = useState({
-    firstName: "Max",
-    lastName: "Prime",
-    username: "cypher",
-    bio: "Recherche en machine learning et traitement du langage naturel"
+    firstName: "",
+    lastName: "",
+    username: "",
+    bio: ""
   });
   
   const [passwordForm, setPasswordForm] = useState({
@@ -39,12 +47,49 @@ export function Settings() {
   });
   
   const [emailForm, setEmailForm] = useState({
-    currentEmail: "cypher@university.cm",
+    currentEmail: "",
     newEmail: "",
     confirmEmail: ""
   });
+  const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
   
   const [marketingNotifications, setMarketingNotifications] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const hydrateSettingsFromUser = async () => {
+      try {
+        const user = await getCurrentUser();
+        if (!isMounted || !user) return;
+
+        setPersonalInfo({
+          firstName: user.firstName || "",
+          lastName: user.lastName || "",
+          username: user.username || "",
+          bio: user.bio || "",
+        });
+
+        setEmailForm((prev) => ({
+          ...prev,
+          currentEmail: user.email || "",
+        }));
+      } catch (error: any) {
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: error?.message || "Impossible de charger vos paramètres",
+          duration: 3000,
+        });
+      }
+    };
+
+    hydrateSettingsFromUser();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [toast]);
 
   const toggleTheme = () => {
     setDarkMode(!darkMode);
@@ -76,40 +121,85 @@ export function Settings() {
 
   const handleLogout = async () => {
     setIsLoading(true);
-    // Simuler la déconnexion
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    toast({
-      title: "Déconnexion réussie",
-      description: "Vous avez été déconnecté avec succès",
-      duration: 2000,
-    });
-    navigate("/login");
+    try {
+      await logoutUser();
+      toast({
+        title: "Déconnexion réussie",
+        description: "Vous avez été déconnecté avec succès",
+        duration: 2000,
+      });
+      navigate("/login");
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: error?.message || "Impossible de vous déconnecter",
+        duration: 3000,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDeleteAccount = async () => {
+    if (deleteConfirmationText.trim().toUpperCase() !== "SUPPRIMER") {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Veuillez saisir SUPPRIMER pour confirmer",
+        duration: 3000,
+      });
+      return;
+    }
+
     setIsLoading(true);
-    // Simuler la suppression du compte
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    toast({
-      variant: "destructive",
-      title: "Compte supprimé",
-      description: "Votre compte a été supprimé avec succès",
-      duration: 3000,
-    });
-    setShowDeleteConfirmModal(false);
-    navigate("/login");
+    try {
+      await deleteUserAccount(deleteConfirmationText);
+      toast({
+        variant: "destructive",
+        title: "Compte supprimé",
+        description: "Votre compte a été supprimé avec succès",
+        duration: 3000,
+      });
+      setShowDeleteConfirmModal(false);
+      navigate("/login");
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: error?.message || "Impossible de supprimer votre compte",
+        duration: 3000,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSavePersonalInfo = async () => {
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    toast({
-      title: "Informations mises à jour",
-      description: "Vos informations personnelles ont été sauvegardées",
-      duration: 2000,
-    });
-    setShowPersonalInfoModal(false);
-    setIsLoading(false);
+    try {
+      await updateUserProfile({
+        first_name: personalInfo.firstName,
+        last_name: personalInfo.lastName,
+        username: personalInfo.username,
+        bio: personalInfo.bio,
+      });
+      toast({
+        title: "Informations mises à jour",
+        description: "Vos informations personnelles ont été sauvegardées",
+        duration: 2000,
+      });
+      setShowPersonalInfoModal(false);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: error?.message || "Impossible de mettre à jour vos informations",
+        duration: 3000,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleChangePassword = async () => {
@@ -124,15 +214,28 @@ export function Settings() {
     }
     
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    toast({
-      title: "Mot de passe modifié",
-      description: "Votre mot de passe a été mis à jour avec succès",
-      duration: 2000,
-    });
-    setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
-    setShowPasswordModal(false);
-    setIsLoading(false);
+    try {
+      await changeUserPassword({
+        current_password: passwordForm.currentPassword,
+        new_password: passwordForm.newPassword,
+      });
+      toast({
+        title: "Mot de passe modifié",
+        description: "Votre mot de passe a été mis à jour avec succès",
+        duration: 2000,
+      });
+      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setShowPasswordModal(false);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: error?.message || "Impossible de modifier votre mot de passe",
+        duration: 3000,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleChangeEmail = async () => {
@@ -147,15 +250,32 @@ export function Settings() {
     }
     
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    toast({
-      title: "Email modifié",
-      description: "Votre email a été mis à jour avec succès",
-      duration: 2000,
-    });
-    setEmailForm({ ...emailForm, currentEmail: emailForm.newEmail, newEmail: "", confirmEmail: "" });
-    setShowEmailModal(false);
-    setIsLoading(false);
+    try {
+      const updatedUser = await changeUserEmail({
+        current_email: emailForm.currentEmail,
+        new_email: emailForm.newEmail,
+      });
+      toast({
+        title: "Email modifié",
+        description: "Votre email a été mis à jour avec succès",
+        duration: 2000,
+      });
+      setEmailForm({
+        currentEmail: updatedUser?.email || emailForm.newEmail,
+        newEmail: "",
+        confirmEmail: "",
+      });
+      setShowEmailModal(false);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: error?.message || "Impossible de modifier votre email",
+        duration: 3000,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const settingsSections = [
@@ -547,6 +667,8 @@ export function Settings() {
                   id="confirmText"
                   placeholder="SUPPRIMER"
                   className="font-mono"
+                  value={deleteConfirmationText}
+                  onChange={(e) => setDeleteConfirmationText(e.target.value)}
                 />
               </div>
               <div className="flex gap-2 justify-end">
