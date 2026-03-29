@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
-from . import views
+from . import views, admin_views
 from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework_simplejwt.views import TokenRefreshView
@@ -22,6 +22,10 @@ urlpatterns = [
     path('api/', include('messaging.urls')),
     path('api/', include('notifications.urls')),
     path('api/', include('upload.urls')),
+
+    path('api/admin/moderation-queue/', admin_views.admin_moderation_queue, name='admin-moderation-queue'),
+    path('api/admin/reported-content/', admin_views.admin_reported_content, name='admin-reported-content'),
+    path('api/admin/user-management-summary/', admin_views.admin_user_management_summary, name='admin-user-management-summary'),
 
     # Search and utility endpoints
     path('api/search/', views.global_search, name='global-search'),
