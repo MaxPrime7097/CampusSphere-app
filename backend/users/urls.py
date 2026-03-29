@@ -8,6 +8,10 @@ urlpatterns = [
     path('auth/register/', views.UserRegistrationView.as_view(), name='register'),
     path('auth/login/', views.UserLoginView.as_view(), name='login'),
     path('auth/me/', views.current_user_profile, name='current-user'),
+    path('auth/logout/', views.LogoutView.as_view(), name='logout'),
+    path('auth/change-password/', views.ChangePasswordView.as_view(), name='change-password'),
+    path('auth/change-email/', views.ChangeEmailView.as_view(), name='change-email'),
+    path('auth/delete-account/', views.DeleteAccountView.as_view(), name='delete-account'),
 
     # User management
     path('<int:id>/', views.UserDetailView.as_view(), name='user-detail'),
