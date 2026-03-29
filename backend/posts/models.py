@@ -97,6 +97,41 @@ class PostLike(models.Model):
         return f"{self.user.username} liked {self.post.id}"
 
 
+class PostSave(models.Model):
+    post = models.ForeignKey(Post, related_name='saves', on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='saved_posts', on_delete=models.CASCADE)
+    saved_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        unique_together = ['post', 'user']
+        ordering = ['-saved_at']
+
+    def __str__(self):
+        return f"{self.user.username} saved post {self.post.id}"
+
+
+class PostReport(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('reviewed', 'Reviewed'),
+        ('resolved', 'Resolved'),
+        ('dismissed', 'Dismissed'),
+    ]
+
+    post = models.ForeignKey(Post, related_name='reports', on_delete=models.CASCADE)
+    reporter = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='reported_posts', on_delete=models.CASCADE)
+    reason = models.CharField(max_length=255)
+    details = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['post', 'reporter']
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Report {self.id} on post {self.post_id} by {self.reporter.username}"
 class PostImpactRating(models.Model):
     post = models.ForeignKey(Post, related_name='impact_ratings', on_delete=models.CASCADE)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='post_impact_ratings', on_delete=models.CASCADE)

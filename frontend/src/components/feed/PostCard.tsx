@@ -22,6 +22,7 @@ import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { likePost, reportPost, savePost, unsavePost } from "@/services/api";
 import { impactRatePost, likePost } from "@/services/api";
 import { formatRelativeTime } from "@/lib/date";
 
@@ -45,6 +46,7 @@ interface PostCardProps {
     impactScore?: number;
     userImpactRating?: number | null;
     isLiked?: boolean;
+    isSaved?: boolean;
   };
 }
 
@@ -53,13 +55,14 @@ export function PostCard({ post }: PostCardProps) {
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const [isLiked, setIsLiked] = useState(Boolean(post.isLiked));
-  const [isSaved, setIsSaved] = useState(false);
+  const [isSaved, setIsSaved] = useState(Boolean(post.isSaved));
   const [likesCount, setLikesCount] = useState(post.likes);
   const [impactScore, setImpactScore] = useState(Number(post.impactScore || 0));
   const [userImpactRating, setUserImpactRating] = useState<number | null>(post.userImpactRating ?? null);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
+  const [isReporting, setIsReporting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isCopyingLink, setIsCopyingLink] = useState(false);
   const [isReporting, setIsReporting] = useState(false);
@@ -68,7 +71,9 @@ export function PostCard({ post }: PostCardProps) {
 
   useEffect(() => {
     setIsLiked(Boolean(post.isLiked));
+    setIsSaved(Boolean(post.isSaved));
     setLikesCount(post.likes);
+  }, [post.id, post.isLiked, post.isSaved, post.likes]);
     setImpactScore(Number(post.impactScore || 0));
     setUserImpactRating(post.userImpactRating ?? null);
   }, [post.id, post.isLiked, post.likes, post.impactScore, post.userImpactRating]);
@@ -99,6 +104,31 @@ export function PostCard({ post }: PostCardProps) {
     }
   };
 
+  const handleSave = async () => {
+    const previousSaved = isSaved;
+    const optimisticSaved = !previousSaved;
+    setIsSaved(optimisticSaved);
+
+    try {
+      const response = optimisticSaved ? await savePost(post.id) : await unsavePost(post.id);
+      const serverSaved = response?.data?.saved;
+      if (typeof serverSaved === "boolean") {
+        setIsSaved(serverSaved);
+      }
+
+      const nextSaved = typeof serverSaved === "boolean" ? serverSaved : optimisticSaved;
+      toast({
+        title: nextSaved ? "Post sauvegardé !" : "Post retiré des sauvegardes",
+        description: nextSaved
+          ? "Le post a été ajouté à vos sauvegardes"
+          : "Le post a été retiré de vos sauvegardes",
+        duration: 2000,
+      });
+    } catch (error: any) {
+      setIsSaved(previousSaved);
+      toast({
+        title: "Erreur",
+        description: error?.message || "Impossible de modifier la sauvegarde du post",
   const handleImpactRate = async (value: number | null) => {
     try {
       const response = await impactRatePost(post.id, value);
@@ -162,6 +192,26 @@ export function PostCard({ post }: PostCardProps) {
     setShowReportDialog(true);
   };
 
+  const submitReport = async (reason: string) => {
+    setIsReporting(true);
+    try {
+      const response = await reportPost(post.id, {
+        reason,
+        details: "Signalé depuis la carte du post",
+      });
+      const reported = Boolean(response?.data?.reported);
+      setShowReportDialog(false);
+      toast({
+        title: reported ? "Signalement envoyé" : "Signalement mis à jour",
+        description: "Merci, notre équipe de modération examinera ce contenu.",
+        duration: 2500,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error?.message || "Impossible de signaler ce post",
+        variant: "destructive",
+        duration: 2500,
   const handleSubmitReport = async (reason: string) => {
     if (isReporting) return;
 
@@ -445,6 +495,9 @@ export function PostCard({ post }: PostCardProps) {
                 key={reason}
                 variant="outline"
                 className="w-full justify-start"
+                onClick={() => {
+                  void submitReport(reason);
+                }}
                 onClick={() => handleSubmitReport(reason)}
                 disabled={isReporting}
               >
