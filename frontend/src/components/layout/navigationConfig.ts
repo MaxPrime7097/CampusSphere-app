@@ -76,8 +76,7 @@ export function getNavigationSections(user?: NavigationUser | null): NavigationS
     { title: "Ressources", url: "/resources", icon: FolderOpen },
     { title: "Sphères", url: "/spheres", icon: Users },
     { title: "Messages", url: "/messages", icon: MessageSquare },
-    { title: "Enregistrements", url: "/saved", icon: Bookmark },
-    { title: "Paramètres", url: "/settings", icon: Settings },
+    { title: "Profil", url: profileUrl, icon: User },
     ...adminEntry,
   ];
 

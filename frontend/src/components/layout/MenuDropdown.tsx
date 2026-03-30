@@ -76,7 +76,7 @@ export function MenuDropdown() {
               <Avatar className="h-10 w-10">
                 <AvatarImage src= "/placeholder/.jpg" />
                 <AvatarFallback className="bg-input text-muted-foreground font-semibold">
-                  M                
+                  MP
                 </AvatarFallback>
               </Avatar>
               <div>

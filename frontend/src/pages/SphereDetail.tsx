@@ -136,9 +136,26 @@ export function SphereDetail() {
     description: "",
     objective: "",
     color: "from-blue-500 to-blue-600",
-    member_count: 0,
-    tags: []
+    memberCount: 0,
+    tags: [],
+    resourceCount: 0,
+    progression: 0,
   }, [sphere, id]);
+
+  const sphereProgress = useMemo(() => {
+    if (sphere?.progression !== undefined && sphere?.progression !== null) {
+      const value = Number(sphere.progression);
+      if (!Number.isNaN(value)) return Math.max(0, Math.min(100, value));
+    }
+    if (tasks.length > 0) {
+      const done = tasks.filter((t) => t.isCompleted).length;
+      return Math.round((done / tasks.length) * 100);
+    }
+    return 0;
+  }, [sphere, tasks]);
+
+  const sphereMemberCount = sphere?.memberCount ?? members.length;
+  const sphereFileCount = sphere?.resourceCount ?? sphere?.filesCount ?? 0;
 
   const resolvedUserRole = useMemo(() => {
     if (!currentUserId) return "member";
@@ -174,6 +191,33 @@ export function SphereDetail() {
       toast({ title: "Tâche accomplie !" });
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string) => {
+    try {
+      setProcessingMemberIds(p => ({ ...p, [memberId]: true }));
+      await removeSphereMember(String(id), memberId);
+      await loadSphereData();
+      toast({ title: "Membre retiré" });
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+    } finally {
+      setProcessingMemberIds(p => ({ ...p, [memberId]: false }));
+    }
+  };
+
+  const handleCancelRequest = async () => {
+    setIsCancellingRequest(true);
+    try {
+      await cancelSphereJoinRequest(String(id));
+      await loadSphereData();
+      setIsPendingRequest(false);
+      toast({ title: "Demande annulée" });
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+    } finally {
+      setIsCancellingRequest(false);
     }
   };
 
@@ -226,18 +270,18 @@ export function SphereDetail() {
             <div className="flex-1 space-y-4">
               <p className="text-lg text-muted-foreground">{sphereFallback.description}</p>
               <div className="flex flex-wrap gap-4 text-sm font-medium">
-                <span className="flex items-center gap-1.5"><Users className="h-4 w-4 text-primary"/> {members.length} membres</span>
-                <span className="flex items-center gap-1.5"><FileText className="h-4 w-4 text-primary"/> 0 fichiers</span>
-                {sphereFallback.tags?.map((tag: string) => (
+                <span className="flex items-center gap-1.5"><Users className="h-4 w-4 text-primary"/> {sphereMemberCount} membres</span>
+                <span className="flex items-center gap-1.5"><FileText className="h-4 w-4 text-primary"/> {sphereFileCount} fichiers</span>
+                {(sphere?.tags || sphereFallback.tags || []).map((tag: string) => (
                   <Badge key={tag} variant="secondary">#{tag}</Badge>
                 ))}
               </div>
               <div className="space-y-1.5">
                 <div className="flex justify-between text-xs font-semibold">
                   <span>Progression</span>
-                  <span>75%</span>
+                  <span>{sphereProgress}%</span>
                 </div>
-                <Progress value={75} className="h-2" />
+                <Progress value={sphereProgress} className="h-2" />
               </div>
             </div>
 
@@ -255,9 +299,13 @@ export function SphereDetail() {
                   </AddMemberModal>
                 </>
               ) : (
-                <Button onClick={handleJoinSphere} disabled={isJoining || isPendingRequest} className="campus-gradient text-white h-12 text-md font-bold">
-                  {isJoining ? <Loader2 className="animate-spin mr-2"/> : null}
-                  {isPendingRequest ? "Demande en attente" : "Rejoindre la Sphère"}
+                <Button
+                  onClick={isPendingRequest ? handleCancelRequest : handleJoinSphere}
+                  disabled={isJoining || isCancellingRequest}
+                  className="campus-gradient text-white h-12 text-md font-bold"
+                >
+                  {(isJoining || isCancellingRequest) ? <Loader2 className="animate-spin mr-2"/> : null}
+                  {isPendingRequest ? "Annuler la demande" : "Rejoindre la Sphère"}
                 </Button>
               )}
               <Button variant="ghost" onClick={handleShare} disabled={isSharing} className="w-full justify-start gap-2">

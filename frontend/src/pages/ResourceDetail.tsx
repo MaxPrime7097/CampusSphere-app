@@ -10,6 +10,23 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { formatFrenchDate } from "@/lib/date";
 
+const SUBJECT_LABELS: Record<string, string> = {
+  math: "Mathématiques",
+  cs: "Informatique",
+  physics: "Physique",
+  economics: "Économie",
+  language: "Langues",
+  other: "Autre",
+};
+
+function getSubjectLabel(subject: string) {
+  return SUBJECT_LABELS[subject] || subject.charAt(0).toUpperCase() + subject.slice(1);
+}
+
+function getResourceTypeLabel(type: string) {
+  return RESOURCE_TYPE_OPTIONS.find((t) => t.value === type)?.label || type;
+}
+
 export function ResourceDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -61,21 +78,28 @@ export function ResourceDetail() {
             description: data.description || '',
             subject: data.subject || 'other',
             type: data.type || 'notes',
-            format: data.fileUrl?.split('.').pop() || data.file?.split('.').pop() || 'pdf',
-            size: data.fileSize || data.file_size || '0 MB',
-            level: data.audience || 'L2',
-            pages: 0,
+            format: (data.fileUrl || data.file)?.toString().split('.').pop() || 'pdf',
+            size: data.fileSize || data.file_size || data.size || '0 MB',
+            level: data.level || data.audience || data.courseLevel || 'L2',
+            pages: data.pages || data.page_count || 0,
             uploader: {
+              name: data.author?.name || data.author_info?.name || data.author_name || "Utilisateur",
+              username: data.author?.username || data.author_info?.username || data.author_username || "",
+              avatar: data.author?.avatar || data.author_info?.avatar || "/placeholder-avatar.jpg",
+              verified: data.author?.isVerified || data.author_info?.is_verified || false,
+              level: data.author?.studyYear || data.author_info?.study_level || "L3",
+              contributions: data.author?.impactScore || data.author_info?.impact_score || 0
+            },
               name: data.author?.name || data.author_info?.name || data.author_name || "Utilisateur",
               avatar: data.author?.avatar || data.author_info?.avatar || "/placeholder-avatar.jpg",
               verified: data.author?.isVerified || data.author_info?.is_verified || false,
               level: data.author?.studyYear || data.author_info?.study_level || "L3",
               contributions: data.author?.impactScore || data.author_info?.impact_score || 0
             },
-            uploadDate: data.createdAt || data.created_at || null,
+            uploadDate: data.createdAt || data.created_at || data.uploaded_at || null,
             stats: {
               downloads: data.downloadCount || data.download_count || data.stats?.downloads || 0,
-              saves: data.stats?.saves || data.saves_count || 0,
+              saves: data.saves || data.stats?.saves || data.saves_count || 0,
               views: data.viewCount || data.view_count || data.stats?.views || 0
             },
             impactScore: data.impactScore || data.impact_score || 0,
@@ -235,9 +259,9 @@ export function ResourceDetail() {
             <div className="mb-4">
               <div className="flex flex-wrap items-center gap-2 mb-3">
                 <Badge className="campus-gradient text-white">
-                  {RESOURCE_TYPE_OPTIONS.find((t) => t.value === resource.type)?.label || resource.type}
+                  {getResourceTypeLabel(resource.type)}
                 </Badge>
-                <Badge variant="secondary">{resource.subject}</Badge>
+                <Badge variant="secondary">{getSubjectLabel(resource.subject)}</Badge>
                 <Badge variant="outline">{resource.format.toUpperCase()}</Badge>
               </div>
               <h1 className="text-2xl md:text-3xl font-bold mb-2">{resource.title}</h1>
@@ -283,31 +307,18 @@ export function ResourceDetail() {
                   </p>
                 </div>
               </div>
-              <Button variant="outline" size="sm">Connect</Button>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Button 
-                className="flex-1 campus-gradient text-white hover:opacity-90 gap-2"
-                onClick={handleDownload}
-                disabled={isDownloading}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => resource.uploader.username && navigate(`/profile/${resource.uploader.username}`)}
+                disabled={!resource.uploader.username}
               >
-                {isDownloading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Download className="h-4 w-4" />
-                )}
-                {isDownloading ? "Téléchargement..." : `Télécharger (${resource.size})`}
+                Voir le profil
               </Button>
-              <Button 
-                variant="outline" 
-                className="text-primary border-primary hover:bg-primary/10"
-                disabled
-              >
+              <Badge className="flex items-center gap-1 rounded-lg px-3 py-2 h-10 text-sm bg-secondary/20 text-secondary">
                 <Zap className="h-4 w-4" />
-                <span className="ml-1">{resource.impactScore}</span>
-              </Button>
+                <span>{resource.impactScore}</span>
+              </Badge>
               <Button 
                 variant="outline"
                 onClick={handleShare}
@@ -341,23 +352,27 @@ export function ResourceDetail() {
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Matière associé</p>
-                <p className="font-medium">{resource.subject}</p>
+                <p className="text-sm text-muted-foreground mb-1">Matière associée</p>
+                <p className="font-medium">{getSubjectLabel(resource.subject)}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Pour des étudiants</p>
-                <p className="font-medium">{resource.level}</p>
+                <p className="text-sm text-muted-foreground mb-1">Public cible</p>
+                <p className="font-medium">{resource.level || "Non défini"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Pages</p>
+                <p className="font-medium">{resource.pages || "N/A"}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Date d'upload</p>
-                <p className="font-medium">{formatFrenchDate(resource.uploadDate)}</p>
+                <p className="font-medium">{resource.uploadDate ? formatFrenchDate(resource.uploadDate) : "N/A"}</p>
               </div>
             </div>
 
             <div>
               <p className="text-sm text-muted-foreground mb-2">Tags</p>
               <div className="flex flex-wrap gap-2">
-                {resource.tags.map((tag) => (
+                {(resource.tags || []).map((tag) => (
                   <Badge key={tag} variant="outline" className="cursor-pointer hover:bg-accent">
                     {tag}
                   </Badge>
