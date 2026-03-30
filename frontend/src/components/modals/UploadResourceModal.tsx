@@ -83,7 +83,7 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
   const visibilities = [
     { value: "public", label: "Public" },
     { value: "university", label: "Université uniquement" },
-    { value: "private", label: "Amis uniquement" }
+    { value: "friends", label: "Amis uniquement" }
   ];
 
   const audiences = [
