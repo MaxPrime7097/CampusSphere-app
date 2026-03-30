@@ -90,12 +90,6 @@ export function ResourceDetail() {
               level: data.author?.studyYear || data.author_info?.study_level || "L3",
               contributions: data.author?.impactScore || data.author_info?.impact_score || 0
             },
-              name: data.author?.name || data.author_info?.name || data.author_name || "Utilisateur",
-              avatar: data.author?.avatar || data.author_info?.avatar || "/placeholder-avatar.jpg",
-              verified: data.author?.isVerified || data.author_info?.is_verified || false,
-              level: data.author?.studyYear || data.author_info?.study_level || "L3",
-              contributions: data.author?.impactScore || data.author_info?.impact_score || 0
-            },
             uploadDate: data.createdAt || data.created_at || data.uploaded_at || null,
             stats: {
               downloads: data.downloadCount || data.download_count || data.stats?.downloads || 0,
