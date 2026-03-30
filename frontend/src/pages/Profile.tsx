@@ -207,7 +207,7 @@ export function Profile() {
     return () => {
       isMounted = false;
     };
-  }, [targetUser?.id]);
+  }, [currentUser?.id, targetUser?.id]);
   
   // Vérifier si c'est le profil de l'utilisateur actuel
   const isOwnProfile = !username || username === currentUser?.username;
@@ -233,13 +233,30 @@ export function Profile() {
       try {
         const connections = await getUserConnections(targetUser.id);
         if (isMounted && connections) {
-          const mapped = (connections || []).map((conn: any) => ({
-            id: String(conn.id || conn.user_id),
-            name: conn.user_info?.name || conn.name || "Utilisateur",
-            username: conn.user_info?.username || conn.username || "user",
-            avatar: conn.user_info?.avatar || conn.avatar || "/placeholder-avatar.jpg",
-            mutual: 0,
-          }));
+          const profileOwnerId = String(targetUser.id);
+          const currentUserId = currentUser?.id ? String(currentUser.id) : null;
+
+          const mapped = (connections || []).map((conn: any) => {
+            const requesterId = conn.requester ? String(conn.requester) : null;
+            const recipientId = conn.recipient ? String(conn.recipient) : null;
+            const isRequesterProfileOwner =
+              requesterId === profileOwnerId || (currentUserId !== null && requesterId === currentUserId);
+
+            const otherUserInfo = isRequesterProfileOwner ? conn.recipient_info : conn.requester_info;
+
+            return {
+              id: String(
+                otherUserInfo?.id ||
+                  (isRequesterProfileOwner ? recipientId : requesterId) ||
+                  conn.id ||
+                  conn.user_id
+              ),
+              name: otherUserInfo?.full_name || otherUserInfo?.name || conn.name || "Utilisateur",
+              username: otherUserInfo?.username || conn.username || "user",
+              avatar: otherUserInfo?.avatar || conn.avatar || "/placeholder-avatar.jpg",
+              mutual: 0,
+            };
+          });
           setUserConnections(mapped);
         }
       } catch (e) {
@@ -249,7 +266,7 @@ export function Profile() {
     return () => {
       isMounted = false;
     };
-  }, [targetUser?.id]);
+  }, [currentUser?.id, targetUser?.id]);
 
   // Load user resources
   useEffect(() => {
@@ -273,7 +290,7 @@ export function Profile() {
     return () => {
       isMounted = false;
     };
-  }, [targetUser?.id]);
+  }, [currentUser?.id, targetUser?.id]);
 
   const userPostsData = useMemo(() => {
     if (!userPosts || userPosts.length === 0) return [];
