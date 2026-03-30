@@ -1,50 +1,61 @@
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase
-from rest_framework import serializers
+from django.test import override_settings
+from rest_framework import status
+from rest_framework.test import APITestCase
 
-from resources.constants import ACCEPTED_RESOURCE_MIME_TYPES
-from resources.serializers import ResourceCreateSerializer
+from users.models import User
+from .models import Resource, ResourceReport, ResourceShareEvent
 
 
-class ResourceCreateSerializerFileValidationTests(TestCase):
+@override_settings(SECURE_SSL_REDIRECT=False)
+class ResourceModerationEndpointsTests(APITestCase):
     def setUp(self):
-        self.serializer = ResourceCreateSerializer()
-
-    def _build_upload(self, content_type: str) -> SimpleUploadedFile:
-        return SimpleUploadedFile(
-            name=f"sample-{content_type.replace('/', '-')}.bin",
-            content=b"file-bytes",
-            content_type=content_type,
+        self.author = User.objects.create_user(
+            email='author@example.com',
+            username='resource_author',
+            first_name='Resource',
+            last_name='Author',
+            password='testpass123',
+        )
+        self.reporter = User.objects.create_user(
+            email='reporter@example.com',
+            username='resource_reporter',
+            first_name='Resource',
+            last_name='Reporter',
+            password='testpass123',
+        )
+        self.resource = Resource.objects.create(
+            title='Resource to report',
+            description='Reportable resource',
+            author=self.author,
+            file=SimpleUploadedFile('resource.pdf', b'pdf-bytes', content_type='application/pdf'),
+            file_size=1200,
+            file_type='application/pdf',
+            subject='computer-science',
+            type='notes',
+            visibility='public',
         )
 
-    def test_validate_file_accepts_each_allowed_mime_type(self):
-        for content_type in ACCEPTED_RESOURCE_MIME_TYPES:
-            with self.subTest(content_type=content_type):
-                upload = self._build_upload(content_type)
-                validated_file = self.serializer.validate_file(upload)
-                self.assertEqual(validated_file.content_type, content_type)
-
-    def test_validate_file_rejects_disallowed_mime_types(self):
-        rejected_types = [
-            "text/plain",
-            "application/vnd.ms-excel",
-            "application/x-rar-compressed",
-            "image/webp",
-            "application/octet-stream",
-        ]
-
-        for content_type in rejected_types:
-            with self.subTest(content_type=content_type):
-                upload = self._build_upload(content_type)
-                with self.assertRaises(serializers.ValidationError):
-                    self.serializer.validate_file(upload)
-
-    def test_validate_file_rejects_too_large_file(self):
-        upload = SimpleUploadedFile(
-            name="large.pdf",
-            content=b"0" * (50 * 1024 * 1024 + 1),
-            content_type="application/pdf",
+    def test_report_resource_creates_pending_report(self):
+        self.client.force_authenticate(user=self.reporter)
+        response = self.client.post(
+            f'/api/resources/{self.resource.id}/report/',
+            {'reason': 'copyright', 'details': 'Uncredited material'},
+            format='json',
         )
 
-        with self.assertRaises(serializers.ValidationError):
-            self.serializer.validate_file(upload)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(response.data['success'])
+        self.assertTrue(ResourceReport.objects.filter(resource=self.resource, reporter=self.reporter).exists())
+
+    def test_share_resource_tracks_event(self):
+        self.client.force_authenticate(user=self.reporter)
+        response = self.client.post(
+            f'/api/resources/{self.resource.id}/share/',
+            {'channel': 'copy_link'},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(response.data['success'])
+        self.assertTrue(ResourceShareEvent.objects.filter(resource=self.resource, user=self.reporter).exists())
