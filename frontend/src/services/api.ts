@@ -419,6 +419,8 @@ export async function updateUserProfile(data: Partial<{
   university: string;
   faculty: string;
   study_year: string;
+  town: string;
+  language: string;
   skills: string[];
   interests: string[];
   current_mood: string;
