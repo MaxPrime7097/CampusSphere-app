@@ -3,6 +3,7 @@ from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APITestCase
 from rest_framework import status
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.auth import get_user_model
 from users.models import User, Connection
 from spheres.models import Sphere, SphereMember
@@ -117,22 +118,37 @@ class ResourceAPITest(APITestCase):
         )
         self.client.force_authenticate(user=self.user)
 
-    def test_create_resource(self):
-        """Test resource creation"""
-        url = reverse('resources:resource-list')
-        data = {
-            'title': 'Test Resource',
-            'description': 'A test resource',
+    def _resource_payload(self, visibility):
+        return {
+            'title': f'Test Resource {visibility}',
+            'description': 'A test resource description',
             'subject': 'informatique',
             'type': 'cours',
-            'visibility': 'public',
-            'audience': 'Étudiants en informatique'
+            'visibility': visibility,
+            'audience': 'Étudiants en informatique',
+            'file': SimpleUploadedFile(
+                name=f'resource-{visibility}.pdf',
+                content=b'%PDF-1.4 test resource content',
+                content_type='application/pdf',
+            ),
         }
-        # Note: In real tests, you'd need to handle file uploads
-        # For now, we'll test the endpoint structure
-        response = self.client.post(url, data, format='json')
-        # This will fail due to missing file, but tests the endpoint
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_resource_accepts_supported_visibility_values(self):
+        """Test resource creation for each supported visibility value."""
+        url = reverse('resources:resource-list')
+
+        for visibility in ['public', 'university', 'friends']:
+            response = self.client.post(url, self._resource_payload(visibility), format='multipart')
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            self.assertEqual(response.data['visibility'], visibility)
+
+    def test_create_resource_legacy_private_visibility_maps_to_friends(self):
+        """Test backward compatibility for legacy private visibility payloads."""
+        url = reverse('resources:resource-list')
+        response = self.client.post(url, self._resource_payload('private'), format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['visibility'], 'friends')
 
 
 class TaskAPITest(APITestCase):
