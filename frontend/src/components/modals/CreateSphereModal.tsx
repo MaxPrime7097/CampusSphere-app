@@ -62,7 +62,7 @@ const sphereSchema = z.object({
   name: z.string().min(3, "Le nom doit contenir au moins 3 caractères").max(50),
   description: z.string().min(10, "La description doit contenir au moins 10 caractères").max(500),
   objective: z.string().min(10, "L'objectif doit contenir au moins 10 caractères").max(300),
-  category: z.enum(categoryOptions.map(({ value }) => value) as [string, ...string[]], {
+  category: z.enum(SPHERE_CATEGORY_OPTIONS.filter((c) => c.value !== "all").map(({ value }) => value) as [string, ...string[]], {
     errorMap: () => ({ message: "Veuillez sélectionner une catégorie valide" }),
   }),
   type: z.enum(typeOptions.map(({ value }) => value) as [string, ...string[]], {
