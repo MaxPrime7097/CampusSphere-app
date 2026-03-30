@@ -19,6 +19,7 @@ interface SphereData {
   description: string;
   objective: string;
   category: string;
+  type: string;
   color: string;
   isPrivate: boolean;
   requireApproval: boolean;
@@ -37,14 +38,50 @@ interface CreateSphereModalProps {
   onSphereCreated?: (sphereData: SphereData) => void;
 }
 
+const categoryOptions = [
+  { value: "academic", label: "Académique" },
+  { value: "professional", label: "Professionnel" },
+  { value: "social", label: "Social" },
+  { value: "sports", label: "Sports" },
+  { value: "arts", label: "Arts" },
+  { value: "technology", label: "Technologie" },
+  { value: "other", label: "Autre" },
+] as const;
+
+const typeOptions = [
+  { value: "study", label: "Étude" },
+  { value: "project", label: "Projet" },
+  { value: "club", label: "Club" },
+  { value: "event", label: "Événement" },
+  { value: "networking", label: "Réseautage" },
+  { value: "other", label: "Autre" },
+] as const;
+
+const colorOptions = [
+  { value: "ocean", label: "Bleu → Violet", gradientClass: "from-blue-500 to-purple-500" },
+  { value: "sunset", label: "Rose → Orange", gradientClass: "from-pink-500 to-orange-500" },
+  { value: "mint", label: "Vert → Turquoise", gradientClass: "from-green-500 to-teal-500" },
+  { value: "lime", label: "Jaune → Vert", gradientClass: "from-yellow-500 to-green-500" },
+  { value: "ruby", label: "Rouge → Rose", gradientClass: "from-red-500 to-pink-500" },
+  { value: "indigo", label: "Indigo → Bleu", gradientClass: "from-indigo-500 to-blue-500" },
+] as const;
+
 const sphereSchema = z.object({
   name: z.string().min(3, "Le nom doit contenir au moins 3 caractères").max(50),
   description: z.string().min(10, "La description doit contenir au moins 10 caractères").max(500),
   objective: z.string().min(10, "L'objectif doit contenir au moins 10 caractères").max(300),
-  category: z.string().min(1, "Veuillez sélectionner une catégorie"),
-  color: z.string().min(1, "Veuillez sélectionner une couleur"),
+  category: z.enum(categoryOptions.map(({ value }) => value) as [string, ...string[]], {
+    errorMap: () => ({ message: "Veuillez sélectionner une catégorie valide" }),
+  }),
+  type: z.enum(typeOptions.map(({ value }) => value) as [string, ...string[]], {
+    errorMap: () => ({ message: "Veuillez sélectionner un type valide" }),
+  }),
+  color: z.enum(colorOptions.map(({ value }) => value) as [string, ...string[]], {
+    errorMap: () => ({ message: "Veuillez sélectionner une couleur valide" }),
+  }),
   targetAudience: z.string().min(1, "Veuillez sélectionner le public cible"),
-  expectedDuration: z.string().min(1, "Veuillez sélectionner la durée attendue")
+  expectedDuration: z.string().min(1, "Veuillez sélectionner la durée attendue"),
+  collaborationType: z.array(z.string()).min(1, "Veuillez sélectionner au moins un type de collaboration"),
 });
 
 export function CreateSphereModal({ children, onSphereCreated }: CreateSphereModalProps) {
@@ -53,7 +90,8 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
   const [description, setDescription] = useState("");
   const [objective, setObjective] = useState("");
   const [category, setCategory] = useState("");
-  const [color, setColor] = useState("from-blue-500 to-purple-500");
+  const [type, setType] = useState("");
+  const [color, setColor] = useState<(typeof colorOptions)[number]["value"]>("ocean");
   const [requireApproval, setRequireApproval] = useState(false);
   const [allowMemberPosts, setAllowMemberPosts] = useState(true);
   const [allowResourceSharing, setAllowResourceSharing] = useState(true);
@@ -66,28 +104,6 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
   const [collaborationType, setCollaborationType] = useState<string[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
-
-  const categories = [
-    "Général",
-    "Académique", 
-    "Projet",
-    "Événement",
-    "Étude",
-    "Social",
-    "Technologie",
-    "Art",
-    "Sport",
-    "Autre"
-  ];
-
-  const colorOptions = [
-    { value: "from-blue-500 to-purple-500", label: "Bleu → Violet", class: "bg-gradient-to-r from-blue-500 to-purple-500" },
-    { value: "from-pink-500 to-orange-500", label: "Rose → Orange", class: "bg-gradient-to-r from-pink-500 to-orange-500" },
-    { value: "from-green-500 to-teal-500", label: "Vert → Turquoise", class: "bg-gradient-to-r from-green-500 to-teal-500" },
-    { value: "from-yellow-500 to-green-500", label: "Jaune → Vert", class: "bg-gradient-to-r from-yellow-500 to-green-500" },
-    { value: "from-red-500 to-pink-500", label: "Rouge → Rose", class: "bg-gradient-to-r from-red-500 to-pink-500" },
-    { value: "from-indigo-500 to-blue-500", label: "Indigo → Bleu", class: "bg-gradient-to-r from-indigo-500 to-blue-500" }
-  ];
 
   const targetAudienceOptions = [
     "Tous les étudiants",
@@ -147,31 +163,33 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
 
   const handleSubmit = async () => {
     try {
-      sphereSchema.parse({ name, description, objective, category, color, targetAudience, expectedDuration });
-
-      if (collaborationType.length === 0) {
-        toast({
-          title: "Type de collaboration requis",
-          description: "Veuillez sélectionner au moins un type de collaboration",
-          variant: "destructive",
-        });
-        return;
-      }
+      const payload = sphereSchema.parse({
+        name: name.trim(),
+        description: description.trim(),
+        objective: objective.trim(),
+        category,
+        type,
+        color,
+        targetAudience,
+        expectedDuration,
+        collaborationType,
+      });
       
       setIsCreating(true);
 
       const sphereData = await createSphere({
-        name: name.trim(),
-        description: description.trim(),
-        category,
-        color,
+        name: payload.name,
+        description: payload.description,
+        category: payload.category,
+        type: payload.type,
+        color: payload.color,
         is_private: false,
         require_approval: requireApproval,
-        objective: objective.trim(),
-        target_audience: targetAudience,
-        duration: expectedDuration,
-        collaboration_types: collaborationType,
-      } as any);
+        objective: payload.objective,
+        target_audience: payload.targetAudience,
+        duration: payload.expectedDuration,
+        collaboration_types: payload.collaborationType,
+      });
 
       if (onSphereCreated) {
         onSphereCreated(sphereData);
@@ -210,7 +228,8 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
     setDescription("");
     setObjective("");
     setCategory("");
-    setColor("from-blue-500 to-purple-500");
+    setType("");
+    setColor("ocean");
     setRequireApproval(false);
     setAllowMemberPosts(true);
     setAllowResourceSharing(true);
@@ -288,8 +307,8 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
 
           <Separator />
 
-          {/* Category & Color */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Category, Type & Color */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="category">Catégorie *</Label>
               <Select value={category} onValueChange={setCategory}>
@@ -297,8 +316,22 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
                   <SelectValue placeholder="Sélectionner..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  {categoryOptions.map((cat) => (
+                    <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="type">Type *</Label>
+              <Select value={type} onValueChange={setType}>
+                <SelectTrigger className="mt-2">
+                  <SelectValue placeholder="Sélectionner..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {typeOptions.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -314,7 +347,7 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
                   {colorOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       <div className="flex items-center gap-2">
-                        <div className={`w-4 h-4 rounded bg-gradient-to-r ${option.value}`} />
+                        <div className={`w-4 h-4 rounded bg-gradient-to-r ${option.gradientClass}`} />
                         {option.label}
                       </div>
                     </SelectItem>
@@ -390,7 +423,11 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
           <div>
             <Label>Aperçu</Label>
             <div className="mt-2 relative h-24 rounded-lg overflow-hidden">
-              <div className={`absolute inset-0 bg-gradient-to-r ${color}`} />
+              <div
+                className={`absolute inset-0 bg-gradient-to-r ${
+                  colorOptions.find((option) => option.value === color)?.gradientClass ?? colorOptions[0].gradientClass
+                }`}
+              />
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-white font-bold text-xl text-center px-4">
                   {name || "Nom de votre sphère"}
@@ -491,7 +528,7 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={!name || !description || !category || isCreating}
+              disabled={!name || !description || !objective || !category || !type || !targetAudience || !expectedDuration || collaborationType.length === 0 || isCreating}
               className="campus-gradient text-white hover:opacity-90"
             >
               {isCreating ? (
