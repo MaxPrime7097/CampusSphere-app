@@ -264,11 +264,41 @@ export function SphereDetail() {
 
   // Fonctions pour la gestion des rôles (admin uniquement, sauf pour le créateur)
   const handleChangeRole = async (memberId: string, newRole: string) => {
-    toast({
-      title: "Indisponible",
-      description: `Le changement de rôle vers ${newRole} n'est pas encore supporté par l'API`,
-      duration: 3000,
-    });
+    const memberToUpdate = members.find((member) => String(member.id) === String(memberId));
+    if (!memberToUpdate) {
+      return;
+    }
+
+    const previousMembers = [...members];
+
+    try {
+      setProcessingMemberIds((prev) => ({ ...prev, [memberId]: true }));
+      setMemberActionStatus(`Mise à jour du rôle de ${memberToUpdate.name}...`);
+      setMembers((prev) => prev.map((member) => (
+        String(member.id) === String(memberId)
+          ? { ...member, role: newRole }
+          : member
+      )));
+
+      await updateSphereMember(String(id), memberId, { role: newRole as "admin" | "moderator" | "member" });
+
+      setMemberActionStatus(`Le rôle de ${memberToUpdate.name} a été mis à jour.`);
+      toast({
+        title: "Rôle mis à jour",
+        description: `${memberToUpdate.name} est maintenant ${newRole}`,
+        duration: 3000,
+      });
+    } catch (error: any) {
+      setMembers(previousMembers);
+      setMemberActionStatus(null);
+      toast({
+        title: "Erreur",
+        description: error?.message || "Impossible de modifier le rôle de ce membre",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessingMemberIds((prev) => ({ ...prev, [memberId]: false }));
+    }
   };
 
   const handleRemoveMember = async (memberId: string) => {

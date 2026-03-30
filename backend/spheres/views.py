@@ -10,7 +10,8 @@ from django.utils import timezone
 from .models import Sphere, SphereMember
 from .serializers import (
     SphereSerializer, SphereCreateSerializer, SphereUpdateSerializer,
-    SphereMemberSerializer, SphereMemberCreateSerializer, SphereJoinSerializer
+    SphereMemberSerializer, SphereMemberCreateSerializer, SphereJoinSerializer,
+    SphereMemberUpdateSerializer
 )
 from .permissions import IsSphereAdmin, IsSphereModerator, IsSphereMember
 from campus_sphere.cache import CacheManager, CacheKeys
@@ -203,16 +204,57 @@ class SphereMembersView(generics.ListCreateAPIView):
         return Response(output_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 
-class SphereMemberDetailView(generics.DestroyAPIView):
-    permission_classes = [IsSphereModerator]
+class SphereMemberDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         sphere = get_object_or_404(Sphere, pk=self.kwargs['sphere_pk'])
         return SphereMember.objects.filter(sphere=sphere)
 
+    def get_serializer_class(self):
+        if self.request.method == 'PATCH':
+            return SphereMemberUpdateSerializer
+        return SphereMemberSerializer
+
+    def _get_actor_membership(self, request, sphere):
+        return SphereMember.objects.filter(
+            sphere=sphere,
+            user=request.user,
+            status='active'
+        ).first()
+
+    def _can_manage_members(self, request, sphere):
+        actor_membership = self._get_actor_membership(request, sphere)
+        return actor_membership and actor_membership.role in ['admin', 'moderator']
+
+    def patch(self, request, *args, **kwargs):
+        membership = self.get_object()
+        if not self._can_manage_members(request, membership.sphere):
+            return Response(
+                {'error': 'Only sphere admins or moderators can update members'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        serializer = self.get_serializer(membership, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        output_serializer = SphereMemberSerializer(membership, context={'request': request})
+        return Response({
+            'success': True,
+            'message': 'Member updated successfully',
+            'data': output_serializer.data,
+        })
+
     def destroy(self, request, *args, **kwargs):
         membership = self.get_object()
         sphere = membership.sphere
+
+        if not self._can_manage_members(request, sphere):
+            return Response(
+                {'error': 'Only sphere admins or moderators can remove members'},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         # Prevent removing the last admin
         if membership.role == 'admin':
