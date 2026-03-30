@@ -33,6 +33,7 @@ import {
 import { UploadResourceModal } from "@/components/modals/UploadResourceModal";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { RESOURCE_TYPE_OPTIONS, normalizeResourceType } from "@/constants/resourceTypes";
 
 function mapResourceCard(r: any) {
   return {
@@ -40,7 +41,7 @@ function mapResourceCard(r: any) {
     title: r.title,
     description: r.description || "",
     subject: r.subject || "other",
-    type: r.type || "notes",
+    type: normalizeResourceType(r.type),
     authorId: r.authorId || r.author || r.created_by,
     authorName: r.author?.name || r.author_info?.name || r.author_name || "Unknown",
     visibility: r.visibility || "public",
@@ -67,7 +68,8 @@ export function Resources() {
   // ✅ Same tab state
   const [activeTab, setActiveTab] = useState("all");
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
   const [savedResources, setSavedResources] = useState<Set<string>>(new Set());
 
   const [resources, setResources] = useState<any[]>([]);
@@ -119,14 +121,7 @@ export function Resources() {
     { value: "language", label: "Langues" },
   ];
 
-  const types = [
-    { value: "all", label: "Tous types" },
-    { value: "notes", label: "Notes de cours" },
-    { value: "summary", label: "Résumés" },
-    { value: "exercises", label: "Exercices" },
-    { value: "projects", label: "Projets" },
-    { value: "slides", label: "Présentations" },
-  ];
+  const types = [{ value: "all", label: "Tous types" }, ...RESOURCE_TYPE_OPTIONS];
 
   useEffect(() => {
     let isMounted = true;
@@ -215,7 +210,12 @@ export function Resources() {
 
   const handleDownload = async (e: React.MouseEvent, resourceId: string) => {
     e.stopPropagation();
-    setIsLoading(true);
+    if (downloadingIds.has(resourceId)) return;
+    setDownloadingIds((prev) => {
+      const next = new Set(prev);
+      next.add(resourceId);
+      return next;
+    });
 
     try {
       const result = await downloadResource(resourceId);
@@ -248,12 +248,16 @@ export function Resources() {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setDownloadingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(resourceId);
+        return next;
+      });
     }
   };
 
   const handleRefresh = async () => {
-    setIsLoading(true);
+    setIsRefreshing(true);
 
     try {
       const data = await listResources();
@@ -272,7 +276,7 @@ export function Resources() {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -293,6 +297,11 @@ export function Resources() {
     setResources((prev) => [mapped, ...prev.filter((item) => item.id !== mapped.id)]);
   };
 
+  const handlePreview = (e: React.MouseEvent, resourceId: string) => {
+    e.stopPropagation();
+    navigate(`/resources/${resourceId}?mode=preview`);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
       <div className="container max-w-6xl mx-auto py-4 md:py-6 px-0">
@@ -311,10 +320,10 @@ export function Resources() {
               variant="outline"
               size="sm"
               onClick={handleRefresh}
-              disabled={isLoading}
+              disabled={isRefreshing}
               className="gap-2"
             >
-              {isLoading ? (
+              {isRefreshing ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <RefreshCw className="h-4 w-4" />
@@ -435,14 +444,7 @@ export function Resources() {
                           size="sm"
                           variant="outline"
                           className="h-7 flex-1 text-xs gap-1"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toast({
-                              title: "Prévisualisation",
-                              description: "Fonctionnalité de prévisualisation à venir",
-                              duration: 2000,
-                            });
-                          }}
+                          onClick={(e) => handlePreview(e, resource.id)}
                         >
                           <Eye className="h-3 w-3" />
                         </Button>
@@ -467,9 +469,9 @@ export function Resources() {
                           variant="default"
                           className="h-7 flex-1 text-xs gap-1 campus-gradient text-white"
                           onClick={(e) => handleDownload(e, resource.id)}
-                          disabled={isLoading}
+                          disabled={downloadingIds.has(resource.id)}
                         >
-                          {isLoading ? (
+                          {downloadingIds.has(resource.id) ? (
                             <Loader2 className="h-3 w-3 animate-spin" />
                           ) : (
                             <Download className="h-3 w-3" />
@@ -517,14 +519,7 @@ export function Resources() {
                         size="sm"
                         variant="outline"
                         className="h-7 flex-1 text-xs gap-1"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toast({
-                            title: "Prévisualisation",
-                            description: "Fonctionnalité de prévisualisation à venir",
-                            duration: 2000,
-                          });
-                        }}
+                        onClick={(e) => handlePreview(e, resource.id)}
                       >
                         <Eye className="h-3 w-3" />
                       </Button>
@@ -549,9 +544,9 @@ export function Resources() {
                         variant="default"
                         className="h-7 flex-1 text-xs gap-1 campus-gradient text-white"
                         onClick={(e) => handleDownload(e, resource.id)}
-                        disabled={isLoading}
+                        disabled={downloadingIds.has(resource.id)}
                       >
-                        {isLoading ? (
+                        {downloadingIds.has(resource.id) ? (
                           <Loader2 className="h-3 w-3 animate-spin" />
                         ) : (
                           <Download className="h-3 w-3" />
@@ -598,14 +593,7 @@ export function Resources() {
                         size="sm"
                         variant="outline"
                         className="h-7 flex-1 text-xs gap-1"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toast({
-                            title: "Prévisualisation",
-                            description: "Fonctionnalité de prévisualisation à venir",
-                            duration: 2000,
-                          });
-                        }}
+                        onClick={(e) => handlePreview(e, resource.id)}
                       >
                         <Eye className="h-3 w-3" />
                       </Button>
@@ -630,9 +618,9 @@ export function Resources() {
                         variant="default"
                         className="h-7 flex-1 text-xs gap-1 campus-gradient text-white"
                         onClick={(e) => handleDownload(e, resource.id)}
-                        disabled={isLoading}
+                        disabled={downloadingIds.has(resource.id)}
                       >
-                        {isLoading ? (
+                        {downloadingIds.has(resource.id) ? (
                           <Loader2 className="h-3 w-3 animate-spin" />
                         ) : (
                           <Download className="h-3 w-3" />

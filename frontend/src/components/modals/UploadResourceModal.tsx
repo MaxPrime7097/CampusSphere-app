@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { FileUpload } from "@/components/upload/FileUpload";
+import { RESOURCE_TYPE_OPTIONS } from "@/constants/resourceTypes";
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 const ACCEPTED_FILE_TYPES = [
@@ -72,18 +73,12 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
   });
 
 
-  const types = [
-    { value: "notes", label: "Notes de cours" },
-    { value: "summary", label: "Résumés" },
-    { value: "exercises", label: "Exercices" },
-    { value: "projects", label: "Projets" },
-    { value: "slides", label: "Présentations" }
-  ];
+  const types = RESOURCE_TYPE_OPTIONS;
 
   const visibilities = [
     { value: "public", label: "Public" },
     { value: "university", label: "Université uniquement" },
-    { value: "private", label: "Amis uniquement" }
+    { value: "friends", label: "Amis uniquement" }
   ];
 
   const audiences = [
