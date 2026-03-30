@@ -13,11 +13,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import {
+  blockUser,
   changeUserEmail,
   changeUserPassword,
   deleteUserAccount,
+  getBlockedUsers,
   getCurrentUser,
+  getPrivacySettings,
   logoutUser,
+  requestUserDataExport,
+  searchUsers,
+  unblockUser,
+  updatePrivacySettings,
   updateUserProfile,
 } from "@/services/api";
 
@@ -31,6 +38,10 @@ export function Settings() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [showProfileVisibilityModal, setShowProfileVisibilityModal] = useState(false);
+  const [showPostVisibilityModal, setShowPostVisibilityModal] = useState(false);
+  const [showDataExportModal, setShowDataExportModal] = useState(false);
+  const [showBlockListModal, setShowBlockListModal] = useState(false);
   
   // États pour les formulaires
   const [personalInfo, setPersonalInfo] = useState({
@@ -52,6 +63,17 @@ export function Settings() {
     confirmEmail: ""
   });
   const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
+  const [privacySettings, setPrivacySettings] = useState({
+    profile_visibility: "public",
+    post_visibility: "public",
+  });
+  const [dataExportOptions, setDataExportOptions] = useState({
+    include_connections: true,
+    include_posts: true,
+  });
+  const [blockedUsers, setBlockedUsers] = useState<any[]>([]);
+  const [blockSearch, setBlockSearch] = useState("");
+  const [isPrivacyLoading, setIsPrivacyLoading] = useState(false);
   
   const [marketingNotifications, setMarketingNotifications] = useState(false);
 
@@ -60,7 +82,11 @@ export function Settings() {
 
     const hydrateSettingsFromUser = async () => {
       try {
-        const user = await getCurrentUser();
+        const [user, privacy, blocks] = await Promise.all([
+          getCurrentUser(),
+          getPrivacySettings(),
+          getBlockedUsers(),
+        ]);
         if (!isMounted || !user) return;
 
         setPersonalInfo({
@@ -74,6 +100,13 @@ export function Settings() {
           ...prev,
           currentEmail: user.email || "",
         }));
+        if (privacy) {
+          setPrivacySettings({
+            profile_visibility: privacy.profile_visibility || "public",
+            post_visibility: privacy.post_visibility || "public",
+          });
+        }
+        setBlockedUsers(blocks || []);
       } catch (error: any) {
         toast({
           variant: "destructive",
@@ -278,15 +311,100 @@ export function Settings() {
     }
   };
 
+  const handleSaveProfileVisibility = async () => {
+    setIsPrivacyLoading(true);
+    try {
+      await updatePrivacySettings({ profile_visibility: privacySettings.profile_visibility });
+      toast({ title: "Confidentialité mise à jour", description: "La visibilité du profil a été enregistrée", duration: 2000 });
+      setShowProfileVisibilityModal(false);
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Erreur", description: error?.message || "Impossible de mettre à jour la visibilité du profil", duration: 3000 });
+    } finally {
+      setIsPrivacyLoading(false);
+    }
+  };
+
+  const handleSavePostVisibility = async () => {
+    setIsPrivacyLoading(true);
+    try {
+      await updatePrivacySettings({ post_visibility: privacySettings.post_visibility });
+      toast({ title: "Confidentialité mise à jour", description: "La visibilité des posts a été enregistrée", duration: 2000 });
+      setShowPostVisibilityModal(false);
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Erreur", description: error?.message || "Impossible de mettre à jour la visibilité des posts", duration: 3000 });
+    } finally {
+      setIsPrivacyLoading(false);
+    }
+  };
+
+  const handleDataExport = async () => {
+    setIsPrivacyLoading(true);
+    try {
+      const data = await requestUserDataExport(dataExportOptions);
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `campussphere-export-${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+      toast({ title: "Export généré", description: "Votre fichier de données a été téléchargé", duration: 2500 });
+      setShowDataExportModal(false);
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Erreur", description: error?.message || "Impossible de générer l'export des données", duration: 3000 });
+    } finally {
+      setIsPrivacyLoading(false);
+    }
+  };
+
+  const refreshBlockList = async () => {
+    const blocks = await getBlockedUsers();
+    setBlockedUsers(blocks || []);
+  };
+
+  const handleBlockUser = async () => {
+    if (!blockSearch.trim()) return;
+    setIsPrivacyLoading(true);
+    try {
+      const users = await searchUsers(blockSearch.trim());
+      const target = users?.[0];
+      if (!target?.id) {
+        toast({ variant: "destructive", title: "Utilisateur introuvable", description: "Aucun utilisateur trouvé avec cette recherche", duration: 2500 });
+        return;
+      }
+      await blockUser(Number(target.id));
+      await refreshBlockList();
+      setBlockSearch("");
+      toast({ title: "Utilisateur bloqué", description: `${target.username} a été ajouté à votre liste de blocage`, duration: 2500 });
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Erreur", description: error?.message || "Impossible de bloquer cet utilisateur", duration: 3000 });
+    } finally {
+      setIsPrivacyLoading(false);
+    }
+  };
+
+  const handleUnblockUser = async (blockId: number) => {
+    setIsPrivacyLoading(true);
+    try {
+      await unblockUser(blockId);
+      await refreshBlockList();
+      toast({ title: "Utilisateur débloqué", description: "Le blocage a été supprimé", duration: 2000 });
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Erreur", description: error?.message || "Impossible de débloquer cet utilisateur", duration: 3000 });
+    } finally {
+      setIsPrivacyLoading(false);
+    }
+  };
+
   const settingsSections = [
     {
       title: "Confidentialité",
       icon: Shield,
       items: [
-        { label: "Qui peut voir mon profil", action: () => toast({ title: "Fonctionnalité à venir", description: "Cette fonctionnalité sera disponible prochainement" }) },
-        { label: "Visibilité des posts", action: () => toast({ title: "Fonctionnalité à venir", description: "Cette fonctionnalité sera disponible prochainement" }) },
-        { label: "Données et téléchargements", action: () => toast({ title: "Fonctionnalité à venir", description: "Cette fonctionnalité sera disponible prochainement" }) },
-        { label: "Blocages", action: () => toast({ title: "Fonctionnalité à venir", description: "Cette fonctionnalité sera disponible prochainement" }) }
+        { label: "Qui peut voir mon profil", action: () => setShowProfileVisibilityModal(true) },
+        { label: "Visibilité des posts", action: () => setShowPostVisibilityModal(true) },
+        { label: "Données et téléchargements", action: () => setShowDataExportModal(true) },
+        { label: "Blocages", action: () => setShowBlockListModal(true) }
       ]
     },
     {
@@ -640,6 +758,122 @@ export function Settings() {
                     "Modifier"
                   )}
                 </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showProfileVisibilityModal} onOpenChange={setShowProfileVisibilityModal}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Visibilité du profil</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <Label>Qui peut voir mon profil</Label>
+              <Select
+                value={privacySettings.profile_visibility}
+                onValueChange={(value) => setPrivacySettings((prev) => ({ ...prev, profile_visibility: value }))}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="public">Tout le monde</SelectItem>
+                  <SelectItem value="connections">Mes connexions uniquement</SelectItem>
+                  <SelectItem value="private">Moi uniquement</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Cette option est active et synchronisée avec votre compte.</p>
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" onClick={() => setShowProfileVisibilityModal(false)}>Annuler</Button>
+                <Button onClick={handleSaveProfileVisibility} disabled={isPrivacyLoading}>Enregistrer</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showPostVisibilityModal} onOpenChange={setShowPostVisibilityModal}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Visibilité des posts</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <Label>Qui peut voir mes nouveaux posts</Label>
+              <Select
+                value={privacySettings.post_visibility}
+                onValueChange={(value) => setPrivacySettings((prev) => ({ ...prev, post_visibility: value }))}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="public">Tout le monde</SelectItem>
+                  <SelectItem value="connections">Mes connexions uniquement</SelectItem>
+                  <SelectItem value="private">Moi uniquement</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Cette option est active et sera utilisée par défaut sur vos prochaines publications.</p>
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" onClick={() => setShowPostVisibilityModal(false)}>Annuler</Button>
+                <Button onClick={handleSavePostVisibility} disabled={isPrivacyLoading}>Enregistrer</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showDataExportModal} onOpenChange={setShowDataExportModal}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Export des données</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="include-connections">Inclure les connexions</Label>
+                <Switch
+                  id="include-connections"
+                  checked={dataExportOptions.include_connections}
+                  onCheckedChange={(value) => setDataExportOptions((prev) => ({ ...prev, include_connections: value }))}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="include-posts">Inclure les posts</Label>
+                <Switch
+                  id="include-posts"
+                  checked={dataExportOptions.include_posts}
+                  onCheckedChange={(value) => setDataExportOptions((prev) => ({ ...prev, include_posts: value }))}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">Fonctionnalité disponible : un fichier JSON est généré et téléchargé immédiatement.</p>
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" onClick={() => setShowDataExportModal(false)}>Annuler</Button>
+                <Button onClick={handleDataExport} disabled={isPrivacyLoading}>Télécharger mes données</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showBlockListModal} onOpenChange={setShowBlockListModal}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Liste de blocage</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Nom d'utilisateur à bloquer"
+                  value={blockSearch}
+                  onChange={(e) => setBlockSearch(e.target.value)}
+                />
+                <Button onClick={handleBlockUser} disabled={isPrivacyLoading || !blockSearch.trim()}>Bloquer</Button>
+              </div>
+              <p className="text-xs text-muted-foreground">Fonctionnalité disponible : blocage et déblocage en temps réel.</p>
+              <div className="space-y-2 max-h-60 overflow-auto">
+                {blockedUsers.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Aucun utilisateur bloqué.</p>
+                ) : blockedUsers.map((block: any) => (
+                  <div key={block.id} className="flex items-center justify-between border rounded-md p-2">
+                    <span className="text-sm">@{block.blocked_user?.username || block.blocked}</span>
+                    <Button variant="outline" size="sm" onClick={() => handleUnblockUser(block.id)} disabled={isPrivacyLoading}>
+                      Débloquer
+                    </Button>
+                  </div>
+                ))}
               </div>
             </div>
           </DialogContent>

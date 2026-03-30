@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
-from .models import User, Connection
+from .models import User, Connection, UserBlock
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -61,7 +61,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'first_name', 'last_name', 'username', 'email', 'full_name',
             'avatar', 'cover_photo', 'bio', 'university', 'faculty', 'study_year',
-            'student_id', 'campus', 'town', 'language', 'impact_score', 'current_mood',
+            'student_id', 'campus', 'town', 'language', 'profile_visibility', 'post_visibility',
+            'data_export_requested_at', 'impact_score', 'current_mood',
             'skills', 'interests', 'previous_education', 'experiences', 'portfolio_links',
             'joined_spheres_count', 'connections_count', 'date_joined', 'updated_at'
         ]
@@ -75,7 +76,7 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'first_name', 'last_name', 'username', 'bio', 'university', 'faculty', 'study_year',
-            'skills', 'interests', 'current_mood'
+            'skills', 'interests', 'current_mood', 'profile_visibility', 'post_visibility'
         ]
 
     def validate_username(self, value):
@@ -172,3 +173,38 @@ class UserSearchSerializer(serializers.ModelSerializer):
             'id', 'first_name', 'last_name', 'username', 'avatar', 'bio',
             'university', 'faculty', 'study_year', 'impact_score'
         ]
+
+
+class PrivacySettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['profile_visibility', 'post_visibility', 'data_export_requested_at']
+        read_only_fields = ['data_export_requested_at']
+
+
+class DataExportRequestSerializer(serializers.Serializer):
+    include_connections = serializers.BooleanField(default=True)
+    include_posts = serializers.BooleanField(default=True)
+
+
+class BlockListItemSerializer(serializers.ModelSerializer):
+    blocked_user = UserSearchSerializer(source='blocked', read_only=True)
+
+    class Meta:
+        model = UserBlock
+        fields = ['id', 'blocked', 'blocked_user', 'created_at']
+        read_only_fields = ['id', 'created_at', 'blocked_user']
+
+
+class BlockCreateSerializer(serializers.Serializer):
+    blocked_user_id = serializers.IntegerField()
+
+    def validate_blocked_user_id(self, value):
+        user = self.context['request'].user
+        if user.id == value:
+            raise serializers.ValidationError('You cannot block yourself')
+
+        if not User.objects.filter(id=value).exists():
+            raise serializers.ValidationError('User does not exist')
+
+        return value
