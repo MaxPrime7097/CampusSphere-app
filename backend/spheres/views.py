@@ -168,6 +168,32 @@ class SphereLeaveView(APIView):
         })
 
 
+class SphereCancelJoinRequestView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request, pk):
+        sphere = get_object_or_404(Sphere, pk=pk)
+        membership = SphereMember.objects.filter(
+            sphere=sphere,
+            user=request.user,
+            status='pending'
+        ).first()
+
+        if membership is None:
+            return Response(
+                {'error': 'No pending join request found for this sphere'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        membership.delete()
+
+        return Response({
+            'success': True,
+            'message': 'Join request cancelled successfully',
+            'timestamp': timezone.now().isoformat()
+        })
+
+
 class SphereMembersView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     # filter_backends = [DjangoFilterBackend]  # Commented out - django_filters not installed
