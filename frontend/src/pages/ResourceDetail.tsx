@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { downloadResource, getResource } from "@/services/api";
+import { downloadResource, getResource, reportResource, trackResourceShare } from "@/services/api";
 import { Download, Share2, ChevronLeft, Eye, Flag, Loader2, Zap, Bookmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -143,29 +143,63 @@ export function ResourceDetail() {
   };
 
   const handleShare = () => {
+    if (!id) return;
     setIsSharing(true);
-    
-    setTimeout(() => {
-      setIsSharing(false);
-      toast({
-        title: "Lien copié !",
-        description: "Le lien de cette ressource a été copié dans votre presse-papiers",
-        duration: 2000,
-      });
-    }, 1000);
+
+    void (async () => {
+      try {
+        const shareUrl = window.location.href;
+        await navigator.clipboard.writeText(shareUrl);
+
+        try {
+          await trackResourceShare(id, { channel: "copy_link" });
+        } catch {
+          // Optional analytics endpoint failure should not block UX.
+        }
+
+        toast({
+          title: "Lien copié !",
+          description: "Le lien de cette ressource a été copié dans votre presse-papiers",
+          duration: 2000,
+        });
+      } catch (e: any) {
+        toast({
+          title: "Partage impossible",
+          description: e?.message || "Impossible de copier le lien dans le presse-papiers.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsSharing(false);
+      }
+    })();
   };
 
   const handleReport = () => {
+    if (!id) return;
     setIsReporting(true);
-    
-    setTimeout(() => {
-      setIsReporting(false);
-      toast({
-        title: "Signalement envoyé",
-        description: "Merci pour votre signalement. Nous examinerons cette ressource",
-        duration: 3000,
-      });
-    }, 1500);
+
+    void (async () => {
+      try {
+        await reportResource(id, {
+          reason: "inappropriate_content",
+          details: "Signalé depuis la page de détail de la ressource.",
+        });
+
+        toast({
+          title: "Signalement envoyé",
+          description: "Merci pour votre signalement. Nous examinerons cette ressource",
+          duration: 3000,
+        });
+      } catch (e: any) {
+        toast({
+          title: "Échec du signalement",
+          description: e?.message || "Impossible d'envoyer le signalement pour le moment.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsReporting(false);
+      }
+    })();
   };
 
 

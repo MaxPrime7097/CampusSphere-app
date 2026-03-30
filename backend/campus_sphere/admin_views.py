@@ -7,6 +7,7 @@ from resources.models import Resource
 from posts.models import Post
 from spheres.models import Sphere
 from users.models import User
+from resources.models import ResourceReport
 
 from .admin_serializers import (
     AdminModerationQueueItemSerializer,
@@ -71,6 +72,8 @@ def admin_moderation_queue(request):
 @permission_classes([permissions.IsAdminUser])
 def admin_reported_content(request):
     posts = Post.objects.select_related('author').order_by('-created_at')[:50]
+    resource_reports = ResourceReport.objects.select_related('resource', 'reporter').order_by('-created_at')[:50]
+
     payload = [
         {
             'id': str(post.id),
@@ -86,6 +89,22 @@ def admin_reported_content(request):
         }
         for post in posts
     ]
+    payload.extend([
+        {
+            'id': str(report.id),
+            'type': 'resource',
+            'content': report.resource.title[:180],
+            'reason': report.reason,
+            'date': report.created_at,
+            'status': report.status,
+            'reporter': {
+                'name': _display_name(report.reporter),
+                'avatar': _avatar_url(report.reporter),
+            },
+        }
+        for report in resource_reports
+    ])
+    payload = sorted(payload, key=lambda item: item['date'] or timezone.now(), reverse=True)[:50]
 
     serializer = AdminReportedContentItemSerializer(payload, many=True)
     return Response({'success': True, 'data': serializer.data})
@@ -99,7 +118,7 @@ def admin_user_management_summary(request):
         'totalUsers': User.objects.count(),
         'newUsersToday': User.objects.filter(date_joined__date=today).count(),
         'pendingResources': Resource.objects.count(),
-        'reportedContent': Post.objects.count(),
+        'reportedContent': Post.objects.count() + ResourceReport.objects.filter(status='pending').count(),
         'activeGroups': Sphere.objects.count(),
         'totalResources': Resource.objects.count(),
     }

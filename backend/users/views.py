@@ -1,4 +1,5 @@
 import logging
+from django.conf import settings
 from rest_framework import generics, status, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -182,9 +183,32 @@ class ConnectionListView(generics.ListCreateAPIView):
     # filter_backends = [DjangoFilterBackend]  # Commented out - django_filters not installed
     # filterset_fields = ['status']  # Commented out - django_filters not installed
 
+    def _get_target_user(self):
+        return User.objects.get(id=self.kwargs['id'])
+
+    def _can_view_target_connections(self, target_user):
+        if target_user == self.request.user:
+            return True
+
+        # Visibility policy:
+        # - own_only (default): only the authenticated user can view their own connections
+        # - public_profile: any authenticated user can view connections for a target user id
+        policy = getattr(settings, 'CONNECTION_LIST_VISIBILITY_POLICY', 'own_only')
+        return policy == 'public_profile'
+
     def get_queryset(self):
+        if self.request.method == 'POST':
+            return Connection.objects.none()
+
+        target_user = self._get_target_user()
+        if not self._can_view_target_connections(target_user):
+            self.permission_denied(
+                self.request,
+                message='Not authorized to view this user\'s connections.'
+            )
+
         return Connection.objects.filter(
-            models.Q(requester=self.request.user) | models.Q(recipient=self.request.user)
+            models.Q(requester=target_user) | models.Q(recipient=target_user)
         ).select_related('requester', 'recipient')
 
     def get_serializer_class(self):
