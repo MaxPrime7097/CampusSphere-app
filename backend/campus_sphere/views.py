@@ -132,7 +132,9 @@ def admin_reported_content(request):
         return Response({'detail': 'Admin access required.'}, status=status.HTTP_403_FORBIDDEN)
 
     from posts.models import PostReport
-    reports = PostReport.objects.select_related('post', 'reporter').order_by('-created_at')
+    from resources.models import ResourceReport
+    post_reports = PostReport.objects.select_related('post', 'reporter').order_by('-created_at')
+    resource_reports = ResourceReport.objects.select_related('resource', 'reporter').order_by('-created_at')
 
     def reporter_avatar_url(user):
         avatar_field = getattr(user, 'avatar', None)
@@ -143,7 +145,7 @@ def admin_reported_content(request):
 
     data = [
         {
-            'id': report.id,
+            'id': f"post-{report.id}",
             'type': 'Post',
             'content': report.post.content[:280],
             'reason': report.reason,
@@ -154,8 +156,24 @@ def admin_reported_content(request):
                 'avatar': reporter_avatar_url(report.reporter),
             }
         }
-        for report in reports
+        for report in post_reports
     ]
+    data.extend([
+        {
+            'id': f"resource-{report.id}",
+            'type': 'Resource',
+            'content': report.resource.title[:280],
+            'reason': report.reason,
+            'date': report.created_at.isoformat(),
+            'status': report.status,
+            'reporter': {
+                'name': f"{getattr(report.reporter, 'first_name', '')} {getattr(report.reporter, 'last_name', '')}".strip() or report.reporter.username,
+                'avatar': reporter_avatar_url(report.reporter),
+            }
+        }
+        for report in resource_reports
+    ])
+    data.sort(key=lambda item: item.get('date') or '', reverse=True)
     return Response({'success': True, 'data': data, 'timestamp': timezone.now().isoformat()})
 
 
@@ -175,16 +193,17 @@ def admin_user_management_summary(request):
 
     from django.contrib.auth import get_user_model
     from posts.models import PostReport
+    from resources.models import ResourceReport, Resource
     User = get_user_model()
     today = timezone.now().date()
 
     data = {
         'total_users': User.objects.count(),
         'new_users_today': User.objects.filter(date_joined__date=today).count(),
-        'pending_resources': 0,
-        'reported_content': PostReport.objects.filter(status='pending').count(),
+        'pending_resources': Resource.objects.count(),
+        'reported_content': PostReport.objects.filter(status='pending').count() + ResourceReport.objects.filter(status='pending').count(),
         'active_groups': 0,
-        'total_resources': 0,
+        'total_resources': Resource.objects.count(),
     }
     return Response({'success': True, 'data': data, 'timestamp': timezone.now().isoformat()})
 
