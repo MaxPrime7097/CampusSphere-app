@@ -293,6 +293,11 @@ export function Resources() {
     setResources((prev) => [mapped, ...prev.filter((item) => item.id !== mapped.id)]);
   };
 
+  const handlePreview = (e: React.MouseEvent, resourceId: string) => {
+    e.stopPropagation();
+    navigate(`/resources/${resourceId}?mode=preview`);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
       <div className="container max-w-6xl mx-auto py-4 md:py-6 px-0">
@@ -435,14 +440,7 @@ export function Resources() {
                           size="sm"
                           variant="outline"
                           className="h-7 flex-1 text-xs gap-1"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toast({
-                              title: "Prévisualisation",
-                              description: "Fonctionnalité de prévisualisation à venir",
-                              duration: 2000,
-                            });
-                          }}
+                          onClick={(e) => handlePreview(e, resource.id)}
                         >
                           <Eye className="h-3 w-3" />
                         </Button>
@@ -517,14 +515,7 @@ export function Resources() {
                         size="sm"
                         variant="outline"
                         className="h-7 flex-1 text-xs gap-1"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toast({
-                            title: "Prévisualisation",
-                            description: "Fonctionnalité de prévisualisation à venir",
-                            duration: 2000,
-                          });
-                        }}
+                        onClick={(e) => handlePreview(e, resource.id)}
                       >
                         <Eye className="h-3 w-3" />
                       </Button>
@@ -598,14 +589,7 @@ export function Resources() {
                         size="sm"
                         variant="outline"
                         className="h-7 flex-1 text-xs gap-1"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toast({
-                            title: "Prévisualisation",
-                            description: "Fonctionnalité de prévisualisation à venir",
-                            duration: 2000,
-                          });
-                        }}
+                        onClick={(e) => handlePreview(e, resource.id)}
                       >
                         <Eye className="h-3 w-3" />
                       </Button>
