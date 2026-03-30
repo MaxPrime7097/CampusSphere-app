@@ -103,6 +103,13 @@ class SphereMemberCreateSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
+
+
+class SphereMemberUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SphereMember
+        fields = ['role', 'status']
+
 class SphereJoinSerializer(serializers.Serializer):
     def validate(self, data):
         sphere = self.context['sphere']
