@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { FileUpload } from "@/components/upload/FileUpload";
 import { RESOURCE_TYPE_OPTIONS } from "@/constants/resourceTypes";
+import { ACCEPTED_RESOURCE_MIME_TYPES, ACCEPTED_RESOURCE_FILE_EXTENSIONS } from "@/constants/resourceUpload";
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 const ACCEPTED_FILE_TYPES = [...ACCEPTED_RESOURCE_MIME_TYPES];
