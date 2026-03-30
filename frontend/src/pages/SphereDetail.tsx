@@ -56,6 +56,26 @@ export function SphereDetail() {
   const [processingMemberIds, setProcessingMemberIds] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  const normalizeRole = (roleValue: unknown): string | null => {
+    if (!roleValue) {
+      return null;
+    }
+
+    const normalized = String(roleValue).trim().toLowerCase();
+    if (normalized === "admin" || normalized === "administrateur") {
+      return "admin";
+    }
+    if (normalized === "moderator" || normalized === "modérateur" || normalized === "moderateur") {
+      return "moderator";
+    }
+    if (normalized === "member" || normalized === "membre") {
+      return "member";
+    }
+
+    return normalized;
+  };
 
   const mapTask = (t: any) => ({
     id: String(t.id),
@@ -76,11 +96,14 @@ export function SphereDetail() {
     try {
       setLoading(true);
       setLoadError(null);
-      const [sphereData, membersData, tasksData] = await Promise.all([
+      const [sphereData, membersData, tasksData, currentUser] = await Promise.all([
         getSphere(String(id)),
         listSphereMembers(String(id)),
         listSphereTasks(String(id)),
+        getCurrentUser(),
       ]);
+
+      setCurrentUserId(currentUser?.id ? String(currentUser.id) : null);
 
       setSphere(sphereData);
 
@@ -144,6 +167,26 @@ export function SphereDetail() {
   };
 
   const creator = sphereFallback?.created_by_info || null;
+
+  const resolvedUserRole = useMemo(() => {
+    const sphereRole = normalizeRole(sphereFallback?.userRole ?? sphereFallback?.user_role);
+    if (sphereRole) {
+      return sphereRole;
+    }
+
+    if (!currentUserId) {
+      return "member";
+    }
+
+    const memberRole = members.find((member) => {
+      const memberUserId = member.user_info?.id || member.user?.id || member.user;
+      return String(memberUserId) === String(currentUserId);
+    })?.role;
+
+    return normalizeRole(memberRole) || "member";
+  }, [currentUserId, members, sphereFallback?.userRole, sphereFallback?.user_role]);
+
+  const canModerateMembers = resolvedUserRole === "admin" || resolvedUserRole === "moderator";
 
 
 
@@ -828,6 +871,11 @@ export function SphereDetail() {
                   </AddMemberModal>
                 )}
               </div>
+              {!canModerateMembers && (
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800 dark:border-blue-900/50 dark:bg-blue-900/20 dark:text-blue-200">
+                  Liste en lecture seule : seuls les administrateurs et modérateurs peuvent modifier les rôles ou supprimer des membres.
+                </div>
+              )}
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {members.map((member) => (
@@ -867,7 +915,7 @@ export function SphereDetail() {
                         <Button size="sm" variant="outline" onClick={() => navigate(`/profile/${member.username}`)}>
                           Profil
                         </Button>
-                        {isMember && !member.isCreator && (
+                        {canModerateMembers && !member.isCreator && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button size="sm" variant="ghost">
@@ -909,7 +957,9 @@ export function SphereDetail() {
                 <h3 className="text-lg font-semibold">Demandes en attente ({pendingMembers.length})</h3>
                 <div className="text-right">
                   <p className="text-sm text-muted-foreground">
-                    Seuls les administrateurs peuvent gérer les demandes
+                    {canModerateMembers
+                      ? "Vous pouvez approuver ou refuser les demandes en attente."
+                      : "Vous pouvez consulter les demandes, mais seuls les administrateurs et modérateurs peuvent agir."}
                   </p>
                   {memberActionStatus && (
                     <p className="text-xs text-muted-foreground mt-1">{memberActionStatus}</p>
@@ -950,7 +1000,7 @@ export function SphereDetail() {
                           >
                             Profil
                           </Button>
-                          {isMember && (
+                          {canModerateMembers && (
                             <div className="flex gap-1">
                               <Button 
                                 size="sm" 
@@ -974,6 +1024,11 @@ export function SphereDetail() {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+              {!canModerateMembers && pendingMembers.length > 0 && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
+                  Vous n&apos;avez pas les autorisations nécessaires pour approuver ou refuser ces demandes.
                 </div>
               )}
             </div>
