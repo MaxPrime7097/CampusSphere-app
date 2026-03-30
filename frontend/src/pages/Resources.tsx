@@ -68,7 +68,8 @@ export function Resources() {
   // ✅ Same tab state
   const [activeTab, setActiveTab] = useState("all");
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
   const [savedResources, setSavedResources] = useState<Set<string>>(new Set());
 
   const [resources, setResources] = useState<any[]>([]);
@@ -209,7 +210,12 @@ export function Resources() {
 
   const handleDownload = async (e: React.MouseEvent, resourceId: string) => {
     e.stopPropagation();
-    setIsLoading(true);
+    if (downloadingIds.has(resourceId)) return;
+    setDownloadingIds((prev) => {
+      const next = new Set(prev);
+      next.add(resourceId);
+      return next;
+    });
 
     try {
       const result = await downloadResource(resourceId);
@@ -242,12 +248,16 @@ export function Resources() {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setDownloadingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(resourceId);
+        return next;
+      });
     }
   };
 
   const handleRefresh = async () => {
-    setIsLoading(true);
+    setIsRefreshing(true);
 
     try {
       const data = await listResources();
@@ -266,7 +276,7 @@ export function Resources() {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -310,10 +320,10 @@ export function Resources() {
               variant="outline"
               size="sm"
               onClick={handleRefresh}
-              disabled={isLoading}
+              disabled={isRefreshing}
               className="gap-2"
             >
-              {isLoading ? (
+              {isRefreshing ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <RefreshCw className="h-4 w-4" />
@@ -459,9 +469,9 @@ export function Resources() {
                           variant="default"
                           className="h-7 flex-1 text-xs gap-1 campus-gradient text-white"
                           onClick={(e) => handleDownload(e, resource.id)}
-                          disabled={isLoading}
+                          disabled={downloadingIds.has(resource.id)}
                         >
-                          {isLoading ? (
+                          {downloadingIds.has(resource.id) ? (
                             <Loader2 className="h-3 w-3 animate-spin" />
                           ) : (
                             <Download className="h-3 w-3" />
@@ -534,9 +544,9 @@ export function Resources() {
                         variant="default"
                         className="h-7 flex-1 text-xs gap-1 campus-gradient text-white"
                         onClick={(e) => handleDownload(e, resource.id)}
-                        disabled={isLoading}
+                        disabled={downloadingIds.has(resource.id)}
                       >
-                        {isLoading ? (
+                        {downloadingIds.has(resource.id) ? (
                           <Loader2 className="h-3 w-3 animate-spin" />
                         ) : (
                           <Download className="h-3 w-3" />
@@ -608,9 +618,9 @@ export function Resources() {
                         variant="default"
                         className="h-7 flex-1 text-xs gap-1 campus-gradient text-white"
                         onClick={(e) => handleDownload(e, resource.id)}
-                        disabled={isLoading}
+                        disabled={downloadingIds.has(resource.id)}
                       >
-                        {isLoading ? (
+                        {downloadingIds.has(resource.id) ? (
                           <Loader2 className="h-3 w-3 animate-spin" />
                         ) : (
                           <Download className="h-3 w-3" />
