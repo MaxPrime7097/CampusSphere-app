@@ -283,7 +283,11 @@ export function Spheres() {
                 </CardContent>
               </Card>
               <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-                {getSortedSpheres().map((sphere) => (
+                {getSortedSpheres().map((sphere) => {
+                  const hasProgression = Number.isFinite(sphere.progression);
+                  const progressionValue = hasProgression ? Math.max(0, Math.min(100, Number(sphere.progression))) : null;
+
+                  return (
                   <Card key={sphere.id} className={cardClasses}>
                     <CardHeader className="pb-3">
                       <div className={`h-16 w-16 rounded-full bg-gradient-to-br ${sphere.color} mx-auto mb-2 flex items-center justify-center text-white font-bold text-xl`}>{sphere.name.charAt(0)}</div>
@@ -291,16 +295,18 @@ export function Spheres() {
                       <p className="text-xs text-muted-foreground text-center">{sphere.memberCount} membres</p>
                     </CardHeader>
                     <CardContent className="pt-0 px-3 pb-3">
-                      <div className="space-y-1 mb-3">
-                        <div className="flex justify-between text-xs"><span className="text-muted-foreground">Progression</span><span className="font-semibold">{sphere.progression}%</span></div>
-                        <div className="w-full bg-muted rounded-full h-1.5">
-                          <div className={`h-1.5 rounded-full bg-gradient-to-r ${sphere.color} progress-bar`} style={{ '--progress-width': `${sphere.progression}%` } as React.CSSProperties} />
+                      {progressionValue !== null && (
+                        <div className="space-y-1 mb-3">
+                          <div className="flex justify-between text-xs"><span className="text-muted-foreground">Progression</span><span className="font-semibold">{progressionValue}%</span></div>
+                          <div className="w-full bg-muted rounded-full h-1.5">
+                            <div className={`h-1.5 rounded-full bg-gradient-to-r ${sphere.color} progress-bar`} style={{ '--progress-width': `${progressionValue}%` } as React.CSSProperties} />
+                          </div>
                         </div>
-                      </div>
+                      )}
                       <Button size="sm" className="w-full campus-gradient text-white hover:opacity-90" onClick={() => navigate(`/spheres/${sphere.id}`)}>Accéder</Button>
                     </CardContent>
                   </Card>
-                ))}
+                )})}
               </div>
             </section>
           )}
