@@ -23,6 +23,7 @@ class SphereMemberSerializer(serializers.ModelSerializer):
 class SphereSerializer(serializers.ModelSerializer):
     created_by_info = serializers.SerializerMethodField()
     member_count = serializers.IntegerField(read_only=True)
+    progression = serializers.SerializerMethodField()
     is_member = serializers.SerializerMethodField()
     membership_status = serializers.SerializerMethodField()
     user_role = serializers.SerializerMethodField()
@@ -33,10 +34,27 @@ class SphereSerializer(serializers.ModelSerializer):
             'id', 'name', 'description', 'category', 'type', 'color', 'icon',
             'is_private', 'require_approval', 'objective', 'target_audience',
             'duration', 'collaboration_types', 'member_count', 'impact_score',
+            'progression',
             'created_by', 'created_by_info', 'is_member', 'membership_status',
             'user_role', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'member_count', 'impact_score', 'created_at', 'updated_at']
+
+    def get_progression(self, obj):
+        """
+        Compute a normalized progression percentage for the sphere.
+
+        Formula:
+          progression = clamp(impact_score, 0, 100)
+
+        The UI can safely render this as a 0-100% progress bar without showing
+        `undefined%`.
+        """
+        try:
+            impact_score = int(obj.impact_score or 0)
+        except (TypeError, ValueError):
+            impact_score = 0
+        return max(0, min(100, impact_score))
 
     def get_created_by_info(self, obj):
         from users.serializers import UserProfileSerializer
