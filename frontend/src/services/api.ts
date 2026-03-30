@@ -1162,7 +1162,7 @@ export async function uploadFile(file: File, token?: string) {
 
 export async function uploadAvatar(userId: number | string, file: File, token?: string) {
   const formData = new FormData();
-  formData.append('avatar', file);
+  formData.append('file', file);
   return apiFetch<any>(`api/users/${userId}/avatar/`, {
     method: "POST",
     body: formData,
@@ -1172,7 +1172,7 @@ export async function uploadAvatar(userId: number | string, file: File, token?: 
 
 export async function uploadCoverPhoto(userId: number | string, file: File, token?: string) {
   const formData = new FormData();
-  formData.append('cover', file);
+  formData.append('file', file);
   return apiFetch<any>(`api/users/${userId}/cover/`, {
     method: "POST",
     body: formData,
