@@ -12,6 +12,8 @@ urlpatterns = [
     path('<int:pk>/download/', views.ResourceDownloadView.as_view(), name='resource-download'),
     path('<int:pk>/save/', views.ResourceSaveView.as_view(), name='resource-save'),
     path('<int:pk>/view/', views.ResourceViewTrackingView.as_view(), name='resource-view'),
+    path('<int:pk>/report/', views.ResourceReportView.as_view(), name='resource-report'),
+    path('<int:pk>/share/', views.ResourceShareTrackingView.as_view(), name='resource-share'),
 
     # User resources
     path('saved/', views.user_saved_resources, name='user-saved-resources'),
