@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { getSphereCategoryLabel } from "@/constants/sphereCategories";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -281,7 +282,7 @@ export function PostCard({ post }: PostCardProps) {
         <div className="space-y-3">
           {post.category && (
             <Badge variant="secondary" className="text-xs">
-              {post.category}
+              {getSphereCategoryLabel(post.category)}
             </Badge>
           )}
           

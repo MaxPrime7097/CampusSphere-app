@@ -5,6 +5,7 @@ import { Download, Share2, ChevronLeft, Eye, Flag, Loader2, Zap, Bookmark } from
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { RESOURCE_TYPE_OPTIONS } from "@/constants/resourceTypes";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { formatFrenchDate } from "@/lib/date";
@@ -233,7 +234,9 @@ export function ResourceDetail() {
             {/* Title & Type */}
             <div className="mb-4">
               <div className="flex flex-wrap items-center gap-2 mb-3">
-                <Badge className="campus-gradient text-white">{resource.type}</Badge>
+                <Badge className="campus-gradient text-white">
+                  {RESOURCE_TYPE_OPTIONS.find((t) => t.value === resource.type)?.label || resource.type}
+                </Badge>
                 <Badge variant="secondary">{resource.subject}</Badge>
                 <Badge variant="outline">{resource.format.toUpperCase()}</Badge>
               </div>

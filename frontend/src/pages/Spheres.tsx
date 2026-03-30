@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { listSpheres, getCurrentUser, joinSphere, getUserSpheres, leaveSphere } from "@/services/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SPHERE_CATEGORY_OPTIONS, getSphereCategoryLabel } from "@/constants/sphereCategories";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -149,9 +150,12 @@ export function Spheres() {
   };
 
   const categories = [
-    { id: "all", label: "Toutes" },
-    ...Array.from(new Set(allSpheres.map(s => s.category))).map(cat => ({ id: cat, label: cat }))
+    ...SPHERE_CATEGORY_OPTIONS,
+    ...Array.from(new Set(allSpheres.map(s => s.category))).
+      filter((cat) => cat && !SPHERE_CATEGORY_OPTIONS.some(option => option.value === cat)).
+      map((cat) => ({ id: cat, label: getSphereCategoryLabel(cat) }))
   ];
+
 
   const cardClasses = cn(
     "transition-all duration-300",
@@ -241,7 +245,7 @@ export function Spheres() {
                       </div>
                       <div className="px-4 py-2">
                         <div className="flex flex-wrap gap-1 mb-2">
-                          <Badge variant="outline" className="text-xs">{sphere.category || ""}</Badge>
+                          <Badge variant="outline" className="text-xs">{getSphereCategoryLabel(sphere.category)}</Badge>
                           {sphere.requireApproval && <Badge variant="destructive" className="text-xs">Approbation</Badge>}
                         </div>
                         <h3 className="font-semibold text-sm line-clamp-2 mb-2">{sphere.name || ""}</h3>

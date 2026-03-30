@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { SPHERE_CATEGORY_OPTIONS } from "@/constants/sphereCategories";
 import { Plus, Sparkles, Loader2, Check, Users, Lock, Globe, Shield, Bell, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
@@ -38,15 +39,6 @@ interface CreateSphereModalProps {
   onSphereCreated?: (sphereData: SphereData) => void;
 }
 
-const categoryOptions = [
-  { value: "academic", label: "Académique" },
-  { value: "professional", label: "Professionnel" },
-  { value: "social", label: "Social" },
-  { value: "sports", label: "Sports" },
-  { value: "arts", label: "Arts" },
-  { value: "technology", label: "Technologie" },
-  { value: "other", label: "Autre" },
-] as const;
 
 const typeOptions = [
   { value: "study", label: "Étude" },
@@ -316,7 +308,7 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
                   <SelectValue placeholder="Sélectionner..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {categoryOptions.map((cat) => (
+                  {SPHERE_CATEGORY_OPTIONS.filter((cat) => cat.value !== "all").map((cat) => (
                     <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
                   ))}
                 </SelectContent>
