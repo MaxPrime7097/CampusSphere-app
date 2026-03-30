@@ -100,7 +100,9 @@ function mapProfileToViewModel({
     portfolioLinks: profile.portfolioLinks ?? [],
     sharedFiles: (resources || []).map((resource: any) => ({
       id: resource.id,
-      name: resource.title || NOT_AVAILABLE_TEXT,
+      resourceId: resource.id,
+      name: resource.title || resource.filename || resource.fileName || NOT_AVAILABLE_TEXT,
+      filename: resource.filename || resource.fileName || resource.title || `resource-${resource.id}`,
       type: resource.type || NOT_AVAILABLE_TEXT,
       size: resource.fileSize || NOT_AVAILABLE_TEXT,
     })),
@@ -435,12 +437,49 @@ export function Profile() {
     }
   };
 
-  const handleDownloadFile = (fileName: string) => {
-    toast({
-      title: "Téléchargement démarré",
-      description: `Le fichier "${fileName}" va être téléchargé`,
-      duration: 2000,
-    });
+  const handleDownloadFile = async (resourceId?: string | number, fileName?: string) => {
+    if (!resourceId) {
+      toast({
+        title: "Téléchargement indisponible",
+        description: "Cette contribution ne possède pas d'identifiant de ressource valide.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const result = await downloadResource(resourceId);
+      const objectUrl = window.URL.createObjectURL(result.blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = result.filename || fileName || `resource-${resourceId}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(objectUrl);
+
+      toast({
+        title: "Téléchargement démarré",
+        description: `Le fichier "${result.filename || fileName || `resource-${resourceId}`}" va être téléchargé`,
+        duration: 2000,
+      });
+    } catch (error: any) {
+      const message = String(error?.message || "").toLowerCase();
+      const isPermissionError =
+        message.includes("403") ||
+        message.includes("forbidden") ||
+        message.includes("permission") ||
+        message.includes("not allowed") ||
+        message.includes("not authorized");
+
+      toast({
+        title: isPermissionError ? "Téléchargement non autorisé" : "Erreur de téléchargement",
+        description: isPermissionError
+          ? "Vous n'avez pas l'autorisation de télécharger cette ressource. Vérifiez sa visibilité ou contactez son propriétaire."
+          : error?.message || "Impossible de télécharger cette ressource pour le moment.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleEditProfile = () => setShowEditModal(true);
@@ -892,7 +931,7 @@ export function Profile() {
                           <Button 
                             size="sm" 
                             variant="ghost"
-                            onClick={() => handleDownloadFile(file.name)}
+                            onClick={() => handleDownloadFile(file.resourceId, file.filename || file.name)}
                             className="gap-2"
                           >
                             <Download className="h-4 w-4" />
