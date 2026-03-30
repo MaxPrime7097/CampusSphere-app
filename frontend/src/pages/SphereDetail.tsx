@@ -283,30 +283,23 @@ export function SphereDetail() {
       return;
     }
 
-    const normalizedRole = normalizeRole(newRole);
-    if (memberToUpdate.role === normalizedRole) {
-      return;
-    }
-
     const previousMembers = [...members];
+
     try {
       setProcessingMemberIds((prev) => ({ ...prev, [memberId]: true }));
       setMemberActionStatus(`Mise à jour du rôle de ${memberToUpdate.name}...`);
+      setMembers((prev) => prev.map((member) => (
+        String(member.id) === String(memberId)
+          ? { ...member, role: newRole }
+          : member
+      )));
 
-      setMembers((prev) =>
-        prev.map((member) =>
-          String(member.id) === String(memberId)
-            ? { ...member, role: normalizedRole }
-            : member
-        )
-      );
+      await updateSphereMember(String(id), memberId, { role: newRole as "admin" | "moderator" | "member" });
 
-      await updateSphereMember(String(id), memberId, { role: normalizedRole as "admin" | "moderator" | "member" });
-
-      setMemberActionStatus(`${memberToUpdate.name} est maintenant ${normalizedRole === 'moderator' ? 'modérateur' : normalizedRole === 'admin' ? 'administrateur' : 'membre'}.`);
+      setMemberActionStatus(`Le rôle de ${memberToUpdate.name} a été mis à jour.`);
       toast({
         title: "Rôle mis à jour",
-        description: `${memberToUpdate.name} est maintenant ${normalizedRole === 'moderator' ? 'modérateur' : normalizedRole === 'admin' ? 'administrateur' : 'membre'}`,
+        description: `${memberToUpdate.name} est maintenant ${newRole}`,
         duration: 3000,
       });
     } catch (error: any) {
@@ -314,7 +307,7 @@ export function SphereDetail() {
       setMemberActionStatus(null);
       toast({
         title: "Erreur",
-        description: error?.message || "Impossible de modifier le rôle du membre",
+        description: error?.message || "Impossible de modifier le rôle de ce membre",
         variant: "destructive",
       });
     } finally {

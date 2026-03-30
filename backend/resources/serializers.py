@@ -1,7 +1,17 @@
 from rest_framework import serializers
 from django.utils import timezone
 from .models import Resource, ResourceSave, ResourceView
+from .constants import ACCEPTED_RESOURCE_MIME_TYPES
 from users.impact_policy import RESOURCE_UPLOADED, apply_impact_event
+LEGACY_VISIBILITY_MAP = {
+    'private': 'friends',
+}
+
+
+def normalize_visibility(value):
+    if isinstance(value, str):
+        return LEGACY_VISIBILITY_MAP.get(value, value)
+    return value
 
 
 class ResourceSerializer(serializers.ModelSerializer):
@@ -69,6 +79,9 @@ class ResourceSerializer(serializers.ModelSerializer):
 class ResourceCreateSerializer(serializers.ModelSerializer):
     file = serializers.FileField()
 
+    def validate_visibility(self, value):
+        return normalize_visibility(value)
+
     class Meta:
         model = Resource
         fields = [
@@ -83,19 +96,7 @@ class ResourceCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("File size cannot exceed 50MB")
 
         # File type validation
-        allowed_types = [
-            'application/pdf',
-            'application/msword',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'application/vnd.ms-powerpoint',
-            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-            'application/zip',
-            'image/jpeg',
-            'image/png',
-            'image/gif'
-        ]
-        
-        if value.content_type not in allowed_types:
+        if value.content_type not in ACCEPTED_RESOURCE_MIME_TYPES:
             raise serializers.ValidationError(
                 "File type not allowed. Supported types: PDF, DOC, DOCX, PPT, PPTX, ZIP, JPG, PNG, GIF"
             )
@@ -117,6 +118,9 @@ class ResourceCreateSerializer(serializers.ModelSerializer):
 
 
 class ResourceUpdateSerializer(serializers.ModelSerializer):
+    def validate_visibility(self, value):
+        return normalize_visibility(value)
+
     class Meta:
         model = Resource
         fields = [

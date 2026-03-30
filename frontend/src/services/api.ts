@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { normalizeResourceType } from "@/constants/resourceTypes";
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 function getAccessToken(): string | undefined {
@@ -108,6 +110,9 @@ function normalizeUser(user: any) {
     campus: user.campus ?? "",
     town: user.town ?? "",
     language: user.language ?? "",
+    profileVisibility: user.profileVisibility ?? user.profile_visibility ?? "public",
+    postVisibility: user.postVisibility ?? user.post_visibility ?? "public",
+    dataExportRequestedAt: user.dataExportRequestedAt ?? user.data_export_requested_at ?? null,
     impactScore: user.impactScore ?? user.impact_score ?? 0,
     currentMood: user.currentMood ?? user.current_mood ?? "",
     skills: toArray(user.skills),
@@ -176,7 +181,7 @@ function normalizeResource(resource: any) {
     title: resource.title ?? "",
     description: resource.description ?? "",
     subject: resource.subject ?? "other",
-    type: resource.type ?? "notes",
+    type: normalizeResourceType(resource.type),
     category: resource.category ?? "",
     tags: toArray(resource.tags),
     visibility: resource.visibility ?? "public",
@@ -419,6 +424,8 @@ export async function updateUserProfile(data: Partial<{
   university: string;
   faculty: string;
   study_year: string;
+  town: string;
+  language: string;
   skills: string[];
   interests: string[];
   current_mood: string;
@@ -472,6 +479,58 @@ export async function deleteUserAccount(confirmationText: string, token?: string
   }
 }
 
+
+
+export async function getPrivacySettings(token?: string) {
+  const response = await apiFetch<any>("api/users/privacy/", {
+    token: token || getAccessToken(),
+  });
+  return unwrapItem(response);
+}
+
+export async function updatePrivacySettings(payload: Partial<{
+  profile_visibility: string;
+  post_visibility: string;
+}>, token?: string) {
+  const response = await apiFetch<any>("api/users/privacy/", {
+    method: "PUT",
+    body: payload,
+    token: token || getAccessToken(),
+  });
+  return unwrapItem(response);
+}
+
+export async function requestUserDataExport(payload: { include_connections: boolean; include_posts: boolean }, token?: string) {
+  const response = await apiFetch<any>("api/users/data-export/", {
+    method: "POST",
+    body: payload,
+    token: token || getAccessToken(),
+  });
+  return unwrapItem(response);
+}
+
+export async function getBlockedUsers(token?: string) {
+  const response = await apiFetch<any>("api/users/blocks/", {
+    token: token || getAccessToken(),
+  });
+  return unwrapList(response);
+}
+
+export async function blockUser(blockedUserId: number, token?: string) {
+  const response = await apiFetch<any>("api/users/blocks/", {
+    method: "POST",
+    body: { blocked_user_id: blockedUserId },
+    token: token || getAccessToken(),
+  });
+  return unwrapItem(response);
+}
+
+export async function unblockUser(blockId: number, token?: string) {
+  return apiFetch<any>(`api/users/blocks/${blockId}/`, {
+    method: "DELETE",
+    token: token || getAccessToken(),
+  });
+}
 export async function searchUsers(query: string, token?: string) {
   const response = await apiFetch<any>(`api/users/search/?q=${encodeURIComponent(query)}`, {
     token: token || getAccessToken(),
@@ -825,6 +884,10 @@ export async function getResource(id: number | string, token?: string) {
 }
 
 export async function createResource(data: FormData, token?: string) {
+  const rawType = data.get("type");
+  if (typeof rawType === "string" && rawType) {
+    data.set("type", normalizeResourceType(rawType));
+  }
   const response = await apiFetch<any>("api/resources/", {
     method: "POST",
     body: data,
@@ -897,6 +960,30 @@ export async function getSavedResources(token?: string) {
 export async function getUserResources(userId: number | string, token?: string) {
   const response = await apiFetch<any>(`api/resources/user/${userId}/`, { token: token || getAccessToken() });
   return normalizeResources(unwrapList(response));
+}
+
+export async function reportResource(
+  id: number | string,
+  payload: { reason?: string; details?: string } = {},
+  token?: string
+) {
+  return apiFetch<any>(`api/resources/${id}/report/`, {
+    method: "POST",
+    body: payload,
+    token: token || getAccessToken(),
+  });
+}
+
+export async function trackResourceShare(
+  id: number | string,
+  payload: { channel?: string } = { channel: "copy_link" },
+  token?: string
+) {
+  return apiFetch<any>(`api/resources/${id}/share/`, {
+    method: "POST",
+    body: payload,
+    token: token || getAccessToken(),
+  });
 }
 
 // ============================================================================
@@ -1162,7 +1249,7 @@ export async function uploadFile(file: File, token?: string) {
 
 export async function uploadAvatar(userId: number | string, file: File, token?: string) {
   const formData = new FormData();
-  formData.append('avatar', file);
+  formData.append('file', file);
   return apiFetch<any>(`api/users/${userId}/avatar/`, {
     method: "POST",
     body: formData,
@@ -1172,7 +1259,7 @@ export async function uploadAvatar(userId: number | string, file: File, token?: 
 
 export async function uploadCoverPhoto(userId: number | string, file: File, token?: string) {
   const formData = new FormData();
-  formData.append('cover', file);
+  formData.append('file', file);
   return apiFetch<any>(`api/users/${userId}/cover/`, {
     method: "POST",
     body: formData,

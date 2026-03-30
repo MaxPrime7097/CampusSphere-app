@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getCurrentUser, getUserByUsername, getUserPosts, uploadAvatar, uploadCoverPhoto, updateUserProfile, getUserConnections, getUserResources } from "@/services/api";
+import { getCurrentUser, getUserByUsername, getUserPosts, uploadAvatar, uploadCoverPhoto, updateUserProfile, getUserConnections, getUserResources, createConnection, deleteConnection } from "@/services/api";
 import { MapPin, Camera, Calendar, Link, Users, BookOpen, Award, Settings, FileText, Briefcase, GraduationCap, Loader2, Check, Download, UserPlus, UserMinus, ExternalLink, Upload, X, Zap, Smile } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -100,7 +100,9 @@ function mapProfileToViewModel({
     portfolioLinks: profile.portfolioLinks ?? [],
     sharedFiles: (resources || []).map((resource: any) => ({
       id: resource.id,
-      name: resource.title || NOT_AVAILABLE_TEXT,
+      resourceId: resource.id,
+      name: resource.title || resource.filename || resource.fileName || NOT_AVAILABLE_TEXT,
+      filename: resource.filename || resource.fileName || resource.title || `resource-${resource.id}`,
       type: resource.type || NOT_AVAILABLE_TEXT,
       size: resource.fileSize || NOT_AVAILABLE_TEXT,
     })),
@@ -115,10 +117,12 @@ function mapProfileToViewModel({
 
 export function Profile() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { username } = useParams<{ username?: string }>();
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [isFollowing, setIsFollowing] = useState(false);
+  const [currentConnectionId, setCurrentConnectionId] = useState<string | null>(null);
   const [currentMood, setCurrentMood] = useState("🚀 En pleine révision !");
   const [isFollowingLoading, setIsFollowingLoading] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -207,7 +211,7 @@ export function Profile() {
     return () => {
       isMounted = false;
     };
-  }, [targetUser?.id]);
+  }, [currentUser?.id, targetUser?.id]);
   
   // Vérifier si c'est le profil de l'utilisateur actuel
   const isOwnProfile = !username || username === currentUser?.username;
@@ -233,13 +237,30 @@ export function Profile() {
       try {
         const connections = await getUserConnections(targetUser.id);
         if (isMounted && connections) {
-          const mapped = (connections || []).map((conn: any) => ({
-            id: String(conn.id || conn.user_id),
-            name: conn.user_info?.name || conn.name || "Utilisateur",
-            username: conn.user_info?.username || conn.username || "user",
-            avatar: conn.user_info?.avatar || conn.avatar || "/placeholder-avatar.jpg",
-            mutual: 0,
-          }));
+          const profileOwnerId = String(targetUser.id);
+          const currentUserId = currentUser?.id ? String(currentUser.id) : null;
+
+          const mapped = (connections || []).map((conn: any) => {
+            const requesterId = conn.requester ? String(conn.requester) : null;
+            const recipientId = conn.recipient ? String(conn.recipient) : null;
+            const isRequesterProfileOwner =
+              requesterId === profileOwnerId || (currentUserId !== null && requesterId === currentUserId);
+
+            const otherUserInfo = isRequesterProfileOwner ? conn.recipient_info : conn.requester_info;
+
+            return {
+              id: String(
+                otherUserInfo?.id ||
+                  (isRequesterProfileOwner ? recipientId : requesterId) ||
+                  conn.id ||
+                  conn.user_id
+              ),
+              name: otherUserInfo?.full_name || otherUserInfo?.name || conn.name || "Utilisateur",
+              username: otherUserInfo?.username || conn.username || "user",
+              avatar: otherUserInfo?.avatar || conn.avatar || "/placeholder-avatar.jpg",
+              mutual: 0,
+            };
+          });
           setUserConnections(mapped);
         }
       } catch (e) {
@@ -249,7 +270,7 @@ export function Profile() {
     return () => {
       isMounted = false;
     };
-  }, [targetUser?.id]);
+  }, [currentUser?.id, targetUser?.id]);
 
   // Load user resources
   useEffect(() => {
@@ -273,7 +294,46 @@ export function Profile() {
     return () => {
       isMounted = false;
     };
-  }, [targetUser?.id]);
+  }, [currentUser?.id, targetUser?.id]);
+
+  // Initialize connection status (current user <-> target user)
+  useEffect(() => {
+    if (!currentUser?.id || !targetUser?.id || isOwnProfile) {
+      setIsFollowing(false);
+      setCurrentConnectionId(null);
+      return;
+    }
+
+    let isMounted = true;
+    (async () => {
+      try {
+        const currentUserConnections = await getUserConnections(currentUser.id);
+        if (!isMounted || !Array.isArray(currentUserConnections)) return;
+
+        const matchedConnection = currentUserConnections.find((conn: any) => {
+          const requesterId = String(conn.requester ?? conn.requester_id ?? "");
+          const recipientId = String(conn.recipient ?? conn.recipient_id ?? "");
+          const targetId = String(targetUser.id);
+
+          return requesterId === targetId || recipientId === targetId;
+        });
+
+        setIsFollowing(Boolean(matchedConnection));
+        setCurrentConnectionId(
+          matchedConnection?.id != null ? String(matchedConnection.id) : null
+        );
+      } catch (error) {
+        if (isMounted) {
+          setIsFollowing(false);
+          setCurrentConnectionId(null);
+        }
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUser?.id, targetUser?.id, isOwnProfile]);
 
   const userPostsData = useMemo(() => {
     if (!userPosts || userPosts.length === 0) return [];
@@ -298,32 +358,128 @@ export function Profile() {
   }, [currentUser, targetUser, userPosts]);
 
   const handleFollow = async () => {
+    if (!currentUser?.id || !targetUser?.id || isFollowingLoading) return;
+
+    const previousIsFollowing = isFollowing;
+    const previousConnectionId = currentConnectionId;
+    const nextIsFollowing = !previousIsFollowing;
+
+    // Optimistic update
+    setIsFollowing(nextIsFollowing);
     setIsFollowingLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsFollowing(!isFollowing);
-    setIsFollowingLoading(false);
-    
-    toast({
-      title: isFollowing ? "Ne suit plus" : "Suit maintenant",
-      description: isFollowing ? `Vous ne suivez plus ${user.name}` : `Vous suivez maintenant ${user.name}`,
-      duration: 2000,
-    });
+
+    try {
+      if (previousIsFollowing) {
+        if (!previousConnectionId) {
+          throw new Error("Connection introuvable pour la suppression.");
+        }
+
+        await deleteConnection(currentUser.id, previousConnectionId);
+        setCurrentConnectionId(null);
+      } else {
+        const response = await createConnection(targetUser.id);
+        const createdConnectionId =
+          response?.id != null ? String(response.id) : previousConnectionId;
+        setCurrentConnectionId(createdConnectionId ?? null);
+      }
+
+      toast({
+        title: previousIsFollowing ? "Connexion supprimée" : "Connexion envoyée",
+        description: previousIsFollowing
+          ? `Vous n'êtes plus connecté(e) à ${user.name}`
+          : `Vous êtes maintenant connecté(e) à ${user.name}`,
+        duration: 2000,
+      });
+    } catch (error: any) {
+      // Rollback optimistic state
+      setIsFollowing(previousIsFollowing);
+      setCurrentConnectionId(previousConnectionId);
+
+      toast({
+        title: "Erreur",
+        description:
+          error?.message ||
+          (previousIsFollowing
+            ? "Impossible de supprimer la connexion"
+            : "Impossible de créer la connexion"),
+        variant: "destructive",
+      });
+    } finally {
+      setIsFollowingLoading(false);
+    }
   };
 
-  const handleViewProfile = (connectionId: string, connectionName: string) => {
-    toast({
-      title: "Navigation vers profil",
-      description: `Ouverture du profil de ${connectionName}`,
-      duration: 2000,
-    });
+  const handleViewProfile = (connectionIdentifier?: string, connectionName?: string, showToast = false) => {
+    if (!connectionIdentifier) {
+      if (showToast) {
+        toast({
+          title: "Profil indisponible",
+          description: "Impossible d'ouvrir ce profil pour le moment",
+          variant: "destructive",
+        });
+      }
+      return;
+    }
+
+    const targetPath = `/profile/${encodeURIComponent(connectionIdentifier)}`;
+
+    // Route-level check: avoid redundant navigation when already on the selected profile page.
+    if (location.pathname !== targetPath) {
+      navigate(targetPath);
+    }
+
+    if (showToast && connectionName) {
+      toast({
+        title: "Navigation vers profil",
+        description: `Ouverture du profil de ${connectionName}`,
+        duration: 2000,
+      });
+    }
   };
 
-  const handleDownloadFile = (fileName: string) => {
-    toast({
-      title: "Téléchargement démarré",
-      description: `Le fichier "${fileName}" va être téléchargé`,
-      duration: 2000,
-    });
+  const handleDownloadFile = async (resourceId?: string | number, fileName?: string) => {
+    if (!resourceId) {
+      toast({
+        title: "Téléchargement indisponible",
+        description: "Cette contribution ne possède pas d'identifiant de ressource valide.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const result = await downloadResource(resourceId);
+      const objectUrl = window.URL.createObjectURL(result.blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = result.filename || fileName || `resource-${resourceId}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(objectUrl);
+
+      toast({
+        title: "Téléchargement démarré",
+        description: `Le fichier "${result.filename || fileName || `resource-${resourceId}`}" va être téléchargé`,
+        duration: 2000,
+      });
+    } catch (error: any) {
+      const message = String(error?.message || "").toLowerCase();
+      const isPermissionError =
+        message.includes("403") ||
+        message.includes("forbidden") ||
+        message.includes("permission") ||
+        message.includes("not allowed") ||
+        message.includes("not authorized");
+
+      toast({
+        title: isPermissionError ? "Téléchargement non autorisé" : "Erreur de téléchargement",
+        description: isPermissionError
+          ? "Vous n'avez pas l'autorisation de télécharger cette ressource. Vérifiez sa visibilité ou contactez son propriétaire."
+          : error?.message || "Impossible de télécharger cette ressource pour le moment.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleEditProfile = () => setShowEditModal(true);
@@ -691,7 +847,7 @@ export function Profile() {
                             <Button 
                               size="sm" 
                               variant="outline"
-                              onClick={() => handleViewProfile(connection.id, connection.name)}
+                              onClick={() => handleViewProfile(connection.username || connection.id, connection.name)}
                             >
                               Voir
                             </Button>
@@ -775,7 +931,7 @@ export function Profile() {
                           <Button 
                             size="sm" 
                             variant="ghost"
-                            onClick={() => handleDownloadFile(file.name)}
+                            onClick={() => handleDownloadFile(file.resourceId, file.filename || file.name)}
                             className="gap-2"
                           >
                             <Download className="h-4 w-4" />

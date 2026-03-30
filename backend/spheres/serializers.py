@@ -103,12 +103,74 @@ class SphereMemberCreateSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
-
-
 class SphereMemberUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = SphereMember
         fields = ['role', 'status']
+
+    def validate(self, attrs):
+        request = self.context.get('request')
+        target_membership = self.instance
+
+        if not request or not request.user.is_authenticated:
+            raise serializers.ValidationError("Authentication required")
+
+        if not attrs:
+            raise serializers.ValidationError("Provide at least one field to update")
+
+        actor_membership = SphereMember.objects.filter(
+            sphere=target_membership.sphere,
+            user=request.user,
+            status='active'
+        ).first()
+
+        if not actor_membership or actor_membership.role not in ['admin', 'moderator']:
+            raise serializers.ValidationError("Only sphere admins or moderators can update members")
+
+        if 'status' in attrs:
+            current_status = target_membership.status
+            requested_status = attrs['status']
+            allowed_status_transitions = {
+                'pending': {'active', 'inactive', 'banned'},
+                'active': {'inactive', 'banned'},
+                'inactive': {'active', 'banned'},
+                'banned': {'active'},
+            }
+
+            if requested_status == current_status:
+                raise serializers.ValidationError({'status': 'Member already has this status'})
+
+            if requested_status not in allowed_status_transitions.get(current_status, set()):
+                raise serializers.ValidationError({
+                    'status': f"Transition from {current_status} to {requested_status} is not allowed"
+                })
+
+            if actor_membership.role != 'admin' and requested_status in ['inactive', 'banned']:
+                raise serializers.ValidationError({
+                    'status': 'Only admins can set member status to inactive or banned'
+                })
+
+        if 'role' in attrs:
+            requested_role = attrs['role']
+            if actor_membership.role != 'admin':
+                raise serializers.ValidationError({'role': 'Only admins can change member roles'})
+
+            if requested_role == target_membership.role:
+                raise serializers.ValidationError({'role': 'Member already has this role'})
+
+            if target_membership.user_id == request.user.id and requested_role != 'admin':
+                raise serializers.ValidationError({'role': 'Admins cannot demote themselves'})
+
+            if target_membership.role == 'admin' and requested_role != 'admin':
+                remaining_admins = target_membership.sphere.members.filter(
+                    role='admin',
+                    status='active'
+                ).exclude(id=target_membership.id).count()
+                if remaining_admins == 0:
+                    raise serializers.ValidationError({'role': 'Cannot demote the last admin'})
+
+        return attrs
+
 
 class SphereJoinSerializer(serializers.Serializer):
     def validate(self, data):
