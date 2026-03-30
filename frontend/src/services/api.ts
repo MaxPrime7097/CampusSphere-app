@@ -899,6 +899,30 @@ export async function getUserResources(userId: number | string, token?: string) 
   return normalizeResources(unwrapList(response));
 }
 
+export async function reportResource(
+  id: number | string,
+  payload: { reason?: string; details?: string } = {},
+  token?: string
+) {
+  return apiFetch<any>(`api/resources/${id}/report/`, {
+    method: "POST",
+    body: payload,
+    token: token || getAccessToken(),
+  });
+}
+
+export async function trackResourceShare(
+  id: number | string,
+  payload: { channel?: string } = { channel: "copy_link" },
+  token?: string
+) {
+  return apiFetch<any>(`api/resources/${id}/share/`, {
+    method: "POST",
+    body: payload,
+    token: token || getAccessToken(),
+  });
+}
+
 // ============================================================================
 // TASKS
 // ============================================================================

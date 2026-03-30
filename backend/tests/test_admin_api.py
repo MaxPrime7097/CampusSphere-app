@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from posts.models import Post
-from resources.models import Resource
+from resources.models import Resource, ResourceReport
 from spheres.models import Sphere
 from users.models import User
 
@@ -57,6 +57,12 @@ class AdminEndpointsAPITest(APITestCase):
             subject='general',
             type='text',
         )
+        self.resource_report = ResourceReport.objects.create(
+            resource=self.resource,
+            reporter=self.admin,
+            reason='copyright',
+            details='Appears to contain copyrighted material.',
+        )
 
     def test_admin_moderation_queue_requires_admin(self):
         self.client.force_authenticate(user=self.member)
@@ -90,6 +96,7 @@ class AdminEndpointsAPITest(APITestCase):
             set(first_item.keys()),
             {'id', 'type', 'content', 'reason', 'date', 'status', 'reporter'},
         )
+        self.assertIn(first_item['type'].lower(), {'post', 'resource'})
         self.assertEqual(first_item['status'], 'pending')
         self.assertSetEqual(set(first_item['reporter'].keys()), {'name', 'avatar'})
 
@@ -119,6 +126,6 @@ class AdminEndpointsAPITest(APITestCase):
             User.objects.filter(date_joined__date=timezone.localdate()).count(),
         )
         self.assertEqual(summary['pendingResources'], Resource.objects.count())
-        self.assertEqual(summary['reportedContent'], Post.objects.count())
+        self.assertEqual(summary['reportedContent'], Post.objects.count() + ResourceReport.objects.filter(status='pending').count())
         self.assertEqual(summary['activeGroups'], Sphere.objects.count())
         self.assertEqual(summary['totalResources'], Resource.objects.count())
