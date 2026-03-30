@@ -33,6 +33,7 @@ import {
 import { UploadResourceModal } from "@/components/modals/UploadResourceModal";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { RESOURCE_TYPE_OPTIONS, normalizeResourceType } from "@/constants/resourceTypes";
 
 function mapResourceCard(r: any) {
   return {
@@ -40,7 +41,7 @@ function mapResourceCard(r: any) {
     title: r.title,
     description: r.description || "",
     subject: r.subject || "other",
-    type: r.type || "notes",
+    type: normalizeResourceType(r.type),
     authorId: r.authorId || r.author || r.created_by,
     authorName: r.author?.name || r.author_info?.name || r.author_name || "Unknown",
     visibility: r.visibility || "public",
@@ -119,14 +120,7 @@ export function Resources() {
     { value: "language", label: "Langues" },
   ];
 
-  const types = [
-    { value: "all", label: "Tous types" },
-    { value: "notes", label: "Notes de cours" },
-    { value: "summary", label: "Résumés" },
-    { value: "exercises", label: "Exercices" },
-    { value: "projects", label: "Projets" },
-    { value: "slides", label: "Présentations" },
-  ];
+  const types = [{ value: "all", label: "Tous types" }, ...RESOURCE_TYPE_OPTIONS];
 
   useEffect(() => {
     let isMounted = true;
