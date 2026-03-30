@@ -1,5 +1,5 @@
 import pytest
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from rest_framework.test import APITestCase
 from rest_framework import status
@@ -253,3 +253,44 @@ class ConnectionAPITest(APITestCase):
         # Check connection was created
         connection = Connection.objects.get(requester=self.user1, recipient=self.user2)
         self.assertEqual(connection.status, 'pending')
+
+    def test_list_own_connections(self):
+        """Authenticated users can list their own connections."""
+        Connection.objects.create(requester=self.user1, recipient=self.user2, status='accepted')
+
+        url = reverse('users:user-connections', kwargs={'id': self.user1.id})
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+
+    @override_settings(CONNECTION_LIST_VISIBILITY_POLICY='public_profile')
+    def test_list_another_users_connections_allowed_for_public_profile_policy(self):
+        """When visibility policy is public_profile, other users can list target user's connections."""
+        user3 = User.objects.create_user(
+            email='connection3@example.com',
+            username='connection3',
+            first_name='Connection',
+            last_name='Three',
+            password='testpass123'
+        )
+        Connection.objects.create(requester=self.user2, recipient=user3, status='accepted')
+
+        url = reverse('users:user-connections', kwargs={'id': self.user2.id})
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+
+    def test_list_another_users_connections_denied_for_own_only_policy(self):
+        """When visibility policy is own_only (default), users cannot list someone else's connections."""
+        user3 = User.objects.create_user(
+            email='connection4@example.com',
+            username='connection4',
+            first_name='Connection',
+            last_name='Four',
+            password='testpass123'
+        )
+        Connection.objects.create(requester=self.user2, recipient=user3, status='accepted')
+
+        url = reverse('users:user-connections', kwargs={'id': self.user2.id})
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
