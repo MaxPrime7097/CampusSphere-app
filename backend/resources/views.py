@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404
 from django.http import HttpResponse, Http404
 from django.db import models
 from django.utils import timezone
-from .models import Resource, ResourceSave, ResourceView
+from .models import Resource, ResourceSave, ResourceView, ResourceReport, ResourceShareEvent
 from .serializers import (
     ResourceSerializer, ResourceCreateSerializer, ResourceUpdateSerializer,
     ResourceSaveSerializer
@@ -267,6 +267,68 @@ class ResourceViewTrackingView(APIView):
             },
             'timestamp': timezone.now().isoformat()
         })
+
+
+class ResourceReportView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        resource = get_object_or_404(Resource, pk=pk)
+        reporter = request.user
+
+        if resource.author == reporter:
+            return Response(
+                {'detail': 'You cannot report your own resource.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        reason = (request.data.get('reason') or 'inappropriate_content').strip()[:120]
+        details = (request.data.get('details') or '').strip()
+
+        report, created = ResourceReport.objects.update_or_create(
+            resource=resource,
+            reporter=reporter,
+            defaults={
+                'reason': reason or 'inappropriate_content',
+                'details': details,
+                'status': 'pending',
+            }
+        )
+
+        return Response({
+            'success': True,
+            'data': {
+                'id': report.id,
+                'status': report.status,
+                'created': created,
+            },
+            'message': 'Resource report submitted successfully.',
+            'timestamp': timezone.now().isoformat()
+        }, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
+class ResourceShareTrackingView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        resource = get_object_or_404(Resource, pk=pk)
+        channel = (request.data.get('channel') or 'copy_link').strip()[:40]
+
+        valid_channels = {choice[0] for choice in ResourceShareEvent.CHANNEL_CHOICES}
+        if channel not in valid_channels:
+            channel = 'unknown'
+
+        ResourceShareEvent.objects.create(
+            resource=resource,
+            user=request.user if request.user.is_authenticated else None,
+            channel=channel,
+        )
+
+        return Response({
+            'success': True,
+            'message': 'Share event recorded.',
+            'timestamp': timezone.now().isoformat()
+        }, status=status.HTTP_201_CREATED)
 
 
 @api_view(['GET'])
