@@ -4,7 +4,7 @@ from django.utils import timezone
 
 
 class Resource(models.Model):
-    TYPE_CHOICES = [
+    CANONICAL_TYPES = [
         ('cours', 'Cours'),
         ('notes', 'Notes'),
         ('resumes', 'Résumés'),
@@ -13,6 +13,7 @@ class Resource(models.Model):
         ('presentations', 'Présentations'),
         ('other', 'Autre'),
     ]
+    TYPE_CHOICES = CANONICAL_TYPES
 
     VISIBILITY_CHOICES = [
         ('public', 'Public'),
