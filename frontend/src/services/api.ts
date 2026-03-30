@@ -108,6 +108,9 @@ function normalizeUser(user: any) {
     campus: user.campus ?? "",
     town: user.town ?? "",
     language: user.language ?? "",
+    profileVisibility: user.profileVisibility ?? user.profile_visibility ?? "public",
+    postVisibility: user.postVisibility ?? user.post_visibility ?? "public",
+    dataExportRequestedAt: user.dataExportRequestedAt ?? user.data_export_requested_at ?? null,
     impactScore: user.impactScore ?? user.impact_score ?? 0,
     currentMood: user.currentMood ?? user.current_mood ?? "",
     skills: toArray(user.skills),
@@ -472,6 +475,58 @@ export async function deleteUserAccount(confirmationText: string, token?: string
   }
 }
 
+
+
+export async function getPrivacySettings(token?: string) {
+  const response = await apiFetch<any>("api/users/privacy/", {
+    token: token || getAccessToken(),
+  });
+  return unwrapItem(response);
+}
+
+export async function updatePrivacySettings(payload: Partial<{
+  profile_visibility: string;
+  post_visibility: string;
+}>, token?: string) {
+  const response = await apiFetch<any>("api/users/privacy/", {
+    method: "PUT",
+    body: payload,
+    token: token || getAccessToken(),
+  });
+  return unwrapItem(response);
+}
+
+export async function requestUserDataExport(payload: { include_connections: boolean; include_posts: boolean }, token?: string) {
+  const response = await apiFetch<any>("api/users/data-export/", {
+    method: "POST",
+    body: payload,
+    token: token || getAccessToken(),
+  });
+  return unwrapItem(response);
+}
+
+export async function getBlockedUsers(token?: string) {
+  const response = await apiFetch<any>("api/users/blocks/", {
+    token: token || getAccessToken(),
+  });
+  return unwrapList(response);
+}
+
+export async function blockUser(blockedUserId: number, token?: string) {
+  const response = await apiFetch<any>("api/users/blocks/", {
+    method: "POST",
+    body: { blocked_user_id: blockedUserId },
+    token: token || getAccessToken(),
+  });
+  return unwrapItem(response);
+}
+
+export async function unblockUser(blockId: number, token?: string) {
+  return apiFetch<any>(`api/users/blocks/${blockId}/`, {
+    method: "DELETE",
+    token: token || getAccessToken(),
+  });
+}
 export async function searchUsers(query: string, token?: string) {
   const response = await apiFetch<any>(`api/users/search/?q=${encodeURIComponent(query)}`, {
     token: token || getAccessToken(),

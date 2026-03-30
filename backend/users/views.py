@@ -7,12 +7,14 @@ from rest_framework_simplejwt.tokens import RefreshToken
 # from django_filters.rest_framework import DjangoFilterBackend  # Commented out - django_filters not installed
 from rest_framework.filters import SearchFilter
 from django.db import models
-from .models import User, Connection
+from django.utils import timezone
+from .models import User, Connection, UserBlock
 from .serializers import (
     UserRegistrationSerializer, UserLoginSerializer, UserProfileSerializer,
     UserUpdateSerializer, ConnectionSerializer, ConnectionCreateSerializer,
     UserSearchSerializer, ChangePasswordSerializer, ChangeEmailSerializer,
-    LogoutSerializer, DeleteAccountSerializer
+    LogoutSerializer, DeleteAccountSerializer, PrivacySettingsSerializer,
+    DataExportRequestSerializer, BlockListItemSerializer, BlockCreateSerializer
 )
 from campus_sphere.cache import CacheManager, CacheKeys
 
@@ -257,3 +259,119 @@ def get_user_by_username(request, username):
             'success': False,
             'error': 'User not found'
         }, status=404)
+
+
+class PrivacySettingsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        return Response({
+            'success': True,
+            'data': PrivacySettingsSerializer(request.user).data,
+        }, status=status.HTTP_200_OK)
+
+    def put(self, request):
+        serializer = PrivacySettingsSerializer(request.user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response({
+            'success': True,
+            'data': serializer.data,
+            'message': 'Privacy settings updated successfully',
+        }, status=status.HTTP_200_OK)
+
+
+class DataExportView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = DataExportRequestSerializer(data=request.data or {})
+        serializer.is_valid(raise_exception=True)
+
+        include_connections = serializer.validated_data.get('include_connections', True)
+        include_posts = serializer.validated_data.get('include_posts', True)
+
+        request.user.data_export_requested_at = timezone.now()
+        request.user.save(update_fields=['data_export_requested_at', 'updated_at'])
+
+        export_data = {
+            'profile': UserProfileSerializer(request.user).data,
+            'connections': [],
+            'posts': [],
+            'metadata': {
+                'generated_at': timezone.now().isoformat(),
+                'include_connections': include_connections,
+                'include_posts': include_posts,
+            }
+        }
+
+        if include_connections:
+            connections = Connection.objects.filter(
+                models.Q(requester=request.user) | models.Q(recipient=request.user),
+                status='accepted'
+            ).select_related('requester', 'recipient')
+            export_data['connections'] = ConnectionSerializer(connections, many=True).data
+
+        if include_posts:
+            try:
+                from posts.models import Post
+                posts_qs = Post.objects.filter(author=request.user).order_by('-created_at')
+                export_data['posts'] = [
+                    {
+                        'id': post.id,
+                        'content': post.content,
+                        'visibility': post.visibility,
+                        'created_at': post.created_at.isoformat() if post.created_at else None,
+                        'updated_at': post.updated_at.isoformat() if post.updated_at else None,
+                    }
+                    for post in posts_qs
+                ]
+            except Exception:
+                export_data['posts'] = []
+
+        return Response({
+            'success': True,
+            'data': export_data,
+            'message': 'Data export generated successfully',
+        }, status=status.HTTP_200_OK)
+
+
+class BlockListView(generics.ListCreateAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return UserBlock.objects.filter(blocker=self.request.user).select_related('blocked')
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return BlockCreateSerializer
+        return BlockListItemSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+
+        blocked_user = User.objects.get(id=serializer.validated_data['blocked_user_id'])
+        block, created = UserBlock.objects.get_or_create(blocker=request.user, blocked=blocked_user)
+
+        return Response({
+            'success': True,
+            'data': BlockListItemSerializer(block).data,
+            'message': 'User blocked successfully' if created else 'User already blocked',
+        }, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
+class BlockDetailView(generics.DestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return UserBlock.objects.filter(blocker=self.request.user)
+
+    def delete(self, request, *args, **kwargs):
+        block = self.get_object()
+        block.delete()
+        return Response({
+            'success': True,
+            'message': 'User unblocked successfully',
+        }, status=status.HTTP_200_OK)
