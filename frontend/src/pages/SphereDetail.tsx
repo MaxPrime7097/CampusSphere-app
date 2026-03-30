@@ -58,6 +58,26 @@ export function SphereDetail() {
   const [processingMemberIds, setProcessingMemberIds] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  const normalizeRole = (roleValue: unknown): string | null => {
+    if (!roleValue) {
+      return null;
+    }
+
+    const normalized = String(roleValue).trim().toLowerCase();
+    if (normalized === "admin" || normalized === "administrateur") {
+      return "admin";
+    }
+    if (normalized === "moderator" || normalized === "modérateur" || normalized === "moderateur") {
+      return "moderator";
+    }
+    if (normalized === "member" || normalized === "membre") {
+      return "member";
+    }
+
+    return normalized;
+  };
 
   const mapTask = (t: any) => ({
     id: String(t.id),
@@ -91,6 +111,8 @@ export function SphereDetail() {
         listSphereTasks(String(id)),
         getCurrentUser(),
       ]);
+
+      setCurrentUserId(currentUser?.id ? String(currentUser.id) : null);
 
       setSphere(sphereData);
       setCurrentUserId(currentUser?.id ? String(currentUser.id) : null);
@@ -159,6 +181,26 @@ export function SphereDetail() {
   const canModerateMembers = isMember && (currentUserRole === 'admin' || currentUserRole === 'moderator');
   const canChangeMemberRoles = isMember && currentUserRole === 'admin';
   const roleChangeAvailable = true;
+
+  const resolvedUserRole = useMemo(() => {
+    const sphereRole = normalizeRole(sphereFallback?.userRole ?? sphereFallback?.user_role);
+    if (sphereRole) {
+      return sphereRole;
+    }
+
+    if (!currentUserId) {
+      return "member";
+    }
+
+    const memberRole = members.find((member) => {
+      const memberUserId = member.user_info?.id || member.user?.id || member.user;
+      return String(memberUserId) === String(currentUserId);
+    })?.role;
+
+    return normalizeRole(memberRole) || "member";
+  }, [currentUserId, members, sphereFallback?.userRole, sphereFallback?.user_role]);
+
+  const canModerateMembers = resolvedUserRole === "admin" || resolvedUserRole === "moderator";
 
 
 
@@ -896,6 +938,11 @@ export function SphereDetail() {
                   </AddMemberModal>
                 )}
               </div>
+              {!canModerateMembers && (
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800 dark:border-blue-900/50 dark:bg-blue-900/20 dark:text-blue-200">
+                  Liste en lecture seule : seuls les administrateurs et modérateurs peuvent modifier les rôles ou supprimer des membres.
+                </div>
+              )}
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {members.map((member) => (
@@ -1047,6 +1094,11 @@ export function SphereDetail() {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+              {!canModerateMembers && pendingMembers.length > 0 && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
+                  Vous n&apos;avez pas les autorisations nécessaires pour approuver ou refuser ces demandes.
                 </div>
               )}
             </div>
