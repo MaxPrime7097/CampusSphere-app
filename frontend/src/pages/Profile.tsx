@@ -115,6 +115,7 @@ function mapProfileToViewModel({
 
 export function Profile() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { username } = useParams<{ username?: string }>();
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -406,12 +407,32 @@ export function Profile() {
     }
   };
 
-  const handleViewProfile = (connectionId: string, connectionName: string) => {
-    toast({
-      title: "Navigation vers profil",
-      description: `Ouverture du profil de ${connectionName}`,
-      duration: 2000,
-    });
+  const handleViewProfile = (connectionIdentifier?: string, connectionName?: string, showToast = false) => {
+    if (!connectionIdentifier) {
+      if (showToast) {
+        toast({
+          title: "Profil indisponible",
+          description: "Impossible d'ouvrir ce profil pour le moment",
+          variant: "destructive",
+        });
+      }
+      return;
+    }
+
+    const targetPath = `/profile/${encodeURIComponent(connectionIdentifier)}`;
+
+    // Route-level check: avoid redundant navigation when already on the selected profile page.
+    if (location.pathname !== targetPath) {
+      navigate(targetPath);
+    }
+
+    if (showToast && connectionName) {
+      toast({
+        title: "Navigation vers profil",
+        description: `Ouverture du profil de ${connectionName}`,
+        duration: 2000,
+      });
+    }
   };
 
   const handleDownloadFile = (fileName: string) => {
@@ -787,7 +808,7 @@ export function Profile() {
                             <Button 
                               size="sm" 
                               variant="outline"
-                              onClick={() => handleViewProfile(connection.id, connection.name)}
+                              onClick={() => handleViewProfile(connection.username || connection.id, connection.name)}
                             >
                               Voir
                             </Button>
