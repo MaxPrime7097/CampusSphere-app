@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getSphere, listSphereMembers, listSphereTasks, joinSphere, leaveSphere, getCurrentUser, completeTask, updateSphereMember, removeSphereMember } from "@/services/api";
+import { getSphere, listSphereMembers, listSphereTasks, joinSphere, leaveSphere, cancelSphereJoinRequest, getCurrentUser, completeTask, updateSphereMember, removeSphereMember } from "@/services/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -40,6 +40,7 @@ export function SphereDetail() {
   const [isJoining, setIsJoining] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [isPendingRequest, setIsPendingRequest] = useState(false);
+  const [isCancellingRequest, setIsCancellingRequest] = useState(false);
   const [activeTab, setActiveTab] = useState("chat");
   const [tasks, setTasks] = useState([]);
   const files: any[] = [];
@@ -197,13 +198,29 @@ export function SphereDetail() {
     }
   };
 
-  const handleCancelRequest = () => {
-    // No cancel endpoint provided; inform user
-    toast({
-      title: "Indisponible",
-      description: "L'annulation de la demande n'est pas disponible pour le moment",
-      duration: 2000,
-    });
+  const handleCancelRequest = async () => {
+    const previousPending = isPendingRequest;
+    try {
+      setIsCancellingRequest(true);
+      setIsPendingRequest(false);
+      setIsMember(false);
+      await cancelSphereJoinRequest(String(id));
+      toast({
+        title: "Demande annulée",
+        description: "Votre demande d'adhésion a bien été annulée",
+        duration: 2500,
+      });
+      await loadSphereData();
+    } catch (e: any) {
+      setIsPendingRequest(previousPending);
+      toast({
+        title: "Erreur",
+        description: e?.message || "Impossible d'annuler la demande",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCancellingRequest(false);
+    }
   };
 
   // Fonctions pour la gestion des demandes d'adhésion (admin uniquement)
@@ -555,9 +572,14 @@ export function SphereDetail() {
                   <Button 
                     className="bg-yellow-500 hover:bg-yellow-600 text-white gap-2"
                     onClick={handleCancelRequest}
+                    disabled={isCancellingRequest}
                   >
-                    <Clock className="h-4 w-4" />
-                    Demande en attente
+                    {isCancellingRequest ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Clock className="h-4 w-4" />
+                    )}
+                    {isCancellingRequest ? "Annulation..." : "Demande en attente"}
                   </Button>
                 ) : (
                   <div className="flex flex-col gap-2">

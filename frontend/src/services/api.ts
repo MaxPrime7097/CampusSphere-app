@@ -688,6 +688,13 @@ export async function leaveSphere(id: number | string, token?: string) {
   });
 }
 
+export async function cancelSphereJoinRequest(id: number | string, token?: string) {
+  return apiFetch<{ success: boolean; message?: string }>(`api/spheres/${id}/cancel-request/`, {
+    method: "DELETE",
+    token: token || getAccessToken(),
+  });
+}
+
 export async function listSphereMembers(id: number | string, token?: string) {
   return apiFetch<any[]>(`api/spheres/${id}/members/`, { token: token || getAccessToken() });
 }

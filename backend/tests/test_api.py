@@ -62,6 +62,45 @@ class SphereAPITest(APITestCase):
         membership = SphereMember.objects.get(sphere=sphere, user=self.user)
         self.assertEqual(membership.status, 'active')
 
+    def test_cancel_pending_join_request(self):
+        """Test cancelling a pending join request"""
+        sphere = Sphere.objects.create(
+            name='Approval Sphere',
+            description='Sphere with approval requirement',
+            category='academic',
+            type='study',
+            require_approval=True,
+            created_by=self.user
+        )
+
+        join_url = reverse('spheres:sphere-join', kwargs={'pk': sphere.id})
+        join_response = self.client.post(join_url, format='json')
+        self.assertEqual(join_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            SphereMember.objects.get(sphere=sphere, user=self.user).status,
+            'pending'
+        )
+
+        cancel_url = reverse('spheres:sphere-cancel-request', kwargs={'pk': sphere.id})
+        cancel_response = self.client.delete(cancel_url, format='json')
+        self.assertEqual(cancel_response.status_code, status.HTTP_200_OK)
+        self.assertTrue(cancel_response.data['success'])
+        self.assertFalse(SphereMember.objects.filter(sphere=sphere, user=self.user).exists())
+
+    def test_cancel_pending_join_request_not_found(self):
+        """Test cancelling pending join request when no pending request exists"""
+        sphere = Sphere.objects.create(
+            name='No Pending Sphere',
+            description='Sphere without pending membership',
+            category='academic',
+            type='study',
+            created_by=self.user
+        )
+
+        cancel_url = reverse('spheres:sphere-cancel-request', kwargs={'pk': sphere.id})
+        cancel_response = self.client.delete(cancel_url, format='json')
+        self.assertEqual(cancel_response.status_code, status.HTTP_404_NOT_FOUND)
+
 
 class PostAPITest(APITestCase):
     def setUp(self):
