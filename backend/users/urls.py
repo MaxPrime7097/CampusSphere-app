@@ -12,6 +12,10 @@ urlpatterns = [
     path('auth/change-password/', views.ChangePasswordView.as_view(), name='change-password'),
     path('auth/change-email/', views.ChangeEmailView.as_view(), name='change-email'),
     path('auth/delete-account/', views.DeleteAccountView.as_view(), name='delete-account'),
+    path('privacy/', views.PrivacySettingsView.as_view(), name='privacy-settings'),
+    path('data-export/', views.DataExportView.as_view(), name='data-export'),
+    path('blocks/', views.BlockListView.as_view(), name='block-list'),
+    path('blocks/<int:pk>/', views.BlockDetailView.as_view(), name='block-detail'),
 
     # User management
     path('<int:id>/', views.UserDetailView.as_view(), name='user-detail'),

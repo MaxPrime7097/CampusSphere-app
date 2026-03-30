@@ -1,8 +1,9 @@
 import pytest
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from rest_framework.test import APITestCase
 from rest_framework import status
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.auth import get_user_model
 from users.models import User, Connection
 from spheres.models import Sphere, SphereMember
@@ -61,6 +62,45 @@ class SphereAPITest(APITestCase):
         membership = SphereMember.objects.get(sphere=sphere, user=self.user)
         self.assertEqual(membership.status, 'active')
 
+    def test_cancel_pending_join_request(self):
+        """Test cancelling a pending join request"""
+        sphere = Sphere.objects.create(
+            name='Approval Sphere',
+            description='Sphere with approval requirement',
+            category='academic',
+            type='study',
+            require_approval=True,
+            created_by=self.user
+        )
+
+        join_url = reverse('spheres:sphere-join', kwargs={'pk': sphere.id})
+        join_response = self.client.post(join_url, format='json')
+        self.assertEqual(join_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            SphereMember.objects.get(sphere=sphere, user=self.user).status,
+            'pending'
+        )
+
+        cancel_url = reverse('spheres:sphere-cancel-request', kwargs={'pk': sphere.id})
+        cancel_response = self.client.delete(cancel_url, format='json')
+        self.assertEqual(cancel_response.status_code, status.HTTP_200_OK)
+        self.assertTrue(cancel_response.data['success'])
+        self.assertFalse(SphereMember.objects.filter(sphere=sphere, user=self.user).exists())
+
+    def test_cancel_pending_join_request_not_found(self):
+        """Test cancelling pending join request when no pending request exists"""
+        sphere = Sphere.objects.create(
+            name='No Pending Sphere',
+            description='Sphere without pending membership',
+            category='academic',
+            type='study',
+            created_by=self.user
+        )
+
+        cancel_url = reverse('spheres:sphere-cancel-request', kwargs={'pk': sphere.id})
+        cancel_response = self.client.delete(cancel_url, format='json')
+        self.assertEqual(cancel_response.status_code, status.HTTP_404_NOT_FOUND)
+
 
 class PostAPITest(APITestCase):
     def setUp(self):
@@ -117,22 +157,37 @@ class ResourceAPITest(APITestCase):
         )
         self.client.force_authenticate(user=self.user)
 
-    def test_create_resource(self):
-        """Test resource creation"""
-        url = reverse('resources:resource-list')
-        data = {
-            'title': 'Test Resource',
-            'description': 'A test resource',
+    def _resource_payload(self, visibility):
+        return {
+            'title': f'Test Resource {visibility}',
+            'description': 'A test resource description',
             'subject': 'informatique',
             'type': 'cours',
-            'visibility': 'public',
-            'audience': 'Étudiants en informatique'
+            'visibility': visibility,
+            'audience': 'Étudiants en informatique',
+            'file': SimpleUploadedFile(
+                name=f'resource-{visibility}.pdf',
+                content=b'%PDF-1.4 test resource content',
+                content_type='application/pdf',
+            ),
         }
-        # Note: In real tests, you'd need to handle file uploads
-        # For now, we'll test the endpoint structure
-        response = self.client.post(url, data, format='json')
-        # This will fail due to missing file, but tests the endpoint
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_resource_accepts_supported_visibility_values(self):
+        """Test resource creation for each supported visibility value."""
+        url = reverse('resources:resource-list')
+
+        for visibility in ['public', 'university', 'friends']:
+            response = self.client.post(url, self._resource_payload(visibility), format='multipart')
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            self.assertEqual(response.data['visibility'], visibility)
+
+    def test_create_resource_legacy_private_visibility_maps_to_friends(self):
+        """Test backward compatibility for legacy private visibility payloads."""
+        url = reverse('resources:resource-list')
+        response = self.client.post(url, self._resource_payload('private'), format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['visibility'], 'friends')
 
 
 class TaskAPITest(APITestCase):
@@ -253,3 +308,44 @@ class ConnectionAPITest(APITestCase):
         # Check connection was created
         connection = Connection.objects.get(requester=self.user1, recipient=self.user2)
         self.assertEqual(connection.status, 'pending')
+
+    def test_list_own_connections(self):
+        """Authenticated users can list their own connections."""
+        Connection.objects.create(requester=self.user1, recipient=self.user2, status='accepted')
+
+        url = reverse('users:user-connections', kwargs={'id': self.user1.id})
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+
+    @override_settings(CONNECTION_LIST_VISIBILITY_POLICY='public_profile')
+    def test_list_another_users_connections_allowed_for_public_profile_policy(self):
+        """When visibility policy is public_profile, other users can list target user's connections."""
+        user3 = User.objects.create_user(
+            email='connection3@example.com',
+            username='connection3',
+            first_name='Connection',
+            last_name='Three',
+            password='testpass123'
+        )
+        Connection.objects.create(requester=self.user2, recipient=user3, status='accepted')
+
+        url = reverse('users:user-connections', kwargs={'id': self.user2.id})
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+
+    def test_list_another_users_connections_denied_for_own_only_policy(self):
+        """When visibility policy is own_only (default), users cannot list someone else's connections."""
+        user3 = User.objects.create_user(
+            email='connection4@example.com',
+            username='connection4',
+            first_name='Connection',
+            last_name='Four',
+            password='testpass123'
+        )
+        Connection.objects.create(requester=self.user2, recipient=user3, status='accepted')
+
+        url = reverse('users:user-connections', kwargs={'id': self.user2.id})
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

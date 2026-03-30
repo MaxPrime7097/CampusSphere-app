@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getSphere, listSphereMembers, listSphereTasks, joinSphere, leaveSphere, getCurrentUser, completeTask, updateSphereMember, removeSphereMember } from "@/services/api";
+import { getSphere, listSphereMembers, listSphereTasks, joinSphere, leaveSphere, cancelSphereJoinRequest, getCurrentUser, completeTask, updateSphereMember, removeSphereMember } from "@/services/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -40,6 +40,7 @@ export function SphereDetail() {
   const [isJoining, setIsJoining] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [isPendingRequest, setIsPendingRequest] = useState(false);
+  const [isCancellingRequest, setIsCancellingRequest] = useState(false);
   const [activeTab, setActiveTab] = useState("chat");
   const [tasks, setTasks] = useState([]);
   const files: any[] = [];
@@ -50,6 +51,7 @@ export function SphereDetail() {
 
   // Charger l'utilisateur actuel et les données de la sphère depuis l'API
   const [sphere, setSphere] = useState<any | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [members, setMembers] = useState<any[]>([]);
   const [pendingMembers, setPendingMembers] = useState<any[]>([]);
   const [memberActionStatus, setMemberActionStatus] = useState<string | null>(null);
@@ -92,6 +94,13 @@ export function SphereDetail() {
     priority: t.priority || 'medium',
   });
 
+  const normalizeRole = (roleValue: string) => {
+    const role = (roleValue || '').toLowerCase();
+    if (role === 'admin' || role === 'administrateur') return 'admin';
+    if (role === 'moderator' || role === 'modérateur') return 'moderator';
+    return 'member';
+  };
+
   const loadSphereData = async () => {
     try {
       setLoading(true);
@@ -106,12 +115,13 @@ export function SphereDetail() {
       setCurrentUserId(currentUser?.id ? String(currentUser.id) : null);
 
       setSphere(sphereData);
+      setCurrentUserId(currentUser?.id ? String(currentUser.id) : null);
 
       const mappedMembers = (membersData || []).map((m: any) => ({
         id: m.id || m.user,
         user: m.user_info || m.user,
         user_info: m.user_info,
-        role: m.role_display || m.role || 'member',
+        role: normalizeRole(m.role || m.role_display || 'member'),
         status: m.status || 'active',
         joinedAt: m.joined_at,
         requestedAt: m.joined_at,
@@ -167,6 +177,10 @@ export function SphereDetail() {
   };
 
   const creator = sphereFallback?.created_by_info || null;
+  const currentUserRole = normalizeRole(sphereFallback?.user_role || '');
+  const canModerateMembers = isMember && (currentUserRole === 'admin' || currentUserRole === 'moderator');
+  const canChangeMemberRoles = isMember && currentUserRole === 'admin';
+  const roleChangeAvailable = true;
 
   const resolvedUserRole = useMemo(() => {
     const sphereRole = normalizeRole(sphereFallback?.userRole ?? sphereFallback?.user_role);
@@ -226,13 +240,29 @@ export function SphereDetail() {
     }
   };
 
-  const handleCancelRequest = () => {
-    // No cancel endpoint provided; inform user
-    toast({
-      title: "Indisponible",
-      description: "L'annulation de la demande n'est pas disponible pour le moment",
-      duration: 2000,
-    });
+  const handleCancelRequest = async () => {
+    const previousPending = isPendingRequest;
+    try {
+      setIsCancellingRequest(true);
+      setIsPendingRequest(false);
+      setIsMember(false);
+      await cancelSphereJoinRequest(String(id));
+      toast({
+        title: "Demande annulée",
+        description: "Votre demande d'adhésion a bien été annulée",
+        duration: 2500,
+      });
+      await loadSphereData();
+    } catch (e: any) {
+      setIsPendingRequest(previousPending);
+      toast({
+        title: "Erreur",
+        description: e?.message || "Impossible d'annuler la demande",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCancellingRequest(false);
+    }
   };
 
   // Fonctions pour la gestion des demandes d'adhésion (admin uniquement)
@@ -307,11 +337,41 @@ export function SphereDetail() {
 
   // Fonctions pour la gestion des rôles (admin uniquement, sauf pour le créateur)
   const handleChangeRole = async (memberId: string, newRole: string) => {
-    toast({
-      title: "Indisponible",
-      description: `Le changement de rôle vers ${newRole} n'est pas encore supporté par l'API`,
-      duration: 3000,
-    });
+    const memberToUpdate = members.find((member) => String(member.id) === String(memberId));
+    if (!memberToUpdate) {
+      return;
+    }
+
+    const previousMembers = [...members];
+
+    try {
+      setProcessingMemberIds((prev) => ({ ...prev, [memberId]: true }));
+      setMemberActionStatus(`Mise à jour du rôle de ${memberToUpdate.name}...`);
+      setMembers((prev) => prev.map((member) => (
+        String(member.id) === String(memberId)
+          ? { ...member, role: newRole }
+          : member
+      )));
+
+      await updateSphereMember(String(id), memberId, { role: newRole as "admin" | "moderator" | "member" });
+
+      setMemberActionStatus(`Le rôle de ${memberToUpdate.name} a été mis à jour.`);
+      toast({
+        title: "Rôle mis à jour",
+        description: `${memberToUpdate.name} est maintenant ${newRole}`,
+        duration: 3000,
+      });
+    } catch (error: any) {
+      setMembers(previousMembers);
+      setMemberActionStatus(null);
+      toast({
+        title: "Erreur",
+        description: error?.message || "Impossible de modifier le rôle de ce membre",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessingMemberIds((prev) => ({ ...prev, [memberId]: false }));
+    }
   };
 
   const handleRemoveMember = async (memberId: string) => {
@@ -373,7 +433,7 @@ export function SphereDetail() {
       id: member.id || member.user,
       user: member.user_info || member.user,
       user_info: member.user_info,
-      role: member.role_display || member.role || 'member',
+      role: normalizeRole(member.role || member.role_display || 'member'),
       status: member.status || 'active',
       joinedAt: member.joined_at,
       name: member.user_info?.name || 'Utilisateur',
@@ -554,9 +614,14 @@ export function SphereDetail() {
                   <Button 
                     className="bg-yellow-500 hover:bg-yellow-600 text-white gap-2"
                     onClick={handleCancelRequest}
+                    disabled={isCancellingRequest}
                   >
-                    <Clock className="h-4 w-4" />
-                    Demande en attente
+                    {isCancellingRequest ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Clock className="h-4 w-4" />
+                    )}
+                    {isCancellingRequest ? "Annulation..." : "Demande en attente"}
                   </Button>
                 ) : (
                   <div className="flex flex-col gap-2">
@@ -707,9 +772,11 @@ export function SphereDetail() {
                  <TabsTrigger value="members" className="h-8">
                    Membres ({members.length})
                  </TabsTrigger>
-                 <TabsTrigger value="pending" className="h-8">
-                   Demandes ({pendingMembers.length})
-                 </TabsTrigger>
+                 {canModerateMembers && (
+                   <TabsTrigger value="pending" className="h-8">
+                     Demandes ({pendingMembers.length})
+                   </TabsTrigger>
+                 )}
                </TabsList>
              </ScrollableTabs>
 
@@ -728,7 +795,7 @@ export function SphereDetail() {
             <div className="rounded-lg border bg-card p-6">
               <div className="flex flex-row items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold">Gestion des tâches</h3>
-                {isMember && (
+                {canModerateMembers && (
                   <CreateTaskModal
                     onTaskCreated={handleCreateTask}
                     sphereId={sphereFallback.id}
@@ -858,7 +925,7 @@ export function SphereDetail() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">Membres actifs ({members.length})</h3>
-                {isMember && (
+                {canModerateMembers && (
                   <AddMemberModal
                     sphereId={sphereFallback.id}
                     sphereName={sphereFallback.name}
@@ -915,7 +982,7 @@ export function SphereDetail() {
                         <Button size="sm" variant="outline" onClick={() => navigate(`/profile/${member.username}`)}>
                           Profil
                         </Button>
-                        {canModerateMembers && !member.isCreator && (
+                        {canModerateMembers && !member.isCreator && String(member.user_info?.id || member.user?.id || '') !== String(currentUserId || '') && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button size="sm" variant="ghost">
@@ -923,14 +990,18 @@ export function SphereDetail() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleChangeRole(member.id, "Modérateur")}>
-                                <Shield className="h-4 w-4 mr-2" />
-                                Promouvoir Modérateur
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleChangeRole(member.id, "Membre")}>
-                                <User className="h-4 w-4 mr-2" />
-                                Rétrograder Membre
-                              </DropdownMenuItem>
+                              {roleChangeAvailable && canChangeMemberRoles && member.role !== 'moderator' && (
+                                <DropdownMenuItem onClick={() => handleChangeRole(member.id, "moderator")}>
+                                  <Shield className="h-4 w-4 mr-2" />
+                                  Promouvoir Modérateur
+                                </DropdownMenuItem>
+                              )}
+                              {roleChangeAvailable && canChangeMemberRoles && member.role !== 'member' && (
+                                <DropdownMenuItem onClick={() => handleChangeRole(member.id, "member")}>
+                                  <User className="h-4 w-4 mr-2" />
+                                  Rétrograder Membre
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem 
                                 onClick={() => handleRemoveMember(member.id)}
                                 disabled={Boolean(processingMemberIds[String(member.id)])}
@@ -951,15 +1022,14 @@ export function SphereDetail() {
           </TabsContent>
 
           {/* Pending Members Tab */}
+          {canModerateMembers && (
           <TabsContent value="pending" className="mt-6">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">Demandes en attente ({pendingMembers.length})</h3>
                 <div className="text-right">
                   <p className="text-sm text-muted-foreground">
-                    {canModerateMembers
-                      ? "Vous pouvez approuver ou refuser les demandes en attente."
-                      : "Vous pouvez consulter les demandes, mais seuls les administrateurs et modérateurs peuvent agir."}
+                    Seuls les modérateurs et administrateurs peuvent gérer les demandes
                   </p>
                   {memberActionStatus && (
                     <p className="text-xs text-muted-foreground mt-1">{memberActionStatus}</p>
@@ -1033,6 +1103,7 @@ export function SphereDetail() {
               )}
             </div>
           </TabsContent>
+          )}
         </Tabs>
         )}
       </div>

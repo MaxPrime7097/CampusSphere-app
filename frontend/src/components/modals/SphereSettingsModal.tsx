@@ -6,23 +6,17 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { 
   Settings, 
   Save, 
   Loader2, 
-  CheckCircle,
   Users,
-  Lock,
   Globe,
   Shield,
   Trash2,
-  AlertTriangle,
-  Palette,
-  Bell,
-  UserCheck
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { deleteSphere, updateSphere } from "@/services/api";
 
 interface SphereSettings {
   name: string;
@@ -42,7 +36,13 @@ interface SphereSettingsModalProps {
     name: string;
     description: string;
     category: string;
+    type?: string;
+    isPrivate?: boolean;
     requireApproval: boolean;
+    objective?: string;
+    targetAudience?: string;
+    duration?: string;
+    collaborationTypes?: string[];
     allowMemberPosts: boolean;
     allowResourceSharing: boolean;
     allowTaskCreation: boolean;
@@ -127,19 +127,31 @@ export function SphereSettingsModal({
     setIsSaving(true);
 
     try {
-      // Simuler la sauvegarde
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      if (!sphereData?.id) {
+        throw new Error("Identifiant de sphère manquant");
+      }
 
-      const updatedSettings = {
-        ...settings,
-        id: sphereData?.id || Date.now().toString(),
-        updatedAt: new Date().toISOString()
+      const payload = {
+        name: settings.name.trim(),
+        description: settings.description,
+        category: settings.category,
+        type: sphereData.type,
+        is_private: sphereData.isPrivate ?? false,
+        require_approval: settings.requireApproval,
+        objective: sphereData.objective,
+        target_audience: sphereData.targetAudience,
+        duration: sphereData.duration,
+        collaboration_types: sphereData.collaborationTypes,
       };
 
-      console.log("Updating sphere settings:", updatedSettings);
+      const response = await updateSphere(sphereData.id, payload);
+      const isSuccess = response?.success ?? true;
+      if (!isSuccess) {
+        throw new Error(response?.message || "Échec de la mise à jour de la sphère");
+      }
 
       if (onSettingsUpdated) {
-        onSettingsUpdated(updatedSettings);
+        onSettingsUpdated(settings);
       }
 
       toast({
@@ -162,15 +174,25 @@ export function SphereSettingsModal({
   };
 
   const handleDeleteSphere = async () => {
+    if (!sphereData?.id) {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Identifiant de sphère manquant",
+      });
+      return;
+    }
+
     setIsDeleting(true);
 
     try {
-      // Simuler la suppression
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const response = await deleteSphere(sphereData.id);
+      const isSuccess = response?.success ?? true;
+      if (!isSuccess) {
+        throw new Error(response?.message || "Échec de la suppression de la sphère");
+      }
 
-      console.log("Deleting sphere:", sphereData?.id);
-
-      if (onSphereDeleted && sphereData?.id) {
+      if (onSphereDeleted) {
         onSphereDeleted(sphereData.id);
       }
 

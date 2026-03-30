@@ -31,6 +31,18 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
+    PROFILE_VISIBILITY_CHOICES = [
+        ('public', 'Public'),
+        ('connections', 'Connections only'),
+        ('private', 'Private'),
+    ]
+
+    POST_VISIBILITY_CHOICES = [
+        ('public', 'Public'),
+        ('connections', 'Connections only'),
+        ('private', 'Private'),
+    ]
+
     # Basic Information
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
@@ -50,6 +62,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
     cover_photo = models.ImageField(upload_to='covers/', blank=True, null=True)
     language = models.CharField(max_length=10, default='fr')
+    profile_visibility = models.CharField(max_length=20, choices=PROFILE_VISIBILITY_CHOICES, default='public')
+    post_visibility = models.CharField(max_length=20, choices=POST_VISIBILITY_CHOICES, default='public')
+    data_export_requested_at = models.DateTimeField(blank=True, null=True)
 
     # Impact and Mood
     impact_score = models.IntegerField(default=0, validators=[MinValueValidator(0)])
@@ -115,3 +130,16 @@ class Connection(models.Model):
 
     def __str__(self):
         return f"{self.requester.username} -> {self.recipient.username} ({self.status})"
+
+
+class UserBlock(models.Model):
+    blocker = models.ForeignKey(User, related_name='initiated_blocks', on_delete=models.CASCADE)
+    blocked = models.ForeignKey(User, related_name='received_blocks', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        unique_together = ['blocker', 'blocked']
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.blocker.username} blocked {self.blocked.username}"
