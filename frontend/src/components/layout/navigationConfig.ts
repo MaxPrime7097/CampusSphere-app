@@ -16,6 +16,8 @@ import {
 
 export interface NavigationUser {
   username?: string | null;
+  full_name?: string | null;
+  avatar?: string | null;
   role?: string | null;
   user_type?: string | null;
   is_staff?: boolean;

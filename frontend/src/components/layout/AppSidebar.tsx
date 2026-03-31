@@ -30,7 +30,7 @@ export function AppSidebar() {
   };
 
   const [user, setUser] = useState<NavigationUser>({});
-  const appVersion = import.meta.env.VITE_APP_VERSION || "1.0.0";
+  const appVersion = import.meta.env.VITE_APP_VERSION || "2.0.0";
 
   useEffect(() => {
     let isMounted = true;

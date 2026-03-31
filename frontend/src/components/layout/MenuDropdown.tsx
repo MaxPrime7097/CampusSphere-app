@@ -52,7 +52,7 @@ export function MenuDropdown() {
     isActive 
       ? "bg-accent text-foreground font-medium" 
       : "hover:bg-accent text-primary";
-  const appVersion = import.meta.env.VITE_APP_VERSION || "1.0.0";
+  const appVersion = import.meta.env.VITE_APP_VERSION || "2.0.0";
   const { quickActions, utilities, navigationItems } = getNavigationSections(user);
   const profileUrl = navigationItems.find((item) => item.title === "Profil")?.url || "/profile/current";
   const userDisplayName = user?.username || "Utilisateur";
