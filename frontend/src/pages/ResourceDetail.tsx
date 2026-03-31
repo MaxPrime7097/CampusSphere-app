@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { downloadResource, getResource, reportResource, trackResourceShare } from "@/services/api";
+import { downloadResource, getResource, reportResource, saveResource, trackResourceShare } from "@/services/api";
 import { Download, Share2, ChevronLeft, Eye, Flag, Loader2, Zap, Bookmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -32,8 +32,10 @@ export function ResourceDetail() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [isReporting, setIsReporting] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
   const [resource, setResource] = useState<{
     id: string;
@@ -62,6 +64,7 @@ export function ResourceDetail() {
     impactScore: number;
     tags: string[];
     relatedCourse: string;
+    isSaved: boolean;
   } | null>(null);
 
   // Load resource from API
@@ -73,7 +76,7 @@ export function ResourceDetail() {
       try {
         const data = await getResource(id);
         if (isMounted && data) {
-          setResource({
+          const resourcePayload = {
             id: String(data.id),
             title: data.title,
             description: data.description || '',
@@ -97,10 +100,13 @@ export function ResourceDetail() {
               saves: data.saves || data.stats?.saves || data.saves_count || 0,
               views: data.viewCount || data.view_count || data.stats?.views || 0
             },
+            isSaved: data.isSaved ?? data.is_saved ?? false,
             impactScore: data.impactScore || data.impact_score || 0,
             tags: data.tags || [],
             relatedCourse: data.subject || ''
-          });
+          };
+          setResource(resourcePayload);
+          setIsSaved(resourcePayload.isSaved);
         }
       } catch (e: any) {
         toast({
@@ -160,6 +166,45 @@ export function ResourceDetail() {
         setIsDownloading(false);
       }
     })();
+  };
+
+  const handleSaveResource = async () => {
+    if (!id || isSaving) return;
+
+    setIsSaving(true);
+
+    try {
+      const response = await saveResource(id);
+      const saved = response?.data?.saved ?? !isSaved;
+      setIsSaved(saved);
+      setResource((prev) =>
+        prev
+          ? {
+              ...prev,
+              isSaved: saved,
+              stats: {
+                ...prev.stats,
+                saves: saved ? (Number(prev.stats.saves) || 0) + 1 : Math.max(0, (Number(prev.stats.saves) || 1) - 1),
+              },
+            }
+          : prev
+      );
+
+      toast({
+        title: saved ? "Ressource sauvegardée" : "Ressource retirée des sauvegardes",
+        description: saved
+          ? "Cette ressource est maintenant enregistrée dans vos favoris"
+          : "Cette ressource a été retirée de vos favoris",
+      });
+    } catch (e: any) {
+      toast({
+        title: "Erreur",
+        description: e?.message || "Impossible de modifier l'état de sauvegarde",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleShare = () => {
@@ -298,7 +343,7 @@ export function ResourceDetail() {
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {resource.uploader.level} · {resource.uploader.contributions} contributions
+                    {resource.uploader.contributions} contributions
                   </p>
                 </div>
               </div>
@@ -310,6 +355,20 @@ export function ResourceDetail() {
               >
                 Voir le profil
               </Button>
+              <Button
+                variant={isSaved ? "secondary" : "outline"}
+                size="sm"
+                onClick={handleSaveResource}
+                disabled={isSaving}
+                className="gap-2"
+              >
+                {isSaving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Bookmark className="h-4 w-4" />
+                )}
+                {isSaved ? "Enregistré" : "Enregistrer"}
+              </Button>
               <Badge className="flex items-center gap-1 rounded-lg px-3 py-2 h-10 text-sm bg-secondary/20 text-secondary">
                 <Zap className="h-4 w-4" />
                 <span>{resource.impactScore}</span>
@@ -318,17 +377,6 @@ export function ResourceDetail() {
                 variant="outline"
                 onClick={handleShare}
                 disabled={isSharing}
-              >
-                {isSharing ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Share2 className="h-4 w-4" />
-                )}
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={handleReport}
-                disabled={isReporting}
               >
                 {isReporting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

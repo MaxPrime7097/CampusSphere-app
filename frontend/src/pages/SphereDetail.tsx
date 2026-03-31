@@ -108,16 +108,20 @@ export function SphereDetail() {
       setTasks((tasksData || []).map(mapTask));
 
       // Membership state logic
-      if (sphereData?.is_member) {
-        setIsMember(true);
-        setIsPendingRequest(false);
-      } else if (sphereData?.membership_status === 'pending') {
-        setIsPendingRequest(true);
-        setIsMember(false);
-      } else {
-        setIsMember(false);
-        setIsPendingRequest(false);
-      }
+      const isMemberFromServer = sphereData?.is_member ?? sphereData?.isMember ?? false;
+      const membershipStatusFromServer = sphereData?.membership_status ?? sphereData?.membershipStatus ?? null;
+      const currentUserMember = mappedMembers.find((m: any) => String(m.user_info?.id) === String(currentUser?.id));
+
+      const resolvedIsMember =
+        isMemberFromServer ||
+        Boolean(currentUserMember && currentUserMember.status === 'active');
+
+      const resolvedIsPending =
+        membershipStatusFromServer === 'pending' ||
+        Boolean(currentUserMember && currentUserMember.status === 'pending');
+
+      setIsMember(resolvedIsMember);
+      setIsPendingRequest(!resolvedIsMember && resolvedIsPending);
     } catch (e: any) {
       setLoadError(e?.message || "Erreur de chargement");
     } finally {
@@ -174,8 +178,11 @@ export function SphereDetail() {
       const res = await joinSphere(String(id));
       if (res?.data?.status === 'pending') {
         setIsPendingRequest(true);
+        setIsMember(false);
         toast({ title: "Demande envoyée" });
       } else {
+        setIsMember(true);
+        setIsPendingRequest(false);
         await loadSphereData();
         toast({ title: "Bienvenue dans la sphère !" });
       }

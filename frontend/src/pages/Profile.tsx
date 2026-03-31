@@ -77,7 +77,7 @@ function mapProfileToViewModel({
     name: profile.name ?? displayName,
     firstName: profile.firstName ?? "",
     lastName: profile.lastName ?? "",
-    username: profile.username ?? "",
+    username: profile.username ?? profile.slug ?? "",
     email: profile.email ?? "",
     phoneNumber: profile.phone_number ?? profile.phoneNumber ?? "",
     dateOfBirth: profile.date_of_birth ?? profile.dateOfBirth ?? "",
@@ -93,6 +93,7 @@ function mapProfileToViewModel({
     studyYear: profile.studyYear ?? "",
     studentId: profile.studentId ?? "",
     campus: profile.campus ?? "",
+    currentMood: profile.current_mood ?? profile.currentMood ?? "",
     previousEducation: profile.previousEducation ?? [],
     experiences: profile.experiences ?? [],
     skills: profile.skills ?? [],
@@ -1286,7 +1287,13 @@ export function Profile() {
                     "💡 Plein d'idées !",
                     "🎯 Concentré sur mes objectifs",
                     "🤝 Prêt à collaborer",
-                    "📚 En mode apprentissage"
+                    "📚 En mode apprentissage",
+                    "☕ Besoin d'un café",
+                    "🌟 Inspiré et créatif",
+                    "🏃‍♂️ En mouvement",
+                    "🧘‍♀️ Au calme",
+                    "🎉 Fêtant les réussites",
+                    "💪 Déterminé"
                   ].map((mood) => (
                     <Button
                       key={mood}

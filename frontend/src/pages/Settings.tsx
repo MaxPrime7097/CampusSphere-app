@@ -34,6 +34,21 @@ export function Settings() {
   const [darkMode, setDarkMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [language, setLanguage] = useState("fr");
+
+  useEffect(() => {
+    const storedTheme = localStorage.getItem("theme");
+    if (storedTheme === "dark") {
+      document.documentElement.classList.add("dark");
+      setDarkMode(true);
+    } else if (storedTheme === "light") {
+      document.documentElement.classList.remove("dark");
+      setDarkMode(false);
+    } else {
+      const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.classList.toggle("dark", prefersDark);
+      setDarkMode(prefersDark);
+    }
+  }, [setDarkMode]);
   const [showPersonalInfoModal, setShowPersonalInfoModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
@@ -125,11 +140,13 @@ export function Settings() {
   }, [toast]);
 
   const toggleTheme = () => {
-    setDarkMode(!darkMode);
-    document.documentElement.classList.toggle('dark');
+    const nextDarkMode = !darkMode;
+    setDarkMode(nextDarkMode);
+    document.documentElement.classList.toggle('dark', nextDarkMode);
+    localStorage.setItem('theme', nextDarkMode ? 'dark' : 'light');
     toast({
       title: "Thème modifié",
-      description: `Passage au thème ${!darkMode ? 'sombre' : 'clair'}`,
+      description: `Passage au thème ${nextDarkMode ? 'sombre' : 'clair'}`,
       duration: 2000,
     });
   };

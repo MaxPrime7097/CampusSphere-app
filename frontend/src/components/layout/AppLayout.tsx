@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
@@ -21,12 +21,31 @@ export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
   const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState("");
-  
+  const [darkMode, setDarkMode] = useState(false);
+
+  useEffect(() => {
+    const storedTheme = localStorage.getItem('theme');
+    if (storedTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+      setDarkMode(true);
+    } else if (storedTheme === 'light') {
+      document.documentElement.classList.remove('dark');
+      setDarkMode(false);
+    } else {
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.classList.toggle('dark', prefersDark);
+      setDarkMode(prefersDark);
+    }
+  }, []);
+
   const isInConversation = location.pathname.startsWith('/messages/') && location.pathname.split('/').length > 2;
   const hideNavOnMobile = isMobile && isInConversation;
   
   const toggleTheme = () => {
-    document.documentElement.classList.toggle('dark');
+    const nextMode = !darkMode;
+    document.documentElement.classList.toggle('dark', nextMode);
+    localStorage.setItem('theme', nextMode ? 'dark' : 'light');
+    setDarkMode(nextMode);
   };
 
   const handleSearch = (e: React.FormEvent) => {

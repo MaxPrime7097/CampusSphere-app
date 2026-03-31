@@ -160,7 +160,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
     if (isCopyingLink) return;
     setIsCopyingLink(true);
 
-    const postUrl = `${window.location.origin}/post/${post.id}`;
+    const postUrl = `${window.location.origin}/posts/${post.id}`;
     try {
       await navigator.clipboard.writeText(postUrl);
       toast({
@@ -182,6 +182,10 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
   const handleReport = () => {
     setReportError(null);
     setShowReportDialog(true);
+  };
+
+  const handleOpenPost = () => {
+    navigate(`/posts/${post.id}`);
   };
 
   const handleSubmitReport = async (reason: string) => {
@@ -299,12 +303,18 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
 
       <CardContent className="pt-0">
         <div className="space-y-3">
-          {post.category && (
-            <Badge variant="secondary" className="text-xs">
-              {getSphereCategoryLabel(post.category)}
-            </Badge>
-          )}
-          
+          <div className="flex items-center justify-between mb-2">
+            {post.category && (
+              <Badge variant="secondary" className="text-xs">
+                {getSphereCategoryLabel(post.category)}
+              </Badge>
+            )}
+            <Button size="xs" variant="outline" onClick={handleOpenPost} className="gap-1">
+              Voir
+              <ExternalLink className="h-3 w-3" />
+            </Button>
+          </div>
+
           <p className="text-sm leading-relaxed">{post.content}</p>
           
           {post.image && (
