@@ -1,3 +1,5 @@
+import logging
+
 from rest_framework import generics, status, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -13,6 +15,8 @@ from .serializers import (
     CommentSerializer, CommentCreateSerializer, PostLikeSerializer,
     PostImpactRatingActionSerializer
 )
+
+logger = logging.getLogger(__name__)
 from spheres.permissions import IsSphereMemberOrPublic
 from users.impact_policy import POST_CREATED, COMMENT_CREATED, apply_impact_event
 
@@ -61,31 +65,39 @@ class PostListView(generics.ListCreateAPIView):
         queryset = Post.objects.select_related('author', 'sphere').prefetch_related('likes', 'comments')
         user = self.request.user
 
-        # Filter posts based on visibility and user permissions
-        public_posts = queryset.filter(visibility='public')
-        
-        # User's own posts
-        user_posts = queryset.filter(author=user)
-        
-        # Posts from spheres user is a member of
-        from spheres.models import SphereMember
-        user_spheres = SphereMember.objects.filter(user=user, status='active').values_list('sphere', flat=True)
-        sphere_posts = queryset.filter(sphere__in=user_spheres, visibility='sphere')
-        
-        # Friends posts (if visibility is friends)
-        from users.models import Connection
-        user_connections = Connection.objects.filter(
-            models.Q(requester=user) | models.Q(recipient=user),
-            status='accepted'
-        )
-        friend_ids = []
-        for conn in user_connections:
-            friend_ids.append(conn.requester.id if conn.recipient == user else conn.recipient.id)
-        
-        friends_posts = queryset.filter(author__in=friend_ids, visibility='friends')
-        
-        # Combine all accessible posts
-        return (public_posts | user_posts | sphere_posts | friends_posts).distinct()
+        try:
+            # Filter posts based on visibility and user permissions
+            public_posts = queryset.filter(visibility='public')
+
+            # User's own posts
+            user_posts = queryset.filter(author=user)
+
+            # Posts from spheres user is a member of
+            from spheres.models import SphereMember
+            user_spheres = SphereMember.objects.filter(user=user, status='active').values_list('sphere', flat=True)
+            sphere_posts = queryset.filter(sphere__in=user_spheres, visibility='sphere')
+
+            # Friends posts (if visibility is friends)
+            from users.models import Connection
+            user_connections = Connection.objects.filter(
+                models.Q(requester=user) | models.Q(recipient=user),
+                status='accepted'
+            )
+            friend_ids = [conn.requester.id if conn.recipient == user else conn.recipient.id for conn in user_connections]
+
+            friends_posts = queryset.filter(author__in=friend_ids, visibility='friends')
+
+            # Combine all accessible posts
+            return (public_posts | user_posts | sphere_posts | friends_posts).distinct()
+        except Exception as exc:
+            logger.exception("Error loading posts for user %s", getattr(user, 'id', None))
+            # If an internal issue is encountered, return an empty queryset instead of crashing
+            return Post.objects.none()
+
+    def handle_exception(self, exc):
+        logger.exception("Error in PostListView for user %s", getattr(self.request.user, 'id', None))
+        from rest_framework.exceptions import APIException
+        raise APIException("Unable to load posts at this time. Please try again later.")
 
     def get_serializer_class(self):
         if self.request.method == 'POST':

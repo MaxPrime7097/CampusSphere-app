@@ -99,7 +99,7 @@ export function FeedSidebar() {
             <button
               key={sphere.id}
               type="button"
-              className="w-full flex items-center justify-between hover:bg-accent/50 p-2 rounded-lg transition-colors text-left"
+              className="w-full flex items-center justify-between hover:bg-accent/50 p-2 rounded-lg transition-colors text-left border-b border-muted-foreground/50"
               onClick={() => openSphere(sphere.id, sphere.name)}
             >
               <div className="min-w-0">
@@ -132,7 +132,7 @@ export function FeedSidebar() {
             <button
               key={resource.id}
               type="button"
-              className="w-full space-y-1 hover:bg-accent/50 p-2 rounded-lg transition-colors text-left"
+              className="w-full space-y-1 hover:bg-accent/50 p-2 rounded-lg transition-colors text-left border-b border-muted-foreground/50"
               onClick={() => openResource(resource.id, resource.title)}
             >
               <div className="font-medium text-sm line-clamp-2">{resource.title}</div>
@@ -168,20 +168,15 @@ export function FeedSidebar() {
         </CardContent>
       </Card>
 
-      <Card
-        className="campus-card campus-gradient text-white cursor-pointer hover:opacity-90 transition-opacity"
-        onClick={() => openResource()}
-      >
-        <Card className="campus-card mt-5">
-          <CardContent className="pt-4 md:pt-6 p-4 md:p-6">
-            <div className="text-center space-y-4">
-              <div>
-                <h3 className="font-automata text-primary text-lg md:text-xl">CampusSphere</h3>
-                <p className="text-xs md:text-sm text-muted-foreground">Version {appVersion}</p>
-              </div>
+      <Card className="campus-card mt-5">
+        <CardContent className="pt-4 md:pt-6 p-4 md:p-6">
+          <div className="text-center space-y-4">
+            <div>
+              <h3 className="font-automata text-primary text-lg md:text-xl">CampusSphere</h3>
+              <p className="text-xs md:text-sm text-muted-foreground">Version {appVersion}</p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </CardContent>
       </Card>
     </div>
   );
