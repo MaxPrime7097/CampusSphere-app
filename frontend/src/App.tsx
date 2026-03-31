@@ -19,6 +19,7 @@ import { EditProfile } from "./pages/EditProfile";
 import { SavedItems } from "./pages/SavedItems";
 import { Resources } from "./pages/Resources";
 import { ResourceDetail } from "./pages/ResourceDetail";
+import { PostDetail } from "./pages/PostDetail";
 import { Spheres } from "./pages/Spheres";
 import { SphereDetail } from "./pages/SphereDetail";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
@@ -139,6 +140,13 @@ const App = () => (
             <Protected>
               <AppLayout>
                 <ResourceDetail />
+              </AppLayout>
+            </Protected>
+          } />
+          <Route path="/posts/:id" element={
+            <Protected>
+              <AppLayout>
+                <PostDetail />
               </AppLayout>
             </Protected>
           } />

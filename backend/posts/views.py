@@ -214,6 +214,72 @@ class PostLikeView(APIView):
         })
 
 
+class PostSaveToggleView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        post = get_object_or_404(Post, pk=pk)
+        user = request.user
+
+        if not user_can_access_post(user, post):
+            return Response({'error': 'You do not have permission to save this post'}, status=status.HTTP_403_FORBIDDEN)
+
+        save_obj = PostSave.objects.filter(post=post, user=user).first()
+        if save_obj:
+            save_obj.delete()
+            saved = False
+        else:
+            PostSave.objects.create(post=post, user=user)
+            saved = True
+
+        return Response({
+            'success': True,
+            'data': {
+                'saved': saved
+            },
+            'timestamp': timezone.now().isoformat()
+        })
+
+
+class PostReportView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        post = get_object_or_404(Post, pk=pk)
+        user = request.user
+
+        if not user_can_access_post(user, post):
+            return Response({'error': 'You do not have permission to report this post'}, status=status.HTTP_403_FORBIDDEN)
+
+        reason = request.data.get('reason', 'inappropriate_content')
+        details = request.data.get('details', '')
+
+        report_obj, created = PostReport.objects.get_or_create(
+            post=post,
+            reporter=user,
+            defaults={
+                'reason': reason,
+                'details': details,
+            }
+        )
+
+        if not created:
+            report_obj.reason = reason
+            report_obj.details = details
+            report_obj.status = 'pending'
+            report_obj.save(update_fields=['reason', 'details', 'status', 'updated_at'])
+
+        return Response({
+            'success': True,
+            'data': {
+                'reported': True,
+                'report_id': report_obj.id,
+                'is_new': created,
+            },
+            'timestamp': timezone.now().isoformat()
+        })
+
+
 class PostImpactRatingView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 

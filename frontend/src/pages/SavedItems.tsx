@@ -3,7 +3,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PostCard } from "@/components/feed/PostCard";
 import { Card, CardContent } from "@/components/ui/card";
 import { BookOpen, Calendar, ShoppingBag, Loader2 } from "lucide-react";
-import { getSavedPosts, getSavedResources } from "@/services/api";
+import { getSavedPosts, getSavedResources, savePost, saveResource } from "@/services/api";
+
+const SUBJECT_LABELS: Record<string, string> = {
+  math: "Mathématiques",
+  cs: "Informatique",
+  physics: "Physique",
+  economics: "Économie",
+  language: "Langues",
+  other: "Autre",
+};
+
+function getSubjectLabel(subject: string) {
+  return SUBJECT_LABELS[subject] || String(subject || "").charAt(0).toUpperCase() + String(subject || "").slice(1);
+}
 
 export function SavedItems() {
   const [savedPosts, setSavedPosts] = useState<any[]>([]);
@@ -62,6 +75,43 @@ export function SavedItems() {
     };
   }, []);
 
+  const handleRemoveSavedPost = async (postId: string) => {
+    try {
+      await savePost(postId);
+      setSavedPosts((prev) => prev.filter((post) => post.id !== postId));
+
+      toast({
+        title: "Post retiré des sauvegardes",
+        description: "Le post a été retiré de vos éléments enregistrés",
+        duration: 2000,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error?.message || "Impossible de retirer ce post des sauvegardes",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRemoveSavedResource = async (resourceId: string) => {
+    try {
+      await saveResource(resourceId);
+      setSavedResources((prev) => prev.filter((resource) => resource.id !== resourceId));
+      toast({
+        title: "Ressource retirée des sauvegardes",
+        description: "La ressource a été retirée de vos éléments enregistrés",
+        duration: 2000,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error?.message || "Impossible de retirer cette ressource des sauvegardes",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
       <div className="container max-w-4xl mx-auto py-6 px-4">
@@ -91,7 +141,15 @@ export function SavedItems() {
               </Card>
             ) : (
               savedPosts.map((post) => (
-                <PostCard key={post.id} post={post} />
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  onToggleSave={(saved) => {
+                    if (!saved) {
+                      setSavedPosts((prev) => prev.filter((p) => p.id !== post.id));
+                    }
+                  }}
+                />
               ))
             )}
           </TabsContent>
@@ -115,8 +173,26 @@ export function SavedItems() {
                 {savedResources.map((resource) => (
                   <Card key={resource.id} className="campus-card">
                     <CardContent className="p-4">
-                      <h3 className="font-semibold">{resource.title}</h3>
-                      <p className="text-sm text-muted-foreground mt-1">{resource.description}</p>
+                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                        <div>
+                          <h3 className="font-semibold">{resource.title}</h3>
+                          <p className="text-sm text-muted-foreground mt-1">{resource.description}</p>
+                          <div className="text-xs text-muted-foreground mt-2 flex flex-wrap gap-2">
+                            <span>Type: {resource.type}</span>
+                            <span>Matière: {getSubjectLabel(resource.subject)}</span>
+                            <span>Taille: {resource.fileSize}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <Button variant="outline" size="sm" onClick={() => handleRemoveSavedResource(resource.id)}>
+                            Retirer
+                          </Button>
+                          <Button variant="secondary" size="sm" onClick={() => window.location.assign(`/resources/${resource.id}`)}>
+                            Voir
+                          </Button>
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
                 ))}

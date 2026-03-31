@@ -47,6 +47,7 @@ export function ResourceDetail() {
     pages: number;
     uploader: {
       name: string;
+      username?: string;
       avatar: string;
       verified: boolean;
       level: string;
@@ -76,19 +77,17 @@ export function ResourceDetail() {
             id: String(data.id),
             title: data.title,
             description: data.description || '',
-            subject: data.subject || 'other',
-            type: data.type || 'notes',
-            format: (data.fileUrl || data.file)?.toString().split('.').pop() || 'pdf',
-            size: data.fileSize || data.file_size || data.size || '0 MB',
-            level: data.level || data.audience || data.courseLevel || 'L2',
+            subject: data.subject,
+            type: data.type,
+            format: (data.fileUrl || data.file)?.toString().split('.').pop(),
+            size: data.fileSize || data.file_size || data.size,
+            level: data.level || data.audience || data.courseLevel,
             pages: data.pages || data.page_count || 0,
             uploader: {
               name: data.author?.name || data.author_info?.name || data.author_name || "Utilisateur",
               username: data.author?.username || data.author_info?.username || data.author_username || "",
               avatar: data.author?.avatar || data.author_info?.avatar || "/placeholder-avatar.jpg",
               verified: data.author?.isVerified || data.author_info?.is_verified || false,
-              level: data.author?.studyYear || data.author_info?.study_level || "L3",
-              contributions: data.author?.impactScore || data.author_info?.impact_score || 0
             },
             uploadDate: data.createdAt || data.created_at || data.uploaded_at || null,
             stats: {

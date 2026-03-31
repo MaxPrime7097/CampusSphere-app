@@ -23,7 +23,7 @@ import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { impactRatePost, likePost } from "@/services/api";
+import { impactRatePost, likePost, savePost, reportPost } from "@/services/api";
 import { formatRelativeTime } from "@/lib/date";
 
 interface PostCardProps {
@@ -48,9 +48,10 @@ interface PostCardProps {
     isLiked?: boolean;
     isSaved?: boolean;
   };
+  onToggleSave?: (saved: boolean) => void;
 }
 
-export function PostCard({ post }: PostCardProps) {
+export function PostCard({ post, onToggleSave }: PostCardProps) {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { toast } = useToast();
@@ -74,7 +75,7 @@ export function PostCard({ post }: PostCardProps) {
     setLikesCount(post.likes);
     setImpactScore(Number(post.impactScore || 0));
     setUserImpactRating(post.userImpactRating ?? null);
-  }, [post.id, post.isLiked, post.likes, post.impactScore, post.userImpactRating]);
+  }, [post.id, post.isLiked, post.isSaved, post.likes, post.impactScore, post.userImpactRating]);
 
   const handleLike = async () => {
     try {
@@ -120,17 +121,35 @@ export function PostCard({ post }: PostCardProps) {
     }
   };
 
-  const handleSave = () => {
-    setIsSaved(!isSaved);
-    toast({
-      title: nextSavedState ? "Post sauvegardé !" : "Post retiré des sauvegardes",
-      description: nextSavedState
-        ? "Le post a été ajouté à vos sauvegardes (mock local)."
-        : "Le post a été retiré de vos sauvegardes (mock local).",
-      duration: 2000,
-    });
+  const handleSave = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
 
-    setIsSaving(false);
+    const nextSavedState = !isSaved;
+
+    try {
+      const response = await savePost(post.id);
+      const saved = response?.data?.saved ?? nextSavedState;
+
+      setIsSaved(saved);
+      onToggleSave?.(saved);
+
+      toast({
+        title: saved ? "Post sauvegardé !" : "Post retiré des sauvegardes",
+        description: saved
+          ? "Le post a été ajouté à vos sauvegardes"
+          : "Le post a été retiré de vos sauvegardes",
+        duration: 2000,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error?.message || "Impossible de mettre à jour l'état de sauvegarde du post",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleShare = () => {

@@ -819,6 +819,21 @@ export async function likePost(id: number | string, token?: string) {
   });
 }
 
+export async function savePost(id: number | string, token?: string) {
+  return apiFetch<any>(`api/posts/${id}/save/`, {
+    method: "POST",
+    token: token || getAccessToken(),
+  });
+}
+
+export async function reportPost(id: number | string, payload: {reason?: string; details?: string} = {}, token?: string) {
+  return apiFetch<any>(`api/posts/${id}/report/`, {
+    method: "POST",
+    body: payload,
+    token: token || getAccessToken(),
+  });
+}
+
 export async function impactRatePost(
   id: number | string,
   value: number | null,

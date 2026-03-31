@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { listNotifications, markNotificationRead, markAllNotificationsRead, deleteNotification as deleteNotificationApi } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -20,6 +21,7 @@ export function Notifications() {
   const [loading, setLoading] = useState(true);
   const [statusText, setStatusText] = useState<string | null>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     let isMounted = true;
@@ -29,15 +31,39 @@ export function Notifications() {
         const data = await listNotifications();
         if (isMounted) {
           // Map backend notifications to frontend format
-          const mapped = (data || []).map((n: any) => ({
-            id: String(n.id),
-            type: n.notification_type || n.type || 'system',
-            title: n.title || 'Notification',
-            message: n.message || n.content || '',
-            read: n.is_read || n.read || false,
-            createdAt: n.created_at || n.createdAt || new Date().toISOString(),
-            sender: n.sender || null,
-          }));
+          const mapped = (data || []).map((n: any) => {
+            const senderName =
+              n.sender?.name ||
+              n.data?.sender_name ||
+              n.data?.user_full_name ||
+              n.data?.user_name ||
+              n.data?.inviter_name ||
+              n.data?.assigner_name ||
+              n.data?.requester_name ||
+              null;
+            const senderAvatar = n.sender?.avatar || n.data?.sender_avatar || null;
+
+            let actionUrl = null;
+            if (n.data?.post_id) actionUrl = `/posts/${n.data.post_id}`;
+            else if (n.data?.sphere_id) actionUrl = `/spheres/${n.data.sphere_id}`;
+            else if (n.data?.task_id) actionUrl = `/tasks/${n.data.task_id}`;
+            else if (n.data?.conversation_id) actionUrl = `/messages`;
+
+            return {
+              id: String(n.id),
+              type: n.notification_type || n.type || 'system',
+              title: n.title || 'Notification',
+              message: n.message || n.content || '',
+              read: n.is_read || n.read || false,
+              createdAt: n.created_at || n.createdAt || new Date().toISOString(),
+              sender: {
+                name: senderName,
+                avatar: senderAvatar,
+                id: n.data?.sender_id || n.data?.user_id || n.data?.requester_id || n.data?.assigner_id || n.data?.inviter_id || null,
+              },
+              actionUrl,
+            };
+          });
           setNotifications(mapped);
         }
       } catch (e: any) {
@@ -132,6 +158,16 @@ export function Notifications() {
     }
   };
 
+  const handleNotificationClick = async (notification: any) => {
+    if (!notification.read) {
+      await markAsRead(notification.id);
+    }
+
+    if (notification.actionUrl) {
+      navigate(notification.actionUrl);
+    }
+  };
+
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
@@ -181,9 +217,17 @@ export function Notifications() {
             </div>
           ) : (
             notifications.map((notification) => (
-              <div 
-                key={notification.id} 
-                className={`rounded-lg border bg-card p-4 transition-all duration-200 hover:shadow-md ${
+              <div
+                key={notification.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => handleNotificationClick(notification)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    handleNotificationClick(notification);
+                  }
+                }}
+                className={`rounded-lg border bg-card p-4 transition-all duration-200 hover:shadow-md cursor-pointer ${
                   !notification.read ? 'border-primary/20 bg-primary/5' : ''
                 }`}
               >
@@ -213,12 +257,17 @@ export function Notifications() {
                           <div className="flex items-center gap-4 text-xs text-muted-foreground">
                             <span>{new Date(notification.createdAt).toLocaleDateString('fr-FR')}</span>
                             <div className="flex items-center gap-1">
-                              <Avatar className="h-4 w-4">
+                            <Avatar className="h-4 w-4">
+                              {notification.sender?.avatar ? (
+                                <AvatarImage src={notification.sender.avatar} />
+                              ) : (
                                 <AvatarImage src="/placeholder-avatar.jpg" />
-                                <AvatarFallback className="text-xs">?</AvatarFallback>
-                              </Avatar>
-                                <span>Par un membre</span>
-                              </div>
+                              )}
+                              <AvatarFallback className="text-xs">?</AvatarFallback>
+                            </Avatar>
+                            <span>
+                              {notification.sender?.name || (notification.type === 'system' ? 'Système' : 'Membre')}
+                            </span>
                           </div>
                         </div>
 
@@ -228,7 +277,10 @@ export function Notifications() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => markAsRead(notification.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                markAsRead(notification.id);
+                              }}
                               className="h-8 w-8"
                             >
                               <CheckCheck className="h-4 w-4" />
@@ -237,7 +289,10 @@ export function Notifications() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => deleteNotification(notification.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteNotification(notification.id);
+                            }}
                             className="h-8 w-8 text-muted-foreground hover:text-destructive"
                           >
                             <X className="h-4 w-4" />

@@ -78,7 +78,7 @@ class PostSerializer(serializers.ModelSerializer):
             'id', 'content', 'author', 'author_info', 'sphere', 'sphere_info',
             'category', 'visibility', 'subject', 'type', 'audience', 'location',
             'tags', 'files', 'allow_comments', 'is_pinned', 'likes_count',
-            'comments_count', 'impact_score', 'is_liked', 'can_edit', 'can_delete',
+            'comments_count', 'impact_score', 'is_liked', 'is_saved', 'can_edit', 'can_delete',
             'user_impact_rating', 'recent_comments', 'created_at', 'updated_at'
         ]
         read_only_fields = [
