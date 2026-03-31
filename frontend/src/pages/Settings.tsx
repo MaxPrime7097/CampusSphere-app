@@ -74,7 +74,7 @@ export function Settings() {
   const [blockedUsers, setBlockedUsers] = useState<any[]>([]);
   const [blockSearch, setBlockSearch] = useState("");
   const [isPrivacyLoading, setIsPrivacyLoading] = useState(false);
-  
+  const appVersion = import.meta.env.VITE_APP_VERSION || "2.0.0";
   const [marketingNotifications, setMarketingNotifications] = useState(false);
 
   useEffect(() => {
@@ -568,19 +568,8 @@ export function Settings() {
             <CardContent className="pt-4 md:pt-6 p-4 md:p-6">
               <div className="text-center space-y-4">
                 <div>
-                  <h3 className="font-automata text-lg md:text-xl">CampusSphere</h3>
-                  <p className="text-xs md:text-sm text-muted-foreground">Version 1.0.0</p>
-                </div>
-                <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-4 text-xs md:text-sm">
-                  <Button variant="link" className="px-0 h-auto">
-                    Conditions d'utilisation
-                  </Button>
-                  <Button variant="link" className="px-0 h-auto">
-                    Politique de confidentialité
-                  </Button>
-                  <Button variant="link" className="px-0 h-auto">
-                    Support
-                  </Button>
+                  <h3 className="font-automata text-primary text-lg md:text-xl">CampusSphere</h3>
+                  <p className="text-xs md:text-sm text-muted-foreground">Version {appVersion}</p>
                 </div>
               </div>
             </CardContent>
