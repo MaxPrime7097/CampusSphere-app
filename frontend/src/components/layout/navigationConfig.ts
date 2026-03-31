@@ -55,6 +55,7 @@ export function getNavigationSections(user?: NavigationUser | null): NavigationS
     { title: "Profil", url: profileUrl, icon: User },
     { title: "Ressources", url: "/resources", icon: FolderOpen },
     { title: "Sphères", url: "/spheres", icon: Users },
+    { title: "Enregistrements", url: "/saved", icon: Bookmark },
   ];
 
   const quickActions: NavigationItem[] = [

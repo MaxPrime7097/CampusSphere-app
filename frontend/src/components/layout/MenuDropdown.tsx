@@ -52,8 +52,11 @@ export function MenuDropdown() {
     isActive 
       ? "bg-accent text-foreground font-medium" 
       : "hover:bg-accent text-primary";
+  const appVersion = import.meta.env.VITE_APP_VERSION || "1.0.0";
   const { quickActions, utilities, navigationItems } = getNavigationSections(user);
   const profileUrl = navigationItems.find((item) => item.title === "Profil")?.url || "/profile/current";
+  const userDisplayName = user?.username || "Utilisateur";
+  const userHandle = user?.username ? `@${user.username}` : "@invité";
 
   return (
   <Sheet>
@@ -68,31 +71,51 @@ export function MenuDropdown() {
             Menu
           </h1>
         </SheetHeader>
-        <Card className="campus-card mt-5" onClick= {() => navigate(profileUrl)}>
+        <Card className="campus-card mt-5" onClick={() => navigate(profileUrl)}>
           <CardContent className="pt-4 md:pt-6 p-4 md:p-6">
             <div 
               className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
             >
               <Avatar className="h-10 w-10">
-                <AvatarImage src= "/placeholder/.jpg" />
+                <AvatarImage src={user?.avatar || "/placeholder/.jpg"} />
                 <AvatarFallback className="bg-input text-muted-foreground font-semibold">
-                  MP
+                  {userDisplayName.charAt(0).toUpperCase() || "U"}
                 </AvatarFallback>
               </Avatar>
               <div>
                 <div className="flex items-center gap-2">
-                  <h4 className="font-semibold text-sm hover:underline">Max Prime</h4>
+                  <h4 className="font-semibold text-sm hover:underline">{userDisplayName}</h4>
                     <div className="w-4 h-4 campus-gradient rounded-full flex items-center justify-center">
                       <span className="text-white text-xs">✓</span>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <p className="text-xs text-muted-foreground">@cypher</p>
+                  <p className="text-xs text-muted-foreground">{userHandle}</p>
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {navigationItems.map((item) => (
+                <Card className="py-2" key={item.title}>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild>
+                      <NavLink to={item.url} className={getNavClasses}>
+                        <item.icon className="h-5 w-5" />
+                        {!isCollapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </Card>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
 
         <SidebarGroup>
           <SidebarGroupLabel>Actions</SidebarGroupLabel>

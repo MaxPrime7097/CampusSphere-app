@@ -30,6 +30,7 @@ export function AppSidebar() {
   };
 
   const [user, setUser] = useState<NavigationUser>({});
+  const appVersion = import.meta.env.VITE_APP_VERSION || "1.0.0";
 
   useEffect(() => {
     let isMounted = true;
@@ -109,6 +110,12 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        <div className="mt-6 border-t border-border pt-4 px-3">
+          <div className="text-sm font-semibold text-center">CampusSphere</div>
+          <div className="text-xs text-muted-foreground text-center">Version {appVersion}</div>
+          <div className="text-xs text-muted-foreground text-center">Full menu from API routes</div>
+        </div>
 
       </SidebarContent>
     </Sidebar>

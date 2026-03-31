@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PostCard } from "@/components/feed/PostCard";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { BookOpen, Calendar, ShoppingBag, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { getSavedPosts, getSavedResources, savePost, saveResource } from "@/services/api";
 
 const SUBJECT_LABELS: Record<string, string> = {
@@ -22,6 +24,7 @@ export function SavedItems() {
   const [savedPosts, setSavedPosts] = useState<any[]>([]);
   const [savedResources, setSavedResources] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     let isMounted = true;
