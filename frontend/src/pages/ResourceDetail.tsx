@@ -88,6 +88,8 @@ export function ResourceDetail() {
               username: data.author?.username || data.author_info?.username || data.author_username || "",
               avatar: data.author?.avatar || data.author_info?.avatar || "/placeholder-avatar.jpg",
               verified: data.author?.isVerified || data.author_info?.is_verified || false,
+              level: data.author?.level || data.author_info?.level || "",
+              contributions: data.author?.contributions || data.author_info?.contributions || 0,
             },
             uploadDate: data.createdAt || data.created_at || data.uploaded_at || null,
             stats: {

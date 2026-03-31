@@ -202,12 +202,14 @@ export function Notifications() {
 
         {/* Notifications List */}
         <div className="space-y-4">
-          {loading ? (
+          {loading && (
             <div className="rounded-lg border bg-card p-12 text-center">
               <Loader2 className="h-12 w-12 text-muted-foreground mb-4 mx-auto animate-spin" />
               <p className="text-muted-foreground">Chargement des notifications...</p>
             </div>
-          ) : notifications.length === 0 ? (
+          )}
+
+          {!loading && notifications.length === 0 && (
             <div className="rounded-lg border bg-card p-12 text-center">
               <Bell className="h-12 w-12 text-muted-foreground mb-4 mx-auto" />
               <h3 className="text-lg font-semibold mb-2">Aucune notification</h3>
@@ -215,7 +217,9 @@ export function Notifications() {
                 Vous n'avez pas encore de notifications. Elles apparaîtront ici quand vous recevrez des invitations, messages ou mises à jour.
               </p>
             </div>
-          ) : (
+          )}
+
+          {!loading && notifications.length > 0 && (
             notifications.map((notification) => (
               <div
                 key={notification.id}
@@ -231,32 +235,32 @@ export function Notifications() {
                   !notification.read ? 'border-primary/20 bg-primary/5' : ''
                 }`}
               >
-                  <div className="flex items-start gap-3">
-                    {/* Icon */}
-                    <div className="flex-shrink-0 mt-1">
-                      {getNotificationIcon(notification.type)}
-                    </div>
+                <div className="flex items-start gap-3">
+                  {/* Icon */}
+                  <div className="flex-shrink-0 mt-1">
+                    {getNotificationIcon(notification.type)}
+                  </div>
 
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className={`font-semibold ${!notification.read ? 'text-foreground' : 'text-muted-foreground'}`}>
-                              {notification.title}
-                            </h3>
-                            {!notification.read && (
-                              <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0" />
-                            )}
-                          </div>
-                          
-                          <p className="text-sm text-muted-foreground mb-2">
-                            {notification.message}
-                          </p>
-                          
-                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                            <span>{new Date(notification.createdAt).toLocaleDateString('fr-FR')}</span>
-                            <div className="flex items-center gap-1">
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className={`font-semibold ${!notification.read ? 'text-foreground' : 'text-muted-foreground'}`}>
+                            {notification.title}
+                          </h3>
+                          {!notification.read && (
+                            <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0" />
+                          )}
+                        </div>
+
+                        <p className="text-sm text-muted-foreground mb-2">
+                          {notification.message}
+                        </p>
+
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <span>{new Date(notification.createdAt).toLocaleDateString('fr-FR')}</span>
+                          <div className="flex items-center gap-1">
                             <Avatar className="h-4 w-4">
                               {notification.sender?.avatar ? (
                                 <AvatarImage src={notification.sender.avatar} />
@@ -270,37 +274,38 @@ export function Notifications() {
                             </span>
                           </div>
                         </div>
+                      </div>
 
-                        {/* Actions */}
-                        <div className="flex items-center gap-1">
-                          {!notification.read && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                markAsRead(notification.id);
-                              }}
-                              className="h-8 w-8"
-                            >
-                              <CheckCheck className="h-4 w-4" />
-                            </Button>
-                          )}
+                      {/* Actions */}
+                      <div className="flex items-center gap-1">
+                        {!notification.read && (
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={(e) => {
                               e.stopPropagation();
-                              deleteNotification(notification.id);
+                              markAsRead(notification.id);
                             }}
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            className="h-8 w-8"
                           >
-                            <X className="h-4 w-4" />
+                            <CheckCheck className="h-4 w-4" />
                           </Button>
-                        </div>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteNotification(notification.id);
+                          }}
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   </div>
+                </div>
               </div>
             ))
           )}
