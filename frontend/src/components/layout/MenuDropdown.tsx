@@ -56,7 +56,7 @@ export function MenuDropdown() {
   const profileUrl = navigationItems.find((item) => item.title === "Profil")?.url || "/profile/current";
 
   const displayName = user?.name || user?.username || "Utilisateur";
-  const displayUsername = user?.username ? `@${user.username}` : "@invité";
+  const displayUsername = user?.username ? `@${user.username}` : "@user";
   const avatarUrl = user?.avatar || "/placeholder/.jpg";
   const appVersion = import.meta.env.VITE_APP_VERSION || "2.0.0";
 
