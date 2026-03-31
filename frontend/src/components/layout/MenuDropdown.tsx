@@ -52,11 +52,13 @@ export function MenuDropdown() {
     isActive 
       ? "bg-accent text-foreground font-medium" 
       : "hover:bg-accent text-primary";
-  const appVersion = import.meta.env.VITE_APP_VERSION || "2.0.0";
   const { quickActions, utilities, navigationItems } = getNavigationSections(user);
   const profileUrl = navigationItems.find((item) => item.title === "Profil")?.url || "/profile/current";
-  const userDisplayName = user?.username || "Utilisateur";
-  const userHandle = user?.username ? `@${user.username}` : "@invité";
+
+  const displayName = user?.name || user?.username || "Utilisateur";
+  const displayUsername = user?.username ? `@${user.username}` : "@invité";
+  const avatarUrl = user?.avatar || "/placeholder/.jpg";
+  const appVersion = import.meta.env.VITE_APP_VERSION || "2.0.0";
 
   return (
   <Sheet>
@@ -77,45 +79,25 @@ export function MenuDropdown() {
               className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
             >
               <Avatar className="h-10 w-10">
-                <AvatarImage src={user?.avatar || "/placeholder/.jpg"} />
+                <AvatarImage src={avatarUrl} />
                 <AvatarFallback className="bg-input text-muted-foreground font-semibold">
-                  {userDisplayName.charAt(0).toUpperCase() || "U"}
+                  {displayName.charAt(0) || "U"}
                 </AvatarFallback>
               </Avatar>
               <div>
                 <div className="flex items-center gap-2">
-                  <h4 className="font-semibold text-sm hover:underline">{userDisplayName}</h4>
-                    <div className="w-4 h-4 campus-gradient rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
-                    </div>
+                  <h4 className="font-semibold text-sm hover:underline">{displayName}</h4>
+                  <div className="w-4 h-4 campus-gradient rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs">✓</span>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <p className="text-xs text-muted-foreground">{userHandle}</p>
+                  <p className="text-xs text-muted-foreground">{displayUsername}</p>
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navigationItems.map((item) => (
-                <Card className="py-2" key={item.title}>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <NavLink to={item.url} className={getNavClasses}>
-                        <item.icon className="h-5 w-5" />
-                        {!isCollapsed && <span>{item.title}</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </Card>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
 
         <SidebarGroup>
           <SidebarGroupLabel>Actions</SidebarGroupLabel>
@@ -161,7 +143,7 @@ export function MenuDropdown() {
             <div className="text-center space-y-4">
               <div>
                 <h3 className="font-automata text-primary text-lg md:text-xl">CampusSphere</h3>
-                <p className="text-xs md:text-sm text-muted-foreground">Version 1.0.0</p>
+                <p className="text-xs md:text-sm text-muted-foreground">Version {appVersion}</p>
               </div>
             </div>
           </CardContent>

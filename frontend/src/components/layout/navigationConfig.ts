@@ -16,8 +16,6 @@ import {
 
 export interface NavigationUser {
   username?: string | null;
-  full_name?: string | null;
-  avatar?: string | null;
   role?: string | null;
   user_type?: string | null;
   is_staff?: boolean;
@@ -57,7 +55,6 @@ export function getNavigationSections(user?: NavigationUser | null): NavigationS
     { title: "Profil", url: profileUrl, icon: User },
     { title: "Ressources", url: "/resources", icon: FolderOpen },
     { title: "Sphères", url: "/spheres", icon: Users },
-    { title: "Enregistrements", url: "/saved", icon: Bookmark },
   ];
 
   const quickActions: NavigationItem[] = [

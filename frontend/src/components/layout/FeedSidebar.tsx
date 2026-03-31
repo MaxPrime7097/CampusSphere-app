@@ -14,6 +14,7 @@ export function FeedSidebar() {
   const [popularSpheres, setPopularSpheres] = useState<any[]>([]);
   const [recentResources, setRecentResources] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const appVersion = import.meta.env.VITE_APP_VERSION || "2.0.0";
 
   useEffect(() => {
     let isMounted = true;
@@ -103,9 +104,9 @@ export function FeedSidebar() {
             >
               <div className="min-w-0">
                 <div className="font-medium text-sm truncate">{sphere.name}</div>
-                <div className="text-xs text-muted-foreground truncate">
+                <Badge variant="secondary" className="text-xs">
                   {sphere.category || "Sphère collaborative"}
-                </div>
+                </Badge>
               </div>
               <Badge variant="secondary" className="text-xs">
                 {sphere.memberCount || 0} membres
@@ -139,11 +140,6 @@ export function FeedSidebar() {
                 <span className="truncate">{resource.authorName || "Auteur inconnu"}</span>
                 <span>{formatRelativeTime(resource.createdAt)}</span>
               </div>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                <span>{resource.type || "resource"}</span>
-                <span>{resource.downloadCount || 0} téléchargements</span>
-                <span>{resource.impactScore || 0} impact</span>
-              </div>
             </button>
           ))}
         </CardContent>
@@ -176,17 +172,16 @@ export function FeedSidebar() {
         className="campus-card campus-gradient text-white cursor-pointer hover:opacity-90 transition-opacity"
         onClick={() => openResource()}
       >
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            <BookOpen className="h-5 w-5 flex-shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <div className="font-semibold text-sm">Bibliothèque partagée</div>
-              <p className="text-xs opacity-90">
-                Consulte les ressources réellement publiées par la communauté.
-              </p>
+        <Card className="campus-card mt-5">
+          <CardContent className="pt-4 md:pt-6 p-4 md:p-6">
+            <div className="text-center space-y-4">
+              <div>
+                <h3 className="font-automata text-primary text-lg md:text-xl">CampusSphere</h3>
+                <p className="text-xs md:text-sm text-muted-foreground">Version {appVersion}</p>
+              </div>
             </div>
-          </div>
-        </CardContent>
+          </CardContent>
+        </Card>
       </Card>
     </div>
   );

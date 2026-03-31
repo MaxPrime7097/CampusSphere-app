@@ -47,7 +47,6 @@ export function MobileNavigation() {
             }
           >
             <item.icon className="h-5 w-5" />
-            <span className="text-[9px] md:text-xs mt-1">{item.title}</span>
           </NavLink>
         ))}
       </div>
