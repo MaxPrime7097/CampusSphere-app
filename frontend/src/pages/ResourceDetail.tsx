@@ -351,7 +351,7 @@ export function ResourceDetail() {
                 variant="outline"
                 size="sm"
                 onClick={() => resource.uploader.username && navigate(`/profile/${resource.uploader.username}`)}
-                disabled={!resource.uploader.username}
+                disabled={!resource.uploader.username} 
               >
                 Voir le profil
               </Button>

@@ -366,7 +366,7 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = env_config('EMAIL_HOST_USER', default='your-email@gmail.com')
 EMAIL_HOST_PASSWORD = env_config('EMAIL_HOST_PASSWORD', default='your-app-password')
-DEFAULT_FROM_EMAIL = 'CampusSphere <noreply@campus-sphere.com>'
+DEFAULT_FROM_EMAIL = 'CampusSphere <no-reply@campussphere.app>'
 
 # Celery Configuration for Background Tasks
 # CELERY_BROKER_URL = REDIS_URL  # Commented out - Redis not configured

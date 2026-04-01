@@ -238,7 +238,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
 
   return (
     <>
-      <Card className={cardClasses}>
+      <Card className={cardClasses} onClick={handleOpenPost}>
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div 
@@ -309,10 +309,6 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                 {getSphereCategoryLabel(post.category)}
               </Badge>
             )}
-            <Button size="xs" variant="outline" onClick={handleOpenPost} className="gap-1">
-              Voir
-              <ExternalLink className="h-3 w-3" />
-            </Button>
           </div>
 
           <p className="text-sm leading-relaxed">{post.content}</p>

@@ -81,7 +81,7 @@ class EmailNotificationService:
             'notification': notification,
             'data': data,
             'site_name': 'CampusSphere',
-            'site_url': 'https://campus-sphere.com'
+            'site_url': 'https://campussphere.app'
         }
 
         # Email templates and subjects based on notification type
@@ -134,7 +134,7 @@ class EmailNotificationService:
             context = {
                 'user': user,
                 'site_name': 'CampusSphere',
-                'site_url': 'https://campus-sphere.com'
+                'site_url': 'https://campussphere.app'
             }
             
             html_content = render_to_string('emails/welcome.html', context)
@@ -165,7 +165,7 @@ class EmailNotificationService:
                 'user': user,
                 'reset_link': reset_link,
                 'site_name': 'CampusSphere',
-                'site_url': 'https://campus-sphere.com'
+                'site_url': 'https://campussphere.app'
             }
             
             html_content = render_to_string('emails/password_reset.html', context)

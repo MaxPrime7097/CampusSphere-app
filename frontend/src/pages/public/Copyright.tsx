@@ -199,8 +199,8 @@ export function Copyright(): JSX.Element {
                 <ul className="mt-4 space-y-2">
                   <li><p className="mt-4">
                   {" "}
-                  <a href="mailto:policies@campus-sphere.com" className="text-primary hover:underline">
-                    policies@campus-sphere.com
+                  <a href="mailto:policies@campussphere.app" className="text-primary hover:underline">
+                    policies@campussphere.app
                   </a>
                 </p></li>
                   <li>Adresse: Douala, Cameroun</li>
