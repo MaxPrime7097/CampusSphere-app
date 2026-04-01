@@ -15,9 +15,78 @@ import {
   Loader2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { CanonicalNotificationType, NOTIFICATION_TYPE_SET } from "@/constants/notificationTypes";
+
+
+type NotificationListItem = {
+  id: string;
+  type: CanonicalNotificationType;
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+  sender: {
+    name: string | null;
+    avatar: string | null;
+    id: string | null;
+  };
+  actionUrl: string | null;
+};
+
+const debugFallbackType = (rawType: unknown, notificationId: unknown) => {
+  console.debug("[Notifications] Unknown notification type, fallback to system", {
+    notificationId,
+    rawType,
+  });
+};
+
+const LEGACY_TYPE_MAP: Record<string, CanonicalNotificationType> = {
+  sphere_invite: "sphere_invitation",
+  task: "task_assigned",
+  resource: "resource_shared",
+  message_received: "message",
+};
+
+const toCanonicalType = (rawType: unknown, notificationId: unknown): CanonicalNotificationType => {
+  if (typeof rawType === "string" && NOTIFICATION_TYPE_SET.has(rawType)) {
+    return rawType as CanonicalNotificationType;
+  }
+
+  if (typeof rawType === "string" && LEGACY_TYPE_MAP[rawType]) {
+    return LEGACY_TYPE_MAP[rawType];
+  }
+
+  debugFallbackType(rawType, notificationId);
+  return "system";
+};
+
+const buildActionUrl = (type: CanonicalNotificationType, data: Record<string, any> | undefined): string | null => {
+  switch (type) {
+    case "post_like":
+    case "post_comment":
+    case "comment_reply":
+      return data?.post_id ? `/posts/${data.post_id}` : null;
+    case "sphere_invitation":
+    case "sphere_join_request":
+      return data?.sphere_id ? `/spheres/${data.sphere_id}` : null;
+    case "task_assigned":
+    case "task_completed":
+      return data?.task_id ? `/tasks/${data.task_id}` : null;
+    case "resource_shared":
+      return data?.resource_id ? `/resources/${data.resource_id}` : null;
+    case "connection_request":
+    case "connection_accepted":
+      return data?.requester_username ? `/profile/${data.requester_username}` : null;
+    case "message":
+      return data?.conversation_id ? `/messages/${data.conversation_id}` : "/messages";
+    case "system":
+    default:
+      return null;
+  }
+};
 
 export function Notifications() {
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<NotificationListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusText, setStatusText] = useState<string | null>(null);
   const { toast } = useToast();
@@ -43,15 +112,12 @@ export function Notifications() {
               null;
             const senderAvatar = n.sender?.avatar || n.data?.sender_avatar || null;
 
-            let actionUrl = null;
-            if (n.data?.post_id) actionUrl = `/posts/${n.data.post_id}`;
-            else if (n.data?.sphere_id) actionUrl = `/spheres/${n.data.sphere_id}`;
-            else if (n.data?.task_id) actionUrl = `/tasks/${n.data.task_id}`;
-            else if (n.data?.conversation_id) actionUrl = `/messages`;
+            const notificationType = toCanonicalType(n.notification_type || n.type, n.id);
+            const actionUrl = buildActionUrl(notificationType, n.data);
 
             return {
               id: String(n.id),
-              type: n.notification_type || n.type || 'system',
+              type: notificationType,
               title: n.title || 'Notification',
               message: n.message || n.content || '',
               read: n.is_read || n.read || false,
@@ -81,22 +147,27 @@ export function Notifications() {
     };
   }, []);
 
-  const getNotificationIcon = (type: string) => {
+  const getNotificationIcon = (type: CanonicalNotificationType) => {
     switch (type) {
-      case 'sphere_invite':
-      case 'sphere_join_request':
+      case "sphere_invitation":
+      case "sphere_join_request":
+      case "connection_request":
+      case "connection_accepted":
         return <Users className="h-4 w-4 text-blue-500" />;
-      case 'message':
+      case "message":
         return <MessageSquare className="h-4 w-4 text-green-500" />;
-      case 'task':
-      case 'task_assigned':
+      case "post_like":
+      case "post_comment":
+      case "comment_reply":
+        return <Bell className="h-4 w-4 text-pink-500" />;
+      case "task_assigned":
+      case "task_completed":
         return <Calendar className="h-4 w-4 text-orange-500" />;
-      case 'resource':
+      case "resource_shared":
         return <FileText className="h-4 w-4 text-purple-500" />;
-      case 'system':
-        return <Settings className="h-4 w-4 text-gray-500" />;
+      case "system":
       default:
-        return <Bell className="h-4 w-4 text-gray-500" />;
+        return <Settings className="h-4 w-4 text-gray-500" />;
     }
   };
 

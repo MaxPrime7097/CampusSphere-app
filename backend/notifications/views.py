@@ -230,7 +230,7 @@ def create_message_notification(message):
         settings = getattr(participant, 'notification_settings', None)
         if settings and settings.in_app_messages:
             create_notification(
-                type='message_received',
+                type='message',
                 title='Nouveau message',
                 message=f'{message.author.full_name} vous a envoyé un message',
                 recipient=participant,
