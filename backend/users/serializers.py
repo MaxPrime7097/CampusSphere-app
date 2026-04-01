@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.db.models import Q
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from .models import User, Connection, UserBlock
@@ -53,8 +54,8 @@ class UserLoginSerializer(serializers.Serializer):
 
 class UserProfileSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(read_only=True)
-    joined_spheres_count = serializers.IntegerField(read_only=True)
-    connections_count = serializers.IntegerField(read_only=True)
+    joined_spheres_count = serializers.SerializerMethodField()
+    connections_count = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -67,6 +68,18 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'joined_spheres_count', 'connections_count', 'date_joined', 'updated_at'
         ]
         read_only_fields = ['id', 'impact_score', 'date_joined', 'updated_at']
+
+    def get_joined_spheres_count(self, obj):
+        return obj.sphere_memberships.filter(status='active').count()
+
+    def get_connections_count(self, obj):
+        """
+        Business rule: only accepted connections are counted.
+        """
+        return Connection.objects.filter(
+            Q(requester=obj) | Q(recipient=obj),
+            status='accepted'
+        ).count()
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):

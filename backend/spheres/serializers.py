@@ -1,5 +1,4 @@
 from rest_framework import serializers
-from django.utils import timezone
 from .models import Sphere, SphereMember
 
 
@@ -27,16 +26,17 @@ class SphereSerializer(serializers.ModelSerializer):
     is_member = serializers.SerializerMethodField()
     membership_status = serializers.SerializerMethodField()
     user_role = serializers.SerializerMethodField()
+    is_expired = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Sphere
         fields = [
             'id', 'name', 'description', 'category', 'type', 'color', 'icon',
             'is_private', 'require_approval', 'objective', 'target_audience',
-            'duration', 'collaboration_types', 'member_count', 'impact_score',
+            'duration', 'expires_at', 'auto_delete_on_expiry', 'collaboration_types', 'member_count', 'impact_score',
             'progression',
             'created_by', 'created_by_info', 'is_member', 'membership_status',
-            'user_role', 'created_at', 'updated_at'
+            'user_role', 'is_expired', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'member_count', 'impact_score', 'created_at', 'updated_at']
 
@@ -87,11 +87,12 @@ class SphereCreateSerializer(serializers.ModelSerializer):
         fields = [
             'name', 'description', 'category', 'type', 'color', 'icon',
             'is_private', 'require_approval', 'objective', 'target_audience',
-            'duration', 'collaboration_types'
+            'duration', 'auto_delete_on_expiry', 'collaboration_types'
         ]
 
     def create(self, validated_data):
         validated_data['created_by'] = self.context['request'].user
+        validated_data['expires_at'] = Sphere.compute_expiry_from_duration(validated_data.get('duration'))
         return super().create(validated_data)
 
 
@@ -101,8 +102,13 @@ class SphereUpdateSerializer(serializers.ModelSerializer):
         fields = [
             'name', 'description', 'category', 'type', 'color', 'icon',
             'is_private', 'require_approval', 'objective', 'target_audience',
-            'duration', 'collaboration_types'
+            'duration', 'auto_delete_on_expiry', 'collaboration_types'
         ]
+
+    def update(self, instance, validated_data):
+        if 'duration' in validated_data:
+            validated_data['expires_at'] = Sphere.compute_expiry_from_duration(validated_data.get('duration'))
+        return super().update(instance, validated_data)
 
 
 class SphereMemberCreateSerializer(serializers.ModelSerializer):
