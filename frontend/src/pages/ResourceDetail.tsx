@@ -337,7 +337,7 @@ export function ResourceDetail() {
             </div>
 
             {/* Uploader Info */}
-            <div className="flex items-center justify-between p-3 bg-accent/50 rounded-lg mb-4">
+            <div className="flex flex-col gap-3 p-3 bg-accent/50 rounded-lg mb-4 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-3">
                 <Avatar className="h-12 w-12">
                   <AvatarImage src={resource.uploader.avatar} />
@@ -355,43 +355,81 @@ export function ResourceDetail() {
                   </p>
                 </div>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => resource.uploader.username && navigate(`/profile/${resource.uploader.username}`)}
-                disabled={!resource.uploader.username} 
-              >
-                Voir le profil
-              </Button>
-              <Button
-                variant={isSaved ? "secondary" : "outline"}
-                size="sm"
-                onClick={handleSaveResource}
-                disabled={isSaving}
-                className="gap-2"
-              >
-                {isSaving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Bookmark className="h-4 w-4" />
-                )}
-                {isSaved ? "Enregistré" : "Enregistrer"}
-              </Button>
-              <Badge className="flex items-center gap-1 rounded-lg px-3 py-2 h-10 text-sm bg-secondary/20 text-secondary">
-                <Zap className="h-4 w-4" />
-                <span>{resource.impactScore}</span>
-              </Badge>
-              <Button 
-                variant="outline"
-                onClick={handleShare}
-                disabled={isSharing}
-              >
-                {isReporting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Flag className="h-4 w-4" />
-                )}
-              </Button>
+              <div className="flex flex-wrap items-center gap-2 md:justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => resource.uploader.username && navigate(`/profile/${resource.uploader.username}`)}
+                  disabled={!resource.uploader.username}
+                  aria-label="Voir le profil de l'auteur"
+                >
+                  Voir le profil
+                </Button>
+                <Button
+                  variant={isSaved ? "secondary" : "outline"}
+                  size="sm"
+                  onClick={handleSaveResource}
+                  disabled={isSaving}
+                  className="gap-2"
+                  aria-label={isSaved ? "Retirer des enregistrements" : "Enregistrer la ressource"}
+                >
+                  {isSaving ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Bookmark className="h-4 w-4" />
+                  )}
+                  {isSaved ? "Enregistré" : "Enregistrer"}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleShare}
+                  disabled={isSharing}
+                  className="gap-2"
+                  aria-label="Partager la ressource"
+                >
+                  {isSharing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Share2 className="h-4 w-4" />
+                  )}
+                  Partager
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleReport}
+                  disabled={isReporting}
+                  className="gap-2"
+                  aria-label="Signaler la ressource"
+                >
+                  {isReporting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Flag className="h-4 w-4" />
+                  )}
+                  Signaler
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownload}
+                  disabled={isDownloading}
+                  className="gap-2"
+                  aria-label="Télécharger la ressource"
+                >
+                  {isDownloading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
+                  Télécharger
+                </Button>
+                <Badge className="flex items-center gap-1 rounded-lg px-3 py-2 h-10 text-sm bg-secondary/20 text-secondary">
+                  <Zap className="h-4 w-4" />
+                  <span>{resource.impactScore}</span>
+                </Badge>
+              </div>
             </div>
           </CardContent>
         </Card>
