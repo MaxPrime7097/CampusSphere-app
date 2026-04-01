@@ -70,8 +70,8 @@ class TaskSerializer(serializers.ModelSerializer):
     def get_can_complete(self, obj):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
-            # Assigned user, creator, or sphere moderators/admins can complete
-            if obj.assigned_to == request.user or obj.created_by == request.user:
+            # Assigned user or sphere moderators/admins can complete
+            if obj.assigned_to == request.user:
                 return True
             from spheres.models import SphereMember
             return SphereMember.objects.filter(
@@ -90,21 +90,35 @@ class TaskCreateSerializer(serializers.ModelSerializer):
             'title', 'description', 'assigned_to', 'priority', 'due_date',
             'impact_points', 'sphere'
         ]
+        extra_kwargs = {
+            'assigned_to': {'required': True, 'allow_null': False}
+        }
+
+    def validate(self, attrs):
+        assigned_to = attrs.get('assigned_to')
+        sphere = attrs.get('sphere')
+
+        if not assigned_to:
+            raise serializers.ValidationError({
+                'assigned_to': "L'assignation est obligatoire"
+            })
+
+        if sphere:
+            from spheres.models import SphereMember
+            if not SphereMember.objects.filter(
+                sphere=sphere,
+                user=assigned_to,
+                status='active'
+            ).exists():
+                raise serializers.ValidationError({
+                    'assigned_to': "Assigned user must be an active member of the sphere"
+                })
+
+        return attrs
 
     def validate_assigned_to(self, value):
-        if value:
-            sphere = self.initial_data.get('sphere')
-            if sphere:
-                from spheres.models import SphereMember
-                # Check if assigned user is a member of the sphere
-                if not SphereMember.objects.filter(
-                    sphere_id=sphere,
-                    user=value,
-                    status='active'
-                ).exists():
-                    raise serializers.ValidationError(
-                        "Assigned user must be a member of the sphere"
-                    )
+        if not value:
+            raise serializers.ValidationError("L'assignation est obligatoire")
         return value
 
     def validate_sphere(self, value):
