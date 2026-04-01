@@ -401,11 +401,15 @@ class PostCommentsView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         post = get_object_or_404(Post, pk=self.kwargs['pk'])
+        parent_comment = serializer.validated_data.get('parent')
         
         # Check if comments are allowed
         if not post.allow_comments:
             from rest_framework.exceptions import ValidationError
             raise ValidationError("Comments are not allowed on this post")
+        if parent_comment and parent_comment.post_id != post.id:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError({'parent': 'Parent comment must belong to the same post.'})
 
         comment = serializer.save()
         # Update post comment count
