@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Plus, Image, MapPin, Users, X, Lock, Globe, Video, FileText, Smile, AtSign, Calendar, Clock, Hash, Loader2, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { findInvalidMentions, getActiveMentionQuery } from "@/lib/mentions";
 
 interface PostDraftData {
   content: string;
@@ -55,6 +56,7 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
   const [showPreview, setShowPreview] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [availableUsers, setAvailableUsers] = useState<{ id: string; name: string; username: string; avatar: string }[]>([]);
+  const [mentionQuery, setMentionQuery] = useState("");
   const [scheduledDate, setScheduledDate] = useState("");
   const [scheduledTime, setScheduledTime] = useState("");
   const [isScheduled, setIsScheduled] = useState(false);
@@ -70,11 +72,12 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
 
   // Charger les utilisateurs disponibles pour les mentions
   useEffect(() => {
+    if (!showMentions) return;
     let isMounted = true;
-    (async () => {
+
+    const handle = window.setTimeout(async () => {
       try {
-        // Load users when needed (can be optimized to load on @ mention)
-        const users = await searchUsers("");
+        const users = await searchUsers(mentionQuery);
         if (isMounted && users) {
           const mapped = users.map((u: any) => ({
             id: String(u.id),
@@ -84,14 +87,18 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
           }));
           setAvailableUsers(mapped);
         }
-      } catch (e) {
-        // Error loading users
+      } catch {
+        if (isMounted) {
+          setAvailableUsers([]);
+        }
       }
-    })();
+    }, 180);
+
     return () => {
       isMounted = false;
+      window.clearTimeout(handle);
     };
-  }, []);
+  }, [mentionQuery, showMentions]);
 
   
 
@@ -193,6 +200,16 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
       toast({
         title: "Contenu requis",
         description: "Veuillez saisir du contenu pour votre post",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const invalidMentions = findInvalidMentions(content);
+    if (invalidMentions.length > 0) {
+      toast({
+        title: "Mentions invalides",
+        description: `Format invalide: ${invalidMentions.map((mention) => `@${mention}`).join(", ")}`,
         variant: "destructive"
       });
       return;
@@ -305,7 +322,18 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
               id="content"
               placeholder="Que voulez-vous partager avec la communauté ?"
               value={content}
-              onChange={(e) => setContent(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                setContent(value);
+                const activeQuery = getActiveMentionQuery(value, e.target.selectionStart ?? value.length);
+                if (activeQuery !== null) {
+                  setMentionQuery(activeQuery);
+                  setShowMentions(true);
+                } else {
+                  setShowMentions(false);
+                  setMentionQuery("");
+                }
+              }}
               className="min-h-[150px] mt-2 text-base"
             />
             <div className="flex justify-between items-center mt-2">

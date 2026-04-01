@@ -4,6 +4,7 @@ from rest_framework.test import APITestCase
 
 from users.models import User
 from .models import Post, Comment
+from notifications.models import Notification
 
 
 class PostCommentsIntegrationTests(APITestCase):

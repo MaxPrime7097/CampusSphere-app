@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { impactRatePost, likePost, savePost, reportPost } from "@/services/api";
 import { formatRelativeTime } from "@/lib/date";
+import { renderMentionText } from "@/lib/mentions";
 
 interface PostCardProps {
   post: {
@@ -312,7 +313,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
             </Badge>
           </div>
 
-          <p className="text-sm leading-relaxed">{post.content}</p>
+          <p className="text-sm leading-relaxed whitespace-pre-wrap">{renderMentionText(post.content)}</p>
           
           {post.image && (
             <div className="rounded-lg overflow-hidden md:overflow-hidden w-full relative">

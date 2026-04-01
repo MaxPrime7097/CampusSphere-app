@@ -57,6 +57,41 @@ def create_post_comment_notification(post, commenter, comment):
     )
 
 
+def create_mention_post_notification(post, mentioned_user, sender):
+    """Create notification when a user is mentioned in a post."""
+    return create_notification(
+        notification_type='mention_post',
+        title='Vous avez été mentionné dans un post',
+        message=f'{sender.full_name} vous a mentionné dans un post',
+        recipient=mentioned_user,
+        sender=sender,
+        data={
+            'post_id': str(post.id),
+            'sender_id': str(sender.id),
+            'sender_name': sender.full_name,
+            'post_content': post.content[:100],
+        },
+    )
+
+
+def create_mention_comment_notification(post, comment, mentioned_user, sender):
+    """Create notification when a user is mentioned in a comment."""
+    return create_notification(
+        notification_type='mention_comment',
+        title='Vous avez été mentionné dans un commentaire',
+        message=f'{sender.full_name} vous a mentionné dans un commentaire',
+        recipient=mentioned_user,
+        sender=sender,
+        data={
+            'post_id': str(post.id),
+            'comment_id': str(comment.id),
+            'sender_id': str(sender.id),
+            'sender_name': sender.full_name,
+            'comment_content': comment.content[:100],
+        },
+    )
+
+
 def create_sphere_invitation_notification(sphere, inviter, invitee):
     """Create notification when someone is invited to a sphere."""
     return create_notification(
