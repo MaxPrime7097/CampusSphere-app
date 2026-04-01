@@ -13,7 +13,7 @@ from .serializers import (
     SphereMemberSerializer, SphereMemberCreateSerializer, SphereJoinSerializer,
     SphereMemberUpdateSerializer
 )
-from .permissions import IsSphereAdmin, IsSphereModerator, IsSphereMember
+from .permissions import IsSphereModerator, IsSphereMember
 from campus_sphere.cache import CacheManager, CacheKeys
 
 
@@ -80,19 +80,31 @@ class SphereDetailView(generics.RetrieveUpdateDestroyAPIView):
             return SphereUpdateSerializer
         return SphereSerializer
 
-    def get_permissions(self):
-        if self.request.method in ['PUT', 'PATCH', 'DELETE']:
-            return [IsSphereAdmin()]
-        return [permissions.IsAuthenticated()]
+    def _is_creator(self, sphere, user):
+        return sphere.created_by_id == user.id
+
+    def _forbidden_response(self):
+        return Response(
+            {'error': 'Only the sphere creator can modify or delete this sphere'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    def update(self, request, *args, **kwargs):
+        sphere = self.get_object()
+        if not self._is_creator(sphere, request.user):
+            return self._forbidden_response()
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        sphere = self.get_object()
+        if not self._is_creator(sphere, request.user):
+            return self._forbidden_response()
+        return super().partial_update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
         sphere = self.get_object()
-        # Check if user is admin
-        if not sphere.members.filter(user=request.user, role='admin', status='active').exists():
-            return Response(
-                {'error': 'Only sphere admins can delete spheres'},
-                status=status.HTTP_403_FORBIDDEN
-            )
+        if not self._is_creator(sphere, request.user):
+            return self._forbidden_response()
         return super().destroy(request, *args, **kwargs)
 
 

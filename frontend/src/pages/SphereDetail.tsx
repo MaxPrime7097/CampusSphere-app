@@ -169,7 +169,21 @@ export function SphereDetail() {
   }, [currentUserId, members, sphere]);
 
   const canModerateMembers = resolvedUserRole === "admin" || resolvedUserRole === "moderator";
-  const canChangeMemberRoles = resolvedUserRole === "admin";
+  const sphereCreatorId = useMemo(() => {
+    const candidates = [
+      sphere?.created_by_info?.id,
+      sphere?.createdByInfo?.id,
+      sphere?.created_by,
+      sphere?.createdBy,
+    ];
+    const found = candidates.find((value) => value !== undefined && value !== null);
+    return found ? String(found) : null;
+  }, [sphere]);
+
+  const canManageSphereSettings = Boolean(
+    currentUserId && sphereCreatorId && String(currentUserId) === String(sphereCreatorId)
+  );
+
 
   // ==================== HANDLERS ====================
   const handleJoinSphere = async () => {
@@ -294,17 +308,19 @@ export function SphereDetail() {
 
             <div className="flex flex-col gap-2 min-w-[220px]">
               {isMember ? (
-                <>
-                  <SphereSettingsModal sphereData={sphereFallback} onSettingsUpdated={loadSphereData} onSphereDeleted={() => navigate("/spheres")}>
-                    <Button variant="outline" className="w-full justify-start gap-2"><Settings className="h-4 w-4"/> Paramètres</Button>
-                  </SphereSettingsModal>
-                  <ManageMembersModal sphereId={sphereFallback.id} sphereName={sphereFallback.name}>
-                     <Button variant="outline" className="w-full justify-start gap-2"><Users className="h-4 w-4"/> Gérer l'équipe</Button>
-                  </ManageMembersModal>
-                  <AddMemberModal sphereId={sphereFallback.id} sphereName={sphereFallback.name} onMemberAdded={loadSphereData}>
-                    <Button variant="outline" className="w-full justify-start gap-2"><UserPlus className="h-4 w-4"/> Inviter</Button>
-                  </AddMemberModal>
-                </>
+                canManageSphereSettings ? (
+                  <>
+                    <SphereSettingsModal sphereData={sphereFallback} onSettingsUpdated={loadSphereData} onSphereDeleted={() => navigate("/spheres")}>
+                      <Button variant="outline" className="w-full justify-start gap-2"><Settings className="h-4 w-4"/> Paramètres</Button>
+                    </SphereSettingsModal>
+                    <ManageMembersModal sphereId={sphereFallback.id} sphereName={sphereFallback.name}>
+                       <Button variant="outline" className="w-full justify-start gap-2"><Users className="h-4 w-4"/> Gérer l'équipe</Button>
+                    </ManageMembersModal>
+                    <AddMemberModal sphereId={sphereFallback.id} sphereName={sphereFallback.name} onMemberAdded={loadSphereData}>
+                      <Button variant="outline" className="w-full justify-start gap-2"><UserPlus className="h-4 w-4"/> Inviter</Button>
+                    </AddMemberModal>
+                  </>
+                ) : null
               ) : (
                 <Button
                   onClick={isPendingRequest ? handleCancelRequest : handleJoinSphere}
