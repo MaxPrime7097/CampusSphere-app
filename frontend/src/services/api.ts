@@ -83,7 +83,7 @@ function unwrapList<T = any>(response: any): T[] {
   return [];
 }
 
-function normalizeUser(user: any) {
+export function normalizeUser(user: any) {
   if (!user) return null;
 
   const firstName = user.firstName ?? user.first_name ?? "";

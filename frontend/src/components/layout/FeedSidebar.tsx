@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { listResources, listSpheres } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { formatRelativeTime } from "@/lib/date";
+import { getSphereCategoryLabel } from "@/constants/sphereCategories";
+import { getResourceTypeLabel, getSubjectLabel, normalizeResourceType, normalizeSubject } from "@/lib/resourceMetadata";
 
 export function FeedSidebar() {
   const { toast } = useToast();
@@ -35,7 +37,13 @@ export function FeedSidebar() {
             .sort((a: any, b: any) => Number(b.memberCount || 0) - Number(a.memberCount || 0))
             .slice(0, 4)
         );
-        setRecentResources((resources || []).slice(0, 4));
+        setRecentResources(
+          (resources || []).slice(0, 4).map((resource: any) => ({
+            ...resource,
+            subject: normalizeSubject(resource?.subject),
+            type: normalizeResourceType(resource?.type),
+          }))
+        );
       } catch (error: any) {
         if (!isMounted) {
           return;
@@ -105,7 +113,7 @@ export function FeedSidebar() {
               <div className="min-w-0">
                 <div className="font-medium text-sm truncate">{sphere.name}</div>
                 <Badge variant="secondary" className="text-xs">
-                  {sphere.category || "Sphère collaborative"}
+                  {sphere.category ? (getSphereCategoryLabel(String(sphere.category).trim().toLowerCase()) || "Autre") : "Sphère collaborative"}
                 </Badge>
               </div>
               <Badge variant="secondary" className="text-xs">
@@ -136,6 +144,14 @@ export function FeedSidebar() {
               onClick={() => openResource(resource.id, resource.title)}
             >
               <div className="font-medium text-sm line-clamp-2">{resource.title}</div>
+              <div className="flex flex-wrap gap-1">
+                <Badge variant="secondary" className="text-[10px]">
+                  {getSubjectLabel(resource.subject)}
+                </Badge>
+                <Badge variant="outline" className="text-[10px]">
+                  {getResourceTypeLabel(resource.type)}
+                </Badge>
+              </div>
               <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
                 <span className="truncate">{resource.authorName || "Auteur inconnu"}</span>
                 <span>{formatRelativeTime(resource.createdAt)}</span>
