@@ -134,8 +134,7 @@ class TaskCompleteView(APIView):
 
         # Check if user can complete the task
         can_complete = (
-            task.assigned_to == user or 
-            task.created_by == user or
+            task.assigned_to == user or
             SphereMember.objects.filter(
                 sphere=task.sphere,
                 user=user,
