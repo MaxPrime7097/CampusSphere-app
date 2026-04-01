@@ -258,9 +258,9 @@ class SphereMemberDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
         sphere = membership.sphere
         actor_membership = self._get_actor_membership(request, sphere)
 
-        if not actor_membership or actor_membership.role not in ['admin', 'moderator']:
+        if not self._can_manage_members(actor_membership):
             return Response(
-                {'error': 'Only sphere moderators or admins can manage members'},
+                {'error': 'Only sphere admins or moderators can update members'},
                 status=status.HTTP_403_FORBIDDEN
             )
 
@@ -299,6 +299,9 @@ class SphereMemberDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
     def patch(self, request, *args, **kwargs):
         return self.partial_update(request, *args, **kwargs)
 
+    def patch(self, request, *args, **kwargs):
+        return self.partial_update(request, *args, **kwargs)
+
     def destroy(self, request, *args, **kwargs):
         membership = self.get_object()
         sphere = membership.sphere
@@ -312,7 +315,10 @@ class SphereMemberDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
 
         # Prevent removing the last admin
         if membership.role == 'admin':
-            admin_count = sphere.members.filter(role='admin', status='active').exclude(id=membership.id).count()
+            admin_count = sphere.members.filter(
+                role='admin',
+                status='active'
+            ).exclude(id=membership.id).count()
             if admin_count == 0:
                 return Response(
                     {'error': 'Cannot remove the last admin from the sphere'},
