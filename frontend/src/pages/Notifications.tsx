@@ -31,7 +31,8 @@ export function Notifications() {
         const data = await listNotifications();
         if (isMounted) {
           // Map backend notifications to frontend format
-          const mapped = (data || []).map((n: any) => {
+          const safeNotifications = Array.isArray(data) ? data : [];
+          const mapped = safeNotifications.map((n: any) => {
             const senderName =
               n.sender?.name ||
               n.data?.sender_name ||
