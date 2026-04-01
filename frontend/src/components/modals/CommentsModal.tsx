@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { getCurrentUser, getPostComments, createComment, likeComment } from "@/services/api";
+import { getCurrentUser, getPostComments, createComment, likeComment, normalizeUser } from "@/services/api";
 import {
   Dialog,
   DialogContent,
@@ -42,6 +42,18 @@ interface CommentsModalProps {
   postId: string;
 }
 
+function normalizeCommentAuthor(rawAuthor: any, fallbackName?: string) {
+  const normalizedUser = normalizeUser(rawAuthor);
+
+  return {
+    name: normalizedUser?.name || fallbackName || "Utilisateur",
+    avatar: normalizedUser?.avatar || "/placeholder-avatar.jpg",
+    username: normalizedUser?.username || "user",
+    isVerified: Boolean(rawAuthor?.is_verified ?? rawAuthor?.isVerified ?? false),
+    impactScore: Number(rawAuthor?.impact_score ?? rawAuthor?.impactScore ?? 0),
+  };
+}
+
 export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps) {
   const { t } = useTranslation();
   const [newComment, setNewComment] = useState("");
@@ -63,26 +75,14 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
         if (isMounted && Array.isArray(data)) {
           const mapped = data.map((comment: any) => ({
             id: String(comment.id),
-            author: {
-              name: comment.author_info?.name || comment.author?.name || comment.author_name || "Utilisateur",
-              avatar: comment.author_info?.avatar || comment.author?.avatar || "/placeholder-avatar.jpg",
-              username: comment.author_info?.username || comment.author?.username || "user",
-              isVerified: Boolean(comment.author_info?.isVerified || comment.author?.isVerified),
-              impactScore: Number(comment.author_info?.impactScore || comment.author?.impactScore || 0),
-            },
+            author: normalizeCommentAuthor(comment.author_info ?? comment.author, comment.author_name),
             content: comment.content || "",
             timestamp: comment.created_at || new Date().toISOString(),
             likes: Number(comment.likes_count || comment.likes || 0),
             isLiked: Boolean(comment.is_liked),
             replies: comment.replies?.map((reply: any) => ({
               id: String(reply.id),
-              author: {
-                name: reply.author_info?.name || reply.author?.name || reply.author_name || "Utilisateur",
-                avatar: reply.author_info?.avatar || reply.author?.avatar || "/placeholder-avatar.jpg",
-                username: reply.author_info?.username || reply.author?.username || "user",
-                isVerified: Boolean(reply.author_info?.isVerified || reply.author?.isVerified),
-                impactScore: Number(reply.author_info?.impactScore || reply.author?.impactScore || 0),
-              },
+              author: normalizeCommentAuthor(reply.author_info ?? reply.author, reply.author_name),
               content: reply.content || "",
               timestamp: reply.created_at || new Date().toISOString(),
               likes: Number(reply.likes_count || reply.likes || 0),
@@ -130,16 +130,11 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
       // Create comment via API
       const result = await createComment(postId, { content: newComment });
       const currentUser = await getCurrentUser().catch(() => null);
+      const normalizedCurrentUser = normalizeCommentAuthor(currentUser?.data ?? currentUser);
       
       const newCommentObj: Comment = {
         id: String(result.id || Date.now()),
-        author: {
-          name: currentUser?.data?.name || currentUser?.name || "Utilisateur",
-          avatar: currentUser?.data?.avatar || currentUser?.avatar || "/placeholder-avatar.jpg",
-          username: currentUser?.data?.username || currentUser?.username || "user",
-          isVerified: Boolean(currentUser?.data?.isVerified || currentUser?.isVerified),
-          impactScore: Number(currentUser?.data?.impactScore || currentUser?.impactScore || 0)
-        },
+        author: normalizedCurrentUser,
         content: newComment,
         timestamp: result.created_at || new Date().toISOString(),
         likes: 0,
@@ -223,16 +218,11 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
       // Create reply comment via API with parent linkage
       const result = await createComment(postId, { content: replyContent, parent: parentId });
       const currentUser = await getCurrentUser().catch(() => null);
+      const normalizedCurrentUser = normalizeCommentAuthor(currentUser?.data ?? currentUser);
       
       const newReply: Comment = {
         id: String(result.id || `${parentId}-${Date.now()}`),
-        author: {
-          name: currentUser?.data?.name || currentUser?.name || "Utilisateur",
-          avatar: currentUser?.data?.avatar || currentUser?.avatar || "/placeholder-avatar.jpg",
-          username: currentUser?.data?.username || currentUser?.username || "user",
-          isVerified: Boolean(currentUser?.data?.isVerified || currentUser?.isVerified),
-          impactScore: Number(currentUser?.data?.impactScore || currentUser?.impactScore || 0)
-        },
+        author: normalizedCurrentUser,
         content: replyContent,
         timestamp: result.created_at || new Date().toISOString(),
         likes: 0,
@@ -391,6 +381,12 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
                               </Badge>
                             )}
                             <span className="text-xs text-muted-foreground">@{reply.author.username}</span>
+                            {reply.author.impactScore && (
+                              <Badge variant="outline" className="text-xs flex items-center gap-1">
+                                <Zap className="h-3 w-3" />
+                                {reply.author.impactScore}
+                              </Badge>
+                            )}
                           </div>
                           <p className="text-sm">{reply.content}</p>
                         </div>
