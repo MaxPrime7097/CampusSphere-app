@@ -160,6 +160,11 @@ export function SphereDetail() {
 
   const sphereMemberCount = sphere?.memberCount ?? members.length;
   const sphereFileCount = sphere?.resourceCount ?? sphere?.filesCount ?? 0;
+  const membershipStateLabel = useMemo(() => {
+    if (isMember) return "Membre";
+    if (isPendingRequest) return "Demande en attente";
+    return "Non membre";
+  }, [isMember, isPendingRequest]);
 
   const resolvedUserRole = useMemo(() => {
     if (!currentUserId) return "member";
