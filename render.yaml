@@ -4,7 +4,11 @@ services:
     name: campus-sphere-backend
     runtime: python
     plan: free
-    
+
+    #Root directory of the backend service
+    # Adjust this if your backend code is not in the root of the repository
+    rootDir: backend
+
     # Build and deployment settings
     # Render manages the environment automatically; manual venv creation is optional but included here per your logic
     buildCommand: |
