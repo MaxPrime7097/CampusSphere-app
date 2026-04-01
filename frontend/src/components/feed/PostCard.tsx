@@ -305,7 +305,8 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
           </div>
         </CardHeader>
 
-      <CardContent className="pt-0" onClick={handleOpenPost}>
+      <CardContent className="pt-0">
+        <div  onClick={handleOpenPost} className="cursor-pointer">
         <div className="space-y-3">
           <div className="flex items-center justify-between mb-2">
             <Badge variant="secondary" className="text-xs">
@@ -331,6 +332,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
               )}
             </div>
           )}
+          </div>
           
           {/* Impact Score Rating */}
           

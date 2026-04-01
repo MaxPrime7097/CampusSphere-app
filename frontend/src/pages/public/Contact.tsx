@@ -222,13 +222,13 @@ export function Contact(): JSX.Element {
           </div>
 
           <div className="flex justify-center gap-5 mb-0">
-            <a href="https://www.facebook.com/profile.php?id=61583216355151" target='blank' className="w-16 h-16 campus-gradient rounded-full flex items-center justify-center text-white hover:scale-110 transition-all duration-300 hover:shadow-lg group">
+            <a href="https://web.facebook.com/campussphereofficial" target='blank' className="w-16 h-16 campus-gradient rounded-full flex items-center justify-center text-white hover:scale-110 transition-all duration-300 hover:shadow-lg group">
               <FaFacebook className="w-8 h-8 group-hover:animate-pulse" />
             </a>
-            <a href="https://www.linkedin.com/company/campussphere/" target='blank' className="w-16 h-16 campus-gradient rounded-full flex items-center justify-center text-white hover:scale-110 transition-all duration-300 hover:shadow-lg group">
+            <a href="https://www.linkedin.com/company/campussphere" target='blank' className="w-16 h-16 campus-gradient rounded-full flex items-center justify-center text-white hover:scale-110 transition-all duration-300 hover:shadow-lg group">
               <FaLinkedin className="w-8 h-8 group-hover:animate-pulse" />
             </a>
-            <a href="https://www.instagram.com/campussphere/" target='blank' className="w-16 h-16 campus-gradient rounded-full flex items-center justify-center text-white hover:scale-110 transition-all duration-300 hover:shadow-lg group">
+            <a href="https://www.instagram.com/campussphere" target='blank' className="w-16 h-16 campus-gradient rounded-full flex items-center justify-center text-white hover:scale-110 transition-all duration-300 hover:shadow-lg group">
               <FaInstagram className="w-8 h-8 group-hover:animate-pulse" />
             </a>
             <a href="https://www.tiktok.com/@campussphere.app" target='blank' className="w-16 h-16 campus-gradient rounded-full flex items-center justify-center text-white hover:scale-110 transition-all duration-300 hover:shadow-lg group">
