@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 # from django_filters.rest_framework import DjangoFilterBackend  # Commented out - django_filters not installed
 from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.shortcuts import get_object_or_404
 from django.db import models
 from django.utils import timezone
@@ -61,6 +62,7 @@ def can_user_access_post(user, post):
 
 
 class PostListView(generics.ListCreateAPIView):
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [SearchFilter, OrderingFilter]  # Removed DjangoFilterBackend - not installed
     # filterset_fields = ['sphere', 'author', 'category', 'subject', 'type', 'visibility']  # Commented out - django_filters not installed
@@ -133,6 +135,7 @@ class PostListView(generics.ListCreateAPIView):
 
 
 class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
     queryset = Post.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
