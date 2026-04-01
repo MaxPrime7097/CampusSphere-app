@@ -19,6 +19,10 @@ from .serializers import (
 logger = logging.getLogger(__name__)
 from spheres.permissions import IsSphereMemberOrPublic
 from users.impact_policy import POST_CREATED, COMMENT_CREATED, apply_impact_event
+from notifications.services import (
+    create_post_comment_notification,
+    create_post_like_notification,
+)
 
 
 def user_can_access_post(user, post):
@@ -212,6 +216,7 @@ class PostLikeView(APIView):
             liked = False
         else:
             liked = True
+            create_post_like_notification(post, user)
 
         # Update post counts
         post.update_counts()
@@ -405,6 +410,7 @@ class PostCommentsView(generics.ListCreateAPIView):
         comment = serializer.save()
         # Update post comment count
         post.update_counts()
+        create_post_comment_notification(post, comment.author, comment)
         
         # Apply impact for creating a comment.
         apply_impact_event(comment.author, COMMENT_CREATED)

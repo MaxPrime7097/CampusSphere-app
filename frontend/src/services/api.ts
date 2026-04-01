@@ -1187,25 +1187,29 @@ export async function removeParticipant(conversationId: number | string, userId:
 // ============================================================================
 
 export async function listNotifications(token?: string) {
-  return apiFetch<any[]>("api/notifications/", { token: token || getAccessToken() });
+  const response = await apiFetch<any[]>("api/notifications/", { token: token || getAccessToken() });
+  return unwrapList<any>(response);
 }
 
 export async function getNotification(id: number | string, token?: string) {
-  return apiFetch<any>(`api/notifications/${id}/`, { token: token || getAccessToken() });
+  const response = await apiFetch<any>(`api/notifications/${id}/`, { token: token || getAccessToken() });
+  return unwrapItem<any>(response);
 }
 
 export async function markNotificationRead(id: number | string, token?: string) {
-  return apiFetch<any>(`api/notifications/${id}/read/`, {
+  const response = await apiFetch<any>(`api/notifications/${id}/read/`, {
     method: "PUT",
     token: token || getAccessToken(),
   });
+  return unwrapItem<any>(response);
 }
 
 export async function markAllNotificationsRead(token?: string) {
-  return apiFetch<any>("api/notifications/read-all/", {
+  const response = await apiFetch<any>("api/notifications/read-all/", {
     method: "PUT",
     token: token || getAccessToken(),
   });
+  return unwrapItem<any>(response);
 }
 
 export interface DeleteNotificationResponse {
@@ -1214,26 +1218,30 @@ export interface DeleteNotificationResponse {
 }
 
 export async function deleteNotification(id: number | string, token?: string) {
-  return apiFetch<DeleteNotificationResponse>(`api/notifications/${id}/`, {
+  const response = await apiFetch<DeleteNotificationResponse>(`api/notifications/${id}/`, {
     method: "DELETE",
     token: token || getAccessToken(),
   });
+  return unwrapItem<DeleteNotificationResponse>(response);
 }
 
 export async function getNotificationSettings(token?: string) {
-  return apiFetch<any>("api/notifications/settings/", { token: token || getAccessToken() });
+  const response = await apiFetch<any>("api/notifications/settings/", { token: token || getAccessToken() });
+  return unwrapItem<any>(response);
 }
 
 export async function updateNotificationSettings(data: Record<string, boolean>, token?: string) {
-  return apiFetch<any>("api/notifications/settings/", {
+  const response = await apiFetch<any>("api/notifications/settings/", {
     method: "PUT",
     body: data,
     token: token || getAccessToken(),
   });
+  return unwrapItem<any>(response);
 }
 
 export async function getNotificationStats(token?: string) {
-  return apiFetch<any>("api/notifications/stats/", { token: token || getAccessToken() });
+  const response = await apiFetch<any>("api/notifications/stats/", { token: token || getAccessToken() });
+  return unwrapItem<any>(response);
 }
 
 // ============================================================================
