@@ -18,6 +18,8 @@ import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { formatRelativeTime } from "@/lib/date";
 
+const MAX_COMMENT_THREAD_DEPTH = 4;
+
 interface Comment {
   id: string;
   author: {
@@ -52,6 +54,57 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
   const [showMentions, setShowMentions] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
 
+  const mapApiComment = (apiComment: any, parentId?: string): Comment => ({
+    id: String(apiComment.id),
+    author: {
+      name: apiComment.author_info?.name || apiComment.author?.name || apiComment.author_name || "Utilisateur",
+      avatar: apiComment.author_info?.avatar || apiComment.author?.avatar || "/placeholder-avatar.jpg",
+      username: apiComment.author_info?.username || apiComment.author?.username || "user",
+      isVerified: Boolean(apiComment.author_info?.isVerified || apiComment.author?.isVerified),
+      impactScore: Number(apiComment.author_info?.impactScore || apiComment.author?.impactScore || 0),
+    },
+    content: apiComment.content || "",
+    timestamp: apiComment.created_at || new Date().toISOString(),
+    likes: Number(apiComment.likes_count || apiComment.likes || 0),
+    isLiked: Boolean(apiComment.is_liked),
+    isReply: Boolean(parentId),
+    parentId,
+    replies: (apiComment.replies || []).map((reply: any) => mapApiComment(reply, String(apiComment.id))),
+  });
+
+  const findCommentDepth = (items: Comment[], targetId: string, depth = 0): number | null => {
+    for (const item of items) {
+      if (item.id === targetId) return depth;
+      if (item.replies?.length) {
+        const found = findCommentDepth(item.replies, targetId, depth + 1);
+        if (found !== null) return found;
+      }
+    }
+    return null;
+  };
+
+  const addReplyToTree = (items: Comment[], parentId: string, reply: Comment): Comment[] =>
+    items.map((item) => {
+      if (item.id === parentId) {
+        return { ...item, replies: [...(item.replies || []), reply] };
+      }
+      if (!item.replies?.length) return item;
+      return { ...item, replies: addReplyToTree(item.replies, parentId, reply) };
+    });
+
+  const toggleLikeInTree = (items: Comment[], commentId: string): Comment[] =>
+    items.map((item) => {
+      if (item.id === commentId) {
+        return {
+          ...item,
+          likes: item.isLiked ? item.likes - 1 : item.likes + 1,
+          isLiked: !item.isLiked,
+        };
+      }
+      if (!item.replies?.length) return item;
+      return { ...item, replies: toggleLikeInTree(item.replies, commentId) };
+    });
+
   // Load comments from API
   useEffect(() => {
     if (!open || !postId) return;
@@ -61,36 +114,7 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
       try {
         const data = await getPostComments(postId);
         if (isMounted && Array.isArray(data)) {
-          const mapped = data.map((comment: any) => ({
-            id: String(comment.id),
-            author: {
-              name: comment.author_info?.name || comment.author?.name || comment.author_name || "Utilisateur",
-              avatar: comment.author_info?.avatar || comment.author?.avatar || "/placeholder-avatar.jpg",
-              username: comment.author_info?.username || comment.author?.username || "user",
-              isVerified: Boolean(comment.author_info?.isVerified || comment.author?.isVerified),
-              impactScore: Number(comment.author_info?.impactScore || comment.author?.impactScore || 0),
-            },
-            content: comment.content || "",
-            timestamp: comment.created_at || new Date().toISOString(),
-            likes: Number(comment.likes_count || comment.likes || 0),
-            isLiked: Boolean(comment.is_liked),
-            replies: comment.replies?.map((reply: any) => ({
-              id: String(reply.id),
-              author: {
-                name: reply.author_info?.name || reply.author?.name || reply.author_name || "Utilisateur",
-                avatar: reply.author_info?.avatar || reply.author?.avatar || "/placeholder-avatar.jpg",
-                username: reply.author_info?.username || reply.author?.username || "user",
-                isVerified: Boolean(reply.author_info?.isVerified || reply.author?.isVerified),
-                impactScore: Number(reply.author_info?.impactScore || reply.author?.impactScore || 0),
-              },
-              content: reply.content || "",
-              timestamp: reply.created_at || new Date().toISOString(),
-              likes: Number(reply.likes_count || reply.likes || 0),
-              isLiked: Boolean(reply.is_liked),
-              isReply: true,
-              parentId: String(comment.id),
-            })) || [],
-          }));
+          const mapped = data.map((comment: any) => mapApiComment(comment));
           setComments(mapped);
         }
       } catch (error) {
@@ -164,40 +188,11 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
     }
   };
 
-  const handleLikeComment = async (commentId: string, isReply: boolean = false, parentId?: string) => {
+  const handleLikeComment = async (commentId: string) => {
     try {
       await likeComment(commentId);
-      
-      setComments(prev => prev.map(comment => {
-        if (isReply && parentId) {
-          // Gérer les likes des réponses
-          if (comment.id === parentId) {
-            return {
-              ...comment,
-              replies: comment.replies?.map(reply => 
-                reply.id === commentId 
-                  ? { 
-                      ...reply, 
-                      likes: reply.isLiked ? reply.likes - 1 : reply.likes + 1,
-                      isLiked: !reply.isLiked
-                    }
-                  : reply
-              )
-            };
-          }
-          return comment;
-        } else {
-          // Gérer les likes des commentaires principaux
-          if (comment.id === commentId) {
-            return {
-              ...comment,
-              likes: comment.isLiked ? comment.likes - 1 : comment.likes + 1,
-              isLiked: !comment.isLiked
-            };
-          }
-          return comment;
-        }
-      }));
+
+      setComments(prev => toggleLikeInTree(prev, commentId));
 
       toast({
         title: "Like ajouté",
@@ -216,6 +211,15 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
 
   const handleReply = async (parentId: string) => {
     if (!replyContent.trim()) return;
+    const parentDepth = findCommentDepth(comments, parentId);
+    if (parentDepth !== null && parentDepth >= MAX_COMMENT_THREAD_DEPTH) {
+      toast({
+        variant: "destructive",
+        title: "Profondeur maximale atteinte",
+        description: "Cette discussion a atteint la profondeur maximale autorisée.",
+      });
+      return;
+    }
 
     setIsSubmitting(true);
     
@@ -241,11 +245,7 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
         parentId
       };
 
-      setComments(prev => prev.map(comment => 
-        comment.id === parentId 
-          ? { ...comment, replies: [...(comment.replies || []), newReply] }
-          : comment
-      ));
+      setComments(prev => addReplyToTree(prev, parentId, newReply));
       
       setReplyContent("");
       setReplyingTo(null);
@@ -285,6 +285,98 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
   };
 
 
+  const renderComment = (comment: Comment, depth = 0) => {
+    const visualDepth = Math.min(depth, MAX_COMMENT_THREAD_DEPTH - 1);
+    const depthOffset = visualDepth === 0 ? 0 : 16 + (visualDepth - 1) * 20;
+    const canReply = depth < MAX_COMMENT_THREAD_DEPTH;
+
+    return (
+      <div key={comment.id} className="space-y-3" style={{ marginLeft: `${depthOffset}px` }}>
+        <div className="flex gap-3">
+          <Avatar className={`${depth === 0 ? "h-10 w-10" : "h-8 w-8"} flex-shrink-0`}>
+            <AvatarImage src={comment.author.avatar} />
+            <AvatarFallback>{comment.author.name?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
+          </Avatar>
+
+          <div className="flex-1">
+            <div className={`${depth === 0 ? "bg-muted" : "bg-muted/50"} rounded-lg p-3`}>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-semibold text-sm">{comment.author.name}</span>
+                {comment.author.isVerified && (
+                  <Badge variant="secondary" className="text-xs px-1 py-0">
+                    ✓
+                  </Badge>
+                )}
+                <span className="text-xs text-muted-foreground">@{comment.author.username}</span>
+                {depth === 0 && comment.author.impactScore && (
+                  <Badge variant="outline" className="text-xs flex items-center gap-1">
+                    <Zap className="h-3 w-3" />
+                    {comment.author.impactScore}
+                  </Badge>
+                )}
+              </div>
+              <p className="text-sm">{comment.content}</p>
+            </div>
+
+            <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+              <span>{formatRelativeTime(comment.timestamp)}</span>
+              <button
+                className={`flex items-center gap-1 hover:text-primary ${comment.isLiked ? 'text-red-500' : ''}`}
+                aria-label="Like comment"
+                onClick={() => handleLikeComment(comment.id)}
+              >
+                <Heart className={`h-3 w-3 ${comment.isLiked ? 'fill-current' : ''}`} />
+                {comment.likes}
+              </button>
+              {canReply && (
+                <button
+                  className="hover:text-primary flex items-center gap-1"
+                  onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
+                >
+                  <Reply className="h-3 w-3" />
+                  Répondre
+                </button>
+              )}
+              <button className="hover:text-primary" aria-label="More options" title="Plus d'options">
+                <MoreHorizontal className="h-3 w-3" />
+              </button>
+            </div>
+
+            {replyingTo === comment.id && (
+              <div className="mt-3 ml-4">
+                <div className="flex gap-2">
+                  <Textarea
+                    placeholder="Répondre au commentaire..."
+                    value={replyContent}
+                    onChange={(e) => setReplyContent(e.target.value)}
+                    className="min-h-[60px] resize-none"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={() => handleReply(comment.id)}
+                    disabled={!replyContent.trim() || isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {comment.replies && comment.replies.length > 0 && (
+              <div className="space-y-3">
+                {comment.replies.map((reply) => renderComment(reply, depth + 1))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col p-0 bg-popover">
@@ -293,125 +385,7 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
         </DialogHeader>
         
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-          {comments.map((comment) => (
-            <div key={comment.id} className="space-y-3">
-              {/* Commentaire principal */}
-              <div className="flex gap-3">
-                <Avatar className="h-10 w-10 flex-shrink-0">
-                  <AvatarImage src={comment.author.avatar} />
-                  <AvatarFallback>{comment.author.name?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
-                </Avatar>
-                
-                <div className="flex-1">
-                  <div className="bg-muted rounded-lg p-3">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-semibold text-sm">{comment.author.name}</span>
-                      {comment.author.isVerified && (
-                        <Badge variant="secondary" className="text-xs px-1 py-0">
-                          ✓
-                        </Badge>
-                      )}
-                      <span className="text-xs text-muted-foreground">@{comment.author.username}</span>
-                      {comment.author.impactScore && (
-                        <Badge variant="outline" className="text-xs flex items-center gap-1">
-                          <Zap className="h-3 w-3" />
-                          {comment.author.impactScore}
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-sm">{comment.content}</p>
-                  </div>
-                  
-                  <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                    <span>{formatRelativeTime(comment.timestamp)}</span>
-                    <button 
-                      className={`flex items-center gap-1 hover:text-primary ${comment.isLiked ? 'text-red-500' : ''}`}
-                      aria-label="Like comment"
-                      onClick={() => handleLikeComment(comment.id)}
-                    >
-                      <Heart className={`h-3 w-3 ${comment.isLiked ? 'fill-current' : ''}`} />
-                      {comment.likes}
-                    </button>
-                    <button 
-                      className="hover:text-primary flex items-center gap-1"
-                      onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
-                    >
-                      <Reply className="h-3 w-3" />
-                      Répondre
-                    </button>
-                    <button className="hover:text-primary" aria-label="More options" title="Plus d'options">
-                      <MoreHorizontal className="h-3 w-3" />
-                    </button>
-                  </div>
-
-                  {/* Zone de réponse */}
-                  {replyingTo === comment.id && (
-                    <div className="mt-3 ml-4">
-                      <div className="flex gap-2">
-                        <Textarea
-                          placeholder="Répondre au commentaire..."
-                          value={replyContent}
-                          onChange={(e) => setReplyContent(e.target.value)}
-                          className="min-h-[60px] resize-none"
-                        />
-                        <Button
-                          size="sm"
-                          onClick={() => handleReply(comment.id)}
-                          disabled={!replyContent.trim() || isSubmitting}
-                        >
-                          {isSubmitting ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Send className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Réponses */}
-              {comment.replies && comment.replies.length > 0 && (
-                <div className="ml-8 space-y-3">
-                  {comment.replies.map((reply) => (
-                    <div key={reply.id} className="flex gap-3">
-                      <Avatar className="h-8 w-8 flex-shrink-0">
-                        <AvatarImage src={reply.author.avatar} />
-                        <AvatarFallback>{reply.author.name?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
-                      </Avatar>
-                      
-                      <div className="flex-1">
-                        <div className="bg-muted/50 rounded-lg p-3">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-semibold text-sm">{reply.author.name}</span>
-                            {reply.author.isVerified && (
-                              <Badge variant="secondary" className="text-xs px-1 py-0">
-                                ✓
-                              </Badge>
-                            )}
-                            <span className="text-xs text-muted-foreground">@{reply.author.username}</span>
-                          </div>
-                          <p className="text-sm">{reply.content}</p>
-                        </div>
-                        
-                        <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                          <span>{formatRelativeTime(reply.timestamp)}</span>
-                          <button 
-                            className={`flex items-center gap-1 hover:text-primary ${reply.isLiked ? 'text-red-500' : ''}`}
-                            onClick={() => handleLikeComment(reply.id, true, comment.id)}
-                          >
-                            <Heart className={`h-3 w-3 ${reply.isLiked ? 'fill-current' : ''}`} />
-                            {reply.likes}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+          {comments.map((comment) => renderComment(comment))}
         </div>
 
         <div className="border-t p-4">
