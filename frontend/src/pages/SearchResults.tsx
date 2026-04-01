@@ -108,13 +108,22 @@ export function SearchResults() {
     }
   };
 
-  const handleViewProfile = (userId: string, userName: string) => {
+  const handleViewProfile = (username?: string, userName?: string) => {
+    if (!username) {
+      toast({
+        title: "Profil indisponible",
+        description: "Impossible d'ouvrir ce profil : username introuvable.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     toast({
       title: "Navigation vers profil",
-      description: `Ouverture du profil de ${userName}`,
+      description: `Ouverture du profil de ${userName || username}`,
       duration: 2000,
     });
-    navigate(`/profile/${userId}`);
+    navigate(`/profile/${username}`);
   };
 
   const handleViewResource = (resourceId: string, resourceTitle: string) => {
@@ -229,16 +238,16 @@ export function SearchResults() {
                       <CardContent className="p-4">
                         <div className="flex items-center gap-3">
                           <Avatar 
-                            className="h-12 w-12 cursor-pointer hover:opacity-80 transition-opacity"
-                            onClick={() => handleViewProfile(user.id, user.name)}
+                            className={`h-12 w-12 transition-opacity ${user.username ? "cursor-pointer hover:opacity-80" : "cursor-not-allowed opacity-60"}`}
+                            onClick={() => handleViewProfile(user.username, user.name)}
                           >
                             <AvatarImage src={user.avatar} />
                             <AvatarFallback>{user.name?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0">
                             <p 
-                              className="font-semibold cursor-pointer hover:underline"
-                              onClick={() => handleViewProfile(user.id, user.name)}
+                              className={`font-semibold ${user.username ? "cursor-pointer hover:underline" : "cursor-not-allowed opacity-60"}`}
+                              onClick={() => handleViewProfile(user.username, user.name)}
                             >
                               {user.name}
                             </p>
@@ -359,16 +368,16 @@ export function SearchResults() {
                     <CardContent className="p-4">
                       <div className="flex items-center gap-3">
                         <Avatar 
-                          className="h-12 w-12 cursor-pointer hover:opacity-80 transition-opacity"
-                          onClick={() => handleViewProfile(user.id, user.name)}
+                          className={`h-12 w-12 transition-opacity ${user.username ? "cursor-pointer hover:opacity-80" : "cursor-not-allowed opacity-60"}`}
+                          onClick={() => handleViewProfile(user.username, user.name)}
                         >
                           <AvatarImage src={user.avatar} />
                           <AvatarFallback>{user.name?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <p 
-                            className="font-semibold cursor-pointer hover:underline"
-                            onClick={() => handleViewProfile(user.id, user.name)}
+                            className={`font-semibold ${user.username ? "cursor-pointer hover:underline" : "cursor-not-allowed opacity-60"}`}
+                            onClick={() => handleViewProfile(user.username, user.name)}
                           >
                             {user.name}
                           </p>

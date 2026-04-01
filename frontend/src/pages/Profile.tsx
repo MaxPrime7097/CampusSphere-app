@@ -410,19 +410,17 @@ export function Profile() {
     }
   };
 
-  const handleViewProfile = (connectionIdentifier?: string, connectionName?: string, showToast = false) => {
-    if (!connectionIdentifier) {
-      if (showToast) {
-        toast({
-          title: "Profil indisponible",
-          description: "Impossible d'ouvrir ce profil pour le moment",
-          variant: "destructive",
-        });
-      }
+  const handleViewProfile = (username?: string, connectionName?: string, showToast = false) => {
+    if (!username) {
+      toast({
+        title: "Profil indisponible",
+        description: "Impossible d'ouvrir ce profil pour le moment : username manquant.",
+        variant: "destructive",
+      });
       return;
     }
 
-    const targetPath = `/profile/${encodeURIComponent(connectionIdentifier)}`;
+    const targetPath = `/profile/${encodeURIComponent(username)}`;
 
     // Route-level check: avoid redundant navigation when already on the selected profile page.
     if (location.pathname !== targetPath) {
@@ -848,7 +846,8 @@ export function Profile() {
                             <Button 
                               size="sm" 
                               variant="outline"
-                              onClick={() => handleViewProfile(connection.username || connection.id, connection.name)}
+                              onClick={() => handleViewProfile(connection.username, connection.name, true)}
+                              disabled={!connection.username}
                             >
                               Voir
                             </Button>
