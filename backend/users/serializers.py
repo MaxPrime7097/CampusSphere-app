@@ -56,6 +56,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(read_only=True)
     joined_spheres_count = serializers.SerializerMethodField()
     connections_count = serializers.SerializerMethodField()
+    contributions_count = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -65,7 +66,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'student_id', 'campus', 'town', 'language', 'profile_visibility', 'post_visibility',
             'data_export_requested_at', 'impact_score', 'current_mood',
             'skills', 'interests', 'previous_education', 'experiences', 'portfolio_links',
-            'joined_spheres_count', 'connections_count', 'date_joined', 'updated_at'
+            'joined_spheres_count', 'connections_count', 'contributions_count',
+            'date_joined', 'updated_at'
         ]
         read_only_fields = ['id', 'impact_score', 'date_joined', 'updated_at']
 
@@ -80,6 +82,14 @@ class UserProfileSerializer(serializers.ModelSerializer):
             Q(requester=obj) | Q(recipient=obj),
             status='accepted'
         ).count()
+
+    def get_contributions_count(self, obj):
+        """
+        Lightweight aggregate used by frontend resource/profile cards.
+        """
+        posts_count = obj.posts.count() if hasattr(obj, 'posts') else 0
+        resources_count = obj.resources.count() if hasattr(obj, 'resources') else 0
+        return posts_count + resources_count
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):

@@ -76,6 +76,12 @@ export function ResourceDetail() {
       try {
         const data = await getResource(id);
         if (isMounted && data) {
+          const author = data.author ?? null;
+          const uploaderContributions =
+            author?.stats?.contributions ??
+            author?.contributions_count ??
+            0;
+
           const resourcePayload = {
             id: String(data.id),
             title: data.title,
@@ -87,12 +93,14 @@ export function ResourceDetail() {
             level: data.level || data.audience || data.courseLevel,
             pages: data.pages || data.page_count || 0,
             uploader: {
-              name: data.author?.name || data.author_info?.name || data.author_name || "Utilisateur",
-              username: data.author?.username || data.author_info?.username || data.author_username || "",
-              avatar: data.author?.avatar || data.author_info?.avatar || "/placeholder-avatar.jpg",
-              verified: data.author?.isVerified || data.author_info?.is_verified || false,
-              level: data.author?.level || data.author_info?.level || "",
-              contributions: data.author?.contributions || data.author_info?.contributions || 0,
+              name: author?.name || data.author_name || "Utilisateur",
+              username: author?.username || data.author_username || "",
+              avatar: author?.avatar || "/placeholder-avatar.jpg",
+              verified: author?.isVerified || author?.is_verified || false,
+              level: author?.level || "",
+              contributions: Number.isFinite(Number(uploaderContributions))
+                ? Number(uploaderContributions)
+                : 0,
             },
             uploadDate: data.createdAt || data.created_at || data.uploaded_at || null,
             stats: {
