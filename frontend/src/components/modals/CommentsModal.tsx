@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { getCurrentUser, getPostComments, createComment, likeComment } from "@/services/api";
+import { getCurrentUser, getPostComments, createComment, likeComment, searchUsers } from "@/services/api";
 import {
   Dialog,
   DialogContent,
@@ -10,13 +10,13 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Heart, Send, Reply, Flag, MoreHorizontal, Smile, AtSign, Loader2, CheckCircle, Zap } from "lucide-react";
+import { Heart, Send, Reply, MoreHorizontal, Smile, AtSign, Loader2, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { formatRelativeTime } from "@/lib/date";
+import { findInvalidMentions, getActiveMentionQuery, renderMentionText } from "@/lib/mentions";
 
 interface Comment {
   id: string;
@@ -51,6 +51,8 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showMentions, setShowMentions] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
+  const [availableUsers, setAvailableUsers] = useState<{ id: string; username: string; name: string; avatar?: string }[]>([]);
+  const [mentionQuery, setMentionQuery] = useState("");
 
   // Load comments from API
   useEffect(() => {
@@ -103,6 +105,26 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
     };
   }, [open, postId]);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (!showMentions) return;
+    const handle = window.setTimeout(async () => {
+      try {
+        const users = await searchUsers(mentionQuery);
+        const mapped = (users || []).map((user: any) => ({
+          id: String(user.id),
+          username: user.username,
+          name: user.name || "Utilisateur",
+          avatar: user.avatar || undefined,
+        }));
+        setAvailableUsers(mapped);
+      } catch {
+        setAvailableUsers([]);
+      }
+    }, 180);
+
+    return () => window.clearTimeout(handle);
+  }, [mentionQuery, showMentions]);
   
   const commentSchema = z.object({
     content: z.string()
@@ -120,6 +142,16 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
         variant: "destructive",
         title: t('modals.comments.invalidTitle', { defaultValue: "Commentaire invalide" }),
         description: validation.error.errors[0].message,
+      });
+      return;
+    }
+
+    const invalidMentions = findInvalidMentions(newComment);
+    if (invalidMentions.length > 0) {
+      toast({
+        variant: "destructive",
+        title: "Mentions invalides",
+        description: `Format invalide: ${invalidMentions.map((item) => `@${item}`).join(", ")}`,
       });
       return;
     }
@@ -216,6 +248,15 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
 
   const handleReply = async (parentId: string) => {
     if (!replyContent.trim()) return;
+    const invalidMentions = findInvalidMentions(replyContent);
+    if (invalidMentions.length > 0) {
+      toast({
+        variant: "destructive",
+        title: "Mentions invalides",
+        description: `Format invalide: ${invalidMentions.map((item) => `@${item}`).join(", ")}`,
+      });
+      return;
+    }
 
     setIsSubmitting(true);
     
@@ -319,7 +360,7 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
                         </Badge>
                       )}
                     </div>
-                    <p className="text-sm">{comment.content}</p>
+                    <p className="text-sm whitespace-pre-wrap">{renderMentionText(comment.content)}</p>
                   </div>
                   
                   <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
@@ -351,7 +392,15 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
                         <Textarea
                           placeholder="Répondre au commentaire..."
                           value={replyContent}
-                          onChange={(e) => setReplyContent(e.target.value)}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setReplyContent(value);
+                            const activeQuery = getActiveMentionQuery(value, e.target.selectionStart ?? value.length);
+                            if (activeQuery !== null) {
+                              setMentionQuery(activeQuery);
+                              setShowMentions(true);
+                            }
+                          }}
                           className="min-h-[60px] resize-none"
                         />
                         <Button
@@ -392,7 +441,7 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
                             )}
                             <span className="text-xs text-muted-foreground">@{reply.author.username}</span>
                           </div>
-                          <p className="text-sm">{reply.content}</p>
+                          <p className="text-sm whitespace-pre-wrap">{renderMentionText(reply.content)}</p>
                         </div>
                         
                         <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
@@ -439,14 +488,14 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
             {showMentions && (
               <Card className="p-3">
                 <div className="space-y-2">
-                  {['alex_dubois', 'sophie_m', 'lucas_dev', 'emma_b'].map((username) => (
+                  {availableUsers.map((user) => (
                     <Button
-                      key={username}
+                      key={user.id}
                       variant="ghost"
                       className="w-full justify-start"
-                      onClick={() => insertMention(username)}
+                      onClick={() => insertMention(user.username)}
                     >
-                      @{username}
+                      @{user.username}
                     </Button>
                   ))}
                 </div>
@@ -462,7 +511,18 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
                 <Textarea
                   placeholder={t('modals.comments.placeholder')}
                   value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setNewComment(value);
+                    const activeQuery = getActiveMentionQuery(value, e.target.selectionStart ?? value.length);
+                    if (activeQuery !== null) {
+                      setMentionQuery(activeQuery);
+                      setShowMentions(true);
+                    } else {
+                      setShowMentions(false);
+                      setMentionQuery("");
+                    }
+                  }}
                   onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSubmit())}
                   className="min-h-[80px] resize-none"
                   maxLength={500}
@@ -515,3 +575,12 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
     </Dialog>
   );
 }
+    const invalidMentions = findInvalidMentions(newComment);
+    if (invalidMentions.length > 0) {
+      toast({
+        variant: "destructive",
+        title: "Mentions invalides",
+        description: `Format invalide: ${invalidMentions.map((item) => `@${item}`).join(", ")}`,
+      });
+      return;
+    }

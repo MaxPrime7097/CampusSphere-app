@@ -22,7 +22,10 @@ from users.impact_policy import POST_CREATED, COMMENT_CREATED, apply_impact_even
 from notifications.services import (
     create_post_comment_notification,
     create_post_like_notification,
+    create_mention_post_notification,
+    create_mention_comment_notification,
 )
+from .mentions import resolve_mentioned_users
 
 
 def user_can_access_post(user, post):
@@ -110,6 +113,9 @@ class PostListView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         post = serializer.save()
+        mentioned_users = resolve_mentioned_users(post.content, exclude_user_id=post.author_id)
+        for mentioned_user in mentioned_users:
+            create_mention_post_notification(post, mentioned_user, post.author)
         # Apply impact for creating a post.
         apply_impact_event(post.author, POST_CREATED)
 
@@ -411,6 +417,9 @@ class PostCommentsView(generics.ListCreateAPIView):
         # Update post comment count
         post.update_counts()
         create_post_comment_notification(post, comment.author, comment)
+        mentioned_users = resolve_mentioned_users(comment.content, exclude_user_id=comment.author_id)
+        for mentioned_user in mentioned_users:
+            create_mention_comment_notification(post, comment, mentioned_user, comment.author)
         
         # Apply impact for creating a comment.
         apply_impact_event(comment.author, COMMENT_CREATED)
