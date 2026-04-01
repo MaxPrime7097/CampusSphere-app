@@ -5,27 +5,10 @@ import { Download, Share2, ChevronLeft, Eye, Flag, Loader2, Zap, Bookmark } from
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { RESOURCE_TYPE_OPTIONS } from "@/constants/resourceTypes";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { formatFrenchDate } from "@/lib/date";
-
-const SUBJECT_LABELS: Record<string, string> = {
-  math: "Mathématiques",
-  cs: "Informatique",
-  physics: "Physique",
-  economics: "Économie",
-  language: "Langues",
-  other: "Autre",
-};
-
-function getSubjectLabel(subject: string) {
-  return SUBJECT_LABELS[subject] || subject.charAt(0).toUpperCase() + subject.slice(1);
-}
-
-function getResourceTypeLabel(type: string) {
-  return RESOURCE_TYPE_OPTIONS.find((t) => t.value === type)?.label || type;
-}
+import { getResourceTypeLabel, getSubjectLabel, normalizeResourceType, normalizeSubject } from "@/lib/resourceMetadata";
 
 export function ResourceDetail() {
   const { id } = useParams();
@@ -42,7 +25,7 @@ export function ResourceDetail() {
     title: string;
     description: string;
     subject: string;
-    type: string;
+    type: string | null;
     format: string;
     size: string;
     level: string;
@@ -86,8 +69,8 @@ export function ResourceDetail() {
             id: String(data.id),
             title: data.title,
             description: data.description || '',
-            subject: data.subject,
-            type: data.type,
+            subject: normalizeSubject(data.subject),
+            type: normalizeResourceType(data.type),
             format: (data.fileUrl || data.file)?.toString().split('.').pop(),
             size: data.fileSize || data.file_size || data.size,
             level: data.level || data.audience || data.courseLevel,
@@ -111,7 +94,7 @@ export function ResourceDetail() {
             isSaved: data.isSaved ?? data.is_saved ?? false,
             impactScore: data.impactScore || data.impact_score || 0,
             tags: data.tags || [],
-            relatedCourse: data.subject || ''
+            relatedCourse: normalizeSubject(data.subject)
           };
           setResource(resourcePayload);
           setIsSaved(resourcePayload.isSaved);
@@ -310,7 +293,7 @@ export function ResourceDetail() {
                   {getResourceTypeLabel(resource.type)}
                 </Badge>
                 <Badge variant="secondary">{getSubjectLabel(resource.subject)}</Badge>
-                <Badge variant="outline">{resource.format.toUpperCase()}</Badge>
+                <Badge variant="outline">{resource.format ? resource.format.toUpperCase() : "Non défini"}</Badge>
               </div>
               <h1 className="text-2xl md:text-3xl font-bold mb-2">{resource.title}</h1>
               <p className="text-muted-foreground">{resource.description}</p>
