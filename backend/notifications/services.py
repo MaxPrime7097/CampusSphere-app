@@ -1,0 +1,131 @@
+from notifications.models import Notification
+
+
+def create_notification(notification_type, title, message, recipient, data=None, sender=None):
+    """Create an in-app notification and optionally trigger async email delivery."""
+    if sender is not None and sender == recipient:
+        return None
+
+    notification = Notification.objects.create(
+        type=notification_type,
+        title=title,
+        message=message,
+        recipient=recipient,
+        data=data or {},
+    )
+
+    try:
+        from notifications.tasks import send_notification_email_task
+        send_notification_email_task.delay(str(notification.id))
+    except Exception:
+        # Email dispatch failures should not block core business actions.
+        pass
+
+    return notification
+
+
+def create_post_like_notification(post, liker):
+    """Create notification when someone likes a post."""
+    return create_notification(
+        notification_type='post_like',
+        title='Nouveau like sur votre post',
+        message=f'{liker.full_name} a aimé votre post',
+        recipient=post.author,
+        sender=liker,
+        data={
+            'post_id': str(post.id),
+            'user_id': str(liker.id),
+            'post_content': post.content[:100],
+        },
+    )
+
+
+def create_post_comment_notification(post, commenter, comment):
+    """Create notification when someone comments on a post."""
+    return create_notification(
+        notification_type='post_comment',
+        title='Nouveau commentaire sur votre post',
+        message=f'{commenter.full_name} a commenté votre post',
+        recipient=post.author,
+        sender=commenter,
+        data={
+            'post_id': str(post.id),
+            'comment_id': str(comment.id),
+            'user_id': str(commenter.id),
+            'comment_content': comment.content[:100],
+        },
+    )
+
+
+def create_sphere_invitation_notification(sphere, inviter, invitee):
+    """Create notification when someone is invited to a sphere."""
+    return create_notification(
+        notification_type='sphere_invitation',
+        title='Invitation à rejoindre une sphère',
+        message=f'{inviter.full_name} vous a invité à rejoindre "{sphere.name}"',
+        recipient=invitee,
+        sender=inviter,
+        data={
+            'sphere_id': str(sphere.id),
+            'inviter_id': str(inviter.id),
+            'sphere_name': sphere.name,
+        },
+    )
+
+
+def create_task_assigned_notification(task, assigner):
+    """Create notification when a task is assigned."""
+    if not task.assigned_to:
+        return None
+
+    return create_notification(
+        notification_type='task_assigned',
+        title='Nouvelle tâche assignée',
+        message=f'{assigner.full_name} vous a assigné la tâche "{task.title}"',
+        recipient=task.assigned_to,
+        sender=assigner,
+        data={
+            'task_id': str(task.id),
+            'assigner_id': str(assigner.id),
+            'sphere_id': str(task.sphere.id),
+            'task_title': task.title,
+            'due_date': task.due_date.isoformat() if task.due_date else None,
+        },
+    )
+
+
+def create_connection_request_notification(connection):
+    """Create notification when someone sends a connection request."""
+    return create_notification(
+        notification_type='connection_request',
+        title='Nouvelle demande de connexion',
+        message=f'{connection.requester.full_name} souhaite se connecter avec vous',
+        recipient=connection.recipient,
+        sender=connection.requester,
+        data={
+            'connection_id': str(connection.id),
+            'requester_id': str(connection.requester.id),
+        },
+    )
+
+
+def create_message_notification(message):
+    """Create notification when someone receives a message."""
+    conversation = message.conversation
+
+    for participant in conversation.participants.exclude(id=message.author.id):
+        settings = getattr(participant, 'notification_settings', None)
+        if settings and settings.in_app_messages:
+            create_notification(
+                notification_type='message_received',
+                title='Nouveau message',
+                message=f'{message.author.full_name} vous a envoyé un message',
+                recipient=participant,
+                sender=message.author,
+                data={
+                    'conversation_id': str(conversation.id),
+                    'message_id': str(message.id),
+                    'sender_id': str(message.author.id),
+                    'conversation_type': conversation.type,
+                },
+            )

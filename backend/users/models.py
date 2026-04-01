@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Q
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
@@ -108,7 +109,13 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.sphere_memberships.filter(status='active').count()
 
     def get_connections_count(self):
-        return self.connections.count()
+        """
+        Business rule: only accepted connections are counted.
+        """
+        return Connection.objects.filter(
+            Q(requester=self) | Q(recipient=self),
+            status='accepted'
+        ).count()
 
 
 class Connection(models.Model):
