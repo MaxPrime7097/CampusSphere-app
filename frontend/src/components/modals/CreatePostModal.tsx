@@ -202,11 +202,24 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
     
     try {
       // Create post via API
-      const postPayload: any = {
-        content,
-        visibility: visibility === 'public' ? 'public' : visibility,
-        tags: tags.length > 0 ? tags : undefined,
-      };
+      const postPayload = new FormData();
+      postPayload.append('content', content);
+      postPayload.append('visibility', visibility === 'public' ? 'public' : visibility);
+
+      if (tags.length > 0) {
+        postPayload.append('tags', JSON.stringify(tags));
+      }
+
+      uploadedFiles.forEach((file) => {
+        postPayload.append('files[]', file);
+      });
+
+      if (category) postPayload.append('category', category);
+      if (subject) postPayload.append('subject', subject);
+      if (type) postPayload.append('type', type);
+      if (audience) postPayload.append('audience', audience);
+      if (location) postPayload.append('location', location);
+      postPayload.append('allow_comments', String(allowComments));
       
       const result = await createPost(postPayload);
       const createdPost = result?.data ?? result;
