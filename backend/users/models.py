@@ -32,6 +32,22 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
+    MOOD_EXCITED = 'excited'
+    MOOD_FOCUSED = 'focused'
+    MOOD_COLLABORATING = 'collaborating'
+    MOOD_LEARNING = 'learning'
+    MOOD_INSPIRED = 'inspired'
+    MOOD_DETERMINED = 'determined'
+
+    CURRENT_MOOD_CHOICES = [
+        (MOOD_EXCITED, 'Excited'),
+        (MOOD_FOCUSED, 'Focused'),
+        (MOOD_COLLABORATING, 'Collaborating'),
+        (MOOD_LEARNING, 'Learning'),
+        (MOOD_INSPIRED, 'Inspired'),
+        (MOOD_DETERMINED, 'Determined'),
+    ]
+
     PROFILE_VISIBILITY_CHOICES = [
         ('public', 'Public'),
         ('connections', 'Connections only'),
@@ -69,7 +85,11 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     # Impact and Mood
     impact_score = models.IntegerField(default=0, validators=[MinValueValidator(0)])
-    current_mood = models.CharField(max_length=50, default='excited')
+    current_mood = models.CharField(
+        max_length=50,
+        default=MOOD_EXCITED,
+        choices=CURRENT_MOOD_CHOICES,
+    )
 
     # Skills and Interests
     skills = models.JSONField(default=list, blank=True)

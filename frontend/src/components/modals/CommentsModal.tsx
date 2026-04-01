@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { getCurrentUser, getPostComments, createComment, likeComment } from "@/services/api";
+import { getCurrentUser, getPostComments, createComment, likeComment, normalizeUser } from "@/services/api";
 import {
   Dialog,
   DialogContent,
@@ -42,6 +42,18 @@ interface CommentsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   postId: string;
+}
+
+function normalizeCommentAuthor(rawAuthor: any, fallbackName?: string) {
+  const normalizedUser = normalizeUser(rawAuthor);
+
+  return {
+    name: normalizedUser?.name || fallbackName || "Utilisateur",
+    avatar: normalizedUser?.avatar || "/placeholder-avatar.jpg",
+    username: normalizedUser?.username || "user",
+    isVerified: Boolean(rawAuthor?.is_verified ?? rawAuthor?.isVerified ?? false),
+    impactScore: Number(rawAuthor?.impact_score ?? rawAuthor?.impactScore ?? 0),
+  };
 }
 
 export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps) {
@@ -114,7 +126,24 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
       try {
         const data = await getPostComments(postId);
         if (isMounted && Array.isArray(data)) {
-          const mapped = data.map((comment: any) => mapApiComment(comment));
+          const mapped = data.map((comment: any) => ({
+            id: String(comment.id),
+            author: normalizeCommentAuthor(comment.author_info ?? comment.author, comment.author_name),
+            content: comment.content || "",
+            timestamp: comment.created_at || new Date().toISOString(),
+            likes: Number(comment.likes_count || comment.likes || 0),
+            isLiked: Boolean(comment.is_liked),
+            replies: comment.replies?.map((reply: any) => ({
+              id: String(reply.id),
+              author: normalizeCommentAuthor(reply.author_info ?? reply.author, reply.author_name),
+              content: reply.content || "",
+              timestamp: reply.created_at || new Date().toISOString(),
+              likes: Number(reply.likes_count || reply.likes || 0),
+              isLiked: Boolean(reply.is_liked),
+              isReply: true,
+              parentId: String(comment.id),
+            })) || [],
+          }));
           setComments(mapped);
         }
       } catch (error) {
@@ -154,16 +183,11 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
       // Create comment via API
       const result = await createComment(postId, { content: newComment });
       const currentUser = await getCurrentUser().catch(() => null);
+      const normalizedCurrentUser = normalizeCommentAuthor(currentUser?.data ?? currentUser);
       
       const newCommentObj: Comment = {
         id: String(result.id || Date.now()),
-        author: {
-          name: currentUser?.data?.name || currentUser?.name || "Utilisateur",
-          avatar: currentUser?.data?.avatar || currentUser?.avatar || "/placeholder-avatar.jpg",
-          username: currentUser?.data?.username || currentUser?.username || "user",
-          isVerified: Boolean(currentUser?.data?.isVerified || currentUser?.isVerified),
-          impactScore: Number(currentUser?.data?.impactScore || currentUser?.impactScore || 0)
-        },
+        author: normalizedCurrentUser,
         content: newComment,
         timestamp: result.created_at || new Date().toISOString(),
         likes: 0,
@@ -227,16 +251,11 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
       // Create reply comment via API with parent linkage
       const result = await createComment(postId, { content: replyContent, parent: parentId });
       const currentUser = await getCurrentUser().catch(() => null);
+      const normalizedCurrentUser = normalizeCommentAuthor(currentUser?.data ?? currentUser);
       
       const newReply: Comment = {
         id: String(result.id || `${parentId}-${Date.now()}`),
-        author: {
-          name: currentUser?.data?.name || currentUser?.name || "Utilisateur",
-          avatar: currentUser?.data?.avatar || currentUser?.avatar || "/placeholder-avatar.jpg",
-          username: currentUser?.data?.username || currentUser?.username || "user",
-          isVerified: Boolean(currentUser?.data?.isVerified || currentUser?.isVerified),
-          impactScore: Number(currentUser?.data?.impactScore || currentUser?.impactScore || 0)
-        },
+        author: normalizedCurrentUser,
         content: replyContent,
         timestamp: result.created_at || new Date().toISOString(),
         likes: 0,
@@ -385,7 +404,131 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
         </DialogHeader>
         
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-          {comments.map((comment) => renderComment(comment))}
+          {comments.map((comment) => (
+            <div key={comment.id} className="space-y-3">
+              {/* Commentaire principal */}
+              <div className="flex gap-3">
+                <Avatar className="h-10 w-10 flex-shrink-0">
+                  <AvatarImage src={comment.author.avatar} />
+                  <AvatarFallback>{comment.author.name?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
+                </Avatar>
+                
+                <div className="flex-1">
+                  <div className="bg-muted rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-semibold text-sm">{comment.author.name}</span>
+                      {comment.author.isVerified && (
+                        <Badge variant="secondary" className="text-xs px-1 py-0">
+                          ✓
+                        </Badge>
+                      )}
+                      <span className="text-xs text-muted-foreground">@{comment.author.username}</span>
+                      {comment.author.impactScore && (
+                        <Badge variant="outline" className="text-xs flex items-center gap-1">
+                          <Zap className="h-3 w-3" />
+                          {comment.author.impactScore}
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-sm">{comment.content}</p>
+                  </div>
+                  
+                  <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                    <span>{formatRelativeTime(comment.timestamp)}</span>
+                    <button 
+                      className={`flex items-center gap-1 hover:text-primary ${comment.isLiked ? 'text-red-500' : ''}`}
+                      aria-label="Like comment"
+                      onClick={() => handleLikeComment(comment.id)}
+                    >
+                      <Heart className={`h-3 w-3 ${comment.isLiked ? 'fill-current' : ''}`} />
+                      {comment.likes}
+                    </button>
+                    <button 
+                      className="hover:text-primary flex items-center gap-1"
+                      onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
+                    >
+                      <Reply className="h-3 w-3" />
+                      Répondre
+                    </button>
+                    <button className="hover:text-primary" aria-label="More options" title="Plus d'options">
+                      <MoreHorizontal className="h-3 w-3" />
+                    </button>
+                  </div>
+
+                  {/* Zone de réponse */}
+                  {replyingTo === comment.id && (
+                    <div className="mt-3 ml-4">
+                      <div className="flex gap-2">
+                        <Textarea
+                          placeholder="Répondre au commentaire..."
+                          value={replyContent}
+                          onChange={(e) => setReplyContent(e.target.value)}
+                          className="min-h-[60px] resize-none"
+                        />
+                        <Button
+                          size="sm"
+                          onClick={() => handleReply(comment.id)}
+                          disabled={!replyContent.trim() || isSubmitting}
+                        >
+                          {isSubmitting ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Send className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Réponses */}
+              {comment.replies && comment.replies.length > 0 && (
+                <div className="ml-8 space-y-3">
+                  {comment.replies.map((reply) => (
+                    <div key={reply.id} className="flex gap-3">
+                      <Avatar className="h-8 w-8 flex-shrink-0">
+                        <AvatarImage src={reply.author.avatar} />
+                        <AvatarFallback>{reply.author.name?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
+                      </Avatar>
+                      
+                      <div className="flex-1">
+                        <div className="bg-muted/50 rounded-lg p-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-semibold text-sm">{reply.author.name}</span>
+                            {reply.author.isVerified && (
+                              <Badge variant="secondary" className="text-xs px-1 py-0">
+                                ✓
+                              </Badge>
+                            )}
+                            <span className="text-xs text-muted-foreground">@{reply.author.username}</span>
+                            {reply.author.impactScore && (
+                              <Badge variant="outline" className="text-xs flex items-center gap-1">
+                                <Zap className="h-3 w-3" />
+                                {reply.author.impactScore}
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm">{reply.content}</p>
+                        </div>
+                        
+                        <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                          <span>{formatRelativeTime(reply.timestamp)}</span>
+                          <button 
+                            className={`flex items-center gap-1 hover:text-primary ${reply.isLiked ? 'text-red-500' : ''}`}
+                            onClick={() => handleLikeComment(reply.id, true, comment.id)}
+                          >
+                            <Heart className={`h-3 w-3 ${reply.isLiked ? 'fill-current' : ''}`} />
+                            {reply.likes}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
 
         <div className="border-t p-4">
