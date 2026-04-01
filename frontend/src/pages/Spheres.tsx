@@ -83,7 +83,7 @@ export function Spheres() {
     const sorted = [...filteredSpheres];
     switch (activeTab) {
       case "page3": // Loadout/Top
-        return sorted.sort((a: any, b: any) => (b.impactScore || 0) - (a.impactScore || 0));
+        return sorted.sort((a: any, b: any) => (b.progression || 0) - (a.progression || 0));
       case "page2": // Titan Maintenance/My Spheres
         if (userSpheres.length > 0) return userSpheres;
         return sorted.filter((sphere: any) => userJoinedSpheres.includes(String(sphere.id)));
@@ -335,7 +335,7 @@ export function Spheres() {
                                 <p className="text-xs text-muted-foreground flex items-center gap-1"><Users className="h-3 w-3" />{sphere.memberCount} membres</p>
                               </div>
                               <div className="text-right">
-                                <div className="text-primary font-bold">⚡ {sphere.impactScore}</div>
+                                <div className="text-primary font-bold">{Math.max(0, Math.min(100, Number(sphere.progression || 0)))}%</div>
                                 <Badge variant="secondary" className="text-xs mt-1">{sphere.category}</Badge>
                               </div>
                             </div>

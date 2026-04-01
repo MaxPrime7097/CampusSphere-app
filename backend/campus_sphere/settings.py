@@ -376,6 +376,13 @@ DEFAULT_FROM_EMAIL = 'CampusSphere <no-reply@campussphere.app>'
 # CELERY_RESULT_SERIALIZER = 'json'
 # CELERY_TIMEZONE = TIME_ZONE
 
+CELERY_BEAT_SCHEDULE = {
+    'cleanup-expired-spheres-hourly': {
+        'task': 'spheres.tasks.cleanup_expired_spheres_task',
+        'schedule': 3600.0,
+    },
+}
+
 # Static Files
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'

@@ -68,7 +68,8 @@ export function CreateTaskModal({ children, onTaskCreated, sphereMembers = [], s
     description: z.string().min(10, "La description doit contenir au moins 10 caractères"),
     dueDate: z.string().min(1, "La date d'échéance est requise"),
     priority: z.string().min(1, "La priorité est requise"),
-    category: z.string().min(1, "La catégorie est requise")
+    category: z.string().min(1, "La catégorie est requise"),
+    assignedTo: z.string().min(1, "L'assignation est obligatoire")
   });
 
   const addTag = () => {
@@ -94,7 +95,8 @@ export function CreateTaskModal({ children, onTaskCreated, sphereMembers = [], s
       description,
       dueDate,
       priority,
-      category
+      category,
+      assignedTo
     });
 
     if (!validation.success) {
@@ -122,7 +124,7 @@ export function CreateTaskModal({ children, onTaskCreated, sphereMembers = [], s
         due_date: dueDate,
         priority,
         sphere_id: sphereId,
-        assigned_to: assignedTo && assignedTo !== "unassigned" ? assignedTo : undefined,
+        assigned_to: assignedTo,
         impact_points: priority === "urgent" ? 30 : priority === "high" ? 20 : priority === "medium" ? 15 : 10,
       } as any);
 
@@ -291,10 +293,9 @@ export function CreateTaskModal({ children, onTaskCreated, sphereMembers = [], s
               <Label htmlFor="assignedTo">Assigner à</Label>
               <Select value={assignedTo} onValueChange={setAssignedTo}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un membre (optionnel)" />
+                  <SelectValue placeholder="Sélectionner un membre" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="unassigned">Non assigné</SelectItem>
                   {sphereMembers.map((member) => (
                     <SelectItem key={member.id} value={member.id}>
                       <div className="flex items-center gap-2">
@@ -403,7 +404,7 @@ export function CreateTaskModal({ children, onTaskCreated, sphereMembers = [], s
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={!title || !description || !dueDate || !priority || !category || isSubmitting}
+              disabled={!title || !description || !dueDate || !priority || !category || !assignedTo || isSubmitting}
               className="flex-1 campus-gradient text-white hover:opacity-90"
             >
               {isSubmitting ? (

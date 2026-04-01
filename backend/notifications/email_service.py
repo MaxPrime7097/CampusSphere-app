@@ -63,7 +63,7 @@ class EmailNotificationService:
             'task_completed': settings.email_task_assignments,
             'connection_request': settings.email_messages,
             'connection_accepted': settings.email_messages,
-            'message_received': settings.email_messages,
+            'message': settings.email_messages,
             'system': settings.system_updates,
         }
         
@@ -105,7 +105,7 @@ class EmailNotificationService:
             subject = f"🤝 Nouvelle demande de connexion"
             template = 'emails/connection_request.html'
             
-        elif notification.type == 'message_received':
+        elif notification.type == 'message':
             subject = f"💬 Nouveau message de {data.get('sender_name', 'un utilisateur')}"
             template = 'emails/message_received.html'
             
