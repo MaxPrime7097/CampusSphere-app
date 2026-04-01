@@ -107,20 +107,29 @@ class SphereJoinView(APIView):
         # Determine membership status based on sphere settings
         membership_status = 'pending' if sphere.require_approval else 'active'
 
-        # Create membership
-        membership, created = SphereMember.objects.get_or_create(
+        existing_membership = SphereMember.objects.filter(
             sphere=sphere,
-            user=request.user,
-            defaults={
-                'role': 'member',
-                'status': membership_status
-            }
-        )
+            user=request.user
+        ).first()
 
-        if not created:
+        if existing_membership and existing_membership.status in ['pending', 'active']:
             return Response(
-                {'error': 'You are already associated with this sphere'},
+                {'error': 'You already have an active or pending membership for this sphere'},
                 status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if existing_membership:
+            existing_membership.role = 'member'
+            existing_membership.status = membership_status
+            existing_membership.joined_at = timezone.now()
+            existing_membership.save(update_fields=['role', 'status', 'joined_at'])
+            membership = existing_membership
+        else:
+            membership = SphereMember.objects.create(
+                sphere=sphere,
+                user=request.user,
+                role='member',
+                status=membership_status
             )
 
         # Update member count

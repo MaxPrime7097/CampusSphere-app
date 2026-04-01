@@ -170,6 +170,7 @@ export function SphereDetail() {
 
   const canModerateMembers = resolvedUserRole === "admin" || resolvedUserRole === "moderator";
   const canChangeMemberRoles = resolvedUserRole === "admin";
+  const membershipStateLabel = isMember ? "Membre" : isPendingRequest ? "Demande en attente" : "Rejoindre";
 
   // ==================== HANDLERS ====================
   const handleJoinSphere = async () => {
@@ -293,6 +294,9 @@ export function SphereDetail() {
             </div>
 
             <div className="flex flex-col gap-2 min-w-[220px]">
+              <Badge variant={isMember ? "default" : isPendingRequest ? "secondary" : "outline"} className="w-fit">
+                {membershipStateLabel}
+              </Badge>
               {isMember ? (
                 <>
                   <SphereSettingsModal sphereData={sphereFallback} onSettingsUpdated={loadSphereData} onSphereDeleted={() => navigate("/spheres")}>
@@ -306,14 +310,27 @@ export function SphereDetail() {
                   </AddMemberModal>
                 </>
               ) : (
-                <Button
-                  onClick={isPendingRequest ? handleCancelRequest : handleJoinSphere}
-                  disabled={isJoining || isCancellingRequest}
-                  className="campus-gradient text-white h-12 text-md font-bold"
-                >
-                  {(isJoining || isCancellingRequest) ? <Loader2 className="animate-spin mr-2"/> : null}
-                  {isPendingRequest ? "Annuler la demande" : "Rejoindre la Sphère"}
-                </Button>
+                <>
+                  <Button
+                    onClick={handleJoinSphere}
+                    disabled={isPendingRequest || isJoining || isCancellingRequest}
+                    className="campus-gradient text-white h-12 text-md font-bold"
+                  >
+                    {isJoining ? <Loader2 className="animate-spin mr-2"/> : null}
+                    {isPendingRequest ? "Demande en attente" : "Rejoindre la Sphère"}
+                  </Button>
+                  {isPendingRequest && (
+                    <Button
+                      onClick={handleCancelRequest}
+                      disabled={isCancellingRequest}
+                      variant="outline"
+                      className="h-10 text-sm"
+                    >
+                      {isCancellingRequest ? <Loader2 className="animate-spin mr-2"/> : null}
+                      Annuler la demande
+                    </Button>
+                  )}
+                </>
               )}
               <Button variant="ghost" onClick={handleShare} disabled={isSharing} className="w-full justify-start gap-2">
                 {isSharing ? <Check className="h-4 w-4 text-green-500"/> : <Share2 className="h-4 w-4"/>} 
@@ -404,19 +421,28 @@ export function SphereDetail() {
             </TabsContent>
 
             <TabsContent value="pending" className="space-y-4 mt-4">
-               {pendingMembers.map(m => (
-                  <div key={m.id} className="p-4 border rounded-xl flex justify-between items-center bg-card">
-                    <div className="flex items-center gap-4">
-                      <Avatar><AvatarImage src={m.avatar}/></Avatar>
-                      <p className="font-bold">{m.name}</p>
+              {pendingMembers.length === 0 && (
+                <p className="text-center py-10 text-muted-foreground italic">Aucune demande en attente.</p>
+              )}
+              {pendingMembers.map(m => (
+                  <div key={m.id} className="p-4 border rounded-xl bg-card space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Demande en attente</h4>
+                      <Badge variant="secondary">pending</Badge>
                     </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white gap-2" onClick={() => handleApproveRequest(m.id)} disabled={processingMemberIds[m.id]}>
-                        <UserCheck className="h-4 w-4"/> Accepter
-                      </Button>
-                      <Button size="sm" variant="ghost" className="text-red-600 hover:bg-red-50" onClick={() => handleRejectRequest(m.id)} disabled={processingMemberIds[m.id]}>
-                        <UserX className="h-4 w-4"/>
-                      </Button>
+                    <div className="flex justify-between items-center gap-4">
+                      <div className="flex items-center gap-4">
+                        <Avatar><AvatarImage src={m.avatar}/></Avatar>
+                        <p className="font-bold">{m.name}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white gap-2" onClick={() => handleApproveRequest(m.id)} disabled={processingMemberIds[m.id]}>
+                          <UserCheck className="h-4 w-4"/> Approuver
+                        </Button>
+                        <Button size="sm" variant="ghost" className="text-red-600 hover:bg-red-50 gap-2" onClick={() => handleRejectRequest(m.id)} disabled={processingMemberIds[m.id]}>
+                          <UserX className="h-4 w-4"/> Rejeter
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
