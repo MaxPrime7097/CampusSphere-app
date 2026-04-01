@@ -50,7 +50,7 @@ function mapMessage(msg: any, currentUserId?: string) {
   return {
     id: String(msg.id),
     sender: author.name || author.username || "Utilisateur",
-    senderUsername: author.username || "user",
+    senderUsername: author.username || "",
     senderId,
     content: msg.content || "",
     timestamp: msg.created_at || msg.createdAt || null,
@@ -224,6 +224,19 @@ export function Messages() {
     );
   };
 
+  const handleProfileNavigation = (username?: string, displayName?: string) => {
+    if (!username) {
+      toast({
+        title: "Profil indisponible",
+        description: `Impossible d'ouvrir le profil de ${displayName || "cet utilisateur"} : username manquant.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    navigate(`/profile/${username}`);
+  };
+
   const selectedConv = conversations.find(c => c.id === conversationId);
 
   return (
@@ -335,8 +348,19 @@ export function Messages() {
                     ←
                   </Button>
                   
-                  <Avatar className="h-8 w-8 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"  
-                      onClick={() => navigate(`/profile/${selectedConv?.participants?.[0]?.username || 'unknown'}`)}>
+                  <Avatar
+                    className={`h-8 w-8 flex-shrink-0 transition-opacity ${
+                      selectedConv?.participants?.[0]?.username
+                        ? "cursor-pointer hover:opacity-80"
+                        : "cursor-not-allowed opacity-60"
+                    }`}
+                    onClick={() =>
+                      handleProfileNavigation(
+                        selectedConv?.participants?.[0]?.username,
+                        selectedConv?.name
+                      )
+                    }
+                  >
                     <AvatarImage src={selectedConv?.avatar} />
                     <AvatarFallback className="bg-input text-muted-foreground font-semibold text-xs md:text-sm">
                       {(selectedConv?.name || "U").slice(0, 1).toUpperCase()}
@@ -396,8 +420,12 @@ export function Messages() {
                  >
                    {!message.isCurrentUser && (
                      <Avatar 
-                       className="h-8 w-8 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-                       onClick={() => navigate(`/profile/${message.sender}`)}
+                       className={`h-8 w-8 flex-shrink-0 transition-opacity ${
+                         message.senderUsername
+                           ? "cursor-pointer hover:opacity-80"
+                           : "cursor-not-allowed opacity-60"
+                       }`}
+                       onClick={() => handleProfileNavigation(message.senderUsername, message.sender)}
                      >
                        <AvatarImage src={message.avatar} />
                        <AvatarFallback className="bg-input text-muted-foreground font-semibold text-xs md:text-sm">
@@ -409,8 +437,12 @@ export function Messages() {
                    <div className={`max-w-[70%] sm:max-w-xs lg:max-w-md ${message.isCurrentUser ? 'text-right' : ''}`}>
                      {!message.isCurrentUser && (
                        <p 
-                         className="text-xs text-muted-foreground mb-1 cursor-pointer hover:underline"
-                         onClick={() => navigate(`/profile/${message.senderUsername}`)}
+                         className={`text-xs text-muted-foreground mb-1 ${
+                           message.senderUsername
+                             ? "cursor-pointer hover:underline"
+                             : "cursor-not-allowed opacity-60"
+                         }`}
+                         onClick={() => handleProfileNavigation(message.senderUsername, message.sender)}
                        >
                          {message.sender}
                        </p>
