@@ -38,23 +38,24 @@ class SphereSerializer(serializers.ModelSerializer):
             'created_by', 'created_by_info', 'is_member', 'membership_status',
             'user_role', 'is_expired', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'member_count', 'impact_score', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'member_count', 'created_at', 'updated_at']
 
     def get_progression(self, obj):
         """
-        Compute a normalized progression percentage for the sphere.
+        Compute progression as percentage of completed tasks in the sphere.
 
         Formula:
-          progression = clamp(impact_score, 0, 100)
+          progression = (completed_tasks / total_tasks) * 100
 
-        The UI can safely render this as a 0-100% progress bar without showing
-        `undefined%`.
+        Returns 0 when the sphere has no tasks.
         """
-        try:
-            impact_score = int(obj.impact_score or 0)
-        except (TypeError, ValueError):
-            impact_score = 0
-        return max(0, min(100, impact_score))
+        total_tasks = obj.tasks.count()
+        if total_tasks == 0:
+            return 0
+
+        completed_tasks = obj.tasks.filter(is_completed=True).count()
+        return round((completed_tasks / total_tasks) * 100)
+
 
     def get_created_by_info(self, obj):
         from users.serializers import UserProfileSerializer

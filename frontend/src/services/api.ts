@@ -158,7 +158,6 @@ function normalizeSphere(sphere: any) {
     isPrivate: sphere.is_private ?? sphere.isPrivate ?? false,
     requireApproval: sphere.require_approval ?? sphere.requireApproval ?? false,
     memberCount: toNumber(sphere.member_count ?? sphere.memberCount, 0),
-    impactScore: toNumber(sphere.impact_score ?? sphere.impactScore, 0),
     progression: toNumber(sphere.progression ?? sphere.progressionPercentage, 0),
     createdBy: sphere.created_by ?? sphere.createdBy ?? createdByInfo?.id ?? null,
     createdByInfo,
