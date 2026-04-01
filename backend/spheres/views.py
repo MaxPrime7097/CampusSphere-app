@@ -242,21 +242,24 @@ class SphereMemberDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
             return SphereMemberUpdateSerializer
         return SphereMemberSerializer
 
-    def _get_actor_membership(self, sphere, user):
+    def _get_actor_membership(self, request, sphere):
         return SphereMember.objects.filter(
             sphere=sphere,
-            user=user,
+            user=request.user,
             status='active'
         ).first()
+
+    def _can_manage_members(self, actor_membership):
+        return actor_membership and actor_membership.role in ['admin', 'moderator']
 
     def partial_update(self, request, *args, **kwargs):
         membership = self.get_object()
         sphere = membership.sphere
-        actor_membership = self._get_actor_membership(sphere, request.user)
+        actor_membership = self._get_actor_membership(request, sphere)
 
-        if not actor_membership or actor_membership.role not in ['admin', 'moderator']:
+        if not self._can_manage_members(actor_membership):
             return Response(
-                {'error': 'Only sphere moderators or admins can manage members'},
+                {'error': 'Only sphere admins or moderators can update members'},
                 status=status.HTTP_403_FORBIDDEN
             )
 
@@ -286,40 +289,6 @@ class SphereMemberDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
 
         serializer.save()
 
-        return Response({
-            'success': True,
-            'message': 'Member updated successfully',
-            'data': SphereMemberSerializer(membership, context={'request': request}).data
-        })
-
-    def get_serializer_class(self):
-        if self.request.method == 'PATCH':
-            return SphereMemberUpdateSerializer
-        return SphereMemberSerializer
-
-    def _get_actor_membership(self, request, sphere):
-        return SphereMember.objects.filter(
-            sphere=sphere,
-            user=request.user,
-            status='active'
-        ).first()
-
-    def _can_manage_members(self, request, sphere):
-        actor_membership = self._get_actor_membership(request, sphere)
-        return actor_membership and actor_membership.role in ['admin', 'moderator']
-
-    def patch(self, request, *args, **kwargs):
-        membership = self.get_object()
-        if not self._can_manage_members(request, membership.sphere):
-            return Response(
-                {'error': 'Only sphere admins or moderators can update members'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-        serializer = self.get_serializer(membership, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
         output_serializer = SphereMemberSerializer(membership, context={'request': request})
         return Response({
             'success': True,
@@ -327,26 +296,25 @@ class SphereMemberDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
             'data': output_serializer.data,
         })
 
+    def patch(self, request, *args, **kwargs):
+        return self.partial_update(request, *args, **kwargs)
+
     def destroy(self, request, *args, **kwargs):
         membership = self.get_object()
         sphere = membership.sphere
-        actor_membership = self._get_actor_membership(sphere, request.user)
+        actor_membership = self._get_actor_membership(request, sphere)
 
-        if not actor_membership or actor_membership.role not in ['admin', 'moderator']:
-            return Response(
-                {'error': 'Only sphere moderators or admins can remove members'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-        if not self._can_manage_members(request, sphere):
+        if not self._can_manage_members(actor_membership):
             return Response(
                 {'error': 'Only sphere admins or moderators can remove members'},
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        # Prevent removing the last admin
         if membership.role == 'admin':
-            admin_count = sphere.members.filter(role='admin', status='active').exclude(id=membership.id).count()
+            admin_count = sphere.members.filter(
+                role='admin',
+                status='active'
+            ).exclude(id=membership.id).count()
             if admin_count == 0:
                 return Response(
                     {'error': 'Cannot remove the last admin from the sphere'},
