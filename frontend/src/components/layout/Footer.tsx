@@ -27,7 +27,7 @@ export function Footer() {
                 <a href="https://www.instagram.com/campussphere/" target='blank' className="w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:scale-110 transition-all duration-300 hover:text-primary group">
                   <FaInstagram className="w-7 h-7" />
                 </a>
-                <a href="#" target='blank' className="w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:scale-110 transition-all duration-300 hover:text-primary group">
+                <a href="https://www.tiktok.com/@campussphere.app" target='blank' className="w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:scale-110 transition-all duration-300 hover:text-primary group">
                   <FaTiktok className="w-7 h-7" />
                 </a>
               </div>

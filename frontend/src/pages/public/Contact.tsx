@@ -231,7 +231,7 @@ export function Contact(): JSX.Element {
             <a href="https://www.instagram.com/campussphere/" target='blank' className="w-16 h-16 campus-gradient rounded-full flex items-center justify-center text-white hover:scale-110 transition-all duration-300 hover:shadow-lg group">
               <FaInstagram className="w-8 h-8 group-hover:animate-pulse" />
             </a>
-            <a href="#" target='blank' className="w-16 h-16 campus-gradient rounded-full flex items-center justify-center text-white hover:scale-110 transition-all duration-300 hover:shadow-lg group">
+            <a href="https://www.tiktok.com/@campussphere.app" target='blank' className="w-16 h-16 campus-gradient rounded-full flex items-center justify-center text-white hover:scale-110 transition-all duration-300 hover:shadow-lg group">
               <FaTiktok className="w-8 h-8 group-hover:animate-pulse" />
             </a>
           </div>

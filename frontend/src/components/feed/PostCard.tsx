@@ -238,7 +238,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
 
   return (
     <>
-      <Card className={cardClasses} onClick={handleOpenPost}>
+      <Card className={cardClasses}>
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div 
@@ -301,7 +301,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
           </div>
         </CardHeader>
 
-      <CardContent className="pt-0">
+      <CardContent className="pt-0" onClick={handleOpenPost}>
         <div className="space-y-3">
           <div className="flex items-center justify-between mb-2">
             {post.category && (
