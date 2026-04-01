@@ -229,6 +229,9 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
     }
   };
 
+
+  const normalizedCategory = post.category ? String(post.category).trim().toLowerCase() : "";
+  const categoryLabel = normalizedCategory ? getSphereCategoryLabel(normalizedCategory) || "Autre" : "Non défini";
   const cardClasses = cn(
     "transition-all duration-300",
     isMobile 
@@ -304,11 +307,9 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
       <CardContent className="pt-0">
         <div className="space-y-3">
           <div className="flex items-center justify-between mb-2">
-            {post.category && (
-              <Badge variant="secondary" className="text-xs">
-                {getSphereCategoryLabel(post.category)}
-              </Badge>
-            )}
+            <Badge variant="secondary" className="text-xs">
+              {categoryLabel}
+            </Badge>
           </div>
 
           <p className="text-sm leading-relaxed">{post.content}</p>
