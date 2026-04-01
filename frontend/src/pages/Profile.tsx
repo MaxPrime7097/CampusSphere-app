@@ -116,7 +116,6 @@ function mapProfileToViewModel({
     town: profile.town ?? "",
     language: profile.language ?? "",
     impactScore: profile.impactScore ?? null,
-    currentMood: profile.currentMood ?? "",
     university: profile.university ?? "",
     faculty: profile.faculty ?? "",
     studyYear: profile.studyYear ?? "",
