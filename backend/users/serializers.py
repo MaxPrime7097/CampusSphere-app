@@ -98,6 +98,14 @@ class UserUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("This username is already in use")
         return value
 
+    def validate_current_mood(self, value):
+        allowed_values = {choice[0] for choice in User.CURRENT_MOOD_CHOICES}
+        if value not in allowed_values:
+            raise serializers.ValidationError(
+                f"Invalid mood. Allowed values: {', '.join(sorted(allowed_values))}."
+            )
+        return value
+
 
 class ChangePasswordSerializer(serializers.Serializer):
     current_password = serializers.CharField(write_only=True)

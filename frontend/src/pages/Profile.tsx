@@ -17,6 +17,35 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils"; // si tu utilises cn dans ce fichier
 
 const NOT_AVAILABLE_TEXT = "Not available";
+const MOOD_OPTIONS = [
+  { value: "excited", label: "🚀 En pleine révision !" },
+  { value: "focused", label: "🎯 Concentré sur mes objectifs" },
+  { value: "collaborating", label: "🤝 Prêt à collaborer" },
+  { value: "learning", label: "📚 En mode apprentissage" },
+  { value: "inspired", label: "🌟 Inspiré et créatif" },
+  { value: "determined", label: "💪 Déterminé" },
+];
+
+const MOOD_VALUE_TO_LABEL = MOOD_OPTIONS.reduce<Record<string, string>>((acc, mood) => {
+  acc[mood.value] = mood.label;
+  return acc;
+}, {});
+
+function getMoodLabel(moodValue?: string | null) {
+  if (!moodValue) {
+    return NOT_AVAILABLE_TEXT;
+  }
+
+  return MOOD_VALUE_TO_LABEL[moodValue] ?? moodValue;
+}
+
+function findMoodOptionByValue(moodValue?: string | null) {
+  if (!moodValue) {
+    return null;
+  }
+
+  return MOOD_OPTIONS.find((option) => option.value === moodValue) ?? null;
+}
 
 function mapProfileToViewModel({
   profile,
@@ -124,7 +153,6 @@ export function Profile() {
   const isMobile = useIsMobile();
   const [isFollowing, setIsFollowing] = useState(false);
   const [currentConnectionId, setCurrentConnectionId] = useState<string | null>(null);
-  const [currentMood, setCurrentMood] = useState("🚀 En pleine révision !");
   const [isFollowingLoading, setIsFollowingLoading] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCoverPhotoModal, setShowCoverPhotoModal] = useState(false);
@@ -136,7 +164,7 @@ export function Profile() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [showMoodModal, setShowMoodModal] = useState(false);
-  const [newMood, setNewMood] = useState("");
+  const [newMood, setNewMood] = useState<{ value: string; label: string } | null>(null);
 
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [targetUser, setTargetUser] = useState<any>(null);
@@ -600,11 +628,11 @@ export function Profile() {
   };
 
   const handleMoodChange = async () => {
-    if (!newMood.trim() || !currentUser?.id) return;
+    if (!newMood?.value || !currentUser?.id) return;
     try {
-      await updateUserProfile({ current_mood: newMood });
+      await updateUserProfile({ current_mood: newMood.value });
       toast({ title: "Mood mis à jour !", description: "Votre mood du moment a été changé", duration: 2000 });
-      setNewMood("");
+      setNewMood(null);
       setShowMoodModal(false);
       const userData = await getCurrentUser();
       setCurrentUser(userData);
@@ -743,7 +771,7 @@ export function Profile() {
                     </div>
                     <div>
                       <p className="text-sm font-semibold">Mood du moment</p>
-                      <p className="text-sm text-muted-foreground">{user.currentMood || NOT_AVAILABLE_TEXT}</p>
+                      <p className="text-sm text-muted-foreground">{getMoodLabel(user.currentMood)}</p>
                     </div>
                     {isOwnProfile && (
                       <Settings className="h-3 w-3 text-muted-foreground ml-auto" />
@@ -1249,7 +1277,15 @@ export function Profile() {
         </Dialog>
 
         {/* Modal pour changer le mood */}
-        <Dialog open={showMoodModal} onOpenChange={setShowMoodModal}>
+        <Dialog
+          open={showMoodModal}
+          onOpenChange={(open) => {
+            setShowMoodModal(open);
+            if (open) {
+              setNewMood(findMoodOptionByValue(user.currentMood));
+            }
+          }}
+        >
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
@@ -1266,13 +1302,12 @@ export function Profile() {
                 <Label htmlFor="mood">Mood du moment</Label>
                 <Input
                   id="mood"
-                  placeholder="Ex: 🚀 En pleine révision !, 😴 Fatigué mais motivé..."
-                  value={newMood}
-                  onChange={(e) => setNewMood(e.target.value)}
+                  value={newMood?.label ?? ""}
+                  readOnly
                   className="mt-2"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Décrivez votre état d'esprit actuel
+                  Choisissez votre état d'esprit actuel
                 </p>
               </div>
 
@@ -1280,28 +1315,15 @@ export function Profile() {
               <div>
                 <Label>Suggestions</Label>
                 <div className="grid grid-cols-2 gap-2 mt-2">
-                  {[
-                    "🚀 En pleine révision !",
-                    "😴 Fatigué mais motivé",
-                    "💡 Plein d'idées !",
-                    "🎯 Concentré sur mes objectifs",
-                    "🤝 Prêt à collaborer",
-                    "📚 En mode apprentissage",
-                    "☕ Besoin d'un café",
-                    "🌟 Inspiré et créatif",
-                    "🏃‍♂️ En mouvement",
-                    "🧘‍♀️ Au calme",
-                    "🎉 Fêtant les réussites",
-                    "💪 Déterminé"
-                  ].map((mood) => (
+                  {MOOD_OPTIONS.map((mood) => (
                     <Button
-                      key={mood}
+                      key={mood.value}
                       variant="outline"
                       size="sm"
                       onClick={() => setNewMood(mood)}
                       className="text-xs h-auto py-2 px-3 justify-start"
                     >
-                      {mood}
+                      {mood.label}
                     </Button>
                   ))}
                 </div>
@@ -1313,14 +1335,14 @@ export function Profile() {
                 variant="outline" 
                 onClick={() => {
                   setShowMoodModal(false);
-                  setNewMood("");
+                  setNewMood(null);
                 }}
               >
                 Annuler
               </Button>
               <Button
                 onClick={handleMoodChange}
-                disabled={!newMood.trim()}
+                disabled={!newMood?.value}
                 className="campus-gradient text-white hover:opacity-90"
               >
                 <Check className="h-4 w-4 mr-2" />
