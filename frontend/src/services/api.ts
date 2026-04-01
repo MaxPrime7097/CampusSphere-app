@@ -152,6 +152,8 @@ function normalizeSphere(sphere: any) {
     objective: sphere.objective ?? "",
     targetAudience: sphere.target_audience ?? sphere.targetAudience ?? "",
     duration: sphere.duration ?? "",
+    expiresAt: sphere.expires_at ?? sphere.expiresAt ?? null,
+    autoDeleteOnExpiry: sphere.auto_delete_on_expiry ?? sphere.autoDeleteOnExpiry ?? false,
     collaborationTypes: toArray(sphere.collaboration_types ?? sphere.collaborationTypes),
     isPrivate: sphere.is_private ?? sphere.isPrivate ?? false,
     requireApproval: sphere.require_approval ?? sphere.requireApproval ?? false,
@@ -659,12 +661,29 @@ export async function updateSphere(id: number | string, data: Partial<{
   category: string;
   type: string;
   is_private: boolean;
+  require_approval: boolean;
+  duration: string;
+  auto_delete_on_expiry: boolean;
 }>, token?: string) {
   return apiFetch<any>(`api/spheres/${id}/`, {
     method: "PUT",
     body: data,
     token: token || getAccessToken(),
   });
+}
+
+
+export async function extendSphereDuration(
+  id: number | string,
+  duration: string,
+  token?: string
+) {
+  const response = await apiFetch<any>(`api/spheres/${id}/extend-duration/`, {
+    method: "POST",
+    body: { duration },
+    token: token || getAccessToken(),
+  });
+  return normalizeSphere(unwrapItem(response));
 }
 
 export async function deleteSphere(id: number | string, token?: string) {
