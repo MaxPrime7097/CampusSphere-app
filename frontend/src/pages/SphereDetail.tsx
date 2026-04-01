@@ -170,6 +170,11 @@ export function SphereDetail() {
 
   const canModerateMembers = resolvedUserRole === "admin" || resolvedUserRole === "moderator";
   const canChangeMemberRoles = resolvedUserRole === "admin";
+  const canMarkTaskComplete = (task: any) => {
+    const isAssignedUser = currentUserId && String(task.assignedToId) === String(currentUserId);
+    const hasElevatedRole = resolvedUserRole === "admin" || resolvedUserRole === "moderator";
+    return Boolean(isAssignedUser || hasElevatedRole);
+  };
 
   // ==================== HANDLERS ====================
   const handleJoinSphere = async () => {
@@ -351,15 +356,20 @@ export function SphereDetail() {
                 {tasks.map(task => (
                   <div key={task.id} className={`p-5 rounded-xl border bg-card flex justify-between items-center transition-all ${task.isCompleted ? 'bg-muted/30 grayscale-[0.5]' : 'hover:border-primary/50'}`}>
                     <div className="flex gap-4">
-                      <Button 
-                        variant={task.isCompleted ? "default" : "outline"} 
-                        size="icon" 
-                        className="rounded-full h-8 w-8" 
-                        onClick={() => handleTaskComplete(task.id)} 
-                        disabled={task.isCompleted}
-                      >
-                        {task.isCompleted ? <Check className="h-4 w-4" /> : null}
-                      </Button>
+                      {task.isCompleted ? (
+                        <Button variant="default" size="icon" className="rounded-full h-8 w-8" disabled>
+                          <Check className="h-4 w-4" />
+                        </Button>
+                      ) : canMarkTaskComplete(task) ? (
+                        <Button
+                          variant="outline"
+                          className="gap-2"
+                          onClick={() => handleTaskComplete(task.id)}
+                        >
+                          <Check className="h-4 w-4" />
+                          Marquer complété
+                        </Button>
+                      ) : null}
                       <div>
                         <p className={`font-semibold text-md ${task.isCompleted ? 'line-through text-muted-foreground' : ''}`}>{task.title}</p>
                         <div className="flex items-center gap-3 mt-1">
