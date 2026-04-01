@@ -12,6 +12,7 @@ urlpatterns = [
     path('<int:pk>/join/', views.SphereJoinView.as_view(), name='sphere-join'),
     path('<int:pk>/leave/', views.SphereLeaveView.as_view(), name='sphere-leave'),
     path('<int:pk>/cancel-request/', views.SphereCancelJoinRequestView.as_view(), name='sphere-cancel-request'),
+    path('<int:pk>/extend-duration/', views.SphereExtendDurationView.as_view(), name='sphere-extend-duration'),
 
     # Sphere members management
     path('<int:pk>/members/', views.SphereMembersView.as_view(), name='sphere-members'),
