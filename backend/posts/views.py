@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 # from django_filters.rest_framework import DjangoFilterBackend  # Commented out - django_filters not installed
 from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.shortcuts import get_object_or_404
 from django.db import models
 from django.utils import timezone
@@ -22,7 +23,10 @@ from users.impact_policy import POST_CREATED, COMMENT_CREATED, apply_impact_even
 from notifications.services import (
     create_post_comment_notification,
     create_post_like_notification,
+    create_mention_post_notification,
+    create_mention_comment_notification,
 )
+from .mentions import resolve_mentioned_users
 
 
 def user_can_access_post(user, post):
@@ -58,6 +62,7 @@ def can_user_access_post(user, post):
 
 
 class PostListView(generics.ListCreateAPIView):
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [SearchFilter, OrderingFilter]  # Removed DjangoFilterBackend - not installed
     # filterset_fields = ['sphere', 'author', 'category', 'subject', 'type', 'visibility']  # Commented out - django_filters not installed
@@ -110,6 +115,9 @@ class PostListView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         post = serializer.save()
+        mentioned_users = resolve_mentioned_users(post.content, exclude_user_id=post.author_id)
+        for mentioned_user in mentioned_users:
+            create_mention_post_notification(post, mentioned_user, post.author)
         # Apply impact for creating a post.
         apply_impact_event(post.author, POST_CREATED)
 
@@ -127,6 +135,7 @@ class PostListView(generics.ListCreateAPIView):
 
 
 class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
     queryset = Post.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
@@ -401,16 +410,23 @@ class PostCommentsView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         post = get_object_or_404(Post, pk=self.kwargs['pk'])
+        parent_comment = serializer.validated_data.get('parent')
         
         # Check if comments are allowed
         if not post.allow_comments:
             from rest_framework.exceptions import ValidationError
             raise ValidationError("Comments are not allowed on this post")
+        if parent_comment and parent_comment.post_id != post.id:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError({'parent': 'Parent comment must belong to the same post.'})
 
         comment = serializer.save()
         # Update post comment count
         post.update_counts()
         create_post_comment_notification(post, comment.author, comment)
+        mentioned_users = resolve_mentioned_users(comment.content, exclude_user_id=comment.author_id)
+        for mentioned_user in mentioned_users:
+            create_mention_comment_notification(post, comment, mentioned_user, comment.author)
         
         # Apply impact for creating a comment.
         apply_impact_event(comment.author, COMMENT_CREATED)

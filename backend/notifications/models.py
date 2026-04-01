@@ -7,6 +7,8 @@ class Notification(models.Model):
     CANONICAL_TYPES = [
         ('post_like', 'Like sur post'),
         ('post_comment', 'Commentaire sur post'),
+        ('mention_post', 'Mention dans un post'),
+        ('mention_comment', 'Mention dans un commentaire'),
         ('comment_reply', 'Réponse à commentaire'),
         ('sphere_invitation', 'Invitation à une sphère'),
         ('sphere_join_request', 'Demande d\'adhésion'),

@@ -83,7 +83,7 @@ function unwrapList<T = any>(response: any): T[] {
   return [];
 }
 
-function normalizeUser(user: any) {
+export function normalizeUser(user: any) {
   if (!user) return null;
 
   const firstName = user.firstName ?? user.first_name ?? "";
@@ -173,6 +173,30 @@ function normalizeSpheres(spheres: any[] = []) {
   return spheres.map((sphere) => normalizeSphere(sphere)).filter(Boolean);
 }
 
+
+function normalizePostFiles(files: any[] | null | undefined) {
+  return toArray(files).map((file) => {
+    if (typeof file === "string") {
+      return {
+        id: null,
+        name: file.split("/").pop() || "",
+        url: file,
+        type: "",
+        size: 0,
+      };
+    }
+
+    return {
+      ...file,
+      id: file?.id ?? null,
+      name: file?.name ?? file?.original_name ?? "",
+      url: file?.url ?? file?.file_url ?? file?.file ?? "",
+      type: file?.type ?? file?.file_type ?? "",
+      size: toNumber(file?.size ?? file?.file_size, 0),
+    };
+  });
+}
+
 function normalizeResource(resource: any) {
   if (!resource) return null;
 
@@ -221,7 +245,7 @@ function normalizePost(post: any) {
     audience: post.audience ?? "",
     location: post.location ?? "",
     tags: toArray(post.tags),
-    files: toArray(post.files),
+    files: normalizePostFiles(post.files),
     allowComments: post.allow_comments ?? post.allowComments ?? true,
     isPinned: post.is_pinned ?? post.isPinned ?? false,
     likesCount: toNumber(post.likes_count ?? post.likesCount, 0),
@@ -798,7 +822,21 @@ export async function createPost(data: {
   category?: string;
   subject?: string;
   type?: string;
-}, token?: string) {
+} | FormData, token?: string) {
+  if (data instanceof FormData) {
+    const sphereId = data.get("sphere_id");
+    if (sphereId !== null && data.get("sphere") === null) {
+      data.append("sphere", String(sphereId));
+      data.delete("sphere_id");
+    }
+
+    return apiFetch<any>("api/posts/", {
+      method: "POST",
+      body: data,
+      token: token || getAccessToken(),
+    });
+  }
+
   const payload = { ...data } as any;
   if (payload.sphere_id !== undefined && payload.sphere === undefined) {
     payload.sphere = payload.sphere_id;

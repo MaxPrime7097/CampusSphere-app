@@ -1,7 +1,79 @@
 from rest_framework import serializers
-from django.utils import timezone
+from upload.serializers import FileUploadSerializer
 from .models import Post, PostLike, PostImpactRating, Comment, CommentLike
 
+
+
+
+def _normalize_post_file_entry(file_entry):
+    if isinstance(file_entry, dict):
+        return {
+            'id': file_entry.get('id'),
+            'name': file_entry.get('name') or file_entry.get('original_name') or '',
+            'url': file_entry.get('url') or file_entry.get('file_url') or file_entry.get('file') or '',
+            'type': file_entry.get('type') or file_entry.get('file_type') or '',
+            'size': file_entry.get('size') or file_entry.get('file_size') or 0,
+        }
+
+    if isinstance(file_entry, str):
+        return {
+            'id': None,
+            'name': file_entry.rsplit('/', 1)[-1],
+            'url': file_entry,
+            'type': '',
+            'size': 0,
+        }
+
+    return {
+        'id': None,
+        'name': '',
+        'url': '',
+        'type': '',
+        'size': 0,
+    }
+
+
+
+
+def _coerce_json_list(raw_value, field_name):
+    if raw_value in (None, ''):
+        return []
+
+    if isinstance(raw_value, list):
+        return raw_value
+
+    if isinstance(raw_value, str):
+        import json
+        try:
+            parsed = json.loads(raw_value)
+        except json.JSONDecodeError as exc:
+            raise serializers.ValidationError({field_name: 'Invalid JSON list.'}) from exc
+        if not isinstance(parsed, list):
+            raise serializers.ValidationError({field_name: 'Must be a list.'})
+        return parsed
+
+    raise serializers.ValidationError({field_name: 'Must be a list.'})
+
+def _build_uploaded_files_payload(request):
+    uploaded_files = []
+    incoming_files = request.FILES.getlist('files[]') or request.FILES.getlist('files')
+
+    for incoming_file in incoming_files:
+        serializer = FileUploadSerializer(
+            data={'file': incoming_file, 'type': 'post'},
+            context={'request': request},
+        )
+        serializer.is_valid(raise_exception=True)
+        uploaded_file = serializer.save()
+        uploaded_files.append({
+            'id': str(uploaded_file.id),
+            'name': uploaded_file.original_name,
+            'url': uploaded_file.file_url,
+            'type': uploaded_file.file_type,
+            'size': uploaded_file.file_size,
+        })
+
+    return uploaded_files
 
 class CommentSerializer(serializers.ModelSerializer):
     author_info = serializers.SerializerMethodField()
@@ -72,6 +144,7 @@ class PostSerializer(serializers.ModelSerializer):
     can_edit = serializers.SerializerMethodField()
     can_delete = serializers.SerializerMethodField()
     recent_comments = serializers.SerializerMethodField()
+    files = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
@@ -135,6 +208,9 @@ class PostSerializer(serializers.ModelSerializer):
         recent_comments = obj.comments.filter(parent=None)[:3]  # Top-level comments only
         return CommentSerializer(recent_comments, many=True, context=self.context).data
 
+    def get_files(self, obj):
+        return [_normalize_post_file_entry(file_entry) for file_entry in (obj.files or [])]
+
     def get_user_impact_rating(self, obj):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
@@ -164,8 +240,25 @@ class PostCreateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("You must be a member of this sphere to post")
         return value
 
+    def validate_tags(self, value):
+        return _coerce_json_list(value, 'tags')
+
+    def validate_files(self, value):
+        return _coerce_json_list(value, 'files')
+
     def create(self, validated_data):
-        validated_data['author'] = self.context['request'].user
+        request = self.context['request']
+        validated_data['author'] = request.user
+        persisted_files = _build_uploaded_files_payload(request)
+
+        existing_files = validated_data.get('files') or []
+        if isinstance(existing_files, list):
+            validated_data['files'] = [
+                _normalize_post_file_entry(file_entry) for file_entry in existing_files
+            ] + persisted_files
+        else:
+            validated_data['files'] = persisted_files
+
         return super().create(validated_data)
 
 
@@ -176,6 +269,29 @@ class PostUpdateSerializer(serializers.ModelSerializer):
             'content', 'category', 'visibility', 'subject', 'type',
             'audience', 'location', 'tags', 'files', 'allow_comments'
         ]
+
+    def validate_tags(self, value):
+        return _coerce_json_list(value, 'tags')
+
+    def validate_files(self, value):
+        return _coerce_json_list(value, 'files')
+
+    def update(self, instance, validated_data):
+        request = self.context['request']
+        persisted_files = _build_uploaded_files_payload(request)
+
+        if persisted_files:
+            incoming_files = validated_data.get('files')
+            if isinstance(incoming_files, list):
+                validated_data['files'] = [
+                    _normalize_post_file_entry(file_entry) for file_entry in incoming_files
+                ] + persisted_files
+            else:
+                validated_data['files'] = [
+                    _normalize_post_file_entry(file_entry) for file_entry in (instance.files or [])
+                ] + persisted_files
+
+        return super().update(instance, validated_data)
 
 
 class PostLikeSerializer(serializers.ModelSerializer):

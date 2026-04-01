@@ -5,27 +5,10 @@ import { Download, Share2, ChevronLeft, Eye, Flag, Loader2, Zap, Bookmark } from
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { RESOURCE_TYPE_OPTIONS } from "@/constants/resourceTypes";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { formatFrenchDate } from "@/lib/date";
-
-const SUBJECT_LABELS: Record<string, string> = {
-  math: "Mathématiques",
-  cs: "Informatique",
-  physics: "Physique",
-  economics: "Économie",
-  language: "Langues",
-  other: "Autre",
-};
-
-function getSubjectLabel(subject: string) {
-  return SUBJECT_LABELS[subject] || subject.charAt(0).toUpperCase() + subject.slice(1);
-}
-
-function getResourceTypeLabel(type: string) {
-  return RESOURCE_TYPE_OPTIONS.find((t) => t.value === type)?.label || type;
-}
+import { getResourceTypeLabel, getSubjectLabel, normalizeResourceType, normalizeSubject } from "@/lib/resourceMetadata";
 
 export function ResourceDetail() {
   const { id } = useParams();
@@ -42,7 +25,7 @@ export function ResourceDetail() {
     title: string;
     description: string;
     subject: string;
-    type: string;
+    type: string | null;
     format: string;
     size: string;
     level: string;
@@ -76,23 +59,31 @@ export function ResourceDetail() {
       try {
         const data = await getResource(id);
         if (isMounted && data) {
+          const author = data.author ?? null;
+          const uploaderContributions =
+            author?.stats?.contributions ??
+            author?.contributions_count ??
+            0;
+
           const resourcePayload = {
             id: String(data.id),
             title: data.title,
             description: data.description || '',
-            subject: data.subject,
-            type: data.type,
+            subject: normalizeSubject(data.subject),
+            type: normalizeResourceType(data.type),
             format: (data.fileUrl || data.file)?.toString().split('.').pop(),
             size: data.fileSize || data.file_size || data.size,
             level: data.level || data.audience || data.courseLevel,
             pages: data.pages || data.page_count || 0,
             uploader: {
-              name: data.author?.name || data.author_info?.name || data.author_name || "Utilisateur",
-              username: data.author?.username || data.author_info?.username || data.author_username || "",
-              avatar: data.author?.avatar || data.author_info?.avatar || "/placeholder-avatar.jpg",
-              verified: data.author?.isVerified || data.author_info?.is_verified || false,
-              level: data.author?.level || data.author_info?.level || "",
-              contributions: data.author?.contributions || data.author_info?.contributions || 0,
+              name: author?.name || data.author_name || "Utilisateur",
+              username: author?.username || data.author_username || "",
+              avatar: author?.avatar || "/placeholder-avatar.jpg",
+              verified: author?.isVerified || author?.is_verified || false,
+              level: author?.level || "",
+              contributions: Number.isFinite(Number(uploaderContributions))
+                ? Number(uploaderContributions)
+                : 0,
             },
             uploadDate: data.createdAt || data.created_at || data.uploaded_at || null,
             stats: {
@@ -103,7 +94,7 @@ export function ResourceDetail() {
             isSaved: data.isSaved ?? data.is_saved ?? false,
             impactScore: data.impactScore || data.impact_score || 0,
             tags: data.tags || [],
-            relatedCourse: data.subject || ''
+            relatedCourse: normalizeSubject(data.subject)
           };
           setResource(resourcePayload);
           setIsSaved(resourcePayload.isSaved);
@@ -302,7 +293,7 @@ export function ResourceDetail() {
                   {getResourceTypeLabel(resource.type)}
                 </Badge>
                 <Badge variant="secondary">{getSubjectLabel(resource.subject)}</Badge>
-                <Badge variant="outline">{resource.format.toUpperCase()}</Badge>
+                <Badge variant="outline">{resource.format ? resource.format.toUpperCase() : "Non défini"}</Badge>
               </div>
               <h1 className="text-2xl md:text-3xl font-bold mb-2">{resource.title}</h1>
               <p className="text-muted-foreground">{resource.description}</p>
@@ -329,7 +320,7 @@ export function ResourceDetail() {
             </div>
 
             {/* Uploader Info */}
-            <div className="flex items-center justify-between p-3 bg-accent/50 rounded-lg mb-4">
+            <div className="flex flex-col gap-3 p-3 bg-accent/50 rounded-lg mb-4 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-3">
                 <Avatar className="h-12 w-12">
                   <AvatarImage src={resource.uploader.avatar} />
@@ -347,43 +338,81 @@ export function ResourceDetail() {
                   </p>
                 </div>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => resource.uploader.username && navigate(`/profile/${resource.uploader.username}`)}
-                disabled={!resource.uploader.username} 
-              >
-                Voir le profil
-              </Button>
-              <Button
-                variant={isSaved ? "secondary" : "outline"}
-                size="sm"
-                onClick={handleSaveResource}
-                disabled={isSaving}
-                className="gap-2"
-              >
-                {isSaving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Bookmark className="h-4 w-4" />
-                )}
-                {isSaved ? "Enregistré" : "Enregistrer"}
-              </Button>
-              <Badge className="flex items-center gap-1 rounded-lg px-3 py-2 h-10 text-sm bg-secondary/20 text-secondary">
-                <Zap className="h-4 w-4" />
-                <span>{resource.impactScore}</span>
-              </Badge>
-              <Button 
-                variant="outline"
-                onClick={handleShare}
-                disabled={isSharing}
-              >
-                {isReporting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Flag className="h-4 w-4" />
-                )}
-              </Button>
+              <div className="flex flex-wrap items-center gap-2 md:justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => resource.uploader.username && navigate(`/profile/${resource.uploader.username}`)}
+                  disabled={!resource.uploader.username}
+                  aria-label="Voir le profil de l'auteur"
+                >
+                  Voir le profil
+                </Button>
+                <Button
+                  variant={isSaved ? "secondary" : "outline"}
+                  size="sm"
+                  onClick={handleSaveResource}
+                  disabled={isSaving}
+                  className="gap-2"
+                  aria-label={isSaved ? "Retirer des enregistrements" : "Enregistrer la ressource"}
+                >
+                  {isSaving ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Bookmark className="h-4 w-4" />
+                  )}
+                  {isSaved ? "Enregistré" : "Enregistrer"}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleShare}
+                  disabled={isSharing}
+                  className="gap-2"
+                  aria-label="Partager la ressource"
+                >
+                  {isSharing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Share2 className="h-4 w-4" />
+                  )}
+                  Partager
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleReport}
+                  disabled={isReporting}
+                  className="gap-2"
+                  aria-label="Signaler la ressource"
+                >
+                  {isReporting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Flag className="h-4 w-4" />
+                  )}
+                  Signaler
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownload}
+                  disabled={isDownloading}
+                  className="gap-2"
+                  aria-label="Télécharger la ressource"
+                >
+                  {isDownloading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
+                  Télécharger
+                </Button>
+                <Badge className="flex items-center gap-1 rounded-lg px-3 py-2 h-10 text-sm bg-secondary/20 text-secondary">
+                  <Zap className="h-4 w-4" />
+                  <span>{resource.impactScore}</span>
+                </Badge>
+              </div>
             </div>
           </CardContent>
         </Card>

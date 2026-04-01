@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { impactRatePost, likePost, savePost, reportPost } from "@/services/api";
 import { formatRelativeTime } from "@/lib/date";
+import { renderMentionText } from "@/lib/mentions";
 
 interface PostCardProps {
   post: {
@@ -229,6 +230,9 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
     }
   };
 
+
+  const normalizedCategory = post.category ? String(post.category).trim().toLowerCase() : "";
+  const categoryLabel = normalizedCategory ? getSphereCategoryLabel(normalizedCategory) || "Autre" : "Non défini";
   const cardClasses = cn(
     "transition-all duration-300",
     isMobile 
@@ -304,14 +308,12 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
       <CardContent className="pt-0" onClick={handleOpenPost}>
         <div className="space-y-3">
           <div className="flex items-center justify-between mb-2">
-            {post.category && (
-              <Badge variant="secondary" className="text-xs">
-                {getSphereCategoryLabel(post.category)}
-              </Badge>
-            )}
+            <Badge variant="secondary" className="text-xs">
+              {categoryLabel}
+            </Badge>
           </div>
 
-          <p className="text-sm leading-relaxed">{post.content}</p>
+          <p className="text-sm leading-relaxed whitespace-pre-wrap">{renderMentionText(post.content)}</p>
           
           {post.image && (
             <div className="rounded-lg overflow-hidden md:overflow-hidden w-full relative">
