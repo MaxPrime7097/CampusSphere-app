@@ -18,6 +18,7 @@ from .serializers import (
     DataExportRequestSerializer, BlockListItemSerializer, BlockCreateSerializer
 )
 from campus_sphere.cache import CacheManager, CacheKeys
+from notifications.services import create_connection_request_notification
 
 logger = logging.getLogger(__name__)
 
@@ -219,7 +220,8 @@ class ConnectionListView(generics.ListCreateAPIView):
         return ConnectionSerializer
 
     def perform_create(self, serializer):
-        serializer.save(requester=self.request.user)
+        connection = serializer.save(requester=self.request.user)
+        create_connection_request_notification(connection)
 
 
 class ConnectionDetailView(generics.DestroyAPIView):
