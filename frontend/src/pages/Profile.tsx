@@ -18,6 +18,67 @@ import { cn } from "@/lib/utils"; // si tu utilises cn dans ce fichier
 
 const NOT_AVAILABLE_TEXT = "Not available";
 
+const STUDY_YEAR_LABELS: Record<string, string> = {
+  bts1: "BTS 1",
+  bts2: "BTS 2",
+  hnd1: "HND 1",
+  hnd2: "HND 2",
+  l1: "Licence 1",
+  l2: "Licence 2",
+  l3: "Licence 3",
+  bachelor1: "Bachelor 1",
+  bachelor2: "Bachelor 2",
+  bachelor3: "Bachelor 3",
+  bachelor4: "Bachelor 4",
+  m1: "Master 1",
+  m2: "Master 2",
+  d1: "Doctorat 1",
+  d2: "Doctorat 2",
+  d3: "Doctorat 3",
+  phd1: "PhD 1",
+  phd2: "PhD 2",
+  phd3: "PhD 3",
+  other: "Autre niveau",
+};
+
+const FACULTY_LABELS: Record<string, string> = {
+  informatique: "Informatique",
+  mathematiques: "Mathématiques",
+  physique: "Physique",
+  chimie: "Chimie",
+  biologie: "Biologie",
+  economie: "Économie",
+  droit: "Droit",
+  medecine: "Médecine",
+  pharmacie: "Pharmacie",
+  ingenierie: "Ingénierie",
+  lettres: "Lettres et Sciences Humaines",
+  sciences_education: "Sciences de l'Éducation",
+  psychologie: "Psychologie",
+  sociologie: "Sociologie",
+  histoire: "Histoire",
+  geographie: "Géographie",
+  philosophie: "Philosophie",
+  langues: "Langues Étrangères",
+  communication: "Communication",
+  journalisme: "Journalisme",
+  art: "Arts",
+  musique: "Musique",
+  sport: "Sciences et Techniques des Activités Physiques et Sportives",
+  agronomie: "Agronomie",
+  veterinaire: "Médecine Vétérinaire",
+  foresterie: "Foresterie",
+  geologie: "Géologie",
+  mining: "Mines et Géologie",
+  other: "Autre filière",
+};
+
+const normalizeCanonicalLabel = (value: unknown, map: Record<string, string>): string => {
+  if (!value || typeof value !== "string") return "";
+  const key = value.trim().toLowerCase();
+  return map[key] || value;
+};
+
 function mapProfileToViewModel({
   profile,
   posts,
@@ -87,18 +148,17 @@ function mapProfileToViewModel({
     town: profile.town ?? "",
     language: profile.language ?? "",
     impactScore: profile.impactScore ?? null,
-    currentMood: profile.currentMood ?? "",
     university: profile.university ?? "",
     faculty: profile.faculty ?? "",
-    studyYear: profile.studyYear ?? "",
+    studyYear: profile.studyYear ?? profile.study_year ?? "",
     studentId: profile.studentId ?? "",
     campus: profile.campus ?? "",
     currentMood: profile.current_mood ?? profile.currentMood ?? "",
-    previousEducation: profile.previousEducation ?? [],
+    previousEducation: profile.previousEducation ?? profile.previous_education ?? [],
     experiences: profile.experiences ?? [],
     skills: profile.skills ?? [],
     interests: profile.interests ?? [],
-    portfolioLinks: profile.portfolioLinks ?? [],
+    portfolioLinks: profile.portfolioLinks ?? profile.portfolio_links ?? [],
     sharedFiles: (resources || []).map((resource: any) => ({
       id: resource.id,
       resourceId: resource.id,
@@ -357,6 +417,15 @@ export function Profile() {
       isLiked: Boolean(post.isLiked ?? post.is_liked),
     }));
   }, [currentUser, targetUser, userPosts]);
+
+  const displayFaculty = useMemo(
+    () => normalizeCanonicalLabel(user.faculty, FACULTY_LABELS) || NOT_AVAILABLE_TEXT,
+    [user.faculty]
+  );
+  const displayStudyYear = useMemo(
+    () => normalizeCanonicalLabel(user.studyYear, STUDY_YEAR_LABELS) || NOT_AVAILABLE_TEXT,
+    [user.studyYear]
+  );
 
   const handleFollow = async () => {
     if (!currentUser?.id || !targetUser?.id || isFollowingLoading) return;
@@ -864,7 +933,77 @@ export function Profile() {
           {/* ABOUT */}
           {activeTab === "about" && (
             <section className="mt-6 space-y-4">
-              {/* ... (LEAVE YOUR ABOUT CONTENT EXACTLY AS IS) */}
+              <div className="rounded-lg border bg-card p-6">
+                <h3 className="flex items-center gap-2 text-lg font-semibold mb-4">
+                  <GraduationCap className="h-5 w-5" />
+                  Informations académiques
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Université</p>
+                    <p className="font-medium">{user.university || NOT_AVAILABLE_TEXT}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Filière</p>
+                    <p className="font-medium">{displayFaculty}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Niveau</p>
+                    <p className="font-medium">{displayStudyYear}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Matricule</p>
+                    <p className="font-medium">{user.studentId || NOT_AVAILABLE_TEXT}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Campus</p>
+                    <p className="font-medium">{user.campus || NOT_AVAILABLE_TEXT}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-lg border bg-card p-6">
+                <h3 className="flex items-center gap-2 text-lg font-semibold mb-4">
+                  <BookOpen className="h-5 w-5" />
+                  Formations précédentes
+                </h3>
+                {user.previousEducation?.length > 0 ? (
+                  <div className="space-y-3">
+                    {user.previousEducation.map((edu: any, index: number) => (
+                      <div key={`${edu?.degree || "degree"}-${index}`} className="border rounded-lg p-3">
+                        <p className="font-medium">{edu?.degree || NOT_AVAILABLE_TEXT}</p>
+                        <p className="text-sm text-muted-foreground">{edu?.school || NOT_AVAILABLE_TEXT}</p>
+                        <p className="text-xs text-muted-foreground">{edu?.year || NOT_AVAILABLE_TEXT}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">{NOT_AVAILABLE_TEXT}</p>
+                )}
+              </div>
+
+              <div className="rounded-lg border bg-card p-6">
+                <h3 className="flex items-center gap-2 text-lg font-semibold mb-4">
+                  <Briefcase className="h-5 w-5" />
+                  Expériences
+                </h3>
+                {user.experiences?.length > 0 ? (
+                  <div className="space-y-3">
+                    {user.experiences.map((exp: any, index: number) => (
+                      <div key={`${exp?.title || "experience"}-${index}`} className="border rounded-lg p-3">
+                        <p className="font-medium">{exp?.title || NOT_AVAILABLE_TEXT}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {[exp?.company, exp?.duration].filter(Boolean).join(" • ") || NOT_AVAILABLE_TEXT}
+                        </p>
+                        <p className="text-sm mt-1">{exp?.description || NOT_AVAILABLE_TEXT}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">{NOT_AVAILABLE_TEXT}</p>
+                )}
+              </div>
+
               <div className="rounded-lg border bg-card p-6">
                 <h3 className="flex items-center gap-2 text-lg font-semibold mb-4">
                   <Users className="h-5 w-5" />
@@ -896,9 +1035,76 @@ export function Profile() {
                 </div>
               </div>
 
-              {/* (KEEP ALL YOUR ABOUT CONTENT BELOW EXACTLY THE SAME) */}
-              {/* ... */}
-              {/* (INCLUDING academic info, skills, links, experiences, etc.) */}
+              <div className="rounded-lg border bg-card p-6">
+                <h3 className="flex items-center gap-2 text-lg font-semibold mb-4">
+                  <Zap className="h-5 w-5" />
+                  Compétences
+                </h3>
+                {user.skills?.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {user.skills.map((skill: any, index: number) => (
+                      <Badge key={`${skill}-${index}`} variant="secondary">
+                        {typeof skill === "string" ? skill : skill?.name || NOT_AVAILABLE_TEXT}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">{NOT_AVAILABLE_TEXT}</p>
+                )}
+              </div>
+
+              <div className="rounded-lg border bg-card p-6">
+                <h3 className="flex items-center gap-2 text-lg font-semibold mb-4">
+                  <Smile className="h-5 w-5" />
+                  Centres d'intérêt
+                </h3>
+                {user.interests?.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {user.interests.map((interest: any, index: number) => (
+                      <Badge key={`${interest}-${index}`} variant="outline">
+                        {typeof interest === "string" ? interest : interest?.name || NOT_AVAILABLE_TEXT}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">{NOT_AVAILABLE_TEXT}</p>
+                )}
+              </div>
+
+              <div className="rounded-lg border bg-card p-6">
+                <h3 className="flex items-center gap-2 text-lg font-semibold mb-4">
+                  <Link className="h-5 w-5" />
+                  Portfolio
+                </h3>
+                {user.portfolioLinks?.length > 0 ? (
+                  <div className="space-y-2">
+                    {user.portfolioLinks.map((entry: any, index: number) => {
+                      const rawUrl = typeof entry === "string" ? entry : entry?.url;
+                      const href = rawUrl?.startsWith("http") ? rawUrl : rawUrl ? `https://${rawUrl}` : "";
+                      const label = (typeof entry === "object" && entry?.name) || rawUrl || `Lien ${index + 1}`;
+
+                      return href ? (
+                        <a
+                          key={`${href}-${index}`}
+                          href={href}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center justify-between rounded-lg border p-3 hover:bg-accent/50 transition-colors"
+                        >
+                          <span className="font-medium truncate pr-2">{label}</span>
+                          <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
+                        </a>
+                      ) : (
+                        <p key={`invalid-link-${index}`} className="text-sm text-muted-foreground">
+                          {NOT_AVAILABLE_TEXT}
+                        </p>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">{NOT_AVAILABLE_TEXT}</p>
+                )}
+              </div>
             </section>
           )}
 
