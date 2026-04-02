@@ -14,6 +14,7 @@ from users.models import User
 
 from .admin_permissions import build_admin_permissions_for_user, require_admin_permission, resolve_admin_role
 from .admin_serializers import (
+    AdminAuditLogSerializer,
     AdminModerationQueueItemSerializer,
     AdminReportedContentItemSerializer,
     AdminSummarySerializer,
