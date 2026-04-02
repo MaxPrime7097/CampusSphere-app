@@ -129,3 +129,39 @@ class AdminEndpointsAPITest(APITestCase):
         self.assertEqual(summary['reportedContent'], Post.objects.count() + ResourceReport.objects.filter(status='pending').count())
         self.assertEqual(summary['activeGroups'], Sphere.objects.count())
         self.assertEqual(summary['totalResources'], Resource.objects.count())
+
+    def test_admin_v1_users_list_uses_standardized_response(self):
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get('/api/admin/v1/users/?page=1&page_size=10&ordering=-date_joined&search=admin')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertSetEqual(set(response.data.keys()), {'success', 'data', 'meta', 'message'})
+        self.assertIn('pagination', response.data['meta'])
+        self.assertIn('ordering', response.data['meta'])
+        self.assertIn('filters', response.data['meta'])
+
+    def test_admin_v1_reports_bulk_approve(self):
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(
+            '/api/admin/v1/reports/bulk-approve/',
+            {'ids': [self.resource_report.id]},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data['success'])
+        self.resource_report.refresh_from_db()
+        self.assertEqual(self.resource_report.status, 'reviewed')
+
+    def test_admin_v1_users_bulk_ban_requires_admin(self):
+        self.client.force_authenticate(user=self.member)
+        response = self.client.post('/api/admin/v1/users/bulk-ban/', {'ids': [self.member.id]}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_admin_v1_posts_bulk_delete(self):
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post('/api/admin/v1/posts/bulk-delete/', {'ids': [self.post.id]}, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(Post.objects.filter(id=self.post.id).exists())
+        self.assertSetEqual(set(response.data.keys()), {'success', 'data', 'meta', 'message'})
