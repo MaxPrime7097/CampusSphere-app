@@ -107,7 +107,7 @@ export function FeedSidebar() {
             <button
               key={sphere.id}
               type="button"
-              className="w-full flex items-center justify-between hover:bg-accent/50 p-2 rounded-lg transition-colors text-left border-2 border-input"
+              className="w-full flex items-center justify-between hover:bg-accent/50 p-2 rounded-lg transition-colors text-left border-1 border-input"
               onClick={() => openSphere(sphere.id, sphere.name)}
             >
               <div className="min-w-0">
@@ -140,7 +140,7 @@ export function FeedSidebar() {
             <button
               key={resource.id}
               type="button"
-              className="w-full space-y-1 hover:bg-accent/50 p-2 rounded-lg transition-colors text-left border-2 border-input"
+              className="w-full space-y-1 hover:bg-accent/50 p-2 rounded-lg transition-colors text-left border-1 border-input"
               onClick={() => openResource(resource.id, resource.title)}
             >
               <div className="font-medium text-sm line-clamp-2">{resource.title}</div>
