@@ -1,13 +1,14 @@
 import { useState, useEffect, useMemo } from "react";
 import { searchUsers, getCurrentUser, getUserConnections, createConnection, deleteConnection, getMutualConnectionCounts } from "@/services/api";
-import { Users, Link, Search, Filter } from "lucide-react";
+import { Users, Link } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
+import { SharedPatternTabsList, SharedPatternTabsTrigger } from "@/components/ui/shared-pattern-tabs";
+import { SharedFilterSortBar } from "@/components/ui/shared-filter-sort-bar";
 import { Card, CardContent } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import {
@@ -18,6 +19,14 @@ import {
 } from "@/lib/profileMetadata";
 
 type ConnectionFilter = "all" | "university" | "faculty" | "mutual" | "impact";
+
+const CONNECTION_FILTER_OPTIONS: Array<{ value: ConnectionFilter; label: string }> = [
+  { value: "all", label: "Tous" },
+  { value: "university", label: "Université" },
+  { value: "faculty", label: "Filière" },
+  { value: "mutual", label: "Amis communs" },
+  { value: "impact", label: "Impact" },
+];
 
 export function Connections() {
   const navigate = useNavigate();
@@ -254,59 +263,43 @@ export function Connections() {
           )}
         </div>
 
-        {/* Search Bar */}
-        <div className="mb-6 flex flex-col gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Rechercher des connexions..."
-              className="pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant={activeFilter === "all" ? "default" : "outline"} size="sm" onClick={() => setActiveFilter("all")}>
-              <Filter className="h-4 w-4 mr-2" />
-              Tous
-            </Button>
-            <Button variant={activeFilter === "university" ? "default" : "outline"} size="sm" onClick={() => setActiveFilter("university")}>
-              Université
-            </Button>
-            <Button variant={activeFilter === "faculty" ? "default" : "outline"} size="sm" onClick={() => setActiveFilter("faculty")}>
-              Filière
-            </Button>
-            <Button variant={activeFilter === "mutual" ? "default" : "outline"} size="sm" onClick={() => setActiveFilter("mutual")}>
-              Amis communs
-            </Button>
-            <Button variant={activeFilter === "impact" ? "default" : "outline"} size="sm" onClick={() => setActiveFilter("impact")}>
-              Impact
-            </Button>
-            {hasActiveFilters && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setSearchQuery("");
-                  setActiveFilter("all");
-                }}
-              >
-                Réinitialiser
-              </Button>
-            )}
-          </div>
+        <div className="mb-6">
+          <SharedFilterSortBar
+            searchValue={searchQuery}
+            onSearchValueChange={setSearchQuery}
+            searchPlaceholder="Rechercher des connexions..."
+            hasActiveFilters={hasActiveFilters}
+            onReset={() => {
+              setSearchQuery("");
+              setActiveFilter("all");
+            }}
+            controls={
+              <Select value={activeFilter} onValueChange={(value) => setActiveFilter(value as ConnectionFilter)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filtrer" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CONNECTION_FILTER_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            }
+          />
         </div>
 
         {/* Tabs */}
         <Tabs defaultValue="all" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 max-w-md">
-            <TabsTrigger value="all">
+          <SharedPatternTabsList className="mb-2 max-w-lg">
+            <SharedPatternTabsTrigger value="all">
               Mes Connexions ({filteredConnections.length})
-            </TabsTrigger>
-            <TabsTrigger value="suggestions">
+            </SharedPatternTabsTrigger>
+            <SharedPatternTabsTrigger value="suggestions">
               Suggestions ({filteredSuggestions.length})
-            </TabsTrigger>
-          </TabsList>
+            </SharedPatternTabsTrigger>
+          </SharedPatternTabsList>
 
           {/* All Connections */}
           <TabsContent value="all" className="space-y-4">
