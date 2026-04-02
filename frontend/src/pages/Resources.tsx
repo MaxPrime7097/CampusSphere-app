@@ -35,6 +35,12 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { RESOURCE_TYPE_OPTIONS, normalizeResourceType } from "@/constants/resourceTypes";
 import { getSubjectLabel, getTypeLabel, normalizeSubject } from "@/lib/resourceMetadata";
+import {
+  DEFAULT_SORT,
+  RESOURCE_SORT_KEYS,
+  type ResourceSortKey,
+  ensureValidSortKey,
+} from "@/constants/defaultSort";
 
 function mapResourceCard(r: any) {
   return {
@@ -66,7 +72,7 @@ export function Resources() {
   const [selectedSubject, setSelectedSubject] = useState("all");
   const [selectedType, setSelectedType] = useState("all");
 
-  const [activeTab, setActiveTab] = useState("all");
+  const [activeTab, setActiveTab] = useState<ResourceSortKey>(DEFAULT_SORT.resources);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
@@ -151,18 +157,20 @@ export function Resources() {
     return matchesSearch && matchesSubject && matchesType;
   });
 
+  const resolvedResourceSort = ensureValidSortKey(activeTab, RESOURCE_SORT_KEYS, DEFAULT_SORT.resources);
+
   const getSortedResources = () => {
     const sorted = [...filteredResources];
 
-    switch (activeTab) {
+    switch (resolvedResourceSort) {
+      case "all":
+        return sorted;
       case "suggestions":
         return sorted.sort((a, b) => b.impactScore - a.impactScore);
       case "recent":
         return sorted.sort(
           (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
         );
-      default:
-        return sorted;
     }
   };
 
@@ -351,10 +359,10 @@ export function Resources() {
           ].map((tab) => (
             <li key={tab.id}>
               <button
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => setActiveTab(tab.id as ResourceSortKey)}
                 className={cn(
                   "w-full flex justify-center border-b-4 py-4 transition-all duration-200 text-sm font-medium",
-                  activeTab === tab.id
+                  resolvedResourceSort === tab.id
                     ? "border-primary text-primary"
                     : "border-transparent hover:text-primary hover:border-primary"
                 )}
@@ -366,7 +374,7 @@ export function Resources() {
         </ul>
 
         {/* ======= CONTENT ======= */}
-        {activeTab === "all" && (
+        {resolvedResourceSort === "all" && (
           <>
             {/* Filters */}
             <Card className={cardClasses}>
@@ -491,7 +499,7 @@ export function Resources() {
           </>
         )}
 
-        {activeTab === "suggestions" && (
+        {resolvedResourceSort === "suggestions" && (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {getSortedResources().map((resource) => (
               <Card
@@ -570,7 +578,7 @@ export function Resources() {
           </div>
         )}
 
-        {activeTab === "recent" && (
+        {resolvedResourceSort === "recent" && (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {getSortedResources().map((resource) => (
               <Card
