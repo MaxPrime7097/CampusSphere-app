@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { Users, FileText, TrendingUp, Shield, AlertCircle, CheckCircle, XCircle, Search, Filter, BarChart3, Clock, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
@@ -166,7 +167,8 @@ export function AdminDashboard() {
               </Button>
               <Button className="campus-gradient text-white gap-2" disabled={!canUpdate}>
                 <Filter className="h-4 w-4" />
-                Filtres
+                Moderation Queue
+                </Link>
               </Button>
             </div>
           </div>
