@@ -34,7 +34,7 @@ interface Comment {
   canDelete?: boolean;
   author: {
     name: string;
-    avatar: string;
+    avatar?: string | null;
     username: string;
     isVerified?: boolean;
     impactScore?: number;
@@ -55,14 +55,27 @@ interface CommentsModalProps {
 }
 
 function normalizeCommentAuthor(rawAuthor: any, fallbackName?: string) {
-  const normalizedUser = normalizeUser(rawAuthor);
+  const authorPayload = rawAuthor?.author_info ?? rawAuthor?.author ?? rawAuthor;
+  const normalizedUser = normalizeUser(authorPayload);
 
   return {
     name: normalizedUser?.name || fallbackName || "Utilisateur",
-    avatar: normalizedUser?.avatar || "/placeholder-avatar.jpg",
+    avatar: normalizedUser?.avatar ?? null,
     username: normalizedUser?.username || "user",
-    isVerified: Boolean(rawAuthor?.is_verified ?? rawAuthor?.isVerified ?? false),
-    impactScore: Number(rawAuthor?.impact_score ?? rawAuthor?.impactScore ?? 0),
+    isVerified: Boolean(
+      authorPayload?.is_verified ??
+      authorPayload?.isVerified ??
+      rawAuthor?.is_verified ??
+      rawAuthor?.isVerified ??
+      false
+    ),
+    impactScore: Number(
+      authorPayload?.impact_score ??
+      authorPayload?.impactScore ??
+      rawAuthor?.impact_score ??
+      rawAuthor?.impactScore ??
+      0
+    ),
   };
 }
 
@@ -499,6 +512,7 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col p-0 bg-popover">
         <DialogHeader className="px-6 py-4 border-b">
@@ -597,17 +611,39 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
         </DialogContent>
       </Dialog>
 
-      <Dialog open={Boolean(editingCommentId)} onOpenChange={(isOpen) => !isOpen && setEditingCommentId(null)}>
+            {/* Edit Comment Dialog */}
+      <Dialog 
+        open={Boolean(editingCommentId)} 
+        onOpenChange={(isOpen) => {
+          if (!isOpen) {
+            setEditingCommentId(null);
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Modifier le commentaire</DialogTitle>
             <DialogDescription>Les changements seront visibles immédiatement après validation.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            <Textarea value={editingCommentContent} onChange={(e) => setEditingCommentContent(e.target.value)} className="min-h-[120px]" maxLength={500} />
+            <Textarea 
+              value={editingCommentContent} 
+              onChange={(e) => setEditingCommentContent(e.target.value)} 
+              className="min-h-[120px]" 
+              maxLength={500} 
+            />
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setEditingCommentId(null)} disabled={isUpdatingComment}>Annuler</Button>
-              <Button onClick={handleUpdateComment} disabled={isUpdatingComment}>
+              <Button 
+                variant="outline" 
+                onClick={() => setEditingCommentId(null)} 
+                disabled={isUpdatingComment}
+              >
+                Annuler
+              </Button>
+              <Button 
+                onClick={handleUpdateComment} 
+                disabled={isUpdatingComment}
+              >
                 {isUpdatingComment ? "Enregistrement..." : "Enregistrer"}
               </Button>
             </div>
@@ -615,15 +651,33 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
         </DialogContent>
       </Dialog>
 
-      <Dialog open={Boolean(commentToDelete)} onOpenChange={(isOpen) => !isOpen && setCommentToDelete(null)}>
+      {/* Delete Comment Dialog */}
+      <Dialog 
+        open={Boolean(commentToDelete)} 
+        onOpenChange={(isOpen) => {
+          if (!isOpen) {
+            setCommentToDelete(null);
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Supprimer ce commentaire ?</DialogTitle>
             <DialogDescription>Cette action est irréversible.</DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setCommentToDelete(null)} disabled={isDeletingComment}>Annuler</Button>
-            <Button variant="destructive" onClick={handleDeleteComment} disabled={isDeletingComment}>
+            <Button 
+              variant="outline" 
+              onClick={() => setCommentToDelete(null)} 
+              disabled={isDeletingComment}
+            >
+              Annuler
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDeleteComment} 
+              disabled={isDeletingComment}
+            >
               {isDeletingComment ? "Suppression..." : "Supprimer"}
             </Button>
           </div>
