@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -201,14 +202,14 @@ export function Connections() {
 
         {/* Tabs */}
         <Tabs defaultValue="all" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 max-w-md">
-            <TabsTrigger value="all">
+          <SharedTabsList className="w-full sm:w-auto sm:max-w-md">
+            <SharedTabsTrigger value="all">
               Mes Connexions ({connections.length})
-            </TabsTrigger>
-            <TabsTrigger value="suggestions">
+            </SharedTabsTrigger>
+            <SharedTabsTrigger value="suggestions">
               Suggestions ({suggestions.length})
-            </TabsTrigger>
-          </TabsList>
+            </SharedTabsTrigger>
+          </SharedTabsList>
 
           {/* All Connections */}
           <TabsContent value="all" className="space-y-4">
