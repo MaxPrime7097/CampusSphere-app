@@ -322,7 +322,7 @@ class SphereMemberDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
         sphere = membership.sphere
         actor_membership = self._get_actor_membership(request, sphere)
 
-        if not self._can_manage_members(actor_membership):
+        if not self._can_manage_members(request, sphere):
             return Response(
                 {'error': 'Only sphere admins or moderators can update members'},
                 status=status.HTTP_403_FORBIDDEN
@@ -359,9 +359,6 @@ class SphereMemberDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
             'message': 'Member updated successfully',
             'data': SphereMemberSerializer(membership, context={'request': request}).data
         })
-
-    def patch(self, request, *args, **kwargs):
-        return self.partial_update(request, *args, **kwargs)
 
     def patch(self, request, *args, **kwargs):
         return self.partial_update(request, *args, **kwargs)
