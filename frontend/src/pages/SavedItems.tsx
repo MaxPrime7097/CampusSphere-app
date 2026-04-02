@@ -6,19 +6,7 @@ import { Button } from "@/components/ui/button";
 import { BookOpen, Calendar, ShoppingBag, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getSavedPosts, getSavedResources, savePost, saveResource } from "@/services/api";
-
-const SUBJECT_LABELS: Record<string, string> = {
-  math: "Mathématiques",
-  cs: "Informatique",
-  physics: "Physique",
-  economics: "Économie",
-  language: "Langues",
-  other: "Autre",
-};
-
-function getSubjectLabel(subject: string) {
-  return SUBJECT_LABELS[subject] || String(subject || "").charAt(0).toUpperCase() + String(subject || "").slice(1);
-}
+import { getSubjectLabel, getTypeLabel, normalizeResourceType, normalizeSubject } from "@/lib/resourceMetadata";
 
 export function SavedItems() {
   const [savedPosts, setSavedPosts] = useState<any[]>([]);
@@ -56,8 +44,8 @@ export function SavedItems() {
             id: String(r.id),
             title: r.title,
             description: r.description || '',
-            subject: r.subject || 'other',
-            type: r.type || 'notes',
+            subject: normalizeSubject(r.subject),
+            type: normalizeResourceType(r.type),
             authorName: r.author?.name || r.author_info?.name || r.author_name || 'Unknown',
             fileUrl: r.fileUrl || r.file_url || r.file || '',
             fileSize: r.fileSize || r.file_size || '0 MB',
@@ -181,7 +169,7 @@ export function SavedItems() {
                           <h3 className="font-semibold">{resource.title}</h3>
                           <p className="text-sm text-muted-foreground mt-1">{resource.description}</p>
                           <div className="text-xs text-muted-foreground mt-2 flex flex-wrap gap-2">
-                            <span>Type: {resource.type}</span>
+                            <span>Type: {getTypeLabel(resource.type)}</span>
                             <span>Matière: {getSubjectLabel(resource.subject)}</span>
                             <span>Taille: {resource.fileSize}</span>
                           </div>

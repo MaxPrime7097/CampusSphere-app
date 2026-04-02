@@ -9,6 +9,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import {
+  getFacultyLabel,
+  getUniversityLabel,
+  normalizeFaculty,
+  normalizeUniversity,
+} from "@/lib/profileMetadata";
 
 export function Connections() {
   const navigate = useNavigate();
@@ -76,6 +82,16 @@ export function Connections() {
               (conn.requester === currentUser.id
                 ? conn.recipient_info?.faculty
                 : conn.requester_info?.faculty) || '',
+            normalizedUniversity: normalizeUniversity(
+              conn.requester === currentUser.id
+                ? conn.recipient_info?.university
+                : conn.requester_info?.university
+            ),
+            normalizedFaculty: normalizeFaculty(
+              conn.requester === currentUser.id
+                ? conn.recipient_info?.faculty
+                : conn.requester_info?.faculty
+            ),
             isVerified: false,
             impactScore:
               (conn.requester === currentUser.id
@@ -146,11 +162,18 @@ export function Connections() {
               field: u.faculty || '',
               isVerified: u.is_verified || false,
               impactScore: u.impact_score || 0,
-              reason: u.university === currentUser.university ? 
-                `Même université - ${u.university}` : 
-                u.faculty === currentUser.faculty ?
-                `Même filière - ${u.faculty}` :
-                "Suggestions pour vous"
+              normalizedUniversity: normalizeUniversity(u.university),
+              normalizedFaculty: normalizeFaculty(u.faculty),
+              reason:
+                normalizeUniversity(u.university) &&
+                normalizeUniversity(currentUser.university) &&
+                normalizeUniversity(u.university) === normalizeUniversity(currentUser.university)
+                  ? `Même université - ${getUniversityLabel(u.university)}`
+                  : normalizeFaculty(u.faculty) &&
+                      normalizeFaculty(currentUser.faculty) &&
+                      normalizeFaculty(u.faculty) === normalizeFaculty(currentUser.faculty)
+                    ? `Même filière - ${getFacultyLabel(u.faculty)}`
+                    : "Suggestions pour vous",
             }));
           setSuggestions(mapped.slice(0, 20));
         }
@@ -238,10 +261,10 @@ export function Connections() {
 
                       <div className="flex gap-2 flex-wrap justify-center">
                         <Badge variant="secondary" className="text-xs">
-                          {connection.university}
+                          {getUniversityLabel(connection.university)}
                         </Badge>
                         <Badge variant="outline" className="text-xs">
-                          {connection.field}
+                          {getFacultyLabel(connection.field)}
                         </Badge>
                       </div>
 
@@ -297,10 +320,10 @@ export function Connections() {
 
                       <div className="flex gap-2 flex-wrap justify-center">
                         <Badge variant="secondary" className="text-xs">
-                          {suggestion.university}
+                          {getUniversityLabel(suggestion.university)}
                         </Badge>
                         <Badge variant="outline" className="text-xs">
-                          {suggestion.field}
+                          {getFacultyLabel(suggestion.field)}
                         </Badge>
                       </div>
 

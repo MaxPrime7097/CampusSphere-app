@@ -16,6 +16,14 @@ import {
   type SearchSortKey,
   ensureValidSortKey,
 } from "@/constants/defaultSort";
+import {
+  getCategoryLabel,
+  getSubjectLabel,
+  getTypeLabel,
+  normalizeCategory,
+  normalizeResourceType,
+  normalizeSubject,
+} from "@/lib/resourceMetadata";
 
 export function SearchResults() {
   const [searchParams] = useSearchParams();
@@ -111,8 +119,9 @@ export function SearchResults() {
               id: String(r.id),
               title: r.title,
               description: r.description || '',
-              subject: r.subject || 'other',
-              type: r.type || 'notes',
+              subject: normalizeSubject(r.subject),
+              type: normalizeResourceType(r.type),
+              category: normalizeCategory(r.category),
               authorName: r.author_info?.name || r.author_name || r.author?.name || "Auteur inconnu",
               tags: r.tags || [],
             })),
@@ -422,7 +431,17 @@ export function SearchResults() {
                           >
                             {res.title}
                           </p>
-                          <p className="text-sm text-muted-foreground">Type: {res.type}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Type: {getTypeLabel(res.type)}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Matière: {getSubjectLabel(res.subject)}
+                          </p>
+                          {res.category && (
+                            <p className="text-sm text-muted-foreground">
+                              Catégorie: {getCategoryLabel(res.category)}
+                            </p>
+                          )}
                           <p className="text-sm text-muted-foreground">Auteur: {res.authorName}</p>
                         </div>
                         <Button 
@@ -563,7 +582,17 @@ export function SearchResults() {
                         >
                           {res.title}
                         </p>
-                        <p className="text-sm text-muted-foreground">Type: {res.type}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Type: {getTypeLabel(res.type)}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Matière: {getSubjectLabel(res.subject)}
+                        </p>
+                        {res.category && (
+                          <p className="text-sm text-muted-foreground">
+                            Catégorie: {getCategoryLabel(res.category)}
+                          </p>
+                        )}
                         <p className="text-sm text-muted-foreground">Auteur: {res.authorName}</p>
                       </div>
                       <Button 
