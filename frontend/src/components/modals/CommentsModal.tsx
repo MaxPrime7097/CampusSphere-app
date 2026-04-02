@@ -26,7 +26,6 @@ import { formatRelativeTime } from "@/lib/date";
 import { findInvalidMentions, getActiveMentionQuery, renderMentionText } from "@/lib/mentions";
 
 const MAX_COMMENT_THREAD_DEPTH = 4;
-const [currentUser, setCurrentUser] = useState<any>(null);
 
 interface Comment {
   id: string;
@@ -98,6 +97,7 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
   const [isUpdatingComment, setIsUpdatingComment] = useState(false);
   const [commentToDelete, setCommentToDelete] = useState<Comment | null>(null);
   const [isDeletingComment, setIsDeletingComment] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   const mapApiComment = (apiComment: any, parentId?: string): Comment => ({
     id: String(apiComment.id),
