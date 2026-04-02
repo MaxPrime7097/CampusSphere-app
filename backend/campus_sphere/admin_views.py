@@ -1,5 +1,5 @@
 from django.utils import timezone
-from rest_framework import permissions
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
@@ -9,6 +9,7 @@ from spheres.models import Sphere
 from users.models import User
 from resources.models import ResourceReport
 
+from .admin_permissions import build_admin_permissions_for_user, require_admin_permission, resolve_admin_role
 from .admin_serializers import (
     AdminModerationQueueItemSerializer,
     AdminReportedContentItemSerializer,
@@ -45,8 +46,12 @@ def _human_readable_size(bytes_size):
 
 
 @api_view(['GET'])
-@permission_classes([permissions.IsAdminUser])
+@permission_classes([IsAuthenticated])
 def admin_moderation_queue(request):
+    allowed, denied_response, _, _ = require_admin_permission(request, 'view')
+    if not allowed:
+        return denied_response
+
     resources = Resource.objects.select_related('author').order_by('-created_at')[:50]
     payload = [
         {
@@ -69,8 +74,12 @@ def admin_moderation_queue(request):
 
 
 @api_view(['GET'])
-@permission_classes([permissions.IsAdminUser])
+@permission_classes([IsAuthenticated])
 def admin_reported_content(request):
+    allowed, denied_response, _, _ = require_admin_permission(request, 'view')
+    if not allowed:
+        return denied_response
+
     posts = Post.objects.select_related('author').order_by('-created_at')[:50]
     resource_reports = ResourceReport.objects.select_related('resource', 'reporter').order_by('-created_at')[:50]
 
@@ -111,8 +120,12 @@ def admin_reported_content(request):
 
 
 @api_view(['GET'])
-@permission_classes([permissions.IsAdminUser])
+@permission_classes([IsAuthenticated])
 def admin_user_management_summary(request):
+    allowed, denied_response, _, _ = require_admin_permission(request, 'view')
+    if not allowed:
+        return denied_response
+
     today = timezone.localdate()
     summary = {
         'totalUsers': User.objects.count(),
@@ -125,3 +138,19 @@ def admin_user_management_summary(request):
 
     serializer = AdminSummarySerializer(summary)
     return Response({'success': True, 'data': serializer.data})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def admin_permissions(request):
+    allowed, denied_response, role, permissions = require_admin_permission(request, 'view')
+    if not allowed:
+        return denied_response
+
+    return Response({
+        'success': True,
+        'data': {
+            'role': role or resolve_admin_role(request.user),
+            'permissions': permissions or build_admin_permissions_for_user(request.user),
+        },
+    })

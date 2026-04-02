@@ -36,6 +36,7 @@ import { CookiePolicy } from "./pages/public/CookiePolicy";
 import { DataDeletion } from "./pages/public/DataDeletion";
 import { Waitinglist } from "./pages/public/Waitinglist";
 import { Policies } from "./pages/public/Policies";
+import { RequireAdminRole } from "./components/auth/RequireAdminRole";
 
 
 const queryClient = new QueryClient();
@@ -173,7 +174,7 @@ const App = () => (
           } />
 
           {/* Admin routes */}
-          <Route path="/cs-inc/private/admin" element={<AdminDashboard />} />
+          <Route path="/cs-inc/private/admin" element={<RequireAdminRole action="view"><AdminDashboard /></RequireAdminRole>} />
         
           {/* Public pages */}
           <Route path="/cs-inc" element={<Landing />} />
