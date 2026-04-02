@@ -12,27 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { RefreshCw, Loader2, Users, MessageCircle, BookOpen, ArrowRight, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-
-function mapPostToCard(post: any) {
-  return {
-    id: String(post.id),
-    author: {
-      name: post.author?.name || "Utilisateur",
-      avatar: post.author?.avatar || "/placeholder-avatar.jpg",
-      username: post.author?.username || "user",
-      isVerified: Boolean(post.author?.isVerified),
-      impactScore: Number(post.author?.impactScore || 0),
-    },
-    content: post.content || "",
-    createdAt: post.createdAt || post.created_at || null,
-    likes: Number(post.likesCount ?? post.likes_count ?? post.likes ?? 0),
-    comments: Number(post.commentsCount ?? post.comments_count ?? post.comments ?? 0),
-    category: post.category || "Général",
-    impactScore: Number(post.impactScore ?? post.impact_score ?? 0),
-    isLiked: Boolean(post.isLiked ?? post.is_liked),
-    isSaved: Boolean(post.isSaved ?? post.is_saved),
-  };
-}
+import { mapPostToCard } from "@/lib/postCardMapper";
 
 export function Home() {
   const isMobile = useIsMobile();

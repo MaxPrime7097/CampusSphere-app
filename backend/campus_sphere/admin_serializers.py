@@ -35,11 +35,18 @@ class AdminSummarySerializer(serializers.Serializer):
     totalResources = serializers.IntegerField()
 
 
-class AdminAuditLogSerializer(serializers.Serializer):
-    id = serializers.IntegerField()
-    actor = serializers.CharField(allow_null=True)
+class AdminKpiStatsSerializer(serializers.Serializer):
+    newUsers = serializers.IntegerField()
+    activeSpheres = serializers.IntegerField()
+    pendingReports = serializers.IntegerField()
+    overdueTasks = serializers.IntegerField()
+    failedNotifications = serializers.IntegerField()
+    range = serializers.CharField()
+    startDate = serializers.DateTimeField(allow_null=True)
+    endDate = serializers.DateTimeField(allow_null=True)
+
+
+class AdminQuickActionSerializer(serializers.Serializer):
     action = serializers.CharField()
-    targetType = serializers.CharField()
-    targetId = serializers.CharField()
-    payloadDiff = serializers.JSONField()
-    createdAt = serializers.DateTimeField()
+    success = serializers.BooleanField()
+    message = serializers.CharField()
