@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { getSphereCategoryLabel } from "@/constants/sphereCategories";
+import { getCategoryLabel } from "@/lib/resourceMetadata";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -231,8 +231,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
   };
 
 
-  const normalizedCategory = post.category ? String(post.category).trim().toLowerCase() : "";
-  const categoryLabel = normalizedCategory ? getSphereCategoryLabel(normalizedCategory) || "Autre" : "Non défini";
+  const categoryLabel = getCategoryLabel(post.category);
   const cardClasses = cn(
     "transition-all duration-300",
     isMobile 

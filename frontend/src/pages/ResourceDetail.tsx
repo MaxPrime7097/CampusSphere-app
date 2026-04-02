@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { formatFrenchDate } from "@/lib/date";
-import { getResourceTypeLabel, getSubjectLabel, normalizeResourceType, normalizeSubject } from "@/lib/resourceMetadata";
+import { getSubjectLabel, getTypeLabel, normalizeResourceType, normalizeSubject } from "@/lib/resourceMetadata";
 
 export function ResourceDetail() {
   const { id } = useParams();
@@ -290,7 +290,7 @@ export function ResourceDetail() {
             <div className="mb-4">
               <div className="flex flex-wrap items-center gap-2 mb-3">
                 <Badge className="campus-gradient text-white">
-                  {getResourceTypeLabel(resource.type)}
+                  {getTypeLabel(resource.type)}
                 </Badge>
                 <Badge variant="secondary">{getSubjectLabel(resource.subject)}</Badge>
                 <Badge variant="outline">{resource.format ? resource.format.toUpperCase() : "Non défini"}</Badge>
