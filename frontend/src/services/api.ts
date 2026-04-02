@@ -1337,6 +1337,25 @@ export interface AdminUserManagementSummary {
   totalResources: number;
 }
 
+export type AdminStatsRange = "24h" | "7j" | "30j" | "custom";
+
+export interface AdminKpiStats {
+  newUsers: number;
+  activeSpheres: number;
+  pendingReports: number;
+  overdueTasks: number;
+  failedNotifications: number;
+  range: AdminStatsRange;
+  startDate: string | null;
+  endDate: string | null;
+}
+
+export interface AdminQuickActionResult {
+  action: string;
+  success: boolean;
+  message: string;
+}
+
 function mapAdminModerationQueueItem(item: any): AdminModerationQueueItem {
   const uploader = normalizeUser(item?.uploader ?? item?.author ?? item?.uploaded_by ?? item?.uploader_info);
   return {
@@ -1380,6 +1399,19 @@ function mapAdminSummary(summary: any): AdminUserManagementSummary {
   };
 }
 
+function mapAdminKpiStats(stats: any): AdminKpiStats {
+  return {
+    newUsers: toNumber(stats?.newUsers ?? stats?.new_users, 0),
+    activeSpheres: toNumber(stats?.activeSpheres ?? stats?.active_spheres, 0),
+    pendingReports: toNumber(stats?.pendingReports ?? stats?.pending_reports, 0),
+    overdueTasks: toNumber(stats?.overdueTasks ?? stats?.overdue_tasks, 0),
+    failedNotifications: toNumber(stats?.failedNotifications ?? stats?.failed_notifications, 0),
+    range: (stats?.range as AdminStatsRange) ?? "24h",
+    startDate: stats?.startDate ?? stats?.start_date ?? null,
+    endDate: stats?.endDate ?? stats?.end_date ?? null,
+  };
+}
+
 export async function getAdminModerationQueue(token?: string): Promise<AdminModerationQueueItem[]> {
   const response = await apiFetch<any>("api/admin/moderation-queue/", { token: token || getAccessToken() });
   return unwrapList(response).map(mapAdminModerationQueueItem);
@@ -1393,6 +1425,60 @@ export async function getAdminReportedContent(token?: string): Promise<AdminRepo
 export async function getAdminUserManagementSummary(token?: string): Promise<AdminUserManagementSummary> {
   const response = await apiFetch<any>("api/admin/user-management-summary/", { token: token || getAccessToken() });
   return mapAdminSummary(unwrapItem(response));
+}
+
+export async function getAdminKpiStats(
+  params: { range: AdminStatsRange; startDate?: string; endDate?: string },
+  token?: string,
+): Promise<AdminKpiStats> {
+  const query = new URLSearchParams({ range: params.range });
+  if (params.startDate) query.set("startDate", params.startDate);
+  if (params.endDate) query.set("endDate", params.endDate);
+
+  const response = await apiFetch<any>(`api/admin/stats/?${query.toString()}`, { token: token || getAccessToken() });
+  return mapAdminKpiStats(unwrapItem(response));
+}
+
+export async function adminSuspendUser(userId: string, token?: string): Promise<AdminQuickActionResult> {
+  const response = await apiFetch<any>("api/admin/actions/suspend-user/", {
+    method: "POST",
+    body: { userId },
+    token: token || getAccessToken(),
+  });
+  const result = unwrapItem(response);
+  return {
+    action: result?.action ?? "suspendUser",
+    success: Boolean(result?.success),
+    message: result?.message ?? "Action exécutée.",
+  };
+}
+
+export async function adminCloseReport(reportId: string, token?: string): Promise<AdminQuickActionResult> {
+  const response = await apiFetch<any>("api/admin/actions/close-report/", {
+    method: "POST",
+    body: { reportId },
+    token: token || getAccessToken(),
+  });
+  const result = unwrapItem(response);
+  return {
+    action: result?.action ?? "closeReport",
+    success: Boolean(result?.success),
+    message: result?.message ?? "Action exécutée.",
+  };
+}
+
+export async function adminArchiveExpiredSphere(sphereId: string, token?: string): Promise<AdminQuickActionResult> {
+  const response = await apiFetch<any>("api/admin/actions/archive-expired-sphere/", {
+    method: "POST",
+    body: { sphereId },
+    token: token || getAccessToken(),
+  });
+  const result = unwrapItem(response);
+  return {
+    action: result?.action ?? "archiveSphere",
+    success: Boolean(result?.success),
+    message: result?.message ?? "Action exécutée.",
+  };
 }
 
 // ============================================================================

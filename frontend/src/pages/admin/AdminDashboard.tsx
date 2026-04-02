@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Users, FileText, TrendingUp, Shield, AlertCircle, CheckCircle, XCircle, Search, Filter, BarChart3, Clock, Loader2 } from "lucide-react";
+import { Users, FileText, TrendingUp, Shield, AlertCircle, CheckCircle, XCircle, Search, Filter, BarChart3, Clock, Loader2, BellOff, UserX, Archive, Ban } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -11,23 +11,41 @@ import {
   getAdminModerationQueue,
   getAdminReportedContent,
   getAdminUserManagementSummary,
+  getAdminKpiStats,
+  adminSuspendUser,
+  adminCloseReport,
+  adminArchiveExpiredSphere,
   type AdminModerationQueueItem,
   type AdminReportedContentItem,
   type AdminUserManagementSummary,
+  type AdminStatsRange,
+  type AdminKpiStats,
 } from "@/services/api";
 
 export function AdminDashboard() {
+  const [statsRange, setStatsRange] = useState<AdminStatsRange>("24h");
+  const [customStartDate, setCustomStartDate] = useState("");
+  const [customEndDate, setCustomEndDate] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [stats, setStats] = useState<AdminUserManagementSummary | null>(null);
+  const [kpiStats, setKpiStats] = useState<AdminKpiStats | null>(null);
   const [pendingResources, setPendingResources] = useState<AdminModerationQueueItem[]>([]);
   const [reportedContent, setReportedContent] = useState<AdminReportedContentItem[]>([]);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
+  const [isLoadingKpis, setIsLoadingKpis] = useState(true);
   const [isLoadingModeration, setIsLoadingModeration] = useState(true);
   const [isLoadingReports, setIsLoadingReports] = useState(true);
+  const [isExecutingAction, setIsExecutingAction] = useState(false);
   const [statsError, setStatsError] = useState<string | null>(null);
+  const [kpiError, setKpiError] = useState<string | null>(null);
   const [moderationError, setModerationError] = useState<string | null>(null);
   const [reportsError, setReportsError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [suspendUserId, setSuspendUserId] = useState("");
+  const [closeReportId, setCloseReportId] = useState("");
+  const [archiveSphereId, setArchiveSphereId] = useState("");
 
   const filteredPendingResources = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -54,7 +72,7 @@ export function AdminDashboard() {
   useEffect(() => {
     let isMounted = true;
 
-    (async () => {
+    const loadAdminStats = async () => {
       try {
         setIsLoadingStats(true);
         setStatsError(null);
@@ -65,7 +83,9 @@ export function AdminDashboard() {
       } finally {
         if (isMounted) setIsLoadingStats(false);
       }
-    })();
+    };
+
+    loadAdminStats();
 
     (async () => {
       try {
@@ -97,6 +117,74 @@ export function AdminDashboard() {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadKpiStats = async () => {
+      if (statsRange === "custom" && (!customStartDate || !customEndDate)) {
+        setKpiStats(null);
+        setIsLoadingKpis(false);
+        setKpiError("Sélectionnez une période personnalisée complète.");
+        return;
+      }
+
+      try {
+        setIsLoadingKpis(true);
+        setKpiError(null);
+
+        const payload = await getAdminKpiStats({
+          range: statsRange,
+          startDate: customStartDate ? new Date(customStartDate).toISOString() : undefined,
+          endDate: customEndDate ? new Date(customEndDate).toISOString() : undefined,
+        });
+
+        if (isMounted) setKpiStats(payload);
+      } catch (error: any) {
+        if (isMounted) {
+          setKpiStats(null);
+          setKpiError(error?.message || "Impossible de charger les KPI dédiés.");
+        }
+      } finally {
+        if (isMounted) setIsLoadingKpis(false);
+      }
+    };
+
+    loadKpiStats();
+    return () => {
+      isMounted = false;
+    };
+  }, [statsRange, customStartDate, customEndDate]);
+
+  const handleQuickAction = async (action: "suspend" | "close" | "archive") => {
+    try {
+      setIsExecutingAction(true);
+      setActionError(null);
+      setActionSuccess(null);
+
+      if (action === "suspend") {
+        if (!suspendUserId.trim()) throw new Error("Renseignez un ID utilisateur.");
+        const result = await adminSuspendUser(suspendUserId.trim());
+        setActionSuccess(result.message);
+      }
+
+      if (action === "close") {
+        if (!closeReportId.trim()) throw new Error("Renseignez un ID de signalement.");
+        const result = await adminCloseReport(closeReportId.trim());
+        setActionSuccess(result.message);
+      }
+
+      if (action === "archive") {
+        if (!archiveSphereId.trim()) throw new Error("Renseignez un ID de sphère.");
+        const result = await adminArchiveExpiredSphere(archiveSphereId.trim());
+        setActionSuccess(result.message);
+      }
+    } catch (error: any) {
+      setActionError(error?.message || "Impossible d'exécuter l'action rapide.");
+    } finally {
+      setIsExecutingAction(false);
+    }
+  };
 
   const getInitials = (value: string) =>
     value
@@ -133,15 +221,24 @@ export function AdminDashboard() {
               </p>
             </div>
             
-            <div className="flex gap-2">
-              <Button variant="outline" className="gap-2">
-                <BarChart3 className="h-4 w-4" />
-                Statistiques
-              </Button>
-              <Button className="campus-gradient text-white gap-2">
-                <Filter className="h-4 w-4" />
-                Filtres
-              </Button>
+            <div className="flex flex-wrap gap-2 items-center">
+              {(["24h", "7j", "30j", "custom"] as AdminStatsRange[]).map((range) => (
+                <Button
+                  key={range}
+                  variant={statsRange === range ? "default" : "outline"}
+                  className="gap-2"
+                  onClick={() => setStatsRange(range)}
+                >
+                  <Filter className="h-4 w-4" />
+                  {range}
+                </Button>
+              ))}
+              {statsRange === "custom" && (
+                <>
+                  <Input type="date" value={customStartDate} onChange={(e) => setCustomStartDate(e.target.value)} className="w-40" />
+                  <Input type="date" value={customEndDate} onChange={(e) => setCustomEndDate(e.target.value)} className="w-40" />
+                </>
+              )}
             </div>
           </div>
 
@@ -157,120 +254,73 @@ export function AdminDashboard() {
           </div>
         </div>
 
-        {/* Enhanced Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-          <Card className="campus-card hover:campus-glow transition-all">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center justify-between">
-                <span>Utilisateurs Totaux</span>
-                <TrendingUp className="h-4 w-4 text-green-500" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-end gap-2 mb-3">
-                <span className="text-4xl font-bold campus-gradient bg-clip-text text-transparent">
-                  {isLoadingStats ? "…" : (stats?.totalUsers ?? "—")}
-                </span>
-                <Badge className="mb-1 bg-green-100 text-green-800">
-                  +{isLoadingStats ? "…" : (stats?.newUsersToday ?? "—")} aujourd'hui
-                </Badge>
-              </div>
-              <Progress value={75} className="h-2" />
-              <p className="text-xs text-muted-foreground mt-2">
-                +12% par rapport au mois dernier
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="campus-card hover:campus-glow transition-all">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center justify-between">
-                <span>Contenus à Modérer</span>
-                <Clock className="h-4 w-4 text-orange-500" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-end gap-2 mb-3">
-                <span className="text-4xl font-bold text-orange-600">
-                  {isLoadingStats ? "…" : (stats?.pendingResources ?? "—")}
-                </span>
-                <Badge variant="outline" className="mb-1">
-                  Ressources
-                </Badge>
-              </div>
-              <Progress value={40} className="h-2" />
-              <p className="text-xs text-muted-foreground mt-2">
-                Temps de traitement moyen: 2h
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="campus-card hover:campus-glow transition-all">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center justify-between">
-                <span>Signalements Actifs</span>
-                <AlertCircle className="h-4 w-4 text-red-500" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-end gap-2 mb-3">
-                <span className="text-4xl font-bold text-red-600">
-                  {isLoadingStats ? "…" : (stats?.reportedContent ?? "—")}
-                </span>
-                <Badge variant="destructive" className="mb-1">
-                  Urgent
-                </Badge>
-              </div>
-              <Progress value={15} className="h-2" />
-              <p className="text-xs text-muted-foreground mt-2">
-                2 nécessitent une attention immédiate
-              </p>
-            </CardContent>
-          </Card>
+        {/* KPI Cards (dedicated stats endpoint) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+          {[
+            { label: "Nouveaux users", value: kpiStats?.newUsers, icon: TrendingUp, tone: "text-green-600" },
+            { label: "Sphères actives", value: kpiStats?.activeSpheres, icon: Users, tone: "text-blue-600" },
+            { label: "Signalements en attente", value: kpiStats?.pendingReports, icon: AlertCircle, tone: "text-red-600" },
+            { label: "Tâches en retard", value: kpiStats?.overdueTasks, icon: Clock, tone: "text-orange-600" },
+            { label: "Notifications échouées", value: kpiStats?.failedNotifications, icon: BellOff, tone: "text-amber-600" },
+          ].map((kpi) => (
+            <Card key={kpi.label} className="campus-card">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-muted-foreground">{kpi.label}</p>
+                  <kpi.icon className={`h-4 w-4 ${kpi.tone}`} />
+                </div>
+                <div className={`text-3xl font-bold ${kpi.tone}`}>
+                  {isLoadingKpis ? "…" : kpiStats ? kpi.value : "—"}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
-        {/* Quick Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          <Card className="campus-card">
-            <CardContent className="p-4">
-              <div className="text-center">
-                <Users className="h-5 w-5 mx-auto mb-2 text-primary" />
-                <div className="text-2xl font-bold">{isLoadingStats ? "…" : (stats?.activeGroups ?? "—")}</div>
-                <p className="text-xs text-muted-foreground">Groupes actifs</p>
-              </div>
-            </CardContent>
+        {(kpiError || !isLoadingKpis && !kpiStats) && (
+          <Card className="campus-card border-destructive/40 mb-6">
+            <CardContent className="py-4 text-sm text-destructive">{kpiError || "Aucune donnée KPI pour ce filtre."}</CardContent>
           </Card>
+        )}
 
-          <Card className="campus-card">
-            <CardContent className="p-4">
-              <div className="text-center">
-                <FileText className="h-5 w-5 mx-auto mb-2 text-primary" />
-                <div className="text-2xl font-bold">{isLoadingStats ? "…" : (stats?.totalResources ?? "—")}</div>
-                <p className="text-xs text-muted-foreground">Ressources</p>
-              </div>
+        <Card className="campus-card mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Ban className="h-5 w-5 text-primary" />
+              Actions rapides
+            </CardTitle>
+            <CardDescription>Suspendre utilisateur, clôturer signalement, archiver sphère expirée.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Suspendre utilisateur</p>
+              <Input placeholder="ID utilisateur" value={suspendUserId} onChange={(e) => setSuspendUserId(e.target.value)} />
+              <Button size="sm" className="w-full" onClick={() => handleQuickAction("suspend")} disabled={isExecutingAction}>
+                <UserX className="h-4 w-4 mr-1" /> Suspendre
+              </Button>
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Clôturer signalement</p>
+              <Input placeholder="ID signalement" value={closeReportId} onChange={(e) => setCloseReportId(e.target.value)} />
+              <Button size="sm" variant="outline" className="w-full" onClick={() => handleQuickAction("close")} disabled={isExecutingAction}>
+                <CheckCircle className="h-4 w-4 mr-1" /> Clôturer
+              </Button>
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Archiver sphère expirée</p>
+              <Input placeholder="ID sphère" value={archiveSphereId} onChange={(e) => setArchiveSphereId(e.target.value)} />
+              <Button size="sm" variant="secondary" className="w-full" onClick={() => handleQuickAction("archive")} disabled={isExecutingAction}>
+                <Archive className="h-4 w-4 mr-1" /> Archiver
+              </Button>
+            </div>
+          </CardContent>
+          {(actionError || actionSuccess) && (
+            <CardContent className="pt-0">
+              {actionError && <p className="text-sm text-destructive">{actionError}</p>}
+              {actionSuccess && <p className="text-sm text-green-600">{actionSuccess}</p>}
             </CardContent>
-          </Card>
-
-          <Card className="campus-card">
-            <CardContent className="p-4">
-              <div className="text-center">
-                <TrendingUp className="h-5 w-5 mx-auto mb-2 text-green-500" />
-                <div className="text-2xl font-bold text-green-600">87%</div>
-                <p className="text-xs text-muted-foreground">Satisfaction</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="campus-card">
-            <CardContent className="p-4">
-              <div className="text-center">
-                <BarChart3 className="h-5 w-5 mx-auto mb-2 text-primary" />
-                <div className="text-2xl font-bold">2.4k</div>
-                <p className="text-xs text-muted-foreground">Posts/jour</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+          )}
+        </Card>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>

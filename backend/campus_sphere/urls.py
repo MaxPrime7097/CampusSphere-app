@@ -26,6 +26,10 @@ urlpatterns = [
     path('api/admin/moderation-queue/', admin_views.admin_moderation_queue, name='admin-moderation-queue'),
     path('api/admin/reported-content/', admin_views.admin_reported_content, name='admin-reported-content'),
     path('api/admin/user-management-summary/', admin_views.admin_user_management_summary, name='admin-user-management-summary'),
+    path('api/admin/stats/', admin_views.admin_kpi_stats, name='admin-kpi-stats'),
+    path('api/admin/actions/suspend-user/', admin_views.admin_suspend_user, name='admin-suspend-user'),
+    path('api/admin/actions/close-report/', admin_views.admin_close_report, name='admin-close-report'),
+    path('api/admin/actions/archive-expired-sphere/', admin_views.admin_archive_expired_sphere, name='admin-archive-expired-sphere'),
 
     # Search and utility endpoints
     path('api/search/', views.global_search, name='global-search'),
