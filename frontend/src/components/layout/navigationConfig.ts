@@ -1,5 +1,4 @@
 import type { LucideIcon } from "lucide-react";
-import type { ReactNode } from "react";
 import {
   BookLock,
   Bookmark,
@@ -28,9 +27,8 @@ export interface NavigationUser {
 
 export interface NavigationItem {
   title: string;
-  url?: string;
+  url: string;
   icon: LucideIcon;
-  component?: React.ReactNode;
 }
 
 export interface NavigationSections {
@@ -81,7 +79,7 @@ export function getNavigationSections(user?: NavigationUser | null): NavigationS
   const mobileItems: NavigationItem[] = [
     { title: "Accueil", url: "/", icon: Home },
     { title: "Ressources", url: "/resources", icon: FolderOpen },
-    { title: "NouveauPost", component: newPost, icon: Plus },
+    { title: "NouveauPost", url: newPost, icon: Plus },
     { title: "Sphères", url: "/spheres", icon: Users },
     { title: "Notifications", url: "/notifications", icon: Bell },
     ...adminEntry,
