@@ -23,6 +23,7 @@ import { PostDetail } from "./pages/PostDetail";
 import { Spheres } from "./pages/Spheres";
 import { SphereDetail } from "./pages/SphereDetail";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
+import { AdminModerationQueue } from "./pages/admin/AdminModerationQueue";
 import { About } from "./pages/public/About";
 import { Contact } from "./pages/public/Contact";
 import { FAQ } from "./pages/public/FAQ";
@@ -174,6 +175,7 @@ const App = () => (
 
           {/* Admin routes */}
           <Route path="/cs-inc/private/admin" element={<AdminDashboard />} />
+          <Route path="/cs-inc/private/admin/moderation-queue" element={<AdminModerationQueue />} />
         
           {/* Public pages */}
           <Route path="/cs-inc" element={<Landing />} />

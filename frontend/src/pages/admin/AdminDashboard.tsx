@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { Users, FileText, TrendingUp, Shield, AlertCircle, CheckCircle, XCircle, Search, Filter, BarChart3, Clock, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -138,9 +139,11 @@ export function AdminDashboard() {
                 <BarChart3 className="h-4 w-4" />
                 Statistiques
               </Button>
-              <Button className="campus-gradient text-white gap-2">
+              <Button asChild className="campus-gradient text-white gap-2">
+                <Link to="/cs-inc/private/admin/moderation-queue">
                 <Filter className="h-4 w-4" />
-                Filtres
+                Moderation Queue
+                </Link>
               </Button>
             </div>
           </div>
