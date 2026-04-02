@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { getCategoryLabel } from "@/lib/resourceMetadata";
 
 export function PostDetail() {
   const { id } = useParams();
@@ -59,7 +60,12 @@ export function PostDetail() {
             </CardContent>
           </Card>
         ) : post ? (
-          <PostCard post={post} />
+          <PostCard
+            post={{
+              ...post,
+              category: getCategoryLabel(post.category),
+            }}
+          />
         ) : (
           <Card className="campus-card">
             <CardContent className="p-8 text-center text-muted-foreground">

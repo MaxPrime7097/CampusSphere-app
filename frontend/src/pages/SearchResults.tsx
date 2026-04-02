@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { globalSearch } from "@/services/api";
+import { createConnection, deleteConnection, getCurrentUser, globalSearch } from "@/services/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -17,30 +17,71 @@ export function SearchResults() {
   const { toast } = useToast();
   const query = searchParams.get("q") || "";
   const [searchTerm, setSearchTerm] = useState(query);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(query);
   const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("all");
   const [sortBy, setSortBy] = useState("relevance");
   const [followedUsers, setFollowedUsers] = useState(new Set());
+  const [connectionIdsByUser, setConnectionIdsByUser] = useState<Record<string, string>>({});
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [followLoadingUserId, setFollowLoadingUserId] = useState<string | null>(null);
   const [searchResults, setSearchResults] = useState<{ users: any[]; resources: any[]; spheres: any[] }>({
     users: [],
     resources: [],
     spheres: []
   });
 
+  useEffect(() => {
+    let isMounted = true;
+
+    (async () => {
+      try {
+        const me = await getCurrentUser();
+        if (isMounted && me?.id != null) {
+          setCurrentUserId(String(me.id));
+        }
+      } catch {
+        // Current user is optional for read-only search experience.
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const debounceTimeout = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 350);
+
+    return () => clearTimeout(debounceTimeout);
+  }, [searchTerm]);
+
   // Recherche en temps réel
   useEffect(() => {
-    if (!searchTerm.trim()) {
+    if (!debouncedSearchTerm.trim()) {
       setSearchResults({ users: [], resources: [], spheres: [] });
       setIsSearching(false);
+      setSearchError(null);
       return;
     }
 
     let isMounted = true;
     setIsSearching(true);
+    setSearchError(null);
     
     (async () => {
       try {
-        const result = await globalSearch(searchTerm, 'all', 20);
+        const searchType = "all";
+        const searchLimit = 20;
+        console.debug("[SearchResults] globalSearch params", {
+          searchTerm: debouncedSearchTerm,
+          type: searchType,
+          limit: searchLimit,
+        });
+        const result = await globalSearch(debouncedSearchTerm, searchType, searchLimit);
         if (isMounted && result.success) {
           const data = result.data || {};
           setSearchResults({
@@ -72,8 +113,17 @@ export function SearchResults() {
             }))
           });
         }
-      } catch {
-        // Error searching
+      } catch (error: any) {
+        if (isMounted) {
+          const message = error?.message || "Impossible d'effectuer la recherche pour le moment.";
+          setSearchError(message);
+          toast({
+            title: "Erreur de recherche",
+            description: message,
+            variant: "destructive",
+          });
+          setSearchResults({ users: [], resources: [], spheres: [] });
+        }
       } finally {
         if (isMounted) setIsSearching(false);
       }
@@ -82,29 +132,77 @@ export function SearchResults() {
     return () => {
       isMounted = false;
     };
-  }, [searchTerm]);
+  }, [debouncedSearchTerm, toast]);
 
   const handleFollowUser = async (userId: string, userName: string) => {
+    if (!currentUserId || followLoadingUserId) {
+      toast({
+        title: "Action indisponible",
+        description: "Impossible de modifier la connexion pour le moment.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const isFollowing = followedUsers.has(userId);
-    
-    if (isFollowing) {
-      setFollowedUsers(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(userId);
-        return newSet;
-      });
+    const previousFollowedUsers = new Set(followedUsers);
+    const previousConnectionId = connectionIdsByUser[userId];
+    setFollowLoadingUserId(userId);
+
+    // Optimistic update
+    setFollowedUsers((prev) => {
+      const next = new Set(prev);
+      if (isFollowing) {
+        next.delete(userId);
+      } else {
+        next.add(userId);
+      }
+      return next;
+    });
+
+    try {
+      if (isFollowing) {
+        if (!previousConnectionId) {
+          throw new Error("Connexion introuvable pour la suppression.");
+        }
+        await deleteConnection(currentUserId, previousConnectionId);
+        setConnectionIdsByUser((prev) => {
+          const next = { ...prev };
+          delete next[userId];
+          return next;
+        });
+      } else {
+        const response = await createConnection(userId);
+        if (response?.id != null) {
+          setConnectionIdsByUser((prev) => ({ ...prev, [userId]: String(response.id) }));
+        }
+      }
+
       toast({
-        title: "Ne suit plus",
-        description: `Vous ne suivez plus ${userName}`,
+        title: isFollowing ? "Ne suit plus" : "Suit maintenant",
+        description: isFollowing
+          ? `Vous ne suivez plus ${userName}`
+          : `Vous suivez maintenant ${userName}`,
         duration: 2000,
       });
-    } else {
-      setFollowedUsers(prev => new Set(prev).add(userId));
+    } catch (error: any) {
+      setFollowedUsers(previousFollowedUsers);
+      setConnectionIdsByUser((prev) => ({
+        ...prev,
+        ...(previousConnectionId ? { [userId]: previousConnectionId } : {}),
+      }));
+
       toast({
-        title: "Suit maintenant",
-        description: `Vous suivez maintenant ${userName}`,
-        duration: 2000,
+        title: "Erreur",
+        description:
+          error?.message ||
+          (isFollowing
+            ? "Impossible de supprimer la connexion."
+            : "Impossible de créer la connexion."),
+        variant: "destructive",
       });
+    } finally {
+      setFollowLoadingUserId(null);
     }
   };
 
@@ -169,6 +267,9 @@ export function SearchResults() {
       spheres: sortResults(searchResults.spheres, "spheres")
     };
   }, [searchResults, sortBy]);
+  const totalResults = sortedResults.users.length + sortedResults.resources.length + sortedResults.spheres.length;
+  const hasActiveQuery = debouncedSearchTerm.trim().length > 0;
+  const hasEmptyResults = hasActiveQuery && totalResults === 0 && !isSearching && !searchError;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
@@ -211,7 +312,7 @@ export function SearchResults() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4 mb-6">
             <TabsTrigger value="all" className="text-xs md:text-sm">
-              Tout ({sortedResults.users.length + sortedResults.resources.length + sortedResults.spheres.length})
+              Tout ({totalResults})
             </TabsTrigger>
             <TabsTrigger value="users" className="text-xs md:text-sm">
               Personnes ({sortedResults.users.length})
@@ -258,6 +359,7 @@ export function SearchResults() {
                             size="sm" 
                             variant={followedUsers.has(user.id) ? "outline" : "default"}
                             onClick={() => handleFollowUser(user.id, user.name)}
+                            disabled={followLoadingUserId === user.id || !currentUserId}
                             className={!followedUsers.has(user.id) ? "campus-gradient text-white hover:opacity-90" : ""}
                           >
                             {followedUsers.has(user.id) ? (
@@ -350,12 +452,20 @@ export function SearchResults() {
               </div>
             )}
 
-            {sortedResults.users.length === 0 && sortedResults.resources.length === 0 && sortedResults.spheres.length === 0 && (
+            {searchError && (
+              <div className="text-center py-12">
+                <Search className="h-12 w-12 text-destructive mx-auto mb-4" />
+                <p className="text-destructive text-lg">La recherche a échoué</p>
+                <p className="text-sm text-muted-foreground mt-2">{searchError}</p>
+              </div>
+            )}
+
+            {hasEmptyResults && (
               <div className="text-center py-12">
                 <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground text-lg">Aucun résultat trouvé</p>
+                <p className="text-muted-foreground text-lg">Aucun résultat pour “{debouncedSearchTerm}”</p>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Essayez avec d'autres mots-clés ou explorez nos suggestions
+                  Aucun élément ne correspond à votre recherche pour le moment.
                 </p>
               </div>
             )}
@@ -388,6 +498,7 @@ export function SearchResults() {
                           size="sm" 
                           variant={followedUsers.has(user.id) ? "outline" : "default"}
                           onClick={() => handleFollowUser(user.id, user.name)}
+                          disabled={followLoadingUserId === user.id || !currentUserId}
                           className={!followedUsers.has(user.id) ? "campus-gradient text-white hover:opacity-90" : ""}
                         >
                           {followedUsers.has(user.id) ? (

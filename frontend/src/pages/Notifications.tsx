@@ -60,25 +60,75 @@ const toCanonicalType = (rawType: unknown, notificationId: unknown): CanonicalNo
   return "system";
 };
 
-const buildActionUrl = (type: CanonicalNotificationType, data: Record<string, any> | undefined): string | null => {
+type NormalizedNotificationData = {
+  postId: string | null;
+  profileUsername: string | null;
+  sphereId: string | null;
+  taskId: string | null;
+  resourceId: string | null;
+  conversationId: string | null;
+};
+
+const toNullableString = (value: unknown): string | null => {
+  if (typeof value === "string" && value.trim().length > 0) {
+    return value;
+  }
+  if (typeof value === "number") {
+    return String(value);
+  }
+  return null;
+};
+
+const normalizeNotificationData = (n: any): NormalizedNotificationData => {
+  const data = n?.data;
+  const sender = n?.sender;
+
+  return {
+    postId: toNullableString(data?.post_id) || toNullableString(data?.post) || toNullableString(data?.postId),
+    profileUsername:
+      toNullableString(data?.requester_username) ||
+      toNullableString(data?.username) ||
+      toNullableString(sender?.id),
+    sphereId: toNullableString(data?.sphere_id) || toNullableString(data?.sphereId),
+    taskId: toNullableString(data?.task_id) || toNullableString(data?.taskId),
+    resourceId: toNullableString(data?.resource_id) || toNullableString(data?.resourceId),
+    conversationId: toNullableString(data?.conversation_id) || toNullableString(data?.conversationId),
+  };
+};
+
+const CLICKABLE_NOTIFICATION_TYPES = new Set<CanonicalNotificationType>([
+  "post_like",
+  "post_comment",
+  "comment_reply",
+  "sphere_invitation",
+  "sphere_join_request",
+  "task_assigned",
+  "task_completed",
+  "resource_shared",
+  "connection_request",
+  "connection_accepted",
+  "message",
+]);
+
+const buildActionUrl = (type: CanonicalNotificationType, data: NormalizedNotificationData): string | null => {
   switch (type) {
     case "post_like":
     case "post_comment":
     case "comment_reply":
-      return data?.post_id ? `/posts/${data.post_id}` : null;
+      return data.postId ? `/posts/${data.postId}` : null;
     case "sphere_invitation":
     case "sphere_join_request":
-      return data?.sphere_id ? `/spheres/${data.sphere_id}` : null;
+      return data.sphereId ? `/spheres/${data.sphereId}` : null;
     case "task_assigned":
     case "task_completed":
-      return data?.task_id ? `/tasks/${data.task_id}` : null;
+      return data.taskId ? `/tasks/${data.taskId}` : null;
     case "resource_shared":
-      return data?.resource_id ? `/resources/${data.resource_id}` : null;
+      return data.resourceId ? `/resources/${data.resourceId}` : null;
     case "connection_request":
     case "connection_accepted":
-      return data?.requester_username ? `/profile/${data.requester_username}` : null;
+      return data.profileUsername ? `/profile/${data.profileUsername}` : null;
     case "message":
-      return data?.conversation_id ? `/messages/${data.conversation_id}` : "/messages";
+      return data.conversationId ? `/messages/${data.conversationId}` : "/messages";
     case "system":
     default:
       return null;
@@ -114,7 +164,16 @@ export function Notifications() {
             const senderAvatar = n.sender?.avatar || n.data?.sender_avatar || null;
 
             const notificationType = toCanonicalType(n.notification_type || n.type, n.id);
-            const actionUrl = buildActionUrl(notificationType, n.data);
+            const normalizedData = normalizeNotificationData(n);
+            const actionUrl = buildActionUrl(notificationType, normalizedData);
+            if (!actionUrl && CLICKABLE_NOTIFICATION_TYPES.has(notificationType)) {
+              console.debug("[Notifications] Missing actionUrl for clickable notification", {
+                notificationId: n.id,
+                notificationType,
+                normalizedData,
+                rawData: n.data,
+              });
+            }
 
             return {
               id: String(n.id),

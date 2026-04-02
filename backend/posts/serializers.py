@@ -236,6 +236,9 @@ class PostSerializer(serializers.ModelSerializer):
 
 
 class PostCreateSerializer(serializers.ModelSerializer):
+    # API contract (create): visibility must be one of Post.VISIBILITY_CHOICES values.
+    # Expected values: "public", "sphere", "friends".
+    # UI-only values (e.g. "university", "private") must be mapped by frontend before submission.
     class Meta:
         model = Post
         fields = [

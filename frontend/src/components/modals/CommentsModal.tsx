@@ -1,15 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  getCurrentUser,
-  getPostComments,
-  createComment,
-  likeComment,
-  normalizeUser,
-  searchUsers,
-  updateComment,
-  deleteComment,
-} from "@/services/api";
+import { getCurrentUser, getPostComments, createComment, likeComment, normalizeUser, searchUsers } from "@/services/api";
 import {
   Dialog,
   DialogContent,
@@ -96,9 +87,6 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
 
   const mapApiComment = (apiComment: any, parentId?: string): Comment => ({
     id: String(apiComment.id),
-    authorId: String(apiComment.author ?? apiComment.author_id ?? apiComment.author_info?.id ?? ""),
-    canEdit: Boolean(apiComment.can_edit ?? apiComment.canEdit ?? false),
-    canDelete: Boolean(apiComment.can_delete ?? apiComment.canDelete ?? false),
     author: normalizeCommentAuthor(apiComment.author_info ?? apiComment.author, apiComment.author_name),
     content: apiComment.content || "",
     timestamp: apiComment.created_at || new Date().toISOString(),
@@ -165,15 +153,10 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
     let isMounted = true;
     (async () => {
       try {
-        const [rawComments, user] = await Promise.all([
-          getPostComments(postId),
-          getCurrentUser().catch(() => null),
-        ]);
-        if (!isMounted) return;
-
-        setCurrentUserId(user?.id ? String(user.id) : null);
-        if (Array.isArray(rawComments)) {
-          setComments(rawComments.map((comment: any) => mapApiComment(comment)));
+        const data = await getPostComments(postId);
+        if (isMounted && Array.isArray(data)) {
+          const mapped = data.map((comment: any) => mapApiComment(comment));
+          setComments(mapped);
         }
       } catch (error) {
         console.error("Error loading comments:", error);
@@ -280,6 +263,17 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
         duration: 2000,
       });
     }
+  };
+
+  const startReply = (comment: Comment) => {
+    if (replyingTo === comment.id) {
+      setReplyingTo(null);
+      return;
+    }
+
+    const mentionPrefix = `@${comment.author.username} `;
+    setReplyingTo(comment.id);
+    setReplyContent((prev) => (prev.includes(mentionPrefix) ? prev : `${mentionPrefix}${prev}`));
   };
 
   const handleReply = async (parentId: string) => {
@@ -441,7 +435,10 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
                 {comment.likes}
               </button>
               {canReply && (
-                <button className="hover:text-primary flex items-center gap-1" onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}>
+                <button
+                  className="hover:text-primary flex items-center gap-1"
+                  onClick={() => startReply(comment)}
+                >
                   <Reply className="h-3 w-3" />
                   Répondre
                 </button>
@@ -480,6 +477,9 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
                       if (activeQuery !== null) {
                         setMentionQuery(activeQuery);
                         setShowMentions(true);
+                      } else {
+                        setShowMentions(false);
+                        setMentionQuery("");
                       }
                     }}
                     className="min-h-[60px] resize-none"
@@ -499,28 +499,36 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
   };
 
   return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col p-0 bg-popover">
-          <DialogHeader className="px-6 py-4 border-b">
-            <DialogTitle>{t("modals.comments.title")}</DialogTitle>
-          </DialogHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col p-0 bg-popover">
+        <DialogHeader className="px-6 py-4 border-b">
+          <DialogTitle>{t('modals.comments.title')}</DialogTitle>
+        </DialogHeader>
+        
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          {comments.map((comment) => renderComment(comment))}
+        </div>
 
-          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">{comments.map((comment) => renderComment(comment))}</div>
+        <div className="border-t p-4">
+          <div className="space-y-3">          
 
-          <div className="border-t p-4">
-            <div className="space-y-3">
-              {showEmojiPicker && (
-                <Card className="p-3">
-                  <div className="grid grid-cols-8 gap-2">
-                    {["😀", "😂", "🥰", "😎", "🤔", "👍", "🎉", "🔥", "💯", "✨", "🚀", "❤️", "👏", "🙌", "💪", "🎯"].map((emoji) => (
-                      <Button key={emoji} variant="ghost" className="text-2xl p-2 h-auto" onClick={() => insertEmoji(emoji)}>
-                        {emoji}
-                      </Button>
-                    ))}
-                  </div>
-                </Card>
-              )}
+            {/* Emoji Picker */}
+            {showEmojiPicker && (
+              <Card className="p-3">
+                <div className="grid grid-cols-8 gap-2">
+                  {['😀', '😂', '🥰', '😎', '🤔', '👍', '🎉', '🔥', '💯', '✨', '🚀', '❤️', '👏', '🙌', '💪', '🎯'].map((emoji) => (
+                    <Button
+                      key={emoji}
+                      variant="ghost"
+                      className="text-2xl p-2 h-auto"
+                      onClick={() => insertEmoji(emoji)}
+                    >
+                      {emoji}
+                    </Button>
+                  ))}
+                </div>
+              </Card>
+            )}
 
               {showMentions && (
                 <Card className="p-3">
