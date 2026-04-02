@@ -54,7 +54,6 @@ const CATEGORY_ALIASES: Record<string, string> = {
   acad: "academic",
   academics: "academic",
   pro: "professional",
-  professionnel: "professional",
   société: "social",
   societe: "social",
   tech: "technology",
