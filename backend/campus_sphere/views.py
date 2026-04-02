@@ -4,32 +4,6 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.utils import timezone
 from .search import SearchService, FilterService
-from users.serializers import UserSearchSerializer
-from spheres.serializers import SphereSerializer
-from posts.serializers import PostSerializer
-from resources.serializers import ResourceSerializer
-
-
-def _serialize_search_results(results, request):
-    """Serialize search result querysets/models into JSON-ready arrays."""
-    return {
-        'users': UserSearchSerializer(results.get('users', []), many=True).data,
-        'spheres': SphereSerializer(
-            results.get('spheres', []),
-            many=True,
-            context={'request': request}
-        ).data,
-        'posts': PostSerializer(
-            results.get('posts', []),
-            many=True,
-            context={'request': request}
-        ).data,
-        'resources': ResourceSerializer(
-            results.get('resources', []),
-            many=True,
-            context={'request': request}
-        ).data,
-    }
 
 
 @api_view(['GET'])
@@ -65,7 +39,7 @@ def global_search(request):
                 'timestamp': timezone.now().isoformat()
             }, status=400)
 
-        results = _serialize_search_results(raw_results, request)
+        results = SearchService.serialize_results(raw_results, request)
 
         return Response({
             'success': True,
