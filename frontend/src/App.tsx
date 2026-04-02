@@ -22,7 +22,13 @@ import { ResourceDetail } from "./pages/ResourceDetail";
 import { PostDetail } from "./pages/PostDetail";
 import { Spheres } from "./pages/Spheres";
 import { SphereDetail } from "./pages/SphereDetail";
-import { AdminDashboard } from "./pages/admin/AdminDashboard";
+import { AdminLayout } from "./admin/components/AdminLayout";
+import { AdminDashboardPage } from "./admin/pages/AdminDashboardPage";
+import { AdminUsersPage } from "./admin/pages/AdminUsersPage";
+import { AdminSpheresPage } from "./admin/pages/AdminSpheresPage";
+import { AdminModerationPage } from "./admin/pages/AdminModerationPage";
+import { AdminResourcesPage } from "./admin/pages/AdminResourcesPage";
+import { AdminLogsPage } from "./admin/pages/AdminLogsPage";
 import { About } from "./pages/public/About";
 import { Contact } from "./pages/public/Contact";
 import { FAQ } from "./pages/public/FAQ";
@@ -173,7 +179,15 @@ const App = () => (
           } />
 
           {/* Admin routes */}
-          <Route path="/cs-inc/private/admin" element={<AdminDashboard />} />
+          <Route path="/cs-inc/private/admin" element={<AdminLayout />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<AdminDashboardPage />} />
+            <Route path="users" element={<AdminUsersPage />} />
+            <Route path="spheres" element={<AdminSpheresPage />} />
+            <Route path="moderation" element={<AdminModerationPage />} />
+            <Route path="resources" element={<AdminResourcesPage />} />
+            <Route path="logs" element={<AdminLogsPage />} />
+          </Route>
         
           {/* Public pages */}
           <Route path="/cs-inc" element={<Landing />} />
