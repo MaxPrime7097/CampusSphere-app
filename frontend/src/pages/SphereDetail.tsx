@@ -51,6 +51,39 @@ export function SphereDetail() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [processingMemberIds, setProcessingMemberIds] = useState<Record<string, boolean>>({});
 
+  const resolveJoinConflict = (error: unknown): "already_active" | "already_pending" | null => {
+    const rawMessage =
+      (error as any)?.response?.data?.detail ??
+      (error as any)?.response?.data?.message ??
+      (error as any)?.message ??
+      "";
+
+    let parsedPayload: any = null;
+    if (typeof rawMessage === "string") {
+      try {
+        parsedPayload = JSON.parse(rawMessage);
+      } catch {
+        parsedPayload = null;
+      }
+    }
+
+    const normalizedMessage = [
+      rawMessage,
+      parsedPayload?.detail,
+      parsedPayload?.message,
+      parsedPayload?.error,
+      parsedPayload?.status,
+      parsedPayload?.data?.status,
+    ]
+      .filter(Boolean)
+      .map((value) => String(value).toLowerCase())
+      .join(" ");
+
+    if (normalizedMessage.includes("already active")) return "already_active";
+    if (normalizedMessage.includes("already pending")) return "already_pending";
+    return null;
+  };
+
   // ==================== HELPERS ====================
   const normalizeRole = (roleValue: unknown): string => {
     if (!roleValue) return "member";
@@ -206,7 +239,26 @@ export function SphereDetail() {
         toast({ title: "Bienvenue dans la sphère !" });
       }
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      const joinConflict = resolveJoinConflict(e);
+      if (joinConflict === "already_active") {
+        setIsMember(true);
+        setIsPendingRequest(false);
+        toast({
+          title: "Déjà membre",
+          description: "Vous êtes déjà membre actif de cette sphère.",
+        });
+      } else if (joinConflict === "already_pending") {
+        setIsMember(false);
+        setIsPendingRequest(true);
+        toast({
+          title: "Demande déjà en attente",
+          description: "Votre demande d'adhésion est déjà en cours de validation.",
+        });
+      } else {
+        setIsMember(false);
+        setIsPendingRequest(false);
+        toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      }
     } finally { setIsJoining(false); }
   };
 
