@@ -13,11 +13,12 @@ export function MobileNavigation() {
     let isMounted = true;
     (async () => {
       try {
-const data = await getCurrentUser();
+        const data = await getCurrentUser();
         if (isMounted && data) {
           setUser(data);
         }
       } catch {
+        // User not logged in or error
       }
     })();
 
