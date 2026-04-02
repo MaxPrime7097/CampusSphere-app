@@ -34,13 +34,14 @@ import { UploadResourceModal } from "@/components/modals/UploadResourceModal";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { RESOURCE_TYPE_OPTIONS, normalizeResourceType } from "@/constants/resourceTypes";
+import { getSubjectLabel, getTypeLabel, normalizeSubject } from "@/lib/resourceMetadata";
 
 function mapResourceCard(r: any) {
   return {
     id: String(r.id),
     title: r.title,
     description: r.description || "",
-    subject: r.subject || "other",
+    subject: normalizeSubject(r.subject),
     type: normalizeResourceType(r.type),
     authorId: r.authorId || r.author || r.created_by,
     authorName: r.author?.name || r.author_info?.name || r.author_name || "Unknown",
@@ -436,9 +437,14 @@ export function Resources() {
                           {resource.impactScore || 0}
                         </span>
                       </div>
-                      <Badge variant="outline" className="text-xs mb-2">
-                        {types.find((t) => t.value === resource.type)?.label}
-                      </Badge>
+                      <div className="mb-2 flex flex-wrap gap-1">
+                        <Badge variant="outline" className="text-xs">
+                          {getTypeLabel(resource.type)}
+                        </Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          {getSubjectLabel(resource.subject)}
+                        </Badge>
+                      </div>
                       <div className="flex gap-1">
                         <Button
                           size="sm"
@@ -511,9 +517,14 @@ export function Resources() {
                         {resource.impactScore || 0}
                       </span>
                     </div>
-                    <Badge variant="outline" className="text-xs mb-2">
-                      {types.find((t) => t.value === resource.type)?.label}
-                    </Badge>
+                    <div className="mb-2 flex flex-wrap gap-1">
+                      <Badge variant="outline" className="text-xs">
+                        {getTypeLabel(resource.type)}
+                      </Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        {getSubjectLabel(resource.subject)}
+                      </Badge>
+                    </div>
                     <div className="flex gap-1">
                       <Button
                         size="sm"
@@ -585,9 +596,14 @@ export function Resources() {
                         {resource.impactScore || 0}
                       </span>
                     </div>
-                    <Badge variant="outline" className="text-xs mb-2">
-                      {types.find((t) => t.value === resource.type)?.label}
-                    </Badge>
+                    <div className="mb-2 flex flex-wrap gap-1">
+                      <Badge variant="outline" className="text-xs">
+                        {getTypeLabel(resource.type)}
+                      </Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        {getSubjectLabel(resource.subject)}
+                      </Badge>
+                    </div>
                     <div className="flex gap-1">
                       <Button
                         size="sm"

@@ -13,7 +13,7 @@ from django.utils import timezone
 from .models import Post, PostLike, PostSave, PostImpactRating, Comment, CommentLike
 from .serializers import (
     PostSerializer, PostCreateSerializer, PostUpdateSerializer,
-    CommentSerializer, CommentCreateSerializer, PostLikeSerializer,
+    CommentSerializer, CommentCreateSerializer, CommentUpdateSerializer, PostLikeSerializer,
     PostImpactRatingActionSerializer
 )
 
@@ -442,6 +442,31 @@ class PostCommentsView(generics.ListCreateAPIView):
         output_serializer = CommentSerializer(comment, context=self.get_serializer_context())
         headers = self.get_success_headers(output_serializer.data)
         return Response(output_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+
+class CommentDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = Comment.objects.select_related('author', 'post', 'parent').prefetch_related('replies')
+
+    def get_serializer_class(self):
+        if self.request.method in ['PUT', 'PATCH']:
+            return CommentUpdateSerializer
+        return CommentSerializer
+
+    def perform_update(self, serializer):
+        comment = self.get_object()
+        if comment.author != self.request.user:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You can only edit your own comments")
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if instance.author != self.request.user:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You can only delete your own comments")
+        post = instance.post
+        instance.delete()
+        post.update_counts()
 
 
 class CommentLikeView(APIView):

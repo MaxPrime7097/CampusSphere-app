@@ -40,6 +40,16 @@ interface CreatePostModalProps {
   onPostCreated?: (postData: unknown) => void;
 }
 
+const POST_VISIBILITY_API_MAP: Record<string, "public" | "sphere" | "friends"> = {
+  public: "public",
+  university: "sphere",
+  private: "friends",
+};
+
+const mapPostVisibilityForApi = (uiVisibility: string): "public" | "sphere" | "friends" | null => {
+  return POST_VISIBILITY_API_MAP[uiVisibility] ?? null;
+};
+
 export function CreatePostModal({ children, onPostCreated }: CreatePostModalProps) {
   const [content, setContent] = useState("");
   const [location, setLocation] = useState("");
@@ -215,13 +225,23 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
       return;
     }
 
+    const apiVisibility = mapPostVisibilityForApi(visibility);
+    if (!apiVisibility) {
+      toast({
+        title: "Visibilité invalide",
+        description: "Impossible de publier ce post: option de visibilité non supportée.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     
     try {
       // Create post via API
       const postPayload = new FormData();
       postPayload.append('content', content);
-      postPayload.append('visibility', visibility === 'public' ? 'public' : visibility);
+      postPayload.append('visibility', apiVisibility);
 
       if (tags.length > 0) {
         postPayload.append('tags', JSON.stringify(tags));

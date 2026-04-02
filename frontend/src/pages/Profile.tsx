@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
-import { getCurrentUser, getUserByUsername, getUserPosts, uploadAvatar, uploadCoverPhoto, updateUserProfile, getUserConnections, getUserResources, createConnection, deleteConnection, downloadResource } from "@/services/api";
+import { getCurrentUser, getUserByUsername, getUserPosts, uploadAvatar, uploadCoverPhoto, updateUserProfile, getUserConnections, getUserResources, createConnection, deleteConnection, downloadResource, getUserProfile } from "@/services/api";
 import { MapPin, Camera, Calendar, Link, Users, BookOpen, Award, Settings, FileText, Briefcase, GraduationCap, Loader2, Check, Download, UserPlus, UserMinus, ExternalLink, Upload, X, Zap, Smile } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -698,14 +698,34 @@ export function Profile() {
 
   const handleMoodChange = async () => {
     if (!newMood?.value || !currentUser?.id) return;
+
+    const selectedMoodValue = newMood.value;
+
     try {
-      await updateUserProfile({ current_mood: newMood.value });
-      toast({ title: "Mood mis à jour !", description: "Votre mood du moment a été changé", duration: 2000 });
+      await updateUserProfile({ current_mood: selectedMoodValue });
+
+      let refreshedProfile = await getUserProfile();
+      if (!refreshedProfile) {
+        refreshedProfile = await getCurrentUser();
+      }
+
+      const confirmedMoodValue = refreshedProfile?.currentMood ?? refreshedProfile?.current_mood ?? "";
+
+      setCurrentUser(refreshedProfile);
+      if (isOwnProfile) setTargetUser(refreshedProfile);
       setNewMood(null);
       setShowMoodModal(false);
-      const userData = await getCurrentUser();
-      setCurrentUser(userData);
-      if (isOwnProfile) setTargetUser(userData);
+
+      if (confirmedMoodValue !== selectedMoodValue) {
+        toast({
+          title: "mise à jour non confirmée",
+          description: "La valeur enregistrée diffère de votre sélection.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({ title: "Mood mis à jour !", description: "Votre mood du moment a été changé", duration: 2000 });
     } catch (error: any) {
       toast({ title: "Erreur", description: error?.message || "Impossible de mettre à jour le mood", variant: "destructive" });
     }

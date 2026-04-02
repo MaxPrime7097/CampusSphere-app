@@ -86,6 +86,8 @@ function unwrapList<T = any>(response: any): T[] {
 export function normalizeUser(user: any) {
   if (!user) return null;
 
+  const currentMood = user.currentMood ?? user.current_mood ?? "";
+
   const firstName = user.firstName ?? user.first_name ?? "";
   const lastName = user.lastName ?? user.last_name ?? "";
   const fullNameFromApi = user.full_name ?? user.name ?? "";
@@ -100,7 +102,18 @@ export function normalizeUser(user: any) {
     name,
     username: user.username ?? "",
     email: user.email ?? "",
-    avatar: user.avatar ?? user.profileImage ?? null,
+    avatar:
+      user.avatar ??
+      user.profileImage ??
+      user.profile_image ??
+      user.avatarUrl ??
+      user.avatar_url ??
+      user.profilePicture ??
+      user.profile_picture ??
+      user.image ??
+      user.imageUrl ??
+      user.image_url ??
+      null,
     coverPhoto: user.coverPhoto ?? user.cover_photo ?? null,
     bio: user.bio ?? "",
     university: user.university ?? "",
@@ -114,7 +127,8 @@ export function normalizeUser(user: any) {
     postVisibility: user.postVisibility ?? user.post_visibility ?? "public",
     dataExportRequestedAt: user.dataExportRequestedAt ?? user.data_export_requested_at ?? null,
     impactScore: user.impactScore ?? user.impact_score ?? 0,
-    currentMood: user.currentMood ?? user.current_mood ?? "",
+    currentMood,
+    current_mood: currentMood,
     skills: toArray(user.skills),
     interests: toArray(user.interests),
     previousEducation: toArray(user.previousEducation ?? user.previous_education),
@@ -214,6 +228,8 @@ function normalizeResource(resource: any) {
     fileUrl: resource.file_url ?? resource.fileUrl ?? "",
     fileSize: resource.file_size ?? resource.fileSize ?? "",
     isSaved: resource.is_saved ?? resource.isSaved ?? false,
+    canEdit: resource.can_edit ?? resource.canEdit ?? false,
+    canDelete: resource.can_delete ?? resource.canDelete ?? false,
     downloadCount: toNumber(resource.download_count ?? resource.downloadCount, 0),
     viewCount: toNumber(resource.view_count ?? resource.viewCount, 0),
     impactScore: toNumber(resource.impact_score ?? resource.impactScore, 0),
@@ -456,11 +472,12 @@ export async function updateUserProfile(data: Partial<{
   interests: string[];
   current_mood: string;
 }>, token?: string) {
-  return apiFetch<any>("api/users/profile/", {
+  const response = await apiFetch<any>("api/users/profile/", {
     method: "PUT",
     body: data,
     token: token || getAccessToken(),
   });
+  return normalizeUser(unwrapItem(response));
 }
 
 export async function changeUserPassword(payload: { current_password: string; new_password: string }, token?: string) {
@@ -854,11 +871,12 @@ export async function updatePost(id: number | string, data: Partial<{
   visibility: string;
   tags: string[];
 }>, token?: string) {
-  return apiFetch<any>(`api/posts/${id}/`, {
+  const response = await apiFetch<any>(`api/posts/${id}/`, {
     method: "PUT",
     body: data,
     token: token || getAccessToken(),
   });
+  return normalizePost(unwrapItem(response));
 }
 
 export async function deletePost(id: number | string, token?: string) {
@@ -938,6 +956,21 @@ export async function createComment(postId: number | string, data: { content: st
   });
 }
 
+export async function updateComment(commentId: number | string, data: { content: string }, token?: string) {
+  return apiFetch<any>(`api/posts/comments/${commentId}/`, {
+    method: "PUT",
+    body: data,
+    token: token || getAccessToken(),
+  });
+}
+
+export async function deleteComment(commentId: number | string, token?: string) {
+  return apiFetch<any>(`api/posts/comments/${commentId}/`, {
+    method: "DELETE",
+    token: token || getAccessToken(),
+  });
+}
+
 export async function likeComment(commentId: number | string, token?: string) {
   return apiFetch<any>(`api/posts/comments/${commentId}/like/`, {
     method: "POST",
@@ -981,11 +1014,12 @@ export async function updateResource(id: number | string, data: Partial<{
   category: string;
   tags: string[];
 }>, token?: string) {
-  return apiFetch<any>(`api/resources/${id}/`, {
+  const response = await apiFetch<any>(`api/resources/${id}/`, {
     method: "PUT",
     body: data,
     token: token || getAccessToken(),
   });
+  return normalizeResource(unwrapItem(response));
 }
 
 export async function deleteResource(id: number | string, token?: string) {

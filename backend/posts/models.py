@@ -4,6 +4,8 @@ from django.utils import timezone
 
 
 class Post(models.Model):
+    # Backend/API contract values for post visibility.
+    # Frontend UI labels must map to these exact persisted values.
     VISIBILITY_CHOICES = [
         ('public', 'Public'),
         ('sphere', 'Sphère uniquement'),
