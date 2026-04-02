@@ -11,7 +11,7 @@ import {
   Settings,
   Shield,
   User,
-  Users,
+  Globe,
   Bell,
   Plus,
   Link,
@@ -58,7 +58,7 @@ export function getNavigationSections(user?: NavigationUser | null): NavigationS
     { title: "Accueil", url: "/", icon: Home },
     { title: "Profil", url: profileUrl, icon: User },
     { title: "Ressources", url: "/resources", icon: FolderOpen },
-    { title: "Sphères", url: "/spheres", icon: Users },
+    { title: "Sphères", url: "/spheres", icon: Globe },
   ];
 
   const quickActions: NavigationItem[] = [
@@ -80,7 +80,7 @@ export function getNavigationSections(user?: NavigationUser | null): NavigationS
     { title: "Accueil", url: "/", icon: Home },
     { title: "Ressources", url: "/resources", icon: FolderOpen },
     { title: "NouveauPost", url: newPost, icon: Plus },
-    { title: "Sphères", url: "/spheres", icon: Users },
+    { title: "Sphères", url: "/spheres", icon:  },
     { title: "Notifications", url: "/notifications", icon: Bell },
     ...adminEntry,
   ];

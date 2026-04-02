@@ -89,7 +89,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
     setContent(post.content);
     setEditingContent(post.content);
     setIsDeleted(false);
-  }, [post.id, post.isLiked, post.isSaved, post.likes, post.impactScore, post.userImpactRating]);
+  }, [post.id, post.isLiked, post.isSaved, post.content, postpost.likes, post.impactScore, post.userImpactRating]);
 
   const handleOpenEdit = () => {
     setEditingContent(content);
