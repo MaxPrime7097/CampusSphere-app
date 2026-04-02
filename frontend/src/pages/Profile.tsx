@@ -317,6 +317,11 @@ export function Profile() {
     });
   }, [targetUser, userPosts, userConnections, userResources, resourcesAvailable, loading]);
 
+  const aboutProfile = useMemo(() => ({
+    phoneNumber: user.phoneNumber ?? "",
+    dateOfBirth: user.dateOfBirth ?? "",
+  }), [user.phoneNumber, user.dateOfBirth]);
+
   // Load connections
   useEffect(() => {
     if (!targetUser?.id) return;
@@ -1063,11 +1068,11 @@ export function Profile() {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Téléphone</p>
-                      <p className="font-medium">{user.phoneNumber || NOT_AVAILABLE_TEXT}</p>
+                      <p className="font-medium">{aboutProfile.phoneNumber || NOT_AVAILABLE_TEXT}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Date de naissance</p>
-                      <p className="font-medium">{user.dateOfBirth || NOT_AVAILABLE_TEXT}</p>
+                      <p className="font-medium">{aboutProfile.dateOfBirth || NOT_AVAILABLE_TEXT}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Ville</p>
