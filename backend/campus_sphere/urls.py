@@ -28,6 +28,18 @@ urlpatterns = [
     path('api/admin/user-management-summary/', admin_views.admin_user_management_summary, name='admin-user-management-summary'),
     path('api/admin/permissions/', admin_views.admin_permissions, name='admin-permissions'),
 
+    # Admin API v1 namespace
+    path('api/admin/v1/users/', admin_views.admin_v1_users, name='admin-v1-users'),
+    path('api/admin/v1/users/bulk-ban/', admin_views.admin_v1_users_bulk_ban, name='admin-v1-users-bulk-ban'),
+    path('api/admin/v1/spheres/', admin_views.admin_v1_spheres, name='admin-v1-spheres'),
+    path('api/admin/v1/posts/', admin_views.admin_v1_posts, name='admin-v1-posts'),
+    path('api/admin/v1/posts/bulk-delete/', admin_views.admin_v1_posts_bulk_delete, name='admin-v1-posts-bulk-delete'),
+    path('api/admin/v1/resources/', admin_views.admin_v1_resources, name='admin-v1-resources'),
+    path('api/admin/v1/resources/bulk-delete/', admin_views.admin_v1_resources_bulk_delete, name='admin-v1-resources-bulk-delete'),
+    path('api/admin/v1/reports/', admin_views.admin_v1_reports, name='admin-v1-reports'),
+    path('api/admin/v1/reports/bulk-approve/', admin_views.admin_v1_reports_bulk_approve, name='admin-v1-reports-bulk-approve'),
+    path('api/admin/v1/stats/', admin_views.admin_v1_stats, name='admin-v1-stats'),
+
     # Search and utility endpoints
     path('api/search/', views.global_search, name='global-search'),
     path('api/search/suggestions/', views.search_suggestions, name='search-suggestions'),
