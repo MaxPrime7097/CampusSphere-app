@@ -49,6 +49,15 @@ export function MobileNavigation() {
               </CreatePostModal>
             );
           }
+          <button
+                  type="button"
+                  className={cn(baseStyles, inactiveStyles)}
+                  onClick={() => console.log("The button was definitely pressed!")}
+                  aria-label={item.title}
+                  title={item.title}
+                >
+                  <item.icon className="h-5 w-5" />
+                </button>
 
           return (
             <NavLink

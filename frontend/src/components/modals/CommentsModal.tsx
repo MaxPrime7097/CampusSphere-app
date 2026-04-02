@@ -99,6 +99,21 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
   const [isDeletingComment, setIsDeletingComment] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      try {
+        const data = await getCurrentUser();
+        if (isMounted) setCurrentUser(data);
+      } catch (e) {
+        // User not logged in
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const mapApiComment = (apiComment: any, parentId?: string): Comment => ({
     id: String(apiComment.id),
     author: normalizeCommentAuthor(apiComment.author_info ?? apiComment.author, apiComment.author_name),
@@ -558,11 +573,11 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
               )}
 
               <div className="flex gap-3">
-                <Avatar className="h-10 w-10 flex-shrink-0">
+                <Avatar className="h-10 w-10">
                   <AvatarImage src={currentUser?.avatar || "/placeholder-avatar.jpg"} />
-                  <AvatarFallback className="bg-input text-muted-foreground font-semibold">
-                  {currentUser?.name?.slice(0, 1).toUpperCase() || 'U'}
-              </AvatarFallback>
+                    <AvatarFallback className="bg-input text-muted-foreground font-semibold">
+                    {currentUser?.name?.slice(0, 1).toUpperCase() || 'U'}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 space-y-2">
                   <Textarea
