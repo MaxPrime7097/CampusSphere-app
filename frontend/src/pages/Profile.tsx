@@ -327,13 +327,11 @@ export function Profile() {
         const connections = await getUserConnections(targetUser.id);
         if (isMounted && connections) {
           const profileOwnerId = String(targetUser.id);
-          const currentUserId = currentUser?.id ? String(currentUser.id) : null;
 
           const mapped = (connections || []).map((conn: any) => {
             const requesterId = conn.requester ? String(conn.requester) : null;
             const recipientId = conn.recipient ? String(conn.recipient) : null;
-            const isRequesterProfileOwner =
-              requesterId === profileOwnerId || (currentUserId !== null && requesterId === currentUserId);
+            const isRequesterProfileOwner = requesterId === profileOwnerId;
 
             const otherUserInfo = isRequesterProfileOwner ? conn.recipient_info : conn.requester_info;
 
@@ -359,7 +357,7 @@ export function Profile() {
     return () => {
       isMounted = false;
     };
-  }, [currentUser?.id, targetUser?.id]);
+  }, [targetUser?.id]);
 
   // Load user resources
   useEffect(() => {
