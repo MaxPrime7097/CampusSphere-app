@@ -28,7 +28,7 @@ export function MobileNavigation() {
   }, []);
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-100 bg-card border-t border-border md:hidden">
       <div className="flex justify-around items-center py-2 px-4">
         {mobileItems.map((item) => {
           const baseStyles = "flex flex-col items-center gap-1 py-2 px-3 rounded-lg transition-colors";
@@ -49,16 +49,7 @@ export function MobileNavigation() {
               </CreatePostModal>
             );
           }
-          <button
-                  type="button"
-                  className={cn(baseStyles, inactiveStyles)}
-                  onClick={() => console.log("The button was definitely pressed!")}
-                  aria-label={item.title}
-                  title={item.title}
-                >
-                  <item.icon className="h-5 w-5" />
-                </button>
-
+        
           return (
             <NavLink
               key={item.title}
