@@ -1,4 +1,7 @@
+import logging
+
 from rest_framework import generics, status, permissions, serializers
+from rest_framework.exceptions import APIException, PermissionDenied, ValidationError
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -16,6 +19,8 @@ from .serializers import (
 from .permissions import IsSphereModerator, IsSphereMember
 from campus_sphere.cache import CacheManager, CacheKeys
 
+
+logger = logging.getLogger(__name__)
 
 
 
@@ -106,17 +111,82 @@ class SphereDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_object(self):
         sphere_id = self.kwargs.get('pk')
         cache_key = CacheKeys.sphere_detail(sphere_id)
+        user_id = getattr(self.request.user, 'id', None)
 
-        sphere = CacheManager.get_or_set(
-            cache_key,
-            lambda: super().get_object(),
-            CacheManager.SPHERE_DETAIL_TTL
+        try:
+            sphere = CacheManager.get_or_set(
+                cache_key,
+                lambda: generics.RetrieveUpdateDestroyAPIView.get_object(self),
+                CacheManager.SPHERE_DETAIL_TTL
+            )
+
+            if sphere.is_expired and self.request.method in ['GET', 'POST']:
+                raise ValidationError({'detail': 'This sphere has expired'})
+
+            if sphere.is_private and sphere.created_by_id != user_id:
+                is_active_member = sphere.members.filter(user=self.request.user, status='active').exists()
+                if not is_active_member:
+                    raise PermissionDenied('This private sphere is only visible to active members')
+
+            return sphere
+        except Exception:
+            logger.exception(
+                'SphereDetailView.get_object failed (sphere_id=%s user_id=%s method=%s)',
+                sphere_id,
+                user_id,
+                self.request.method,
+            )
+            raise
+
+    def _error_response(self, error, detail, status_code):
+        return Response(
+            {
+                'error': error,
+                'detail': detail,
+                'timestamp': timezone.now().isoformat(),
+            },
+            status=status_code,
         )
 
-        if sphere.is_expired and self.request.method in ['GET', 'POST']:
-            raise serializers.ValidationError({'detail': 'This sphere has expired'})
+    def retrieve(self, request, *args, **kwargs):
+        sphere_id = kwargs.get('pk')
+        user_id = getattr(request.user, 'id', None)
 
-        return sphere
+        try:
+            instance = self.get_object()
+            serializer = self.get_serializer(instance)
+            return Response(serializer.data)
+        except ValidationError as exc:
+            logger.exception(
+                'Sphere detail validation failed (sphere_id=%s user_id=%s method=%s)',
+                sphere_id,
+                user_id,
+                request.method,
+            )
+            detail = exc.detail
+            if isinstance(detail, dict) and 'detail' in detail:
+                detail = detail['detail']
+            return self._error_response('validation_error', detail, status.HTTP_400_BAD_REQUEST)
+        except APIException as exc:
+            logger.exception(
+                'Sphere detail API exception (sphere_id=%s user_id=%s method=%s)',
+                sphere_id,
+                user_id,
+                request.method,
+            )
+            return self._error_response('api_error', exc.detail, exc.status_code)
+        except Exception:
+            logger.exception(
+                'Sphere detail serialization failed (sphere_id=%s user_id=%s method=%s)',
+                sphere_id,
+                user_id,
+                request.method,
+            )
+            return self._error_response(
+                'internal_server_error',
+                'An unexpected error occurred while loading sphere details.',
+                status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
     def get_serializer_class(self):
         if self.request.method in ['PUT', 'PATCH']:
