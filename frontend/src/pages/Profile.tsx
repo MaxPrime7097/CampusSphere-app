@@ -317,6 +317,11 @@ export function Profile() {
     });
   }, [targetUser, userPosts, userConnections, userResources, resourcesAvailable, loading]);
 
+  const aboutProfile = useMemo(() => ({
+    phoneNumber: user.phoneNumber ?? "",
+    dateOfBirth: user.dateOfBirth ?? "",
+  }), [user.phoneNumber, user.dateOfBirth]);
+
   // Load connections
   useEffect(() => {
     if (!targetUser?.id) return;
@@ -332,19 +337,28 @@ export function Profile() {
             const requesterId = conn.requester ? String(conn.requester) : null;
             const recipientId = conn.recipient ? String(conn.recipient) : null;
             const isRequesterProfileOwner = requesterId === profileOwnerId;
-
-            const otherUserInfo = isRequesterProfileOwner ? conn.recipient_info : conn.requester_info;
+            const isRecipientProfileOwner = recipientId === profileOwnerId;
+            const counterpartUserInfo = isRequesterProfileOwner
+              ? conn.recipient_info
+              : isRecipientProfileOwner
+                ? conn.requester_info
+                : null;
+            const counterpartId = isRequesterProfileOwner
+              ? recipientId
+              : isRecipientProfileOwner
+                ? requesterId
+                : null;
 
             return {
               id: String(
-                otherUserInfo?.id ||
-                  (isRequesterProfileOwner ? recipientId : requesterId) ||
+                counterpartUserInfo?.id ||
+                  counterpartId ||
                   conn.id ||
                   conn.user_id
               ),
-              name: otherUserInfo?.full_name || otherUserInfo?.name || conn.name || "Utilisateur",
-              username: otherUserInfo?.username || conn.username || "user",
-              avatar: otherUserInfo?.avatar || conn.avatar || "/placeholder-avatar.jpg",
+              name: counterpartUserInfo?.full_name || counterpartUserInfo?.name || conn.name || "Utilisateur",
+              username: counterpartUserInfo?.username || conn.username || "user",
+              avatar: counterpartUserInfo?.avatar || conn.avatar || "/placeholder-avatar.jpg",
               mutual: 0,
             };
           });
@@ -1063,11 +1077,11 @@ export function Profile() {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Téléphone</p>
-                      <p className="font-medium">{user.phoneNumber || NOT_AVAILABLE_TEXT}</p>
+                      <p className="font-medium">{aboutProfile.phoneNumber || NOT_AVAILABLE_TEXT}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Date de naissance</p>
-                      <p className="font-medium">{user.dateOfBirth || NOT_AVAILABLE_TEXT}</p>
+                      <p className="font-medium">{aboutProfile.dateOfBirth || NOT_AVAILABLE_TEXT}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Ville</p>

@@ -4,7 +4,8 @@ import { createConnection, deleteConnection, getCurrentUser, globalSearch } from
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Users, BookOpen, ShoppingBag, Loader2, Link, Unlink, FolderOpen, User } from "lucide-react";
@@ -16,6 +17,14 @@ import {
   type SearchSortKey,
   ensureValidSortKey,
 } from "@/constants/defaultSort";
+import {
+  getCategoryLabel,
+  getSubjectLabel,
+  getTypeLabel,
+  normalizeCategory,
+  normalizeResourceType,
+  normalizeSubject,
+} from "@/lib/resourceMetadata";
 
 export function SearchResults() {
   const [searchParams] = useSearchParams();
@@ -111,8 +120,9 @@ export function SearchResults() {
               id: String(r.id),
               title: r.title,
               description: r.description || '',
-              subject: r.subject || 'other',
-              type: r.type || 'notes',
+              subject: normalizeSubject(r.subject),
+              type: normalizeResourceType(r.type),
+              category: normalizeCategory(r.category),
               authorName: r.author_info?.name || r.author_name || r.author?.name || "Auteur inconnu",
               tags: r.tags || [],
             })),
@@ -332,20 +342,20 @@ export function SearchResults() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6">
-            <TabsTrigger value="all" className="text-xs md:text-sm">
+          <SharedTabsList className="mb-6 w-full">
+            <SharedTabsTrigger value="all">
               Tout ({totalResults})
-            </TabsTrigger>
-            <TabsTrigger value="users" className="text-xs md:text-sm">
+            </SharedTabsTrigger>
+            <SharedTabsTrigger value="users">
               Personnes ({sortedResults.users.length})
-            </TabsTrigger>
-            <TabsTrigger value="resources" className="text-xs md:text-sm">
+            </SharedTabsTrigger>
+            <SharedTabsTrigger value="resources">
               Ressources ({sortedResults.resources.length})
-            </TabsTrigger>
-            <TabsTrigger value="spheres" className="text-xs md:text-sm">
+            </SharedTabsTrigger>
+            <SharedTabsTrigger value="spheres">
               Sphères ({sortedResults.spheres.length})
-            </TabsTrigger>
-          </TabsList>
+            </SharedTabsTrigger>
+          </SharedTabsList>
 
           <TabsContent value="all" className="space-y-6">
             {/* Users Section */}
@@ -422,7 +432,17 @@ export function SearchResults() {
                           >
                             {res.title}
                           </p>
-                          <p className="text-sm text-muted-foreground">Type: {res.type}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Type: {getTypeLabel(res.type)}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Matière: {getSubjectLabel(res.subject)}
+                          </p>
+                          {res.category && (
+                            <p className="text-sm text-muted-foreground">
+                              Catégorie: {getCategoryLabel(res.category)}
+                            </p>
+                          )}
                           <p className="text-sm text-muted-foreground">Auteur: {res.authorName}</p>
                         </div>
                         <Button 
@@ -563,7 +583,17 @@ export function SearchResults() {
                         >
                           {res.title}
                         </p>
-                        <p className="text-sm text-muted-foreground">Type: {res.type}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Type: {getTypeLabel(res.type)}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Matière: {getSubjectLabel(res.subject)}
+                        </p>
+                        {res.category && (
+                          <p className="text-sm text-muted-foreground">
+                            Catégorie: {getCategoryLabel(res.category)}
+                          </p>
+                        )}
                         <p className="text-sm text-muted-foreground">Auteur: {res.authorName}</p>
                       </div>
                       <Button 

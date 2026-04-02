@@ -6,6 +6,8 @@ import { SPHERE_CATEGORY_OPTIONS, getSphereCategoryLabel } from "@/constants/sph
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Users, TrendingUp, Clock, Loader2, Check, RefreshCw, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -213,31 +215,19 @@ export function Spheres() {
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <ul className="grid grid-flow-col text-center border-b border-gray-200 text-gray-500 mb-6">
-          {[
-            { id: "discover", label: "Découvrir" },
-            { id: "mySpheres", label: "Mes Sphères" },
-            { id: "top", label: "Top" },
-          ].map((tab) => (
-            <li key={tab.id}>
-              <button
-                onClick={() => setActiveTab(tab.id as SphereSortKey)}
-                className={cn(
-                  "w-full flex justify-center border-b-4 py-4 transition-all duration-200 text-sm font-medium",
-                  resolvedSphereSort === tab.id 
-                    ? "border-primary text-primary" // Active Color
-                    : "border-transparent hover:text-primary hover:border-primary" // Hover/Inactive
-                )}
-              >
-                {tab.label}
-              </button>
-            </li>
-          ))}
-        </ul>
-        
+        <Tabs
+          value={resolvedSphereSort}
+          onValueChange={(value) => setActiveTab(value as SphereSortKey)}
+          className="w-full"
+        >
+          <SharedTabsList className="mb-6">
+            <SharedTabsTrigger value="discover">Découvrir</SharedTabsTrigger>
+            <SharedTabsTrigger value="mySpheres">Mes Sphères</SharedTabsTrigger>
+            <SharedTabsTrigger value="top">Top</SharedTabsTrigger>
+          </SharedTabsList>
+
           {/* Section 1: Pilot Training */}
-          {resolvedSphereSort === "discover" && (
+          <TabsContent value="discover" className="mt-0">
             <section id="discover" className="space-y-4">
               <Card className={cardClasses}>
                 <CardContent className="p-3">
@@ -317,10 +307,10 @@ export function Spheres() {
               </div>
               )}
             </section>
-          )}
+          </TabsContent>
 
           {/* Section 2: Titan maintenance */}
-          {resolvedSphereSort === "mySpheres" && (
+          <TabsContent value="mySpheres" className="mt-0">
             <section id="mySpheres" className="space-y-4">
               <Card className={cardClasses}>
                 <CardContent className="p-3">
@@ -374,10 +364,10 @@ export function Spheres() {
               </div>
               )}
             </section>
-          )}
+          </TabsContent>
 
           {/* Section 3: Loadout */}
-          {resolvedSphereSort === "top" && (
+          <TabsContent value="top" className="mt-0">
             <section id="top" className="space-y-4">
               <Card className={cardClasses}>
                 <CardHeader>
@@ -407,7 +397,8 @@ export function Spheres() {
                 </CardContent>
               </Card>
             </section>
-          )}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

@@ -1,24 +1,13 @@
 import { useState, useEffect } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
 import { PostCard } from "@/components/feed/PostCard";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Calendar, ShoppingBag, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getSavedPosts, getSavedResources, savePost, saveResource } from "@/services/api";
-
-const SUBJECT_LABELS: Record<string, string> = {
-  math: "Mathématiques",
-  cs: "Informatique",
-  physics: "Physique",
-  economics: "Économie",
-  language: "Langues",
-  other: "Autre",
-};
-
-function getSubjectLabel(subject: string) {
-  return SUBJECT_LABELS[subject] || String(subject || "").charAt(0).toUpperCase() + String(subject || "").slice(1);
-}
+import { getSubjectLabel, getTypeLabel, normalizeResourceType, normalizeSubject } from "@/lib/resourceMetadata";
 
 export function SavedItems() {
   const [savedPosts, setSavedPosts] = useState<any[]>([]);
@@ -56,8 +45,8 @@ export function SavedItems() {
             id: String(r.id),
             title: r.title,
             description: r.description || '',
-            subject: r.subject || 'other',
-            type: r.type || 'notes',
+            subject: normalizeSubject(r.subject),
+            type: normalizeResourceType(r.type),
             authorName: r.author?.name || r.author_info?.name || r.author_name || 'Unknown',
             fileUrl: r.fileUrl || r.file_url || r.file || '',
             fileSize: r.fileSize || r.file_size || '0 MB',
@@ -123,10 +112,10 @@ export function SavedItems() {
         </h1>
 
         <Tabs defaultValue="posts" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="posts">Posts</TabsTrigger>
-            <TabsTrigger value="resources">Ressources</TabsTrigger>
-          </TabsList>
+          <SharedTabsList className="mb-6">
+            <SharedTabsTrigger value="posts">Posts</SharedTabsTrigger>
+            <SharedTabsTrigger value="resources">Ressources</SharedTabsTrigger>
+          </SharedTabsList>
 
           <TabsContent value="posts" className="space-y-4">
             {loading ? (
@@ -181,7 +170,7 @@ export function SavedItems() {
                           <h3 className="font-semibold">{resource.title}</h3>
                           <p className="text-sm text-muted-foreground mt-1">{resource.description}</p>
                           <div className="text-xs text-muted-foreground mt-2 flex flex-wrap gap-2">
-                            <span>Type: {resource.type}</span>
+                            <span>Type: {getTypeLabel(resource.type)}</span>
                             <span>Matière: {getSubjectLabel(resource.subject)}</span>
                             <span>Taille: {resource.fileSize}</span>
                           </div>
