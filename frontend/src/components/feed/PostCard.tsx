@@ -453,15 +453,15 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
           <p className="text-sm leading-relaxed whitespace-pre-wrap">{renderMentionText(content)}</p>
           
           {attachments.length > 0 && (
-            <div className="space-y-3">
+            <div className="space-y-0">
               {imageAttachments.length > 0 && (
                 <div className={cn("grid gap-2", imageAttachments.length > 1 ? "grid-cols-2" : "grid-cols-1")}>
                   {imageAttachments.map((file) => (
-                    <div key={file.id ?? file.url} className="rounded-lg overflow-hidden md:overflow-hidden w-full relative">
+                    <div key={file.id ?? file.url} className="rounded-lg overflow-hidden md:overflow-hidden rounded-null w-full relative">
                       <img
                         src={file.url}
                         alt={file.name || "Post attachment"}
-                        className="w-full h-64 object-cover hover:scale-105 transition-transform duration-300 cursor-pointer"
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300 cursor-pointer"
                         onDoubleClick={handleImageDoubleClick}
                       />
                       {isLiked && (
