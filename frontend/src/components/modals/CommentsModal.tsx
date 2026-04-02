@@ -24,7 +24,7 @@ interface Comment {
   id: string;
   author: {
     name: string;
-    avatar: string;
+    avatar?: string | null;
     username: string;
     isVerified?: boolean;
     impactScore?: number;
@@ -45,14 +45,27 @@ interface CommentsModalProps {
 }
 
 function normalizeCommentAuthor(rawAuthor: any, fallbackName?: string) {
-  const normalizedUser = normalizeUser(rawAuthor);
+  const authorPayload = rawAuthor?.author_info ?? rawAuthor?.author ?? rawAuthor;
+  const normalizedUser = normalizeUser(authorPayload);
 
   return {
     name: normalizedUser?.name || fallbackName || "Utilisateur",
-    avatar: normalizedUser?.avatar || "/placeholder-avatar.jpg",
+    avatar: normalizedUser?.avatar ?? null,
     username: normalizedUser?.username || "user",
-    isVerified: Boolean(rawAuthor?.is_verified ?? rawAuthor?.isVerified ?? false),
-    impactScore: Number(rawAuthor?.impact_score ?? rawAuthor?.impactScore ?? 0),
+    isVerified: Boolean(
+      authorPayload?.is_verified ??
+      authorPayload?.isVerified ??
+      rawAuthor?.is_verified ??
+      rawAuthor?.isVerified ??
+      false
+    ),
+    impactScore: Number(
+      authorPayload?.impact_score ??
+      authorPayload?.impactScore ??
+      rawAuthor?.impact_score ??
+      rawAuthor?.impactScore ??
+      0
+    ),
   };
 }
 
@@ -70,13 +83,7 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
 
   const mapApiComment = (apiComment: any, parentId?: string): Comment => ({
     id: String(apiComment.id),
-    author: {
-      name: apiComment.author_info?.name || apiComment.author?.name || apiComment.author_name || "Utilisateur",
-      avatar: apiComment.author_info?.avatar || apiComment.author?.avatar || "/placeholder-avatar.jpg",
-      username: apiComment.author_info?.username || apiComment.author?.username || "user",
-      isVerified: Boolean(apiComment.author_info?.isVerified || apiComment.author?.isVerified),
-      impactScore: Number(apiComment.author_info?.impactScore || apiComment.author?.impactScore || 0),
-    },
+    author: normalizeCommentAuthor(apiComment, apiComment.author_name),
     content: apiComment.content || "",
     timestamp: apiComment.created_at || new Date().toISOString(),
     likes: Number(apiComment.likes_count || apiComment.likes || 0),
@@ -128,24 +135,7 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
       try {
         const data = await getPostComments(postId);
         if (isMounted && Array.isArray(data)) {
-          const mapped = data.map((comment: any) => ({
-            id: String(comment.id),
-            author: normalizeCommentAuthor(comment.author_info ?? comment.author, comment.author_name),
-            content: comment.content || "",
-            timestamp: comment.created_at || new Date().toISOString(),
-            likes: Number(comment.likes_count || comment.likes || 0),
-            isLiked: Boolean(comment.is_liked),
-            replies: comment.replies?.map((reply: any) => ({
-              id: String(reply.id),
-              author: normalizeCommentAuthor(reply.author_info ?? reply.author, reply.author_name),
-              content: reply.content || "",
-              timestamp: reply.created_at || new Date().toISOString(),
-              likes: Number(reply.likes_count || reply.likes || 0),
-              isLiked: Boolean(reply.is_liked),
-              isReply: true,
-              parentId: String(comment.id),
-            })) || [],
-          }));
+          const mapped = data.map((comment: any) => mapApiComment(comment));
           setComments(mapped);
         }
       } catch (error) {
@@ -345,7 +335,7 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
       <div key={comment.id} className="space-y-3" style={{ marginLeft: `${depthOffset}px` }}>
         <div className="flex gap-3">
           <Avatar className={`${depth === 0 ? "h-10 w-10" : "h-8 w-8"} flex-shrink-0`}>
-            <AvatarImage src={comment.author.avatar} />
+            <AvatarImage src={comment.author.avatar ?? undefined} />
             <AvatarFallback>{comment.author.name?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
           </Avatar>
 
@@ -441,7 +431,7 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
               {/* Commentaire principal */}
               <div className="flex gap-3">
                 <Avatar className="h-10 w-10 flex-shrink-0">
-                  <AvatarImage src={comment.author.avatar} />
+                  <AvatarImage src={comment.author.avatar ?? undefined} />
                   <AvatarFallback>{comment.author.name?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
                 </Avatar>
                 
@@ -528,7 +518,7 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
                   {comment.replies.map((reply) => (
                     <div key={reply.id} className="flex gap-3">
                       <Avatar className="h-8 w-8 flex-shrink-0">
-                        <AvatarImage src={reply.author.avatar} />
+                        <AvatarImage src={reply.author.avatar ?? undefined} />
                         <AvatarFallback>{reply.author.name?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
                       </Avatar>
                       

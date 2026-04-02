@@ -100,7 +100,18 @@ export function normalizeUser(user: any) {
     name,
     username: user.username ?? "",
     email: user.email ?? "",
-    avatar: user.avatar ?? user.profileImage ?? null,
+    avatar:
+      user.avatar ??
+      user.profileImage ??
+      user.profile_image ??
+      user.avatarUrl ??
+      user.avatar_url ??
+      user.profilePicture ??
+      user.profile_picture ??
+      user.image ??
+      user.imageUrl ??
+      user.image_url ??
+      null,
     coverPhoto: user.coverPhoto ?? user.cover_photo ?? null,
     bio: user.bio ?? "",
     university: user.university ?? "",
