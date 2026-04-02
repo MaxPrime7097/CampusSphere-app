@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { getCategoryLabel } from "@/lib/resourceMetadata";
+import { mapPostToCard } from "@/lib/postCardMapper";
 
 export function PostDetail() {
   const { id } = useParams();
@@ -23,7 +23,7 @@ export function PostDetail() {
     (async () => {
       try {
         const data = await getPost(id);
-        if (mounted) setPost(data);
+        if (mounted) setPost(mapPostToCard(data));
       } catch (error: any) {
         toast({
           title: "Erreur",
@@ -60,12 +60,7 @@ export function PostDetail() {
             </CardContent>
           </Card>
         ) : post ? (
-          <PostCard
-            post={{
-              ...post,
-              category: getCategoryLabel(post.category),
-            }}
-          />
+          <PostCard post={mapPostToCard(post)} />
         ) : (
           <Card className="campus-card">
             <CardContent className="p-8 text-center text-muted-foreground">

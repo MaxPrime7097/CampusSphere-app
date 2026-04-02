@@ -18,7 +18,7 @@ import { SearchResults } from "./pages/SearchResults";
 import { EditProfile } from "./pages/EditProfile";
 import { SavedItems } from "./pages/SavedItems";
 import { Resources } from "./pages/Resources";
-import { ResourceDetail } from "./pages/ResourceDetail";
+import { ResourceDetailRoute } from "./pages/ResourceDetailRoute";
 import { PostDetail } from "./pages/PostDetail";
 import { Spheres } from "./pages/Spheres";
 import { SphereDetail } from "./pages/SphereDetail";
@@ -139,7 +139,7 @@ const App = () => (
           <Route path="/resources/:id" element={
             <Protected>
               <AppLayout>
-                <ResourceDetail />
+                <ResourceDetailRoute />
               </AppLayout>
             </Protected>
           } />

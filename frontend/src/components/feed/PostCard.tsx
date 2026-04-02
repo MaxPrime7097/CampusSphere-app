@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Heart, MessageCircle, Share, Bookmark, MoreVertical, Zap, Copy, Flag, ExternalLink, Users, Plus, Minus, X, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Heart, MessageCircle, Share, Bookmark, MoreVertical, Zap, Copy, Flag, ExternalLink, Users, Plus, Minus, X, Pencil, Trash2, Loader2, FileText, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -30,6 +30,13 @@ import { Textarea } from "@/components/ui/textarea";
 
 interface PostCardProps {
   post: {
+    files?: {
+      id: string | number | null;
+      name: string;
+      url: string;
+      type: string;
+      size: number;
+    }[];
     id: string;
     author: {
       name: string;
@@ -51,6 +58,7 @@ interface PostCardProps {
     isSaved?: boolean;
     canEdit?: boolean;
     canDelete?: boolean;
+    files?: Array<Record<string, unknown>>;
   };
   onToggleSave?: (saved: boolean) => void;
 }
@@ -287,6 +295,62 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
     }
   };
 
+  const resolveAttachmentType = (file: { type?: string; name?: string }) => {
+    const rawType = (file.type || "").toLowerCase();
+    const extension = (file.name?.split(".").pop() || "").toLowerCase();
+
+    if (
+      rawType === "image" ||
+      rawType.startsWith("image/") ||
+      ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "avif", "heic"].includes(extension)
+    ) {
+      return "image";
+    }
+
+    if (
+      rawType === "video" ||
+      rawType.startsWith("video/") ||
+      ["mp4", "webm", "ogg", "mov", "m4v", "avi", "mkv"].includes(extension)
+    ) {
+      return "video";
+    }
+
+    return "document";
+  };
+
+  const formatFileSize = (size = 0) => {
+    if (!size || Number.isNaN(size)) return "";
+    if (size < 1024) return `${size} B`;
+    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+    if (size < 1024 * 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+    return `${(size / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+  };
+
+  const normalizedFiles = (post.files ?? [])
+    .filter((file) => Boolean(file?.url))
+    .map((file) => ({
+      ...file,
+      name: file.name || file.url.split("/").pop() || "Attachment",
+      type: file.type || "",
+      size: Number(file.size || 0),
+    }));
+
+  const attachments = normalizedFiles.length > 0
+    ? normalizedFiles
+    : post.image
+      ? [{
+          id: "legacy-image",
+          name: "Image",
+          url: post.image,
+          type: "image",
+          size: 0,
+        }]
+      : [];
+
+  const imageAttachments = attachments.filter((file) => resolveAttachmentType(file) === "image");
+  const videoAttachments = attachments.filter((file) => resolveAttachmentType(file) === "video");
+  const documentAttachments = attachments.filter((file) => resolveAttachmentType(file) === "document");
+
 
   const categoryLabel = getCategoryLabel(post.category);
   const cardClasses = cn(
@@ -388,18 +452,76 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
 
           <p className="text-sm leading-relaxed whitespace-pre-wrap">{renderMentionText(content)}</p>
           
-          {post.image && (
-            <div className="rounded-lg overflow-hidden md:overflow-hidden w-full relative">
-              <img 
-                src={post.image} 
-                alt="Post content" 
-                className="w-full h-64 object-cover hover:scale-105 transition-transform duration-300 cursor-pointer"
-                onDoubleClick={handleImageDoubleClick}
-              />
-              {/* Animation de like sur double-clic */}
-              {isLiked && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <Heart className="h-16 w-16 text-red-500 fill-current animate-ping" />
+          {attachments.length > 0 && (
+            <div className="space-y-3">
+              {imageAttachments.length > 0 && (
+                <div className={cn("grid gap-2", imageAttachments.length > 1 ? "grid-cols-2" : "grid-cols-1")}>
+                  {imageAttachments.map((file) => (
+                    <div key={file.id ?? file.url} className="rounded-lg overflow-hidden md:overflow-hidden w-full relative">
+                      <img
+                        src={file.url}
+                        alt={file.name || "Post attachment"}
+                        className="w-full h-64 object-cover hover:scale-105 transition-transform duration-300 cursor-pointer"
+                        onDoubleClick={handleImageDoubleClick}
+                      />
+                      {isLiked && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <Heart className="h-16 w-16 text-red-500 fill-current animate-ping" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {videoAttachments.length > 0 && (
+                <div className="space-y-2">
+                  {videoAttachments.map((file) => (
+                    <div key={file.id ?? file.url} className="rounded-lg overflow-hidden bg-muted">
+                      <video
+                        src={file.url}
+                        controls
+                        preload="metadata"
+                        className="w-full max-h-[380px]"
+                        onClick={(event) => event.stopPropagation()}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {documentAttachments.length > 0 && (
+                <div className="space-y-2">
+                  {documentAttachments.map((file) => (
+                    <div
+                      key={file.id ?? file.url}
+                      className="flex items-center justify-between gap-3 rounded-lg border bg-muted/40 px-3 py-2"
+                    >
+                      <div className="min-w-0 flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium">{file.name}</p>
+                          {file.size > 0 && (
+                            <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1" onClick={(event) => event.stopPropagation()}>
+                        <Button variant="ghost" size="sm" asChild>
+                          <a href={file.url} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="h-4 w-4 mr-1" />
+                            Ouvrir
+                          </a>
+                        </Button>
+                        <Button variant="ghost" size="sm" asChild>
+                          <a href={file.url} download={file.name}>
+                            <Download className="h-4 w-4 mr-1" />
+                            Télécharger
+                          </a>
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

@@ -10,6 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, Users, BookOpen, ShoppingBag, Loader2, Link, Unlink, FolderOpen, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import {
+  DEFAULT_SORT,
+  SEARCH_SORT_KEYS,
+  type SearchSortKey,
+  ensureValidSortKey,
+} from "@/constants/defaultSort";
 
 export function SearchResults() {
   const [searchParams] = useSearchParams();
@@ -21,7 +27,7 @@ export function SearchResults() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("all");
-  const [sortBy, setSortBy] = useState("relevance");
+  const [sortBy, setSortBy] = useState<SearchSortKey>(DEFAULT_SORT.search);
   const [followedUsers, setFollowedUsers] = useState(new Set());
   const [connectionIdsByUser, setConnectionIdsByUser] = useState<Record<string, string>>({});
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -50,6 +56,13 @@ export function SearchResults() {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    setSearchTerm(query);
+    setDebouncedSearchTerm(query);
+    setActiveTab("all");
+    setSearchError(null);
+  }, [query]);
 
   useEffect(() => {
     const debounceTimeout = setTimeout(() => {
@@ -249,24 +262,29 @@ export function SearchResults() {
     }
   };
 
+  const resolvedSearchSort = ensureValidSortKey(sortBy, SEARCH_SORT_KEYS, DEFAULT_SORT.search);
+
   // Résultats triés et filtrés
   const sortedResults = useMemo(() => {
-    const sortResults = (items: any[], type: string) => {
-      switch (sortBy) {
+    const sortResults = (items: any[]) => {
+      switch (resolvedSearchSort) {
         case "name":
-          return [...items].sort((a, b) => a.name.localeCompare(b.name));
+          return [...items].sort((a, b) => {
+            const left = a.name || a.title || "";
+            const right = b.name || b.title || "";
+            return left.localeCompare(right);
+          });
         case "relevance":
-        default:
           return items;
       }
     };
 
     return {
-      users: sortResults(searchResults.users, "users"),
-      resources: sortResults(searchResults.resources, "resources"),
-      spheres: sortResults(searchResults.spheres, "spheres")
+      users: sortResults(searchResults.users),
+      resources: sortResults(searchResults.resources),
+      spheres: sortResults(searchResults.spheres)
     };
-  }, [searchResults, sortBy]);
+  }, [searchResults, resolvedSearchSort]);
   const totalResults = sortedResults.users.length + sortedResults.resources.length + sortedResults.spheres.length;
   const hasActiveQuery = debouncedSearchTerm.trim().length > 0;
   const hasEmptyResults = hasActiveQuery && totalResults === 0 && !isSearching && !searchError;
@@ -289,24 +307,28 @@ export function SearchResults() {
             )}
           </form>
           
-          {query && (
-            <div className="flex items-center justify-between mt-3">
-              <p className="text-sm text-muted-foreground">
-              Résultats pour "<span className="font-semibold">{query}</span>"
+          <div className="flex items-center justify-between mt-3">
+            <p className="text-sm text-muted-foreground">
+              {query ? (
+                <>
+                  Résultats pour "<span className="font-semibold">{query}</span>"
+                </>
+              ) : (
+                "Trie les résultats"
+              )}
             </p>
-              <div className="flex items-center gap-2">
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-40 h-8">
-                    <SelectValue placeholder="Trier par" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="relevance">Pertinence</SelectItem>
-                    <SelectItem value="name">Nom</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="flex items-center gap-2">
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-40 h-8">
+                  <SelectValue placeholder="Trier par" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="relevance">Pertinence</SelectItem>
+                  <SelectItem value="name">Nom</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          )}
+          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
