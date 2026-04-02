@@ -13,8 +13,6 @@ This file clarifies what is currently backed by production APIs versus what is s
   - Frontend calls `POST /api/posts/{id}/report/`.
   - Persists one report per user per post (subsequent reports update reason/details).
 
-## Mock / UI-only (not persisted yet)
-
 - **Save/unsave post**
   - Currently local state + toast only.
   - No backend API call yet.

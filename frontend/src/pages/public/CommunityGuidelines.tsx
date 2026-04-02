@@ -175,8 +175,8 @@ export function CommunityGuidelines(): JSX.Element {
               <ul className="list-disc list-inside ml-4 mt-4 space-y-2">
                 <li>Via le bouton "Signaler" sur chaque publication</li>
                 <li>
-                <a href="mailto:support@campus-sphere.com" className="text-primary hover:underline">
-                    support@campus-sphere.com
+                <a href="mailto:support@campussphere.app" className="text-primary hover:underline">
+                    support@campussphere.app
                 </a>
                 </li>
                 <li>Formulaire de contact sur notre site</li>
@@ -197,8 +197,8 @@ export function CommunityGuidelines(): JSX.Element {
                 <ul className="mt-4 space-y-2">
                   <li><p className="mt-4">
                   {" "}
-                  <a href="mailto:policies@campus-sphere.com" className="text-primary hover:underline">
-                    policies@campus-sphere.com
+                  <a href="mailto:policies@campussphere.app" className="text-primary hover:underline">
+                    policies@campussphere.app
                   </a>
                 </p></li>
                   <li>Adresse: Douala, Cameroun</li>

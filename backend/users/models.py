@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Q
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
@@ -31,6 +32,22 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
+    MOOD_EXCITED = 'excited'
+    MOOD_FOCUSED = 'focused'
+    MOOD_COLLABORATING = 'collaborating'
+    MOOD_LEARNING = 'learning'
+    MOOD_INSPIRED = 'inspired'
+    MOOD_DETERMINED = 'determined'
+
+    CURRENT_MOOD_CHOICES = [
+        (MOOD_EXCITED, 'Excited'),
+        (MOOD_FOCUSED, 'Focused'),
+        (MOOD_COLLABORATING, 'Collaborating'),
+        (MOOD_LEARNING, 'Learning'),
+        (MOOD_INSPIRED, 'Inspired'),
+        (MOOD_DETERMINED, 'Determined'),
+    ]
+
     PROFILE_VISIBILITY_CHOICES = [
         ('public', 'Public'),
         ('connections', 'Connections only'),
@@ -68,7 +85,11 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     # Impact and Mood
     impact_score = models.IntegerField(default=0, validators=[MinValueValidator(0)])
-    current_mood = models.CharField(max_length=50, default='excited')
+    current_mood = models.CharField(
+        max_length=50,
+        default=MOOD_EXCITED,
+        choices=CURRENT_MOOD_CHOICES,
+    )
 
     # Skills and Interests
     skills = models.JSONField(default=list, blank=True)
@@ -108,7 +129,13 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.sphere_memberships.filter(status='active').count()
 
     def get_connections_count(self):
-        return self.connections.count()
+        """
+        Business rule: only accepted connections are counted.
+        """
+        return Connection.objects.filter(
+            Q(requester=self) | Q(recipient=self),
+            status='accepted'
+        ).count()
 
 
 class Connection(models.Model):
@@ -143,3 +170,30 @@ class UserBlock(models.Model):
 
     def __str__(self):
         return f"{self.blocker.username} blocked {self.blocked.username}"
+
+class AdminAuditLog(models.Model):
+    actor = models.ForeignKey(
+        User,
+        related_name='admin_audit_logs',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    action = models.CharField(max_length=50)
+    target_type = models.CharField(max_length=100)
+    target_id = models.CharField(max_length=100, blank=True)
+    payload_diff = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['created_at']),
+            models.Index(fields=['action']),
+            models.Index(fields=['target_type']),
+        ]
+
+    def __str__(self):
+        actor_label = self.actor.username if self.actor else 'unknown'
+        return f"{self.action} by {actor_label} on {self.target_type}:{self.target_id}"
+

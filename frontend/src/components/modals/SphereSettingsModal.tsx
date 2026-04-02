@@ -14,9 +14,10 @@ import {
   Globe,
   Shield,
   Trash2,
+  Clock3,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { deleteSphere, updateSphere } from "@/services/api";
+import { deleteSphere, extendSphereDuration, updateSphere } from "@/services/api";
 
 interface SphereSettings {
   name: string;
@@ -42,6 +43,8 @@ interface SphereSettingsModalProps {
     objective?: string;
     targetAudience?: string;
     duration?: string;
+    expiresAt?: string | null;
+    autoDeleteOnExpiry?: boolean;
     collaborationTypes?: string[];
     allowMemberPosts: boolean;
     allowResourceSharing: boolean;
@@ -61,6 +64,7 @@ export function SphereSettingsModal({
   const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isExtending, setIsExtending] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   // État des paramètres
@@ -72,7 +76,9 @@ export function SphereSettingsModal({
     allowMemberPosts: true,
     allowResourceSharing: true,
     allowTaskCreation: true,
-    maxMembers: 100
+    maxMembers: 100,
+    duration: "Permanent",
+    autoDeleteOnExpiry: false
   });
 
   const { toast } = useToast();
@@ -88,7 +94,9 @@ export function SphereSettingsModal({
         allowMemberPosts: sphereData.allowMemberPosts ?? true,
         allowResourceSharing: sphereData.allowResourceSharing ?? true,
         allowTaskCreation: sphereData.allowTaskCreation ?? true,
-        maxMembers: sphereData.maxMembers || 100
+        maxMembers: sphereData.maxMembers || 100,
+        duration: sphereData.duration || "Permanent",
+        autoDeleteOnExpiry: sphereData.autoDeleteOnExpiry ?? false
       });
     }
   }, [sphereData]);
@@ -104,6 +112,15 @@ export function SphereSettingsModal({
     { title: "Art", value: "Art" },
     { title: "Sport", value: "Sport" },
     { title: "Autre", value: "Autre" }
+  ];
+
+
+  const durationOptions = [
+    "Court terme (1-3 mois)",
+    "Moyen terme (3-6 mois)",
+    "Long terme (6-12 mois)",
+    "Permanent",
+    "Flexible"
   ];
 
   const updateSetting = (key: string, value: string | boolean | number) => {
@@ -140,7 +157,8 @@ export function SphereSettingsModal({
         require_approval: settings.requireApproval,
         objective: sphereData.objective,
         target_audience: sphereData.targetAudience,
-        duration: sphereData.duration,
+        duration: settings.duration,
+        auto_delete_on_expiry: settings.autoDeleteOnExpiry,
         collaboration_types: sphereData.collaborationTypes,
       };
 
@@ -170,6 +188,28 @@ export function SphereSettingsModal({
       });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+
+  const handleExtendDuration = async () => {
+    if (!sphereData?.id) return;
+
+    setIsExtending(true);
+    try {
+      const updatedSphere = await extendSphereDuration(sphereData.id, settings.duration);
+      toast({
+        title: "Durée prolongée",
+        description: `Nouvelle expiration: ${updatedSphere?.expiresAt ? new Date(updatedSphere.expiresAt).toLocaleString() : "aucune"}`,
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de prolonger la durée (réservé au créateur).",
+      });
+    } finally {
+      setIsExtending(false);
     }
   };
 
@@ -353,6 +393,58 @@ export function SphereSettingsModal({
             </div>
           </div>
 
+
+          {/* Expiration */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <Clock3 className="h-4 w-4" />
+              Durée et expiration
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="duration">Durée</Label>
+                <Select value={settings.duration} onValueChange={(value) => updateSetting("duration", value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {durationOptions.map((duration) => (
+                      <SelectItem key={duration} value={duration}>
+                        {duration}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center justify-between rounded-md border p-3">
+                <div>
+                  <Label htmlFor="autoDeleteOnExpiry">Suppression auto à expiration</Label>
+                  <p className="text-xs text-muted-foreground">Supprime la sphère expirée automatiquement</p>
+                </div>
+                <Switch
+                  id="autoDeleteOnExpiry"
+                  checked={settings.autoDeleteOnExpiry}
+                  onCheckedChange={(value) => updateSetting("autoDeleteOnExpiry", value)}
+                />
+              </div>
+            </div>
+
+            <div className="text-sm text-muted-foreground">
+              Statut: {sphereData?.expiresAt ? (new Date(sphereData.expiresAt) < new Date() ? "Expirée" : "Active") : "Sans expiration"}
+              {sphereData?.expiresAt ? ` · Expire le ${new Date(sphereData.expiresAt).toLocaleString()}` : ""}
+            </div>
+
+            <Button
+              variant="secondary"
+              onClick={handleExtendDuration}
+              disabled={isExtending || isSaving || isDeleting}
+            >
+              {isExtending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Clock3 className="h-4 w-4 mr-2" />}
+              Prolonger la durée
+            </Button>
+          </div>
 
           {/* Zone de danger */}
           <div className="space-y-4 pt-4 border-t">
