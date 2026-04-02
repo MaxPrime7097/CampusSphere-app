@@ -39,7 +39,7 @@ export function MobileNavigation() {
               <CreatePostModal key={item.title}>
                 <button
                   type="button"
-                  className="text-primary bg-primary/10"
+                  className="py-2 px-3 text-primary bg-primary/10"
                   aria-label={item.title}
                   title={item.title}
                 >
