@@ -365,12 +365,12 @@ export function SearchResults() {
                             {followedUsers.has(user.id) ? (
                               <>
                                 <Unlink className="h-4 w-4 mr-2" />
-                                Deconnecter
+                                Disconnect
                               </>
                             ) : (
                               <>
                                 <Link className="h-4 w-4 mr-2" />
-                                Se Connecter
+                                Connect
                               </>
                             )}
                           </Button>
@@ -504,12 +504,12 @@ export function SearchResults() {
                           {followedUsers.has(user.id) ? (
                             <>
                               <Unlink className="h-4 w-4 mr-2" />
-                              Ne plus suivre
+                              Disconnect
                             </>
                           ) : (
                             <>
                               <Link className="h-4 w-4 mr-2" />
-                              Suivre
+                              Connect
                             </>
                           )}
                         </Button>
