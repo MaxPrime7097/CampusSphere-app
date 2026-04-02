@@ -11,13 +11,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { formatFrenchDate } from "@/lib/date";
 import {
+  getAudienceLabel,
   getCategoryLabel,
   getSubjectLabel,
   getTypeLabel,
+  normalizeAudience,
   normalizeCategory,
   normalizeResourceType,
   normalizeSubject,
 } from "@/lib/resourceMetadata";
+import { formatFileSize } from "@/lib/utils";
 
 const RESOURCE_DETAIL_LOG_PREFIX = "[ResourceDetail][debug]";
 
@@ -101,8 +104,8 @@ export function ResourceDetail() {
 
           const author = data.author ?? null;
           const uploaderContributions =
-            author?.stats?.contributions ??
             author?.contributions_count ??
+            author?.stats?.contributions ??
             0;
 
           const resourcePayload = {
@@ -114,7 +117,7 @@ export function ResourceDetail() {
             type: normalizeResourceType(data.type),
             format: (data.fileUrl || data.file)?.toString().split('.').pop(),
             size: data.fileSize || data.file_size || data.size,
-            level: data.level || data.audience || data.courseLevel,
+            level: normalizeAudience(data.level || data.audience || data.courseLevel),
             pages: data.pages || data.page_count || 0,
             uploader: {
               name: author?.name || data.author_name || "Utilisateur",
@@ -594,11 +597,15 @@ export function ResourceDetail() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Public cible</p>
-                <p className="font-medium">{resource.level || "Non défini"}</p>
+                <p className="font-medium">{getAudienceLabel(resource.level)}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Pages</p>
                 <p className="font-medium">{resource.pages || "N/A"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Taille du fichier</p>
+                <p className="font-medium">{formatFileSize(resource.size)}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Date d'upload</p>

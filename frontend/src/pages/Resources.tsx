@@ -32,7 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { UploadResourceModal } from "@/components/modals/UploadResourceModal";
-import { cn } from "@/lib/utils";
+import { cn, formatFileSize } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { RESOURCE_TYPE_OPTIONS, normalizeResourceType } from "@/constants/resourceTypes";
 import { getSubjectLabel, getTypeLabel, normalizeSubject } from "@/lib/resourceMetadata";
@@ -439,6 +439,9 @@ export function Resources() {
                           {getSubjectLabel(resource.subject)}
                         </Badge>
                       </div>
+                      <p className="text-[11px] text-muted-foreground mb-2">
+                        Taille: {formatFileSize(resource.fileSize)}
+                      </p>
                       <div className="flex gap-1">
                         <Button
                           size="sm"
