@@ -29,8 +29,13 @@ export function Spheres() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userJoinedSpheres, setUserJoinedSpheres] = useState<string[]>([]);
   const [userSpheres, setUserSpheres] = useState<any[]>([]);
+  const [userSpheresLoadError, setUserSpheresLoadError] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<SphereSortKey>(DEFAULT_SORT.spheres);
+  // Tab State - Initialized to page1
+  const [activeTab, setActiveTab] = useState("page1");
+  const debugApiError = (endpoint: string, error: unknown) => {
+    console.debug(`[Spheres] API error (${endpoint})`, error);
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -45,10 +50,21 @@ export function Spheres() {
               const sphereIds = (userSpheresData || []).map((s: any) => String(s.id));
               setUserJoinedSpheres(sphereIds);
               setUserSpheres(userSpheresData || []);
+              setUserSpheresLoadError(null);
             }
-          } catch (e) {}
+          } catch (e: any) {
+            debugApiError("GET /users/me/spheres", e);
+            if (isMounted) {
+              setUserSpheresLoadError(e?.message || "Impossible de charger vos sphères.");
+            }
+          }
         }
-      } catch (e) {}
+      } catch (e: any) {
+        debugApiError("GET /users/me", e);
+        if (isMounted) {
+          setLoadError(e?.message || "Impossible de charger les données utilisateur.");
+        }
+      }
     })();
     return () => { isMounted = false; };
   }, []);
@@ -62,9 +78,11 @@ export function Spheres() {
     (async () => {
       try {
         setLoadingSpheres(true);
+        setLoadError(null);
         const data = await listSpheres();
         if (isMounted) setAllSpheres(data || []);
       } catch (e: any) {
+        debugApiError("GET /spheres", e);
         if (isMounted) setLoadError(e?.message || "Erreur de chargement");
       } finally {
         if (isMounted) setLoadingSpheres(false);
@@ -114,6 +132,7 @@ export function Spheres() {
         }
       }
     } catch (e: any) {
+      debugApiError(`POST /spheres/${sphereId}/join`, e);
       toast({ title: "Erreur", description: e?.message, variant: "destructive" });
     } finally {
       setIsJoining(null);
@@ -127,6 +146,7 @@ export function Spheres() {
       setUserJoinedSpheres((prev) => prev.filter((id) => String(id) !== String(sphereId)));
       setUserSpheres((prev) => prev.filter((sphere) => String(sphere.id) !== String(sphereId)));
     } catch (e: any) {
+      debugApiError(`POST /spheres/${sphereId}/leave`, e);
       toast({ title: "Erreur", description: e?.message || "Impossible de quitter la sphère", variant: "destructive" });
     }
   };
@@ -136,10 +156,13 @@ export function Spheres() {
     try {
       const [spheresData, userSpheresData] = await Promise.all([listSpheres(), getUserSpheres()]);
       setAllSpheres(spheresData || []);
+      setLoadError(null);
       const sphereIds = (userSpheresData || []).map((s: any) => String(s.id));
       setUserJoinedSpheres(sphereIds);
       setUserSpheres(userSpheresData || []);
+      setUserSpheresLoadError(null);
     } catch (e: any) {
+      debugApiError("GET /spheres + GET /users/me/spheres", e);
       toast({ title: "Erreur", description: e?.message || "Impossible d'actualiser", variant: "destructive" });
     } finally {
       setIsLoading(false);
@@ -240,8 +263,22 @@ export function Spheres() {
               </CardContent>
               </Card>
 
-              {loadError && <div className="text-sm text-red-500">{loadError}</div>}
-              
+              {loadError ? (
+                <Card className={cardClasses}>
+                  <CardContent className="py-8 text-center space-y-3">
+                    <p className="text-sm text-destructive">{loadError}</p>
+                    <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading} className="gap-2">
+                      {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                      Réessayer
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : !loadingSpheres && getSortedSpheres().length === 0 ? (
+                <div className="text-center py-8">
+                  <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">Aucune sphère à découvrir pour le moment.</p>
+                </div>
+              ) : (
               <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
                 {(loadingSpheres ? Array.from({ length: 4 }).map((_, i) => ({ id: `skeleton-${i}`, name: "", category: "", memberCount: 0, color: "from-muted to-muted", requireApproval: false })) : getSortedSpheres()).map((sphere) => (
                   <Card key={sphere.id} className={cardClasses} onClick={() => navigate(`/spheres/${sphere.id}`)}>
@@ -278,6 +315,7 @@ export function Spheres() {
                   </Card>
                 ))}
               </div>
+              )}
             </section>
           )}
 
@@ -292,6 +330,22 @@ export function Spheres() {
                   </div>
                 </CardContent>
               </Card>
+              {userSpheresLoadError ? (
+                <Card className={cardClasses}>
+                  <CardContent className="py-8 text-center space-y-3">
+                    <p className="text-sm text-destructive">{userSpheresLoadError}</p>
+                    <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading} className="gap-2">
+                      {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                      Réessayer
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : getSortedSpheres().length === 0 ? (
+                <div className="text-center py-8">
+                  <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">Vous n'avez rejoint aucune sphère pour le moment.</p>
+                </div>
+              ) : (
               <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
                 {getSortedSpheres().map((sphere) => {
                   const hasProgression = Number.isFinite(sphere.progression);
@@ -318,6 +372,7 @@ export function Spheres() {
                   </Card>
                 )})}
               </div>
+              )}
             </section>
           )}
 
@@ -352,14 +407,6 @@ export function Spheres() {
                 </CardContent>
               </Card>
             </section>
-          )}
-
-          {/* Empty State */}
-          {getSortedSpheres().length === 0 && (
-            <div className="text-center py-8">
-              <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">Aucune sphère trouvée.</p>
-            </div>
           )}
       </div>
     </div>

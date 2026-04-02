@@ -58,6 +58,13 @@ export function SearchResults() {
   }, []);
 
   useEffect(() => {
+    setSearchTerm(query);
+    setDebouncedSearchTerm(query);
+    setActiveTab("all");
+    setSearchError(null);
+  }, [query]);
+
+  useEffect(() => {
     const debounceTimeout = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
     }, 350);
@@ -300,24 +307,28 @@ export function SearchResults() {
             )}
           </form>
           
-          {query && (
-            <div className="flex items-center justify-between mt-3">
-              <p className="text-sm text-muted-foreground">
-              Résultats pour "<span className="font-semibold">{query}</span>"
+          <div className="flex items-center justify-between mt-3">
+            <p className="text-sm text-muted-foreground">
+              {query ? (
+                <>
+                  Résultats pour "<span className="font-semibold">{query}</span>"
+                </>
+              ) : (
+                "Trie les résultats"
+              )}
             </p>
-              <div className="flex items-center gap-2">
-                <Select value={resolvedSearchSort} onValueChange={(value) => setSortBy(value as SearchSortKey)}>
-                  <SelectTrigger className="w-40 h-8">
-                    <SelectValue placeholder="Trier par" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="relevance">Pertinence</SelectItem>
-                    <SelectItem value="name">Nom</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="flex items-center gap-2">
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-40 h-8">
+                  <SelectValue placeholder="Trier par" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="relevance">Pertinence</SelectItem>
+                  <SelectItem value="name">Nom</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          )}
+          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

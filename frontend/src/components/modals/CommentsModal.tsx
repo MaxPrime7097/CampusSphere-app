@@ -104,7 +104,10 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
     (async () => {
       try {
         const data = await getCurrentUser();
-        if (isMounted) setCurrentUser(data);
+        if (isMounted) {
+          setCurrentUser(data);
+          setCurrentUserId(data?.id ? String(data.id) : null);
+        }
       } catch (e) {
         // User not logged in
       }
@@ -116,6 +119,9 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
 
   const mapApiComment = (apiComment: any, parentId?: string): Comment => ({
     id: String(apiComment.id),
+    authorId: apiComment.author_id ? String(apiComment.author_id) : apiComment.author?.id ? String(apiComment.author.id) : undefined,
+    canEdit: typeof apiComment.can_edit === "boolean" ? apiComment.can_edit : undefined,
+    canDelete: typeof apiComment.can_delete === "boolean" ? apiComment.can_delete : undefined,
     author: normalizeCommentAuthor(apiComment.author_info ?? apiComment.author, apiComment.author_name),
     content: apiComment.content || "",
     timestamp: apiComment.created_at || new Date().toISOString(),
@@ -354,7 +360,7 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
   };
 
   const canManageComment = (comment: Comment) =>
-    Boolean(comment.canEdit || comment.canDelete || (currentUserId && comment.authorId === currentUserId));
+    Boolean(comment.canEdit || comment.canDelete || (comment.authorId && currentUserId && comment.authorId === currentUserId));
 
   const openEditComment = (comment: Comment) => {
     setEditingCommentId(comment.id);
