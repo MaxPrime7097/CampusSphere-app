@@ -40,6 +40,7 @@ export function MobileNavigation() {
                 <button
                   type="button"
                   className={cn(baseStyles, inactiveStyles)}
+                  onClick={() => console.log("The button was definitely pressed!")}
                   aria-label={item.title}
                   title={item.title}
                 >

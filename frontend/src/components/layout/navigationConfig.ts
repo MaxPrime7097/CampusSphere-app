@@ -15,6 +15,7 @@ import {
   Users,
   Bell,
   Plus,
+  Link,
 } from "lucide-react";
 
 export interface NavigationUser {
@@ -63,6 +64,7 @@ export function getNavigationSections(user?: NavigationUser | null): NavigationS
   ];
 
   const quickActions: NavigationItem[] = [
+    { title: "Connexions", url:"/connections", icon: Link },
     { title: "Messages", url: "/messages", icon: MessageSquare },
     { title: "Enregistrements", url: "/saved", icon: Bookmark },
     { title: "Paramètres", url: "/settings", icon: Settings },

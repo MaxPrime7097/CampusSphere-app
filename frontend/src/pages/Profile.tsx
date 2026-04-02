@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { getCurrentUser, getUserByUsername, getUserPosts, uploadAvatar, uploadCoverPhoto, updateUserProfile, getUserConnections, getUserResources, createConnection, deleteConnection, downloadResource, getUserProfile } from "@/services/api";
-import { MapPin, Camera, Calendar, Link, Users, BookOpen, Award, Settings, FileText, Briefcase, GraduationCap, Loader2, Check, Download, UserPlus, UserMinus, ExternalLink, Upload, X, Zap, Smile } from "lucide-react";
+import { MapPin, Camera, Calendar, Link, Users, BookOpen, Award, Settings, FileText, Briefcase, GraduationCap, Loader2, Check, Download, Link, UnLink, ExternalLink, Upload, X, Zap, Smile } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -806,12 +806,12 @@ export function Profile() {
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       ) : isFollowing ? (
                         <>
-                          <UserMinus className="h-4 w-4 mr-2" />
+                          <UnLink className="h-4 w-4 mr-2" />
                           Disconnect
                         </>
                       ) : (
                         <>
-                          <UserPlus className="h-4 w-4 mr-2" />
+                          <Link className="h-4 w-4 mr-2" />
                           Connect
                         </>
                       )}

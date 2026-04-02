@@ -66,7 +66,6 @@ export function Resources() {
   const [selectedSubject, setSelectedSubject] = useState("all");
   const [selectedType, setSelectedType] = useState("all");
 
-  // ✅ Same tab state
   const [activeTab, setActiveTab] = useState("all");
 
   const [isRefreshing, setIsRefreshing] = useState(false);

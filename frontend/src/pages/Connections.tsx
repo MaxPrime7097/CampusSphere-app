@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { searchUsers, getCurrentUser, getUserConnections, createConnection, deleteConnection, getMutualConnectionCounts } from "@/services/api";
-import { Users, UserPlus, Search, Filter } from "lucide-react";
+import { Users, Link, Search, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -170,15 +170,14 @@ export function Connections() {
       <div className="container max-w-6xl mx-auto py-6 px-4">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <Users className="h-8 w-8 campus-gradient p-1.5 rounded-lg text-white" />
-            <h1 className="text-3xl font-bold campus-gradient bg-clip-text text-transparent">
+          <div>
+            <h1 className="text-3xl font-bold bg-clip-text text-muted-foreground">
               Connexions
             </h1>
+            <p className="text-sm md:text-base text-muted-foreground mt-1">
+              Gérez vos connexions et découvrez de nouveaux étudiants
+            </p>
           </div>
-          <p className="text-muted-foreground">
-            Gérez vos connexions et découvrez de nouveaux étudiants
-          </p>
           {mutualCountStatus && (
             <p className="text-xs text-muted-foreground mt-1">{mutualCountStatus}</p>
           )}
@@ -336,7 +335,7 @@ export function Connections() {
                           }
                         }}
                       >
-                        <UserPlus className="h-4 w-4 mr-2" />
+                        <Link className="h-4 w-4 mr-2" />
                         Se connecter
                       </Button>
                     </div>
