@@ -18,7 +18,7 @@ import { SearchResults } from "./pages/SearchResults";
 import { EditProfile } from "./pages/EditProfile";
 import { SavedItems } from "./pages/SavedItems";
 import { Resources } from "./pages/Resources";
-import { ResourceDetail } from "./pages/ResourceDetail";
+import { ResourceDetailRoute } from "./pages/ResourceDetailRoute";
 import { PostDetail } from "./pages/PostDetail";
 import { Spheres } from "./pages/Spheres";
 import { SphereDetail } from "./pages/SphereDetail";
@@ -37,6 +37,7 @@ import { CookiePolicy } from "./pages/public/CookiePolicy";
 import { DataDeletion } from "./pages/public/DataDeletion";
 import { Waitinglist } from "./pages/public/Waitinglist";
 import { Policies } from "./pages/public/Policies";
+import { RequireAdminRole } from "./components/auth/RequireAdminRole";
 
 
 const queryClient = new QueryClient();
@@ -140,7 +141,7 @@ const App = () => (
           <Route path="/resources/:id" element={
             <Protected>
               <AppLayout>
-                <ResourceDetail />
+                <ResourceDetailRoute />
               </AppLayout>
             </Protected>
           } />
@@ -174,8 +175,7 @@ const App = () => (
           } />
 
           {/* Admin routes */}
-          <Route path="/cs-inc/private/admin" element={<AdminDashboard />} />
-          <Route path="/cs-inc/private/admin/moderation-queue" element={<AdminModerationQueue />} />
+          <Route path="/cs-inc/private/admin" element={<RequireAdminRole action="view"><AdminDashboard /></RequireAdminRole>} />
         
           {/* Public pages */}
           <Route path="/cs-inc" element={<Landing />} />

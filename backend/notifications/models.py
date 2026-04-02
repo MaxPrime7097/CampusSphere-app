@@ -4,9 +4,11 @@ from django.utils import timezone
 
 
 class Notification(models.Model):
-    TYPE_CHOICES = [
+    CANONICAL_TYPES = [
         ('post_like', 'Like sur post'),
         ('post_comment', 'Commentaire sur post'),
+        ('mention_post', 'Mention dans un post'),
+        ('mention_comment', 'Mention dans un commentaire'),
         ('comment_reply', 'Réponse à commentaire'),
         ('sphere_invitation', 'Invitation à une sphère'),
         ('sphere_join_request', 'Demande d\'adhésion'),
@@ -15,9 +17,10 @@ class Notification(models.Model):
         ('resource_shared', 'Ressource partagée'),
         ('connection_request', 'Demande de connexion'),
         ('connection_accepted', 'Connexion acceptée'),
-        ('message_received', 'Message reçu'),
+        ('message', 'Message reçu'),
         ('system', 'Notification système'),
     ]
+    TYPE_CHOICES = CANONICAL_TYPES
 
     # Basic Information
     type = models.CharField(max_length=30, choices=TYPE_CHOICES)

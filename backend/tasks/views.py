@@ -14,6 +14,7 @@ from .serializers import (
 )
 from spheres.permissions import IsSphereMember, IsSphereModerator
 from users.impact_policy import TASK_COMPLETED, apply_impact_points
+from notifications.services import create_task_assigned_notification
 
 
 class TaskListView(generics.ListCreateAPIView):
@@ -133,8 +134,7 @@ class TaskCompleteView(APIView):
 
         # Check if user can complete the task
         can_complete = (
-            task.assigned_to == user or 
-            task.created_by == user or
+            task.assigned_to == user or
             SphereMember.objects.filter(
                 sphere=task.sphere,
                 user=user,
@@ -206,6 +206,7 @@ class TaskAssignView(APIView):
         assigned_user = User.objects.get(id=serializer.validated_data['assigned_to_id'])
         task.assigned_to = assigned_user
         task.save(update_fields=['assigned_to', 'updated_at'])
+        create_task_assigned_notification(task, user)
 
         return Response({
             'success': True,

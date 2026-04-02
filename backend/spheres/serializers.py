@@ -1,5 +1,4 @@
 from rest_framework import serializers
-from django.utils import timezone
 from .models import Sphere, SphereMember
 
 
@@ -27,34 +26,36 @@ class SphereSerializer(serializers.ModelSerializer):
     is_member = serializers.SerializerMethodField()
     membership_status = serializers.SerializerMethodField()
     user_role = serializers.SerializerMethodField()
+    is_expired = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Sphere
         fields = [
             'id', 'name', 'description', 'category', 'type', 'color', 'icon',
             'is_private', 'require_approval', 'objective', 'target_audience',
-            'duration', 'collaboration_types', 'member_count', 'impact_score',
+            'duration', 'expires_at', 'auto_delete_on_expiry', 'collaboration_types', 'member_count', 'impact_score',
             'progression',
             'created_by', 'created_by_info', 'is_member', 'membership_status',
-            'user_role', 'created_at', 'updated_at'
+            'user_role', 'is_expired', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'member_count', 'impact_score', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'member_count', 'created_at', 'updated_at']
 
     def get_progression(self, obj):
         """
-        Compute a normalized progression percentage for the sphere.
+        Compute progression as percentage of completed tasks in the sphere.
 
         Formula:
-          progression = clamp(impact_score, 0, 100)
+          progression = (completed_tasks / total_tasks) * 100
 
-        The UI can safely render this as a 0-100% progress bar without showing
-        `undefined%`.
+        Returns 0 when the sphere has no tasks.
         """
-        try:
-            impact_score = int(obj.impact_score or 0)
-        except (TypeError, ValueError):
-            impact_score = 0
-        return max(0, min(100, impact_score))
+        total_tasks = obj.tasks.count()
+        if total_tasks == 0:
+            return 0
+
+        completed_tasks = obj.tasks.filter(is_completed=True).count()
+        return round((completed_tasks / total_tasks) * 100)
+
 
     def get_created_by_info(self, obj):
         from users.serializers import UserProfileSerializer
@@ -87,11 +88,12 @@ class SphereCreateSerializer(serializers.ModelSerializer):
         fields = [
             'name', 'description', 'category', 'type', 'color', 'icon',
             'is_private', 'require_approval', 'objective', 'target_audience',
-            'duration', 'collaboration_types'
+            'duration', 'auto_delete_on_expiry', 'collaboration_types'
         ]
 
     def create(self, validated_data):
         validated_data['created_by'] = self.context['request'].user
+        validated_data['expires_at'] = Sphere.compute_expiry_from_duration(validated_data.get('duration'))
         return super().create(validated_data)
 
 
@@ -101,8 +103,13 @@ class SphereUpdateSerializer(serializers.ModelSerializer):
         fields = [
             'name', 'description', 'category', 'type', 'color', 'icon',
             'is_private', 'require_approval', 'objective', 'target_audience',
-            'duration', 'collaboration_types'
+            'duration', 'auto_delete_on_expiry', 'collaboration_types'
         ]
+
+    def update(self, instance, validated_data):
+        if 'duration' in validated_data:
+            validated_data['expires_at'] = Sphere.compute_expiry_from_duration(validated_data.get('duration'))
+        return super().update(instance, validated_data)
 
 
 class SphereMemberCreateSerializer(serializers.ModelSerializer):

@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Users, FileText, TrendingUp, Shield, AlertCircle, CheckCircle, XCircle, Search, Filter, BarChart3, Clock, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,10 +13,14 @@ import {
   getAdminModerationQueue,
   getAdminReportedContent,
   getAdminUserManagementSummary,
+  getCurrentUser,
+  getAdminPermissions,
   type AdminModerationQueueItem,
   type AdminReportedContentItem,
   type AdminUserManagementSummary,
+  type AdminPermissions,
 } from "@/services/api";
+import { canAdmin } from "@/lib/adminPermissions";
 
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -29,6 +34,8 @@ export function AdminDashboard() {
   const [statsError, setStatsError] = useState<string | null>(null);
   const [moderationError, setModerationError] = useState<string | null>(null);
   const [reportsError, setReportsError] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [adminPermissions, setAdminPermissions] = useState<AdminPermissions | null>(null);
 
   const filteredPendingResources = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -54,6 +61,20 @@ export function AdminDashboard() {
 
   useEffect(() => {
     let isMounted = true;
+
+    (async () => {
+      try {
+        const me = await getCurrentUser();
+        if (isMounted) setCurrentUser(me);
+        const perms = await getAdminPermissions();
+        if (isMounted) setAdminPermissions(perms.permissions);
+      } catch {
+        if (isMounted) {
+          setCurrentUser(null);
+          setAdminPermissions(null);
+        }
+      }
+    })();
 
     (async () => {
       try {
@@ -114,6 +135,11 @@ export function AdminDashboard() {
     return date.toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
   };
 
+  const canCreate = canAdmin(currentUser, "create", adminPermissions);
+  const canUpdate = canAdmin(currentUser, "update", adminPermissions);
+  const canDelete = canAdmin(currentUser, "delete", adminPermissions);
+  const canExport = canAdmin(currentUser, "export", adminPermissions);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5">
       <div className="container max-w-7xl mx-auto py-6 md:py-8 px-4">
@@ -135,12 +161,11 @@ export function AdminDashboard() {
             </div>
             
             <div className="flex gap-2">
-              <Button variant="outline" className="gap-2">
+              <Button variant="outline" className="gap-2" disabled={!canExport}>
                 <BarChart3 className="h-4 w-4" />
                 Statistiques
               </Button>
-              <Button asChild className="campus-gradient text-white gap-2">
-                <Link to="/cs-inc/private/admin/moderation-queue">
+              <Button className="campus-gradient text-white gap-2" disabled={!canUpdate}>
                 <Filter className="h-4 w-4" />
                 Moderation Queue
                 </Link>
@@ -277,12 +302,12 @@ export function AdminDashboard() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 mb-6">
-            <TabsTrigger value="overview">Aperçu</TabsTrigger>
-            <TabsTrigger value="users">Utilisateurs</TabsTrigger>
-            <TabsTrigger value="resources">Ressources</TabsTrigger>
-            <TabsTrigger value="reports">Signalements</TabsTrigger>
-          </TabsList>
+          <SharedTabsList className="mb-6">
+            <SharedTabsTrigger value="overview">Aperçu</SharedTabsTrigger>
+            <SharedTabsTrigger value="users">Utilisateurs</SharedTabsTrigger>
+            <SharedTabsTrigger value="resources">Ressources</SharedTabsTrigger>
+            <SharedTabsTrigger value="reports">Signalements</SharedTabsTrigger>
+          </SharedTabsList>
 
           <TabsContent value="overview" className="space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
@@ -408,11 +433,11 @@ export function AdminDashboard() {
                             </div>
                           </div>
                           <div className="flex gap-2">
-                            <Button size="sm" className="campus-gradient text-white gap-1">
+                            <Button size="sm" className="campus-gradient text-white gap-1" disabled={!canUpdate}>
                               <CheckCircle className="h-3 w-3" />
                               Approuver
                             </Button>
-                            <Button size="sm" variant="outline" className="text-red-600 border-red-600 gap-1">
+                            <Button size="sm" variant="outline" className="text-red-600 border-red-600 gap-1" disabled={!canDelete}>
                               <XCircle className="h-3 w-3" />
                               Rejeter
                             </Button>
@@ -467,8 +492,8 @@ export function AdminDashboard() {
                             </div>
                           </div>
                           <div className="flex gap-2">
-                            <Button size="sm" variant="outline">Examiner</Button>
-                            <Button size="sm" variant="destructive">Supprimer</Button>
+                            <Button size="sm" variant="outline" disabled={!canUpdate}>Examiner</Button>
+                            <Button size="sm" variant="destructive" disabled={!canDelete}>Supprimer</Button>
                           </div>
                         </div>
                       </div>
