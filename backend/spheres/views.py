@@ -1,4 +1,7 @@
-from rest_framework import generics, status, permissions
+import logging
+
+from rest_framework import generics, status, permissions, serializers
+from rest_framework.exceptions import APIException, PermissionDenied, ValidationError
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -13,9 +16,50 @@ from .serializers import (
     SphereMemberSerializer, SphereMemberCreateSerializer, SphereJoinSerializer,
     SphereMemberUpdateSerializer
 )
-from .permissions import IsSphereAdmin, IsSphereModerator, IsSphereMember
+from .permissions import IsSphereModerator, IsSphereMember
 from campus_sphere.cache import CacheManager, CacheKeys
 
+
+logger = logging.getLogger(__name__)
+
+
+
+def filter_active_spheres(queryset):
+    now = timezone.now()
+    return queryset.filter(models.Q(expires_at__isnull=True) | models.Q(expires_at__gt=now))
+
+
+class SphereExtendDurationView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        sphere = get_object_or_404(Sphere, pk=pk)
+
+        if sphere.created_by_id != request.user.id:
+            return Response(
+                {'error': 'Only the sphere creator can extend the duration'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        duration = request.data.get('duration')
+        if not duration:
+            raise serializers.ValidationError({'duration': 'This field is required'})
+
+        base_datetime = sphere.expires_at if sphere.expires_at and sphere.expires_at > timezone.now() else timezone.now()
+        new_expiry = Sphere.compute_expiry_from_duration(duration, from_datetime=base_datetime)
+
+        if new_expiry is None:
+            return Response(
+                {'error': 'Unsupported duration. Use finite duration values to extend the sphere.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        sphere.duration = duration
+        sphere.expires_at = new_expiry
+        sphere.save(update_fields=['duration', 'expires_at', 'updated_at'])
+
+        serializer = SphereSerializer(sphere, context={'request': request})
+        return Response({'success': True, 'data': serializer.data})
 
 class SphereListView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -24,7 +68,6 @@ class SphereListView(generics.ListCreateAPIView):
     search_fields = ['name', 'description']
 
     def get_queryset(self):
-        queryset = Sphere.objects.all()
         # Filter out private spheres unless user is a member
         user = self.request.user
         private_spheres = Sphere.objects.filter(
@@ -33,7 +76,7 @@ class SphereListView(generics.ListCreateAPIView):
             members__status='active'
         )
         public_spheres = Sphere.objects.filter(is_private=False)
-        return (private_spheres | public_spheres).distinct()
+        return filter_active_spheres((private_spheres | public_spheres).distinct())
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -68,31 +111,113 @@ class SphereDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_object(self):
         sphere_id = self.kwargs.get('pk')
         cache_key = CacheKeys.sphere_detail(sphere_id)
+        user_id = getattr(self.request.user, 'id', None)
 
-        return CacheManager.get_or_set(
-            cache_key,
-            lambda: super().get_object(),
-            CacheManager.SPHERE_DETAIL_TTL
+        try:
+            sphere = CacheManager.get_or_set(
+                cache_key,
+                lambda: generics.RetrieveUpdateDestroyAPIView.get_object(self),
+                CacheManager.SPHERE_DETAIL_TTL
+            )
+
+            if sphere.is_expired and self.request.method in ['GET', 'POST']:
+                raise ValidationError({'detail': 'This sphere has expired'})
+
+            if sphere.is_private and sphere.created_by_id != user_id:
+                is_active_member = sphere.members.filter(user=self.request.user, status='active').exists()
+                if not is_active_member:
+                    raise PermissionDenied('This private sphere is only visible to active members')
+
+            return sphere
+        except Exception:
+            logger.exception(
+                'SphereDetailView.get_object failed (sphere_id=%s user_id=%s method=%s)',
+                sphere_id,
+                user_id,
+                self.request.method,
+            )
+            raise
+
+    def _error_response(self, error, detail, status_code):
+        return Response(
+            {
+                'error': error,
+                'detail': detail,
+                'timestamp': timezone.now().isoformat(),
+            },
+            status=status_code,
         )
+
+    def retrieve(self, request, *args, **kwargs):
+        sphere_id = kwargs.get('pk')
+        user_id = getattr(request.user, 'id', None)
+
+        try:
+            instance = self.get_object()
+            serializer = self.get_serializer(instance)
+            return Response(serializer.data)
+        except ValidationError as exc:
+            logger.exception(
+                'Sphere detail validation failed (sphere_id=%s user_id=%s method=%s)',
+                sphere_id,
+                user_id,
+                request.method,
+            )
+            detail = exc.detail
+            if isinstance(detail, dict) and 'detail' in detail:
+                detail = detail['detail']
+            return self._error_response('validation_error', detail, status.HTTP_400_BAD_REQUEST)
+        except APIException as exc:
+            logger.exception(
+                'Sphere detail API exception (sphere_id=%s user_id=%s method=%s)',
+                sphere_id,
+                user_id,
+                request.method,
+            )
+            return self._error_response('api_error', exc.detail, exc.status_code)
+        except Exception:
+            logger.exception(
+                'Sphere detail serialization failed (sphere_id=%s user_id=%s method=%s)',
+                sphere_id,
+                user_id,
+                request.method,
+            )
+            return self._error_response(
+                'internal_server_error',
+                'An unexpected error occurred while loading sphere details.',
+                status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
     def get_serializer_class(self):
         if self.request.method in ['PUT', 'PATCH']:
             return SphereUpdateSerializer
         return SphereSerializer
 
-    def get_permissions(self):
-        if self.request.method in ['PUT', 'PATCH', 'DELETE']:
-            return [IsSphereAdmin()]
-        return [permissions.IsAuthenticated()]
+    def _is_creator(self, sphere, user):
+        return sphere.created_by_id == user.id
+
+    def _forbidden_response(self):
+        return Response(
+            {'error': 'Only the sphere creator can modify or delete this sphere'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    def update(self, request, *args, **kwargs):
+        sphere = self.get_object()
+        if not self._is_creator(sphere, request.user):
+            return self._forbidden_response()
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        sphere = self.get_object()
+        if not self._is_creator(sphere, request.user):
+            return self._forbidden_response()
+        return super().partial_update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
         sphere = self.get_object()
-        # Check if user is admin
-        if not sphere.members.filter(user=request.user, role='admin', status='active').exists():
-            return Response(
-                {'error': 'Only sphere admins can delete spheres'},
-                status=status.HTTP_403_FORBIDDEN
-            )
+        if not self._is_creator(sphere, request.user):
+            return self._forbidden_response()
         return super().destroy(request, *args, **kwargs)
 
 
@@ -100,27 +225,36 @@ class SphereJoinView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
-        sphere = get_object_or_404(Sphere, pk=pk)
+        sphere = get_object_or_404(filter_active_spheres(Sphere.objects.all()), pk=pk)
         serializer = SphereJoinSerializer(data=request.data, context={'request': request, 'sphere': sphere})
         serializer.is_valid(raise_exception=True)
 
         # Determine membership status based on sphere settings
         membership_status = 'pending' if sphere.require_approval else 'active'
 
-        # Create membership
-        membership, created = SphereMember.objects.get_or_create(
+        existing_membership = SphereMember.objects.filter(
             sphere=sphere,
-            user=request.user,
-            defaults={
-                'role': 'member',
-                'status': membership_status
-            }
-        )
+            user=request.user
+        ).first()
 
-        if not created:
+        if existing_membership and existing_membership.status in ['pending', 'active']:
             return Response(
-                {'error': 'You are already associated with this sphere'},
+                {'error': 'You already have an active or pending membership for this sphere'},
                 status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if existing_membership:
+            existing_membership.role = 'member'
+            existing_membership.status = membership_status
+            existing_membership.joined_at = timezone.now()
+            existing_membership.save(update_fields=['role', 'status', 'joined_at'])
+            membership = existing_membership
+        else:
+            membership = SphereMember.objects.create(
+                sphere=sphere,
+                user=request.user,
+                role='member',
+                status=membership_status
             )
 
         # Update member count
@@ -142,7 +276,7 @@ class SphereLeaveView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
-        sphere = get_object_or_404(Sphere, pk=pk)
+        sphere = get_object_or_404(filter_active_spheres(Sphere.objects.all()), pk=pk)
         membership = get_object_or_404(
             SphereMember,
             sphere=sphere,
@@ -173,7 +307,7 @@ class SphereCancelJoinRequestView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def delete(self, request, pk):
-        sphere = get_object_or_404(Sphere, pk=pk)
+        sphere = get_object_or_404(filter_active_spheres(Sphere.objects.all()), pk=pk)
         membership = SphereMember.objects.filter(
             sphere=sphere,
             user=request.user,
@@ -201,7 +335,7 @@ class SphereMembersView(generics.ListCreateAPIView):
     # filterset_fields = ['role', 'status']  # Commented out - django_filters not installed
 
     def get_queryset(self):
-        sphere = get_object_or_404(Sphere, pk=self.kwargs['pk'])
+        sphere = get_object_or_404(filter_active_spheres(Sphere.objects.all()), pk=self.kwargs['pk'])
         return sphere.members.select_related('user').order_by('-joined_at')
 
     def get_serializer_class(self):
@@ -211,7 +345,7 @@ class SphereMembersView(generics.ListCreateAPIView):
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        context['sphere'] = get_object_or_404(Sphere, pk=self.kwargs['pk'])
+        context['sphere'] = get_object_or_404(filter_active_spheres(Sphere.objects.all()), pk=self.kwargs['pk'])
         return context
 
     def get_permissions(self):
@@ -234,7 +368,7 @@ class SphereMemberDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        sphere = get_object_or_404(Sphere, pk=self.kwargs['sphere_pk'])
+        sphere = get_object_or_404(filter_active_spheres(Sphere.objects.all()), pk=self.kwargs['sphere_pk'])
         return SphereMember.objects.filter(sphere=sphere).select_related('user', 'sphere')
 
     def get_serializer_class(self):
@@ -242,21 +376,25 @@ class SphereMemberDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
             return SphereMemberUpdateSerializer
         return SphereMemberSerializer
 
-    def _get_actor_membership(self, sphere, user):
+    def _get_actor_membership(self, request, sphere):
         return SphereMember.objects.filter(
             sphere=sphere,
-            user=user,
+            user=request.user,
             status='active'
         ).first()
+
+    def _can_manage_members(self, request, sphere):
+        actor_membership = self._get_actor_membership(request, sphere)
+        return actor_membership and actor_membership.role in ['admin', 'moderator']
 
     def partial_update(self, request, *args, **kwargs):
         membership = self.get_object()
         sphere = membership.sphere
-        actor_membership = self._get_actor_membership(sphere, request.user)
+        actor_membership = self._get_actor_membership(request, sphere)
 
-        if not actor_membership or actor_membership.role not in ['admin', 'moderator']:
+        if not self._can_manage_members(request, sphere):
             return Response(
-                {'error': 'Only sphere moderators or admins can manage members'},
+                {'error': 'Only sphere admins or moderators can update members'},
                 status=status.HTTP_403_FORBIDDEN
             )
 
@@ -292,45 +430,13 @@ class SphereMemberDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
             'data': SphereMemberSerializer(membership, context={'request': request}).data
         })
 
-    def get_serializer_class(self):
-        if self.request.method == 'PATCH':
-            return SphereMemberUpdateSerializer
-        return SphereMemberSerializer
-
-    def _get_actor_membership(self, request, sphere):
-        return SphereMember.objects.filter(
-            sphere=sphere,
-            user=request.user,
-            status='active'
-        ).first()
-
-    def _can_manage_members(self, request, sphere):
-        actor_membership = self._get_actor_membership(request, sphere)
-        return actor_membership and actor_membership.role in ['admin', 'moderator']
-
     def patch(self, request, *args, **kwargs):
-        membership = self.get_object()
-        if not self._can_manage_members(request, membership.sphere):
-            return Response(
-                {'error': 'Only sphere admins or moderators can update members'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-        serializer = self.get_serializer(membership, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        output_serializer = SphereMemberSerializer(membership, context={'request': request})
-        return Response({
-            'success': True,
-            'message': 'Member updated successfully',
-            'data': output_serializer.data,
-        })
+        return self.partial_update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
         membership = self.get_object()
         sphere = membership.sphere
-        actor_membership = self._get_actor_membership(sphere, request.user)
+        actor_membership = self._get_actor_membership(request, sphere)
 
         if not actor_membership or actor_membership.role not in ['admin', 'moderator']:
             return Response(
@@ -338,15 +444,12 @@ class SphereMemberDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        if not self._can_manage_members(request, sphere):
-            return Response(
-                {'error': 'Only sphere admins or moderators can remove members'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
         # Prevent removing the last admin
         if membership.role == 'admin':
-            admin_count = sphere.members.filter(role='admin', status='active').exclude(id=membership.id).count()
+            admin_count = sphere.members.filter(
+                role='admin',
+                status='active'
+            ).exclude(id=membership.id).count()
             if admin_count == 0:
                 return Response(
                     {'error': 'Cannot remove the last admin from the sphere'},
@@ -371,7 +474,7 @@ def user_spheres(request):
         status='active'
     ).select_related('sphere')
 
-    spheres = [membership.sphere for membership in memberships]
+    spheres = [membership.sphere for membership in memberships if not membership.sphere.is_expired]
     serializer = SphereSerializer(spheres, many=True, context={'request': request})
 
     return Response({

@@ -20,7 +20,7 @@ import {
   SheetHeader,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { useEffect, useState } from "react";
+import { type MouseEvent, useEffect, useState } from "react";
 import { getCurrentUser } from "@/services/api";
 import { getNavigationSections, type NavigationUser } from "./navigationConfig";
 
@@ -28,6 +28,7 @@ export function MenuDropdown() {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
   const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
   const [user, setUser] = useState<NavigationUser>({});
 
   useEffect(() => {
@@ -59,21 +60,36 @@ export function MenuDropdown() {
   const displayUsername = user?.username ? `@${user.username}` : "@user";
   const avatarUrl = user?.avatar || "/placeholder/.jpg";
   const appVersion = import.meta.env.VITE_APP_VERSION || "2.0.0";
+  const closeMenu = () => setOpen(false);
+  const handleContainerClickCapture = (event: MouseEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement | null;
+    const interactiveElement = target?.closest("a,button");
+
+    if (interactiveElement) {
+      setOpen(false);
+    }
+  };
 
   return (
-  <Sheet>
-      <SheetTrigger>
+  <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
         <Button variant="ghost" size="sm" className="relative hover:bg-accent">
           <Menu className="h-4 w-4" />
         </Button>
       </SheetTrigger>
-      <SheetContent className="pt-5">
+      <SheetContent className="pt-5" onClickCapture={handleContainerClickCapture}>
         <SheetHeader>
           <h1 className="text-3xl font-bold bg-clip-text text-muted-foreground">
             Menu
           </h1>
         </SheetHeader>
-        <Card className="campus-card mt-5" onClick={() => navigate(profileUrl)}>
+        <Card
+          className="campus-card mt-5"
+          onClick={() => {
+            closeMenu();
+            navigate(profileUrl);
+          }}
+        >
           <CardContent className="pt-4 md:pt-6 p-4 md:p-6">
             <div 
               className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
@@ -107,7 +123,7 @@ export function MenuDropdown() {
                <Card className="py-2" key={item.title}>
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink to={item.url} className={getNavClasses}>
+                    <NavLink to={item.url} className={getNavClasses} onClick={closeMenu}>
                       <item.icon className="h-5 w-5" />
                       {!isCollapsed && <span>{item.title}</span>}
                     </NavLink>
@@ -127,7 +143,7 @@ export function MenuDropdown() {
                <Card className="py-2" key={item.title}>
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink to={item.url} end className={getNavClasses}>
+                    <NavLink to={item.url} end className={getNavClasses} onClick={closeMenu}>
                       <item.icon className="h-5 w-5" />
                       {!isCollapsed && <span>{item.title}</span>}
                     </NavLink>

@@ -22,7 +22,7 @@ Votre frontend et backend **SONT CONFIGURÉS pour communiquer**, mais voici ce q
   "http://127.0.0.1:3000",
   "http://localhost:8080",
   "http://127.0.0.1:8080",
-  "https://campus-sphere.com",
+  "https://campussphere.app",
   ```
 - **Authentification**: JWT avec tokens de 7 jours (access) et 30 jours (refresh)
 
@@ -84,7 +84,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",        # ← Frontend localhost
     "http://localhost:8080",        # Alternative
     "http://127.0.0.1:8080",        # Alternative
-    "https://campus-sphere.com",    # Production
+    "https://campussphere.app",    # Production
 ]
 ```
 

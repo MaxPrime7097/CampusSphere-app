@@ -12,6 +12,7 @@ from .serializers import (
     ConversationSerializer, ConversationCreateSerializer, ConversationUpdateSerializer,
     MessageSerializer, MessageCreateSerializer
 )
+from notifications.services import create_message_notification
 
 
 class ConversationListView(generics.ListCreateAPIView):
@@ -120,6 +121,7 @@ class ConversationMessagesView(generics.ListCreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
+        create_message_notification(serializer.instance)
 
         message = Message.objects.select_related('author', 'conversation').prefetch_related('read_by').get(
             pk=serializer.instance.pk

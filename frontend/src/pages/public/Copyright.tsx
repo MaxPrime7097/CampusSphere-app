@@ -123,13 +123,17 @@ export function Copyright(): JSX.Element {
               </div>
               <div className="font-nunito font-semibold text-muted-foreground space-y-4 mt-4">
               <p>
-                Envoyez votre notification de violation DMCA à notre agent désigné :
+                Envoyez votre notification de violation DMCA à notre agent désigné à l'adresse suivante :
               </p>
-              <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-                <p className="font-semibold text-foreground">Agent DMCA CampusSphere</p>
-                <p>Email: dmca@campussphere.com</p>
-                <p>Adresse: CampusSphere, 123 Avenue de l'Université, Paris</p>
-              </div>
+              <ul className="mt-4 space-y-2">
+                <li><p className="mt-4">
+                {" "}
+                <a href="mailto:policies@campussphere.app" className="text-primary hover:underline">
+                  policies@campussphere.app
+                </a>
+              </p></li>
+                <li>Adresse: Douala, Cameroun</li>
+              </ul>
               </div>
             </div>
 
@@ -199,8 +203,8 @@ export function Copyright(): JSX.Element {
                 <ul className="mt-4 space-y-2">
                   <li><p className="mt-4">
                   {" "}
-                  <a href="mailto:policies@campus-sphere.com" className="text-primary hover:underline">
-                    policies@campus-sphere.com
+                  <a href="mailto:policies@campussphere.app" className="text-primary hover:underline">
+                    policies@campussphere.app
                   </a>
                 </p></li>
                   <li>Adresse: Douala, Cameroun</li>
