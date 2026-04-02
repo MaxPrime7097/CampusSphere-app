@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CreatePost } from "@/components/feed/CreatePost";
 import { PostCard } from "@/components/feed/PostCard";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { cn } from "@/lib/utils"; // si tu utilises cn dans ce fichier
+import { cn, formatFileSize } from "@/lib/utils"; // si tu utilises cn dans ce fichier
 
 const NOT_AVAILABLE_TEXT = "Not available";
 const MOOD_OPTIONS = [
@@ -194,7 +194,7 @@ function mapProfileToViewModel({
       name: resource.title || resource.filename || resource.fileName || NOT_AVAILABLE_TEXT,
       filename: resource.filename || resource.fileName || resource.title || `resource-${resource.id}`,
       type: resource.type || NOT_AVAILABLE_TEXT,
-      size: resource.fileSize || NOT_AVAILABLE_TEXT,
+      size: formatFileSize(resource.fileSize || 0),
     })),
     stats: {
       posts: posts?.length || 0,
