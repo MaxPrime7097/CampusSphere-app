@@ -80,12 +80,14 @@ class CommentSerializer(serializers.ModelSerializer):
     likes_count = serializers.IntegerField(read_only=True)
     is_liked = serializers.SerializerMethodField()
     replies = serializers.SerializerMethodField()
+    can_edit = serializers.SerializerMethodField()
+    can_delete = serializers.SerializerMethodField()
 
     class Meta:
         model = Comment
         fields = [
             'id', 'content', 'author', 'author_info', 'parent', 'likes_count',
-            'is_liked', 'replies', 'created_at', 'updated_at'
+            'is_liked', 'replies', 'can_edit', 'can_delete', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'author', 'created_at', 'updated_at']
 
@@ -104,6 +106,14 @@ class CommentSerializer(serializers.ModelSerializer):
             replies = obj.replies.all()[:5]  # Limit to 5 replies
             return CommentSerializer(replies, many=True, context=self.context).data
         return []
+
+    def get_can_edit(self, obj):
+        request = self.context.get('request')
+        return bool(request and request.user.is_authenticated and obj.author_id == request.user.id)
+
+    def get_can_delete(self, obj):
+        request = self.context.get('request')
+        return bool(request and request.user.is_authenticated and obj.author_id == request.user.id)
 
 
 class CommentCreateSerializer(serializers.ModelSerializer):
@@ -131,6 +141,12 @@ class CommentCreateSerializer(serializers.ModelSerializer):
         validated_data['author'] = self.context['request'].user
         validated_data['post'] = self.context['post']
         return super().create(validated_data)
+
+
+class CommentUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Comment
+        fields = ['content']
 
 
 class PostSerializer(serializers.ModelSerializer):

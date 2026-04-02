@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Heart, MessageCircle, Share, Bookmark, MoreVertical, Zap, Copy, Flag, ExternalLink, Users, Plus, Minus, X } from "lucide-react";
+import { Heart, MessageCircle, Share, Bookmark, MoreVertical, Zap, Copy, Flag, ExternalLink, Users, Plus, Minus, X, Pencil, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -23,9 +23,10 @@ import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { impactRatePost, likePost, savePost, reportPost } from "@/services/api";
+import { impactRatePost, likePost, savePost, reportPost, updatePost, deletePost } from "@/services/api";
 import { formatRelativeTime } from "@/lib/date";
 import { renderMentionText } from "@/lib/mentions";
+import { Textarea } from "@/components/ui/textarea";
 
 interface PostCardProps {
   post: {
@@ -48,6 +49,8 @@ interface PostCardProps {
     userImpactRating?: number | null;
     isLiked?: boolean;
     isSaved?: boolean;
+    canEdit?: boolean;
+    canDelete?: boolean;
   };
   onToggleSave?: (saved: boolean) => void;
 }
@@ -69,6 +72,13 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
   const [isReporting, setIsReporting] = useState(false);
   const [reportError, setReportError] = useState<string | null>(null);
   const [reportedReason, setReportedReason] = useState<string | null>(null);
+  const [content, setContent] = useState(post.content);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [editingContent, setEditingContent] = useState(post.content);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleted, setIsDeleted] = useState(false);
 
   useEffect(() => {
     setIsLiked(Boolean(post.isLiked));
@@ -76,7 +86,54 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
     setLikesCount(post.likes);
     setImpactScore(Number(post.impactScore || 0));
     setUserImpactRating(post.userImpactRating ?? null);
+    setContent(post.content);
+    setEditingContent(post.content);
+    setIsDeleted(false);
   }, [post.id, post.isLiked, post.isSaved, post.likes, post.impactScore, post.userImpactRating]);
+
+  const handleOpenEdit = () => {
+    setEditingContent(content);
+    setShowEditDialog(true);
+  };
+
+  const handleConfirmEdit = async () => {
+    if (isUpdating) return;
+    const nextContent = editingContent.trim();
+    if (!nextContent) {
+      toast({ title: "Contenu invalide", description: "Le contenu ne peut pas être vide.", variant: "destructive" });
+      return;
+    }
+
+    // Pessimistic update: keep old UI until API confirms.
+    setIsUpdating(true);
+    try {
+      const updated = await updatePost(post.id, { content: nextContent });
+      setContent(updated?.content ?? nextContent);
+      setShowEditDialog(false);
+      toast({ title: "Post modifié", description: "Votre post a été mis à jour avec succès." });
+    } catch (error: any) {
+      toast({ title: "Échec de modification", description: error?.message || "Impossible de modifier ce post.", variant: "destructive" });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (isDeleting) return;
+    setIsDeleting(true);
+    setShowDeleteDialog(false);
+    // Optimistic delete + rollback.
+    setIsDeleted(true);
+    try {
+      await deletePost(post.id);
+      toast({ title: "Post supprimé", description: "Le post a été supprimé définitivement." });
+    } catch (error: any) {
+      setIsDeleted(false);
+      toast({ title: "Échec de suppression", description: error?.message || "Impossible de supprimer ce post.", variant: "destructive" });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const handleLike = async () => {
     try {
@@ -240,6 +297,10 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
       : "campus-card hover:campus-glow"
   );
 
+  if (isDeleted) {
+    return null;
+  }
+
   return (
     <>
       <Card className={cardClasses}>
@@ -300,6 +361,18 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                   <Flag className="h-4 w-4 mr-2" />
                   Signaler
                 </DropdownMenuItem>
+                {post.canEdit && (
+                  <DropdownMenuItem onClick={handleOpenEdit}>
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Modifier
+                  </DropdownMenuItem>
+                )}
+                {post.canDelete && (
+                  <DropdownMenuItem className="text-destructive" onClick={() => setShowDeleteDialog(true)} disabled={isDeleting}>
+                    {isDeleting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                    Supprimer
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -314,7 +387,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
             </Badge>
           </div>
 
-          <p className="text-sm leading-relaxed whitespace-pre-wrap">{renderMentionText(post.content)}</p>
+          <p className="text-sm leading-relaxed whitespace-pre-wrap">{renderMentionText(content)}</p>
           
           {post.image && (
             <div className="rounded-lg overflow-hidden md:overflow-hidden w-full relative">
@@ -484,6 +557,41 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
               </Button>
             ))}
           </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Modifier le post</DialogTitle>
+          <DialogDescription>Mettez à jour votre contenu puis validez.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <Textarea value={editingContent} onChange={(e) => setEditingContent(e.target.value)} className="min-h-[120px]" maxLength={2000} />
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowEditDialog(false)} disabled={isUpdating}>Annuler</Button>
+            <Button onClick={handleConfirmEdit} disabled={isUpdating}>
+              {isUpdating ? "Enregistrement..." : "Enregistrer"}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Supprimer ce post ?</DialogTitle>
+          <DialogDescription>
+            Cette action est destructive et irréversible.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={() => setShowDeleteDialog(false)} disabled={isDeleting}>Annuler</Button>
+          <Button variant="destructive" onClick={handleConfirmDelete} disabled={isDeleting}>
+            {isDeleting ? "Suppression..." : "Supprimer"}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
