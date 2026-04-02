@@ -26,6 +26,7 @@ import { formatRelativeTime } from "@/lib/date";
 import { findInvalidMentions, getActiveMentionQuery, renderMentionText } from "@/lib/mentions";
 
 const MAX_COMMENT_THREAD_DEPTH = 4;
+const [currentUser, setCurrentUser] = useState<any>(null);
 
 interface Comment {
   id: string;
@@ -558,7 +559,10 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
 
               <div className="flex gap-3">
                 <Avatar className="h-10 w-10 flex-shrink-0">
-                  <AvatarFallback>U</AvatarFallback>
+                  <AvatarImage src={currentUser?.avatar || "/placeholder-avatar.jpg"} />
+                  <AvatarFallback className="bg-input text-muted-foreground font-semibold">
+                  {currentUser?.name?.slice(0, 1).toUpperCase() || 'U'}
+              </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 space-y-2">
                   <Textarea

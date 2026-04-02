@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Users, BookOpen, ShoppingBag, Loader2, Link, UnLink, FolderOpen, User } from "lucide-react";
+import { Search, Users, BookOpen, ShoppingBag, Loader2, Link, Unlink, FolderOpen, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
@@ -364,7 +364,7 @@ export function SearchResults() {
                           >
                             {followedUsers.has(user.id) ? (
                               <>
-                                <UnLink className="h-4 w-4 mr-2" />
+                                <Unlink className="h-4 w-4 mr-2" />
                                 Deconnecter
                               </>
                             ) : (
@@ -503,7 +503,7 @@ export function SearchResults() {
                         >
                           {followedUsers.has(user.id) ? (
                             <>
-                              <UnLink className="h-4 w-4 mr-2" />
+                              <Unlink className="h-4 w-4 mr-2" />
                               Ne plus suivre
                             </>
                           ) : (
