@@ -6,9 +6,23 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { formatFrenchDate } from "@/lib/date";
 import { getSubjectLabel, getTypeLabel, normalizeResourceType, normalizeSubject } from "@/lib/resourceMetadata";
+
+const RESOURCE_DETAIL_LOG_PREFIX = "[ResourceDetail][debug]";
+
+function shouldLogResourceDetailDebug() {
+  if (typeof window === "undefined") return false;
+  return import.meta.env.DEV || window.localStorage.getItem("debug:resource-detail") === "true";
+}
+
+function logResourceDetailDebug(message: string, payload: Record<string, unknown>) {
+  if (!shouldLogResourceDetailDebug()) return;
+  console.info(`${RESOURCE_DETAIL_LOG_PREFIX} ${message}`, payload);
+}
 
 export function ResourceDetail() {
   const { id } = useParams();
@@ -67,6 +81,16 @@ export function ResourceDetail() {
       try {
         const data = await getResource(id);
         if (isMounted && data) {
+          logResourceDetailDebug("received_api_resource", {
+            resourceId: id,
+            type: data.type,
+            subject: data.subject,
+            tags: data.tags,
+            author: data.author,
+            author_name: data.author_name,
+            author_username: data.author_username,
+          });
+
           const author = data.author ?? null;
           const uploaderContributions =
             author?.stats?.contributions ??
@@ -106,6 +130,22 @@ export function ResourceDetail() {
             tags: data.tags || [],
             relatedCourse: normalizeSubject(data.subject)
           };
+
+          logResourceDetailDebug("normalized_resource_payload", {
+            resourceId: id,
+            type: resourcePayload.type,
+            subject: resourcePayload.subject,
+            tags: resourcePayload.tags,
+            uploader: {
+              name: resourcePayload.uploader.name,
+              username: resourcePayload.uploader.username,
+              avatar: resourcePayload.uploader.avatar,
+              verified: resourcePayload.uploader.verified,
+              level: resourcePayload.uploader.level,
+              contributions: resourcePayload.uploader.contributions,
+            },
+          });
+
           setResource(resourcePayload);
           setIsSaved(resourcePayload.isSaved);
           setDraftTitle(resourcePayload.title);
@@ -337,6 +377,21 @@ export function ResourceDetail() {
       </div>
     );
   }
+
+  logResourceDetailDebug("render_resource_critical_values", {
+    resourceId: resource.id,
+    type: resource.type,
+    subject: resource.subject,
+    tags: resource.tags,
+    uploader: {
+      name: resource.uploader.name,
+      username: resource.uploader.username,
+      avatar: resource.uploader.avatar,
+      verified: resource.uploader.verified,
+      level: resource.uploader.level,
+      contributions: resource.uploader.contributions,
+    },
+  });
 
   return (
     <div key={id} className="min-h-screen bg-gradient-to-br from-background to-accent/20">
