@@ -15,6 +15,7 @@ from .serializers import (
 )
 from .permissions import IsSphereAdmin, IsSphereModerator, IsSphereMember
 from campus_sphere.cache import CacheManager, CacheKeys
+from campus_sphere.admin_audit import log_admin_action
 
 
 class SphereListView(generics.ListCreateAPIView):
@@ -85,6 +86,35 @@ class SphereDetailView(generics.RetrieveUpdateDestroyAPIView):
             return [IsSphereAdmin()]
         return [permissions.IsAuthenticated()]
 
+    def perform_update(self, serializer):
+        sphere = self.get_object()
+        before = {
+            'name': sphere.name,
+            'description': sphere.description,
+            'category': sphere.category,
+            'type': sphere.type,
+            'is_private': sphere.is_private,
+            'require_approval': sphere.require_approval,
+        }
+        updated = serializer.save()
+        after = {
+            'name': updated.name,
+            'description': updated.description,
+            'category': updated.category,
+            'type': updated.type,
+            'is_private': updated.is_private,
+            'require_approval': updated.require_approval,
+        }
+        diff = {k: {'before': before[k], 'after': after[k]} for k in before if before[k] != after[k]}
+        if diff:
+            log_admin_action(
+                actor=self.request.user,
+                action='update',
+                target_type='sphere',
+                target_id=updated.id,
+                payload_diff=diff,
+            )
+
     def destroy(self, request, *args, **kwargs):
         sphere = self.get_object()
         # Check if user is admin
@@ -93,6 +123,13 @@ class SphereDetailView(generics.RetrieveUpdateDestroyAPIView):
                 {'error': 'Only sphere admins can delete spheres'},
                 status=status.HTTP_403_FORBIDDEN
             )
+        log_admin_action(
+            actor=request.user,
+            action='delete',
+            target_type='sphere',
+            target_id=sphere.id,
+            payload_diff={'name': sphere.name},
+        )
         return super().destroy(request, *args, **kwargs)
 
 
@@ -159,8 +196,17 @@ class SphereLeaveView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
+        removed_data = {'user_id': membership.user_id, 'role': membership.role, 'status': membership.status}
         membership.delete()
         sphere.update_member_count()
+
+        log_admin_action(
+            actor=request.user,
+            action='delete',
+            target_type='sphere_member',
+            target_id=kwargs.get('pk'),
+            payload_diff=removed_data,
+        )
 
         return Response({
             'success': True,
@@ -318,7 +364,38 @@ class SphereMemberDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
 
         serializer = self.get_serializer(membership, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
+
+        before = {'role': membership.role, 'status': membership.status}
         serializer.save()
+        after = {'role': membership.role, 'status': membership.status}
+
+        if before['role'] != after['role']:
+            log_admin_action(
+                actor=request.user,
+                action='role-change',
+                target_type='sphere_member',
+                target_id=membership.id,
+                payload_diff={'role': {'before': before['role'], 'after': after['role']}},
+            )
+
+        if before['status'] != after['status']:
+            action = 'ban' if after['status'] == 'banned' else 'update'
+            log_admin_action(
+                actor=request.user,
+                action=action,
+                target_type='sphere_member',
+                target_id=membership.id,
+                payload_diff={'status': {'before': before['status'], 'after': after['status']}},
+            )
+
+        if before == after:
+            log_admin_action(
+                actor=request.user,
+                action='update',
+                target_type='sphere_member',
+                target_id=membership.id,
+                payload_diff={'fields': list(serializer.validated_data.keys())},
+            )
 
         output_serializer = SphereMemberSerializer(membership, context={'request': request})
         return Response({
@@ -326,6 +403,35 @@ class SphereMemberDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
             'message': 'Member updated successfully',
             'data': output_serializer.data,
         })
+
+    def perform_update(self, serializer):
+        sphere = self.get_object()
+        before = {
+            'name': sphere.name,
+            'description': sphere.description,
+            'category': sphere.category,
+            'type': sphere.type,
+            'is_private': sphere.is_private,
+            'require_approval': sphere.require_approval,
+        }
+        updated = serializer.save()
+        after = {
+            'name': updated.name,
+            'description': updated.description,
+            'category': updated.category,
+            'type': updated.type,
+            'is_private': updated.is_private,
+            'require_approval': updated.require_approval,
+        }
+        diff = {k: {'before': before[k], 'after': after[k]} for k in before if before[k] != after[k]}
+        if diff:
+            log_admin_action(
+                actor=self.request.user,
+                action='update',
+                target_type='sphere',
+                target_id=updated.id,
+                payload_diff=diff,
+            )
 
     def destroy(self, request, *args, **kwargs):
         membership = self.get_object()
@@ -353,8 +459,17 @@ class SphereMemberDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
+        removed_data = {'user_id': membership.user_id, 'role': membership.role, 'status': membership.status}
         membership.delete()
         sphere.update_member_count()
+
+        log_admin_action(
+            actor=request.user,
+            action='delete',
+            target_type='sphere_member',
+            target_id=kwargs.get('pk'),
+            payload_diff=removed_data,
+        )
 
         return Response({
             'success': True,

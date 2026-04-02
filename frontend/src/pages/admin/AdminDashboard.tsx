@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Users, FileText, TrendingUp, Shield, AlertCircle, CheckCircle, XCircle, Search, Filter, BarChart3, Clock, Loader2 } from "lucide-react";
+import { Users, FileText, TrendingUp, Shield, AlertCircle, CheckCircle, XCircle, Search, Filter, BarChart3, Clock, Loader2, Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -11,9 +11,12 @@ import {
   getAdminModerationQueue,
   getAdminReportedContent,
   getAdminUserManagementSummary,
+  getAdminAuditLogs,
+  exportAdminAuditLogs,
   type AdminModerationQueueItem,
   type AdminReportedContentItem,
   type AdminUserManagementSummary,
+  type AdminAuditLogItem,
 } from "@/services/api";
 
 export function AdminDashboard() {
@@ -28,6 +31,10 @@ export function AdminDashboard() {
   const [statsError, setStatsError] = useState<string | null>(null);
   const [moderationError, setModerationError] = useState<string | null>(null);
   const [reportsError, setReportsError] = useState<string | null>(null);
+  const [auditLogs, setAuditLogs] = useState<AdminAuditLogItem[]>([]);
+  const [auditActionFilter, setAuditActionFilter] = useState("all");
+  const [isLoadingAudit, setIsLoadingAudit] = useState(true);
+  const [auditError, setAuditError] = useState<string | null>(null);
 
   const filteredPendingResources = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -39,6 +46,16 @@ export function AdminDashboard() {
         .includes(query)
     );
   }, [pendingResources, searchQuery]);
+
+  const filteredAuditLogs = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    return auditLogs.filter((log) => {
+      const matchesAction = auditActionFilter === "all" || log.action === auditActionFilter;
+      const haystack = [log.actor ?? "", log.action, log.targetType, log.targetId, JSON.stringify(log.payloadDiff)].join(" ").toLowerCase();
+      const matchesSearch = !query || haystack.includes(query);
+      return matchesAction && matchesSearch;
+    });
+  }, [auditLogs, searchQuery, auditActionFilter]);
 
   const filteredReportedContent = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -77,6 +94,19 @@ export function AdminDashboard() {
         if (isMounted) setModerationError(error?.message || "Impossible de charger la file de modération.");
       } finally {
         if (isMounted) setIsLoadingModeration(false);
+      }
+    })();
+
+    (async () => {
+      try {
+        setIsLoadingAudit(true);
+        setAuditError(null);
+        const logs = await getAdminAuditLogs();
+        if (isMounted) setAuditLogs(logs);
+      } catch (error: any) {
+        if (isMounted) setAuditError(error?.message || "Impossible de charger les logs d'audit.");
+      } finally {
+        if (isMounted) setIsLoadingAudit(false);
       }
     })();
 
@@ -274,11 +304,12 @@ export function AdminDashboard() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 mb-6">
+          <TabsList className="grid w-full grid-cols-5 mb-6">
             <TabsTrigger value="overview">Aperçu</TabsTrigger>
             <TabsTrigger value="users">Utilisateurs</TabsTrigger>
             <TabsTrigger value="resources">Ressources</TabsTrigger>
             <TabsTrigger value="reports">Signalements</TabsTrigger>
+            <TabsTrigger value="audit">Audit</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -475,6 +506,62 @@ export function AdminDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="audit" className="space-y-4">
+            <Card className="campus-card">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Journal d'audit admin</CardTitle>
+                  <CardDescription>Recherche, filtres et exports conformité</CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={async () => {
+                    const blob = await exportAdminAuditLogs('csv', { q: searchQuery, action: auditActionFilter === 'all' ? undefined : auditActionFilter });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'admin-audit-logs.csv';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}><Download className="h-4 w-4 mr-2" />CSV</Button>
+                  <Button variant="outline" onClick={async () => {
+                    const blob = await exportAdminAuditLogs('json', { q: searchQuery, action: auditActionFilter === 'all' ? undefined : auditActionFilter });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'admin-audit-logs.json';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}><Download className="h-4 w-4 mr-2" />JSON</Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="mb-4">
+                  <select className="border rounded px-2 py-1" value={auditActionFilter} onChange={(e) => setAuditActionFilter(e.target.value)}>
+                    <option value="all">Toutes actions</option>
+                    <option value="update">Update</option>
+                    <option value="delete">Delete</option>
+                    <option value="ban">Ban</option>
+                    <option value="role-change">Role change</option>
+                  </select>
+                </div>
+                {isLoadingAudit ? <p>Chargement…</p> : auditError ? <p className="text-red-500">{auditError}</p> : (
+                  <div className="space-y-2">
+                    {filteredAuditLogs.map((log) => (
+                      <div key={log.id} className="p-3 rounded border bg-muted/20">
+                        <div className="flex items-center justify-between text-sm">
+                          <span><strong>{log.action}</strong> · {log.targetType}#{log.targetId}</span>
+                          <span>{formatRelativeDate(log.createdAt)}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Actor: {log.actor ?? 'Inconnu'}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
         </Tabs>
       </div>
     </div>

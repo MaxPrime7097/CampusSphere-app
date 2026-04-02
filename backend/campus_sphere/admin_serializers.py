@@ -33,3 +33,13 @@ class AdminSummarySerializer(serializers.Serializer):
     reportedContent = serializers.IntegerField()
     activeGroups = serializers.IntegerField()
     totalResources = serializers.IntegerField()
+
+
+class AdminAuditLogSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    actor = serializers.CharField(allow_null=True)
+    action = serializers.CharField()
+    targetType = serializers.CharField()
+    targetId = serializers.CharField()
+    payloadDiff = serializers.JSONField()
+    createdAt = serializers.DateTimeField()

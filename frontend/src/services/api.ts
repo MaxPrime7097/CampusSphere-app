@@ -1395,6 +1395,69 @@ export async function getAdminUserManagementSummary(token?: string): Promise<Adm
   return mapAdminSummary(unwrapItem(response));
 }
 
+
+
+export interface AdminAuditLogItem {
+  id: number;
+  actor: string | null;
+  action: string;
+  targetType: string;
+  targetId: string;
+  payloadDiff: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface AdminAuditLogFilters {
+  q?: string;
+  action?: string;
+  targetType?: string;
+}
+
+function mapAdminAuditLogItem(item: any): AdminAuditLogItem {
+  return {
+    id: toNumber(item?.id),
+    actor: item?.actor ?? null,
+    action: item?.action ?? 'update',
+    targetType: item?.targetType ?? item?.target_type ?? '',
+    targetId: String(item?.targetId ?? item?.target_id ?? ''),
+    payloadDiff: item?.payloadDiff ?? item?.payload_diff ?? {},
+    createdAt: item?.createdAt ?? item?.created_at ?? '',
+  };
+}
+
+function toQueryString(params: Record<string, string | undefined>): string {
+  const search = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value && value.trim()) search.set(key, value.trim());
+  });
+  const str = search.toString();
+  return str ? `?${str}` : '';
+}
+
+export async function getAdminAuditLogs(filters: AdminAuditLogFilters = {}, token?: string): Promise<AdminAuditLogItem[]> {
+  const query = toQueryString({ q: filters.q, action: filters.action, target_type: filters.targetType });
+  const response = await apiFetch<any>(`api/admin/audit-logs/${query}`, { token: token || getAccessToken() });
+  return unwrapList(response).map(mapAdminAuditLogItem);
+}
+
+export async function exportAdminAuditLogs(format: 'csv' | 'json', filters: AdminAuditLogFilters = {}, token?: string): Promise<Blob> {
+  const query = toQueryString({ format, q: filters.q, action: filters.action, target_type: filters.targetType });
+  const authToken = token || getAccessToken();
+  const url = `${API_BASE_URL.replace(/\/$/, '')}/api/admin/audit-logs/export/${query}`;
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+    credentials: 'include',
+  });
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(detail || 'Export failed');
+  }
+
+  return res.blob();
+}
+
 // ============================================================================
 // HEALTH & INFO
 // ============================================================================

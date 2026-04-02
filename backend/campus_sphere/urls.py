@@ -26,6 +26,8 @@ urlpatterns = [
     path('api/admin/moderation-queue/', admin_views.admin_moderation_queue, name='admin-moderation-queue'),
     path('api/admin/reported-content/', admin_views.admin_reported_content, name='admin-reported-content'),
     path('api/admin/user-management-summary/', admin_views.admin_user_management_summary, name='admin-user-management-summary'),
+    path('api/admin/audit-logs/', admin_views.admin_audit_logs, name='admin-audit-logs'),
+    path('api/admin/audit-logs/export/', admin_views.admin_audit_logs_export, name='admin-audit-logs-export'),
 
     # Search and utility endpoints
     path('api/search/', views.global_search, name='global-search'),

@@ -143,3 +143,30 @@ class UserBlock(models.Model):
 
     def __str__(self):
         return f"{self.blocker.username} blocked {self.blocked.username}"
+
+class AdminAuditLog(models.Model):
+    actor = models.ForeignKey(
+        User,
+        related_name='admin_audit_logs',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    action = models.CharField(max_length=50)
+    target_type = models.CharField(max_length=100)
+    target_id = models.CharField(max_length=100, blank=True)
+    payload_diff = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['created_at']),
+            models.Index(fields=['action']),
+            models.Index(fields=['target_type']),
+        ]
+
+    def __str__(self):
+        actor_label = self.actor.username if self.actor else 'unknown'
+        return f"{self.action} by {actor_label} on {self.target_type}:{self.target_id}"
+
