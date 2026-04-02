@@ -8,6 +8,7 @@ import {
   getSavedResources,
 } from "@/services/api";
 import {
+  Search,
   Upload,
   Download,
   FileText,
@@ -20,9 +21,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { SharedPatternTabsList, SharedPatternTabsTrigger } from "@/components/ui/shared-pattern-tabs";
-import { SharedFilterSortBar } from "@/components/ui/shared-filter-sort-bar";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -159,17 +158,6 @@ export function Resources() {
   });
 
   const resolvedResourceSort = ensureValidSortKey(activeTab, RESOURCE_SORT_KEYS, DEFAULT_SORT.resources);
-
-  const hasActiveFilters =
-    searchTerm.trim().length > 0 || selectedSubject !== "all" || selectedType !== "all";
-
-  const handleResetFilters = () => {
-    setSearchTerm("");
-    setSelectedSubject("all");
-    setSelectedType("all");
-    setActiveTab(DEFAULT_SORT.resources);
-  };
-
 
   const getSortedResources = () => {
     const sorted = [...filteredResources];
@@ -362,56 +350,77 @@ export function Resources() {
           </div>
         </div>
 
-        <Tabs
-          value={resolvedResourceSort}
-          onValueChange={(value) => setActiveTab(value as ResourceSortKey)}
-          className="space-y-6"
-        >
-          <SharedPatternTabsList>
-            <SharedPatternTabsTrigger value="all">Toutes</SharedPatternTabsTrigger>
-            <SharedPatternTabsTrigger value="suggestions">Suggestions</SharedPatternTabsTrigger>
-            <SharedPatternTabsTrigger value="recent">Récentes</SharedPatternTabsTrigger>
-          </SharedPatternTabsList>
+        {/* Tab Navigation */}
+        <ul className="grid grid-flow-col text-center border-b border-gray-200 text-gray-500 mb-6">
+          {[
+            { id: "all", label: "Toutes" },
+            { id: "suggestions", label: "Suggestions" },
+            { id: "recent", label: "Récentes" },
+          ].map((tab) => (
+            <li key={tab.id}>
+              <button
+                onClick={() => setActiveTab(tab.id as ResourceSortKey)}
+                className={cn(
+                  "w-full flex justify-center border-b-4 py-4 transition-all duration-200 text-sm font-medium",
+                  resolvedResourceSort === tab.id
+                    ? "border-primary text-primary"
+                    : "border-transparent hover:text-primary hover:border-primary"
+                )}
+              >
+                {tab.label}
+              </button>
+            </li>
+          ))}
+        </ul>
 
-          <SharedFilterSortBar
-            searchValue={searchTerm}
-            onSearchValueChange={setSearchTerm}
-            searchPlaceholder="Rechercher..."
-            hasActiveFilters={hasActiveFilters || resolvedResourceSort !== DEFAULT_SORT.resources}
-            onReset={handleResetFilters}
-            controls={
-              <>
-                <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Matière" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {subjects.map((subject) => (
-                      <SelectItem key={subject.value} value={subject.value}>
-                        {subject.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+        {/* ======= CONTENT ======= */}
+        {resolvedResourceSort === "all" && (
+          <>
+            {/* Filters */}
+            <Card className={cardClasses}>
+              <CardContent className="p-3 md:p-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Rechercher..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
 
-                <Select value={selectedType} onValueChange={setSelectedType}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {types.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </>
-            }
-          />
+                  <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Matière" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {subjects.map((subject) => (
+                        <SelectItem key={subject.value} value={subject.value}>
+                          {subject.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
-          <TabsContent value="all" className="mt-0">
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                  <Select value={selectedType} onValueChange={setSelectedType}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {types.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Resources Grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {getSortedResources().map((resource) => (
                 <Card
                   key={resource.id}
@@ -419,13 +428,17 @@ export function Resources() {
                   onClick={() => navigate(`/resources/${resource.id}`)}
                 >
                   <CardContent className="p-0">
-                    <div className="mb-0 flex h-24 items-center justify-center rounded-t-lg bg-input">
+                    <div className="h-24 rounded-t-lg bg-input flex items-center justify-center mb-0">
                       <FileText className="h-12 w-12 text-muted-foreground" />
                     </div>
                     <div className="px-2 py-2">
-                      <h3 className="mb-2 flex-1 line-clamp-2 text-sm font-semibold">{resource.title}</h3>
-                      <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
-                        <p className="text-left">Par {resource.authorName || "Utilisateur"}</p>
+                      <h3 className="flex-1 font-semibold text-sm line-clamp-2 mb-2">
+                        {resource.title}
+                      </h3>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+                        <p className="text-left">
+                          Par {resource.authorName || "Utilisateur"}
+                        </p>
                         <span className="flex items-center gap-1 text-primary">
                           <Zap className="h-3 w-3" />
                           {resource.impactScore || 0}
@@ -446,7 +459,7 @@ export function Resources() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-7 flex-1 gap-1 text-xs"
+                          className="h-7 flex-1 text-xs gap-1"
                           onClick={(e) => handlePreview(e, resource.id)}
                         >
                           <Eye className="h-3 w-3" />
@@ -454,7 +467,7 @@ export function Resources() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          className={`h-7 flex-1 gap-1 text-xs ${
+                          className={`h-7 flex-1 text-xs gap-1 ${
                             savedResources.has(resource.id)
                               ? "text-blue-500 hover:text-blue-600"
                               : ""
@@ -462,13 +475,15 @@ export function Resources() {
                           onClick={(e) => handleSave(e, resource.id)}
                         >
                           <Bookmark
-                            className={`h-3 w-3 ${savedResources.has(resource.id) ? "fill-current" : ""}`}
+                            className={`h-3 w-3 ${
+                              savedResources.has(resource.id) ? "fill-current" : ""
+                            }`}
                           />
                         </Button>
                         <Button
                           size="sm"
                           variant="default"
-                          className="campus-gradient h-7 flex-1 gap-1 text-xs text-white"
+                          className="h-7 flex-1 text-xs gap-1 campus-gradient text-white"
                           onClick={(e) => handleDownload(e, resource.id)}
                           disabled={downloadingIds.has(resource.id)}
                         >
@@ -484,116 +499,166 @@ export function Resources() {
                 </Card>
               ))}
             </div>
-          </TabsContent>
+          </>
+        )}
 
-          <TabsContent value="suggestions" className="mt-0">
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              {getSortedResources().map((resource) => (
-                <Card
-                  key={resource.id}
-                  className={cardClasses}
-                  onClick={() => navigate(`/resources/${resource.id}`)}
-                >
-                  <CardContent className="p-0">
-                    <div className="mb-0 flex h-24 items-center justify-center rounded-t-lg bg-input">
-                      <FileText className="h-12 w-12 text-muted-foreground" />
+        {resolvedResourceSort === "suggestions" && (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {getSortedResources().map((resource) => (
+              <Card
+                key={resource.id}
+                className={cardClasses}
+                onClick={() => navigate(`/resources/${resource.id}`)}
+              >
+                <CardContent className="p-0">
+                  <div className="h-24 rounded-t-lg bg-input flex items-center justify-center mb-0">
+                    <FileText className="h-12 w-12 text-muted-foreground" />
+                  </div>
+                  <div className="px-2 py-2">
+                    <h3 className="flex-1 font-semibold text-sm line-clamp-2 mb-2">
+                      {resource.title}
+                    </h3>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+                      <p className="text-left">
+                        Par {resource.authorName || "Utilisateur"}
+                      </p>
+                      <span className="flex items-center gap-1 text-primary">
+                        <Zap className="h-3 w-3" />
+                        {resource.impactScore || 0}
+                      </span>
                     </div>
-                    <div className="px-2 py-2">
-                      <h3 className="mb-2 flex-1 line-clamp-2 text-sm font-semibold">{resource.title}</h3>
-                      <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
-                        <p className="text-left">Par {resource.authorName || "Utilisateur"}</p>
-                        <span className="flex items-center gap-1 text-primary">
-                          <Zap className="h-3 w-3" />
-                          {resource.impactScore || 0}
-                        </span>
-                      </div>
-                      <div className="mb-2 flex flex-wrap gap-1">
-                        <Badge variant="outline" className="text-xs">{getTypeLabel(resource.type)}</Badge>
-                        <Badge variant="secondary" className="text-xs">{getSubjectLabel(resource.subject)}</Badge>
-                      </div>
-                      <div className="flex gap-1">
-                        <Button size="sm" variant="outline" className="h-7 flex-1 gap-1 text-xs" onClick={(e) => handlePreview(e, resource.id)}>
-                          <Eye className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className={`h-7 flex-1 gap-1 text-xs ${savedResources.has(resource.id) ? "text-blue-500 hover:text-blue-600" : ""}`}
-                          onClick={(e) => handleSave(e, resource.id)}
-                        >
-                          <Bookmark className={`h-3 w-3 ${savedResources.has(resource.id) ? "fill-current" : ""}`} />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="default"
-                          className="campus-gradient h-7 flex-1 gap-1 text-xs text-white"
-                          onClick={(e) => handleDownload(e, resource.id)}
-                          disabled={downloadingIds.has(resource.id)}
-                        >
-                          {downloadingIds.has(resource.id) ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
-                        </Button>
-                      </div>
+                    <div className="mb-2 flex flex-wrap gap-1">
+                      <Badge variant="outline" className="text-xs">
+                        {getTypeLabel(resource.type)}
+                      </Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        {getSubjectLabel(resource.subject)}
+                      </Badge>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 flex-1 text-xs gap-1"
+                        onClick={(e) => handlePreview(e, resource.id)}
+                      >
+                        <Eye className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className={`h-7 flex-1 text-xs gap-1 ${
+                          savedResources.has(resource.id)
+                            ? "text-blue-500 hover:text-blue-600"
+                            : ""
+                        }`}
+                        onClick={(e) => handleSave(e, resource.id)}
+                      >
+                        <Bookmark
+                          className={`h-3 w-3 ${
+                            savedResources.has(resource.id) ? "fill-current" : ""
+                          }`}
+                        />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="h-7 flex-1 text-xs gap-1 campus-gradient text-white"
+                        onClick={(e) => handleDownload(e, resource.id)}
+                        disabled={downloadingIds.has(resource.id)}
+                      >
+                        {downloadingIds.has(resource.id) ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Download className="h-3 w-3" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
-          <TabsContent value="recent" className="mt-0">
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              {getSortedResources().map((resource) => (
-                <Card
-                  key={resource.id}
-                  className={cardClasses}
-                  onClick={() => navigate(`/resources/${resource.id}`)}
-                >
-                  <CardContent className="p-0">
-                    <div className="mb-0 flex h-24 items-center justify-center rounded-t-lg bg-input">
-                      <FileText className="h-12 w-12 text-muted-foreground" />
+        {resolvedResourceSort === "recent" && (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {getSortedResources().map((resource) => (
+              <Card
+                key={resource.id}
+                className={cardClasses}
+                onClick={() => navigate(`/resources/${resource.id}`)}
+              >
+                <CardContent className="p-0">
+                  <div className="h-24 rounded-t-lg bg-input flex items-center justify-center mb-0">
+                    <FileText className="h-12 w-12 text-muted-foreground" />
+                  </div>
+                  <div className="px-2 py-2">
+                    <h3 className="flex-1 font-semibold text-sm line-clamp-2 mb-2">
+                      {resource.title}
+                    </h3>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+                      <p className="text-left">
+                        Par {resource.authorName || "Utilisateur"}
+                      </p>
+                      <span className="flex items-center gap-1 text-primary">
+                        <Zap className="h-3 w-3" />
+                        {resource.impactScore || 0}
+                      </span>
                     </div>
-                    <div className="px-2 py-2">
-                      <h3 className="mb-2 flex-1 line-clamp-2 text-sm font-semibold">{resource.title}</h3>
-                      <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
-                        <p className="text-left">Par {resource.authorName || "Utilisateur"}</p>
-                        <span className="flex items-center gap-1 text-primary">
-                          <Zap className="h-3 w-3" />
-                          {resource.impactScore || 0}
-                        </span>
-                      </div>
-                      <div className="mb-2 flex flex-wrap gap-1">
-                        <Badge variant="outline" className="text-xs">{getTypeLabel(resource.type)}</Badge>
-                        <Badge variant="secondary" className="text-xs">{getSubjectLabel(resource.subject)}</Badge>
-                      </div>
-                      <div className="flex gap-1">
-                        <Button size="sm" variant="outline" className="h-7 flex-1 gap-1 text-xs" onClick={(e) => handlePreview(e, resource.id)}>
-                          <Eye className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className={`h-7 flex-1 gap-1 text-xs ${savedResources.has(resource.id) ? "text-blue-500 hover:text-blue-600" : ""}`}
-                          onClick={(e) => handleSave(e, resource.id)}
-                        >
-                          <Bookmark className={`h-3 w-3 ${savedResources.has(resource.id) ? "fill-current" : ""}`} />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="default"
-                          className="campus-gradient h-7 flex-1 gap-1 text-xs text-white"
-                          onClick={(e) => handleDownload(e, resource.id)}
-                          disabled={downloadingIds.has(resource.id)}
-                        >
-                          {downloadingIds.has(resource.id) ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
-                        </Button>
-                      </div>
+                    <div className="mb-2 flex flex-wrap gap-1">
+                      <Badge variant="outline" className="text-xs">
+                        {getTypeLabel(resource.type)}
+                      </Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        {getSubjectLabel(resource.subject)}
+                      </Badge>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-        </Tabs>
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 flex-1 text-xs gap-1"
+                        onClick={(e) => handlePreview(e, resource.id)}
+                      >
+                        <Eye className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className={`h-7 flex-1 text-xs gap-1 ${
+                          savedResources.has(resource.id)
+                            ? "text-blue-500 hover:text-blue-600"
+                            : ""
+                        }`}
+                        onClick={(e) => handleSave(e, resource.id)}
+                      >
+                        <Bookmark
+                          className={`h-3 w-3 ${
+                            savedResources.has(resource.id) ? "fill-current" : ""
+                          }`}
+                        />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="h-7 flex-1 text-xs gap-1 campus-gradient text-white"
+                        onClick={(e) => handleDownload(e, resource.id)}
+                        disabled={downloadingIds.has(resource.id)}
+                      >
+                        {downloadingIds.has(resource.id) ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Download className="h-3 w-3" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
         {filteredResources.length === 0 && (
           <div className="text-center py-12">

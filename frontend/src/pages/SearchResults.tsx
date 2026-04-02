@@ -5,8 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { SharedPatternTabsList, SharedPatternTabsTrigger } from "@/components/ui/shared-pattern-tabs";
-import { SharedFilterSortBar } from "@/components/ui/shared-filter-sort-bar";
+import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Users, BookOpen, ShoppingBag, Loader2, Link, Unlink, FolderOpen, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -265,6 +265,13 @@ export function SearchResults() {
     navigate(`/spheres/${sphereId}`);
   };
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchTerm.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
+    }
+  };
+
   const resolvedSearchSort = ensureValidSortKey(sortBy, SEARCH_SORT_KEYS, DEFAULT_SORT.search);
 
   // Résultats triés et filtrés
@@ -295,20 +302,34 @@ export function SearchResults() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
       <div className="container max-w-4xl mx-auto py-4 md:py-6 px-4">
-        {/* Search + Filters */}
-        <div className="mb-6 space-y-3">
-          <SharedFilterSortBar
-            searchValue={searchTerm}
-            onSearchValueChange={setSearchTerm}
-            searchPlaceholder="Rechercher des personnes, ressources, sphères..."
-            hasActiveFilters={searchTerm !== query || sortBy !== DEFAULT_SORT.search}
-            onReset={() => {
-              setSearchTerm(query);
-              setSortBy(DEFAULT_SORT.search);
-            }}
-            controls={
-              <Select value={sortBy} onValueChange={(value) => setSortBy(value as SearchSortKey)}>
-                <SelectTrigger>
+        {/* Search Bar */}
+        <div className="mb-6">
+          <form onSubmit={handleSearch} className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher des personnes, ressources, sphères..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 h-12"
+            />
+            {isSearching && (
+              <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+            )}
+          </form>
+          
+          <div className="flex items-center justify-between mt-3">
+            <p className="text-sm text-muted-foreground">
+              {query ? (
+                <>
+                  Résultats pour "<span className="font-semibold">{query}</span>"
+                </>
+              ) : (
+                "Trie les résultats"
+              )}
+            </p>
+            <div className="flex items-center gap-2">
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-40 h-8">
                   <SelectValue placeholder="Trier par" />
                 </SelectTrigger>
                 <SelectContent>
@@ -316,35 +337,25 @@ export function SearchResults() {
                   <SelectItem value="name">Nom</SelectItem>
                 </SelectContent>
               </Select>
-            }
-          />
-          {isSearching && <p className="text-xs text-muted-foreground">Recherche en cours...</p>}
-          <p className="text-sm text-muted-foreground">
-            {query ? (
-              <>
-                Résultats pour "<span className="font-semibold">{query}</span>"
-              </>
-            ) : (
-              "Trie les résultats"
-            )}
-          </p>
+            </div>
+          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <SharedPatternTabsList className="mb-6 w-full">
-            <SharedPatternTabsTrigger value="all">
+          <SharedTabsList className="mb-6 w-full">
+            <SharedTabsTrigger value="all">
               Tout ({totalResults})
-            </SharedPatternTabsTrigger>
-            <SharedPatternTabsTrigger value="users">
+            </SharedTabsTrigger>
+            <SharedTabsTrigger value="users">
               Personnes ({sortedResults.users.length})
-            </SharedPatternTabsTrigger>
-            <SharedPatternTabsTrigger value="resources">
+            </SharedTabsTrigger>
+            <SharedTabsTrigger value="resources">
               Ressources ({sortedResults.resources.length})
-            </SharedPatternTabsTrigger>
-            <SharedPatternTabsTrigger value="spheres">
+            </SharedTabsTrigger>
+            <SharedTabsTrigger value="spheres">
               Sphères ({sortedResults.spheres.length})
-            </SharedPatternTabsTrigger>
-          </SharedPatternTabsList>
+            </SharedTabsTrigger>
+          </SharedTabsList>
 
           <TabsContent value="all" className="space-y-6">
             {/* Users Section */}
