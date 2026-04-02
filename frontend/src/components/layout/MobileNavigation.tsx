@@ -39,8 +39,7 @@ export function MobileNavigation() {
               <CreatePostModal key={item.title}>
                 <button
                   type="button"
-                  className={cn(baseStyles, inactiveStyles)}
-                  onClick={() => console.log("The button was definitely pressed!")}
+                  className="text-primary bg-primary/10"
                   aria-label={item.title}
                   title={item.title}
                 >
