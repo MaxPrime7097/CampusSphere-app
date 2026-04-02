@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { getCurrentUser, getPostComments, createComment, likeComment, normalizeUser, searchUsers } from "@/services/api";
+import { getCurrentUser, getPostComments, createComment, updateComment, deleteComment, likeComment, normalizeUser, searchUsers } from "@/services/api";
 import {
   Dialog,
   DialogContent,
