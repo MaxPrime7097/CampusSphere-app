@@ -164,7 +164,7 @@ export function FeedSidebar() {
       <Card className="campus-card">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <External className="h-4 w-4 text-primary" />
+            <ExternalLink className="h-4 w-4 text-primary" />
             Accès rapide
           </CardTitle>
         </CardHeader>
