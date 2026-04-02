@@ -1187,7 +1187,63 @@ export async function removeParticipant(conversationId: number | string, userId:
 // ============================================================================
 
 export async function listNotifications(token?: string) {
-  return apiFetch<any[]>("api/notifications/", { token: token || getAccessToken() });
+  const data = await apiFetch<any>("api/notifications/", { token: token || getAccessToken() });
+  return unwrapList(data);
+}
+
+export interface NotificationListParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  read?: "all" | "read" | "unread";
+  type?: string;
+  ordering?: string;
+}
+
+export interface PaginatedNotificationsResponse<T = any> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
+export async function listNotificationsPaginated(params: NotificationListParams = {}, token?: string) {
+  const query = new URLSearchParams();
+  if (params.page) query.set("page", String(params.page));
+  if (params.pageSize) query.set("page_size", String(params.pageSize));
+  if (params.search) query.set("search", params.search);
+  if (params.read && params.read !== "all") query.set("is_read", params.read === "read" ? "true" : "false");
+  if (params.type && params.type !== "all") query.set("notification_type", params.type);
+  if (params.ordering) query.set("ordering", params.ordering);
+
+  const path = query.toString() ? `api/notifications/?${query.toString()}` : "api/notifications/";
+  const data = await apiFetch<any>(path, { token: token || getAccessToken() });
+
+  if (Array.isArray(data)) {
+    return {
+      count: data.length,
+      next: null,
+      previous: null,
+      results: data,
+    } satisfies PaginatedNotificationsResponse;
+  }
+
+  if (Array.isArray(data?.results)) {
+    return {
+      count: Number(data?.count || 0),
+      next: data?.next ?? null,
+      previous: data?.previous ?? null,
+      results: data.results,
+    } satisfies PaginatedNotificationsResponse;
+  }
+
+  const fallbackList = unwrapList(data);
+  return {
+    count: fallbackList.length,
+    next: null,
+    previous: null,
+    results: fallbackList,
+  } satisfies PaginatedNotificationsResponse;
 }
 
 export async function getNotification(id: number | string, token?: string) {
