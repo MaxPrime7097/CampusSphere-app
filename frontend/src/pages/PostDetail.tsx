@@ -23,7 +23,7 @@ export function PostDetail() {
     (async () => {
       try {
         const data = await getPost(id);
-        if (mounted) setPost(data);
+        if (mounted) setPost(mapPostToCard(data));
       } catch (error: any) {
         toast({
           title: "Erreur",
