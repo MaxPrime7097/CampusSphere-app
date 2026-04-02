@@ -26,14 +26,12 @@ urlpatterns = [
     path('api/admin/moderation-queue/', admin_views.admin_moderation_queue, name='admin-moderation-queue'),
     path('api/admin/reported-content/', admin_views.admin_reported_content, name='admin-reported-content'),
     path('api/admin/user-management-summary/', admin_views.admin_user_management_summary, name='admin-user-management-summary'),
+    path('api/admin/permissions/', admin_views.admin_permissions, name='admin-permissions'),
 
     # Search and utility endpoints
     path('api/search/', views.global_search, name='global-search'),
     path('api/search/suggestions/', views.search_suggestions, name='search-suggestions'),
     path('api/filters/', views.filter_options, name='filter-options'),
-    path('api/admin/moderation-queue/', views.admin_moderation_queue, name='admin-moderation-queue'),
-    path('api/admin/reported-content/', views.admin_reported_content, name='admin-reported-content'),
-    path('api/admin/user-management-summary/', views.admin_user_management_summary, name='admin-user-management-summary'),
 
     # Health and info
     path('api/health/', views.health_check, name='health-check'),

@@ -1328,6 +1328,19 @@ export interface AdminReportedContentItem {
   };
 }
 
+export interface AdminPermissions {
+  view: boolean;
+  create: boolean;
+  update: boolean;
+  delete: boolean;
+  export: boolean;
+}
+
+export interface AdminPermissionsPayload {
+  role: string | null;
+  permissions: AdminPermissions;
+}
+
 export interface AdminUserManagementSummary {
   totalUsers: number;
   newUsersToday: number;
@@ -1393,6 +1406,23 @@ export async function getAdminReportedContent(token?: string): Promise<AdminRepo
 export async function getAdminUserManagementSummary(token?: string): Promise<AdminUserManagementSummary> {
   const response = await apiFetch<any>("api/admin/user-management-summary/", { token: token || getAccessToken() });
   return mapAdminSummary(unwrapItem(response));
+}
+
+
+export async function getAdminPermissions(token?: string): Promise<AdminPermissionsPayload> {
+  const response = await apiFetch<any>("api/admin/permissions/", { token: token || getAccessToken() });
+  const payload = unwrapItem<any>(response) || {};
+
+  return {
+    role: payload?.role ?? null,
+    permissions: {
+      view: Boolean(payload?.permissions?.view),
+      create: Boolean(payload?.permissions?.create),
+      update: Boolean(payload?.permissions?.update),
+      delete: Boolean(payload?.permissions?.delete),
+      export: Boolean(payload?.permissions?.export),
+    },
+  };
 }
 
 // ============================================================================
