@@ -60,7 +60,7 @@ export function PostDetail() {
             </CardContent>
           </Card>
         ) : post ? (
-          <PostCard post={post} />
+          <PostCard post={mapPostToCard(post)} />
         ) : (
           <Card className="campus-card">
             <CardContent className="p-8 text-center text-muted-foreground">
