@@ -8,6 +8,8 @@ from rest_framework.response import Response
 from posts.models import Post, PostReport
 from resources.models import Resource, ResourceReport
 from spheres.models import Sphere
+from tasks.models import Task
+from notifications.models import Notification
 from users.models import User
 
 from .admin_permissions import build_admin_permissions_for_user, require_admin_permission, resolve_admin_role
@@ -15,6 +17,8 @@ from .admin_serializers import (
     AdminModerationQueueItemSerializer,
     AdminReportedContentItemSerializer,
     AdminSummarySerializer,
+    AdminKpiStatsSerializer,
+    AdminQuickActionSerializer,
 )
 
 

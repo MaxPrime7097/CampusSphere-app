@@ -1448,6 +1448,25 @@ export interface AdminUserManagementSummary {
   totalResources: number;
 }
 
+export type AdminStatsRange = "24h" | "7j" | "30j" | "custom";
+
+export interface AdminKpiStats {
+  newUsers: number;
+  activeSpheres: number;
+  pendingReports: number;
+  overdueTasks: number;
+  failedNotifications: number;
+  range: AdminStatsRange;
+  startDate: string | null;
+  endDate: string | null;
+}
+
+export interface AdminQuickActionResult {
+  action: string;
+  success: boolean;
+  message: string;
+}
+
 function mapAdminModerationQueueItem(item: any): AdminModerationQueueItem {
   const uploader = normalizeUser(item?.uploader ?? item?.author ?? item?.uploaded_by ?? item?.uploader_info);
   return {
@@ -1488,6 +1507,19 @@ function mapAdminSummary(summary: any): AdminUserManagementSummary {
     reportedContent: toNumber(summary?.reportedContent ?? summary?.reported_content, 0),
     activeGroups: toNumber(summary?.activeGroups ?? summary?.active_groups, 0),
     totalResources: toNumber(summary?.totalResources ?? summary?.total_resources, 0),
+  };
+}
+
+function mapAdminKpiStats(stats: any): AdminKpiStats {
+  return {
+    newUsers: toNumber(stats?.newUsers ?? stats?.new_users, 0),
+    activeSpheres: toNumber(stats?.activeSpheres ?? stats?.active_spheres, 0),
+    pendingReports: toNumber(stats?.pendingReports ?? stats?.pending_reports, 0),
+    overdueTasks: toNumber(stats?.overdueTasks ?? stats?.overdue_tasks, 0),
+    failedNotifications: toNumber(stats?.failedNotifications ?? stats?.failed_notifications, 0),
+    range: (stats?.range as AdminStatsRange) ?? "24h",
+    startDate: stats?.startDate ?? stats?.start_date ?? null,
+    endDate: stats?.endDate ?? stats?.end_date ?? null,
   };
 }
 
