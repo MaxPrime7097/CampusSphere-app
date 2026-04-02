@@ -11,7 +11,10 @@ import {
   Settings,
   Shield,
   User,
-  Users,
+  Globe,
+  Bell,
+  Plus,
+  Link,
 } from "lucide-react";
 import { featureFlags } from "@/config/featureFlags";
 
@@ -47,6 +50,7 @@ function isAdminUser(user?: NavigationUser | null) {
 
 export function getNavigationSections(user?: NavigationUser | null): NavigationSections {
   const profileUrl = `/profile/${user?.username || "current"}`;
+  const newPost = "#create-post";
   const adminEntry = isAdminUser(user)
     ? [{ title: "Admin", url: featureFlags.ADMIN_PANEL_V2 ? "/admin-v2" : "/admin", icon: Shield }]
     : [];
@@ -55,10 +59,11 @@ export function getNavigationSections(user?: NavigationUser | null): NavigationS
     { title: "Accueil", url: "/", icon: Home },
     { title: "Profil", url: profileUrl, icon: User },
     { title: "Ressources", url: "/resources", icon: FolderOpen },
-    { title: "Sphères", url: "/spheres", icon: Users },
+    { title: "Sphères", url: "/spheres", icon: Globe },
   ];
 
   const quickActions: NavigationItem[] = [
+    { title: "Connexions", url:"/connections", icon: Link },
     { title: "Messages", url: "/messages", icon: MessageSquare },
     { title: "Enregistrements", url: "/saved", icon: Bookmark },
     { title: "Paramètres", url: "/settings", icon: Settings },
@@ -75,9 +80,9 @@ export function getNavigationSections(user?: NavigationUser | null): NavigationS
   const mobileItems: NavigationItem[] = [
     { title: "Accueil", url: "/", icon: Home },
     { title: "Ressources", url: "/resources", icon: FolderOpen },
-    { title: "Sphères", url: "/spheres", icon: Users },
-    { title: "Messages", url: "/messages", icon: MessageSquare },
-    { title: "Profil", url: profileUrl, icon: User },
+    { title: "NouveauPost", url: newPost, icon: Plus },
+    { title: "Sphères", url: "/spheres", icon: Globe },
+    { title: "Notifications", url: "/notifications", icon: Bell },
     ...adminEntry,
   ];
 

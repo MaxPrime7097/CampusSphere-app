@@ -18,13 +18,12 @@ import { SearchResults } from "./pages/SearchResults";
 import { EditProfile } from "./pages/EditProfile";
 import { SavedItems } from "./pages/SavedItems";
 import { Resources } from "./pages/Resources";
-import { ResourceDetail } from "./pages/ResourceDetail";
+import { ResourceDetailRoute } from "./pages/ResourceDetailRoute";
 import { PostDetail } from "./pages/PostDetail";
 import { Spheres } from "./pages/Spheres";
 import { SphereDetail } from "./pages/SphereDetail";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
-import { AdminDashboardV2 } from "./pages/admin/AdminDashboardV2";
-import { featureFlags } from "./config/featureFlags";
+import { AdminModerationQueue } from "./pages/admin/AdminModerationQueue";
 import { About } from "./pages/public/About";
 import { Contact } from "./pages/public/Contact";
 import { FAQ } from "./pages/public/FAQ";
@@ -38,6 +37,7 @@ import { CookiePolicy } from "./pages/public/CookiePolicy";
 import { DataDeletion } from "./pages/public/DataDeletion";
 import { Waitinglist } from "./pages/public/Waitinglist";
 import { Policies } from "./pages/public/Policies";
+import { RequireAdminRole } from "./components/auth/RequireAdminRole";
 
 
 const queryClient = new QueryClient();
@@ -141,7 +141,7 @@ const App = () => (
           <Route path="/resources/:id" element={
             <Protected>
               <AppLayout>
-                <ResourceDetail />
+                <ResourceDetailRoute />
               </AppLayout>
             </Protected>
           } />
@@ -174,17 +174,8 @@ const App = () => (
             </Protected>
           } />
 
-          {/* Admin routes (coexistence old + v2) */}
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/cs-inc/private/admin" element={<AdminDashboard />} />
-          <Route
-            path="/admin-v2"
-            element={featureFlags.ADMIN_PANEL_V2 ? <AdminDashboardV2 /> : <Navigate to="/admin" replace />}
-          />
-          <Route
-            path="/cs-inc/private/admin-v2"
-            element={featureFlags.ADMIN_PANEL_V2 ? <AdminDashboardV2 /> : <Navigate to="/cs-inc/private/admin" replace />}
-          />
+          {/* Admin routes */}
+          <Route path="/cs-inc/private/admin" element={<RequireAdminRole action="view"><AdminDashboard /></RequireAdminRole>} />
         
           {/* Public pages */}
           <Route path="/cs-inc" element={<Landing />} />

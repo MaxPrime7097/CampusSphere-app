@@ -31,7 +31,8 @@ export function NotificationDropdown() {
         const data = await listNotifications();
         if (!isMounted) return;
 
-        const mapped = (data || []).map((notification: any) => ({
+        const safeNotifications = Array.isArray(data) ? data : [];
+        const mapped = safeNotifications.map((notification: any) => ({
           id: String(notification.id),
           user: {
             name: notification.data?.sender_name || notification.data?.user_name || notification.title || "Notification",

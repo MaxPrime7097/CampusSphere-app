@@ -1,30 +1,37 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { downloadResource, getResource, reportResource, saveResource, trackResourceShare } from "@/services/api";
-import { Download, Share2, ChevronLeft, Eye, Flag, Loader2, Zap, Bookmark } from "lucide-react";
+import { deleteResource, downloadResource, getResource, reportResource, saveResource, trackResourceShare, updateResource } from "@/services/api";
+import { Download, Share2, ChevronLeft, Eye, Flag, Loader2, Zap, Bookmark, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { RESOURCE_TYPE_OPTIONS } from "@/constants/resourceTypes";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { formatFrenchDate } from "@/lib/date";
+import {
+  getAudienceLabel,
+  getCategoryLabel,
+  getSubjectLabel,
+  getTypeLabel,
+  normalizeAudience,
+  normalizeCategory,
+  normalizeResourceType,
+  normalizeSubject,
+} from "@/lib/resourceMetadata";
+import { formatFileSize } from "@/lib/utils";
 
-const SUBJECT_LABELS: Record<string, string> = {
-  math: "Mathématiques",
-  cs: "Informatique",
-  physics: "Physique",
-  economics: "Économie",
-  language: "Langues",
-  other: "Autre",
-};
+const RESOURCE_DETAIL_LOG_PREFIX = "[ResourceDetail][debug]";
 
-function getSubjectLabel(subject: string) {
-  return SUBJECT_LABELS[subject] || subject.charAt(0).toUpperCase() + subject.slice(1);
+function shouldLogResourceDetailDebug() {
+  if (typeof window === "undefined") return false;
+  return import.meta.env.DEV || window.localStorage.getItem("debug:resource-detail") === "true";
 }
 
-function getResourceTypeLabel(type: string) {
-  return RESOURCE_TYPE_OPTIONS.find((t) => t.value === type)?.label || type;
+function logResourceDetailDebug(message: string, payload: Record<string, unknown>) {
+  if (!shouldLogResourceDetailDebug()) return;
+  console.info(`${RESOURCE_DETAIL_LOG_PREFIX} ${message}`, payload);
 }
 
 export function ResourceDetail() {
@@ -36,13 +43,20 @@ export function ResourceDetail() {
   const [isSharing, setIsSharing] = useState(false);
   const [isReporting, setIsReporting] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [isUpdatingResource, setIsUpdatingResource] = useState(false);
+  const [isDeletingResource, setIsDeletingResource] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [draftTitle, setDraftTitle] = useState("");
+  const [draftDescription, setDraftDescription] = useState("");
 
   const [resource, setResource] = useState<{
     id: string;
     title: string;
     description: string;
     subject: string;
-    type: string;
+    category: string;
+    type: string | null;
     format: string;
     size: string;
     level: string;
@@ -65,6 +79,8 @@ export function ResourceDetail() {
     tags: string[];
     relatedCourse: string;
     isSaved: boolean;
+    canEdit?: boolean;
+    canDelete?: boolean;
   } | null>(null);
 
   // Load resource from API
@@ -76,23 +92,42 @@ export function ResourceDetail() {
       try {
         const data = await getResource(id);
         if (isMounted && data) {
+          logResourceDetailDebug("received_api_resource", {
+            resourceId: id,
+            type: data.type,
+            subject: data.subject,
+            tags: data.tags,
+            author: data.author,
+            author_name: data.author_name,
+            author_username: data.author_username,
+          });
+
+          const author = data.author ?? null;
+          const uploaderContributions =
+            author?.contributions_count ??
+            author?.stats?.contributions ??
+            0;
+
           const resourcePayload = {
             id: String(data.id),
             title: data.title,
             description: data.description || '',
-            subject: data.subject,
-            type: data.type,
+            subject: normalizeSubject(data.subject),
+            category: normalizeCategory(data.category),
+            type: normalizeResourceType(data.type),
             format: (data.fileUrl || data.file)?.toString().split('.').pop(),
             size: data.fileSize || data.file_size || data.size,
-            level: data.level || data.audience || data.courseLevel,
+            level: normalizeAudience(data.level || data.audience || data.courseLevel),
             pages: data.pages || data.page_count || 0,
             uploader: {
-              name: data.author?.name || data.author_info?.name || data.author_name || "Utilisateur",
-              username: data.author?.username || data.author_info?.username || data.author_username || "",
-              avatar: data.author?.avatar || data.author_info?.avatar || "/placeholder-avatar.jpg",
-              verified: data.author?.isVerified || data.author_info?.is_verified || false,
-              level: data.author?.level || data.author_info?.level || "",
-              contributions: data.author?.contributions || data.author_info?.contributions || 0,
+              name: author?.name || data.author_name || "Utilisateur",
+              username: author?.username || data.author_username || "",
+              avatar: author?.avatar || "/placeholder-avatar.jpg",
+              verified: author?.isVerified || author?.is_verified || false,
+              level: author?.level || "",
+              contributions: Number.isFinite(Number(uploaderContributions))
+                ? Number(uploaderContributions)
+                : 0,
             },
             uploadDate: data.createdAt || data.created_at || data.uploaded_at || null,
             stats: {
@@ -101,12 +136,32 @@ export function ResourceDetail() {
               views: data.viewCount || data.view_count || data.stats?.views || 0
             },
             isSaved: data.isSaved ?? data.is_saved ?? false,
+            canEdit: data.canEdit ?? data.can_edit ?? false,
+            canDelete: data.canDelete ?? data.can_delete ?? false,
             impactScore: data.impactScore || data.impact_score || 0,
             tags: data.tags || [],
-            relatedCourse: data.subject || ''
+            relatedCourse: normalizeSubject(data.subject)
           };
+
+          logResourceDetailDebug("normalized_resource_payload", {
+            resourceId: id,
+            type: resourcePayload.type,
+            subject: resourcePayload.subject,
+            tags: resourcePayload.tags,
+            uploader: {
+              name: resourcePayload.uploader.name,
+              username: resourcePayload.uploader.username,
+              avatar: resourcePayload.uploader.avatar,
+              verified: resourcePayload.uploader.verified,
+              level: resourcePayload.uploader.level,
+              contributions: resourcePayload.uploader.contributions,
+            },
+          });
+
           setResource(resourcePayload);
           setIsSaved(resourcePayload.isSaved);
+          setDraftTitle(resourcePayload.title);
+          setDraftDescription(resourcePayload.description || "");
         }
       } catch (e: any) {
         toast({
@@ -267,17 +322,88 @@ export function ResourceDetail() {
     })();
   };
 
+  const handleOpenEdit = () => {
+    if (!resource) return;
+    setDraftTitle(resource.title);
+    setDraftDescription(resource.description || "");
+    setShowEditDialog(true);
+  };
+
+  const handleUpdateResource = async () => {
+    if (!id || !resource || isUpdatingResource) return;
+    const title = draftTitle.trim();
+    if (!title) {
+      toast({ title: "Titre requis", description: "Le titre ne peut pas être vide.", variant: "destructive" });
+      return;
+    }
+
+    // Pessimistic update.
+    setIsUpdatingResource(true);
+    try {
+      const updated = await updateResource(id, { title, description: draftDescription.trim() });
+      setResource((prev) =>
+        prev
+          ? {
+              ...prev,
+              title: updated?.title ?? title,
+              description: updated?.description ?? draftDescription.trim(),
+            }
+          : prev
+      );
+      setShowEditDialog(false);
+      toast({ title: "Ressource modifiée", description: "La ressource a été mise à jour." });
+    } catch (e: any) {
+      toast({ title: "Échec de modification", description: e?.message || "Impossible de modifier cette ressource.", variant: "destructive" });
+    } finally {
+      setIsUpdatingResource(false);
+    }
+  };
+
+  const handleDeleteResource = async () => {
+    if (!id || !resource || isDeletingResource) return;
+    const snapshot = resource;
+    setShowDeleteDialog(false);
+    setIsDeletingResource(true);
+    // Optimistic UI: hide content locally while deletion is pending.
+    setResource(null);
+    try {
+      await deleteResource(id);
+      toast({ title: "Ressource supprimée", description: "La ressource a été supprimée définitivement." });
+      navigate("/resources");
+    } catch (e: any) {
+      setResource(snapshot);
+      toast({ title: "Échec de suppression", description: e?.message || "Impossible de supprimer la ressource.", variant: "destructive" });
+    } finally {
+      setIsDeletingResource(false);
+    }
+  };
+
 
   if (!resource) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p>Chargement de la ressource...</p>
+          <p>{isDeletingResource ? "Suppression de la ressource..." : "Chargement de la ressource..."}</p>
         </div>
       </div>
     );
   }
+
+  logResourceDetailDebug("render_resource_critical_values", {
+    resourceId: resource.id,
+    type: resource.type,
+    subject: resource.subject,
+    tags: resource.tags,
+    uploader: {
+      name: resource.uploader.name,
+      username: resource.uploader.username,
+      avatar: resource.uploader.avatar,
+      verified: resource.uploader.verified,
+      level: resource.uploader.level,
+      contributions: resource.uploader.contributions,
+    },
+  });
 
   return (
     <div key={id} className="min-h-screen bg-gradient-to-br from-background to-accent/20">
@@ -299,10 +425,13 @@ export function ResourceDetail() {
             <div className="mb-4">
               <div className="flex flex-wrap items-center gap-2 mb-3">
                 <Badge className="campus-gradient text-white">
-                  {getResourceTypeLabel(resource.type)}
+                  {getTypeLabel(resource.type)}
                 </Badge>
                 <Badge variant="secondary">{getSubjectLabel(resource.subject)}</Badge>
-                <Badge variant="outline">{resource.format.toUpperCase()}</Badge>
+                {resource.category && (
+                  <Badge variant="outline">{getCategoryLabel(resource.category)}</Badge>
+                )}
+                <Badge variant="outline">{resource.format ? resource.format.toUpperCase() : "Non défini"}</Badge>
               </div>
               <h1 className="text-2xl md:text-3xl font-bold mb-2">{resource.title}</h1>
               <p className="text-muted-foreground">{resource.description}</p>
@@ -329,7 +458,7 @@ export function ResourceDetail() {
             </div>
 
             {/* Uploader Info */}
-            <div className="flex items-center justify-between p-3 bg-accent/50 rounded-lg mb-4">
+            <div className="flex flex-col gap-3 p-3 bg-accent/50 rounded-lg mb-4 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-3">
                 <Avatar className="h-12 w-12">
                   <AvatarImage src={resource.uploader.avatar} />
@@ -347,43 +476,111 @@ export function ResourceDetail() {
                   </p>
                 </div>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => resource.uploader.username && navigate(`/profile/${resource.uploader.username}`)}
-                disabled={!resource.uploader.username}
-              >
-                Voir le profil
-              </Button>
-              <Button
-                variant={isSaved ? "secondary" : "outline"}
-                size="sm"
-                onClick={handleSaveResource}
-                disabled={isSaving}
-                className="gap-2"
-              >
-                {isSaving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Bookmark className="h-4 w-4" />
+              <div className="flex flex-wrap items-center gap-2 md:justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => resource.uploader.username && navigate(`/profile/${resource.uploader.username}`)}
+                  disabled={!resource.uploader.username}
+                  aria-label="Voir le profil de l'auteur"
+                >
+                  Voir le profil
+                </Button>
+                <Button
+                  variant={isSaved ? "secondary" : "outline"}
+                  size="sm"
+                  onClick={handleSaveResource}
+                  disabled={isSaving}
+                  className="gap-2"
+                  aria-label={isSaved ? "Retirer des enregistrements" : "Enregistrer la ressource"}
+                >
+                  {isSaving ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Bookmark className="h-4 w-4" />
+                  )}
+                  {isSaved ? "Enregistré" : "Enregistrer"}
+                </Button>
+                {resource.canEdit && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleOpenEdit}
+                    disabled={isUpdatingResource}
+                    className="gap-2"
+                    aria-label="Modifier la ressource"
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Modifier
+                  </Button>
                 )}
-                {isSaved ? "Enregistré" : "Enregistrer"}
-              </Button>
-              <Badge className="flex items-center gap-1 rounded-lg px-3 py-2 h-10 text-sm bg-secondary/20 text-secondary">
-                <Zap className="h-4 w-4" />
-                <span>{resource.impactScore}</span>
-              </Badge>
-              <Button 
-                variant="outline"
-                onClick={handleShare}
-                disabled={isSharing}
-              >
-                {isReporting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Flag className="h-4 w-4" />
+                {resource.canDelete && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setShowDeleteDialog(true)}
+                    disabled={isDeletingResource}
+                    className="gap-2"
+                    aria-label="Supprimer la ressource"
+                  >
+                    {isDeletingResource ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                    Supprimer
+                  </Button>
                 )}
-              </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleShare}
+                  disabled={isSharing}
+                  className="gap-2"
+                  aria-label="Partager la ressource"
+                >
+                  {isSharing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Share2 className="h-4 w-4" />
+                  )}
+                  Partager
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleReport}
+                  disabled={isReporting}
+                  className="gap-2"
+                  aria-label="Signaler la ressource"
+                >
+                  {isReporting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Flag className="h-4 w-4" />
+                  )}
+                  Signaler
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownload}
+                  disabled={isDownloading}
+                  className="gap-2"
+                  aria-label="Télécharger la ressource"
+                >
+                  {isDownloading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
+                  Télécharger
+                </Button>
+                <Badge className="flex items-center gap-1 rounded-lg px-3 py-2 h-10 text-sm bg-secondary/20 text-secondary">
+                  <Zap className="h-4 w-4" />
+                  <span>{resource.impactScore}</span>
+                </Badge>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -400,11 +597,15 @@ export function ResourceDetail() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Public cible</p>
-                <p className="font-medium">{resource.level || "Non défini"}</p>
+                <p className="font-medium">{getAudienceLabel(resource.level)}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Pages</p>
                 <p className="font-medium">{resource.pages || "N/A"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Taille du fichier</p>
+                <p className="font-medium">{formatFileSize(resource.size)}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Date d'upload</p>
@@ -426,6 +627,40 @@ export function ResourceDetail() {
         </Card>
 
       </div>
+
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Modifier la ressource</DialogTitle>
+            <DialogDescription>Mettre à jour le titre et la description.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Textarea value={draftTitle} onChange={(e) => setDraftTitle(e.target.value)} className="min-h-[60px]" />
+            <Textarea value={draftDescription} onChange={(e) => setDraftDescription(e.target.value)} className="min-h-[120px]" />
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowEditDialog(false)} disabled={isUpdatingResource}>Annuler</Button>
+              <Button onClick={handleUpdateResource} disabled={isUpdatingResource}>
+                {isUpdatingResource ? "Enregistrement..." : "Enregistrer"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Supprimer cette ressource ?</DialogTitle>
+            <DialogDescription>Cette action est destructive et ne peut pas être annulée.</DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)} disabled={isDeletingResource}>Annuler</Button>
+            <Button variant="destructive" onClick={handleDeleteResource} disabled={isDeletingResource}>
+              {isDeletingResource ? "Suppression..." : "Supprimer"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

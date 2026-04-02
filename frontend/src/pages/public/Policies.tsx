@@ -71,62 +71,66 @@ export function Policies(): JSX.Element {
       {/* Privacy Content Section */}
       <section id="privacy-content" className="pt-10 pb-20 px-0 bg-card/30">
         <div className="container mx-auto max-w-5xl">
-          
-          
-
           <div className="space-y-8">
           <div className="flex flex-col gap-4">
-            <Button
-                  variant="secondary"
+                <Button
+                  variant="outline"
                   onClick={() => navigate('/cs-inc/policies/privacy')}
-                  className="font-poppins border border-border text-foreground hover:bg-accent text-lg px-8 py-8 rounded-lg transition-all duration-300"
+                  className="font-poppins border-2 border-dashed border-primary/30 text-foreground hover:bg-accent text-lg px-8 py-8 rounded-lg transition-all duration-300"
                 >
                   Politique de Confidentialité
                 </Button>
                 <Button
-                  variant="secondary"
+                  variant="outline"
+                  onClick={() => navigate('/cs-inc/policies/terms')}
+                  className="font-poppins border-2 border-dashed border-primary/30 text-foreground hover:bg-accent text-lg px-8 py-8 rounded-lg transition-all duration-300"
+                >
+                  Conditions d'Utilisation
+                </Button>
+                <Button
+                  variant="outline"
                   onClick={() => navigate('/cs-inc/policies/cookie-policy')}
-                  className="font-poppins border border-border text-foreground hover:bg-accent text-lg px-8 py-8 rounded-lg transition-all duration-300"
+                  className="font-poppins border-2 border-dashed border-primary/30 text-foreground hover:bg-accent text-lg px-8 py-8 rounded-lg transition-all duration-300"
                 >
                   Politique de Cookies
                 </Button>
                 <Button
-                  variant="secondary"
+                  variant="outline"
                   onClick={() => navigate('/cs-inc/policies/copyright')}
-                  className="font-poppins border border-border text-foreground hover:bg-accent text-lg px-8 py-8 rounded-lg transition-all duration-300"
+                  className="font-poppins border-2 border-dashed border-primary/30 text-foreground hover:bg-accent text-lg px-8 py-8 rounded-lg transition-all duration-300"
                 >
                   Politique de Droits d'auteur
                 </Button>
                 <Button
-                  variant="secondary"
+                  variant="outline"
                   onClick={() => navigate('/cs-inc/policies/community-guidelines')}
-                  className="font-poppins border border-border text-foreground hover:bg-accent text-lg px-8 py-8 rounded-lg transition-all duration-300"
+                  className="font-poppins border-2 border-dashed border-primary/30 text-foreground hover:bg-accent text-lg px-8 py-8 rounded-lg transition-all duration-300"
                 >
                   Règles de la Communauté
                 </Button>
               </div>
 
-            <div className="campus-animate-slide-up bg-input border border-border rounded-lg p-4">
-                <div className="p-0">
-                <CardTitle className="font-poppins flex items-center gap-3 p-0">
-                  Contact
-                </CardTitle>
-              </div>
-              <div className="font-nunito font-semibold text-muted-foreground mt-4">
-                <p>
-                  Pour toute question concernant cette politique de confidentialité, contactez-nous :
-                </p>
-                <ul className="mt-4 space-y-2">
-                  <li><p className="mt-4">
-                  Pour exercer ces droits, contactez-nous à{" "}
-                  <a href="mailto:privacy@campus-sphere.com" className="text-primary hover:underline">
-                    policies@campus-sphere.com
-                  </a>
-                </p></li>
-                  <li>Adresse: Douala, Cameroun</li>
-                </ul>
-              </div>
-            </div>
+              <section className="py-20 px-4">
+                <div className="container mx-auto max-w-4xl text-center">
+                  <div className="campus-card p-8 campus-animate-fade-in">
+                    <h2 className="font-raleway text-3xl font-bold mb-4">Nos <span className="campus-gradient bg-clip-text text-transparent">Politiques</span></h2>
+                      <div className="font-nunito font-semibold text-muted-foreground">
+                      <p>
+                        Pour toute question concernant nos politiques ou pour exercer vos droits, contactez-nous à:
+                      </p>
+                      <ul className="mt-4 space-y-2">
+                        <li><p className="mt-4">
+                        {" "}
+                        <a href="mailto:policies@campussphere.app" className="text-primary hover:underline">
+                          policies@campussphere.app
+                        </a>
+                      </p></li>
+                        <li>Adresse: Douala, Cameroun</li>
+                      </ul>
+                      </div>
+                  </div>
+                </div>
+              </section>
           </div>
         </div>
       </section>

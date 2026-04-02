@@ -1,15 +1,30 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { globalSearch } from "@/services/api";
+import { createConnection, deleteConnection, getCurrentUser, globalSearch } from "@/services/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Users, BookOpen, ShoppingBag, Loader2, UserPlus, UserMinus } from "lucide-react";
+import { Search, Users, BookOpen, ShoppingBag, Loader2, Link, Unlink, FolderOpen, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import {
+  DEFAULT_SORT,
+  SEARCH_SORT_KEYS,
+  type SearchSortKey,
+  ensureValidSortKey,
+} from "@/constants/defaultSort";
+import {
+  getCategoryLabel,
+  getSubjectLabel,
+  getTypeLabel,
+  normalizeCategory,
+  normalizeResourceType,
+  normalizeSubject,
+} from "@/lib/resourceMetadata";
 
 export function SearchResults() {
   const [searchParams] = useSearchParams();
@@ -17,30 +32,78 @@ export function SearchResults() {
   const { toast } = useToast();
   const query = searchParams.get("q") || "";
   const [searchTerm, setSearchTerm] = useState(query);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(query);
   const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("all");
-  const [sortBy, setSortBy] = useState("relevance");
+  const [sortBy, setSortBy] = useState<SearchSortKey>(DEFAULT_SORT.search);
   const [followedUsers, setFollowedUsers] = useState(new Set());
+  const [connectionIdsByUser, setConnectionIdsByUser] = useState<Record<string, string>>({});
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [followLoadingUserId, setFollowLoadingUserId] = useState<string | null>(null);
   const [searchResults, setSearchResults] = useState<{ users: any[]; resources: any[]; spheres: any[] }>({
     users: [],
     resources: [],
     spheres: []
   });
 
+  useEffect(() => {
+    let isMounted = true;
+
+    (async () => {
+      try {
+        const me = await getCurrentUser();
+        if (isMounted && me?.id != null) {
+          setCurrentUserId(String(me.id));
+        }
+      } catch {
+        // Current user is optional for read-only search experience.
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    setSearchTerm(query);
+    setDebouncedSearchTerm(query);
+    setActiveTab("all");
+    setSearchError(null);
+  }, [query]);
+
+  useEffect(() => {
+    const debounceTimeout = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 350);
+
+    return () => clearTimeout(debounceTimeout);
+  }, [searchTerm]);
+
   // Recherche en temps réel
   useEffect(() => {
-    if (!searchTerm.trim()) {
+    if (!debouncedSearchTerm.trim()) {
       setSearchResults({ users: [], resources: [], spheres: [] });
       setIsSearching(false);
+      setSearchError(null);
       return;
     }
 
     let isMounted = true;
     setIsSearching(true);
+    setSearchError(null);
     
     (async () => {
       try {
-        const result = await globalSearch(searchTerm, 'all', 20);
+        const searchType = "all";
+        const searchLimit = 20;
+        console.debug("[SearchResults] globalSearch params", {
+          searchTerm: debouncedSearchTerm,
+          type: searchType,
+          limit: searchLimit,
+        });
+        const result = await globalSearch(debouncedSearchTerm, searchType, searchLimit);
         if (isMounted && result.success) {
           const data = result.data || {};
           setSearchResults({
@@ -57,8 +120,9 @@ export function SearchResults() {
               id: String(r.id),
               title: r.title,
               description: r.description || '',
-              subject: r.subject || 'other',
-              type: r.type || 'notes',
+              subject: normalizeSubject(r.subject),
+              type: normalizeResourceType(r.type),
+              category: normalizeCategory(r.category),
               authorName: r.author_info?.name || r.author_name || r.author?.name || "Auteur inconnu",
               tags: r.tags || [],
             })),
@@ -72,8 +136,17 @@ export function SearchResults() {
             }))
           });
         }
-      } catch {
-        // Error searching
+      } catch (error: any) {
+        if (isMounted) {
+          const message = error?.message || "Impossible d'effectuer la recherche pour le moment.";
+          setSearchError(message);
+          toast({
+            title: "Erreur de recherche",
+            description: message,
+            variant: "destructive",
+          });
+          setSearchResults({ users: [], resources: [], spheres: [] });
+        }
       } finally {
         if (isMounted) setIsSearching(false);
       }
@@ -82,39 +155,96 @@ export function SearchResults() {
     return () => {
       isMounted = false;
     };
-  }, [searchTerm]);
+  }, [debouncedSearchTerm, toast]);
 
   const handleFollowUser = async (userId: string, userName: string) => {
+    if (!currentUserId || followLoadingUserId) {
+      toast({
+        title: "Action indisponible",
+        description: "Impossible de modifier la connexion pour le moment.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const isFollowing = followedUsers.has(userId);
-    
-    if (isFollowing) {
-      setFollowedUsers(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(userId);
-        return newSet;
-      });
+    const previousFollowedUsers = new Set(followedUsers);
+    const previousConnectionId = connectionIdsByUser[userId];
+    setFollowLoadingUserId(userId);
+
+    // Optimistic update
+    setFollowedUsers((prev) => {
+      const next = new Set(prev);
+      if (isFollowing) {
+        next.delete(userId);
+      } else {
+        next.add(userId);
+      }
+      return next;
+    });
+
+    try {
+      if (isFollowing) {
+        if (!previousConnectionId) {
+          throw new Error("Connexion introuvable pour la suppression.");
+        }
+        await deleteConnection(currentUserId, previousConnectionId);
+        setConnectionIdsByUser((prev) => {
+          const next = { ...prev };
+          delete next[userId];
+          return next;
+        });
+      } else {
+        const response = await createConnection(userId);
+        if (response?.id != null) {
+          setConnectionIdsByUser((prev) => ({ ...prev, [userId]: String(response.id) }));
+        }
+      }
+
       toast({
-        title: "Ne suit plus",
-        description: `Vous ne suivez plus ${userName}`,
+        title: isFollowing ? "Ne suit plus" : "Suit maintenant",
+        description: isFollowing
+          ? `Vous ne suivez plus ${userName}`
+          : `Vous suivez maintenant ${userName}`,
         duration: 2000,
       });
-    } else {
-      setFollowedUsers(prev => new Set(prev).add(userId));
+    } catch (error: any) {
+      setFollowedUsers(previousFollowedUsers);
+      setConnectionIdsByUser((prev) => ({
+        ...prev,
+        ...(previousConnectionId ? { [userId]: previousConnectionId } : {}),
+      }));
+
       toast({
-        title: "Suit maintenant",
-        description: `Vous suivez maintenant ${userName}`,
-        duration: 2000,
+        title: "Erreur",
+        description:
+          error?.message ||
+          (isFollowing
+            ? "Impossible de supprimer la connexion."
+            : "Impossible de créer la connexion."),
+        variant: "destructive",
       });
+    } finally {
+      setFollowLoadingUserId(null);
     }
   };
 
-  const handleViewProfile = (userId: string, userName: string) => {
+  const handleViewProfile = (username?: string, userName?: string) => {
+    if (!username) {
+      toast({
+        title: "Profil indisponible",
+        description: "Impossible d'ouvrir ce profil : username introuvable.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     toast({
       title: "Navigation vers profil",
-      description: `Ouverture du profil de ${userName}`,
+      description: `Ouverture du profil de ${userName || username}`,
       duration: 2000,
     });
-    navigate(`/profile/${userId}`);
+    navigate(`/profile/${username}`);
   };
 
   const handleViewResource = (resourceId: string, resourceTitle: string) => {
@@ -142,24 +272,32 @@ export function SearchResults() {
     }
   };
 
+  const resolvedSearchSort = ensureValidSortKey(sortBy, SEARCH_SORT_KEYS, DEFAULT_SORT.search);
+
   // Résultats triés et filtrés
   const sortedResults = useMemo(() => {
-    const sortResults = (items: any[], type: string) => {
-      switch (sortBy) {
+    const sortResults = (items: any[]) => {
+      switch (resolvedSearchSort) {
         case "name":
-          return [...items].sort((a, b) => a.name.localeCompare(b.name));
+          return [...items].sort((a, b) => {
+            const left = a.name || a.title || "";
+            const right = b.name || b.title || "";
+            return left.localeCompare(right);
+          });
         case "relevance":
-        default:
           return items;
       }
     };
 
     return {
-      users: sortResults(searchResults.users, "users"),
-      resources: sortResults(searchResults.resources, "resources"),
-      spheres: sortResults(searchResults.spheres, "spheres")
+      users: sortResults(searchResults.users),
+      resources: sortResults(searchResults.resources),
+      spheres: sortResults(searchResults.spheres)
     };
-  }, [searchResults, sortBy]);
+  }, [searchResults, resolvedSearchSort]);
+  const totalResults = sortedResults.users.length + sortedResults.resources.length + sortedResults.spheres.length;
+  const hasActiveQuery = debouncedSearchTerm.trim().length > 0;
+  const hasEmptyResults = hasActiveQuery && totalResults === 0 && !isSearching && !searchError;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
@@ -179,48 +317,52 @@ export function SearchResults() {
             )}
           </form>
           
-          {query && (
-            <div className="flex items-center justify-between mt-3">
-              <p className="text-sm text-muted-foreground">
-              Résultats pour "<span className="font-semibold">{query}</span>"
+          <div className="flex items-center justify-between mt-3">
+            <p className="text-sm text-muted-foreground">
+              {query ? (
+                <>
+                  Résultats pour "<span className="font-semibold">{query}</span>"
+                </>
+              ) : (
+                "Trie les résultats"
+              )}
             </p>
-              <div className="flex items-center gap-2">
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-40 h-8">
-                    <SelectValue placeholder="Trier par" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="relevance">Pertinence</SelectItem>
-                    <SelectItem value="name">Nom</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="flex items-center gap-2">
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-40 h-8">
+                  <SelectValue placeholder="Trier par" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="relevance">Pertinence</SelectItem>
+                  <SelectItem value="name">Nom</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          )}
+          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6">
-            <TabsTrigger value="all" className="text-xs md:text-sm">
-              Tout ({sortedResults.users.length + sortedResults.resources.length + sortedResults.spheres.length})
-            </TabsTrigger>
-            <TabsTrigger value="users" className="text-xs md:text-sm">
+          <SharedTabsList className="mb-6 w-full">
+            <SharedTabsTrigger value="all">
+              Tout ({totalResults})
+            </SharedTabsTrigger>
+            <SharedTabsTrigger value="users">
               Personnes ({sortedResults.users.length})
-            </TabsTrigger>
-            <TabsTrigger value="resources" className="text-xs md:text-sm">
+            </SharedTabsTrigger>
+            <SharedTabsTrigger value="resources">
               Ressources ({sortedResults.resources.length})
-            </TabsTrigger>
-            <TabsTrigger value="spheres" className="text-xs md:text-sm">
+            </SharedTabsTrigger>
+            <SharedTabsTrigger value="spheres">
               Sphères ({sortedResults.spheres.length})
-            </TabsTrigger>
-          </TabsList>
+            </SharedTabsTrigger>
+          </SharedTabsList>
 
           <TabsContent value="all" className="space-y-6">
             {/* Users Section */}
             {sortedResults.users.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                  <Users className="h-5 w-5" />
+                  <User className="h-5 w-5" />
                   Personnes ({sortedResults.users.length})
                 </h3>
                 <div className="space-y-2">
@@ -229,16 +371,16 @@ export function SearchResults() {
                       <CardContent className="p-4">
                         <div className="flex items-center gap-3">
                           <Avatar 
-                            className="h-12 w-12 cursor-pointer hover:opacity-80 transition-opacity"
-                            onClick={() => handleViewProfile(user.id, user.name)}
+                            className={`h-12 w-12 transition-opacity ${user.username ? "cursor-pointer hover:opacity-80" : "cursor-not-allowed opacity-60"}`}
+                            onClick={() => handleViewProfile(user.username, user.name)}
                           >
                             <AvatarImage src={user.avatar} />
                             <AvatarFallback>{user.name?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0">
                             <p 
-                              className="font-semibold cursor-pointer hover:underline"
-                              onClick={() => handleViewProfile(user.id, user.name)}
+                              className={`font-semibold ${user.username ? "cursor-pointer hover:underline" : "cursor-not-allowed opacity-60"}`}
+                              onClick={() => handleViewProfile(user.username, user.name)}
                             >
                               {user.name}
                             </p>
@@ -249,17 +391,18 @@ export function SearchResults() {
                             size="sm" 
                             variant={followedUsers.has(user.id) ? "outline" : "default"}
                             onClick={() => handleFollowUser(user.id, user.name)}
+                            disabled={followLoadingUserId === user.id || !currentUserId}
                             className={!followedUsers.has(user.id) ? "campus-gradient text-white hover:opacity-90" : ""}
                           >
                             {followedUsers.has(user.id) ? (
                               <>
-                                <UserMinus className="h-4 w-4 mr-2" />
-                                Ne plus suivre
+                                <Unlink className="h-4 w-4 mr-2" />
+                                Disconnect
                               </>
                             ) : (
                               <>
-                                <UserPlus className="h-4 w-4 mr-2" />
-                                Suivre
+                                <Link className="h-4 w-4 mr-2" />
+                                Connect
                               </>
                             )}
                           </Button>
@@ -275,7 +418,7 @@ export function SearchResults() {
             {sortedResults.resources.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                  <BookOpen className="h-5 w-5" />
+                  <FolderOpen className="h-5 w-5" />
                   Ressources ({sortedResults.resources.length})
                 </h3>
                 <div className="space-y-2">
@@ -289,7 +432,17 @@ export function SearchResults() {
                           >
                             {res.title}
                           </p>
-                          <p className="text-sm text-muted-foreground">Type: {res.type}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Type: {getTypeLabel(res.type)}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Matière: {getSubjectLabel(res.subject)}
+                          </p>
+                          {res.category && (
+                            <p className="text-sm text-muted-foreground">
+                              Catégorie: {getCategoryLabel(res.category)}
+                            </p>
+                          )}
                           <p className="text-sm text-muted-foreground">Auteur: {res.authorName}</p>
                         </div>
                         <Button 
@@ -310,7 +463,7 @@ export function SearchResults() {
             {sortedResults.spheres.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                  <ShoppingBag className="h-5 w-5" />
+                  <Users className="h-5 w-5" />
                   Sphères ({sortedResults.spheres.length})
                 </h3>
                 <div className="space-y-2">
@@ -341,12 +494,20 @@ export function SearchResults() {
               </div>
             )}
 
-            {sortedResults.users.length === 0 && sortedResults.resources.length === 0 && sortedResults.spheres.length === 0 && (
+            {searchError && (
+              <div className="text-center py-12">
+                <Search className="h-12 w-12 text-destructive mx-auto mb-4" />
+                <p className="text-destructive text-lg">La recherche a échoué</p>
+                <p className="text-sm text-muted-foreground mt-2">{searchError}</p>
+              </div>
+            )}
+
+            {hasEmptyResults && (
               <div className="text-center py-12">
                 <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground text-lg">Aucun résultat trouvé</p>
+                <p className="text-muted-foreground text-lg">Aucun résultat pour “{debouncedSearchTerm}”</p>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Essayez avec d'autres mots-clés ou explorez nos suggestions
+                  Aucun élément ne correspond à votre recherche pour le moment.
                 </p>
               </div>
             )}
@@ -359,16 +520,16 @@ export function SearchResults() {
                     <CardContent className="p-4">
                       <div className="flex items-center gap-3">
                         <Avatar 
-                          className="h-12 w-12 cursor-pointer hover:opacity-80 transition-opacity"
-                          onClick={() => handleViewProfile(user.id, user.name)}
+                          className={`h-12 w-12 transition-opacity ${user.username ? "cursor-pointer hover:opacity-80" : "cursor-not-allowed opacity-60"}`}
+                          onClick={() => handleViewProfile(user.username, user.name)}
                         >
                           <AvatarImage src={user.avatar} />
                           <AvatarFallback>{user.name?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <p 
-                            className="font-semibold cursor-pointer hover:underline"
-                            onClick={() => handleViewProfile(user.id, user.name)}
+                            className={`font-semibold ${user.username ? "cursor-pointer hover:underline" : "cursor-not-allowed opacity-60"}`}
+                            onClick={() => handleViewProfile(user.username, user.name)}
                           >
                             {user.name}
                           </p>
@@ -379,17 +540,18 @@ export function SearchResults() {
                           size="sm" 
                           variant={followedUsers.has(user.id) ? "outline" : "default"}
                           onClick={() => handleFollowUser(user.id, user.name)}
+                          disabled={followLoadingUserId === user.id || !currentUserId}
                           className={!followedUsers.has(user.id) ? "campus-gradient text-white hover:opacity-90" : ""}
                         >
                           {followedUsers.has(user.id) ? (
                             <>
-                              <UserMinus className="h-4 w-4 mr-2" />
-                              Ne plus suivre
+                              <Unlink className="h-4 w-4 mr-2" />
+                              Disconnect
                             </>
                           ) : (
                             <>
-                              <UserPlus className="h-4 w-4 mr-2" />
-                              Suivre
+                              <Link className="h-4 w-4 mr-2" />
+                              Connect
                             </>
                           )}
                         </Button>
@@ -421,7 +583,17 @@ export function SearchResults() {
                         >
                           {res.title}
                         </p>
-                        <p className="text-sm text-muted-foreground">Type: {res.type}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Type: {getTypeLabel(res.type)}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Matière: {getSubjectLabel(res.subject)}
+                        </p>
+                        {res.category && (
+                          <p className="text-sm text-muted-foreground">
+                            Catégorie: {getCategoryLabel(res.category)}
+                          </p>
+                        )}
                         <p className="text-sm text-muted-foreground">Auteur: {res.authorName}</p>
                       </div>
                       <Button 
