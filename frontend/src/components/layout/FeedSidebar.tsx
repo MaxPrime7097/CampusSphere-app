@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { TrendingUp, Users, BookOpen, ArrowRight } from "lucide-react";
+import { TrendingUp, ExternalLink, BookOpen, ArrowRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { listResources, listSpheres } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { formatRelativeTime } from "@/lib/date";
+import { getSphereCategoryLabel } from "@/constants/sphereCategories";
+import { getResourceTypeLabel, getSubjectLabel, normalizeResourceType, normalizeSubject } from "@/lib/resourceMetadata";
 
 export function FeedSidebar() {
   const { toast } = useToast();
@@ -35,7 +37,13 @@ export function FeedSidebar() {
             .sort((a: any, b: any) => Number(b.memberCount || 0) - Number(a.memberCount || 0))
             .slice(0, 4)
         );
-        setRecentResources((resources || []).slice(0, 4));
+        setRecentResources(
+          (resources || []).slice(0, 4).map((resource: any) => ({
+            ...resource,
+            subject: normalizeSubject(resource?.subject),
+            type: normalizeResourceType(resource?.type),
+          }))
+        );
       } catch (error: any) {
         if (!isMounted) {
           return;
@@ -90,7 +98,7 @@ export function FeedSidebar() {
             Sphères actives
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-2">
           {isLoading && <p className="text-sm text-muted-foreground">Chargement...</p>}
           {!isLoading && popularSpheres.length === 0 && (
             <p className="text-sm text-muted-foreground">Aucune sphère à afficher.</p>
@@ -99,13 +107,13 @@ export function FeedSidebar() {
             <button
               key={sphere.id}
               type="button"
-              className="w-full flex items-center justify-between hover:bg-accent/50 p-2 rounded-lg transition-colors text-left border-b border-muted-foreground/50"
+              className="w-full flex items-center justify-between hover:bg-accent/50 p-2 rounded-lg transition-colors text-left border border-input"
               onClick={() => openSphere(sphere.id, sphere.name)}
             >
               <div className="min-w-0">
                 <div className="font-medium text-sm truncate">{sphere.name}</div>
                 <Badge variant="secondary" className="text-xs">
-                  {sphere.category || "Sphère collaborative"}
+                  {sphere.category ? (getSphereCategoryLabel(String(sphere.category).trim().toLowerCase()) || "Autre") : "Sphère collaborative"}
                 </Badge>
               </div>
               <Badge variant="secondary" className="text-xs">
@@ -123,7 +131,7 @@ export function FeedSidebar() {
             Ressources récentes
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-2">
           {isLoading && <p className="text-sm text-muted-foreground">Chargement...</p>}
           {!isLoading && recentResources.length === 0 && (
             <p className="text-sm text-muted-foreground">Aucune ressource récente.</p>
@@ -132,10 +140,18 @@ export function FeedSidebar() {
             <button
               key={resource.id}
               type="button"
-              className="w-full space-y-1 hover:bg-accent/50 p-2 rounded-lg transition-colors text-left border-b border-muted-foreground/50"
+              className="w-full space-y-1 hover:bg-accent/50 p-2 rounded-lg transition-colors text-left border border-input"
               onClick={() => openResource(resource.id, resource.title)}
             >
               <div className="font-medium text-sm line-clamp-2">{resource.title}</div>
+              <div className="flex flex-wrap gap-1">
+                <Badge variant="secondary" className="text-[10px]">
+                  {getSubjectLabel(resource.subject)}
+                </Badge>
+                <Badge variant="outline" className="text-[10px]">
+                  {getResourceTypeLabel(resource.type)}
+                </Badge>
+              </div>
               <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
                 <span className="truncate">{resource.authorName || "Auteur inconnu"}</span>
                 <span>{formatRelativeTime(resource.createdAt)}</span>
@@ -148,7 +164,7 @@ export function FeedSidebar() {
       <Card className="campus-card">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <Users className="h-4 w-4 text-primary" />
+            <ExternalLink className="h-4 w-4 text-primary" />
             Accès rapide
           </CardTitle>
         </CardHeader>

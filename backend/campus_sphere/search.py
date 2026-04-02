@@ -5,10 +5,36 @@ from users.models import User
 from spheres.models import Sphere
 from posts.models import Post
 from resources.models import Resource
+from users.serializers import UserSearchSerializer
+from spheres.serializers import SphereSerializer
+from posts.serializers import PostSerializer
+from resources.serializers import ResourceSerializer
 
 
 class SearchService:
     """Service for advanced search functionality"""
+
+    @staticmethod
+    def serialize_results(results, request):
+        """Serialize raw search result sets into JSON-ready arrays."""
+        return {
+            'users': UserSearchSerializer(results.get('users', []), many=True).data,
+            'spheres': SphereSerializer(
+                results.get('spheres', []),
+                many=True,
+                context={'request': request},
+            ).data,
+            'posts': PostSerializer(
+                results.get('posts', []),
+                many=True,
+                context={'request': request},
+            ).data,
+            'resources': ResourceSerializer(
+                results.get('resources', []),
+                many=True,
+                context={'request': request},
+            ).data,
+        }
 
     @staticmethod
     def search_users(query, filters=None, limit=20):

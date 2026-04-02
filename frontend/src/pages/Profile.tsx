@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
-import { getCurrentUser, getUserByUsername, getUserPosts, uploadAvatar, uploadCoverPhoto, updateUserProfile, getUserConnections, getUserResources, createConnection, deleteConnection } from "@/services/api";
-import { MapPin, Camera, Calendar, Link, Users, BookOpen, Award, Settings, FileText, Briefcase, GraduationCap, Loader2, Check, Download, UserPlus, UserMinus, ExternalLink, Upload, X, Zap, Smile } from "lucide-react";
+import { getCurrentUser, getUserByUsername, getUserPosts, uploadAvatar, uploadCoverPhoto, updateUserProfile, getUserConnections, getUserResources, createConnection, deleteConnection, downloadResource, getUserProfile } from "@/services/api";
+import { MapPin, Camera, Calendar, Link, Users, BookOpen, Award, Settings, FileText, Briefcase, GraduationCap, Loader2, Check, Download, Unlink, ExternalLink, Upload, X, Zap, Smile } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -14,9 +14,130 @@ import { useToast } from "@/hooks/use-toast";
 import { CreatePost } from "@/components/feed/CreatePost";
 import { PostCard } from "@/components/feed/PostCard";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { cn } from "@/lib/utils"; // si tu utilises cn dans ce fichier
+import { cn, formatFileSize } from "@/lib/utils"; // si tu utilises cn dans ce fichier
 
 const NOT_AVAILABLE_TEXT = "Not available";
+const MOOD_OPTIONS = [
+  { value: "excited", label: "🚀 En pleine révision !" },
+  { value: "focused", label: "🎯 Concentré sur mes objectifs" },
+  { value: "collaborating", label: "🤝 Prêt à collaborer" },
+  { value: "learning", label: "📚 En mode apprentissage" },
+  { value: "inspired", label: "🌟 Inspiré et créatif" },
+  { value: "determined", label: "💪 Déterminé" },
+];
+
+const MOOD_VALUE_TO_LABEL = MOOD_OPTIONS.reduce<Record<string, string>>((acc, mood) => {
+  acc[mood.value] = mood.label;
+  return acc;
+}, {});
+
+function getMoodLabel(moodValue?: string | null) {
+  if (!moodValue) {
+    return NOT_AVAILABLE_TEXT;
+  }
+
+  return MOOD_VALUE_TO_LABEL[moodValue] ?? moodValue;
+}
+
+function findMoodOptionByValue(moodValue?: string | null) {
+  if (!moodValue) {
+    return null;
+  }
+
+  return MOOD_OPTIONS.find((option) => option.value === moodValue) ?? null;
+}
+
+const STUDY_YEAR_LABELS: Record<string, string> = {
+  bts1: "BTS 1",
+  bts2: "BTS 2",
+  hnd1: "HND 1",
+  hnd2: "HND 2",
+  l1: "Licence 1",
+  l2: "Licence 2",
+  l3: "Licence 3",
+  bachelor1: "Bachelor 1",
+  bachelor2: "Bachelor 2",
+  bachelor3: "Bachelor 3",
+  bachelor4: "Bachelor 4",
+  m1: "Master 1",
+  m2: "Master 2",
+  d1: "Doctorat 1",
+  d2: "Doctorat 2",
+  d3: "Doctorat 3",
+  phd1: "PhD 1",
+  phd2: "PhD 2",
+  phd3: "PhD 3",
+  other: "Autre niveau",
+};
+
+const FACULTY_LABELS: Record<string, string> = {
+  informatique: "Informatique",
+  mathematiques: "Mathématiques",
+  physique: "Physique",
+  chimie: "Chimie",
+  biologie: "Biologie",
+  economie: "Économie",
+  droit: "Droit",
+  medecine: "Médecine",
+  pharmacie: "Pharmacie",
+  ingenierie: "Ingénierie",
+  lettres: "Lettres et Sciences Humaines",
+  sciences_education: "Sciences de l'Éducation",
+  psychologie: "Psychologie",
+  sociologie: "Sociologie",
+  histoire: "Histoire",
+  geographie: "Géographie",
+  philosophie: "Philosophie",
+  langues: "Langues Étrangères",
+  communication: "Communication",
+  journalisme: "Journalisme",
+  art: "Arts",
+  musique: "Musique",
+  sport: "Sciences et Techniques des Activités Physiques et Sportives",
+  agronomie: "Agronomie",
+  veterinaire: "Médecine Vétérinaire",
+  foresterie: "Foresterie",
+  geologie: "Géologie",
+  mining: "Mines et Géologie",
+  other: "Autre filière",
+};
+
+const normalizeCanonicalLabel = (value: unknown, map: Record<string, string>): string => {
+  if (!value || typeof value !== "string") return "";
+  const key = value.trim().toLowerCase();
+  return map[key] || value;
+};
+
+const normalizeId = (value: unknown): string | null => {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  return String(value);
+};
+
+export function getConnectionCounterpart(conn: any, targetUserId: string) {
+  const requesterId = normalizeId(conn?.requester ?? conn?.requester_id ?? conn?.requester_info?.id);
+  const recipientId = normalizeId(conn?.recipient ?? conn?.recipient_id ?? conn?.recipient_info?.id);
+
+  const isRequesterTarget = requesterId === targetUserId;
+  const isRecipientTarget = recipientId === targetUserId;
+
+  if (!isRequesterTarget && !isRecipientTarget) {
+    return null;
+  }
+
+  const counterpartInfo = isRequesterTarget ? conn?.recipient_info : conn?.requester_info;
+  const counterpartId = isRequesterTarget ? recipientId : requesterId;
+
+  return {
+    id: normalizeId(counterpartInfo?.id ?? counterpartId ?? conn?.id ?? conn?.user_id),
+    name: counterpartInfo?.full_name || counterpartInfo?.name || conn?.name || "Utilisateur",
+    username: counterpartInfo?.username || conn?.username || "user",
+    avatar: counterpartInfo?.avatar || conn?.avatar || "/placeholder-avatar.jpg",
+    mutual: 0,
+  };
+}
 
 function mapProfileToViewModel({
   profile,
@@ -87,25 +208,24 @@ function mapProfileToViewModel({
     town: profile.town ?? "",
     language: profile.language ?? "",
     impactScore: profile.impactScore ?? null,
-    currentMood: profile.currentMood ?? "",
     university: profile.university ?? "",
     faculty: profile.faculty ?? "",
-    studyYear: profile.studyYear ?? "",
+    studyYear: profile.studyYear ?? profile.study_year ?? "",
     studentId: profile.studentId ?? "",
     campus: profile.campus ?? "",
     currentMood: profile.current_mood ?? profile.currentMood ?? "",
-    previousEducation: profile.previousEducation ?? [],
+    previousEducation: profile.previousEducation ?? profile.previous_education ?? [],
     experiences: profile.experiences ?? [],
     skills: profile.skills ?? [],
     interests: profile.interests ?? [],
-    portfolioLinks: profile.portfolioLinks ?? [],
+    portfolioLinks: profile.portfolioLinks ?? profile.portfolio_links ?? [],
     sharedFiles: (resources || []).map((resource: any) => ({
       id: resource.id,
       resourceId: resource.id,
       name: resource.title || resource.filename || resource.fileName || NOT_AVAILABLE_TEXT,
       filename: resource.filename || resource.fileName || resource.title || `resource-${resource.id}`,
       type: resource.type || NOT_AVAILABLE_TEXT,
-      size: resource.fileSize || NOT_AVAILABLE_TEXT,
+      size: formatFileSize(resource.fileSize || 0),
     })),
     stats: {
       posts: posts?.length || 0,
@@ -124,7 +244,6 @@ export function Profile() {
   const isMobile = useIsMobile();
   const [isFollowing, setIsFollowing] = useState(false);
   const [currentConnectionId, setCurrentConnectionId] = useState<string | null>(null);
-  const [currentMood, setCurrentMood] = useState("🚀 En pleine révision !");
   const [isFollowingLoading, setIsFollowingLoading] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCoverPhotoModal, setShowCoverPhotoModal] = useState(false);
@@ -136,7 +255,7 @@ export function Profile() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [showMoodModal, setShowMoodModal] = useState(false);
-  const [newMood, setNewMood] = useState("");
+  const [newMood, setNewMood] = useState<{ value: string; label: string } | null>(null);
 
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [targetUser, setTargetUser] = useState<any>(null);
@@ -229,6 +348,11 @@ export function Profile() {
     });
   }, [targetUser, userPosts, userConnections, userResources, resourcesAvailable, loading]);
 
+  const aboutProfile = useMemo(() => ({
+    phoneNumber: user.phoneNumber ?? "",
+    dateOfBirth: user.dateOfBirth ?? "",
+  }), [user.phoneNumber, user.dateOfBirth]);
+
   // Load connections
   useEffect(() => {
     if (!targetUser?.id) return;
@@ -239,30 +363,11 @@ export function Profile() {
         const connections = await getUserConnections(targetUser.id);
         if (isMounted && connections) {
           const profileOwnerId = String(targetUser.id);
-          const currentUserId = currentUser?.id ? String(currentUser.id) : null;
 
-          const mapped = (connections || []).map((conn: any) => {
-            const requesterId = conn.requester ? String(conn.requester) : null;
-            const recipientId = conn.recipient ? String(conn.recipient) : null;
-            const isRequesterProfileOwner =
-              requesterId === profileOwnerId || (currentUserId !== null && requesterId === currentUserId);
-
-            const otherUserInfo = isRequesterProfileOwner ? conn.recipient_info : conn.requester_info;
-
-            return {
-              id: String(
-                otherUserInfo?.id ||
-                  (isRequesterProfileOwner ? recipientId : requesterId) ||
-                  conn.id ||
-                  conn.user_id
-              ),
-              name: otherUserInfo?.full_name || otherUserInfo?.name || conn.name || "Utilisateur",
-              username: otherUserInfo?.username || conn.username || "user",
-              avatar: otherUserInfo?.avatar || conn.avatar || "/placeholder-avatar.jpg",
-              mutual: 0,
-            };
-          });
-          setUserConnections(mapped);
+          const mapped = (connections || [])
+            .map((conn: any) => getConnectionCounterpart(conn, profileOwnerId))
+            .filter(Boolean);
+          setUserConnections(mapped as any[]);
         }
       } catch (e) {
         // Error loading connections
@@ -271,7 +376,7 @@ export function Profile() {
     return () => {
       isMounted = false;
     };
-  }, [currentUser?.id, targetUser?.id]);
+  }, [targetUser?.id]);
 
   // Load user resources
   useEffect(() => {
@@ -358,6 +463,15 @@ export function Profile() {
     }));
   }, [currentUser, targetUser, userPosts]);
 
+  const displayFaculty = useMemo(
+    () => normalizeCanonicalLabel(user.faculty, FACULTY_LABELS) || NOT_AVAILABLE_TEXT,
+    [user.faculty]
+  );
+  const displayStudyYear = useMemo(
+    () => normalizeCanonicalLabel(user.studyYear, STUDY_YEAR_LABELS) || NOT_AVAILABLE_TEXT,
+    [user.studyYear]
+  );
+
   const handleFollow = async () => {
     if (!currentUser?.id || !targetUser?.id || isFollowingLoading) return;
 
@@ -410,19 +524,17 @@ export function Profile() {
     }
   };
 
-  const handleViewProfile = (connectionIdentifier?: string, connectionName?: string, showToast = false) => {
-    if (!connectionIdentifier) {
-      if (showToast) {
-        toast({
-          title: "Profil indisponible",
-          description: "Impossible d'ouvrir ce profil pour le moment",
-          variant: "destructive",
-        });
-      }
+  const handleViewProfile = (username?: string, connectionName?: string, showToast = false) => {
+    if (!username) {
+      toast({
+        title: "Profil indisponible",
+        description: "Impossible d'ouvrir ce profil pour le moment : username manquant.",
+        variant: "destructive",
+      });
       return;
     }
 
-    const targetPath = `/profile/${encodeURIComponent(connectionIdentifier)}`;
+    const targetPath = `/profile/${encodeURIComponent(username)}`;
 
     // Route-level check: avoid redundant navigation when already on the selected profile page.
     if (location.pathname !== targetPath) {
@@ -602,15 +714,35 @@ export function Profile() {
   };
 
   const handleMoodChange = async () => {
-    if (!newMood.trim() || !currentUser?.id) return;
+    if (!newMood?.value || !currentUser?.id) return;
+
+    const selectedMoodValue = newMood.value;
+
     try {
-      await updateUserProfile({ current_mood: newMood });
-      toast({ title: "Mood mis à jour !", description: "Votre mood du moment a été changé", duration: 2000 });
-      setNewMood("");
+      await updateUserProfile({ current_mood: selectedMoodValue });
+
+      let refreshedProfile = await getUserProfile();
+      if (!refreshedProfile) {
+        refreshedProfile = await getCurrentUser();
+      }
+
+      const confirmedMoodValue = refreshedProfile?.currentMood ?? refreshedProfile?.current_mood ?? "";
+
+      setCurrentUser(refreshedProfile);
+      if (isOwnProfile) setTargetUser(refreshedProfile);
+      setNewMood(null);
       setShowMoodModal(false);
-      const userData = await getCurrentUser();
-      setCurrentUser(userData);
-      if (isOwnProfile) setTargetUser(userData);
+
+      if (confirmedMoodValue !== selectedMoodValue) {
+        toast({
+          title: "mise à jour non confirmée",
+          description: "La valeur enregistrée diffère de votre sélection.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({ title: "Mood mis à jour !", description: "Votre mood du moment a été changé", duration: 2000 });
     } catch (error: any) {
       toast({ title: "Erreur", description: error?.message || "Impossible de mettre à jour le mood", variant: "destructive" });
     }
@@ -691,12 +823,12 @@ export function Profile() {
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       ) : isFollowing ? (
                         <>
-                          <UserMinus className="h-4 w-4 mr-2" />
+                          <Unlink className="h-4 w-4 mr-2" />
                           Disconnect
                         </>
                       ) : (
                         <>
-                          <UserPlus className="h-4 w-4 mr-2" />
+                          <Link className="h-4 w-4 mr-2" />
                           Connect
                         </>
                       )}
@@ -745,7 +877,7 @@ export function Profile() {
                     </div>
                     <div>
                       <p className="text-sm font-semibold">Mood du moment</p>
-                      <p className="text-sm text-muted-foreground">{user.currentMood || NOT_AVAILABLE_TEXT}</p>
+                      <p className="text-sm text-muted-foreground">{getMoodLabel(user.currentMood)}</p>
                     </div>
                     {isOwnProfile && (
                       <Settings className="h-3 w-3 text-muted-foreground ml-auto" />
@@ -848,7 +980,8 @@ export function Profile() {
                             <Button 
                               size="sm" 
                               variant="outline"
-                              onClick={() => handleViewProfile(connection.username || connection.id, connection.name)}
+                              onClick={() => handleViewProfile(connection.username, connection.name, true)}
+                              disabled={!connection.username}
                             >
                               Voir
                             </Button>
@@ -865,7 +998,77 @@ export function Profile() {
           {/* ABOUT */}
           {activeTab === "about" && (
             <section className="mt-6 space-y-4">
-              {/* ... (LEAVE YOUR ABOUT CONTENT EXACTLY AS IS) */}
+              <div className="rounded-lg border bg-card p-6">
+                <h3 className="flex items-center gap-2 text-lg font-semibold mb-4">
+                  <GraduationCap className="h-5 w-5" />
+                  Informations académiques
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Université</p>
+                    <p className="font-medium">{user.university || NOT_AVAILABLE_TEXT}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Filière</p>
+                    <p className="font-medium">{displayFaculty}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Niveau</p>
+                    <p className="font-medium">{displayStudyYear}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Matricule</p>
+                    <p className="font-medium">{user.studentId || NOT_AVAILABLE_TEXT}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Campus</p>
+                    <p className="font-medium">{user.campus || NOT_AVAILABLE_TEXT}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-lg border bg-card p-6">
+                <h3 className="flex items-center gap-2 text-lg font-semibold mb-4">
+                  <BookOpen className="h-5 w-5" />
+                  Formations précédentes
+                </h3>
+                {user.previousEducation?.length > 0 ? (
+                  <div className="space-y-3">
+                    {user.previousEducation.map((edu: any, index: number) => (
+                      <div key={`${edu?.degree || "degree"}-${index}`} className="border rounded-lg p-3">
+                        <p className="font-medium">{edu?.degree || NOT_AVAILABLE_TEXT}</p>
+                        <p className="text-sm text-muted-foreground">{edu?.school || NOT_AVAILABLE_TEXT}</p>
+                        <p className="text-xs text-muted-foreground">{edu?.year || NOT_AVAILABLE_TEXT}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">{NOT_AVAILABLE_TEXT}</p>
+                )}
+              </div>
+
+              <div className="rounded-lg border bg-card p-6">
+                <h3 className="flex items-center gap-2 text-lg font-semibold mb-4">
+                  <Briefcase className="h-5 w-5" />
+                  Expériences
+                </h3>
+                {user.experiences?.length > 0 ? (
+                  <div className="space-y-3">
+                    {user.experiences.map((exp: any, index: number) => (
+                      <div key={`${exp?.title || "experience"}-${index}`} className="border rounded-lg p-3">
+                        <p className="font-medium">{exp?.title || NOT_AVAILABLE_TEXT}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {[exp?.company, exp?.duration].filter(Boolean).join(" • ") || NOT_AVAILABLE_TEXT}
+                        </p>
+                        <p className="text-sm mt-1">{exp?.description || NOT_AVAILABLE_TEXT}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">{NOT_AVAILABLE_TEXT}</p>
+                )}
+              </div>
+
               <div className="rounded-lg border bg-card p-6">
                 <h3 className="flex items-center gap-2 text-lg font-semibold mb-4">
                   <Users className="h-5 w-5" />
@@ -879,11 +1082,11 @@ export function Profile() {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Téléphone</p>
-                      <p className="font-medium">{user.phoneNumber || NOT_AVAILABLE_TEXT}</p>
+                      <p className="font-medium">{aboutProfile.phoneNumber || NOT_AVAILABLE_TEXT}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Date de naissance</p>
-                      <p className="font-medium">{user.dateOfBirth || NOT_AVAILABLE_TEXT}</p>
+                      <p className="font-medium">{aboutProfile.dateOfBirth || NOT_AVAILABLE_TEXT}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Ville</p>
@@ -897,9 +1100,76 @@ export function Profile() {
                 </div>
               </div>
 
-              {/* (KEEP ALL YOUR ABOUT CONTENT BELOW EXACTLY THE SAME) */}
-              {/* ... */}
-              {/* (INCLUDING academic info, skills, links, experiences, etc.) */}
+              <div className="rounded-lg border bg-card p-6">
+                <h3 className="flex items-center gap-2 text-lg font-semibold mb-4">
+                  <Zap className="h-5 w-5" />
+                  Compétences
+                </h3>
+                {user.skills?.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {user.skills.map((skill: any, index: number) => (
+                      <Badge key={`${skill}-${index}`} variant="secondary">
+                        {typeof skill === "string" ? skill : skill?.name || NOT_AVAILABLE_TEXT}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">{NOT_AVAILABLE_TEXT}</p>
+                )}
+              </div>
+
+              <div className="rounded-lg border bg-card p-6">
+                <h3 className="flex items-center gap-2 text-lg font-semibold mb-4">
+                  <Smile className="h-5 w-5" />
+                  Centres d'intérêt
+                </h3>
+                {user.interests?.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {user.interests.map((interest: any, index: number) => (
+                      <Badge key={`${interest}-${index}`} variant="outline">
+                        {typeof interest === "string" ? interest : interest?.name || NOT_AVAILABLE_TEXT}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">{NOT_AVAILABLE_TEXT}</p>
+                )}
+              </div>
+
+              <div className="rounded-lg border bg-card p-6">
+                <h3 className="flex items-center gap-2 text-lg font-semibold mb-4">
+                  <Link className="h-5 w-5" />
+                  Portfolio
+                </h3>
+                {user.portfolioLinks?.length > 0 ? (
+                  <div className="space-y-2">
+                    {user.portfolioLinks.map((entry: any, index: number) => {
+                      const rawUrl = typeof entry === "string" ? entry : entry?.url;
+                      const href = rawUrl?.startsWith("http") ? rawUrl : rawUrl ? `https://${rawUrl}` : "";
+                      const label = (typeof entry === "object" && entry?.name) || rawUrl || `Lien ${index + 1}`;
+
+                      return href ? (
+                        <a
+                          key={`${href}-${index}`}
+                          href={href}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center justify-between rounded-lg border p-3 hover:bg-accent/50 transition-colors"
+                        >
+                          <span className="font-medium truncate pr-2">{label}</span>
+                          <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
+                        </a>
+                      ) : (
+                        <p key={`invalid-link-${index}`} className="text-sm text-muted-foreground">
+                          {NOT_AVAILABLE_TEXT}
+                        </p>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">{NOT_AVAILABLE_TEXT}</p>
+                )}
+              </div>
             </section>
           )}
 
@@ -1250,7 +1520,15 @@ export function Profile() {
         </Dialog>
 
         {/* Modal pour changer le mood */}
-        <Dialog open={showMoodModal} onOpenChange={setShowMoodModal}>
+        <Dialog
+          open={showMoodModal}
+          onOpenChange={(open) => {
+            setShowMoodModal(open);
+            if (open) {
+              setNewMood(findMoodOptionByValue(user.currentMood));
+            }
+          }}
+        >
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
@@ -1267,13 +1545,12 @@ export function Profile() {
                 <Label htmlFor="mood">Mood du moment</Label>
                 <Input
                   id="mood"
-                  placeholder="Ex: 🚀 En pleine révision !, 😴 Fatigué mais motivé..."
-                  value={newMood}
-                  onChange={(e) => setNewMood(e.target.value)}
+                  value={newMood?.label ?? ""}
+                  readOnly
                   className="mt-2"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Décrivez votre état d'esprit actuel
+                  Choisissez votre état d'esprit actuel
                 </p>
               </div>
 
@@ -1281,28 +1558,15 @@ export function Profile() {
               <div>
                 <Label>Suggestions</Label>
                 <div className="grid grid-cols-2 gap-2 mt-2">
-                  {[
-                    "🚀 En pleine révision !",
-                    "😴 Fatigué mais motivé",
-                    "💡 Plein d'idées !",
-                    "🎯 Concentré sur mes objectifs",
-                    "🤝 Prêt à collaborer",
-                    "📚 En mode apprentissage",
-                    "☕ Besoin d'un café",
-                    "🌟 Inspiré et créatif",
-                    "🏃‍♂️ En mouvement",
-                    "🧘‍♀️ Au calme",
-                    "🎉 Fêtant les réussites",
-                    "💪 Déterminé"
-                  ].map((mood) => (
+                  {MOOD_OPTIONS.map((mood) => (
                     <Button
-                      key={mood}
+                      key={mood.value}
                       variant="outline"
                       size="sm"
                       onClick={() => setNewMood(mood)}
                       className="text-xs h-auto py-2 px-3 justify-start"
                     >
-                      {mood}
+                      {mood.label}
                     </Button>
                   ))}
                 </div>
@@ -1314,14 +1578,14 @@ export function Profile() {
                 variant="outline" 
                 onClick={() => {
                   setShowMoodModal(false);
-                  setNewMood("");
+                  setNewMood(null);
                 }}
               >
                 Annuler
               </Button>
               <Button
                 onClick={handleMoodChange}
-                disabled={!newMood.trim()}
+                disabled={!newMood?.value}
                 className="campus-gradient text-white hover:opacity-90"
               >
                 <Check className="h-4 w-4 mr-2" />

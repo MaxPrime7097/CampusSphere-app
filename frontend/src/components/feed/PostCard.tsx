@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { Heart, MessageCircle, Share, Bookmark, MoreVertical, Zap, Copy, Flag, ExternalLink, Users, Plus, Minus, X } from "lucide-react";
+import { Heart, MessageCircle, Share, Bookmark, MoreVertical, Zap, Copy, Flag, ExternalLink, Users, Plus, Minus, X, Pencil, Trash2, Loader2, FileText, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { getSphereCategoryLabel } from "@/constants/sphereCategories";
+import { getCategoryLabel } from "@/lib/resourceMetadata";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,11 +23,20 @@ import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { impactRatePost, likePost, savePost, reportPost } from "@/services/api";
+import { impactRatePost, likePost, savePost, reportPost, updatePost, deletePost } from "@/services/api";
 import { formatRelativeTime } from "@/lib/date";
+import { renderMentionText } from "@/lib/mentions";
+import { Textarea } from "@/components/ui/textarea";
 
 interface PostCardProps {
   post: {
+    files?: {
+      id: string | number | null;
+      name: string;
+      url: string;
+      type: string;
+      size: number;
+    }[];
     id: string;
     author: {
       name: string;
@@ -47,6 +56,9 @@ interface PostCardProps {
     userImpactRating?: number | null;
     isLiked?: boolean;
     isSaved?: boolean;
+    canEdit?: boolean;
+    canDelete?: boolean;
+    files?: Array<Record<string, unknown>>;
   };
   onToggleSave?: (saved: boolean) => void;
 }
@@ -68,6 +80,13 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
   const [isReporting, setIsReporting] = useState(false);
   const [reportError, setReportError] = useState<string | null>(null);
   const [reportedReason, setReportedReason] = useState<string | null>(null);
+  const [content, setContent] = useState(post.content);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [editingContent, setEditingContent] = useState(post.content);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleted, setIsDeleted] = useState(false);
 
   useEffect(() => {
     setIsLiked(Boolean(post.isLiked));
@@ -75,7 +94,54 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
     setLikesCount(post.likes);
     setImpactScore(Number(post.impactScore || 0));
     setUserImpactRating(post.userImpactRating ?? null);
-  }, [post.id, post.isLiked, post.isSaved, post.likes, post.impactScore, post.userImpactRating]);
+    setContent(post.content);
+    setEditingContent(post.content);
+    setIsDeleted(false);
+  }, [post.id, post.isLiked, post.isSaved, post.content, post.likes, post.impactScore, post.userImpactRating]);
+
+  const handleOpenEdit = () => {
+    setEditingContent(content);
+    setShowEditDialog(true);
+  };
+
+  const handleConfirmEdit = async () => {
+    if (isUpdating) return;
+    const nextContent = editingContent.trim();
+    if (!nextContent) {
+      toast({ title: "Contenu invalide", description: "Le contenu ne peut pas être vide.", variant: "destructive" });
+      return;
+    }
+
+    // Pessimistic update: keep old UI until API confirms.
+    setIsUpdating(true);
+    try {
+      const updated = await updatePost(post.id, { content: nextContent });
+      setContent(updated?.content ?? nextContent);
+      setShowEditDialog(false);
+      toast({ title: "Post modifié", description: "Votre post a été mis à jour avec succès." });
+    } catch (error: any) {
+      toast({ title: "Échec de modification", description: error?.message || "Impossible de modifier ce post.", variant: "destructive" });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (isDeleting) return;
+    setIsDeleting(true);
+    setShowDeleteDialog(false);
+    // Optimistic delete + rollback.
+    setIsDeleted(true);
+    try {
+      await deletePost(post.id);
+      toast({ title: "Post supprimé", description: "Le post a été supprimé définitivement." });
+    } catch (error: any) {
+      setIsDeleted(false);
+      toast({ title: "Échec de suppression", description: error?.message || "Impossible de supprimer ce post.", variant: "destructive" });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const handleLike = async () => {
     try {
@@ -229,12 +295,74 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
     }
   };
 
+  const resolveAttachmentType = (file: { type?: string; name?: string }) => {
+    const rawType = (file.type || "").toLowerCase();
+    const extension = (file.name?.split(".").pop() || "").toLowerCase();
+
+    if (
+      rawType === "image" ||
+      rawType.startsWith("image/") ||
+      ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "avif", "heic"].includes(extension)
+    ) {
+      return "image";
+    }
+
+    if (
+      rawType === "video" ||
+      rawType.startsWith("video/") ||
+      ["mp4", "webm", "ogg", "mov", "m4v", "avi", "mkv"].includes(extension)
+    ) {
+      return "video";
+    }
+
+    return "document";
+  };
+
+  const formatFileSize = (size = 0) => {
+    if (!size || Number.isNaN(size)) return "";
+    if (size < 1024) return `${size} B`;
+    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+    if (size < 1024 * 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+    return `${(size / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+  };
+
+  const normalizedFiles = (post.files ?? [])
+    .filter((file) => Boolean(file?.url))
+    .map((file) => ({
+      ...file,
+      name: file.name || file.url.split("/").pop() || "Attachment",
+      type: file.type || "",
+      size: Number(file.size || 0),
+    }));
+
+  const attachments = normalizedFiles.length > 0
+    ? normalizedFiles
+    : post.image
+      ? [{
+          id: "legacy-image",
+          name: "Image",
+          url: post.image,
+          type: "image",
+          size: 0,
+        }]
+      : [];
+
+  const imageAttachments = attachments.filter((file) => resolveAttachmentType(file) === "image");
+  const videoAttachments = attachments.filter((file) => resolveAttachmentType(file) === "video");
+  const documentAttachments = attachments.filter((file) => resolveAttachmentType(file) === "document");
+
+
+  const categoryLabel = getCategoryLabel(post.category);
   const cardClasses = cn(
     "transition-all duration-300",
     isMobile 
       ? "rounded-none border-x-0 border-t-0 shadow-none bg-card" 
       : "campus-card hover:campus-glow"
   );
+
+  if (isDeleted) {
+    return null;
+  }
 
   return (
     <>
@@ -296,6 +424,18 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                   <Flag className="h-4 w-4 mr-2" />
                   Signaler
                 </DropdownMenuItem>
+                {post.canEdit && (
+                  <DropdownMenuItem onClick={handleOpenEdit}>
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Modifier
+                  </DropdownMenuItem>
+                )}
+                {post.canDelete && (
+                  <DropdownMenuItem className="text-destructive" onClick={() => setShowDeleteDialog(true)} disabled={isDeleting}>
+                    {isDeleting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                    Supprimer
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -303,36 +443,90 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
 
       <CardContent className="pt-0">
         <div className="space-y-3">
+          <div  onClick={handleOpenPost} className="cursor-pointer">
           <div className="flex items-center justify-between mb-2">
-            {post.category && (
-              <Badge variant="secondary" className="text-xs">
-                {getSphereCategoryLabel(post.category)}
-              </Badge>
-            )}
-            <Button size="xs" variant="outline" onClick={handleOpenPost} className="gap-1">
-              Voir
-              <ExternalLink className="h-3 w-3" />
-            </Button>
+            <Badge variant="secondary" className="text-xs">
+              {categoryLabel}
+            </Badge>
           </div>
 
-          <p className="text-sm leading-relaxed">{post.content}</p>
+          <p className="text-sm leading-relaxed whitespace-pre-wrap">{renderMentionText(content)}</p>
           
-          {post.image && (
-            <div className="rounded-lg overflow-hidden md:overflow-hidden w-full relative">
-              <img 
-                src={post.image} 
-                alt="Post content" 
-                className="w-full h-64 object-cover hover:scale-105 transition-transform duration-300 cursor-pointer"
-                onDoubleClick={handleImageDoubleClick}
-              />
-              {/* Animation de like sur double-clic */}
-              {isLiked && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <Heart className="h-16 w-16 text-red-500 fill-current animate-ping" />
+          {attachments.length > 0 && (
+            <div className="space-y-3">
+              {imageAttachments.length > 0 && (
+                <div className={cn("grid gap-2", imageAttachments.length > 1 ? "grid-cols-2" : "grid-cols-1")}>
+                  {imageAttachments.map((file) => (
+                    <div key={file.id ?? file.url} className="rounded-lg overflow-hidden md:overflow-hidden w-full relative">
+                      <img
+                        src={file.url}
+                        alt={file.name || "Post attachment"}
+                        className="w-full h-64 object-cover hover:scale-105 transition-transform duration-300 cursor-pointer"
+                        onDoubleClick={handleImageDoubleClick}
+                      />
+                      {isLiked && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <Heart className="h-16 w-16 text-red-500 fill-current animate-ping" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {videoAttachments.length > 0 && (
+                <div className="space-y-2">
+                  {videoAttachments.map((file) => (
+                    <div key={file.id ?? file.url} className="rounded-lg overflow-hidden bg-muted">
+                      <video
+                        src={file.url}
+                        controls
+                        preload="metadata"
+                        className="w-full max-h-[380px]"
+                        onClick={(event) => event.stopPropagation()}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {documentAttachments.length > 0 && (
+                <div className="space-y-2">
+                  {documentAttachments.map((file) => (
+                    <div
+                      key={file.id ?? file.url}
+                      className="flex items-center justify-between gap-3 rounded-lg border bg-muted/40 px-3 py-2"
+                    >
+                      <div className="min-w-0 flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium">{file.name}</p>
+                          {file.size > 0 && (
+                            <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1" onClick={(event) => event.stopPropagation()}>
+                        <Button variant="ghost" size="sm" asChild>
+                          <a href={file.url} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="h-4 w-4 mr-1" />
+                            Ouvrir
+                          </a>
+                        </Button>
+                        <Button variant="ghost" size="sm" asChild>
+                          <a href={file.url} download={file.name}>
+                            <Download className="h-4 w-4 mr-1" />
+                            Télécharger
+                          </a>
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
           )}
+          </div>
           
           {/* Impact Score Rating */}
           
@@ -484,6 +678,41 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
               </Button>
             ))}
           </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Modifier le post</DialogTitle>
+          <DialogDescription>Mettez à jour votre contenu puis validez.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <Textarea value={editingContent} onChange={(e) => setEditingContent(e.target.value)} className="min-h-[120px]" maxLength={2000} />
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowEditDialog(false)} disabled={isUpdating}>Annuler</Button>
+            <Button onClick={handleConfirmEdit} disabled={isUpdating}>
+              {isUpdating ? "Enregistrement..." : "Enregistrer"}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Supprimer ce post ?</DialogTitle>
+          <DialogDescription>
+            Cette action est destructive et irréversible.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={() => setShowDeleteDialog(false)} disabled={isDeleting}>Annuler</Button>
+          <Button variant="destructive" onClick={handleConfirmDelete} disabled={isDeleting}>
+            {isDeleting ? "Suppression..." : "Supprimer"}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

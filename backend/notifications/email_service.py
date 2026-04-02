@@ -63,7 +63,7 @@ class EmailNotificationService:
             'task_completed': settings.email_task_assignments,
             'connection_request': settings.email_messages,
             'connection_accepted': settings.email_messages,
-            'message_received': settings.email_messages,
+            'message': settings.email_messages,
             'system': settings.system_updates,
         }
         
@@ -81,7 +81,7 @@ class EmailNotificationService:
             'notification': notification,
             'data': data,
             'site_name': 'CampusSphere',
-            'site_url': 'https://campus-sphere.com'
+            'site_url': 'https://campussphere.app'
         }
 
         # Email templates and subjects based on notification type
@@ -105,7 +105,7 @@ class EmailNotificationService:
             subject = f"🤝 Nouvelle demande de connexion"
             template = 'emails/connection_request.html'
             
-        elif notification.type == 'message_received':
+        elif notification.type == 'message':
             subject = f"💬 Nouveau message de {data.get('sender_name', 'un utilisateur')}"
             template = 'emails/message_received.html'
             
@@ -134,7 +134,7 @@ class EmailNotificationService:
             context = {
                 'user': user,
                 'site_name': 'CampusSphere',
-                'site_url': 'https://campus-sphere.com'
+                'site_url': 'https://campussphere.app'
             }
             
             html_content = render_to_string('emails/welcome.html', context)
@@ -165,7 +165,7 @@ class EmailNotificationService:
                 'user': user,
                 'reset_link': reset_link,
                 'site_name': 'CampusSphere',
-                'site_url': 'https://campus-sphere.com'
+                'site_url': 'https://campussphere.app'
             }
             
             html_content = render_to_string('emails/password_reset.html', context)
