@@ -49,6 +49,7 @@ export function SphereDetail() {
 
   const [loading, setLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [taskState, setTaskState] = useState<"ready" | "forbidden" | "server_error">("ready");
   const [processingMemberIds, setProcessingMemberIds] = useState<Record<string, boolean>>({});
 
   const resolveJoinConflict = (error: unknown): "already_active" | "already_pending" | null => {
@@ -114,11 +115,11 @@ export function SphereDetail() {
     try {
       setLoading(true);
       setLoadError(null);
+      setTaskState("ready");
 
-      const [sphereData, membersData, tasksData, currentUser] = await Promise.all([
+      const [sphereData, membersData, currentUser] = await Promise.all([
         getSphere(String(id)),
         listSphereMembers(String(id)),
-        listSphereTasks(String(id)),
         getCurrentUser(),
       ]);
 
@@ -138,7 +139,7 @@ export function SphereDetail() {
 
       setMembers(mappedMembers.filter((m: any) => m.status === 'active'));
       setPendingMembers(mappedMembers.filter((m: any) => m.status === 'pending'));
-      setTasks((tasksData || []).map(mapTask));
+      setTasks([]);
 
       // Membership state logic
       const isMemberFromServer = sphereData?.is_member ?? sphereData?.isMember ?? false;
@@ -155,6 +156,24 @@ export function SphereDetail() {
 
       setIsMember(resolvedIsMember);
       setIsPendingRequest(!resolvedIsMember && resolvedIsPending);
+
+      try {
+        const tasksData = await listSphereTasks(String(id));
+        setTasks((tasksData || []).map(mapTask));
+        setTaskState("ready");
+      } catch (taskError: any) {
+        const status = taskError?.response?.status;
+
+        if (status === 403) {
+          setTaskState("forbidden");
+          setTasks([]);
+        } else if (status >= 500) {
+          setTaskState("server_error");
+          setTasks([]);
+        } else {
+          throw taskError;
+        }
+      }
     } catch (e: any) {
       setLoadError(e?.message || "Erreur de chargement");
     } finally {
@@ -434,8 +453,20 @@ export function SphereDetail() {
                 </CreateTaskModal>
               </div>
               <div className="grid gap-3">
-                {tasks.length === 0 && <p className="text-center py-10 text-muted-foreground italic">Aucune tâche pour le moment.</p>}
-                {tasks.map(task => (
+                {taskState === "forbidden" && (
+                  <p className="text-center py-10 text-muted-foreground italic">
+                    Vous devez être membre actif pour voir les tâches
+                  </p>
+                )}
+                {taskState === "server_error" && (
+                  <p className="text-center py-10 text-muted-foreground italic">
+                    Impossible de charger les tâches pour le moment (erreur serveur).
+                  </p>
+                )}
+                {taskState === "ready" && tasks.length === 0 && (
+                  <p className="text-center py-10 text-muted-foreground italic">Aucune tâche pour le moment.</p>
+                )}
+                {taskState === "ready" && tasks.map(task => (
                   <div key={task.id} className={`p-5 rounded-xl border bg-card flex justify-between items-center transition-all ${task.isCompleted ? 'bg-muted/30 grayscale-[0.5]' : 'hover:border-primary/50'}`}>
                     <div className="flex gap-4">
                       {task.isCompleted ? (
@@ -527,7 +558,11 @@ export function SphereDetail() {
           <div className="flex flex-col items-center justify-center py-20 bg-card rounded-xl border border-dashed border-primary/30">
             <Shield className="h-16 w-16 text-primary/20 mb-4" />
             <h2 className="text-xl font-bold">Contenu Protégé</h2>
-            <p className="text-muted-foreground mt-2 text-center max-w-sm">Rejoignez cette sphère pour accéder au chat, aux tâches et aux fichiers partagés.</p>
+            <p className="text-muted-foreground mt-2 text-center max-w-sm">
+              {isPendingRequest
+                ? "Votre demande est en attente. Vous pourrez voir les tâches après validation."
+                : "Rejoignez cette sphère pour accéder au chat, aux tâches et aux fichiers partagés."}
+            </p>
           </div>
         )}
       </div>
