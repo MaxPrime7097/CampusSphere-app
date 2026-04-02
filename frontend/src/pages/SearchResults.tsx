@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Users, BookOpen, ShoppingBag, Loader2, UserPlus, UserMinus } from "lucide-react";
+import { Search, Users, BookOpen, ShoppingBag, Loader2, UserPlus, UserMinus, FolderOpen, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
@@ -229,7 +229,7 @@ export function SearchResults() {
             {sortedResults.users.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                  <Users className="h-5 w-5" />
+                  <User className="h-5 w-5" />
                   Personnes ({sortedResults.users.length})
                 </h3>
                 <div className="space-y-2">
@@ -284,7 +284,7 @@ export function SearchResults() {
             {sortedResults.resources.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                  <BookOpen className="h-5 w-5" />
+                  <FolderOpen className="h-5 w-5" />
                   Ressources ({sortedResults.resources.length})
                 </h3>
                 <div className="space-y-2">
@@ -319,7 +319,7 @@ export function SearchResults() {
             {sortedResults.spheres.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                  <ShoppingBag className="h-5 w-5" />
+                  <Users className="h-5 w-5" />
                   Sphères ({sortedResults.spheres.length})
                 </h3>
                 <div className="space-y-2">

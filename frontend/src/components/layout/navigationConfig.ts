@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
 import {
   BookLock,
   Bookmark,
@@ -12,6 +13,8 @@ import {
   Shield,
   User,
   Users,
+  Bell,
+  Plus,
 } from "lucide-react";
 
 export interface NavigationUser {
@@ -24,8 +27,9 @@ export interface NavigationUser {
 
 export interface NavigationItem {
   title: string;
-  url: string;
+  url?: string;
   icon: LucideIcon;
+  component?: React.ReactNode;
 }
 
 export interface NavigationSections {
@@ -46,6 +50,13 @@ function isAdminUser(user?: NavigationUser | null) {
 
 export function getNavigationSections(user?: NavigationUser | null): NavigationSections {
   const profileUrl = `/profile/${user?.username || "current"}`;
+  const newPostAction = (
+    <CreatePostModal>
+      <Button variant="outline" size="sm">
+        <Plus className="h-4 w-4 mr-2" />
+      </Button>
+    </CreatePostModal>
+  );
   const adminEntry = isAdminUser(user)
     ? [{ title: "Admin", url: "/cs-inc/private/admin", icon: Shield }]
     : [];
@@ -74,9 +85,9 @@ export function getNavigationSections(user?: NavigationUser | null): NavigationS
   const mobileItems: NavigationItem[] = [
     { title: "Accueil", url: "/", icon: Home },
     { title: "Ressources", url: "/resources", icon: FolderOpen },
+    { title: "NouveauPost", component: newPostAction, icon: Plus },
     { title: "Sphères", url: "/spheres", icon: Users },
-    { title: "Messages", url: "/messages", icon: MessageSquare },
-    { title: "Profil", url: profileUrl, icon: User },
+    { title: "Notifications", url: "/notifications", icon: Bell },
     ...adminEntry,
   ];
 
