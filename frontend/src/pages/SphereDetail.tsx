@@ -9,7 +9,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
 import { Progress } from "@/components/ui/progress";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
@@ -25,7 +26,6 @@ import { AddMemberModal } from "@/components/modals/AddMemberModal";
 import { SphereSettingsModal } from "@/components/modals/SphereSettingsModal";
 import { ManageMembersModal } from "@/components/modals/ManageMembersModal";
 import { MiniChat } from "@/components/chat/MiniChat";
-import { ScrollableTabs } from "@/components/ui/scrollable-tabs";
 
 export function SphereDetail() {
   const { id } = useParams();
@@ -363,14 +363,12 @@ export function SphereDetail() {
         {/* TABS SECTION */}
         {isMember ? (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <ScrollableTabs>
-              <TabsList className="bg-muted/50 p-1">
-                <TabsTrigger value="chat">Discussion</TabsTrigger>
-                <TabsTrigger value="tasks">Tâches ({tasks.length})</TabsTrigger>
-                <TabsTrigger value="members">Membres</TabsTrigger>
-                {canModerateMembers && <TabsTrigger value="pending">Demandes ({pendingMembers.length})</TabsTrigger>}
-              </TabsList>
-            </ScrollableTabs>
+            <SharedTabsList>
+              <SharedTabsTrigger value="chat">Discussion</SharedTabsTrigger>
+              <SharedTabsTrigger value="tasks">Tâches ({tasks.length})</SharedTabsTrigger>
+              <SharedTabsTrigger value="members">Membres</SharedTabsTrigger>
+              {canModerateMembers && <SharedTabsTrigger value="pending">Demandes ({pendingMembers.length})</SharedTabsTrigger>}
+            </SharedTabsList>
 
             <TabsContent value="chat" className="mt-4 ring-offset-background">
               <MiniChat sphereId={String(id)} sphereName={sphereFallback.name} isExpanded={isChatExpanded} onToggleExpanded={() => setIsChatExpanded(!isChatExpanded)} />

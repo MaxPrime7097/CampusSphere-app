@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
 import { PostCard } from "@/components/feed/PostCard";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -111,10 +112,10 @@ export function SavedItems() {
         </h1>
 
         <Tabs defaultValue="posts" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="posts">Posts</TabsTrigger>
-            <TabsTrigger value="resources">Ressources</TabsTrigger>
-          </TabsList>
+          <SharedTabsList className="mb-6">
+            <SharedTabsTrigger value="posts">Posts</SharedTabsTrigger>
+            <SharedTabsTrigger value="resources">Ressources</SharedTabsTrigger>
+          </SharedTabsList>
 
           <TabsContent value="posts" className="space-y-4">
             {loading ? (

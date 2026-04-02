@@ -4,7 +4,8 @@ import { createConnection, deleteConnection, getCurrentUser, globalSearch } from
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Users, BookOpen, ShoppingBag, Loader2, Link, Unlink, FolderOpen, User } from "lucide-react";
@@ -341,20 +342,20 @@ export function SearchResults() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6">
-            <TabsTrigger value="all" className="text-xs md:text-sm">
+          <SharedTabsList className="mb-6 w-full">
+            <SharedTabsTrigger value="all">
               Tout ({totalResults})
-            </TabsTrigger>
-            <TabsTrigger value="users" className="text-xs md:text-sm">
+            </SharedTabsTrigger>
+            <SharedTabsTrigger value="users">
               Personnes ({sortedResults.users.length})
-            </TabsTrigger>
-            <TabsTrigger value="resources" className="text-xs md:text-sm">
+            </SharedTabsTrigger>
+            <SharedTabsTrigger value="resources">
               Ressources ({sortedResults.resources.length})
-            </TabsTrigger>
-            <TabsTrigger value="spheres" className="text-xs md:text-sm">
+            </SharedTabsTrigger>
+            <SharedTabsTrigger value="spheres">
               Sphères ({sortedResults.spheres.length})
-            </TabsTrigger>
-          </TabsList>
+            </SharedTabsTrigger>
+          </SharedTabsList>
 
           <TabsContent value="all" className="space-y-6">
             {/* Users Section */}

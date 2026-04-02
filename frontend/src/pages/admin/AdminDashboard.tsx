@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Users, FileText, TrendingUp, Shield, AlertCircle, CheckCircle, XCircle, Search, Filter, BarChart3, Clock, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -274,12 +275,12 @@ export function AdminDashboard() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 mb-6">
-            <TabsTrigger value="overview">Aperçu</TabsTrigger>
-            <TabsTrigger value="users">Utilisateurs</TabsTrigger>
-            <TabsTrigger value="resources">Ressources</TabsTrigger>
-            <TabsTrigger value="reports">Signalements</TabsTrigger>
-          </TabsList>
+          <SharedTabsList className="mb-6">
+            <SharedTabsTrigger value="overview">Aperçu</SharedTabsTrigger>
+            <SharedTabsTrigger value="users">Utilisateurs</SharedTabsTrigger>
+            <SharedTabsTrigger value="resources">Ressources</SharedTabsTrigger>
+            <SharedTabsTrigger value="reports">Signalements</SharedTabsTrigger>
+          </SharedTabsList>
 
           <TabsContent value="overview" className="space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
