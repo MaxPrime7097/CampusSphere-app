@@ -13,6 +13,7 @@ import {
   User,
   Users,
 } from "lucide-react";
+import { featureFlags } from "@/config/featureFlags";
 
 export interface NavigationUser {
   username?: string | null;
@@ -47,7 +48,7 @@ function isAdminUser(user?: NavigationUser | null) {
 export function getNavigationSections(user?: NavigationUser | null): NavigationSections {
   const profileUrl = `/profile/${user?.username || "current"}`;
   const adminEntry = isAdminUser(user)
-    ? [{ title: "Admin", url: "/cs-inc/private/admin", icon: Shield }]
+    ? [{ title: "Admin", url: featureFlags.ADMIN_PANEL_V2 ? "/admin-v2" : "/admin", icon: Shield }]
     : [];
 
   const navigationItems: NavigationItem[] = [

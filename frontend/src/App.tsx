@@ -23,6 +23,8 @@ import { PostDetail } from "./pages/PostDetail";
 import { Spheres } from "./pages/Spheres";
 import { SphereDetail } from "./pages/SphereDetail";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
+import { AdminDashboardV2 } from "./pages/admin/AdminDashboardV2";
+import { featureFlags } from "./config/featureFlags";
 import { About } from "./pages/public/About";
 import { Contact } from "./pages/public/Contact";
 import { FAQ } from "./pages/public/FAQ";
@@ -172,8 +174,17 @@ const App = () => (
             </Protected>
           } />
 
-          {/* Admin routes */}
+          {/* Admin routes (coexistence old + v2) */}
+          <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/cs-inc/private/admin" element={<AdminDashboard />} />
+          <Route
+            path="/admin-v2"
+            element={featureFlags.ADMIN_PANEL_V2 ? <AdminDashboardV2 /> : <Navigate to="/admin" replace />}
+          />
+          <Route
+            path="/cs-inc/private/admin-v2"
+            element={featureFlags.ADMIN_PANEL_V2 ? <AdminDashboardV2 /> : <Navigate to="/cs-inc/private/admin" replace />}
+          />
         
           {/* Public pages */}
           <Route path="/cs-inc" element={<Landing />} />
