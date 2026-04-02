@@ -86,6 +86,8 @@ function unwrapList<T = any>(response: any): T[] {
 export function normalizeUser(user: any) {
   if (!user) return null;
 
+  const currentMood = user.currentMood ?? user.current_mood ?? "";
+
   const firstName = user.firstName ?? user.first_name ?? "";
   const lastName = user.lastName ?? user.last_name ?? "";
   const fullNameFromApi = user.full_name ?? user.name ?? "";
@@ -114,7 +116,8 @@ export function normalizeUser(user: any) {
     postVisibility: user.postVisibility ?? user.post_visibility ?? "public",
     dataExportRequestedAt: user.dataExportRequestedAt ?? user.data_export_requested_at ?? null,
     impactScore: user.impactScore ?? user.impact_score ?? 0,
-    currentMood: user.currentMood ?? user.current_mood ?? "",
+    currentMood,
+    current_mood: currentMood,
     skills: toArray(user.skills),
     interests: toArray(user.interests),
     previousEducation: toArray(user.previousEducation ?? user.previous_education),
@@ -456,11 +459,12 @@ export async function updateUserProfile(data: Partial<{
   interests: string[];
   current_mood: string;
 }>, token?: string) {
-  return apiFetch<any>("api/users/profile/", {
+  const response = await apiFetch<any>("api/users/profile/", {
     method: "PUT",
     body: data,
     token: token || getAccessToken(),
   });
+  return normalizeUser(unwrapItem(response));
 }
 
 export async function changeUserPassword(payload: { current_password: string; new_password: string }, token?: string) {
