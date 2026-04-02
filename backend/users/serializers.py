@@ -54,6 +54,8 @@ class UserLoginSerializer(serializers.Serializer):
 
 class UserProfileSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(read_only=True)
+    phone_number = serializers.SerializerMethodField()
+    date_of_birth = serializers.SerializerMethodField()
     joined_spheres_count = serializers.SerializerMethodField()
     connections_count = serializers.SerializerMethodField()
     contributions_count = serializers.SerializerMethodField()
@@ -62,7 +64,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'id', 'first_name', 'last_name', 'username', 'email', 'full_name',
-            'avatar', 'cover_photo', 'bio', 'university', 'faculty', 'study_year',
+            'phone_number', 'date_of_birth', 'avatar', 'cover_photo', 'bio', 'university', 'faculty', 'study_year',
             'student_id', 'campus', 'town', 'language', 'profile_visibility', 'post_visibility',
             'data_export_requested_at', 'impact_score', 'current_mood',
             'skills', 'interests', 'previous_education', 'experiences', 'portfolio_links',
@@ -73,6 +75,12 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     def get_joined_spheres_count(self, obj):
         return obj.sphere_memberships.filter(status='active').count()
+
+    def get_phone_number(self, obj):
+        return getattr(obj, 'phone_number', '')
+
+    def get_date_of_birth(self, obj):
+        return getattr(obj, 'date_of_birth', None)
 
     def get_connections_count(self, obj):
         """
@@ -94,12 +102,16 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 class UserUpdateSerializer(serializers.ModelSerializer):
     username = serializers.CharField(min_length=3, max_length=50, required=False)
+    phone_number = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    date_of_birth = serializers.DateField(required=False, allow_null=True)
 
     class Meta:
         model = User
         fields = [
             'first_name', 'last_name', 'username', 'bio', 'university', 'faculty', 'study_year',
-            'skills', 'interests', 'current_mood', 'profile_visibility', 'post_visibility'
+            'student_id', 'campus', 'town', 'language', 'skills', 'interests', 'current_mood',
+            'previous_education', 'experiences', 'portfolio_links', 'profile_visibility', 'post_visibility',
+            'phone_number', 'date_of_birth'
         ]
 
     def validate_username(self, value):
@@ -115,6 +127,31 @@ class UserUpdateSerializer(serializers.ModelSerializer):
                 f"Invalid mood. Allowed values: {', '.join(sorted(allowed_values))}."
             )
         return value
+
+    def update(self, instance, validated_data):
+        """
+        Handle optional profile fields that may be present in some deployments
+        (e.g. phone_number/date_of_birth) without breaking environments where
+        those columns are not yet migrated.
+        """
+        phone_number = validated_data.pop('phone_number', serializers.empty)
+        date_of_birth = validated_data.pop('date_of_birth', serializers.empty)
+
+        instance = super().update(instance, validated_data)
+
+        update_fields = []
+        if phone_number is not serializers.empty and hasattr(instance, 'phone_number'):
+            instance.phone_number = phone_number
+            update_fields.append('phone_number')
+        if date_of_birth is not serializers.empty and hasattr(instance, 'date_of_birth'):
+            instance.date_of_birth = date_of_birth
+            update_fields.append('date_of_birth')
+
+        if update_fields:
+            update_fields.append('updated_at')
+            instance.save(update_fields=update_fields)
+
+        return instance
 
 
 class ChangePasswordSerializer(serializers.Serializer):

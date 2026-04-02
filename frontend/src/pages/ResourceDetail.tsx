@@ -10,7 +10,14 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { formatFrenchDate } from "@/lib/date";
-import { getSubjectLabel, getTypeLabel, normalizeResourceType, normalizeSubject } from "@/lib/resourceMetadata";
+import {
+  getCategoryLabel,
+  getSubjectLabel,
+  getTypeLabel,
+  normalizeCategory,
+  normalizeResourceType,
+  normalizeSubject,
+} from "@/lib/resourceMetadata";
 
 const RESOURCE_DETAIL_LOG_PREFIX = "[ResourceDetail][debug]";
 
@@ -45,6 +52,7 @@ export function ResourceDetail() {
     title: string;
     description: string;
     subject: string;
+    category: string;
     type: string | null;
     format: string;
     size: string;
@@ -102,6 +110,7 @@ export function ResourceDetail() {
             title: data.title,
             description: data.description || '',
             subject: normalizeSubject(data.subject),
+            category: normalizeCategory(data.category),
             type: normalizeResourceType(data.type),
             format: (data.fileUrl || data.file)?.toString().split('.').pop(),
             size: data.fileSize || data.file_size || data.size,
@@ -416,6 +425,9 @@ export function ResourceDetail() {
                   {getTypeLabel(resource.type)}
                 </Badge>
                 <Badge variant="secondary">{getSubjectLabel(resource.subject)}</Badge>
+                {resource.category && (
+                  <Badge variant="outline">{getCategoryLabel(resource.category)}</Badge>
+                )}
                 <Badge variant="outline">{resource.format ? resource.format.toUpperCase() : "Non défini"}</Badge>
               </div>
               <h1 className="text-2xl md:text-3xl font-bold mb-2">{resource.title}</h1>

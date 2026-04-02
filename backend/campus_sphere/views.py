@@ -4,6 +4,32 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.utils import timezone
 from .search import SearchService, FilterService
+from users.serializers import UserSearchSerializer
+from spheres.serializers import SphereSerializer
+from posts.serializers import PostSerializer
+from resources.serializers import ResourceSerializer
+
+
+def _serialize_search_results(results, request):
+    """Serialize search result querysets/models into JSON-ready arrays."""
+    return {
+        'users': UserSearchSerializer(results.get('users', []), many=True).data,
+        'spheres': SphereSerializer(
+            results.get('spheres', []),
+            many=True,
+            context={'request': request}
+        ).data,
+        'posts': PostSerializer(
+            results.get('posts', []),
+            many=True,
+            context={'request': request}
+        ).data,
+        'resources': ResourceSerializer(
+            results.get('resources', []),
+            many=True,
+            context={'request': request}
+        ).data,
+    }
 
 
 @api_view(['GET'])
@@ -23,21 +49,23 @@ def global_search(request):
 
     try:
         if entity_type == 'all':
-            results = SearchService.global_search(query, request.user, limit)
+            raw_results = SearchService.global_search(query, request.user, limit)
         elif entity_type == 'users':
-            results = {'users': SearchService.search_users(query, limit=limit)}
+            raw_results = {'users': SearchService.search_users(query, limit=limit)}
         elif entity_type == 'spheres':
-            results = {'spheres': SearchService.search_spheres(query, user=request.user, limit=limit)}
+            raw_results = {'spheres': SearchService.search_spheres(query, user=request.user, limit=limit)}
         elif entity_type == 'posts':
-            results = {'posts': SearchService.search_posts(query, user=request.user, limit=limit)}
+            raw_results = {'posts': SearchService.search_posts(query, user=request.user, limit=limit)}
         elif entity_type == 'resources':
-            results = {'resources': SearchService.search_resources(query, user=request.user, limit=limit)}
+            raw_results = {'resources': SearchService.search_resources(query, user=request.user, limit=limit)}
         else:
             return Response({
                 'success': False,
                 'error': 'Invalid entity type',
                 'timestamp': timezone.now().isoformat()
             }, status=400)
+
+        results = _serialize_search_results(raw_results, request)
 
         return Response({
             'success': True,

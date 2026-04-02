@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { searchUsers, getCurrentUser, getUserConnections, createConnection, deleteConnection, getMutualConnectionCounts } from "@/services/api";
 import { Users, Link, Search, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,14 @@ import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import {
+  getFacultyLabel,
+  getUniversityLabel,
+  normalizeFaculty,
+  normalizeUniversity,
+} from "@/lib/profileMetadata";
+
+type ConnectionFilter = "all" | "university" | "faculty" | "mutual" | "impact";
 
 export function Connections() {
   const navigate = useNavigate();
@@ -77,6 +85,16 @@ export function Connections() {
               (conn.requester === currentUser.id
                 ? conn.recipient_info?.faculty
                 : conn.requester_info?.faculty) || '',
+            normalizedUniversity: normalizeUniversity(
+              conn.requester === currentUser.id
+                ? conn.recipient_info?.university
+                : conn.requester_info?.university
+            ),
+            normalizedFaculty: normalizeFaculty(
+              conn.requester === currentUser.id
+                ? conn.recipient_info?.faculty
+                : conn.requester_info?.faculty
+            ),
             isVerified: false,
             impactScore:
               (conn.requester === currentUser.id
@@ -147,11 +165,18 @@ export function Connections() {
               field: u.faculty || '',
               isVerified: u.is_verified || false,
               impactScore: u.impact_score || 0,
-              reason: u.university === currentUser.university ? 
-                `Même université - ${u.university}` : 
-                u.faculty === currentUser.faculty ?
-                `Même filière - ${u.faculty}` :
-                "Suggestions pour vous"
+              normalizedUniversity: normalizeUniversity(u.university),
+              normalizedFaculty: normalizeFaculty(u.faculty),
+              reason:
+                normalizeUniversity(u.university) &&
+                normalizeUniversity(currentUser.university) &&
+                normalizeUniversity(u.university) === normalizeUniversity(currentUser.university)
+                  ? `Même université - ${getUniversityLabel(u.university)}`
+                  : normalizeFaculty(u.faculty) &&
+                      normalizeFaculty(currentUser.faculty) &&
+                      normalizeFaculty(u.faculty) === normalizeFaculty(currentUser.faculty)
+                    ? `Même filière - ${getFacultyLabel(u.faculty)}`
+                    : "Suggestions pour vous",
             }));
           setSuggestions(mapped.slice(0, 20));
         }
@@ -165,6 +190,51 @@ export function Connections() {
   }, [currentUser, connections]);
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState<ConnectionFilter>("all");
+
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+
+  const matchesSearch = (entry: any) => {
+    if (!normalizedQuery) return true;
+    return [entry.name, entry.username, entry.university, entry.faculty, entry.field]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(normalizedQuery));
+  };
+
+  const matchesFilter = (entry: any) => {
+    switch (activeFilter) {
+      case "university":
+        return Boolean(
+          currentUser?.university &&
+            entry.university &&
+            String(entry.university).toLowerCase() === String(currentUser.university).toLowerCase()
+        );
+      case "faculty":
+        return Boolean(
+          currentUser?.faculty &&
+            entry.faculty &&
+            String(entry.faculty).toLowerCase() === String(currentUser.faculty).toLowerCase()
+        );
+      case "mutual":
+        return Number(entry.mutualFriends || 0) > 0;
+      case "impact":
+        return Number(entry.impactScore || 0) >= 50;
+      default:
+        return true;
+    }
+  };
+
+  const filteredConnections = useMemo(
+    () => connections.filter((entry) => matchesSearch(entry) && matchesFilter(entry)),
+    [connections, normalizedQuery, activeFilter, currentUser]
+  );
+
+  const filteredSuggestions = useMemo(
+    () => suggestions.filter((entry) => matchesSearch(entry) && matchesFilter(entry)),
+    [suggestions, normalizedQuery, activeFilter, currentUser]
+  );
+
+  const hasActiveFilters = normalizedQuery.length > 0 || activeFilter !== "all";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
@@ -185,7 +255,7 @@ export function Connections() {
         </div>
 
         {/* Search Bar */}
-        <div className="mb-6 flex gap-3">
+        <div className="mb-6 flex flex-col gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -195,26 +265,53 @@ export function Connections() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <Button variant="outline" size="icon">
-            <Filter className="h-4 w-4" />
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant={activeFilter === "all" ? "default" : "outline"} size="sm" onClick={() => setActiveFilter("all")}>
+              <Filter className="h-4 w-4 mr-2" />
+              Tous
+            </Button>
+            <Button variant={activeFilter === "university" ? "default" : "outline"} size="sm" onClick={() => setActiveFilter("university")}>
+              Université
+            </Button>
+            <Button variant={activeFilter === "faculty" ? "default" : "outline"} size="sm" onClick={() => setActiveFilter("faculty")}>
+              Filière
+            </Button>
+            <Button variant={activeFilter === "mutual" ? "default" : "outline"} size="sm" onClick={() => setActiveFilter("mutual")}>
+              Amis communs
+            </Button>
+            <Button variant={activeFilter === "impact" ? "default" : "outline"} size="sm" onClick={() => setActiveFilter("impact")}>
+              Impact
+            </Button>
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSearchQuery("");
+                  setActiveFilter("all");
+                }}
+              >
+                Réinitialiser
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Tabs */}
         <Tabs defaultValue="all" className="space-y-6">
-          <SharedTabsList className="w-full sm:w-auto sm:max-w-md">
-            <SharedTabsTrigger value="all">
-              Mes Connexions ({connections.length})
-            </SharedTabsTrigger>
-            <SharedTabsTrigger value="suggestions">
-              Suggestions ({suggestions.length})
-            </SharedTabsTrigger>
-          </SharedTabsList>
+          <TabsList className="grid w-full grid-cols-2 max-w-md">
+            <TabsTrigger value="all">
+              Mes Connexions ({filteredConnections.length})
+            </TabsTrigger>
+            <TabsTrigger value="suggestions">
+              Suggestions ({filteredSuggestions.length})
+            </TabsTrigger>
+          </TabsList>
 
           {/* All Connections */}
           <TabsContent value="all" className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {connections.map((connection) => (
+              {filteredConnections.map((connection) => (
                 <Card key={connection.id} className="campus-card">
                   <CardContent className="p-6">
                     <div className="flex flex-col items-center text-center space-y-4">
@@ -239,10 +336,10 @@ export function Connections() {
 
                       <div className="flex gap-2 flex-wrap justify-center">
                         <Badge variant="secondary" className="text-xs">
-                          {connection.university}
+                          {getUniversityLabel(connection.university)}
                         </Badge>
                         <Badge variant="outline" className="text-xs">
-                          {connection.field}
+                          {getFacultyLabel(connection.field)}
                         </Badge>
                       </div>
 
@@ -268,12 +365,15 @@ export function Connections() {
                 </Card>
               ))}
             </div>
+            {!loading && filteredConnections.length === 0 && (
+              <p className="text-sm text-muted-foreground">Aucune connexion trouvée pour ces critères.</p>
+            )}
           </TabsContent>
 
           {/* Suggestions */}
           <TabsContent value="suggestions" className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {suggestions.map((suggestion) => (
+              {filteredSuggestions.map((suggestion) => (
                 <Card key={suggestion.id} className="campus-card">
                   <CardContent className="p-6">
                     <div className="flex flex-col items-center text-center space-y-4">
@@ -298,10 +398,10 @@ export function Connections() {
 
                       <div className="flex gap-2 flex-wrap justify-center">
                         <Badge variant="secondary" className="text-xs">
-                          {suggestion.university}
+                          {getUniversityLabel(suggestion.university)}
                         </Badge>
                         <Badge variant="outline" className="text-xs">
-                          {suggestion.field}
+                          {getFacultyLabel(suggestion.field)}
                         </Badge>
                       </div>
 
@@ -325,8 +425,8 @@ export function Connections() {
                               duration: 2000,
                             });
                             // Move to connections list
-                            setConnections([...connections, suggestion]);
-                            setSuggestions(suggestions.filter(s => s.id !== suggestion.id));
+                            setConnections((prev) => [...prev, suggestion]);
+                            setSuggestions((prev) => prev.filter((s) => s.id !== suggestion.id));
                           } catch (error: any) {
                             toast({
                               title: "Erreur",
@@ -344,6 +444,9 @@ export function Connections() {
                 </Card>
               ))}
             </div>
+            {!loading && filteredSuggestions.length === 0 && (
+              <p className="text-sm text-muted-foreground">Aucune suggestion trouvée pour ces critères.</p>
+            )}
           </TabsContent>
         </Tabs>
       </div>
