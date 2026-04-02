@@ -80,7 +80,7 @@ export function getNavigationSections(user?: NavigationUser | null): NavigationS
     { title: "Accueil", url: "/", icon: Home },
     { title: "Ressources", url: "/resources", icon: FolderOpen },
     { title: "NouveauPost", url: newPost, icon: Plus },
-    { title: "Sphères", url: "/spheres", icon:  },
+    { title: "Sphères", url: "/spheres", icon: Globe },
     { title: "Notifications", url: "/notifications", icon: Bell },
     ...adminEntry,
   ];
