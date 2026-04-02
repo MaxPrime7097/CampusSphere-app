@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { downloadResource, getResource, reportResource, saveResource, trackResourceShare } from "@/services/api";
-import { Download, Share2, ChevronLeft, Eye, Flag, Loader2, Zap, Bookmark } from "lucide-react";
+import { deleteResource, downloadResource, getResource, reportResource, saveResource, trackResourceShare, updateResource } from "@/services/api";
+import { Download, Share2, ChevronLeft, Eye, Flag, Loader2, Zap, Bookmark, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { formatFrenchDate } from "@/lib/date";
-import { getResourceTypeLabel, getSubjectLabel, normalizeResourceType, normalizeSubject } from "@/lib/resourceMetadata";
+import { getSubjectLabel, getTypeLabel, normalizeResourceType, normalizeSubject } from "@/lib/resourceMetadata";
 
 export function ResourceDetail() {
   const { id } = useParams();
@@ -19,6 +19,12 @@ export function ResourceDetail() {
   const [isSharing, setIsSharing] = useState(false);
   const [isReporting, setIsReporting] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [isUpdatingResource, setIsUpdatingResource] = useState(false);
+  const [isDeletingResource, setIsDeletingResource] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [draftTitle, setDraftTitle] = useState("");
+  const [draftDescription, setDraftDescription] = useState("");
 
   const [resource, setResource] = useState<{
     id: string;
@@ -48,6 +54,8 @@ export function ResourceDetail() {
     tags: string[];
     relatedCourse: string;
     isSaved: boolean;
+    canEdit?: boolean;
+    canDelete?: boolean;
   } | null>(null);
 
   // Load resource from API
@@ -92,12 +100,16 @@ export function ResourceDetail() {
               views: data.viewCount || data.view_count || data.stats?.views || 0
             },
             isSaved: data.isSaved ?? data.is_saved ?? false,
+            canEdit: data.canEdit ?? data.can_edit ?? false,
+            canDelete: data.canDelete ?? data.can_delete ?? false,
             impactScore: data.impactScore || data.impact_score || 0,
             tags: data.tags || [],
             relatedCourse: normalizeSubject(data.subject)
           };
           setResource(resourcePayload);
           setIsSaved(resourcePayload.isSaved);
+          setDraftTitle(resourcePayload.title);
+          setDraftDescription(resourcePayload.description || "");
         }
       } catch (e: any) {
         toast({
@@ -258,13 +270,69 @@ export function ResourceDetail() {
     })();
   };
 
+  const handleOpenEdit = () => {
+    if (!resource) return;
+    setDraftTitle(resource.title);
+    setDraftDescription(resource.description || "");
+    setShowEditDialog(true);
+  };
+
+  const handleUpdateResource = async () => {
+    if (!id || !resource || isUpdatingResource) return;
+    const title = draftTitle.trim();
+    if (!title) {
+      toast({ title: "Titre requis", description: "Le titre ne peut pas être vide.", variant: "destructive" });
+      return;
+    }
+
+    // Pessimistic update.
+    setIsUpdatingResource(true);
+    try {
+      const updated = await updateResource(id, { title, description: draftDescription.trim() });
+      setResource((prev) =>
+        prev
+          ? {
+              ...prev,
+              title: updated?.title ?? title,
+              description: updated?.description ?? draftDescription.trim(),
+            }
+          : prev
+      );
+      setShowEditDialog(false);
+      toast({ title: "Ressource modifiée", description: "La ressource a été mise à jour." });
+    } catch (e: any) {
+      toast({ title: "Échec de modification", description: e?.message || "Impossible de modifier cette ressource.", variant: "destructive" });
+    } finally {
+      setIsUpdatingResource(false);
+    }
+  };
+
+  const handleDeleteResource = async () => {
+    if (!id || !resource || isDeletingResource) return;
+    const snapshot = resource;
+    setShowDeleteDialog(false);
+    setIsDeletingResource(true);
+    // Optimistic UI: hide content locally while deletion is pending.
+    setResource(null);
+    try {
+      await deleteResource(id);
+      toast({ title: "Ressource supprimée", description: "La ressource a été supprimée définitivement." });
+      navigate("/resources");
+    } catch (e: any) {
+      setResource(snapshot);
+      toast({ title: "Échec de suppression", description: e?.message || "Impossible de supprimer la ressource.", variant: "destructive" });
+    } finally {
+      setIsDeletingResource(false);
+    }
+  };
+
 
   if (!resource) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p>Chargement de la ressource...</p>
+          <p>{isDeletingResource ? "Suppression de la ressource..." : "Chargement de la ressource..."}</p>
         </div>
       </div>
     );
@@ -290,7 +358,7 @@ export function ResourceDetail() {
             <div className="mb-4">
               <div className="flex flex-wrap items-center gap-2 mb-3">
                 <Badge className="campus-gradient text-white">
-                  {getResourceTypeLabel(resource.type)}
+                  {getTypeLabel(resource.type)}
                 </Badge>
                 <Badge variant="secondary">{getSubjectLabel(resource.subject)}</Badge>
                 <Badge variant="outline">{resource.format ? resource.format.toUpperCase() : "Non défini"}</Badge>
@@ -363,6 +431,36 @@ export function ResourceDetail() {
                   )}
                   {isSaved ? "Enregistré" : "Enregistrer"}
                 </Button>
+                {resource.canEdit && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleOpenEdit}
+                    disabled={isUpdatingResource}
+                    className="gap-2"
+                    aria-label="Modifier la ressource"
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Modifier
+                  </Button>
+                )}
+                {resource.canDelete && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setShowDeleteDialog(true)}
+                    disabled={isDeletingResource}
+                    className="gap-2"
+                    aria-label="Supprimer la ressource"
+                  >
+                    {isDeletingResource ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                    Supprimer
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   size="sm"
@@ -455,6 +553,40 @@ export function ResourceDetail() {
         </Card>
 
       </div>
+
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Modifier la ressource</DialogTitle>
+            <DialogDescription>Mettre à jour le titre et la description.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Textarea value={draftTitle} onChange={(e) => setDraftTitle(e.target.value)} className="min-h-[60px]" />
+            <Textarea value={draftDescription} onChange={(e) => setDraftDescription(e.target.value)} className="min-h-[120px]" />
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowEditDialog(false)} disabled={isUpdatingResource}>Annuler</Button>
+              <Button onClick={handleUpdateResource} disabled={isUpdatingResource}>
+                {isUpdatingResource ? "Enregistrement..." : "Enregistrer"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Supprimer cette ressource ?</DialogTitle>
+            <DialogDescription>Cette action est destructive et ne peut pas être annulée.</DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)} disabled={isDeletingResource}>Annuler</Button>
+            <Button variant="destructive" onClick={handleDeleteResource} disabled={isDeletingResource}>
+              {isDeletingResource ? "Suppression..." : "Supprimer"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
