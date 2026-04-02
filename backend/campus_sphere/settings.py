@@ -366,7 +366,7 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = env_config('EMAIL_HOST_USER', default='your-email@gmail.com')
 EMAIL_HOST_PASSWORD = env_config('EMAIL_HOST_PASSWORD', default='your-app-password')
-DEFAULT_FROM_EMAIL = 'CampusSphere <noreply@campus-sphere.com>'
+DEFAULT_FROM_EMAIL = 'CampusSphere <no-reply@campussphere.app>'
 
 # Celery Configuration for Background Tasks
 # CELERY_BROKER_URL = REDIS_URL  # Commented out - Redis not configured
@@ -375,6 +375,13 @@ DEFAULT_FROM_EMAIL = 'CampusSphere <noreply@campus-sphere.com>'
 # CELERY_TASK_SERIALIZER = 'json'
 # CELERY_RESULT_SERIALIZER = 'json'
 # CELERY_TIMEZONE = TIME_ZONE
+
+CELERY_BEAT_SCHEDULE = {
+    'cleanup-expired-spheres-hourly': {
+        'task': 'spheres.tasks.cleanup_expired_spheres_task',
+        'schedule': 3600.0,
+    },
+}
 
 # Static Files
 STATIC_URL = '/static/'

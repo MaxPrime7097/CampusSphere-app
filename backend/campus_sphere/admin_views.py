@@ -1,17 +1,18 @@
-from django.utils import timezone
+from django.core.paginator import EmptyPage, Paginator
 from django.db.models import Q
-from rest_framework import permissions
+from django.utils import timezone
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
-from resources.models import Resource
-from posts.models import Post
+from posts.models import Post, PostReport
+from resources.models import Resource, ResourceReport
 from spheres.models import Sphere
 from tasks.models import Task
 from notifications.models import Notification
 from users.models import User
-from resources.models import ResourceReport
 
+from .admin_permissions import build_admin_permissions_for_user, require_admin_permission, resolve_admin_role
 from .admin_serializers import (
     AdminModerationQueueItemSerializer,
     AdminReportedContentItemSerializer,
@@ -21,34 +22,8 @@ from .admin_serializers import (
 )
 
 
-def _parse_time_window(request):
-    range_key = request.query_params.get('range', '24h')
-    now = timezone.now()
-
-    if range_key == '24h':
-        start = now - timezone.timedelta(hours=24)
-        end = now
-    elif range_key == '7j':
-        start = now - timezone.timedelta(days=7)
-        end = now
-    elif range_key == '30j':
-        start = now - timezone.timedelta(days=30)
-        end = now
-    elif range_key == 'custom':
-        start_raw = request.query_params.get('startDate')
-        end_raw = request.query_params.get('endDate')
-        start = timezone.datetime.fromisoformat(start_raw) if start_raw else None
-        end = timezone.datetime.fromisoformat(end_raw) if end_raw else now
-        if start and timezone.is_naive(start):
-            start = timezone.make_aware(start, timezone.get_current_timezone())
-        if end and timezone.is_naive(end):
-            end = timezone.make_aware(end, timezone.get_current_timezone())
-    else:
-        start = now - timezone.timedelta(hours=24)
-        end = now
-        range_key = '24h'
-
-    return range_key, start, end
+DEFAULT_PAGE_SIZE = 20
+MAX_PAGE_SIZE = 100
 
 
 def _display_name(user):
@@ -79,9 +54,66 @@ def _human_readable_size(bytes_size):
     return f"{size:.1f} PB"
 
 
+def _admin_response(success=True, data=None, meta=None, message=''):
+    return Response({
+        'success': success,
+        'data': data,
+        'meta': meta or {},
+        'message': message,
+    })
+
+
+def _admin_error(message, http_status=status.HTTP_400_BAD_REQUEST, meta=None):
+    return Response({
+        'success': False,
+        'data': None,
+        'meta': meta or {},
+        'message': message,
+    }, status=http_status)
+
+
+def _parse_list_params(request):
+    page = max(int(request.query_params.get('page', 1)), 1)
+    page_size = min(max(int(request.query_params.get('page_size', DEFAULT_PAGE_SIZE)), 1), MAX_PAGE_SIZE)
+    ordering = request.query_params.get('ordering', '-created_at')
+    search = request.query_params.get('search', '').strip()
+    return page, page_size, ordering, search
+
+
+def _paginate_queryset(queryset, page, page_size):
+    paginator = Paginator(queryset, page_size)
+    try:
+        page_obj = paginator.page(page)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages if paginator.num_pages else 1)
+
+    return page_obj.object_list, {
+        'pagination': {
+            'page': page_obj.number,
+            'page_size': page_size,
+            'total_items': paginator.count,
+            'total_pages': paginator.num_pages,
+            'has_next': page_obj.has_next(),
+            'has_previous': page_obj.has_previous(),
+        }
+    }
+
+
+def _parse_bulk_ids(request):
+    ids = request.data.get('ids', [])
+    if not isinstance(ids, list) or not ids:
+        return None, _admin_error('Le champ "ids" (liste) est obligatoire.')
+    return ids, None
+
+
+# Legacy endpoints kept for backward compatibility
 @api_view(['GET'])
-@permission_classes([permissions.IsAdminUser])
+@permission_classes([IsAuthenticated])
 def admin_moderation_queue(request):
+    allowed, denied_response, _, _ = require_admin_permission(request, 'view')
+    if not allowed:
+        return denied_response
+
     resources = Resource.objects.select_related('author').order_by('-created_at')[:50]
     payload = [
         {
@@ -100,12 +132,16 @@ def admin_moderation_queue(request):
     ]
 
     serializer = AdminModerationQueueItemSerializer(payload, many=True)
-    return Response({'success': True, 'data': serializer.data})
+    return _admin_response(True, serializer.data, message='File de modération chargée.')
 
 
 @api_view(['GET'])
-@permission_classes([permissions.IsAdminUser])
+@permission_classes([IsAuthenticated])
 def admin_reported_content(request):
+    allowed, denied_response, _, _ = require_admin_permission(request, 'view')
+    if not allowed:
+        return denied_response
+
     posts = Post.objects.select_related('author').order_by('-created_at')[:50]
     resource_reports = ResourceReport.objects.select_related('resource', 'reporter').order_by('-created_at')[:50]
 
@@ -142,12 +178,16 @@ def admin_reported_content(request):
     payload = sorted(payload, key=lambda item: item['date'] or timezone.now(), reverse=True)[:50]
 
     serializer = AdminReportedContentItemSerializer(payload, many=True)
-    return Response({'success': True, 'data': serializer.data})
+    return _admin_response(True, serializer.data, message='Contenu signalé chargé.')
 
 
 @api_view(['GET'])
-@permission_classes([permissions.IsAdminUser])
+@permission_classes([IsAuthenticated])
 def admin_user_management_summary(request):
+    allowed, denied_response, _, _ = require_admin_permission(request, 'view')
+    if not allowed:
+        return denied_response
+
     today = timezone.localdate()
     summary = {
         'totalUsers': User.objects.count(),
@@ -163,86 +203,16 @@ def admin_user_management_summary(request):
 
 
 @api_view(['GET'])
-@permission_classes([permissions.IsAdminUser])
-def admin_kpi_stats(request):
-    range_key, start, end = _parse_time_window(request)
-    now = timezone.now()
+@permission_classes([IsAuthenticated])
+def admin_permissions(request):
+    allowed, denied_response, role, permissions = require_admin_permission(request, 'view')
+    if not allowed:
+        return denied_response
 
-    date_filters = {}
-    if start:
-        date_filters['gte'] = start
-    if end:
-        date_filters['lte'] = end
-
-    def _window(field):
-        return {f'{field}__{operator}': value for operator, value in date_filters.items()}
-
-    active_spheres_query = Sphere.objects.all()
-    if start or end:
-        active_spheres_query = active_spheres_query.filter(Q(**_window('updated_at')) | Q(**_window('created_at')))
-
-    payload = {
-        'newUsers': User.objects.filter(**_window('date_joined')).count() if (start or end) else User.objects.count(),
-        'activeSpheres': active_spheres_query.count(),
-        'pendingReports': ResourceReport.objects.filter(status='pending', **_window('created_at')).count() if (start or end) else ResourceReport.objects.filter(status='pending').count(),
-        'overdueTasks': Task.objects.filter(is_completed=False, due_date__lt=now, **_window('due_date')).count() if (start or end) else Task.objects.filter(is_completed=False, due_date__lt=now).count(),
-        'failedNotifications': Notification.objects.filter(
-            Q(data__delivery_status='failed') | Q(data__email_failed=True),
-            **(_window('created_at') if (start or end) else {}),
-        ).count(),
-        'range': range_key,
-        'startDate': start,
-        'endDate': end,
-    }
-
-    serializer = AdminKpiStatsSerializer(payload)
-    return Response({'success': True, 'data': serializer.data})
-
-
-@api_view(['POST'])
-@permission_classes([permissions.IsAdminUser])
-def admin_suspend_user(request):
-    user_id = request.data.get('userId')
-    user = User.objects.filter(id=user_id).first()
-    if not user:
-        serializer = AdminQuickActionSerializer({'action': 'suspendUser', 'success': False, 'message': 'Utilisateur introuvable.'})
-        return Response({'success': False, 'data': serializer.data}, status=404)
-
-    user.is_active = False
-    user.save(update_fields=['is_active'])
-    serializer = AdminQuickActionSerializer({'action': 'suspendUser', 'success': True, 'message': 'Utilisateur suspendu.'})
-    return Response({'success': True, 'data': serializer.data})
-
-
-@api_view(['POST'])
-@permission_classes([permissions.IsAdminUser])
-def admin_close_report(request):
-    report_id = request.data.get('reportId')
-    report = ResourceReport.objects.filter(id=report_id).first()
-    if not report:
-        serializer = AdminQuickActionSerializer({'action': 'closeReport', 'success': False, 'message': 'Signalement introuvable.'})
-        return Response({'success': False, 'data': serializer.data}, status=404)
-
-    report.status = 'reviewed'
-    report.save(update_fields=['status', 'updated_at'])
-    serializer = AdminQuickActionSerializer({'action': 'closeReport', 'success': True, 'message': 'Signalement clôturé.'})
-    return Response({'success': True, 'data': serializer.data})
-
-
-@api_view(['POST'])
-@permission_classes([permissions.IsAdminUser])
-def admin_archive_expired_sphere(request):
-    sphere_id = request.data.get('sphereId')
-    sphere = Sphere.objects.filter(id=sphere_id).first()
-    if not sphere:
-        serializer = AdminQuickActionSerializer({'action': 'archiveSphere', 'success': False, 'message': 'Sphère introuvable.'})
-        return Response({'success': False, 'data': serializer.data}, status=404)
-
-    collab_types = list(sphere.collaboration_types or [])
-    if 'archived' not in collab_types:
-        collab_types.append('archived')
-    sphere.collaboration_types = collab_types
-    sphere.save(update_fields=['collaboration_types', 'updated_at'])
-
-    serializer = AdminQuickActionSerializer({'action': 'archiveSphere', 'success': True, 'message': 'Sphère marquée comme archivée.'})
-    return Response({'success': True, 'data': serializer.data})
+    return Response({
+        'success': True,
+        'data': {
+            'role': role or resolve_admin_role(request.user),
+            'permissions': permissions or build_admin_permissions_for_user(request.user),
+        },
+    })

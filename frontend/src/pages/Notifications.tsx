@@ -15,9 +15,128 @@ import {
   Loader2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { CanonicalNotificationType, NOTIFICATION_TYPE_SET } from "@/constants/notificationTypes";
+
+
+type NotificationListItem = {
+  id: string;
+  type: CanonicalNotificationType;
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+  sender: {
+    name: string | null;
+    avatar: string | null;
+    id: string | null;
+  };
+  actionUrl: string | null;
+};
+
+const debugFallbackType = (rawType: unknown, notificationId: unknown) => {
+  console.debug("[Notifications] Unknown notification type, fallback to system", {
+    notificationId,
+    rawType,
+  });
+};
+
+const LEGACY_TYPE_MAP: Record<string, CanonicalNotificationType> = {
+  sphere_invite: "sphere_invitation",
+  task: "task_assigned",
+  resource: "resource_shared",
+  message_received: "message",
+};
+
+const toCanonicalType = (rawType: unknown, notificationId: unknown): CanonicalNotificationType => {
+  if (typeof rawType === "string" && NOTIFICATION_TYPE_SET.has(rawType)) {
+    return rawType as CanonicalNotificationType;
+  }
+
+  if (typeof rawType === "string" && LEGACY_TYPE_MAP[rawType]) {
+    return LEGACY_TYPE_MAP[rawType];
+  }
+
+  debugFallbackType(rawType, notificationId);
+  return "system";
+};
+
+type NormalizedNotificationData = {
+  postId: string | null;
+  profileUsername: string | null;
+  sphereId: string | null;
+  taskId: string | null;
+  resourceId: string | null;
+  conversationId: string | null;
+};
+
+const toNullableString = (value: unknown): string | null => {
+  if (typeof value === "string" && value.trim().length > 0) {
+    return value;
+  }
+  if (typeof value === "number") {
+    return String(value);
+  }
+  return null;
+};
+
+const normalizeNotificationData = (n: any): NormalizedNotificationData => {
+  const data = n?.data;
+  const sender = n?.sender;
+
+  return {
+    postId: toNullableString(data?.post_id) || toNullableString(data?.post) || toNullableString(data?.postId),
+    profileUsername:
+      toNullableString(data?.requester_username) ||
+      toNullableString(data?.username) ||
+      toNullableString(sender?.id),
+    sphereId: toNullableString(data?.sphere_id) || toNullableString(data?.sphereId),
+    taskId: toNullableString(data?.task_id) || toNullableString(data?.taskId),
+    resourceId: toNullableString(data?.resource_id) || toNullableString(data?.resourceId),
+    conversationId: toNullableString(data?.conversation_id) || toNullableString(data?.conversationId),
+  };
+};
+
+const CLICKABLE_NOTIFICATION_TYPES = new Set<CanonicalNotificationType>([
+  "post_like",
+  "post_comment",
+  "comment_reply",
+  "sphere_invitation",
+  "sphere_join_request",
+  "task_assigned",
+  "task_completed",
+  "resource_shared",
+  "connection_request",
+  "connection_accepted",
+  "message",
+]);
+
+const buildActionUrl = (type: CanonicalNotificationType, data: NormalizedNotificationData): string | null => {
+  switch (type) {
+    case "post_like":
+    case "post_comment":
+    case "comment_reply":
+      return data.postId ? `/posts/${data.postId}` : null;
+    case "sphere_invitation":
+    case "sphere_join_request":
+      return data.sphereId ? `/spheres/${data.sphereId}` : null;
+    case "task_assigned":
+    case "task_completed":
+      return data.taskId ? `/tasks/${data.taskId}` : null;
+    case "resource_shared":
+      return data.resourceId ? `/resources/${data.resourceId}` : null;
+    case "connection_request":
+    case "connection_accepted":
+      return data.profileUsername ? `/profile/${data.profileUsername}` : null;
+    case "message":
+      return data.conversationId ? `/messages/${data.conversationId}` : "/messages";
+    case "system":
+    default:
+      return null;
+  }
+};
 
 export function Notifications() {
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<NotificationListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusText, setStatusText] = useState<string | null>(null);
   const { toast } = useToast();
@@ -31,7 +150,8 @@ export function Notifications() {
         const data = await listNotifications();
         if (isMounted) {
           // Map backend notifications to frontend format
-          const mapped = (data || []).map((n: any) => {
+          const safeNotifications = Array.isArray(data) ? data : [];
+          const mapped = safeNotifications.map((n: any) => {
             const senderName =
               n.sender?.name ||
               n.data?.sender_name ||
@@ -43,15 +163,21 @@ export function Notifications() {
               null;
             const senderAvatar = n.sender?.avatar || n.data?.sender_avatar || null;
 
-            let actionUrl = null;
-            if (n.data?.post_id) actionUrl = `/posts/${n.data.post_id}`;
-            else if (n.data?.sphere_id) actionUrl = `/spheres/${n.data.sphere_id}`;
-            else if (n.data?.task_id) actionUrl = `/tasks/${n.data.task_id}`;
-            else if (n.data?.conversation_id) actionUrl = `/messages`;
+            const notificationType = toCanonicalType(n.notification_type || n.type, n.id);
+            const normalizedData = normalizeNotificationData(n);
+            const actionUrl = buildActionUrl(notificationType, normalizedData);
+            if (!actionUrl && CLICKABLE_NOTIFICATION_TYPES.has(notificationType)) {
+              console.debug("[Notifications] Missing actionUrl for clickable notification", {
+                notificationId: n.id,
+                notificationType,
+                normalizedData,
+                rawData: n.data,
+              });
+            }
 
             return {
               id: String(n.id),
-              type: n.notification_type || n.type || 'system',
+              type: notificationType,
               title: n.title || 'Notification',
               message: n.message || n.content || '',
               read: n.is_read || n.read || false,
@@ -81,22 +207,27 @@ export function Notifications() {
     };
   }, []);
 
-  const getNotificationIcon = (type: string) => {
+  const getNotificationIcon = (type: CanonicalNotificationType) => {
     switch (type) {
-      case 'sphere_invite':
-      case 'sphere_join_request':
+      case "sphere_invitation":
+      case "sphere_join_request":
+      case "connection_request":
+      case "connection_accepted":
         return <Users className="h-4 w-4 text-blue-500" />;
-      case 'message':
+      case "message":
         return <MessageSquare className="h-4 w-4 text-green-500" />;
-      case 'task':
-      case 'task_assigned':
+      case "post_like":
+      case "post_comment":
+      case "comment_reply":
+        return <Bell className="h-4 w-4 text-pink-500" />;
+      case "task_assigned":
+      case "task_completed":
         return <Calendar className="h-4 w-4 text-orange-500" />;
-      case 'resource':
+      case "resource_shared":
         return <FileText className="h-4 w-4 text-purple-500" />;
-      case 'system':
-        return <Settings className="h-4 w-4 text-gray-500" />;
+      case "system":
       default:
-        return <Bell className="h-4 w-4 text-gray-500" />;
+        return <Settings className="h-4 w-4 text-gray-500" />;
     }
   };
 

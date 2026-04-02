@@ -21,7 +21,7 @@
 
 ### Base URL
 ```
-Production: https://api.campus-sphere.com
+Production: https://api.campussphere.app
 Development: http://localhost:3001
 ```
 
@@ -170,8 +170,8 @@ Authorization: Bearer <jwt_token>
     "lastName": "Doe",
     "username": "johndoe",
     "email": "john@example.com",
-    "avatar": "https://cdn.campus-sphere.com/avatars/uuid.jpg",
-    "coverPhoto": "https://cdn.campus-sphere.com/covers/uuid.jpg",
+    "avatar": "https://cdn.campussphere.app/avatars/uuid.jpg",
+    "coverPhoto": "https://cdn.campussphere.app/covers/uuid.jpg",
     "bio": "Étudiant en informatique passionné par le développement web",
     "university": "douala",
     "faculty": "informatique",
@@ -468,7 +468,7 @@ Authorization: Bearer <jwt_token>
         "firstName": "John",
         "lastName": "Doe",
         "username": "johndoe",
-        "avatar": "https://cdn.campus-sphere.com/avatars/uuid.jpg"
+        "avatar": "https://cdn.campussphere.app/avatars/uuid.jpg"
       },
       "sphereId": "uuid",
       "sphere": {
@@ -592,7 +592,7 @@ Authorization: Bearer <jwt_token>
       "file": {
         "id": "uuid",
         "name": "cours-react.pdf",
-        "url": "https://cdn.campus-sphere.com/files/uuid.pdf",
+        "url": "https://cdn.campussphere.app/files/uuid.pdf",
         "size": 2048576,
         "type": "application/pdf"
       },
@@ -601,7 +601,7 @@ Authorization: Bearer <jwt_token>
         "firstName": "John",
         "lastName": "Doe",
         "username": "johndoe",
-        "avatar": "https://cdn.campus-sphere.com/avatars/uuid.jpg"
+        "avatar": "https://cdn.campussphere.app/avatars/uuid.jpg"
       },
       "subject": "informatique",
       "type": "cours",
@@ -635,6 +635,31 @@ description: "Cours complet sur React.js pour débutants"
 subject: "informatique"
 type: "cours"
 visibility: "public"
+# 🔌 Spécification API CampusSphere
+
+## 📋 Table des Matières
+
+1. [Vue d'ensemble](#vue-densemble)
+2. [Authentification](#authentification)
+3. [Utilisateurs](#utilisateurs)
+4. [Sphères](#sphères)
+5. [Posts](#posts)
+6. [Ressources](#ressources)
+7. [Tâches](#tâches)
+8. [Messages](#messages)
+9. [Notifications](#notifications)
+10. [Upload de fichiers](#upload-de-fichiers)
+11. [Codes d'erreur](#codes-derreur)
+12. [Exemples de requêtes](#exemples-de-requêtes)
+
+---
+
+## 🎯 Vue d'ensemble
+
+### Base URL
+Production: https://api.campussphere.app
+Development: http://localhost:3001
+### Headers requishttp
 audience: "Étudiants en informatique"
 tags: ["react", "javascript", "frontend"]
 ```

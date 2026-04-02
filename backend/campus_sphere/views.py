@@ -23,21 +23,23 @@ def global_search(request):
 
     try:
         if entity_type == 'all':
-            results = SearchService.global_search(query, request.user, limit)
+            raw_results = SearchService.global_search(query, request.user, limit)
         elif entity_type == 'users':
-            results = {'users': SearchService.search_users(query, limit=limit)}
+            raw_results = {'users': SearchService.search_users(query, limit=limit)}
         elif entity_type == 'spheres':
-            results = {'spheres': SearchService.search_spheres(query, user=request.user, limit=limit)}
+            raw_results = {'spheres': SearchService.search_spheres(query, user=request.user, limit=limit)}
         elif entity_type == 'posts':
-            results = {'posts': SearchService.search_posts(query, user=request.user, limit=limit)}
+            raw_results = {'posts': SearchService.search_posts(query, user=request.user, limit=limit)}
         elif entity_type == 'resources':
-            results = {'resources': SearchService.search_resources(query, user=request.user, limit=limit)}
+            raw_results = {'resources': SearchService.search_resources(query, user=request.user, limit=limit)}
         else:
             return Response({
                 'success': False,
                 'error': 'Invalid entity type',
                 'timestamp': timezone.now().isoformat()
             }, status=400)
+
+        results = SearchService.serialize_results(raw_results, request)
 
         return Response({
             'success': True,

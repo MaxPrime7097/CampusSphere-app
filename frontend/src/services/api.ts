@@ -83,8 +83,10 @@ function unwrapList<T = any>(response: any): T[] {
   return [];
 }
 
-function normalizeUser(user: any) {
+export function normalizeUser(user: any) {
   if (!user) return null;
+
+  const currentMood = user.currentMood ?? user.current_mood ?? "";
 
   const firstName = user.firstName ?? user.first_name ?? "";
   const lastName = user.lastName ?? user.last_name ?? "";
@@ -100,7 +102,18 @@ function normalizeUser(user: any) {
     name,
     username: user.username ?? "",
     email: user.email ?? "",
-    avatar: user.avatar ?? user.profileImage ?? null,
+    avatar:
+      user.avatar ??
+      user.profileImage ??
+      user.profile_image ??
+      user.avatarUrl ??
+      user.avatar_url ??
+      user.profilePicture ??
+      user.profile_picture ??
+      user.image ??
+      user.imageUrl ??
+      user.image_url ??
+      null,
     coverPhoto: user.coverPhoto ?? user.cover_photo ?? null,
     bio: user.bio ?? "",
     university: user.university ?? "",
@@ -114,7 +127,8 @@ function normalizeUser(user: any) {
     postVisibility: user.postVisibility ?? user.post_visibility ?? "public",
     dataExportRequestedAt: user.dataExportRequestedAt ?? user.data_export_requested_at ?? null,
     impactScore: user.impactScore ?? user.impact_score ?? 0,
-    currentMood: user.currentMood ?? user.current_mood ?? "",
+    currentMood,
+    current_mood: currentMood,
     skills: toArray(user.skills),
     interests: toArray(user.interests),
     previousEducation: toArray(user.previousEducation ?? user.previous_education),
@@ -152,11 +166,12 @@ function normalizeSphere(sphere: any) {
     objective: sphere.objective ?? "",
     targetAudience: sphere.target_audience ?? sphere.targetAudience ?? "",
     duration: sphere.duration ?? "",
+    expiresAt: sphere.expires_at ?? sphere.expiresAt ?? null,
+    autoDeleteOnExpiry: sphere.auto_delete_on_expiry ?? sphere.autoDeleteOnExpiry ?? false,
     collaborationTypes: toArray(sphere.collaboration_types ?? sphere.collaborationTypes),
     isPrivate: sphere.is_private ?? sphere.isPrivate ?? false,
     requireApproval: sphere.require_approval ?? sphere.requireApproval ?? false,
     memberCount: toNumber(sphere.member_count ?? sphere.memberCount, 0),
-    impactScore: toNumber(sphere.impact_score ?? sphere.impactScore, 0),
     progression: toNumber(sphere.progression ?? sphere.progressionPercentage, 0),
     createdBy: sphere.created_by ?? sphere.createdBy ?? createdByInfo?.id ?? null,
     createdByInfo,
@@ -170,6 +185,30 @@ function normalizeSphere(sphere: any) {
 
 function normalizeSpheres(spheres: any[] = []) {
   return spheres.map((sphere) => normalizeSphere(sphere)).filter(Boolean);
+}
+
+
+function normalizePostFiles(files: any[] | null | undefined) {
+  return toArray(files).map((file) => {
+    if (typeof file === "string") {
+      return {
+        id: null,
+        name: file.split("/").pop() || "",
+        url: file,
+        type: "",
+        size: 0,
+      };
+    }
+
+    return {
+      ...file,
+      id: file?.id ?? null,
+      name: file?.name ?? file?.original_name ?? "",
+      url: file?.url ?? file?.file_url ?? file?.file ?? "",
+      type: file?.type ?? file?.file_type ?? "",
+      size: toNumber(file?.size ?? file?.file_size, 0),
+    };
+  });
 }
 
 function normalizeResource(resource: any) {
@@ -189,6 +228,8 @@ function normalizeResource(resource: any) {
     fileUrl: resource.file_url ?? resource.fileUrl ?? "",
     fileSize: resource.file_size ?? resource.fileSize ?? "",
     isSaved: resource.is_saved ?? resource.isSaved ?? false,
+    canEdit: resource.can_edit ?? resource.canEdit ?? false,
+    canDelete: resource.can_delete ?? resource.canDelete ?? false,
     downloadCount: toNumber(resource.download_count ?? resource.downloadCount, 0),
     viewCount: toNumber(resource.view_count ?? resource.viewCount, 0),
     impactScore: toNumber(resource.impact_score ?? resource.impactScore, 0),
@@ -220,7 +261,7 @@ function normalizePost(post: any) {
     audience: post.audience ?? "",
     location: post.location ?? "",
     tags: toArray(post.tags),
-    files: toArray(post.files),
+    files: normalizePostFiles(post.files),
     allowComments: post.allow_comments ?? post.allowComments ?? true,
     isPinned: post.is_pinned ?? post.isPinned ?? false,
     likesCount: toNumber(post.likes_count ?? post.likesCount, 0),
@@ -431,11 +472,12 @@ export async function updateUserProfile(data: Partial<{
   interests: string[];
   current_mood: string;
 }>, token?: string) {
-  return apiFetch<any>("api/users/profile/", {
-    method: "PUT",
+  const response = await apiFetch<any>("api/users/profile/", {
+    method: "PATCH",
     body: data,
     token: token || getAccessToken(),
   });
+  return normalizeUser(unwrapItem(response));
 }
 
 export async function changeUserPassword(payload: { current_password: string; new_password: string }, token?: string) {
@@ -659,12 +701,29 @@ export async function updateSphere(id: number | string, data: Partial<{
   category: string;
   type: string;
   is_private: boolean;
+  require_approval: boolean;
+  duration: string;
+  auto_delete_on_expiry: boolean;
 }>, token?: string) {
   return apiFetch<any>(`api/spheres/${id}/`, {
     method: "PUT",
     body: data,
     token: token || getAccessToken(),
   });
+}
+
+
+export async function extendSphereDuration(
+  id: number | string,
+  duration: string,
+  token?: string
+) {
+  const response = await apiFetch<any>(`api/spheres/${id}/extend-duration/`, {
+    method: "POST",
+    body: { duration },
+    token: token || getAccessToken(),
+  });
+  return normalizeSphere(unwrapItem(response));
 }
 
 export async function deleteSphere(id: number | string, token?: string) {
@@ -780,7 +839,21 @@ export async function createPost(data: {
   category?: string;
   subject?: string;
   type?: string;
-}, token?: string) {
+} | FormData, token?: string) {
+  if (data instanceof FormData) {
+    const sphereId = data.get("sphere_id");
+    if (sphereId !== null && data.get("sphere") === null) {
+      data.append("sphere", String(sphereId));
+      data.delete("sphere_id");
+    }
+
+    return apiFetch<any>("api/posts/", {
+      method: "POST",
+      body: data,
+      token: token || getAccessToken(),
+    });
+  }
+
   const payload = { ...data } as any;
   if (payload.sphere_id !== undefined && payload.sphere === undefined) {
     payload.sphere = payload.sphere_id;
@@ -798,11 +871,12 @@ export async function updatePost(id: number | string, data: Partial<{
   visibility: string;
   tags: string[];
 }>, token?: string) {
-  return apiFetch<any>(`api/posts/${id}/`, {
+  const response = await apiFetch<any>(`api/posts/${id}/`, {
     method: "PUT",
     body: data,
     token: token || getAccessToken(),
   });
+  return normalizePost(unwrapItem(response));
 }
 
 export async function deletePost(id: number | string, token?: string) {
@@ -882,6 +956,21 @@ export async function createComment(postId: number | string, data: { content: st
   });
 }
 
+export async function updateComment(commentId: number | string, data: { content: string }, token?: string) {
+  return apiFetch<any>(`api/posts/comments/${commentId}/`, {
+    method: "PUT",
+    body: data,
+    token: token || getAccessToken(),
+  });
+}
+
+export async function deleteComment(commentId: number | string, token?: string) {
+  return apiFetch<any>(`api/posts/comments/${commentId}/`, {
+    method: "DELETE",
+    token: token || getAccessToken(),
+  });
+}
+
 export async function likeComment(commentId: number | string, token?: string) {
   return apiFetch<any>(`api/posts/comments/${commentId}/like/`, {
     method: "POST",
@@ -925,11 +1014,12 @@ export async function updateResource(id: number | string, data: Partial<{
   category: string;
   tags: string[];
 }>, token?: string) {
-  return apiFetch<any>(`api/resources/${id}/`, {
+  const response = await apiFetch<any>(`api/resources/${id}/`, {
     method: "PUT",
     body: data,
     token: token || getAccessToken(),
   });
+  return normalizeResource(unwrapItem(response));
 }
 
 export async function deleteResource(id: number | string, token?: string) {
@@ -1187,25 +1277,29 @@ export async function removeParticipant(conversationId: number | string, userId:
 // ============================================================================
 
 export async function listNotifications(token?: string) {
-  return apiFetch<any[]>("api/notifications/", { token: token || getAccessToken() });
+  const response = await apiFetch<any[]>("api/notifications/", { token: token || getAccessToken() });
+  return unwrapList<any>(response);
 }
 
 export async function getNotification(id: number | string, token?: string) {
-  return apiFetch<any>(`api/notifications/${id}/`, { token: token || getAccessToken() });
+  const response = await apiFetch<any>(`api/notifications/${id}/`, { token: token || getAccessToken() });
+  return unwrapItem<any>(response);
 }
 
 export async function markNotificationRead(id: number | string, token?: string) {
-  return apiFetch<any>(`api/notifications/${id}/read/`, {
+  const response = await apiFetch<any>(`api/notifications/${id}/read/`, {
     method: "PUT",
     token: token || getAccessToken(),
   });
+  return unwrapItem<any>(response);
 }
 
 export async function markAllNotificationsRead(token?: string) {
-  return apiFetch<any>("api/notifications/read-all/", {
+  const response = await apiFetch<any>("api/notifications/read-all/", {
     method: "PUT",
     token: token || getAccessToken(),
   });
+  return unwrapItem<any>(response);
 }
 
 export interface DeleteNotificationResponse {
@@ -1214,26 +1308,30 @@ export interface DeleteNotificationResponse {
 }
 
 export async function deleteNotification(id: number | string, token?: string) {
-  return apiFetch<DeleteNotificationResponse>(`api/notifications/${id}/`, {
+  const response = await apiFetch<DeleteNotificationResponse>(`api/notifications/${id}/`, {
     method: "DELETE",
     token: token || getAccessToken(),
   });
+  return unwrapItem<DeleteNotificationResponse>(response);
 }
 
 export async function getNotificationSettings(token?: string) {
-  return apiFetch<any>("api/notifications/settings/", { token: token || getAccessToken() });
+  const response = await apiFetch<any>("api/notifications/settings/", { token: token || getAccessToken() });
+  return unwrapItem<any>(response);
 }
 
 export async function updateNotificationSettings(data: Record<string, boolean>, token?: string) {
-  return apiFetch<any>("api/notifications/settings/", {
+  const response = await apiFetch<any>("api/notifications/settings/", {
     method: "PUT",
     body: data,
     token: token || getAccessToken(),
   });
+  return unwrapItem<any>(response);
 }
 
 export async function getNotificationStats(token?: string) {
-  return apiFetch<any>("api/notifications/stats/", { token: token || getAccessToken() });
+  const response = await apiFetch<any>("api/notifications/stats/", { token: token || getAccessToken() });
+  return unwrapItem<any>(response);
 }
 
 // ============================================================================
@@ -1326,6 +1424,19 @@ export interface AdminReportedContentItem {
     name: string;
     avatar: string | null;
   };
+}
+
+export interface AdminPermissions {
+  view: boolean;
+  create: boolean;
+  update: boolean;
+  delete: boolean;
+  export: boolean;
+}
+
+export interface AdminPermissionsPayload {
+  role: string | null;
+  permissions: AdminPermissions;
 }
 
 export interface AdminUserManagementSummary {
@@ -1427,57 +1538,20 @@ export async function getAdminUserManagementSummary(token?: string): Promise<Adm
   return mapAdminSummary(unwrapItem(response));
 }
 
-export async function getAdminKpiStats(
-  params: { range: AdminStatsRange; startDate?: string; endDate?: string },
-  token?: string,
-): Promise<AdminKpiStats> {
-  const query = new URLSearchParams({ range: params.range });
-  if (params.startDate) query.set("startDate", params.startDate);
-  if (params.endDate) query.set("endDate", params.endDate);
 
-  const response = await apiFetch<any>(`api/admin/stats/?${query.toString()}`, { token: token || getAccessToken() });
-  return mapAdminKpiStats(unwrapItem(response));
-}
+export async function getAdminPermissions(token?: string): Promise<AdminPermissionsPayload> {
+  const response = await apiFetch<any>("api/admin/permissions/", { token: token || getAccessToken() });
+  const payload = unwrapItem<any>(response) || {};
 
-export async function adminSuspendUser(userId: string, token?: string): Promise<AdminQuickActionResult> {
-  const response = await apiFetch<any>("api/admin/actions/suspend-user/", {
-    method: "POST",
-    body: { userId },
-    token: token || getAccessToken(),
-  });
-  const result = unwrapItem(response);
   return {
-    action: result?.action ?? "suspendUser",
-    success: Boolean(result?.success),
-    message: result?.message ?? "Action exécutée.",
-  };
-}
-
-export async function adminCloseReport(reportId: string, token?: string): Promise<AdminQuickActionResult> {
-  const response = await apiFetch<any>("api/admin/actions/close-report/", {
-    method: "POST",
-    body: { reportId },
-    token: token || getAccessToken(),
-  });
-  const result = unwrapItem(response);
-  return {
-    action: result?.action ?? "closeReport",
-    success: Boolean(result?.success),
-    message: result?.message ?? "Action exécutée.",
-  };
-}
-
-export async function adminArchiveExpiredSphere(sphereId: string, token?: string): Promise<AdminQuickActionResult> {
-  const response = await apiFetch<any>("api/admin/actions/archive-expired-sphere/", {
-    method: "POST",
-    body: { sphereId },
-    token: token || getAccessToken(),
-  });
-  const result = unwrapItem(response);
-  return {
-    action: result?.action ?? "archiveSphere",
-    success: Boolean(result?.success),
-    message: result?.message ?? "Action exécutée.",
+    role: payload?.role ?? null,
+    permissions: {
+      view: Boolean(payload?.permissions?.view),
+      create: Boolean(payload?.permissions?.create),
+      update: Boolean(payload?.permissions?.update),
+      delete: Boolean(payload?.permissions?.delete),
+      export: Boolean(payload?.permissions?.export),
+    },
   };
 }
 
