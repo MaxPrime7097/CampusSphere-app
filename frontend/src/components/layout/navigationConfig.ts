@@ -50,13 +50,7 @@ function isAdminUser(user?: NavigationUser | null) {
 
 export function getNavigationSections(user?: NavigationUser | null): NavigationSections {
   const profileUrl = `/profile/${user?.username || "current"}`;
-  const newPostAction = (
-    <CreatePostModal>
-      <Button variant="outline" size="sm">
-        <Plus className="h-4 w-4 mr-2" />
-      </Button>
-    </CreatePostModal>
-  );
+  const newPost = "#create-post";
   const adminEntry = isAdminUser(user)
     ? [{ title: "Admin", url: "/cs-inc/private/admin", icon: Shield }]
     : [];
@@ -85,7 +79,7 @@ export function getNavigationSections(user?: NavigationUser | null): NavigationS
   const mobileItems: NavigationItem[] = [
     { title: "Accueil", url: "/", icon: Home },
     { title: "Ressources", url: "/resources", icon: FolderOpen },
-    { title: "NouveauPost", component: newPostAction, icon: Plus },
+    { title: "NouveauPost", component: newPost, icon: Plus },
     { title: "Sphères", url: "/spheres", icon: Users },
     { title: "Notifications", url: "/notifications", icon: Bell },
     ...adminEntry,
