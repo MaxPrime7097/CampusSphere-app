@@ -30,6 +30,7 @@ export function Spheres() {
 
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userJoinedSpheres, setUserJoinedSpheres] = useState<string[]>([]);
+  const [pendingJoinRequests, setPendingJoinRequests] = useState<string[]>([]);
   const [userSpheres, setUserSpheres] = useState<any[]>([]);
   const [userSpheresLoadError, setUserSpheresLoadError] = useState<string | null>(null);
 
@@ -71,6 +72,18 @@ export function Spheres() {
     return () => { isMounted = false; };
   }, []);
 
+  useEffect(() => {
+    const pendingFromServer = (allSpheres || [])
+      .filter((sphere: any) => {
+        const status = sphere?.membership_status ?? sphere?.membershipStatus;
+        return String(status || "").toLowerCase() === "pending";
+      })
+      .map((sphere: any) => String(sphere.id));
+
+    if (pendingFromServer.length === 0) return;
+    setPendingJoinRequests((prev) => Array.from(new Set([...prev, ...pendingFromServer])));
+  }, [allSpheres]);
+
   const [allSpheres, setAllSpheres] = useState<any[]>([]);
   const [loadingSpheres, setLoadingSpheres] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -95,6 +108,39 @@ export function Spheres() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [isJoining, setIsJoining] = useState<string | null>(null);
+
+  const resolveJoinConflict = (error: unknown): "already_active" | "already_pending" | null => {
+    const rawMessage =
+      (error as any)?.response?.data?.detail ??
+      (error as any)?.response?.data?.message ??
+      (error as any)?.message ??
+      "";
+
+    let parsedPayload: any = null;
+    if (typeof rawMessage === "string") {
+      try {
+        parsedPayload = JSON.parse(rawMessage);
+      } catch {
+        parsedPayload = null;
+      }
+    }
+
+    const normalizedMessage = [
+      rawMessage,
+      parsedPayload?.detail,
+      parsedPayload?.message,
+      parsedPayload?.error,
+      parsedPayload?.status,
+      parsedPayload?.data?.status,
+    ]
+      .filter(Boolean)
+      .map((value) => String(value).toLowerCase())
+      .join(" ");
+
+    if (normalizedMessage.includes("already active")) return "already_active";
+    if (normalizedMessage.includes("already pending")) return "already_pending";
+    return null;
+  };
 
   const filteredSpheres = allSpheres.filter(sphere => {
     const matchesSearch = sphere.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -124,10 +170,13 @@ export function Spheres() {
     try {
       const result = await joinSphere(sphereId);
       if (result?.data?.status === 'pending') {
+        setPendingJoinRequests((prev) => (prev.includes(sphereId) ? prev : [...prev, sphereId]));
+        setUserJoinedSpheres((prev) => prev.filter((id) => String(id) !== String(sphereId)));
         toast({ title: "Demande envoyée !", description: `Attente d'approbation pour ${sphereName}` });
       } else {
         toast({ title: "Sphère rejoint !", description: `Succès pour ${sphereName}` });
         setUserJoinedSpheres(prev => [...prev, sphereId]);
+        setPendingJoinRequests((prev) => prev.filter((id) => String(id) !== String(sphereId)));
         const joinedSphere = allSpheres.find((sphere) => String(sphere.id) === String(sphereId));
         if (joinedSphere) {
           setUserSpheres((prev) => [joinedSphere, ...prev.filter((sphere) => String(sphere.id) !== String(sphereId))]);
@@ -135,7 +184,24 @@ export function Spheres() {
       }
     } catch (e: any) {
       debugApiError(`POST /spheres/${sphereId}/join`, e);
-      toast({ title: "Erreur", description: e?.message, variant: "destructive" });
+      const joinConflict = resolveJoinConflict(e);
+      if (joinConflict === "already_active") {
+        setUserJoinedSpheres((prev) => (prev.includes(sphereId) ? prev : [...prev, sphereId]));
+        setPendingJoinRequests((prev) => prev.filter((id) => String(id) !== String(sphereId)));
+        toast({
+          title: "Déjà membre",
+          description: `Vous êtes déjà membre actif de ${sphereName}.`,
+        });
+      } else if (joinConflict === "already_pending") {
+        setPendingJoinRequests((prev) => (prev.includes(sphereId) ? prev : [...prev, sphereId]));
+        setUserJoinedSpheres((prev) => prev.filter((id) => String(id) !== String(sphereId)));
+        toast({
+          title: "Demande déjà en attente",
+          description: `Votre demande pour ${sphereName} est déjà en attente.`,
+        });
+      } else {
+        toast({ title: "Erreur", description: e?.message, variant: "destructive" });
+      }
     } finally {
       setIsJoining(null);
     }
@@ -146,6 +212,7 @@ export function Spheres() {
       await leaveSphere(sphereId);
       toast({ title: "Sphère quittée", description: `Vous avez quitté "${sphereName}"` });
       setUserJoinedSpheres((prev) => prev.filter((id) => String(id) !== String(sphereId)));
+      setPendingJoinRequests((prev) => prev.filter((id) => String(id) !== String(sphereId)));
       setUserSpheres((prev) => prev.filter((sphere) => String(sphere.id) !== String(sphereId)));
     } catch (e: any) {
       debugApiError(`POST /spheres/${sphereId}/leave`, e);
@@ -161,6 +228,7 @@ export function Spheres() {
       setLoadError(null);
       const sphereIds = (userSpheresData || []).map((s: any) => String(s.id));
       setUserJoinedSpheres(sphereIds);
+      setPendingJoinRequests([]);
       setUserSpheres(userSpheresData || []);
       setUserSpheresLoadError(null);
     } catch (e: any) {
@@ -177,6 +245,7 @@ export function Spheres() {
     setUserJoinedSpheres((prev) =>
       prev.includes(String(sphere.id)) ? prev : [String(sphere.id), ...prev]
     );
+    setPendingJoinRequests((prev) => prev.filter((id) => String(id) !== String(sphere.id)));
     setUserSpheres((prev) => [sphere, ...prev.filter((item) => String(item.id) !== String(sphere.id))]);
   };
 
@@ -287,18 +356,29 @@ export function Spheres() {
                         </div>
                         <Button 
                           size="sm" 
-                          className={`w-full h-7 text-xs ${userJoinedSpheres.includes(String(sphere.id)) ? 'bg-green-500 hover:bg-green-600 text-white' : 'campus-gradient text-white'}`}
+                          className={`w-full h-7 text-xs ${userJoinedSpheres.includes(String(sphere.id)) ? 'bg-green-500 hover:bg-green-600 text-white' : pendingJoinRequests.includes(String(sphere.id)) ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'campus-gradient text-white'}`}
                           onClick={(e) => {
                             e.stopPropagation();
                             if (userJoinedSpheres.includes(String(sphere.id))) {
                               handleLeaveSphere(sphere.id, sphere.name);
-                            } else {
+                            } else if (!pendingJoinRequests.includes(String(sphere.id))) {
                               handleJoinSphere(sphere.id, sphere.name);
+                            } else {
+                              toast({
+                                title: "Demande en attente",
+                                description: "Cette demande d'adhésion est déjà en cours.",
+                              });
                             }
                           }}
-                          disabled={isJoining === sphere.id || loadingSpheres}
+                          disabled={isJoining === sphere.id || loadingSpheres || pendingJoinRequests.includes(String(sphere.id))}
                         >
-                          {isJoining === sphere.id ? <Loader2 className="h-3 w-3 animate-spin" /> : userJoinedSpheres.includes(String(sphere.id)) ? <><Check className="h-3 w-3 mr-1" /> Rejoint</> : "Rejoindre"}
+                          {isJoining === sphere.id
+                            ? <Loader2 className="h-3 w-3 animate-spin" />
+                            : userJoinedSpheres.includes(String(sphere.id))
+                              ? <><Check className="h-3 w-3 mr-1" /> Rejoint</>
+                              : pendingJoinRequests.includes(String(sphere.id))
+                                ? <><Clock className="h-3 w-3 mr-1" /> En attente</>
+                                : "Rejoindre"}
                         </Button>
                       </div>
                     </CardContent>
