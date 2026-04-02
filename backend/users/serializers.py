@@ -54,8 +54,15 @@ class UserLoginSerializer(serializers.Serializer):
 
 class UserProfileSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(read_only=True)
+    coverPhoto = serializers.ImageField(source='cover_photo', read_only=True)
+    studyYear = serializers.CharField(source='study_year', read_only=True)
+    studentId = serializers.CharField(source='student_id', read_only=True)
+    previousEducation = serializers.JSONField(source='previous_education', read_only=True)
+    portfolioLinks = serializers.JSONField(source='portfolio_links', read_only=True)
     phone_number = serializers.SerializerMethodField()
+    phoneNumber = serializers.SerializerMethodField()
     date_of_birth = serializers.SerializerMethodField()
+    dateOfBirth = serializers.SerializerMethodField()
     joined_spheres_count = serializers.SerializerMethodField()
     connections_count = serializers.SerializerMethodField()
     contributions_count = serializers.SerializerMethodField()
@@ -64,11 +71,12 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'id', 'first_name', 'last_name', 'username', 'email', 'full_name',
-            'phone_number', 'date_of_birth', 'avatar', 'cover_photo', 'bio', 'university', 'faculty', 'study_year',
-            'student_id', 'campus', 'town', 'language', 'profile_visibility', 'post_visibility',
+            'phone_number', 'phoneNumber', 'date_of_birth', 'dateOfBirth', 'avatar', 'cover_photo', 'coverPhoto',
+            'bio', 'university', 'faculty', 'study_year', 'studyYear', 'student_id', 'studentId', 'campus',
+            'town', 'language', 'profile_visibility', 'post_visibility',
             'data_export_requested_at', 'impact_score', 'current_mood',
-            'skills', 'interests', 'previous_education', 'experiences', 'portfolio_links',
-            'joined_spheres_count', 'connections_count', 'contributions_count',
+            'skills', 'interests', 'previous_education', 'previousEducation', 'experiences',
+            'portfolio_links', 'portfolioLinks', 'joined_spheres_count', 'connections_count', 'contributions_count',
             'date_joined', 'updated_at'
         ]
         read_only_fields = ['id', 'impact_score', 'date_joined', 'updated_at']
@@ -79,8 +87,14 @@ class UserProfileSerializer(serializers.ModelSerializer):
     def get_phone_number(self, obj):
         return getattr(obj, 'phone_number', '')
 
+    def get_phoneNumber(self, obj):
+        return self.get_phone_number(obj)
+
     def get_date_of_birth(self, obj):
         return getattr(obj, 'date_of_birth', None)
+
+    def get_dateOfBirth(self, obj):
+        return self.get_date_of_birth(obj)
 
     def get_connections_count(self, obj):
         """
