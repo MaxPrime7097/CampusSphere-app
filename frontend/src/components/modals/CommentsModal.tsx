@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { getCurrentUser, getPostComments, createComment, likeComment, normalizeUser } from "@/services/api";
+import { getCurrentUser, getPostComments, createComment, likeComment, normalizeUser, searchUsers } from "@/services/api";
 import {
   Dialog,
   DialogContent,
@@ -70,13 +70,7 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
 
   const mapApiComment = (apiComment: any, parentId?: string): Comment => ({
     id: String(apiComment.id),
-    author: {
-      name: apiComment.author_info?.name || apiComment.author?.name || apiComment.author_name || "Utilisateur",
-      avatar: apiComment.author_info?.avatar || apiComment.author?.avatar || "/placeholder-avatar.jpg",
-      username: apiComment.author_info?.username || apiComment.author?.username || "user",
-      isVerified: Boolean(apiComment.author_info?.isVerified || apiComment.author?.isVerified),
-      impactScore: Number(apiComment.author_info?.impactScore || apiComment.author?.impactScore || 0),
-    },
+    author: normalizeCommentAuthor(apiComment.author_info ?? apiComment.author, apiComment.author_name),
     content: apiComment.content || "",
     timestamp: apiComment.created_at || new Date().toISOString(),
     likes: Number(apiComment.likes_count || apiComment.likes || 0),
@@ -128,24 +122,7 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
       try {
         const data = await getPostComments(postId);
         if (isMounted && Array.isArray(data)) {
-          const mapped = data.map((comment: any) => ({
-            id: String(comment.id),
-            author: normalizeCommentAuthor(comment.author_info ?? comment.author, comment.author_name),
-            content: comment.content || "",
-            timestamp: comment.created_at || new Date().toISOString(),
-            likes: Number(comment.likes_count || comment.likes || 0),
-            isLiked: Boolean(comment.is_liked),
-            replies: comment.replies?.map((reply: any) => ({
-              id: String(reply.id),
-              author: normalizeCommentAuthor(reply.author_info ?? reply.author, reply.author_name),
-              content: reply.content || "",
-              timestamp: reply.created_at || new Date().toISOString(),
-              likes: Number(reply.likes_count || reply.likes || 0),
-              isLiked: Boolean(reply.is_liked),
-              isReply: true,
-              parentId: String(comment.id),
-            })) || [],
-          }));
+          const mapped = data.map((comment: any) => mapApiComment(comment));
           setComments(mapped);
         }
       } catch (error) {
@@ -265,6 +242,17 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
     }
   };
 
+  const startReply = (comment: Comment) => {
+    if (replyingTo === comment.id) {
+      setReplyingTo(null);
+      return;
+    }
+
+    const mentionPrefix = `@${comment.author.username} `;
+    setReplyingTo(comment.id);
+    setReplyContent((prev) => (prev.includes(mentionPrefix) ? prev : `${mentionPrefix}${prev}`));
+  };
+
   const handleReply = async (parentId: string) => {
     if (!replyContent.trim()) return;
     const parentDepth = findCommentDepth(comments, parentId);
@@ -366,7 +354,7 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
                   </Badge>
                 )}
               </div>
-              <p className="text-sm">{comment.content}</p>
+              <p className="text-sm whitespace-pre-wrap">{renderMentionText(comment.content)}</p>
             </div>
 
             <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
@@ -382,7 +370,7 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
               {canReply && (
                 <button
                   className="hover:text-primary flex items-center gap-1"
-                  onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
+                  onClick={() => startReply(comment)}
                 >
                   <Reply className="h-3 w-3" />
                   Répondre
@@ -399,7 +387,18 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
                   <Textarea
                     placeholder="Répondre au commentaire..."
                     value={replyContent}
-                    onChange={(e) => setReplyContent(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setReplyContent(value);
+                      const activeQuery = getActiveMentionQuery(value, e.target.selectionStart ?? value.length);
+                      if (activeQuery !== null) {
+                        setMentionQuery(activeQuery);
+                        setShowMentions(true);
+                      } else {
+                        setShowMentions(false);
+                        setMentionQuery("");
+                      }
+                    }}
                     className="min-h-[60px] resize-none"
                   />
                   <Button
@@ -436,139 +435,7 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
         </DialogHeader>
         
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-          {comments.map((comment) => (
-            <div key={comment.id} className="space-y-3">
-              {/* Commentaire principal */}
-              <div className="flex gap-3">
-                <Avatar className="h-10 w-10 flex-shrink-0">
-                  <AvatarImage src={comment.author.avatar} />
-                  <AvatarFallback>{comment.author.name?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
-                </Avatar>
-                
-                <div className="flex-1">
-                  <div className="bg-muted rounded-lg p-3">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-semibold text-sm">{comment.author.name}</span>
-                      {comment.author.isVerified && (
-                        <Badge variant="secondary" className="text-xs px-1 py-0">
-                          ✓
-                        </Badge>
-                      )}
-                      <span className="text-xs text-muted-foreground">@{comment.author.username}</span>
-                      {comment.author.impactScore && (
-                        <Badge variant="outline" className="text-xs flex items-center gap-1">
-                          <Zap className="h-3 w-3" />
-                          {comment.author.impactScore}
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-sm whitespace-pre-wrap">{renderMentionText(comment.content)}</p>
-                  </div>
-                  
-                  <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                    <span>{formatRelativeTime(comment.timestamp)}</span>
-                    <button 
-                      className={`flex items-center gap-1 hover:text-primary ${comment.isLiked ? 'text-red-500' : ''}`}
-                      aria-label="Like comment"
-                      onClick={() => handleLikeComment(comment.id)}
-                    >
-                      <Heart className={`h-3 w-3 ${comment.isLiked ? 'fill-current' : ''}`} />
-                      {comment.likes}
-                    </button>
-                    <button 
-                      className="hover:text-primary flex items-center gap-1"
-                      onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
-                    >
-                      <Reply className="h-3 w-3" />
-                      Répondre
-                    </button>
-                    <button className="hover:text-primary" aria-label="More options" title="Plus d'options">
-                      <MoreHorizontal className="h-3 w-3" />
-                    </button>
-                  </div>
-
-                  {/* Zone de réponse */}
-                  {replyingTo === comment.id && (
-                    <div className="mt-3 ml-4">
-                      <div className="flex gap-2">
-                        <Textarea
-                          placeholder="Répondre au commentaire..."
-                          value={replyContent}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            setReplyContent(value);
-                            const activeQuery = getActiveMentionQuery(value, e.target.selectionStart ?? value.length);
-                            if (activeQuery !== null) {
-                              setMentionQuery(activeQuery);
-                              setShowMentions(true);
-                            }
-                          }}
-                          className="min-h-[60px] resize-none"
-                        />
-                        <Button
-                          size="sm"
-                          onClick={() => handleReply(comment.id)}
-                          disabled={!replyContent.trim() || isSubmitting}
-                        >
-                          {isSubmitting ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Send className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Réponses */}
-              {comment.replies && comment.replies.length > 0 && (
-                <div className="ml-8 space-y-3">
-                  {comment.replies.map((reply) => (
-                    <div key={reply.id} className="flex gap-3">
-                      <Avatar className="h-8 w-8 flex-shrink-0">
-                        <AvatarImage src={reply.author.avatar} />
-                        <AvatarFallback>{reply.author.name?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
-                      </Avatar>
-                      
-                      <div className="flex-1">
-                        <div className="bg-muted/50 rounded-lg p-3">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-semibold text-sm">{reply.author.name}</span>
-                            {reply.author.isVerified && (
-                              <Badge variant="secondary" className="text-xs px-1 py-0">
-                                ✓
-                              </Badge>
-                            )}
-                            <span className="text-xs text-muted-foreground">@{reply.author.username}</span>
-                            {reply.author.impactScore && (
-                              <Badge variant="outline" className="text-xs flex items-center gap-1">
-                                <Zap className="h-3 w-3" />
-                                {reply.author.impactScore}
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-sm whitespace-pre-wrap">{renderMentionText(reply.content)}</p>
-                        </div>
-                        
-                        <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                          <span>{formatRelativeTime(reply.timestamp)}</span>
-                          <button 
-                            className={`flex items-center gap-1 hover:text-primary ${reply.isLiked ? 'text-red-500' : ''}`}
-                            onClick={() => handleLikeComment(reply.id, true, comment.id)}
-                          >
-                            <Heart className={`h-3 w-3 ${reply.isLiked ? 'fill-current' : ''}`} />
-                            {reply.likes}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+          {comments.map((comment) => renderComment(comment))}
         </div>
 
         <div className="border-t p-4">
