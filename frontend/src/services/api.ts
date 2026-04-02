@@ -473,7 +473,7 @@ export async function updateUserProfile(data: Partial<{
   current_mood: string;
 }>, token?: string) {
   const response = await apiFetch<any>("api/users/profile/", {
-    method: "PUT",
+    method: "PATCH",
     body: data,
     token: token || getAccessToken(),
   });
