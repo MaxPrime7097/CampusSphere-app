@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import patch
 from django.test import TestCase
 from django.urls import reverse
+from django.core.cache import cache
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.contrib.auth import get_user_model
@@ -39,6 +40,7 @@ class AuthTests(APITestCase):
     def setUp(self):
         self.register_url = reverse('users:register')
         self.login_url = reverse('users:login')
+        self.password_reset_url = reverse('users:password-reset')
         self.me_url = reverse('users:current-user')
 
         self.user_data = {
@@ -56,6 +58,31 @@ class AuthTests(APITestCase):
             'town': 'douala',
             'language': 'fr'
         }
+
+    def _assert_throttle_after_five_requests(self, url, payload):
+        cache.clear()
+
+        for _ in range(5):
+            response = self.client.post(url, payload, format='json')
+            self.assertNotEqual(
+                response.status_code,
+                status.HTTP_429_TOO_MANY_REQUESTS,
+                msg=f"{url} returned 429 before reaching the 6th request",
+            )
+
+        response = self.client.post(url, payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+
+    def test_auth_endpoints_are_throttled_after_five_requests_per_minute(self):
+        endpoints = [
+            (self.register_url, self.user_data),
+            (self.login_url, {'email': 'john@example.com', 'password': 'wrongpassword'}),
+            (self.password_reset_url, {'email': 'john@example.com'}),
+        ]
+
+        for url, payload in endpoints:
+            with self.subTest(url=url):
+                self._assert_throttle_after_five_requests(url, payload)
 
     def test_user_registration(self):
         """Test user registration"""

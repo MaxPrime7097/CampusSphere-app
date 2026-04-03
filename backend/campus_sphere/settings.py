@@ -248,6 +248,7 @@ CSRF_TRUSTED_ORIGINS = env_config(
 )
 
 CORS_ALLOW_CREDENTIALS = True
+FRONTEND_URL = env_config("FRONTEND_URL", default="http://localhost:8080")
 
 # Django REST Framework Configuration
 REST_FRAMEWORK = {

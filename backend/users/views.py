@@ -10,12 +10,15 @@ from rest_framework.filters import SearchFilter
 from django.db import models
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
+from django.contrib.auth.tokens import default_token_generator
 from .models import User, Connection, UserBlock
 from .serializers import (
     UserRegistrationSerializer, UserLoginSerializer, UserProfileSerializer,
     UserUpdateSerializer, ConnectionSerializer, ConnectionCreateSerializer,
     UserSearchSerializer, ChangePasswordSerializer, ChangeEmailSerializer,
-    LogoutSerializer, DeleteAccountSerializer, PrivacySettingsSerializer,
+    LogoutSerializer, DeleteAccountSerializer, PrivacySettingsSerializer, PasswordResetSerializer,
     DataExportRequestSerializer, BlockListItemSerializer, BlockCreateSerializer
 )
 from campus_sphere.cache import CacheManager, CacheKeys
@@ -103,6 +106,32 @@ class UserLoginView(APIView):
             'message': 'Login successful',
             'timestamp': user.date_joined.isoformat()
         })
+
+
+class PasswordResetView(APIView):
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [AuthScopedRateThrottle]
+
+    def post(self, request):
+        serializer = PasswordResetSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data["email"].strip().lower()
+
+        user = User.objects.filter(email__iexact=email, is_active=True).first()
+        if user:
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+            reset_link = f"{settings.FRONTEND_URL}/reset-password?uid={uid}&token={token}"
+            try:
+                from notifications.tasks import send_password_reset_email_task
+                send_password_reset_email_task.delay(str(user.id), reset_link)
+            except Exception:
+                logger.warning("Failed to queue password reset email task", exc_info=True)
+
+        return Response({
+            "success": True,
+            "message": "If this email exists, a password reset link has been sent."
+        }, status=status.HTTP_200_OK)
 
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
