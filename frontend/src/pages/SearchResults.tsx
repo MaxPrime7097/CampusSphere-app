@@ -401,7 +401,7 @@ export function SearchResults() {
         </UnifiedSearchFiltersBar>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <SharedTabsList className="mb-6 w-full">
+          <SharedTabsList containerClassName="mb-6">
             <SharedTabsTrigger value="all">
               Tout ({totalResults})
             </SharedTabsTrigger>
