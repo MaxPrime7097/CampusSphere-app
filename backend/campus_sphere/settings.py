@@ -154,6 +154,17 @@ else:
 REDIS_URL = env_config("REDIS_URL", default=None)
 
 if REDIS_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": REDIS_URL,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                # Évite de faire tomber l'application si Redis est momentanément indisponible
+                "IGNORE_EXCEPTIONS": True,
+            },
+        }
+    }
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
@@ -162,6 +173,22 @@ if REDIS_URL:
             },
         },
     }
+else:
+    # Fallback local en mémoire si REDIS_URL n'est pas défini
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "campus-sphere-locmem",
+        }
+    }
+
+# Sessions stockées en cache
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # 7 jours
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_SAMESITE = "None"
 
 
 # Password validation
@@ -348,9 +375,7 @@ USE_X_FORWARDED_HOST = not DEBUG
 # Production Settings
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_SSL_REDIRECT = True
-SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
-SESSION_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_SAMESITE = 'Lax'
 
 # File Upload Security
