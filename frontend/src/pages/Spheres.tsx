@@ -33,6 +33,9 @@ export function Spheres() {
   const [pendingJoinRequests, setPendingJoinRequests] = useState<string[]>([]);
   const [userSpheres, setUserSpheres] = useState<any[]>([]);
   const [userSpheresLoadError, setUserSpheresLoadError] = useState<string | null>(null);
+  const [allSpheres, setAllSpheres] = useState<any[]>([]);
+  const [loadingSpheres, setLoadingSpheres] = useState<boolean>(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Tab State - Initialized to page1
   const [activeTab, setActiveTab] = useState("page1");
@@ -83,10 +86,6 @@ export function Spheres() {
     if (pendingFromServer.length === 0) return;
     setPendingJoinRequests((prev) => Array.from(new Set([...prev, ...pendingFromServer])));
   }, [allSpheres]);
-
-  const [allSpheres, setAllSpheres] = useState<any[]>([]);
-  const [loadingSpheres, setLoadingSpheres] = useState<boolean>(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
