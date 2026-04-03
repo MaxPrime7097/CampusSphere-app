@@ -20,6 +20,7 @@ from .serializers import (
 )
 from campus_sphere.cache import CacheManager, CacheKeys
 from notifications.services import create_connection_request_notification
+from .throttles import AuthScopedRateThrottle
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +59,7 @@ class UserRegistrationView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserRegistrationSerializer
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [AuthScopedRateThrottle]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -81,6 +83,7 @@ class UserRegistrationView(generics.CreateAPIView):
 
 class UserLoginView(APIView):
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [AuthScopedRateThrottle]
 
     def post(self, request):
         serializer = UserLoginSerializer(data=request.data)
