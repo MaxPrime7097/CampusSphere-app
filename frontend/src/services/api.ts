@@ -50,6 +50,24 @@ function clearTokens() {
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
+export class ApiRequestError extends Error {
+  status?: number;
+
+  constructor(message: string, status?: number) {
+    super(message);
+    this.name = "ApiRequestError";
+    this.status = status;
+  }
+}
+
+export function isApiRequestErrorStatus(error: unknown, status: number): boolean {
+  return (
+    error instanceof ApiRequestError
+      ? error.status === status
+      : Boolean((error as any)?.message?.includes?.(`Request failed: ${status}`))
+  );
+}
+
 function toArray<T>(value: T[] | null | undefined): T[] {
   if (!value) return [];
   return Array.isArray(value) ? value : [value];
@@ -368,15 +386,15 @@ async function apiFetch<T>(
           }
         }
 
-        throw new Error(errMsg || `Request failed: ${res.status}`);
+        throw new ApiRequestError(errMsg || `Request failed: ${res.status}`, res.status);
       } catch (e) {
         const text = await res.text().catch(() => "");
-        throw new Error(text || `Request failed: ${res.status}`);
+        throw new ApiRequestError(text || `Request failed: ${res.status}`, res.status);
       }
     }
 
     const text = await res.text().catch(() => "");
-    throw new Error(text || `Request failed: ${res.status}`);
+    throw new ApiRequestError(text || `Request failed: ${res.status}`, res.status);
   }
 
   if (contentType.includes("application/json")) {
@@ -592,6 +610,37 @@ export async function getUserByUsername(username: string, token?: string) {
 export async function getUserConnections(userId: number | string, token?: string) {
   const response = await apiFetch<any>(`api/users/${userId}/connections/`, { token: token || getAccessToken() });
   return unwrapList(response);
+}
+
+export interface UserConnectionRelationResponse {
+  target_user_id: number;
+  is_self: boolean;
+  is_connected: boolean;
+  can_connect: boolean;
+  can_disconnect: boolean;
+  connection: any | null;
+}
+
+export async function getUserConnectionRelation(targetUserId: number | string, token?: string) {
+  const response = await apiFetch<any>(`api/users/${targetUserId}/connection-relation/`, {
+    token: token || getAccessToken(),
+  });
+  return unwrapItem<UserConnectionRelationResponse>(response);
+}
+
+export async function connectWithUser(targetUserId: number | string, token?: string) {
+  const response = await apiFetch<any>(`api/users/${targetUserId}/connection-relation/`, {
+    method: "POST",
+    token: token || getAccessToken(),
+  });
+  return unwrapItem(response);
+}
+
+export async function disconnectFromUser(targetUserId: number | string, token?: string) {
+  return apiFetch<any>(`api/users/${targetUserId}/connection-relation/`, {
+    method: "DELETE",
+    token: token || getAccessToken(),
+  });
 }
 
 export interface MutualConnectionCountRequest {
