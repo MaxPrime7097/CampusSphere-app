@@ -8,6 +8,22 @@ import {
 } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   CheckCheck,
   Bell,
@@ -42,6 +58,8 @@ type NotificationListItem = {
   };
   actionUrl: string | null;
 };
+type NotificationRow = NotificationListItem;
+const PAGE_SIZE = 10;
 
 const debugFallbackType = (rawType: unknown, notificationId: unknown) => {
   console.debug("[Notifications] Unknown notification type, fallback to system", {
@@ -197,7 +215,7 @@ export function Notifications() {
 
         return {
           id: String(n.id),
-          type: n.notification_type || n.type || "system",
+          type: toCanonicalType(n.notification_type || n.type, n.id),
           title: n.title || "Notification",
           message: n.message || n.content || "",
           read: n.is_read || n.read || false,
@@ -226,69 +244,8 @@ export function Notifications() {
   }, [page, readFilter, searchQuery, sortByDate, toast, typeFilter]);
 
   useEffect(() => {
-    let isMounted = true;
-    (async () => {
-      try {
-        setLoading(true);
-        const data = await listNotifications();
-        if (isMounted) {
-          // Map backend notifications to frontend format
-          const safeNotifications = Array.isArray(data) ? data : [];
-          const mapped = safeNotifications.map((n: any) => {
-            const senderName =
-              n.sender?.name ||
-              n.data?.sender_name ||
-              n.data?.user_full_name ||
-              n.data?.user_name ||
-              n.data?.inviter_name ||
-              n.data?.assigner_name ||
-              n.data?.requester_name ||
-              null;
-            const senderAvatar = n.sender?.avatar || n.data?.sender_avatar || null;
-
-            const notificationType = toCanonicalType(n.notification_type || n.type, n.id);
-            const normalizedData = normalizeNotificationData(n);
-            const actionUrl = buildActionUrl(notificationType, normalizedData);
-            if (!actionUrl && CLICKABLE_NOTIFICATION_TYPES.has(notificationType)) {
-              console.debug("[Notifications] Missing actionUrl for clickable notification", {
-                notificationId: n.id,
-                notificationType,
-                normalizedData,
-                rawData: n.data,
-              });
-            }
-
-            return {
-              id: String(n.id),
-              type: notificationType,
-              title: n.title || 'Notification',
-              message: n.message || n.content || '',
-              read: n.is_read || n.read || false,
-              createdAt: n.created_at || n.createdAt || new Date().toISOString(),
-              sender: {
-                name: senderName,
-                avatar: senderAvatar,
-                id: n.data?.sender_id || n.data?.user_id || n.data?.requester_id || n.data?.assigner_id || n.data?.inviter_id || null,
-              },
-              actionUrl,
-            };
-          });
-          setNotifications(mapped);
-        }
-      } catch (e: any) {
-        toast({
-          title: "Erreur",
-          description: e?.message || "Impossible de charger les notifications",
-          variant: "destructive",
-        });
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    void fetchNotifications();
+  }, [fetchNotifications]);
 
   const getNotificationIcon = (type: CanonicalNotificationType) => {
     switch (type) {
@@ -382,6 +339,9 @@ export function Notifications() {
   const uniqueTypes = useMemo(() => {
     return Array.from(new Set(notifications.map((n) => n.type))).filter(Boolean);
   }, [notifications]);
+  const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const isAllSelected = notifications.length > 0 && selectedIds.length === notifications.length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
