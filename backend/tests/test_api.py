@@ -264,20 +264,108 @@ class SearchAPITest(APITestCase):
         """Test global search functionality"""
         url = reverse('global-search')
         response = self.client.get(url, {'q': 'test', 'type': 'all'}, follow=True)
-        self.assertIn(response.status_code, [status.HTTP_200_OK, status.HTTP_500_INTERNAL_SERVER_ERROR])
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('success', response.data)
-        if response.status_code == status.HTTP_200_OK:
-            self.assertIn('users', response.data['data'])
-            self.assertIn('spheres', response.data['data'])
-            self.assertIn('posts', response.data['data'])
-            self.assertIn('resources', response.data['data'])
+        self.assertIn('users', response.data['data'])
+        self.assertIn('spheres', response.data['data'])
+        self.assertIn('posts', response.data['data'])
+        self.assertIn('resources', response.data['data'])
 
     def test_search_suggestions(self):
         """Test search suggestions"""
         url = reverse('search-suggestions')
         response = self.client.get(url, {'q': 'test'}, follow=True)
-        self.assertIn(response.status_code, [status.HTTP_200_OK, status.HTTP_500_INTERNAL_SERVER_ERROR])
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('success', response.data)
+
+    def test_global_search_returns_results_for_all_entities_with_minimal_data(self):
+        """Regression test: global search returns users/spheres/posts/resources."""
+        sphere = Sphere.objects.create(
+            name='Test Search Sphere',
+            description='Minimal sphere for search regression tests',
+            category='academic',
+            type='study',
+            is_private=False,
+            created_by=self.user
+        )
+        Post.objects.create(
+            author=self.user,
+            sphere=sphere,
+            content='Test search post content',
+            category='academic',
+            visibility='public',
+            tags=['test-search-tag'],
+        )
+        Resource.objects.create(
+            title='Test Search Resource',
+            description='Minimal resource for search regression tests',
+            author=self.user,
+            file=SimpleUploadedFile(
+                name='search-resource.pdf',
+                content=b'%PDF-1.4 search regression resource',
+                content_type='application/pdf',
+            ),
+            file_size=1024,
+            file_type='application/pdf',
+            subject='informatique',
+            type='cours',
+            visibility='public',
+            tags=['test-search-tag'],
+        )
+
+        url = reverse('global-search')
+        response = self.client.get(url, {'q': 'test search', 'type': 'all', 'limit': 10}, follow=True)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data['success'])
+        self.assertEqual(response.data.get('errors', {}), {})
+        self.assertGreaterEqual(len(response.data['data']['users']), 1)
+        self.assertGreaterEqual(len(response.data['data']['spheres']), 1)
+        self.assertGreaterEqual(len(response.data['data']['posts']), 1)
+        self.assertGreaterEqual(len(response.data['data']['resources']), 1)
+
+    def test_entity_specific_search_routes_return_200(self):
+        """Regression test: users/spheres/posts/resources searches never return 500."""
+        sphere = Sphere.objects.create(
+            name='Search Route Sphere',
+            description='Entity route sphere',
+            category='academic',
+            type='study',
+            is_private=False,
+            created_by=self.user
+        )
+        Post.objects.create(
+            author=self.user,
+            sphere=sphere,
+            content='Search route post',
+            category='academic',
+            visibility='public',
+            tags=['route-tag'],
+        )
+        Resource.objects.create(
+            title='Search Route Resource',
+            description='Entity route resource',
+            author=self.user,
+            file=SimpleUploadedFile(
+                name='search-route-resource.pdf',
+                content=b'%PDF-1.4 entity route resource',
+                content_type='application/pdf',
+            ),
+            file_size=2048,
+            file_type='application/pdf',
+            subject='informatique',
+            type='cours',
+            visibility='public',
+            tags=['route-tag'],
+        )
+
+        url = reverse('global-search')
+        for entity_type in ['users', 'spheres', 'posts', 'resources']:
+            response = self.client.get(url, {'q': 'search', 'type': entity_type}, follow=True)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertTrue(response.data['success'])
+            self.assertIn('errors', response.data)
+            self.assertIn(entity_type, response.data['data'])
 
 
 class ConnectionAPITest(APITestCase):
