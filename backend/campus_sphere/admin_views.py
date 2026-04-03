@@ -1,6 +1,7 @@
 from django.core.paginator import EmptyPage, Paginator
 from django.db.models import Q
 from django.utils import timezone
+from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -14,7 +15,6 @@ from users.models import User
 
 from .admin_permissions import build_admin_permissions_for_user, require_admin_permission, resolve_admin_role
 from .admin_serializers import (
-    AdminAuditLogSerializer,
     AdminModerationQueueItemSerializer,
     AdminReportedContentItemSerializer,
     AdminSummarySerializer,
