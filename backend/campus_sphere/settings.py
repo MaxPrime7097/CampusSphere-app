@@ -151,7 +151,7 @@ else:
 #
 # Redis / Channels (enabled when REDIS_URL is provided)
 #
-REDIS_URL = env_config("REDIS_URL", default=None)
+REDIS_URL = os.environ.get("REDIS_URL")
 
 if REDIS_URL:
     CHANNEL_LAYERS = {
@@ -161,6 +161,30 @@ if REDIS_URL:
                 "hosts": [REDIS_URL],
             },
         },
+    }
+
+if REDIS_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": REDIS_URL,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                "SOCKET_CONNECT_TIMEOUT": 3,
+                "SOCKET_TIMEOUT": 3,
+                "IGNORE_EXCEPTIONS": True,  # fail-open si Redis down
+            },
+            "KEY_PREFIX": os.environ.get("CACHE_KEY_PREFIX", "campussphere"),
+            "TIMEOUT": 300,
+        }
+    }
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "campussphere-fallback",
+            "TIMEOUT": 300,
+        }
     }
 
 
