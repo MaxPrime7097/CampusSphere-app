@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
+import { UnifiedSearchFiltersBar } from "@/components/ui/unified-search-filters-bar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Users, TrendingUp, Clock, Loader2, Check, RefreshCw, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -33,6 +34,9 @@ export function Spheres() {
   const [pendingJoinRequests, setPendingJoinRequests] = useState<string[]>([]);
   const [userSpheres, setUserSpheres] = useState<any[]>([]);
   const [userSpheresLoadError, setUserSpheresLoadError] = useState<string | null>(null);
+  const [allSpheres, setAllSpheres] = useState<any[]>([]);
+  const [loadingSpheres, setLoadingSpheres] = useState<boolean>(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Tab State - Initialized to page1
   const [activeTab, setActiveTab] = useState("page1");
@@ -84,10 +88,6 @@ export function Spheres() {
     setPendingJoinRequests((prev) => Array.from(new Set([...prev, ...pendingFromServer])));
   }, [allSpheres]);
 
-  const [allSpheres, setAllSpheres] = useState<any[]>([]);
-  const [loadingSpheres, setLoadingSpheres] = useState<boolean>(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
-
   useEffect(() => {
     let isMounted = true;
     (async () => {
@@ -108,6 +108,17 @@ export function Spheres() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [isJoining, setIsJoining] = useState<string | null>(null);
+
+  const refreshMembershipState = async () => {
+    const [spheresData, userSpheresData] = await Promise.all([listSpheres(), getUserSpheres()]);
+    setAllSpheres(spheresData || []);
+    const sphereIds = (userSpheresData || []).map((s: any) => String(s.id));
+    setUserJoinedSpheres(sphereIds);
+    setPendingJoinRequests([]);
+    setUserSpheres(userSpheresData || []);
+    setUserSpheresLoadError(null);
+    setLoadError(null);
+  };
 
   const resolveJoinConflict = (error: unknown): "already_active" | "already_pending" | null => {
     const rawMessage =
@@ -151,14 +162,62 @@ export function Spheres() {
 
   const resolvedSphereSort = ensureValidSortKey(activeTab, SPHERE_SORT_KEYS, DEFAULT_SORT.spheres);
 
+  const getUnifiedMembershipState = (sphere: any): "active" | "pending" | "none" => {
+    const sphereId = String(sphere?.id);
+    const membershipStatus = String(sphere?.membership_status ?? sphere?.membershipStatus ?? "").toLowerCase();
+    const isCreator = currentUser?.id && String(sphere?.created_by) === String(currentUser.id);
+    const isMemberFromApi = sphere?.is_member === true || membershipStatus === "active";
+    const isPendingFromApi = membershipStatus === "pending";
+    const isMemberFromLocal = userJoinedSpheres.includes(sphereId);
+    const isPendingFromLocal = pendingJoinRequests.includes(sphereId);
+
+    if (isCreator || isMemberFromApi || isMemberFromLocal) return "active";
+    if (isPendingFromApi || isPendingFromLocal) return "pending";
+    return "none";
+  };
+
+  const getSphereActionModel = (sphere: any) => {
+    const membership = getUnifiedMembershipState(sphere);
+    const sphereId = String(sphere?.id);
+    const isCreator = currentUser?.id && String(sphere?.created_by) === String(currentUser.id);
+    const disabled = loadingSpheres || isJoining === sphereId || membership === "pending";
+
+    if (membership === "active") {
+      return {
+        label: "Rejoint",
+        className: "bg-green-500 hover:bg-green-600 text-white",
+        disabled: loadingSpheres || isJoining === sphereId,
+        icon: <Check className="h-3 w-3 mr-1" />,
+        onClick: () => handleLeaveSphere(sphere.id, sphere.name),
+      };
+    }
+
+    if (membership === "pending") {
+      return {
+        label: "En attente",
+        className: "bg-amber-500 hover:bg-amber-600 text-white",
+        disabled,
+        icon: <Clock className="h-3 w-3 mr-1" />,
+        onClick: () => undefined,
+      };
+    }
+
+    return {
+      label: isCreator ? "Rejoint" : "Rejoindre",
+      className: isCreator ? "bg-green-500 hover:bg-green-600 text-white" : "campus-gradient text-white",
+      disabled: disabled || isCreator,
+      icon: isCreator ? <Check className="h-3 w-3 mr-1" /> : null,
+      onClick: () => handleJoinSphere(sphere.id, sphere.name),
+    };
+  };
+
   const getSortedSpheres = () => {
     const sorted = [...filteredSpheres];
     switch (resolvedSphereSort) {
       case "top":
         return sorted.sort((a: any, b: any) => (b.progression || 0) - (a.progression || 0));
       case "mySpheres":
-        if (userSpheres.length > 0) return userSpheres;
-        return sorted.filter((sphere: any) => userJoinedSpheres.includes(String(sphere.id)));
+        return sorted.filter((sphere: any) => getUnifiedMembershipState(sphere) === "active");
       case "discover":
         return sorted;
     }
@@ -166,6 +225,10 @@ export function Spheres() {
 
   const handleJoinSphere = async (sphereId: string, sphereName: string) => {
     if (!currentUser) return;
+    const currentSphere = allSpheres.find((sphere) => String(sphere.id) === String(sphereId));
+    if (currentSphere && String(currentSphere.created_by) === String(currentUser.id)) {
+      return;
+    }
     setIsJoining(sphereId);
     try {
       const result = await joinSphere(sphereId);
@@ -185,20 +248,12 @@ export function Spheres() {
     } catch (e: any) {
       debugApiError(`POST /spheres/${sphereId}/join`, e);
       const joinConflict = resolveJoinConflict(e);
-      if (joinConflict === "already_active") {
-        setUserJoinedSpheres((prev) => (prev.includes(sphereId) ? prev : [...prev, sphereId]));
-        setPendingJoinRequests((prev) => prev.filter((id) => String(id) !== String(sphereId)));
-        toast({
-          title: "Déjà membre",
-          description: `Vous êtes déjà membre actif de ${sphereName}.`,
-        });
-      } else if (joinConflict === "already_pending") {
-        setPendingJoinRequests((prev) => (prev.includes(sphereId) ? prev : [...prev, sphereId]));
-        setUserJoinedSpheres((prev) => prev.filter((id) => String(id) !== String(sphereId)));
-        toast({
-          title: "Demande déjà en attente",
-          description: `Votre demande pour ${sphereName} est déjà en attente.`,
-        });
+      if (joinConflict === "already_active" || joinConflict === "already_pending") {
+        try {
+          await refreshMembershipState();
+        } catch (refreshError: any) {
+          debugApiError("GET /spheres + GET /users/me/spheres (join conflict refresh)", refreshError);
+        }
       } else {
         toast({ title: "Erreur", description: e?.message, variant: "destructive" });
       }
@@ -223,14 +278,7 @@ export function Spheres() {
   const handleRefresh = async () => {
     setIsLoading(true);
     try {
-      const [spheresData, userSpheresData] = await Promise.all([listSpheres(), getUserSpheres()]);
-      setAllSpheres(spheresData || []);
-      setLoadError(null);
-      const sphereIds = (userSpheresData || []).map((s: any) => String(s.id));
-      setUserJoinedSpheres(sphereIds);
-      setPendingJoinRequests([]);
-      setUserSpheres(userSpheresData || []);
-      setUserSpheresLoadError(null);
+      await refreshMembershipState();
     } catch (e: any) {
       debugApiError("GET /spheres + GET /users/me/spheres", e);
       toast({ title: "Erreur", description: e?.message || "Impossible d'actualiser", variant: "destructive" });
@@ -284,12 +332,39 @@ export function Spheres() {
           </div>
         </div>
 
+        <UnifiedSearchFiltersBar className={cn(cardClasses, "mb-6")} contentClassName="p-3 md:p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher une sphère..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={filterCategory} onValueChange={setFilterCategory}>
+              <SelectTrigger>
+                <SelectValue placeholder="Catégorie" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((cat) => (
+                  <SelectItem key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </UnifiedSearchFiltersBar>
+
         <Tabs
           value={resolvedSphereSort}
           onValueChange={(value) => setActiveTab(value as SphereSortKey)}
           className="w-full"
         >
-          <SharedTabsList className="mb-6">
+
+          <SharedTabsList containerClassName="mb-6">
             <SharedTabsTrigger value="discover">Découvrir</SharedTabsTrigger>
             <SharedTabsTrigger value="mySpheres">Mes Sphères</SharedTabsTrigger>
             <SharedTabsTrigger value="top">Top</SharedTabsTrigger>
@@ -298,30 +373,6 @@ export function Spheres() {
           {/* Section 1: Pilot Training */}
           <TabsContent value="discover" className="mt-0">
             <section id="discover" className="space-y-4">
-              <Card className={cardClasses}>
-                <CardContent className="p-3">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Rechercher une sphère..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                    <Select value={filterCategory} onValueChange={setFilterCategory}>
-                      <SelectTrigger><SelectValue placeholder="Catégorie" /></SelectTrigger>
-                      <SelectContent>
-                        {categories.map((cat) => (
-                          <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-              </CardContent>
-              </Card>
-
               {loadError ? (
                 <Card className={cardClasses}>
                   <CardContent className="py-8 text-center space-y-3">
@@ -354,32 +405,23 @@ export function Spheres() {
                         <div className="space-y-1 text-xs text-muted-foreground mb-2">
                           <div className="flex items-center gap-1"><Users className="h-3 w-3" /> {sphere.memberCount || 0} membres</div>
                         </div>
+                        {(() => {
+                          const actionModel = getSphereActionModel(sphere);
+                          return (
                         <Button 
                           size="sm" 
-                          className={`w-full h-7 text-xs ${userJoinedSpheres.includes(String(sphere.id)) ? 'bg-green-500 hover:bg-green-600 text-white' : pendingJoinRequests.includes(String(sphere.id)) ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'campus-gradient text-white'}`}
+                          className={`w-full h-7 text-xs ${actionModel.className}`}
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (userJoinedSpheres.includes(String(sphere.id))) {
-                              handleLeaveSphere(sphere.id, sphere.name);
-                            } else if (!pendingJoinRequests.includes(String(sphere.id))) {
-                              handleJoinSphere(sphere.id, sphere.name);
-                            } else {
-                              toast({
-                                title: "Demande en attente",
-                                description: "Cette demande d'adhésion est déjà en cours.",
-                              });
-                            }
+                            actionModel.onClick();
                           }}
-                          disabled={isJoining === sphere.id || loadingSpheres || pendingJoinRequests.includes(String(sphere.id))}
+                          disabled={actionModel.disabled}
                         >
                           {isJoining === sphere.id
                             ? <Loader2 className="h-3 w-3 animate-spin" />
-                            : userJoinedSpheres.includes(String(sphere.id))
-                              ? <><Check className="h-3 w-3 mr-1" /> Rejoint</>
-                              : pendingJoinRequests.includes(String(sphere.id))
-                                ? <><Clock className="h-3 w-3 mr-1" /> En attente</>
-                                : "Rejoindre"}
+                            : <>{actionModel.icon}{actionModel.label}</>}
                         </Button>
+                        )})()}
                       </div>
                     </CardContent>
                   </Card>
@@ -392,14 +434,6 @@ export function Spheres() {
           {/* Section 2: Titan maintenance */}
           <TabsContent value="mySpheres" className="mt-0">
             <section id="mySpheres" className="space-y-4">
-              <Card className={cardClasses}>
-                <CardContent className="p-3">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Rechercher mes sphères..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
-                  </div>
-                </CardContent>
-              </Card>
               {userSpheresLoadError ? (
                 <Card className={cardClasses}>
                   <CardContent className="py-8 text-center space-y-3">
@@ -437,7 +471,26 @@ export function Spheres() {
                           </div>
                         </div>
                       )}
-                      <Button size="sm" className="w-full campus-gradient text-white hover:opacity-90" onClick={() => navigate(`/spheres/${sphere.id}`)}>Accéder</Button>
+                      {(() => {
+                        const membership = getUnifiedMembershipState(sphere);
+                        return membership === "active" ? (
+                          <Button size="sm" className="w-full campus-gradient text-white hover:opacity-90" onClick={() => navigate(`/spheres/${sphere.id}`)}>Accéder</Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            className={`w-full ${getSphereActionModel(sphere).className}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              getSphereActionModel(sphere).onClick();
+                            }}
+                            disabled={getSphereActionModel(sphere).disabled}
+                          >
+                            {isJoining === String(sphere.id)
+                              ? <Loader2 className="h-3 w-3 animate-spin" />
+                              : <>{getSphereActionModel(sphere).icon}{getSphereActionModel(sphere).label}</>}
+                          </Button>
+                        );
+                      })()}
                     </CardContent>
                   </Card>
                 )})}
@@ -469,6 +522,38 @@ export function Spheres() {
                                 <div className="text-primary font-bold">{Math.max(0, Math.min(100, Number(sphere.progression || 0)))}%</div>
                                 <Badge variant="secondary" className="text-xs mt-1">{sphere.category}</Badge>
                               </div>
+                            </div>
+                            <div className="mt-3">
+                              {(() => {
+                                const membership = getUnifiedMembershipState(sphere);
+                                const actionModel = getSphereActionModel(sphere);
+                                return membership === "active" ? (
+                                  <Button
+                                    size="sm"
+                                    className="w-full h-7 text-xs campus-gradient text-white hover:opacity-90"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigate(`/spheres/${sphere.id}`);
+                                    }}
+                                  >
+                                    Accéder
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    className={`w-full h-7 text-xs ${actionModel.className}`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      actionModel.onClick();
+                                    }}
+                                    disabled={actionModel.disabled}
+                                  >
+                                    {isJoining === String(sphere.id)
+                                      ? <Loader2 className="h-3 w-3 animate-spin" />
+                                      : <>{actionModel.icon}{actionModel.label}</>}
+                                  </Button>
+                                );
+                              })()}
                             </div>
                           </CardContent>
                         </Card>

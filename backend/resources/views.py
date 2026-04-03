@@ -16,6 +16,21 @@ from .serializers import (
 from users.impact_policy import RESOURCE_DOWNLOADED, apply_impact_event
 
 
+def _can_access_resource(resource, user):
+    if resource.visibility == 'public' or resource.author == user:
+        return True
+    if resource.visibility == 'university' and resource.author.university == user.university:
+        return True
+    if resource.visibility == 'friends':
+        from users.models import Connection
+        return Connection.objects.filter(
+            models.Q(requester=user, recipient=resource.author) |
+            models.Q(requester=resource.author, recipient=user),
+            status='accepted'
+        ).exists()
+    return False
+
+
 class ResourceListView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [SearchFilter, OrderingFilter]  # Removed DjangoFilterBackend - not installed
@@ -140,21 +155,7 @@ class ResourceDownloadView(APIView):
         resource = get_object_or_404(Resource, pk=pk)
         user = request.user
 
-        # Check if user can access this resource (same logic as ResourceDetailView)
-        can_access = False
-        if resource.visibility == 'public' or resource.author == user:
-            can_access = True
-        elif resource.visibility == 'university' and resource.author.university == user.university:
-            can_access = True
-        elif resource.visibility == 'friends':
-            from users.models import Connection
-            can_access = Connection.objects.filter(
-                models.Q(requester=user, recipient=resource.author) |
-                models.Q(requester=resource.author, recipient=user),
-                status='accepted'
-            ).exists()
-
-        if not can_access:
+        if not _can_access_resource(resource, user):
             return Response(
                 {'error': 'You don\'t have permission to download this resource'},
                 status=status.HTTP_403_FORBIDDEN
@@ -176,6 +177,30 @@ class ResourceDownloadView(APIView):
                 {'error': 'File not found or corrupted'},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+
+class ResourcePreviewView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        resource = get_object_or_404(Resource, pk=pk)
+        user = request.user
+
+        if not _can_access_resource(resource, user):
+            return Response(
+                {'error': 'You don\'t have permission to preview this resource'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        if not resource.file:
+            return Response(
+                {'error': 'File not found or unavailable'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        return Response({
+            'preview_url': request.build_absolute_uri(resource.file.url)
+        })
 
 
 class ResourceSaveView(APIView):

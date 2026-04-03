@@ -9,6 +9,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.filters import SearchFilter
 from django.db import models
 from django.utils import timezone
+from django.shortcuts import get_object_or_404
 from .models import User, Connection, UserBlock
 from .serializers import (
     UserRegistrationSerializer, UserLoginSerializer, UserProfileSerializer,
@@ -113,6 +114,10 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
             return UserUpdateSerializer
         return UserProfileSerializer
 
+    def perform_update(self, serializer):
+        serializer.save()
+        CacheManager.invalidate_user_profile(self.request.user.id)
+
 
 class LogoutView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -160,6 +165,7 @@ class ChangeEmailView(APIView):
 
         request.user.email = serializer.validated_data['new_email']
         request.user.save(update_fields=['email', 'updated_at'])
+        CacheManager.invalidate_user_profile(request.user.id)
 
         return Response({
             'success': True,
@@ -260,6 +266,95 @@ class ConnectionListView(generics.ListCreateAPIView):
         create_connection_request_notification(connection)
 
 
+class ConnectionRelationView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def _get_target_user(self):
+        return get_object_or_404(User, id=self.kwargs['id'])
+
+    def _get_existing_connection(self, current_user, target_user):
+        return Connection.objects.filter(
+            models.Q(requester=current_user, recipient=target_user) |
+            models.Q(requester=target_user, recipient=current_user)
+        ).select_related('requester', 'recipient').first()
+
+    def get(self, request, *args, **kwargs):
+        target_user = self._get_target_user()
+        if target_user == request.user:
+            return Response({
+                'success': True,
+                'data': {
+                    'target_user_id': target_user.id,
+                    'is_self': True,
+                    'is_connected': False,
+                    'can_connect': False,
+                    'can_disconnect': False,
+                    'connection': None,
+                }
+            }, status=status.HTTP_200_OK)
+
+        existing_connection = self._get_existing_connection(request.user, target_user)
+
+        return Response({
+            'success': True,
+            'data': {
+                'target_user_id': target_user.id,
+                'is_self': False,
+                'is_connected': existing_connection is not None,
+                'can_connect': existing_connection is None,
+                'can_disconnect': existing_connection is not None,
+                'connection': ConnectionSerializer(existing_connection).data if existing_connection else None,
+            }
+        }, status=status.HTTP_200_OK)
+
+    def post(self, request, *args, **kwargs):
+        target_user = self._get_target_user()
+        if target_user == request.user:
+            return Response(
+                {'detail': 'Cannot connect to yourself.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        existing_connection = self._get_existing_connection(request.user, target_user)
+        if existing_connection:
+            return Response({
+                'success': True,
+                'data': ConnectionSerializer(existing_connection).data,
+                'message': 'Connection already exists.'
+            }, status=status.HTTP_200_OK)
+
+        connection = Connection.objects.create(
+            requester=request.user,
+            recipient=target_user,
+            status='pending',
+        )
+        create_connection_request_notification(connection)
+
+        return Response({
+            'success': True,
+            'data': ConnectionSerializer(connection).data,
+            'message': 'Connection created successfully.'
+        }, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, *args, **kwargs):
+        target_user = self._get_target_user()
+        if target_user == request.user:
+            return Response(
+                {'detail': 'Cannot disconnect from yourself.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        existing_connection = self._get_existing_connection(request.user, target_user)
+        if not existing_connection:
+            return Response(
+                {'detail': 'Connection not found.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        existing_connection.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 class ConnectionDetailView(generics.DestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -337,6 +432,7 @@ class PrivacySettingsView(APIView):
         serializer = PrivacySettingsSerializer(request.user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        CacheManager.invalidate_user_profile(request.user.id)
 
         return Response({
             'success': True,
@@ -357,6 +453,7 @@ class DataExportView(APIView):
 
         request.user.data_export_requested_at = timezone.now()
         request.user.save(update_fields=['data_export_requested_at', 'updated_at'])
+        CacheManager.invalidate_user_profile(request.user.id)
 
         export_data = {
             'profile': UserProfileSerializer(request.user).data,

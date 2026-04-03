@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { deleteResource, downloadResource, getResource, reportResource, saveResource, trackResourceShare, updateResource } from "@/services/api";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { deleteResource, downloadResource, getResource, getResourcePreviewUrl, reportResource, saveResource, trackResourceShare, updateResource } from "@/services/api";
 import { Download, Share2, ChevronLeft, Eye, Flag, Loader2, Zap, Bookmark, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,8 +37,13 @@ function logResourceDetailDebug(message: string, payload: Record<string, unknown
 export function ResourceDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
+  const isPreviewMode = searchParams.get("mode") === "preview";
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [isReporting, setIsReporting] = useState(false);
@@ -81,7 +86,16 @@ export function ResourceDetail() {
     isSaved: boolean;
     canEdit?: boolean;
     canDelete?: boolean;
+    fileUrl?: string;
+    fileName?: string;
+    mimeType?: string;
   } | null>(null);
+  const fileSource = resource?.fileUrl || resource?.fileName || "";
+  const inferredExtension = (fileSource.split(".").pop() || resource?.format || "").toLowerCase();
+  const normalizedMime = (resource?.mimeType || "").toLowerCase();
+  const isPdf = normalizedMime.includes("pdf") || inferredExtension === "pdf";
+  const isImage = normalizedMime.startsWith("image/") || ["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg"].includes(inferredExtension);
+  const isPreviewable = isPdf || isImage;
 
   // Load resource from API
   useEffect(() => {
@@ -138,6 +152,9 @@ export function ResourceDetail() {
             isSaved: data.isSaved ?? data.is_saved ?? false,
             canEdit: data.canEdit ?? data.can_edit ?? false,
             canDelete: data.canDelete ?? data.can_delete ?? false,
+            fileUrl: data.fileUrl || data.file_url || data.file || "",
+            fileName: data.fileName || data.file_name || "",
+            mimeType: data.mimeType || data.mime_type || data.contentType || data.content_type || "",
             impactScore: data.impactScore || data.impact_score || 0,
             tags: data.tags || [],
             relatedCourse: normalizeSubject(data.subject)
@@ -175,6 +192,48 @@ export function ResourceDetail() {
       isMounted = false;
     };
   }, [id]);
+
+  useEffect(() => {
+    if (!id || !isPreviewMode) {
+      setPreviewSrc(null);
+      setPreviewError(null);
+      setIsPreviewLoading(false);
+      return;
+    }
+
+    if (!isPreviewable) {
+      setPreviewSrc(null);
+      setPreviewError(null);
+      setIsPreviewLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+
+    setIsPreviewLoading(true);
+    setPreviewError(null);
+
+    void (async () => {
+      try {
+        const previewUrl = await getResourcePreviewUrl(id);
+        if (!isMounted) return;
+        if (!previewUrl) {
+          setPreviewError("Impossible de récupérer l’URL d’aperçu.");
+          return;
+        }
+        setPreviewSrc(previewUrl);
+      } catch (e: any) {
+        if (!isMounted) return;
+        setPreviewError(e?.message || "Impossible de charger l'aperçu.");
+      } finally {
+        if (isMounted) setIsPreviewLoading(false);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [id, isPreviewMode, isPreviewable]);
 
 
   const handleDownload = () => {
@@ -561,6 +620,30 @@ export function ResourceDetail() {
                   )}
                   Signaler
                 </Button>
+                <Badge className="flex items-center gap-1 rounded-lg px-3 py-2 h-10 text-sm bg-secondary/20 text-secondary">
+                  <Zap className="h-4 w-4" />
+                  <span>{resource.impactScore}</span>
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="campus-card mb-4">
+          <CardContent className="p-4 md:p-6 space-y-4">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h3 className="font-semibold text-lg">Aperçu</h3>
+                <p className="text-sm text-muted-foreground">
+                  {isPreviewMode
+                    ? "Mode aperçu actif (ouvert depuis l'icône œil)."
+                    : "Ouvrez cette page avec ?mode=preview pour charger l'aperçu du fichier."}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant={isPreviewMode ? "secondary" : "outline"}>
+                  {isPreviewMode ? "Aperçu actif" : "Aperçu inactif"}
+                </Badge>
                 <Button
                   variant="outline"
                   size="sm"
@@ -576,12 +659,48 @@ export function ResourceDetail() {
                   )}
                   Télécharger
                 </Button>
-                <Badge className="flex items-center gap-1 rounded-lg px-3 py-2 h-10 text-sm bg-secondary/20 text-secondary">
-                  <Zap className="h-4 w-4" />
-                  <span>{resource.impactScore}</span>
-                </Badge>
               </div>
             </div>
+
+            {isPreviewMode ? (
+              isPreviewLoading ? (
+                <div className="flex items-center justify-center rounded-lg border border-dashed h-[420px]">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : previewError ? (
+                <div className="rounded-lg border border-dashed p-6 text-sm text-destructive">
+                  {previewError}
+                </div>
+              ) : !isPreviewable ? (
+                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                  Ce format n’est pas prévisualisable dans l’application. Utilisez le bouton Télécharger.
+                </div>
+              ) : previewSrc ? (
+                <div className="rounded-lg border overflow-hidden bg-background">
+                  {isPdf ? (
+                    <iframe
+                      title={`Aperçu de ${resource.title}`}
+                      src={previewSrc}
+                      className="w-full h-[70vh] min-h-[420px]"
+                    />
+                  ) : (
+                    <img
+                      src={previewSrc}
+                      alt={`Aperçu de ${resource.title}`}
+                      className="w-full max-h-[70vh] object-contain bg-muted/20"
+                    />
+                  )}
+                </div>
+              ) : (
+                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                  Impossible de charger l’aperçu pour le moment.
+                </div>
+              )
+            ) : (
+              <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                Cliquez sur l’icône œil depuis la liste des ressources pour ouvrir directement cette vue en mode aperçu.
+              </div>
+            )}
           </CardContent>
         </Card>
 

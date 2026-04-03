@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 from decouple import config as env_config, Csv
 
@@ -356,6 +357,15 @@ CSRF_COOKIE_SAMESITE = 'Lax'
 FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB
 FILE_UPLOAD_PERMISSIONS = 0o644
+
+# Connections visibility policy
+# - own_only: only users can list their own full connections
+# - public_profile: authenticated users can list connections from another profile
+# Production default is public_profile (can still be overridden with env var)
+CONNECTION_LIST_VISIBILITY_POLICY = os.getenv(
+    'CONNECTION_LIST_VISIBILITY_POLICY',
+    'public_profile' if not DEBUG else 'own_only'
+)
 
 # Content Security Policy (can be added later with django-csp)
 

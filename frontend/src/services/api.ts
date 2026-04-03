@@ -50,29 +50,22 @@ function clearTokens() {
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
-export class ApiError extends Error {
-  status: number | null;
-  kind: "http" | "network" | "unknown";
-  details?: unknown;
+export class ApiRequestError extends Error {
+  status?: number;
 
-  constructor(
-    message: string,
-    options: {
-      status?: number | null;
-      kind?: "http" | "network" | "unknown";
-      details?: unknown;
-    } = {}
-  ) {
+  constructor(message: string, status?: number) {
     super(message);
-    this.name = "ApiError";
-    this.status = options.status ?? null;
-    this.kind = options.kind ?? "unknown";
-    this.details = options.details;
+    this.name = "ApiRequestError";
+    this.status = status;
   }
 }
 
-export function isNetworkApiError(error: unknown): error is ApiError {
-  return error instanceof ApiError && error.kind === "network";
+export function isApiRequestErrorStatus(error: unknown, status: number): boolean {
+  return (
+    error instanceof ApiRequestError
+      ? error.status === status
+      : Boolean((error as any)?.message?.includes?.(`Request failed: ${status}`))
+  );
 }
 
 function toArray<T>(value: T[] | null | undefined): T[] {
@@ -412,25 +405,15 @@ async function apiFetch<T>(
           }
         }
 
-        throw new ApiError(errMsg || `Request failed: ${res.status}`, {
-          kind: "http",
-          status: res.status,
-          details: errJson,
-        });
+        throw new ApiRequestError(errMsg || `Request failed: ${res.status}`, res.status);
       } catch (e) {
         const text = await res.text().catch(() => "");
-        throw new ApiError(text || `Request failed: ${res.status}`, {
-          kind: "http",
-          status: res.status,
-        });
+        throw new ApiRequestError(text || `Request failed: ${res.status}`, res.status);
       }
     }
 
     const text = await res.text().catch(() => "");
-    throw new ApiError(text || `Request failed: ${res.status}`, {
-      kind: "http",
-      status: res.status,
-    });
+    throw new ApiRequestError(text || `Request failed: ${res.status}`, res.status);
   }
 
   if (contentType.includes("application/json")) {
@@ -646,6 +629,37 @@ export async function getUserByUsername(username: string, token?: string) {
 export async function getUserConnections(userId: number | string, token?: string) {
   const response = await apiFetch<any>(`api/users/${userId}/connections/`, { token: token || getAccessToken() });
   return unwrapList(response);
+}
+
+export interface UserConnectionRelationResponse {
+  target_user_id: number;
+  is_self: boolean;
+  is_connected: boolean;
+  can_connect: boolean;
+  can_disconnect: boolean;
+  connection: any | null;
+}
+
+export async function getUserConnectionRelation(targetUserId: number | string, token?: string) {
+  const response = await apiFetch<any>(`api/users/${targetUserId}/connection-relation/`, {
+    token: token || getAccessToken(),
+  });
+  return unwrapItem<UserConnectionRelationResponse>(response);
+}
+
+export async function connectWithUser(targetUserId: number | string, token?: string) {
+  const response = await apiFetch<any>(`api/users/${targetUserId}/connection-relation/`, {
+    method: "POST",
+    token: token || getAccessToken(),
+  });
+  return unwrapItem(response);
+}
+
+export async function disconnectFromUser(targetUserId: number | string, token?: string) {
+  return apiFetch<any>(`api/users/${targetUserId}/connection-relation/`, {
+    method: "DELETE",
+    token: token || getAccessToken(),
+  });
 }
 
 export interface MutualConnectionCountRequest {
@@ -1110,6 +1124,18 @@ export async function downloadResource(id: number | string, token?: string) {
   const filename = filenameMatch?.[1] || `resource-${id}`;
 
   return { blob, filename };
+}
+
+export async function getResourcePreviewUrl(
+  id: number | string,
+  token?: string
+) {
+  const response = await apiFetch<any>(`api/resources/${id}/preview/`, {
+    token: token || getAccessToken(),
+  });
+  const payload = unwrapItem<any>(response);
+
+  return (payload?.preview_url ?? payload?.previewUrl ?? null) as string | null;
 }
 
 export async function saveResource(id: number | string, token?: string) {

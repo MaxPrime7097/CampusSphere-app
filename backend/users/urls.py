@@ -25,5 +25,6 @@ urlpatterns = [
 
     # Connections
     path('<int:id>/connections/', views.ConnectionListView.as_view(), name='user-connections'),
+    path('<int:id>/connection-relation/', views.ConnectionRelationView.as_view(), name='user-connection-relation'),
     path('<int:id>/connections/<int:pk>/', views.ConnectionDetailView.as_view(), name='connection-detail'),
 ]

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
 import { Card, CardContent } from "@/components/ui/card";
+import { UnifiedSearchFiltersBar } from "@/components/ui/unified-search-filters-bar";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import {
@@ -255,7 +256,7 @@ export function Connections() {
         </div>
 
         {/* Search Bar */}
-        <div className="mb-6 flex flex-col gap-3">
+        <UnifiedSearchFiltersBar className="mb-6 campus-card" contentClassName="space-y-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -295,18 +296,18 @@ export function Connections() {
               </Button>
             )}
           </div>
-        </div>
+        </UnifiedSearchFiltersBar>
 
         {/* Tabs */}
         <Tabs defaultValue="all" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 max-w-md">
-            <TabsTrigger value="all">
+          <SharedTabsList containerClassName="mb-6">
+            <SharedTabsTrigger value="all">
               Mes Connexions ({filteredConnections.length})
-            </TabsTrigger>
-            <TabsTrigger value="suggestions">
+            </SharedTabsTrigger>
+            <SharedTabsTrigger value="suggestions">
               Suggestions ({filteredSuggestions.length})
-            </TabsTrigger>
-          </TabsList>
+            </SharedTabsTrigger>
+          </SharedTabsList>
 
           {/* All Connections */}
           <TabsContent value="all" className="space-y-4">

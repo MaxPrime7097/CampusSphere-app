@@ -1,5 +1,7 @@
-from django.db.models import Q, F, Value, CharField, IntegerField
-from django.db.models.functions import Concat, Lower
+import logging
+
+from django.db.models import Q, CharField
+from django.db.models.functions import Cast
 # from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank  # Commented out - PostgreSQL full-text search not available
 from users.models import User
 from spheres.models import Sphere
@@ -10,9 +12,27 @@ from spheres.serializers import SphereSerializer
 from posts.serializers import PostSerializer
 from resources.serializers import ResourceSerializer
 
+logger = logging.getLogger(__name__)
+
 
 class SearchService:
     """Service for advanced search functionality"""
+
+    @staticmethod
+    def _with_json_text_filter(queryset, field_name, query):
+        """
+        Apply a JSON-safe text search filter.
+
+        Some DB backends do not support `__icontains` directly on JSONField.
+        We cast JSON to text first for portable filtering.
+        """
+        if not query:
+            return queryset
+
+        alias = f'{field_name}_text'
+        return queryset.annotate(
+            **{alias: Cast(field_name, output_field=CharField())}
+        ).filter(**{f'{alias}__icontains': query})
 
     @staticmethod
     def serialize_results(results, request):
@@ -108,10 +128,10 @@ class SearchService:
 
         # Text search (basic implementation without PostgreSQL full-text search)
         if query:
-            queryset = queryset.filter(
-                Q(content__icontains=query) |
-                Q(tags__icontains=query)
+            tag_queryset = SearchService._with_json_text_filter(
+                queryset, 'tags', query
             )
+            queryset = queryset.filter(Q(content__icontains=query)) | tag_queryset
 
         # Apply filters
         if filters:
@@ -161,11 +181,13 @@ class SearchService:
 
         # Text search (basic implementation without PostgreSQL full-text search)
         if query:
+            tag_queryset = SearchService._with_json_text_filter(
+                queryset, 'tags', query
+            )
             queryset = queryset.filter(
                 Q(title__icontains=query) |
-                Q(description__icontains=query) |
-                Q(tags__icontains=query)
-            )
+                Q(description__icontains=query)
+            ) | tag_queryset
 
         # Apply filters
         if filters:
@@ -206,65 +228,93 @@ class SearchService:
     @staticmethod
     def global_search(query, user=None, limit=10):
         """Perform global search across all entities"""
-        results = {
-            'users': SearchService.search_users(query, limit=limit),
-            'spheres': SearchService.search_spheres(query, user=user, limit=limit),
-            'posts': SearchService.search_posts(query, user=user, limit=limit),
-            'resources': SearchService.search_resources(query, user=user, limit=limit),
+        results = {}
+        errors = {}
+
+        search_calls = {
+            'users': lambda: SearchService.search_users(query, limit=limit),
+            'spheres': lambda: SearchService.search_spheres(query, user=user, limit=limit),
+            'posts': lambda: SearchService.search_posts(query, user=user, limit=limit),
+            'resources': lambda: SearchService.search_resources(query, user=user, limit=limit),
         }
 
-        return results
+        for entity_type, search_call in search_calls.items():
+            try:
+                results[entity_type] = search_call()
+            except Exception:
+                logger.exception("Global search failed for entity_type=%s", entity_type)
+                results[entity_type] = []
+                errors[entity_type] = f'Failed to search {entity_type}'
+
+        return results, errors
 
     @staticmethod
     def get_search_suggestions(query, user=None, limit=5):
         """Get search suggestions based on query"""
         suggestions = []
+        errors = {}
 
         # User suggestions
-        users = SearchService.search_users(query, limit=limit)
-        for user in users:
-            suggestions.append({
-                'type': 'user',
-                'id': user.id,
-                'text': f"{user.first_name} {user.last_name}",
-                'subtitle': user.username,
-                'url': f'/profile/{user.id}'
-            })
+        try:
+            users = SearchService.search_users(query, limit=limit)
+            for user in users:
+                suggestions.append({
+                    'type': 'user',
+                    'id': user.id,
+                    'text': f"{user.first_name} {user.last_name}",
+                    'subtitle': user.username,
+                    'url': f'/profile/{user.id}'
+                })
+        except Exception:
+            logger.exception("Search suggestions failed for entity_type=users")
+            errors['users'] = 'Failed to build user suggestions'
 
         # Sphere suggestions
-        spheres = SearchService.search_spheres(query, user=user, limit=limit)
-        for sphere in spheres:
-            suggestions.append({
-                'type': 'sphere',
-                'id': sphere.id,
-                'text': sphere.name,
-                'subtitle': f"{sphere.member_count} membres",
-                'url': f'/spheres/{sphere.id}'
-            })
+        try:
+            spheres = SearchService.search_spheres(query, user=user, limit=limit)
+            for sphere in spheres:
+                suggestions.append({
+                    'type': 'sphere',
+                    'id': sphere.id,
+                    'text': sphere.name,
+                    'subtitle': f"{sphere.member_count} membres",
+                    'url': f'/spheres/{sphere.id}'
+                })
+        except Exception:
+            logger.exception("Search suggestions failed for entity_type=spheres")
+            errors['spheres'] = 'Failed to build sphere suggestions'
 
         # Post suggestions
-        posts = SearchService.search_posts(query, user=user, limit=limit)
-        for post in posts:
-            suggestions.append({
-                'type': 'post',
-                'id': post.id,
-                'text': post.content[:100] + '...' if len(post.content) > 100 else post.content,
-                'subtitle': f"Par {post.author.username}",
-                'url': f'/posts/{post.id}'
-            })
+        try:
+            posts = SearchService.search_posts(query, user=user, limit=limit)
+            for post in posts:
+                suggestions.append({
+                    'type': 'post',
+                    'id': post.id,
+                    'text': post.content[:100] + '...' if len(post.content) > 100 else post.content,
+                    'subtitle': f"Par {post.author.username}",
+                    'url': f'/posts/{post.id}'
+                })
+        except Exception:
+            logger.exception("Search suggestions failed for entity_type=posts")
+            errors['posts'] = 'Failed to build post suggestions'
 
         # Resource suggestions
-        resources = SearchService.search_resources(query, user=user, limit=limit)
-        for resource in resources:
-            suggestions.append({
-                'type': 'resource',
-                'id': resource.id,
-                'text': resource.title,
-                'subtitle': f"Par {resource.author.username}",
-                'url': f'/resources/{resource.id}'
-            })
+        try:
+            resources = SearchService.search_resources(query, user=user, limit=limit)
+            for resource in resources:
+                suggestions.append({
+                    'type': 'resource',
+                    'id': resource.id,
+                    'text': resource.title,
+                    'subtitle': f"Par {resource.author.username}",
+                    'url': f'/resources/{resource.id}'
+                })
+        except Exception:
+            logger.exception("Search suggestions failed for entity_type=resources")
+            errors['resources'] = 'Failed to build resource suggestions'
 
-        return suggestions[:limit]
+        return suggestions[:limit], errors
 
 
 class FilterService:

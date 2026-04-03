@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import patch
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APITestCase
@@ -7,6 +8,31 @@ from django.contrib.auth import get_user_model
 from users.models import User
 
 User = get_user_model()
+
+
+class InMemoryCacheService:
+    def __init__(self):
+        self._store = {}
+
+    def get(self, key):
+        return self._store.get(key)
+
+    def set(self, key, value, timeout=None):
+        self._store[key] = value
+        return True
+
+    def delete(self, key):
+        return self._store.pop(key, None) is not None
+
+    def delete_pattern(self, pattern):
+        if pattern.endswith('*'):
+            prefix = pattern[:-1]
+            keys_to_delete = [key for key in self._store if key.startswith(prefix)]
+        else:
+            keys_to_delete = [pattern] if pattern in self._store else []
+        for key in keys_to_delete:
+            self._store.pop(key, None)
+        return len(keys_to_delete)
 
 
 class AuthTests(APITestCase):
@@ -90,3 +116,104 @@ class AuthTests(APITestCase):
         """Test accessing protected endpoint without authentication"""
         response = self.client.get(self.me_url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_profile_update_invalidates_cached_profile_for_me_and_username_reads(self):
+        """Updating profile arrays should be immediately reflected in cached read endpoints."""
+        self.client.post(self.register_url, self.user_data, format='json')
+        login_response = self.client.post(self.login_url, {
+            'email': 'john@example.com',
+            'password': 'password123'
+        }, format='json')
+        token = login_response.data['data']['tokens']['accessToken']
+
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+        by_username_url = reverse('users:user-by-username', kwargs={'username': 'johndoe'})
+        profile_url = reverse('users:user-profile')
+
+        cache_service = InMemoryCacheService()
+        with patch('campus_sphere.cache.cache_service', cache_service):
+            # Prime cache with initial profile
+            me_before = self.client.get(self.me_url)
+            self.assertEqual(me_before.status_code, status.HTTP_200_OK)
+            self.assertEqual(me_before.data['data']['skills'], [])
+
+            by_username_before = self.client.get(by_username_url)
+            self.assertEqual(by_username_before.status_code, status.HTTP_200_OK)
+            self.assertEqual(by_username_before.data['data']['interests'], [])
+
+            payload = {
+                'skills': ['Python', 'Django'],
+                'interests': ['AI', 'Backend'],
+                'previous_education': [{'school': 'Lycée X', 'year': 2020}],
+                'experiences': [{'company': 'Acme', 'role': 'Intern'}],
+                'portfolio_links': ['https://example.dev'],
+            }
+            update_response = self.client.patch(profile_url, payload, format='json')
+            self.assertEqual(update_response.status_code, status.HTTP_200_OK)
+
+            me_after = self.client.get(self.me_url)
+            self.assertEqual(me_after.status_code, status.HTTP_200_OK)
+            self.assertEqual(me_after.data['data']['skills'], payload['skills'])
+            self.assertEqual(me_after.data['data']['interests'], payload['interests'])
+            self.assertEqual(me_after.data['data']['previous_education'], payload['previous_education'])
+            self.assertEqual(me_after.data['data']['experiences'], payload['experiences'])
+            self.assertEqual(me_after.data['data']['portfolio_links'], payload['portfolio_links'])
+
+            by_username_after = self.client.get(by_username_url)
+            self.assertEqual(by_username_after.status_code, status.HTTP_200_OK)
+            self.assertEqual(by_username_after.data['data']['skills'], payload['skills'])
+            self.assertEqual(by_username_after.data['data']['interests'], payload['interests'])
+            self.assertEqual(by_username_after.data['data']['previous_education'], payload['previous_education'])
+            self.assertEqual(by_username_after.data['data']['experiences'], payload['experiences'])
+            self.assertEqual(by_username_after.data['data']['portfolio_links'], payload['portfolio_links'])
+
+    def test_profile_put_update_invalidates_cached_profile_for_me_and_username_reads(self):
+        """PUT profile update should invalidate cache for JSON profile fields."""
+        self.client.post(self.register_url, self.user_data, format='json')
+        login_response = self.client.post(self.login_url, {
+            'email': 'john@example.com',
+            'password': 'password123'
+        }, format='json')
+        token = login_response.data['data']['tokens']['accessToken']
+
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+        by_username_url = reverse('users:user-by-username', kwargs={'username': 'johndoe'})
+        profile_url = reverse('users:user-profile')
+
+        cache_service = InMemoryCacheService()
+        with patch('campus_sphere.cache.cache_service', cache_service):
+            self.assertEqual(self.client.get(self.me_url).status_code, status.HTTP_200_OK)
+            self.assertEqual(self.client.get(by_username_url).status_code, status.HTTP_200_OK)
+
+            payload = {
+                'first_name': 'John',
+                'last_name': 'Doe',
+                'username': 'johndoe',
+                'bio': 'Updated bio',
+                'university': 'douala',
+                'faculty': 'informatique',
+                'study_year': 'l3',
+                'student_id': '2021001234',
+                'campus': 'Campus Principal',
+                'town': 'douala',
+                'language': 'fr',
+                'skills': ['Python'],
+                'interests': ['Backend'],
+                'current_mood': 'focused',
+                'previous_education': [{'school': 'Lycée Y', 'year': 2021}],
+                'experiences': [{'company': 'Beta', 'role': 'Junior Dev'}],
+                'portfolio_links': ['https://example.org'],
+                'profile_visibility': 'public',
+                'post_visibility': 'public',
+            }
+            update_response = self.client.put(profile_url, payload, format='json')
+            self.assertEqual(update_response.status_code, status.HTTP_200_OK)
+
+            me_after = self.client.get(self.me_url)
+            by_username_after = self.client.get(by_username_url)
+            self.assertEqual(me_after.data['data']['previous_education'], payload['previous_education'])
+            self.assertEqual(me_after.data['data']['experiences'], payload['experiences'])
+            self.assertEqual(me_after.data['data']['portfolio_links'], payload['portfolio_links'])
+            self.assertEqual(by_username_after.data['data']['previous_education'], payload['previous_education'])
+            self.assertEqual(by_username_after.data['data']['experiences'], payload['experiences'])
+            self.assertEqual(by_username_after.data['data']['portfolio_links'], payload['portfolio_links'])
