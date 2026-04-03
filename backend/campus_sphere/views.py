@@ -1,9 +1,13 @@
+import logging
+
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 from django.utils import timezone
 from .search import SearchService, FilterService
+
+logger = logging.getLogger(__name__)
 
 
 @api_view(['GET'])
@@ -22,8 +26,9 @@ def global_search(request):
         }, status=400)
 
     try:
+        errors = {}
         if entity_type == 'all':
-            raw_results = SearchService.global_search(query, request.user, limit)
+            raw_results, errors = SearchService.global_search(query, request.user, limit)
         elif entity_type == 'users':
             raw_results = {'users': SearchService.search_users(query, limit=limit)}
         elif entity_type == 'spheres':
@@ -40,20 +45,27 @@ def global_search(request):
             }, status=400)
 
         results = SearchService.serialize_results(raw_results, request)
+        if entity_type != 'all':
+            expected_types = ['users', 'spheres', 'posts', 'resources']
+            for expected_type in expected_types:
+                results.setdefault(expected_type, [])
 
         return Response({
             'success': True,
             'data': results,
+            'errors': errors,
             'query': query,
             'timestamp': timezone.now().isoformat()
         })
 
-    except Exception as e:
+    except Exception:
+        logger.exception("Global search endpoint failed for entity_type=%s", entity_type)
         return Response({
             'success': False,
-            'error': 'Search failed',
+            'error': f'Search failed for entity type: {entity_type}',
+            'errors': {entity_type: f'Failed to search {entity_type}'},
             'timestamp': timezone.now().isoformat()
-        }, status=500)
+        }, status=200)
 
 
 @api_view(['GET'])
@@ -71,21 +83,29 @@ def search_suggestions(request):
         })
 
     try:
-        suggestions = SearchService.get_search_suggestions(query, request.user, limit)
+        suggestions, errors = SearchService.get_search_suggestions(query, request.user, limit)
 
         return Response({
             'success': True,
             'data': suggestions,
+            'errors': errors,
             'query': query,
             'timestamp': timezone.now().isoformat()
         })
 
-    except Exception as e:
+    except Exception:
+        logger.exception("Search suggestions endpoint failed")
         return Response({
             'success': False,
-            'error': 'Failed to get suggestions',
+            'error': 'Failed to get suggestions by entity type',
+            'errors': {
+                'users': 'Failed to build user suggestions',
+                'spheres': 'Failed to build sphere suggestions',
+                'posts': 'Failed to build post suggestions',
+                'resources': 'Failed to build resource suggestions',
+            },
             'timestamp': timezone.now().isoformat()
-        }, status=500)
+        }, status=200)
 
 
 def ratelimit_error(request, exception):
