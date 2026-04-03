@@ -183,7 +183,7 @@ export function AdminDashboard() {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <SharedTabsList className="mb-6">
+          <SharedTabsList containerClassName="mb-6">
             <SharedTabsTrigger value="resources">Ressources</SharedTabsTrigger>
             <SharedTabsTrigger value="reports">Signalements</SharedTabsTrigger>
           </SharedTabsList>

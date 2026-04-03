@@ -364,7 +364,7 @@ export function Spheres() {
           className="w-full"
         >
 
-          <SharedTabsList className="grid w-full grid-cols-3 max-w-lg" containerClassName="mb-6">
+          <SharedTabsList containerClassName="mb-6">
             <SharedTabsTrigger value="discover">Découvrir</SharedTabsTrigger>
             <SharedTabsTrigger value="mySpheres">Mes Sphères</SharedTabsTrigger>
             <SharedTabsTrigger value="top">Top</SharedTabsTrigger>

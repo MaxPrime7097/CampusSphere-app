@@ -300,10 +300,7 @@ export function Connections() {
 
         {/* Tabs */}
         <Tabs defaultValue="all" className="space-y-6">
-          <SharedTabsList
-            className="grid w-full grid-cols-2 max-w-md"
-            containerClassName="mb-6"
-          >
+          <SharedTabsList containerClassName="mb-6">
             <SharedTabsTrigger value="all">
               Mes Connexions ({filteredConnections.length})
             </SharedTabsTrigger>

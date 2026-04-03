@@ -113,7 +113,7 @@ export function SavedItems() {
         </h1>
 
         <Tabs defaultValue="posts" className="w-full">
-          <SharedTabsList className="mb-6">
+          <SharedTabsList containerClassName="mb-6">
             <SharedTabsTrigger value="posts">Posts</SharedTabsTrigger>
             <SharedTabsTrigger value="resources">Ressources</SharedTabsTrigger>
           </SharedTabsList>
