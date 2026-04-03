@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
-import { getCurrentUser, getUserByUsername, getUserPosts, uploadAvatar, uploadCoverPhoto, updateUserProfile, getUserConnections, getUserResources, createConnection, deleteConnection, downloadResource, getUserProfile } from "@/services/api";
+import { getCurrentUser, getUserByUsername, getUserPosts, uploadAvatar, uploadCoverPhoto, updateUserProfile, getUserConnections, getUserResources, connectWithUser, disconnectFromUser, downloadResource, getUserProfile, getUserConnectionRelation, isApiRequestErrorStatus } from "@/services/api";
 import { MapPin, Camera, Calendar, Link, Users, BookOpen, Award, Settings, FileText, Briefcase, GraduationCap, Loader2, Check, Download, Unlink, ExternalLink, Upload, X, Zap, Smile } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -258,6 +258,7 @@ export function Profile() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [currentConnectionId, setCurrentConnectionId] = useState<string | null>(null);
   const [isFollowingLoading, setIsFollowingLoading] = useState(false);
+  const [relationActionUnavailable, setRelationActionUnavailable] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCoverPhotoModal, setShowCoverPhotoModal] = useState(false);
   const [coverPhotoFile, setCoverPhotoFile] = useState<File | null>(null);
@@ -433,31 +434,24 @@ export function Profile() {
     if (!currentUser?.id || !targetUser?.id || isOwnProfile) {
       setIsFollowing(false);
       setCurrentConnectionId(null);
+      setRelationActionUnavailable(false);
       return;
     }
 
     let isMounted = true;
     (async () => {
       try {
-        const currentUserConnections = await getUserConnections(currentUser.id);
-        if (!isMounted || !Array.isArray(currentUserConnections)) return;
+        const relation = await getUserConnectionRelation(targetUser.id);
+        if (!isMounted || !relation) return;
 
-        const matchedConnection = currentUserConnections.find((conn: any) => {
-          const requesterId = String(conn.requester ?? conn.requester_id ?? "");
-          const recipientId = String(conn.recipient ?? conn.recipient_id ?? "");
-          const targetId = String(targetUser.id);
-
-          return requesterId === targetId || recipientId === targetId;
-        });
-
-        setIsFollowing(Boolean(matchedConnection));
-        setCurrentConnectionId(
-          matchedConnection?.id != null ? String(matchedConnection.id) : null
-        );
+        setRelationActionUnavailable(false);
+        setIsFollowing(Boolean(relation.is_connected));
+        setCurrentConnectionId(relation.connection?.id != null ? String(relation.connection.id) : null);
       } catch (error) {
         if (isMounted) {
           setIsFollowing(false);
           setCurrentConnectionId(null);
+          setRelationActionUnavailable(isApiRequestErrorStatus(error, 403));
         }
       }
     })();
@@ -515,14 +509,15 @@ export function Profile() {
           throw new Error("Connection introuvable pour la suppression.");
         }
 
-        await deleteConnection(currentUser.id, previousConnectionId);
+        await disconnectFromUser(targetUser.id);
         setCurrentConnectionId(null);
       } else {
-        const response = await createConnection(targetUser.id);
+        const response = await connectWithUser(targetUser.id);
         const createdConnectionId =
           response?.id != null ? String(response.id) : previousConnectionId;
         setCurrentConnectionId(createdConnectionId ?? null);
       }
+      setRelationActionUnavailable(false);
 
       toast({
         title: previousIsFollowing ? "Connexion supprimée" : "Connexion envoyée",
@@ -535,6 +530,9 @@ export function Profile() {
       // Rollback optimistic state
       setIsFollowing(previousIsFollowing);
       setCurrentConnectionId(previousConnectionId);
+      if (isApiRequestErrorStatus(error, 403)) {
+        setRelationActionUnavailable(true);
+      }
 
       toast({
         title: "Erreur",
@@ -857,27 +855,34 @@ export function Profile() {
                 </div>
                 <div className="flex gap-2">
                   {!isOwnProfile && (
-                    <Button 
-                      variant={isFollowing ? "outline" : "default"}
-                      onClick={handleFollow}
-                      disabled={isFollowingLoading}
-                      className={!isFollowing ? "campus-gradient text-white hover:opacity-90" : ""}
-                      size="sm"
-                    >
-                      {isFollowingLoading ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : isFollowing ? (
-                        <>
-                          <Unlink className="h-4 w-4 mr-2" />
-                          Disconnect
-                        </>
-                      ) : (
-                        <>
-                          <Link className="h-4 w-4 mr-2" />
-                          Connect
-                        </>
+                    <div className="space-y-1">
+                      <Button 
+                        variant={isFollowing ? "outline" : "default"}
+                        onClick={handleFollow}
+                        disabled={isFollowingLoading || relationActionUnavailable}
+                        className={!isFollowing ? "campus-gradient text-white hover:opacity-90" : ""}
+                        size="sm"
+                      >
+                        {isFollowingLoading ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : isFollowing ? (
+                          <>
+                            <Unlink className="h-4 w-4 mr-2" />
+                            Disconnect
+                          </>
+                        ) : (
+                          <>
+                            <Link className="h-4 w-4 mr-2" />
+                            Connect
+                          </>
+                        )}
+                      </Button>
+                      {relationActionUnavailable && (
+                        <p className="text-xs text-muted-foreground">
+                          L'action de connexion est indisponible pour ce profil.
+                        </p>
                       )}
-                    </Button>
+                    </div>
                   )}
                   {isOwnProfile && (
                     <Button

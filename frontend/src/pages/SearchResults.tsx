@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { createConnection, deleteConnection, getCurrentUser, globalSearch } from "@/services/api";
+import { connectWithUser, disconnectFromUser, getCurrentUser, globalSearch, getUserConnectionRelation, isApiRequestErrorStatus } from "@/services/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +39,7 @@ export function SearchResults() {
   const [sortBy, setSortBy] = useState<SearchSortKey>(DEFAULT_SORT.search);
   const [followedUsers, setFollowedUsers] = useState(new Set());
   const [connectionIdsByUser, setConnectionIdsByUser] = useState<Record<string, string>>({});
+  const [relationActionUnavailableUsers, setRelationActionUnavailableUsers] = useState<Set<string>>(new Set());
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [followLoadingUserId, setFollowLoadingUserId] = useState<string | null>(null);
   const [searchResults, setSearchResults] = useState<{ users: any[]; resources: any[]; spheres: any[] }>({
@@ -171,6 +172,11 @@ export function SearchResults() {
     const previousFollowedUsers = new Set(followedUsers);
     const previousConnectionId = connectionIdsByUser[userId];
     setFollowLoadingUserId(userId);
+    setRelationActionUnavailableUsers((prev) => {
+      const next = new Set(prev);
+      next.delete(userId);
+      return next;
+    });
 
     // Optimistic update
     setFollowedUsers((prev) => {
@@ -185,17 +191,14 @@ export function SearchResults() {
 
     try {
       if (isFollowing) {
-        if (!previousConnectionId) {
-          throw new Error("Connexion introuvable pour la suppression.");
-        }
-        await deleteConnection(currentUserId, previousConnectionId);
+        await disconnectFromUser(userId);
         setConnectionIdsByUser((prev) => {
           const next = { ...prev };
           delete next[userId];
           return next;
         });
       } else {
-        const response = await createConnection(userId);
+        const response = await connectWithUser(userId);
         if (response?.id != null) {
           setConnectionIdsByUser((prev) => ({ ...prev, [userId]: String(response.id) }));
         }
@@ -215,6 +218,16 @@ export function SearchResults() {
         ...(previousConnectionId ? { [userId]: previousConnectionId } : {}),
       }));
 
+      if (isApiRequestErrorStatus(error, 403)) {
+        setRelationActionUnavailableUsers((prev) => new Set(prev).add(userId));
+        toast({
+          title: "Action non autorisée",
+          description: "La relation avec ce profil n'est pas accessible actuellement.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       toast({
         title: "Erreur",
         description:
@@ -228,6 +241,51 @@ export function SearchResults() {
       setFollowLoadingUserId(null);
     }
   };
+
+  useEffect(() => {
+    if (!currentUserId || !searchResults.users.length) return;
+
+    let isMounted = true;
+    (async () => {
+      const users = searchResults.users.filter((u) => String(u.id) !== currentUserId);
+      const relationChecks = await Promise.allSettled(
+        users.map(async (user) => ({ userId: String(user.id), relation: await getUserConnectionRelation(user.id) }))
+      );
+
+      if (!isMounted) return;
+
+      const nextFollowedUsers = new Set<string>();
+      const nextConnectionIds: Record<string, string> = {};
+      const unavailableUsers = new Set<string>();
+
+      relationChecks.forEach((result, index) => {
+        if (result.status === "fulfilled") {
+          const userId = result.value.userId;
+          const relation = result.value.relation;
+          if (relation?.is_connected) {
+            nextFollowedUsers.add(userId);
+            if (relation?.connection?.id != null) {
+              nextConnectionIds[userId] = String(relation.connection.id);
+            }
+          }
+          return;
+        }
+
+        const userId = users[index]?.id;
+        if (userId && isApiRequestErrorStatus(result.reason, 403)) {
+          unavailableUsers.add(String(userId));
+        }
+      });
+
+      setFollowedUsers(nextFollowedUsers);
+      setConnectionIdsByUser(nextConnectionIds);
+      setRelationActionUnavailableUsers(unavailableUsers);
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUserId, searchResults.users]);
 
   const handleViewProfile = (username?: string, userName?: string) => {
     if (!username) {
@@ -391,7 +449,7 @@ export function SearchResults() {
                             size="sm" 
                             variant={followedUsers.has(user.id) ? "outline" : "default"}
                             onClick={() => handleFollowUser(user.id, user.name)}
-                            disabled={followLoadingUserId === user.id || !currentUserId}
+                            disabled={followLoadingUserId === user.id || !currentUserId || relationActionUnavailableUsers.has(user.id)}
                             className={!followedUsers.has(user.id) ? "campus-gradient text-white hover:opacity-90" : ""}
                           >
                             {followedUsers.has(user.id) ? (
@@ -406,6 +464,11 @@ export function SearchResults() {
                               </>
                             )}
                           </Button>
+                          {relationActionUnavailableUsers.has(user.id) && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Connexion indisponible pour ce profil.
+                            </p>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -540,7 +603,7 @@ export function SearchResults() {
                           size="sm" 
                           variant={followedUsers.has(user.id) ? "outline" : "default"}
                           onClick={() => handleFollowUser(user.id, user.name)}
-                          disabled={followLoadingUserId === user.id || !currentUserId}
+                          disabled={followLoadingUserId === user.id || !currentUserId || relationActionUnavailableUsers.has(user.id)}
                           className={!followedUsers.has(user.id) ? "campus-gradient text-white hover:opacity-90" : ""}
                         >
                           {followedUsers.has(user.id) ? (
@@ -555,6 +618,11 @@ export function SearchResults() {
                             </>
                           )}
                         </Button>
+                        {relationActionUnavailableUsers.has(user.id) && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Connexion indisponible pour ce profil.
+                          </p>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
