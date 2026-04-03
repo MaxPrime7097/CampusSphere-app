@@ -1,6 +1,8 @@
 from django.core.paginator import EmptyPage, Paginator
 from django.db.models import Q
 from django.utils import timezone
+from django.views.decorators.cache import cache_page
+from django.views.decorators.vary import vary_on_headers
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
@@ -181,6 +183,8 @@ def admin_reported_content(request):
     return _admin_response(True, serializer.data, message='Contenu signalé chargé.')
 
 
+@cache_page(60 * 15)
+@vary_on_headers('Authorization')
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def admin_user_management_summary(request):
@@ -202,6 +206,8 @@ def admin_user_management_summary(request):
     return Response({'success': True, 'data': serializer.data})
 
 
+@cache_page(60 * 15)
+@vary_on_headers('Authorization')
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def admin_permissions(request):
@@ -479,6 +485,8 @@ def admin_v1_reports_bulk_approve(request):
     )
 
 
+@cache_page(60 * 15)
+@vary_on_headers('Authorization')
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def admin_v1_stats(request):
