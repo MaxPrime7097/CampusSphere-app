@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import logging
 import os
 from pathlib import Path
 from decouple import config as env_config, Csv
@@ -149,11 +150,53 @@ else:
         }
 
 #
-# Redis / Channels (enabled when REDIS_URL is provided)
+# Redis / Cache / Channels (enabled when REDIS_URL is provided)
 #
 REDIS_URL = os.environ.get("REDIS_URL")
+settings_logger = logging.getLogger("campus_sphere.settings")
 
 if REDIS_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": REDIS_URL,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                # Production robustness: avoid app crashes when Redis is down.
+                "IGNORE_EXCEPTIONS": True,
+            },
+        },
+    }
+
+    # Log ignored Redis errors as warnings instead of crashing requests.
+    DJANGO_REDIS_LOG_IGNORED_EXCEPTIONS = True
+    DJANGO_REDIS_LOGGER = "campus_sphere.settings"
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "campus-sphere-local-cache",
+        },
+    }
+    settings_logger.warning(
+        "REDIS_URL is not set; using LocMemCache as fallback for cache and sessions."
+    )
+
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
+
+if REDIS_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": REDIS_URL,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                # Évite de faire tomber l'application si Redis est momentanément indisponible
+                "IGNORE_EXCEPTIONS": True,
+            },
+        }
+    }
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
@@ -162,6 +205,22 @@ if REDIS_URL:
             },
         },
     }
+else:
+    # Fallback local en mémoire si REDIS_URL n'est pas défini
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "campus-sphere-locmem",
+        }
+    }
+
+# Sessions stockées en cache
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # 7 jours
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_SAMESITE = "None"
 
 if REDIS_URL:
     CACHES = {
@@ -372,9 +431,7 @@ USE_X_FORWARDED_HOST = not DEBUG
 # Production Settings
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_SSL_REDIRECT = True
-SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
-SESSION_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_SAMESITE = 'Lax'
 
 # File Upload Security
