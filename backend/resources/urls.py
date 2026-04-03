@@ -9,6 +9,7 @@ urlpatterns = [
     path('<int:pk>/', views.ResourceDetailView.as_view(), name='resource-detail'),
 
     # Resource interactions
+    path('<int:pk>/preview/', views.ResourcePreviewView.as_view(), name='resource-preview'),
     path('<int:pk>/download/', views.ResourceDownloadView.as_view(), name='resource-download'),
     path('<int:pk>/save/', views.ResourceSaveView.as_view(), name='resource-save'),
     path('<int:pk>/view/', views.ResourceViewTrackingView.as_view(), name='resource-view'),
