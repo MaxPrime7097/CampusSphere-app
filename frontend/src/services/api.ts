@@ -1281,6 +1281,45 @@ export async function listNotifications(token?: string) {
   return unwrapList<any>(response);
 }
 
+export interface ListNotificationsPaginatedParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  read?: "all" | "read" | "unread";
+  type?: string;
+  ordering?: string;
+}
+
+export interface PaginatedApiResult<T> {
+  count: number;
+  results: T[];
+}
+
+export async function listNotificationsPaginated(
+  params: ListNotificationsPaginatedParams = {},
+  token?: string
+): Promise<PaginatedApiResult<any>> {
+  const query = new URLSearchParams();
+
+  if (params.page) query.set("page", String(params.page));
+  if (params.pageSize) query.set("page_size", String(params.pageSize));
+  if (params.search) query.set("search", params.search);
+  if (params.read && params.read !== "all") query.set("read", params.read);
+  if (params.type && params.type !== "all") query.set("type", params.type);
+  if (params.ordering) query.set("ordering", params.ordering);
+
+  const suffix = query.toString();
+  const response = await apiFetch<any>(
+    `api/notifications/${suffix ? `?${suffix}` : ""}`,
+    { token: token || getAccessToken() }
+  );
+
+  const results = unwrapList<any>(response);
+  const count = toNumber(response?.count ?? response?.data?.count ?? results.length, results.length);
+
+  return { count, results };
+}
+
 export async function getNotification(id: number | string, token?: string) {
   const response = await apiFetch<any>(`api/notifications/${id}/`, { token: token || getAccessToken() });
   return unwrapItem<any>(response);
