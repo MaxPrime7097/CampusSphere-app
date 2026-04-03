@@ -1058,6 +1058,27 @@ export async function downloadResource(id: number | string, token?: string) {
   return { blob, filename };
 }
 
+export async function getResourcePreviewUrl(
+  id: number | string,
+  params?: { mode?: "preview" | "download" },
+  token?: string
+) {
+  const query = params?.mode ? `?mode=${encodeURIComponent(params.mode)}` : "";
+  const response = await apiFetch<any>(`api/resources/${id}/preview/${query}`, {
+    token: token || getAccessToken(),
+  });
+  const payload = unwrapItem<any>(response);
+
+  return (
+    payload?.previewUrl ??
+    payload?.preview_url ??
+    payload?.url ??
+    payload?.signedUrl ??
+    payload?.signed_url ??
+    null
+  ) as string | null;
+}
+
 export async function saveResource(id: number | string, token?: string) {
   return apiFetch<any>(`api/resources/${id}/save/`, {
     method: "POST",
