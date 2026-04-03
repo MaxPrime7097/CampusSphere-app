@@ -332,7 +332,7 @@ export function Spheres() {
           </div>
         </div>
 
-        <UnifiedSearchFiltersBar className={cn(cardClasses, "mb-6")} contentClassName="p-3 md:p-4">
+        <UnifiedSearchFiltersBar className="mb-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

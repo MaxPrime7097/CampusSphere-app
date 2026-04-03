@@ -362,7 +362,7 @@ export function SearchResults() {
     <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
       <div className="container max-w-4xl mx-auto py-4 md:py-6 px-4">
         {/* Search Bar */}
-        <UnifiedSearchFiltersBar className="mb-6 campus-card" contentClassName="space-y-3">
+        <UnifiedSearchFiltersBar className="mb-6">
           <form onSubmit={handleSearch} className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
