@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import logging
 import os
 from pathlib import Path
 from decouple import config as env_config, Csv
@@ -149,9 +150,40 @@ else:
         }
 
 #
-# Redis / Channels (enabled when REDIS_URL is provided)
+# Redis / Cache / Channels (enabled when REDIS_URL is provided)
 #
-REDIS_URL = env_config("REDIS_URL", default=None)
+REDIS_URL = os.environ.get("REDIS_URL")
+settings_logger = logging.getLogger("campus_sphere.settings")
+
+if REDIS_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": REDIS_URL,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                # Production robustness: avoid app crashes when Redis is down.
+                "IGNORE_EXCEPTIONS": True,
+            },
+        },
+    }
+
+    # Log ignored Redis errors as warnings instead of crashing requests.
+    DJANGO_REDIS_LOG_IGNORED_EXCEPTIONS = True
+    DJANGO_REDIS_LOGGER = "campus_sphere.settings"
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "campus-sphere-local-cache",
+        },
+    }
+    settings_logger.warning(
+        "REDIS_URL is not set; using LocMemCache as fallback for cache and sessions."
+    )
+
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
 
 if REDIS_URL:
     CHANNEL_LAYERS = {
