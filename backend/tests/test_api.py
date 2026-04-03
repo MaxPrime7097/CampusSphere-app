@@ -437,3 +437,27 @@ class ConnectionAPITest(APITestCase):
         url = reverse('users:user-connections', kwargs={'id': self.user2.id})
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_connection_relation_endpoint_returns_pair_relation_without_listing(self):
+        """Users can check relation against a target user without listing target connections."""
+        connection = Connection.objects.create(requester=self.user1, recipient=self.user2, status='accepted')
+
+        url = reverse('users:user-connection-relation', kwargs={'id': self.user2.id})
+        response = self.client.get(url, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data['success'])
+        self.assertTrue(response.data['data']['is_connected'])
+        self.assertEqual(response.data['data']['connection']['id'], connection.id)
+
+    def test_connection_relation_endpoint_can_create_and_delete_connection(self):
+        """Users can create and delete a relation from the dedicated endpoint."""
+        relation_url = reverse('users:user-connection-relation', kwargs={'id': self.user2.id})
+
+        create_response = self.client.post(relation_url, format='json')
+        self.assertEqual(create_response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Connection.objects.filter(requester=self.user1, recipient=self.user2).count(), 1)
+
+        delete_response = self.client.delete(relation_url, format='json')
+        self.assertEqual(delete_response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Connection.objects.filter(requester=self.user1, recipient=self.user2).exists())
