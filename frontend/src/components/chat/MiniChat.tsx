@@ -5,13 +5,11 @@ import {
   getConversationMessages,
   getCurrentUser,
   getUserConversations,
-  isNetworkApiError,
   listSphereMembers,
 } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
 import { Loader2, Maximize2, MessageCircle, MessagesSquare, Minimize2, RefreshCw, Users } from "lucide-react";
 
 interface MiniChatProps {
@@ -30,7 +28,6 @@ export function MiniChat({
   className = "",
 }: MiniChatProps) {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const socketRef = useRef<WebSocket | null>(null);
   const pollingRef = useRef<number | null>(null);
   const wsRetryRef = useRef<number>(0);
@@ -154,29 +151,11 @@ export function MiniChat({
       setLoadError(null);
 
       try {
-        let currentUser: any;
-        try {
-          currentUser = await getCurrentUser();
-        } catch (error: any) {
-          throw new Error(
-            isNetworkApiError(error)
-              ? "Connexion API impossible (CORS/backend indisponible)"
-              : error?.message || "Impossible de récupérer l'utilisateur courant."
-          );
-        }
-
-        let conversationsResponse: any;
-        try {
-          conversationsResponse = await getUserConversations();
-        } catch (error: any) {
-          throw new Error(
-            isNetworkApiError(error)
-              ? "Connexion API impossible (CORS/backend indisponible)"
-              : error?.message || "Impossible de récupérer les conversations utilisateur."
-          );
-        }
-
-        const membersResponse = await listSphereMembers(sphereId);
+        const [currentUser, conversationsResponse, membersResponse] = await Promise.all([
+          getCurrentUser(),
+          getUserConversations(),
+          listSphereMembers(sphereId),
+        ]);
 
         const myId = String(currentUser?.id || "");
         const allConversations = toList(conversationsResponse);
@@ -219,13 +198,7 @@ export function MiniChat({
         connectWebSocket(resolvedId);
       } catch (error: any) {
         if (!mounted) return;
-        const message = error?.message || "Impossible d'initialiser le chat de sphère.";
-        setLoadError(message);
-        toast({
-          title: "Chat indisponible",
-          description: message,
-          variant: "destructive",
-        });
+        setLoadError(error?.message || "Impossible d'initialiser le chat de sphère.");
       } finally {
         if (mounted) setIsBootstrapping(false);
       }
@@ -237,7 +210,7 @@ export function MiniChat({
       mounted = false;
       stopRealtime();
     };
-  }, [sphereId, toast]);
+  }, [sphereId]);
 
   const statusText = useMemo(() => {
     if (transportMode === "ws") return "Canal temps réel connecté";
