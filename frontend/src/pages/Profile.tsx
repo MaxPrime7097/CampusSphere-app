@@ -293,7 +293,6 @@ export function Profile() {
           setCurrentUser(data);
           if (!username) {
             setTargetUser(data);
-            setLoadError(null);
           }
           setProfileLoadError(false);
         } else if (isMounted && !username) {
@@ -309,7 +308,7 @@ export function Profile() {
     return () => {
       isMounted = false;
     };
-  }, [username, toast]);
+  }, []);
 
   // Load target user by username
   useEffect(() => {
@@ -319,7 +318,6 @@ export function Profile() {
     (async () => {
       try {
         setLoading(true);
-        setLoadError(null);
         const user = await getUserByUsername(username);
         if (isMounted && user && isProfilePayloadValid(user)) {
           setTargetUser(user);
@@ -340,7 +338,7 @@ export function Profile() {
     return () => {
       isMounted = false;
     };
-  }, [username, toast]);
+  }, [username]);
 
   // Load user posts
   useEffect(() => {

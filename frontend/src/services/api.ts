@@ -351,32 +351,13 @@ async function apiFetch<T>(
     builtHeaders["Content-Type"] = "application/json";
   }
 
-  let res: Response;
-  try {
-    res = await fetch(url, {
-      method,
-      headers: builtHeaders,
-      body: body instanceof FormData ? (body as FormData) : body ? JSON.stringify(body) : undefined,
-      credentials: "include",
-      signal,
-    });
-  } catch (error: any) {
-    const isNetworkError =
-      error instanceof TypeError &&
-      String(error?.message || "").toLowerCase().includes("failed to fetch");
-
-    if (isNetworkError) {
-      throw new ApiError("Connexion API impossible (CORS/backend indisponible)", {
-        kind: "network",
-        details: error,
-      });
-    }
-
-    throw new ApiError(error?.message || "Erreur réseau inconnue", {
-      kind: "unknown",
-      details: error,
-    });
-  }
+  const res = await fetch(url, {
+    method,
+    headers: builtHeaders,
+    body: body instanceof FormData ? (body as FormData) : body ? JSON.stringify(body) : undefined,
+    credentials: "include",
+    signal,
+  });
 
   const contentType = (res.headers.get("content-type") || "").toLowerCase();
 
