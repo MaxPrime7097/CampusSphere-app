@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CreatePost } from "@/components/feed/CreatePost";
 import { PostCard } from "@/components/feed/PostCard";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { cn } from "@/lib/utils"; // si tu utilises cn dans ce fichier
+import { cn, formatFileSize } from "@/lib/utils"; // si tu utilises cn dans ce fichier
 
 const NOT_AVAILABLE_TEXT = "Not available";
 const MOOD_OPTIONS = [
@@ -108,6 +108,37 @@ const normalizeCanonicalLabel = (value: unknown, map: Record<string, string>): s
   return map[key] || value;
 };
 
+const normalizeId = (value: unknown): string | null => {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  return String(value);
+};
+
+export function getConnectionCounterpart(conn: any, targetUserId: string) {
+  const requesterId = normalizeId(conn?.requester ?? conn?.requester_id ?? conn?.requester_info?.id);
+  const recipientId = normalizeId(conn?.recipient ?? conn?.recipient_id ?? conn?.recipient_info?.id);
+
+  const isRequesterTarget = requesterId === targetUserId;
+  const isRecipientTarget = recipientId === targetUserId;
+
+  if (!isRequesterTarget && !isRecipientTarget) {
+    return null;
+  }
+
+  const counterpartInfo = isRequesterTarget ? conn?.recipient_info : conn?.requester_info;
+  const counterpartId = isRequesterTarget ? recipientId : requesterId;
+
+  return {
+    id: normalizeId(counterpartInfo?.id ?? counterpartId ?? conn?.id ?? conn?.user_id),
+    name: counterpartInfo?.full_name || counterpartInfo?.name || conn?.name || "Utilisateur",
+    username: counterpartInfo?.username || conn?.username || "user",
+    avatar: counterpartInfo?.avatar || conn?.avatar || "/placeholder-avatar.jpg",
+    mutual: 0,
+  };
+}
+
 function mapProfileToViewModel({
   profile,
   posts,
@@ -194,7 +225,7 @@ function mapProfileToViewModel({
       name: resource.title || resource.filename || resource.fileName || NOT_AVAILABLE_TEXT,
       filename: resource.filename || resource.fileName || resource.title || `resource-${resource.id}`,
       type: resource.type || NOT_AVAILABLE_TEXT,
-      size: resource.fileSize || NOT_AVAILABLE_TEXT,
+      size: formatFileSize(resource.fileSize || 0),
     })),
     stats: {
       posts: posts?.length || 0,
@@ -333,36 +364,10 @@ export function Profile() {
         if (isMounted && connections) {
           const profileOwnerId = String(targetUser.id);
 
-          const mapped = (connections || []).map((conn: any) => {
-            const requesterId = conn.requester ? String(conn.requester) : null;
-            const recipientId = conn.recipient ? String(conn.recipient) : null;
-            const isRequesterProfileOwner = requesterId === profileOwnerId;
-            const isRecipientProfileOwner = recipientId === profileOwnerId;
-            const counterpartUserInfo = isRequesterProfileOwner
-              ? conn.recipient_info
-              : isRecipientProfileOwner
-                ? conn.requester_info
-                : null;
-            const counterpartId = isRequesterProfileOwner
-              ? recipientId
-              : isRecipientProfileOwner
-                ? requesterId
-                : null;
-
-            return {
-              id: String(
-                counterpartUserInfo?.id ||
-                  counterpartId ||
-                  conn.id ||
-                  conn.user_id
-              ),
-              name: counterpartUserInfo?.full_name || counterpartUserInfo?.name || conn.name || "Utilisateur",
-              username: counterpartUserInfo?.username || conn.username || "user",
-              avatar: counterpartUserInfo?.avatar || conn.avatar || "/placeholder-avatar.jpg",
-              mutual: 0,
-            };
-          });
-          setUserConnections(mapped);
+          const mapped = (connections || [])
+            .map((conn: any) => getConnectionCounterpart(conn, profileOwnerId))
+            .filter(Boolean);
+          setUserConnections(mapped as any[]);
         }
       } catch (e) {
         // Error loading connections

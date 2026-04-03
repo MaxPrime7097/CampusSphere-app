@@ -8,6 +8,7 @@ import { BookOpen, Calendar, ShoppingBag, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getSavedPosts, getSavedResources, savePost, saveResource } from "@/services/api";
 import { getSubjectLabel, getTypeLabel, normalizeResourceType, normalizeSubject } from "@/lib/resourceMetadata";
+import { formatFileSize } from "@/lib/utils";
 
 export function SavedItems() {
   const [savedPosts, setSavedPosts] = useState<any[]>([]);
@@ -172,7 +173,7 @@ export function SavedItems() {
                           <div className="text-xs text-muted-foreground mt-2 flex flex-wrap gap-2">
                             <span>Type: {getTypeLabel(resource.type)}</span>
                             <span>Matière: {getSubjectLabel(resource.subject)}</span>
-                            <span>Taille: {resource.fileSize}</span>
+                            <span>Taille: {formatFileSize(resource.fileSize)}</span>
                           </div>
                         </div>
 

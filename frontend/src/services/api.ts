@@ -1426,6 +1426,19 @@ export interface AdminReportedContentItem {
   };
 }
 
+export interface AdminPermissions {
+  view: boolean;
+  create: boolean;
+  update: boolean;
+  delete: boolean;
+  export: boolean;
+}
+
+export interface AdminPermissionsPayload {
+  role: string | null;
+  permissions: AdminPermissions;
+}
+
 export interface AdminUserManagementSummary {
   totalUsers: number;
   newUsersToday: number;
@@ -1433,6 +1446,25 @@ export interface AdminUserManagementSummary {
   reportedContent: number;
   activeGroups: number;
   totalResources: number;
+}
+
+export type AdminStatsRange = "24h" | "7j" | "30j" | "custom";
+
+export interface AdminKpiStats {
+  newUsers: number;
+  activeSpheres: number;
+  pendingReports: number;
+  overdueTasks: number;
+  failedNotifications: number;
+  range: AdminStatsRange;
+  startDate: string | null;
+  endDate: string | null;
+}
+
+export interface AdminQuickActionResult {
+  action: string;
+  success: boolean;
+  message: string;
 }
 
 function mapAdminModerationQueueItem(item: any): AdminModerationQueueItem {
@@ -1478,6 +1510,19 @@ function mapAdminSummary(summary: any): AdminUserManagementSummary {
   };
 }
 
+function mapAdminKpiStats(stats: any): AdminKpiStats {
+  return {
+    newUsers: toNumber(stats?.newUsers ?? stats?.new_users, 0),
+    activeSpheres: toNumber(stats?.activeSpheres ?? stats?.active_spheres, 0),
+    pendingReports: toNumber(stats?.pendingReports ?? stats?.pending_reports, 0),
+    overdueTasks: toNumber(stats?.overdueTasks ?? stats?.overdue_tasks, 0),
+    failedNotifications: toNumber(stats?.failedNotifications ?? stats?.failed_notifications, 0),
+    range: (stats?.range as AdminStatsRange) ?? "24h",
+    startDate: stats?.startDate ?? stats?.start_date ?? null,
+    endDate: stats?.endDate ?? stats?.end_date ?? null,
+  };
+}
+
 export async function getAdminModerationQueue(token?: string): Promise<AdminModerationQueueItem[]> {
   const response = await apiFetch<any>("api/admin/moderation-queue/", { token: token || getAccessToken() });
   return unwrapList(response).map(mapAdminModerationQueueItem);
@@ -1491,6 +1536,23 @@ export async function getAdminReportedContent(token?: string): Promise<AdminRepo
 export async function getAdminUserManagementSummary(token?: string): Promise<AdminUserManagementSummary> {
   const response = await apiFetch<any>("api/admin/user-management-summary/", { token: token || getAccessToken() });
   return mapAdminSummary(unwrapItem(response));
+}
+
+
+export async function getAdminPermissions(token?: string): Promise<AdminPermissionsPayload> {
+  const response = await apiFetch<any>("api/admin/permissions/", { token: token || getAccessToken() });
+  const payload = unwrapItem<any>(response) || {};
+
+  return {
+    role: payload?.role ?? null,
+    permissions: {
+      view: Boolean(payload?.permissions?.view),
+      create: Boolean(payload?.permissions?.create),
+      update: Boolean(payload?.permissions?.update),
+      delete: Boolean(payload?.permissions?.delete),
+      export: Boolean(payload?.permissions?.export),
+    },
+  };
 }
 
 // ============================================================================
