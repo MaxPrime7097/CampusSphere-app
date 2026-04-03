@@ -299,14 +299,14 @@ export function Connections() {
 
         {/* Tabs */}
         <Tabs defaultValue="all" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 max-w-md">
-            <TabsTrigger value="all">
+          <SharedTabsList className="grid w-full grid-cols-2 max-w-md">
+            <SharedTabsTrigger value="all">
               Mes Connexions ({filteredConnections.length})
-            </TabsTrigger>
-            <TabsTrigger value="suggestions">
+            </SharedTabsTrigger>
+            <SharedTabsTrigger value="suggestions">
               Suggestions ({filteredSuggestions.length})
-            </TabsTrigger>
-          </TabsList>
+            </SharedTabsTrigger>
+          </SharedTabsList>
 
           {/* All Connections */}
           <TabsContent value="all" className="space-y-4">
