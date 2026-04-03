@@ -38,6 +38,13 @@ src/
 
 ---
 
+## 📐 Politiques d'architecture
+
+- [Politique de cache API](./CACHE_POLICY.md)
+
+---
+
+
 ## 🧩 Composants Principaux
 
 ### 1. **Composants UI de Base** (`src/components/ui/`)
