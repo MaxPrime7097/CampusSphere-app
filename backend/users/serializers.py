@@ -52,6 +52,10 @@ class UserLoginSerializer(serializers.Serializer):
         return data
 
 
+class PasswordResetSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
 class UserProfileSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(read_only=True)
     coverPhoto = serializers.ImageField(source='cover_photo', read_only=True)
