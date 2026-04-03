@@ -164,6 +164,7 @@ class ChangeEmailView(APIView):
 
         request.user.email = serializer.validated_data['new_email']
         request.user.save(update_fields=['email', 'updated_at'])
+        CacheManager.invalidate_user_profile(request.user.id)
 
         return Response({
             'success': True,
@@ -341,6 +342,7 @@ class PrivacySettingsView(APIView):
         serializer = PrivacySettingsSerializer(request.user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        CacheManager.invalidate_user_profile(request.user.id)
 
         return Response({
             'success': True,
@@ -361,6 +363,7 @@ class DataExportView(APIView):
 
         request.user.data_export_requested_at = timezone.now()
         request.user.save(update_fields=['data_export_requested_at', 'updated_at'])
+        CacheManager.invalidate_user_profile(request.user.id)
 
         export_data = {
             'profile': UserProfileSerializer(request.user).data,

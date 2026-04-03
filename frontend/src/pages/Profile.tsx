@@ -116,6 +116,19 @@ const normalizeId = (value: unknown): string | null => {
   return String(value);
 };
 
+function isProfilePayloadValid(profile: any): boolean {
+  if (!profile || typeof profile !== "object") {
+    return false;
+  }
+
+  const identifier = profile.id;
+  const hasValidIdentifier = identifier !== null && identifier !== undefined && identifier !== "";
+  const username = profile.username ?? profile.slug;
+  const hasValidUsername = typeof username === "string" && username.trim().length > 0;
+
+  return hasValidIdentifier && hasValidUsername;
+}
+
 export function getConnectionCounterpart(conn: any, targetUserId: string) {
   const requesterId = normalizeId(conn?.requester ?? conn?.requester_id ?? conn?.requester_info?.id);
   const recipientId = normalizeId(conn?.recipient ?? conn?.recipient_id ?? conn?.recipient_info?.id);
@@ -264,6 +277,7 @@ export function Profile() {
   const [userResources, setUserResources] = useState<any[]>([]);
   const [resourcesAvailable, setResourcesAvailable] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [profileLoadError, setProfileLoadError] = useState(false);
 
   // Tab State - NEW (same as Spheres)
   const [activeTab, setActiveTab] = useState("posts");
@@ -274,14 +288,20 @@ export function Profile() {
     (async () => {
       try {
         const data = await getCurrentUser();
-        if (isMounted) {
+        if (isMounted && isProfilePayloadValid(data)) {
           setCurrentUser(data);
           if (!username) {
             setTargetUser(data);
           }
+          setProfileLoadError(false);
+        } else if (isMounted && !username) {
+          setProfileLoadError(true);
         }
       } catch (e) {
         // User not logged in
+        if (isMounted && !username) {
+          setProfileLoadError(true);
+        }
       }
     })();
     return () => {
@@ -298,12 +318,18 @@ export function Profile() {
       try {
         setLoading(true);
         const user = await getUserByUsername(username);
-        if (isMounted && user) {
+        if (isMounted && user && isProfilePayloadValid(user)) {
           setTargetUser(user);
+          setProfileLoadError(false);
+        } else if (isMounted) {
+          setProfileLoadError(true);
         }
       } catch (e: any) {
         // User not found
         console.error('Error loading user:', e);
+        if (isMounted) {
+          setProfileLoadError(true);
+        }
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -752,6 +778,25 @@ export function Profile() {
     "transition-all duration-300",
     isMobile ? "rounded-none border-x-0 border-t-0 shadow-none bg-card" : "campus-card hover:campus-glow"
   );
+
+  if (!loading && profileLoadError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
+        <div className="container max-w-4xl mx-auto py-6 px-4">
+          <Card className="campus-card">
+            <CardHeader>
+              <CardTitle>Erreur de chargement</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">
+                Le profil reçu est invalide ou obsolète. Veuillez recharger la page.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div key={`${username || 'current'}`} className="min-h-screen bg-gradient-to-br from-background to-accent/20">
