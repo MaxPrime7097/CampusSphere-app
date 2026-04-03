@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
+import { PageSearchFiltersBar } from "@/components/ui/page-search-filters-bar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Users, TrendingUp, Clock, Loader2, Check, RefreshCw, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -289,7 +290,33 @@ export function Spheres() {
           onValueChange={(value) => setActiveTab(value as SphereSortKey)}
           className="w-full"
         >
-          <SharedTabsList className="mb-6">
+          <PageSearchFiltersBar className={cn(cardClasses, "mb-6")} contentClassName="p-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Rechercher une sphère..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Select value={filterCategory} onValueChange={setFilterCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Catégorie" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </PageSearchFiltersBar>
+
+          <SharedTabsList className="grid w-full grid-cols-3 max-w-lg" containerClassName="mb-6">
             <SharedTabsTrigger value="discover">Découvrir</SharedTabsTrigger>
             <SharedTabsTrigger value="mySpheres">Mes Sphères</SharedTabsTrigger>
             <SharedTabsTrigger value="top">Top</SharedTabsTrigger>
@@ -298,30 +325,6 @@ export function Spheres() {
           {/* Section 1: Pilot Training */}
           <TabsContent value="discover" className="mt-0">
             <section id="discover" className="space-y-4">
-              <Card className={cardClasses}>
-                <CardContent className="p-3">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Rechercher une sphère..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                    <Select value={filterCategory} onValueChange={setFilterCategory}>
-                      <SelectTrigger><SelectValue placeholder="Catégorie" /></SelectTrigger>
-                      <SelectContent>
-                        {categories.map((cat) => (
-                          <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-              </CardContent>
-              </Card>
-
               {loadError ? (
                 <Card className={cardClasses}>
                   <CardContent className="py-8 text-center space-y-3">
@@ -392,14 +395,6 @@ export function Spheres() {
           {/* Section 2: Titan maintenance */}
           <TabsContent value="mySpheres" className="mt-0">
             <section id="mySpheres" className="space-y-4">
-              <Card className={cardClasses}>
-                <CardContent className="p-3">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Rechercher mes sphères..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
-                  </div>
-                </CardContent>
-              </Card>
               {userSpheresLoadError ? (
                 <Card className={cardClasses}>
                   <CardContent className="py-8 text-center space-y-3">
