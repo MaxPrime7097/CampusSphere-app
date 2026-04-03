@@ -74,7 +74,6 @@ Optionnel:
 REDIS_URL=redis://...
 EMAIL_HOST_USER=...
 EMAIL_HOST_PASSWORD=...
-<<<<<<< codex/analyze-code-and-provide-overall-status-dfoazs
 USE_S3=True
 AWS_ACCESS_KEY_ID=...
 AWS_SECRET_ACCESS_KEY=...
@@ -83,11 +82,47 @@ AWS_S3_REGION_NAME=...
 # optionnel:
 # AWS_S3_CUSTOM_DOMAIN=cdn.example.com
 # AWS_QUERYSTRING_AUTH=False
-=======
->>>>>>> main
 ```
 
-### Étape D — Health check Render
+### Étape D — Mise à jour CORS/CSRF pour CampusSphere Uni (Vercel)
+
+Dans Render → service backend → **Environment**:
+
+1. Mettre à jour `CORS_ALLOWED_ORIGINS` en incluant explicitement:
+   - `https://campus-sphere-uni.vercel.app`
+2. Mettre à jour `CSRF_TRUSTED_ORIGINS` avec la même origine, plus les autres domaines frontend légitimes.
+3. Si vous utilisez plusieurs previews Vercel contrôlées, envisager:
+   - `CORS_ALLOWED_ORIGIN_REGEXES=^https://.*\.vercel\.app$`
+   - ou une regex plus restrictive (préfixe de projet) pour limiter la surface d'exposition.
+4. Redéployer le backend (manual deploy ou commit déclencheur).
+
+Exemple orienté production:
+
+```env
+CORS_ALLOWED_ORIGINS=https://campus-sphere-uni.vercel.app,https://<other-stable-frontend>.vercel.app
+CSRF_TRUSTED_ORIGINS=https://campus-sphere-uni.vercel.app,https://<other-stable-frontend>.vercel.app,https://<your-backend>.onrender.com
+# Optionnel si previews Vercel:
+# CORS_ALLOWED_ORIGIN_REGEXES=^https://campus-sphere-uni-.*\.vercel\.app$
+```
+
+### Étape E — Vérifier la préflight `OPTIONS /api/conversations/user/`
+
+Après redéploiement, tester la préflight depuis votre poste:
+
+```bash
+curl -i -X OPTIONS "https://<your-backend>.onrender.com/api/conversations/user/" \
+  -H "Origin: https://campus-sphere-uni.vercel.app" \
+  -H "Access-Control-Request-Method: GET" \
+  -H "Access-Control-Request-Headers: authorization,content-type"
+```
+
+Vérifier dans la réponse:
+
+- `Access-Control-Allow-Origin: https://campus-sphere-uni.vercel.app`
+- Présence des méthodes autorisées dans `Access-Control-Allow-Methods`
+- Présence des headers autorisés dans `Access-Control-Allow-Headers`
+
+### Étape F — Health check Render
 
 - Path: `/api/health/`
 
@@ -117,7 +152,6 @@ VITE_APP_ENV=production
 - Vérifier login/register
 - Vérifier chargement des pages protégées
 - Vérifier appels API (Network) vers backend Render
-<<<<<<< codex/analyze-code-and-provide-overall-status-dfoazs
 
 ---
 
@@ -142,32 +176,6 @@ npm run lint
 
 ---
 
-=======
-
----
-
-## 5) Commandes de validation recommandées
-
-### Backend
-
-```bash
-cd backend
-SECRET_KEY=testkeyfortests12345678901234567890 DEBUG=True ALLOWED_HOSTS=localhost python manage.py check
-SECRET_KEY=testkeyfortests12345678901234567890 DEBUG=True ALLOWED_HOSTS=localhost python manage.py test
-```
-
-### Frontend
-
-```bash
-cd frontend
-npm install
-npm run build
-npm run lint
-```
-
----
-
->>>>>>> main
 ## 6) Points de sécurité production
 
 - Ne jamais exposer `SECRET_KEY`
@@ -176,10 +184,11 @@ npm run lint
 - `CORS_ALLOWED_ORIGINS` et `CSRF_TRUSTED_ORIGINS` stricts (pas de `*`)
 - HTTPS obligatoire côté plateformes (Vercel/Render)
 
-<<<<<<< codex/analyze-code-and-provide-overall-status-dfoazs
+---
+
 ## 7) Activation S3 (stockage fichiers)
 
-Le backend supporte maintenant le stockage media local **ou** S3 selon `USE_S3`.
+Le backend supporte le stockage media local **ou** S3 selon `USE_S3`.
 
 - `USE_S3=False` (défaut): fichiers sur disque local (`MEDIA_ROOT`)
 - `USE_S3=True`: fichiers media envoyés vers S3 (`media/` prefix)
@@ -205,18 +214,9 @@ AWS_S3_FILE_OVERWRITE=False
 ---
 
 ## 8) Rollback rapide
-=======
----
-
-## 7) Rollback rapide
->>>>>>> main
 
 - Garder un tag Git de release (`v1.x.x`)
 - En cas d'incident:
   - rollback frontend via Vercel (previous deployment)
   - rollback backend via Render (previous deploy)
   - rollback DB uniquement si migration destructive
-<<<<<<< codex/analyze-code-and-provide-overall-status-dfoazs
-=======
-
->>>>>>> main
