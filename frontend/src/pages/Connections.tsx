@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { PageSearchFiltersBar } from "@/components/ui/page-search-filters-bar";
+import { UnifiedSearchFiltersBar } from "@/components/ui/unified-search-filters-bar";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import {
@@ -256,7 +256,7 @@ export function Connections() {
         </div>
 
         {/* Search Bar */}
-        <PageSearchFiltersBar className="mb-6 campus-card" contentClassName="space-y-3">
+        <UnifiedSearchFiltersBar className="mb-6 campus-card" contentClassName="space-y-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -296,7 +296,7 @@ export function Connections() {
               </Button>
             )}
           </div>
-        </PageSearchFiltersBar>
+        </UnifiedSearchFiltersBar>
 
         {/* Tabs */}
         <Tabs defaultValue="all" className="space-y-6">
