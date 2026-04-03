@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
-import { getCurrentUser, getUserByUsername, getUserPosts, uploadAvatar, uploadCoverPhoto, updateUserProfile, getUserConnections, getUserResources, createConnection, deleteConnection, downloadResource, getUserProfile } from "@/services/api";
-import { MapPin, Camera, Calendar, Link, Users, BookOpen, Award, Settings, FileText, Briefcase, GraduationCap, Loader2, Check, Download, Unlink, ExternalLink, Upload, X, Zap, Smile } from "lucide-react";
+import { getCurrentUser, getUserByUsername, getUserPosts, uploadAvatar, uploadCoverPhoto, updateUserProfile, getUserConnections, getUserResources, createConnection, deleteConnection, downloadResource, getUserProfile, isNetworkApiError } from "@/services/api";
+import { MapPin, Camera, Calendar, Link, Users, BookOpen, Award, Settings, FileText, Briefcase, GraduationCap, Loader2, Check, Download, Unlink, ExternalLink, Upload, X, Zap, Smile, RefreshCw, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -264,6 +264,7 @@ export function Profile() {
   const [userResources, setUserResources] = useState<any[]>([]);
   const [resourcesAvailable, setResourcesAvailable] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Tab State - NEW (same as Spheres)
   const [activeTab, setActiveTab] = useState("posts");
@@ -278,16 +279,26 @@ export function Profile() {
           setCurrentUser(data);
           if (!username) {
             setTargetUser(data);
+            setLoadError(null);
           }
         }
-      } catch (e) {
-        // User not logged in
+      } catch (e: any) {
+        if (!isMounted || username) return;
+        const message = isNetworkApiError(e)
+          ? "Connexion API impossible (CORS/backend indisponible)"
+          : e?.message || "Impossible de charger votre profil.";
+        setLoadError(message);
+        toast({
+          title: "Chargement du profil impossible",
+          description: message,
+          variant: "destructive",
+        });
       }
     })();
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [username, toast]);
 
   // Load target user by username
   useEffect(() => {
@@ -297,13 +308,23 @@ export function Profile() {
     (async () => {
       try {
         setLoading(true);
+        setLoadError(null);
         const user = await getUserByUsername(username);
         if (isMounted && user) {
           setTargetUser(user);
         }
       } catch (e: any) {
-        // User not found
-        console.error('Error loading user:', e);
+        if (!isMounted) return;
+        const message = isNetworkApiError(e)
+          ? "Connexion API impossible (CORS/backend indisponible)"
+          : e?.message || "Impossible de charger ce profil.";
+        setLoadError(message);
+        setTargetUser(null);
+        toast({
+          title: "Chargement du profil impossible",
+          description: message,
+          variant: "destructive",
+        });
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -311,7 +332,7 @@ export function Profile() {
     return () => {
       isMounted = false;
     };
-  }, [username]);
+  }, [username, toast]);
 
   // Load user posts
   useEffect(() => {
@@ -752,6 +773,30 @@ export function Profile() {
     "transition-all duration-300",
     isMobile ? "rounded-none border-x-0 border-t-0 shadow-none bg-card" : "campus-card hover:campus-glow"
   );
+
+  const hasGlobalLoadError = Boolean(loadError);
+
+  if (hasGlobalLoadError) {
+    return (
+      <div key={`${username || 'current'}`} className="min-h-screen bg-gradient-to-br from-background to-accent/20">
+        <div className="container max-w-4xl mx-auto py-4 px-4">
+          <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-destructive mt-0.5" />
+              <div className="space-y-2">
+                <p className="font-semibold text-destructive">Chargement du profil impossible</p>
+                <p className="text-sm text-muted-foreground">{loadError}</p>
+                <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Réessayer
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div key={`${username || 'current'}`} className="min-h-screen bg-gradient-to-br from-background to-accent/20">

@@ -50,6 +50,31 @@ function clearTokens() {
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
+export class ApiError extends Error {
+  status: number | null;
+  kind: "http" | "network" | "unknown";
+  details?: unknown;
+
+  constructor(
+    message: string,
+    options: {
+      status?: number | null;
+      kind?: "http" | "network" | "unknown";
+      details?: unknown;
+    } = {}
+  ) {
+    super(message);
+    this.name = "ApiError";
+    this.status = options.status ?? null;
+    this.kind = options.kind ?? "unknown";
+    this.details = options.details;
+  }
+}
+
+export function isNetworkApiError(error: unknown): error is ApiError {
+  return error instanceof ApiError && error.kind === "network";
+}
+
 function toArray<T>(value: T[] | null | undefined): T[] {
   if (!value) return [];
   return Array.isArray(value) ? value : [value];
@@ -333,13 +358,32 @@ async function apiFetch<T>(
     builtHeaders["Content-Type"] = "application/json";
   }
 
-  const res = await fetch(url, {
-    method,
-    headers: builtHeaders,
-    body: body instanceof FormData ? (body as FormData) : body ? JSON.stringify(body) : undefined,
-    credentials: "include",
-    signal,
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method,
+      headers: builtHeaders,
+      body: body instanceof FormData ? (body as FormData) : body ? JSON.stringify(body) : undefined,
+      credentials: "include",
+      signal,
+    });
+  } catch (error: any) {
+    const isNetworkError =
+      error instanceof TypeError &&
+      String(error?.message || "").toLowerCase().includes("failed to fetch");
+
+    if (isNetworkError) {
+      throw new ApiError("Connexion API impossible (CORS/backend indisponible)", {
+        kind: "network",
+        details: error,
+      });
+    }
+
+    throw new ApiError(error?.message || "Erreur réseau inconnue", {
+      kind: "unknown",
+      details: error,
+    });
+  }
 
   const contentType = (res.headers.get("content-type") || "").toLowerCase();
 
@@ -368,15 +412,25 @@ async function apiFetch<T>(
           }
         }
 
-        throw new Error(errMsg || `Request failed: ${res.status}`);
+        throw new ApiError(errMsg || `Request failed: ${res.status}`, {
+          kind: "http",
+          status: res.status,
+          details: errJson,
+        });
       } catch (e) {
         const text = await res.text().catch(() => "");
-        throw new Error(text || `Request failed: ${res.status}`);
+        throw new ApiError(text || `Request failed: ${res.status}`, {
+          kind: "http",
+          status: res.status,
+        });
       }
     }
 
     const text = await res.text().catch(() => "");
-    throw new Error(text || `Request failed: ${res.status}`);
+    throw new ApiError(text || `Request failed: ${res.status}`, {
+      kind: "http",
+      status: res.status,
+    });
   }
 
   if (contentType.includes("application/json")) {
