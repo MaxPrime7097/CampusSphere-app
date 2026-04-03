@@ -21,7 +21,7 @@ import {
 import { canAdmin } from "@/lib/adminPermissions";
 
 export function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState("resources");
+  const [activeTab, setActiveTab] = useState("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [stats, setStats] = useState<AdminUserManagementSummary | null>(null);
   const [pendingResources, setPendingResources] = useState<AdminModerationQueueItem[]>([]);
