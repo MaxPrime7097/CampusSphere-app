@@ -90,6 +90,12 @@ export function ResourceDetail() {
     fileName?: string;
     mimeType?: string;
   } | null>(null);
+  const fileSource = resource?.fileUrl || resource?.fileName || "";
+  const inferredExtension = (fileSource.split(".").pop() || resource?.format || "").toLowerCase();
+  const normalizedMime = (resource?.mimeType || "").toLowerCase();
+  const isPdf = normalizedMime.includes("pdf") || inferredExtension === "pdf";
+  const isImage = normalizedMime.startsWith("image/") || ["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg"].includes(inferredExtension);
+  const isPreviewable = isPdf || isImage;
 
   // Load resource from API
   useEffect(() => {
@@ -191,28 +197,31 @@ export function ResourceDetail() {
     if (!id || !isPreviewMode) {
       setPreviewSrc(null);
       setPreviewError(null);
+      setIsPreviewLoading(false);
+      return;
+    }
+
+    if (!isPreviewable) {
+      setPreviewSrc(null);
+      setPreviewError(null);
+      setIsPreviewLoading(false);
       return;
     }
 
     let isMounted = true;
-    let fallbackObjectUrl: string | null = null;
 
     setIsPreviewLoading(true);
     setPreviewError(null);
 
     void (async () => {
       try {
-        const signedPreviewUrl = await getResourcePreviewUrl(id, { mode: "preview" });
-        if (isMounted && signedPreviewUrl) {
-          setPreviewSrc(signedPreviewUrl);
+        const previewUrl = await getResourcePreviewUrl(id);
+        if (!isMounted) return;
+        if (!previewUrl) {
+          setPreviewError("Impossible de récupérer l’URL d’aperçu.");
           return;
         }
-
-        const result = await downloadResource(id);
-        fallbackObjectUrl = window.URL.createObjectURL(result.blob);
-
-        if (!isMounted) return;
-        setPreviewSrc(fallbackObjectUrl);
+        setPreviewSrc(previewUrl);
       } catch (e: any) {
         if (!isMounted) return;
         setPreviewError(e?.message || "Impossible de charger l'aperçu.");
@@ -223,18 +232,8 @@ export function ResourceDetail() {
 
     return () => {
       isMounted = false;
-      if (fallbackObjectUrl) {
-        window.URL.revokeObjectURL(fallbackObjectUrl);
-      }
     };
-  }, [id, isPreviewMode]);
-
-  const fileSource = resource?.fileUrl || resource?.fileName || "";
-  const inferredExtension = (fileSource.split(".").pop() || resource?.format || "").toLowerCase();
-  const normalizedMime = (resource?.mimeType || "").toLowerCase();
-  const isPdf = normalizedMime.includes("pdf") || inferredExtension === "pdf";
-  const isImage = normalizedMime.startsWith("image/") || ["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg"].includes(inferredExtension);
-  const isPreviewable = isPdf || isImage;
+  }, [id, isPreviewMode, isPreviewable]);
 
 
   const handleDownload = () => {
