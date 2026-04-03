@@ -129,3 +129,20 @@ class AdminEndpointsAPITest(APITestCase):
         self.assertEqual(summary['reportedContent'], Post.objects.count() + ResourceReport.objects.filter(status='pending').count())
         self.assertEqual(summary['activeGroups'], Sphere.objects.count())
         self.assertEqual(summary['totalResources'], Resource.objects.count())
+
+    def test_admin_permissions_endpoint_requires_admin(self):
+        self.client.force_authenticate(user=self.member)
+        response = self.client.get('/api/admin/permissions/')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_admin_permissions_endpoint_returns_matrix(self):
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get('/api/admin/permissions/')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data['success'])
+        payload = response.data['data']
+
+        self.assertEqual(payload['role'], 'admin')
+        self.assertSetEqual(set(payload['permissions'].keys()), {'view', 'create', 'update', 'delete', 'export'})
+        self.assertTrue(payload['permissions']['view'])

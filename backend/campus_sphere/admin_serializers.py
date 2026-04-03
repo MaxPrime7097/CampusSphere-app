@@ -33,3 +33,20 @@ class AdminSummarySerializer(serializers.Serializer):
     reportedContent = serializers.IntegerField()
     activeGroups = serializers.IntegerField()
     totalResources = serializers.IntegerField()
+
+
+class AdminKpiStatsSerializer(serializers.Serializer):
+    newUsers = serializers.IntegerField()
+    activeSpheres = serializers.IntegerField()
+    pendingReports = serializers.IntegerField()
+    overdueTasks = serializers.IntegerField()
+    failedNotifications = serializers.IntegerField()
+    range = serializers.CharField()
+    startDate = serializers.DateTimeField(allow_null=True)
+    endDate = serializers.DateTimeField(allow_null=True)
+
+
+class AdminQuickActionSerializer(serializers.Serializer):
+    action = serializers.CharField()
+    success = serializers.BooleanField()
+    message = serializers.CharField()

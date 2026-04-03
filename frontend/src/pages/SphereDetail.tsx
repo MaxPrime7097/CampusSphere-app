@@ -9,7 +9,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
 import { Progress } from "@/components/ui/progress";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
@@ -25,7 +26,6 @@ import { AddMemberModal } from "@/components/modals/AddMemberModal";
 import { SphereSettingsModal } from "@/components/modals/SphereSettingsModal";
 import { ManageMembersModal } from "@/components/modals/ManageMembersModal";
 import { MiniChat } from "@/components/chat/MiniChat";
-import { ScrollableTabs } from "@/components/ui/scrollable-tabs";
 
 export function SphereDetail() {
   const { id } = useParams();
@@ -49,7 +49,41 @@ export function SphereDetail() {
 
   const [loading, setLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [taskState, setTaskState] = useState<"ready" | "forbidden" | "server_error">("ready");
   const [processingMemberIds, setProcessingMemberIds] = useState<Record<string, boolean>>({});
+
+  const resolveJoinConflict = (error: unknown): "already_active" | "already_pending" | null => {
+    const rawMessage =
+      (error as any)?.response?.data?.detail ??
+      (error as any)?.response?.data?.message ??
+      (error as any)?.message ??
+      "";
+
+    let parsedPayload: any = null;
+    if (typeof rawMessage === "string") {
+      try {
+        parsedPayload = JSON.parse(rawMessage);
+      } catch {
+        parsedPayload = null;
+      }
+    }
+
+    const normalizedMessage = [
+      rawMessage,
+      parsedPayload?.detail,
+      parsedPayload?.message,
+      parsedPayload?.error,
+      parsedPayload?.status,
+      parsedPayload?.data?.status,
+    ]
+      .filter(Boolean)
+      .map((value) => String(value).toLowerCase())
+      .join(" ");
+
+    if (normalizedMessage.includes("already active")) return "already_active";
+    if (normalizedMessage.includes("already pending")) return "already_pending";
+    return null;
+  };
 
   // ==================== HELPERS ====================
   const normalizeRole = (roleValue: unknown): string => {
@@ -81,11 +115,11 @@ export function SphereDetail() {
     try {
       setLoading(true);
       setLoadError(null);
+      setTaskState("ready");
 
-      const [sphereData, membersData, tasksData, currentUser] = await Promise.all([
+      const [sphereData, membersData, currentUser] = await Promise.all([
         getSphere(String(id)),
         listSphereMembers(String(id)),
-        listSphereTasks(String(id)),
         getCurrentUser(),
       ]);
 
@@ -105,7 +139,7 @@ export function SphereDetail() {
 
       setMembers(mappedMembers.filter((m: any) => m.status === 'active'));
       setPendingMembers(mappedMembers.filter((m: any) => m.status === 'pending'));
-      setTasks((tasksData || []).map(mapTask));
+      setTasks([]);
 
       // Membership state logic
       const isMemberFromServer = sphereData?.is_member ?? sphereData?.isMember ?? false;
@@ -122,6 +156,24 @@ export function SphereDetail() {
 
       setIsMember(resolvedIsMember);
       setIsPendingRequest(!resolvedIsMember && resolvedIsPending);
+
+      try {
+        const tasksData = await listSphereTasks(String(id));
+        setTasks((tasksData || []).map(mapTask));
+        setTaskState("ready");
+      } catch (taskError: any) {
+        const status = taskError?.response?.status;
+
+        if (status === 403) {
+          setTaskState("forbidden");
+          setTasks([]);
+        } else if (status >= 500) {
+          setTaskState("server_error");
+          setTasks([]);
+        } else {
+          throw taskError;
+        }
+      }
     } catch (e: any) {
       setLoadError(e?.message || "Erreur de chargement");
     } finally {
@@ -160,6 +212,11 @@ export function SphereDetail() {
 
   const sphereMemberCount = sphere?.memberCount ?? members.length;
   const sphereFileCount = sphere?.resourceCount ?? sphere?.filesCount ?? 0;
+  const membershipStateLabel = useMemo(() => {
+    if (isMember) return "Membre";
+    if (isPendingRequest) return "Demande en attente";
+    return "Non membre";
+  }, [isMember, isPendingRequest]);
 
   const resolvedUserRole = useMemo(() => {
     if (!currentUserId) return "member";
@@ -169,7 +226,21 @@ export function SphereDetail() {
   }, [currentUserId, members, sphere]);
 
   const canModerateMembers = resolvedUserRole === "admin" || resolvedUserRole === "moderator";
-  const canChangeMemberRoles = resolvedUserRole === "admin";
+  const sphereCreatorId = useMemo(() => {
+    const candidates = [
+      sphere?.created_by_info?.id,
+      sphere?.createdByInfo?.id,
+      sphere?.created_by,
+      sphere?.createdBy,
+    ];
+    const found = candidates.find((value) => value !== undefined && value !== null);
+    return found ? String(found) : null;
+  }, [sphere]);
+
+  const canManageSphereSettings = Boolean(
+    currentUserId && sphereCreatorId && String(currentUserId) === String(sphereCreatorId)
+  );
+
 
   // ==================== HANDLERS ====================
   const handleJoinSphere = async () => {
@@ -187,7 +258,26 @@ export function SphereDetail() {
         toast({ title: "Bienvenue dans la sphère !" });
       }
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      const joinConflict = resolveJoinConflict(e);
+      if (joinConflict === "already_active") {
+        setIsMember(true);
+        setIsPendingRequest(false);
+        toast({
+          title: "Déjà membre",
+          description: "Vous êtes déjà membre actif de cette sphère.",
+        });
+      } else if (joinConflict === "already_pending") {
+        setIsMember(false);
+        setIsPendingRequest(true);
+        toast({
+          title: "Demande déjà en attente",
+          description: "Votre demande d'adhésion est déjà en cours de validation.",
+        });
+      } else {
+        setIsMember(false);
+        setIsPendingRequest(false);
+        toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      }
     } finally { setIsJoining(false); }
   };
 
@@ -293,27 +383,45 @@ export function SphereDetail() {
             </div>
 
             <div className="flex flex-col gap-2 min-w-[220px]">
+              <Badge variant={isMember ? "default" : isPendingRequest ? "secondary" : "outline"} className="w-fit">
+                {membershipStateLabel}
+              </Badge>
               {isMember ? (
-                <>
-                  <SphereSettingsModal sphereData={sphereFallback} onSettingsUpdated={loadSphereData} onSphereDeleted={() => navigate("/spheres")}>
-                    <Button variant="outline" className="w-full justify-start gap-2"><Settings className="h-4 w-4"/> Paramètres</Button>
-                  </SphereSettingsModal>
-                  <ManageMembersModal sphereId={sphereFallback.id} sphereName={sphereFallback.name}>
-                     <Button variant="outline" className="w-full justify-start gap-2"><Users className="h-4 w-4"/> Gérer l'équipe</Button>
-                  </ManageMembersModal>
-                  <AddMemberModal sphereId={sphereFallback.id} sphereName={sphereFallback.name} onMemberAdded={loadSphereData}>
-                    <Button variant="outline" className="w-full justify-start gap-2"><UserPlus className="h-4 w-4"/> Inviter</Button>
-                  </AddMemberModal>
-                </>
+                canManageSphereSettings ? (
+                  <>
+                    <SphereSettingsModal sphereData={sphereFallback} onSettingsUpdated={loadSphereData} onSphereDeleted={() => navigate("/spheres")}>
+                      <Button variant="outline" className="w-full justify-start gap-2"><Settings className="h-4 w-4"/> Paramètres</Button>
+                    </SphereSettingsModal>
+                    <ManageMembersModal sphereId={sphereFallback.id} sphereName={sphereFallback.name}>
+                       <Button variant="outline" className="w-full justify-start gap-2"><Users className="h-4 w-4"/> Gérer l'équipe</Button>
+                    </ManageMembersModal>
+                    <AddMemberModal sphereId={sphereFallback.id} sphereName={sphereFallback.name} onMemberAdded={loadSphereData}>
+                      <Button variant="outline" className="w-full justify-start gap-2"><UserPlus className="h-4 w-4"/> Inviter</Button>
+                    </AddMemberModal>
+                  </>
+                ) : null
               ) : (
-                <Button
-                  onClick={isPendingRequest ? handleCancelRequest : handleJoinSphere}
-                  disabled={isJoining || isCancellingRequest}
-                  className="campus-gradient text-white h-12 text-md font-bold"
-                >
-                  {(isJoining || isCancellingRequest) ? <Loader2 className="animate-spin mr-2"/> : null}
-                  {isPendingRequest ? "Annuler la demande" : "Rejoindre la Sphère"}
-                </Button>
+                <>
+                  <Button
+                    onClick={handleJoinSphere}
+                    disabled={isPendingRequest || isJoining || isCancellingRequest}
+                    className="campus-gradient text-white h-12 text-md font-bold"
+                  >
+                    {isJoining ? <Loader2 className="animate-spin mr-2"/> : null}
+                    {isPendingRequest ? "Demande en attente" : "Rejoindre la Sphère"}
+                  </Button>
+                  {isPendingRequest && (
+                    <Button
+                      onClick={handleCancelRequest}
+                      disabled={isCancellingRequest}
+                      variant="outline"
+                      className="h-10 text-sm"
+                    >
+                      {isCancellingRequest ? <Loader2 className="animate-spin mr-2"/> : null}
+                      Annuler la demande
+                    </Button>
+                  )}
+                </>
               )}
               <Button variant="ghost" onClick={handleShare} disabled={isSharing} className="w-full justify-start gap-2">
                 {isSharing ? <Check className="h-4 w-4 text-green-500"/> : <Share2 className="h-4 w-4"/>} 
@@ -326,14 +434,12 @@ export function SphereDetail() {
         {/* TABS SECTION */}
         {isMember ? (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <ScrollableTabs>
-              <TabsList className="bg-muted/50 p-1">
-                <TabsTrigger value="chat">Discussion</TabsTrigger>
-                <TabsTrigger value="tasks">Tâches ({tasks.length})</TabsTrigger>
-                <TabsTrigger value="members">Membres</TabsTrigger>
-                {canModerateMembers && <TabsTrigger value="pending">Demandes ({pendingMembers.length})</TabsTrigger>}
-              </TabsList>
-            </ScrollableTabs>
+            <SharedTabsList>
+              <SharedTabsTrigger value="chat">Discussion</SharedTabsTrigger>
+              <SharedTabsTrigger value="tasks">Tâches ({tasks.length})</SharedTabsTrigger>
+              <SharedTabsTrigger value="members">Membres</SharedTabsTrigger>
+              {canModerateMembers && <SharedTabsTrigger value="pending">Demandes ({pendingMembers.length})</SharedTabsTrigger>}
+            </SharedTabsList>
 
             <TabsContent value="chat" className="mt-4 ring-offset-background">
               <MiniChat sphereId={String(id)} sphereName={sphereFallback.name} isExpanded={isChatExpanded} onToggleExpanded={() => setIsChatExpanded(!isChatExpanded)} />
@@ -347,19 +453,36 @@ export function SphereDetail() {
                 </CreateTaskModal>
               </div>
               <div className="grid gap-3">
-                {tasks.length === 0 && <p className="text-center py-10 text-muted-foreground italic">Aucune tâche pour le moment.</p>}
-                {tasks.map(task => (
+                {taskState === "forbidden" && (
+                  <p className="text-center py-10 text-muted-foreground italic">
+                    Vous devez être membre actif pour voir les tâches
+                  </p>
+                )}
+                {taskState === "server_error" && (
+                  <p className="text-center py-10 text-muted-foreground italic">
+                    Impossible de charger les tâches pour le moment (erreur serveur).
+                  </p>
+                )}
+                {taskState === "ready" && tasks.length === 0 && (
+                  <p className="text-center py-10 text-muted-foreground italic">Aucune tâche pour le moment.</p>
+                )}
+                {taskState === "ready" && tasks.map(task => (
                   <div key={task.id} className={`p-5 rounded-xl border bg-card flex justify-between items-center transition-all ${task.isCompleted ? 'bg-muted/30 grayscale-[0.5]' : 'hover:border-primary/50'}`}>
                     <div className="flex gap-4">
-                      <Button 
-                        variant={task.isCompleted ? "default" : "outline"} 
-                        size="icon" 
-                        className="rounded-full h-8 w-8" 
-                        onClick={() => handleTaskComplete(task.id)} 
-                        disabled={task.isCompleted}
-                      >
-                        {task.isCompleted ? <Check className="h-4 w-4" /> : null}
-                      </Button>
+                      {task.isCompleted ? (
+                        <Button variant="default" size="icon" className="rounded-full h-8 w-8" disabled>
+                          <Check className="h-4 w-4" />
+                        </Button>
+                      ) : canMarkTaskComplete(task) ? (
+                        <Button
+                          variant="outline"
+                          className="gap-2"
+                          onClick={() => handleTaskComplete(task.id)}
+                        >
+                          <Check className="h-4 w-4" />
+                          Marquer complété
+                        </Button>
+                      ) : null}
                       <div>
                         <p className={`font-semibold text-md ${task.isCompleted ? 'line-through text-muted-foreground' : ''}`}>{task.title}</p>
                         <div className="flex items-center gap-3 mt-1">
@@ -404,19 +527,28 @@ export function SphereDetail() {
             </TabsContent>
 
             <TabsContent value="pending" className="space-y-4 mt-4">
-               {pendingMembers.map(m => (
-                  <div key={m.id} className="p-4 border rounded-xl flex justify-between items-center bg-card">
-                    <div className="flex items-center gap-4">
-                      <Avatar><AvatarImage src={m.avatar}/></Avatar>
-                      <p className="font-bold">{m.name}</p>
+              {pendingMembers.length === 0 && (
+                <p className="text-center py-10 text-muted-foreground italic">Aucune demande en attente.</p>
+              )}
+              {pendingMembers.map(m => (
+                  <div key={m.id} className="p-4 border rounded-xl bg-card space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Demande en attente</h4>
+                      <Badge variant="secondary">pending</Badge>
                     </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white gap-2" onClick={() => handleApproveRequest(m.id)} disabled={processingMemberIds[m.id]}>
-                        <UserCheck className="h-4 w-4"/> Accepter
-                      </Button>
-                      <Button size="sm" variant="ghost" className="text-red-600 hover:bg-red-50" onClick={() => handleRejectRequest(m.id)} disabled={processingMemberIds[m.id]}>
-                        <UserX className="h-4 w-4"/>
-                      </Button>
+                    <div className="flex justify-between items-center gap-4">
+                      <div className="flex items-center gap-4">
+                        <Avatar><AvatarImage src={m.avatar}/></Avatar>
+                        <p className="font-bold">{m.name}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white gap-2" onClick={() => handleApproveRequest(m.id)} disabled={processingMemberIds[m.id]}>
+                          <UserCheck className="h-4 w-4"/> Approuver
+                        </Button>
+                        <Button size="sm" variant="ghost" className="text-red-600 hover:bg-red-50 gap-2" onClick={() => handleRejectRequest(m.id)} disabled={processingMemberIds[m.id]}>
+                          <UserX className="h-4 w-4"/> Rejeter
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -426,7 +558,11 @@ export function SphereDetail() {
           <div className="flex flex-col items-center justify-center py-20 bg-card rounded-xl border border-dashed border-primary/30">
             <Shield className="h-16 w-16 text-primary/20 mb-4" />
             <h2 className="text-xl font-bold">Contenu Protégé</h2>
-            <p className="text-muted-foreground mt-2 text-center max-w-sm">Rejoignez cette sphère pour accéder au chat, aux tâches et aux fichiers partagés.</p>
+            <p className="text-muted-foreground mt-2 text-center max-w-sm">
+              {isPendingRequest
+                ? "Votre demande est en attente. Vous pourrez voir les tâches après validation."
+                : "Rejoignez cette sphère pour accéder au chat, aux tâches et aux fichiers partagés."}
+            </p>
           </div>
         )}
       </div>

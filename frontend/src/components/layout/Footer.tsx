@@ -18,16 +18,16 @@ export function Footer() {
                 Ensemble, nous construisons l'avenir de l'éducation collaborative.
               </p>
               <div className="flex items-center gap-2">
-                <a href="https://www.facebook.com/profile.php?id=61583216355151" target='blank' className="w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:scale-110 transition-all duration-300 hover:text-primary group">
+                <a href="https://web.facebook.com/campussphereofficial" target='blank' className="w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:scale-110 transition-all duration-300 hover:text-primary group">
                   <FaFacebook className="w-7 h-7" />
                 </a>
-                <a href="https://www.linkedin.com/company/campussphere/" target='blank' className="w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:scale-110 transition-all duration-300 hover:text-primary group">
+                <a href="https://www.linkedin.com/company/campussphere" target='blank' className="w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:scale-110 transition-all duration-300 hover:text-primary group">
                   <FaLinkedin className="w-7 h-7" />
                 </a>
-                <a href="https://www.instagram.com/campussphere/" target='blank' className="w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:scale-110 transition-all duration-300 hover:text-primary group">
+                <a href="https://www.instagram.com/campussphere" target='blank' className="w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:scale-110 transition-all duration-300 hover:text-primary group">
                   <FaInstagram className="w-7 h-7" />
                 </a>
-                <a href="#" target='blank' className="w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:scale-110 transition-all duration-300 hover:text-primary group">
+                <a href="https://www.tiktok.com/@campussphere.app" target='blank' className="w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:scale-110 transition-all duration-300 hover:text-primary group">
                   <FaTiktok className="w-7 h-7" />
                 </a>
               </div>

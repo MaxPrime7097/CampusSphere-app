@@ -1,5 +1,7 @@
-from django.db import models
+from datetime import timedelta
+
 from django.conf import settings
+from django.db import models
 from django.utils import timezone
 
 
@@ -39,6 +41,8 @@ class Sphere(models.Model):
     objective = models.TextField(blank=True)
     target_audience = models.CharField(max_length=200, blank=True)
     duration = models.CharField(max_length=50, default='permanent')
+    expires_at = models.DateTimeField(null=True, blank=True)
+    auto_delete_on_expiry = models.BooleanField(default=False)
     collaboration_types = models.JSONField(default=list, blank=True)
 
     # Statistics
@@ -57,6 +61,39 @@ class Sphere(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def is_expired(self):
+        return bool(self.expires_at and self.expires_at <= timezone.now())
+
+    @staticmethod
+    def compute_expiry_from_duration(duration, from_datetime=None):
+        if not duration:
+            return None
+
+        normalized = str(duration).strip().lower()
+        start_at = from_datetime or timezone.now()
+
+        # Common app values (FR/EN)
+        mappings = [
+            (('court terme', '1-3 mois', 'short term'), timedelta(days=90)),
+            (('moyen terme', '3-6 mois', 'medium term'), timedelta(days=180)),
+            (('long terme', '6-12 mois', 'long term'), timedelta(days=365)),
+            (('1 semaine', 'week'), timedelta(days=7)),
+            (('1 mois', 'month'), timedelta(days=30)),
+            (('3 mois',), timedelta(days=90)),
+            (('6 mois',), timedelta(days=180)),
+            (('12 mois', '1 an', '1 year'), timedelta(days=365)),
+        ]
+
+        for keywords, delta in mappings:
+            if any(keyword in normalized for keyword in keywords):
+                return start_at + delta
+
+        if any(token in normalized for token in ('permanent', 'flexible', 'illimité', 'illimite', 'none')):
+            return None
+
+        return None
 
     def get_active_members_count(self):
         return self.members.filter(status='active').count()
