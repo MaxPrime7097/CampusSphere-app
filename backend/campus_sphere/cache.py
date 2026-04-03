@@ -145,10 +145,15 @@ class CacheManager:
         return fresh_value
 
     @staticmethod
+    def invalidate_user_profile(user_id):
+        """Invalidate the cached user profile payload."""
+        cache_service.delete(CacheKeys.user_profile(user_id))
+
+    @staticmethod
     def invalidate_user_cache(user_id):
         """Invalidate all user-related cache"""
+        CacheManager.invalidate_user_profile(user_id)
         patterns = [
-            f"user:profile:{user_id}",
             f"user:connections:{user_id}",
             f"user:spheres:{user_id}",
             f"user:resources:{user_id}:*",
