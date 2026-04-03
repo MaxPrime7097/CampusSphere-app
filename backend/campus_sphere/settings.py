@@ -222,6 +222,30 @@ SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SECURE = True
 SESSION_COOKIE_SAMESITE = "None"
 
+if REDIS_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": REDIS_URL,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                "SOCKET_CONNECT_TIMEOUT": 3,
+                "SOCKET_TIMEOUT": 3,
+                "IGNORE_EXCEPTIONS": True,  # fail-open si Redis down
+            },
+            "KEY_PREFIX": os.environ.get("CACHE_KEY_PREFIX", "campussphere"),
+            "TIMEOUT": 300,
+        }
+    }
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "campussphere-fallback",
+            "TIMEOUT": 300,
+        }
+    }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
