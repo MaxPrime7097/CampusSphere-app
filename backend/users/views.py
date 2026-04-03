@@ -113,6 +113,10 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
             return UserUpdateSerializer
         return UserProfileSerializer
 
+    def perform_update(self, serializer):
+        serializer.save()
+        CacheManager.invalidate_user_profile(self.request.user.id)
+
 
 class LogoutView(APIView):
     permission_classes = [permissions.IsAuthenticated]
