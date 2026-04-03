@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
 import { featureFlags } from "@/config/featureFlags";
 import { AdminDashboard } from "./AdminDashboard";
 
@@ -54,13 +55,13 @@ export function AdminDashboardV2() {
         </Card>
 
         <Tabs value={activeModule} onValueChange={(value) => setActiveModule(value as AdminModule)}>
-          <TabsList className="grid w-full grid-cols-2 gap-2 md:grid-cols-4">
+          <SharedTabsList className="grid w-full grid-cols-2 gap-2 md:grid-cols-4" containerClassName="mb-6">
             {moduleOrder.map((module) => (
-              <TabsTrigger key={module.key} value={module.key} className="capitalize">
+              <SharedTabsTrigger key={module.key} value={module.key} className="capitalize">
                 {module.title}
-              </TabsTrigger>
+              </SharedTabsTrigger>
             ))}
-          </TabsList>
+          </SharedTabsList>
 
           {moduleOrder.map((module) => {
             const isMigrated = migratedModules.has(module.key);
