@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 from django.utils import timezone
+from django.views.decorators.cache import cache_page
 from .search import SearchService, FilterService
 
 logger = logging.getLogger(__name__)
@@ -117,6 +118,7 @@ def ratelimit_error(request, exception):
     }, status=429)
 
 
+@cache_page(60 * 15)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def filter_options(request):
@@ -241,6 +243,7 @@ def health_check(request):
     })
 
 
+@cache_page(60 * 15)
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def api_info(request):
