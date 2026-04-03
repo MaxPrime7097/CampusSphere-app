@@ -1,44 +1,147 @@
-# import redis  # Commented out - redis not installed
-import json
-from django.conf import settings
-# from django.core.cache.backends.redis import RedisCache  # Commented out - redis not installed
+import fnmatch
 from django.core.cache import cache
 
 
-class DummyCacheService:
-    """Dummy cache service when Redis is not available"""
+class DjangoCacheService:
+    """Cache service backed by Django's configured cache backend."""
+
+    INDEX_KEY = "cache:index:keys"
 
     def get(self, key):
-        """Get value from cache - always returns None"""
-        return None
+        return cache.get(key)
 
     def set(self, key, value, timeout=None):
-        """Set value in cache - always returns False"""
-        return False
+        stored = cache.set(key, value, timeout)
+        if stored:
+            self._index_add(key)
+        return stored
 
     def delete(self, key):
-        """Delete value from cache - always returns False"""
-        return False
+        deleted = cache.delete(key)
+        self._index_discard(key)
+        return bool(deleted)
 
     def delete_pattern(self, pattern):
-        """Delete keys matching pattern - always returns 0"""
-        return 0
+        deleted = self._delete_pattern_backend(pattern)
+        if deleted is not None:
+            self._index_delete_pattern(pattern)
+            return deleted
+
+        # Fallback strategy for backends without native pattern deletion support.
+        matches = [key for key in self._index_get() if fnmatch.fnmatch(key, pattern)]
+        for key in matches:
+            cache.delete(key)
+        self._index_remove_many(matches)
+        return len(matches)
 
     def exists(self, key):
-        """Check if key exists in cache - always returns False"""
-        return False
+        try:
+            return cache.has_key(key)
+        except Exception:
+            return cache.get(key) is not None
 
     def increment(self, key, amount=1):
-        """Increment value in cache - always returns None"""
-        return None
+        try:
+            return cache.incr(key, amount)
+        except Exception:
+            return None
 
     def expire(self, key, timeout):
-        """Set expiration time for key - always returns False"""
-        return False
+        touch = getattr(cache, "touch", None)
+        if not callable(touch):
+            return False
+        try:
+            return touch(key, timeout)
+        except Exception:
+            return False
+
+    def _delete_pattern_backend(self, pattern):
+        native_delete_pattern = getattr(cache, "delete_pattern", None)
+        if callable(native_delete_pattern):
+            try:
+                return native_delete_pattern(pattern)
+            except Exception:
+                pass
+
+        internal_backend = getattr(cache, "_cache", None)
+        backend_delete_pattern = getattr(internal_backend, "delete_pattern", None)
+        if callable(backend_delete_pattern):
+            try:
+                return backend_delete_pattern(pattern)
+            except Exception:
+                pass
+
+        client = self._redis_client(internal_backend)
+        if client is None:
+            return None
+
+        try:
+            keys = list(client.scan_iter(match=pattern))
+            if not keys:
+                return 0
+            return client.delete(*keys)
+        except Exception:
+            return None
+
+    def _redis_client(self, internal_backend):
+        client_factory = getattr(getattr(cache, "client", None), "get_client", None)
+        if callable(client_factory):
+            try:
+                return client_factory(write=True)
+            except Exception:
+                pass
+
+        if internal_backend is None:
+            return None
+
+        backend_client_factory = getattr(internal_backend, "get_client", None)
+        if callable(backend_client_factory):
+            try:
+                return backend_client_factory(write=True)
+            except Exception:
+                return None
+        return None
+
+    def _index_get(self):
+        keys = cache.get(self.INDEX_KEY, [])
+        if isinstance(keys, (list, tuple, set)):
+            return set(keys)
+        return set()
+
+    def _index_set(self, keys):
+        cache.set(self.INDEX_KEY, list(keys), None)
+
+    def _index_add(self, key):
+        keys = self._index_get()
+        if key in keys:
+            return
+        keys.add(key)
+        self._index_set(keys)
+
+    def _index_discard(self, key):
+        keys = self._index_get()
+        if key not in keys:
+            return
+        keys.discard(key)
+        self._index_set(keys)
+
+    def _index_remove_many(self, keys_to_remove):
+        if not keys_to_remove:
+            return
+        keys = self._index_get()
+        before = len(keys)
+        keys.difference_update(keys_to_remove)
+        if len(keys) != before:
+            self._index_set(keys)
+
+    def _index_delete_pattern(self, pattern):
+        keys = self._index_get()
+        to_remove = [key for key in keys if fnmatch.fnmatch(key, pattern)]
+        self._index_remove_many(to_remove)
 
 
 # Global cache service instance
-cache_service = DummyCacheService()
+cache_service = DjangoCacheService()
 
 
 class CacheKeys:
