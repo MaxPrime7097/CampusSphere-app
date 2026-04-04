@@ -1,15 +1,14 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { connectWithUser, disconnectFromUser, getCurrentUser, globalSearch, getUserConnectionRelation, isApiRequestErrorStatus } from "@/services/api";
+import { createConnection, deleteConnection, getCurrentUser, globalSearch } from "@/services/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
-import { UnifiedSearchFiltersBar } from "@/components/ui/unified-search-filters-bar";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Users, BookOpen, ShoppingBag, Loader2, Link, Unlink, FolderOpen, User } from "lucide-react";
+import { Search, Users, BookOpen, ShoppingBag, Loader2, Link, Unlink, FolderOpen, User, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -38,9 +37,9 @@ export function SearchResults() {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("all");
   const [sortBy, setSortBy] = useState<SearchSortKey>(DEFAULT_SORT.search);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [followedUsers, setFollowedUsers] = useState(new Set());
   const [connectionIdsByUser, setConnectionIdsByUser] = useState<Record<string, string>>({});
-  const [relationActionUnavailableUsers, setRelationActionUnavailableUsers] = useState<Set<string>>(new Set());
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [followLoadingUserId, setFollowLoadingUserId] = useState<string | null>(null);
   const [searchResults, setSearchResults] = useState<{ users: any[]; resources: any[]; spheres: any[] }>({
@@ -173,11 +172,6 @@ export function SearchResults() {
     const previousFollowedUsers = new Set(followedUsers);
     const previousConnectionId = connectionIdsByUser[userId];
     setFollowLoadingUserId(userId);
-    setRelationActionUnavailableUsers((prev) => {
-      const next = new Set(prev);
-      next.delete(userId);
-      return next;
-    });
 
     // Optimistic update
     setFollowedUsers((prev) => {
@@ -192,14 +186,17 @@ export function SearchResults() {
 
     try {
       if (isFollowing) {
-        await disconnectFromUser(userId);
+        if (!previousConnectionId) {
+          throw new Error("Connexion introuvable pour la suppression.");
+        }
+        await deleteConnection(currentUserId, previousConnectionId);
         setConnectionIdsByUser((prev) => {
           const next = { ...prev };
           delete next[userId];
           return next;
         });
       } else {
-        const response = await connectWithUser(userId);
+        const response = await createConnection(userId);
         if (response?.id != null) {
           setConnectionIdsByUser((prev) => ({ ...prev, [userId]: String(response.id) }));
         }
@@ -219,16 +216,6 @@ export function SearchResults() {
         ...(previousConnectionId ? { [userId]: previousConnectionId } : {}),
       }));
 
-      if (isApiRequestErrorStatus(error, 403)) {
-        setRelationActionUnavailableUsers((prev) => new Set(prev).add(userId));
-        toast({
-          title: "Action non autorisée",
-          description: "La relation avec ce profil n'est pas accessible actuellement.",
-          variant: "destructive",
-        });
-        return;
-      }
-
       toast({
         title: "Erreur",
         description:
@@ -242,51 +229,6 @@ export function SearchResults() {
       setFollowLoadingUserId(null);
     }
   };
-
-  useEffect(() => {
-    if (!currentUserId || !searchResults.users.length) return;
-
-    let isMounted = true;
-    (async () => {
-      const users = searchResults.users.filter((u) => String(u.id) !== currentUserId);
-      const relationChecks = await Promise.allSettled(
-        users.map(async (user) => ({ userId: String(user.id), relation: await getUserConnectionRelation(user.id) }))
-      );
-
-      if (!isMounted) return;
-
-      const nextFollowedUsers = new Set<string>();
-      const nextConnectionIds: Record<string, string> = {};
-      const unavailableUsers = new Set<string>();
-
-      relationChecks.forEach((result, index) => {
-        if (result.status === "fulfilled") {
-          const userId = result.value.userId;
-          const relation = result.value.relation;
-          if (relation?.is_connected) {
-            nextFollowedUsers.add(userId);
-            if (relation?.connection?.id != null) {
-              nextConnectionIds[userId] = String(relation.connection.id);
-            }
-          }
-          return;
-        }
-
-        const userId = users[index]?.id;
-        if (userId && isApiRequestErrorStatus(result.reason, 403)) {
-          unavailableUsers.add(String(userId));
-        }
-      });
-
-      setFollowedUsers(nextFollowedUsers);
-      setConnectionIdsByUser(nextConnectionIds);
-      setRelationActionUnavailableUsers(unavailableUsers);
-    })();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [currentUserId, searchResults.users]);
 
   const handleViewProfile = (username?: string, userName?: string) => {
     if (!username) {
@@ -362,7 +304,7 @@ export function SearchResults() {
     <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
       <div className="container max-w-4xl mx-auto py-4 md:py-6 px-4">
         {/* Search Bar */}
-        <UnifiedSearchFiltersBar className="mb-6">
+        <div className="mb-6">
           <form onSubmit={handleSearch} className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -386,22 +328,36 @@ export function SearchResults() {
                 "Trie les résultats"
               )}
             </p>
-            <div className="flex items-center gap-2">
+            {/* Desktop sort */}
+            <div className="hidden sm:flex items-center gap-2">
               <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-40 h-8">
-                  <SelectValue placeholder="Trier par" />
-                </SelectTrigger>
+                <SelectTrigger className="w-40 h-8"><SelectValue placeholder="Trier par" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="relevance">Pertinence</SelectItem>
                   <SelectItem value="name">Nom</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+            {/* Mobile sort button */}
+            <Button variant="outline" size="icon" className={`sm:hidden h-8 w-8 ${showMobileFilters ? "border-primary text-primary" : ""}`} onClick={() => setShowMobileFilters((v) => !v)}>
+              <Filter className="h-4 w-4" />
+            </Button>
           </div>
-        </UnifiedSearchFiltersBar>
+          {showMobileFilters && (
+            <div className="mt-2 sm:hidden">
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger><SelectValue placeholder="Trier par" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="relevance">Pertinence</SelectItem>
+                  <SelectItem value="name">Nom</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <SharedTabsList containerClassName="mb-6">
+          <SharedTabsList className="mb-6 w-full">
             <SharedTabsTrigger value="all">
               Tout ({totalResults})
             </SharedTabsTrigger>
@@ -450,7 +406,7 @@ export function SearchResults() {
                             size="sm" 
                             variant={followedUsers.has(user.id) ? "outline" : "default"}
                             onClick={() => handleFollowUser(user.id, user.name)}
-                            disabled={followLoadingUserId === user.id || !currentUserId || relationActionUnavailableUsers.has(user.id)}
+                            disabled={followLoadingUserId === user.id || !currentUserId}
                             className={!followedUsers.has(user.id) ? "campus-gradient text-white hover:opacity-90" : ""}
                           >
                             {followedUsers.has(user.id) ? (
@@ -465,11 +421,6 @@ export function SearchResults() {
                               </>
                             )}
                           </Button>
-                          {relationActionUnavailableUsers.has(user.id) && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Connexion indisponible pour ce profil.
-                            </p>
-                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -604,7 +555,7 @@ export function SearchResults() {
                           size="sm" 
                           variant={followedUsers.has(user.id) ? "outline" : "default"}
                           onClick={() => handleFollowUser(user.id, user.name)}
-                          disabled={followLoadingUserId === user.id || !currentUserId || relationActionUnavailableUsers.has(user.id)}
+                          disabled={followLoadingUserId === user.id || !currentUserId}
                           className={!followedUsers.has(user.id) ? "campus-gradient text-white hover:opacity-90" : ""}
                         >
                           {followedUsers.has(user.id) ? (
@@ -619,11 +570,6 @@ export function SearchResults() {
                             </>
                           )}
                         </Button>
-                        {relationActionUnavailableUsers.has(user.id) && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Connexion indisponible pour ce profil.
-                          </p>
-                        )}
                       </div>
                     </CardContent>
                   </Card>

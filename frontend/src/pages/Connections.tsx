@@ -1,14 +1,14 @@
 import { useState, useEffect, useMemo } from "react";
 import { searchUsers, getCurrentUser, getUserConnections, createConnection, deleteConnection, getMutualConnectionCounts } from "@/services/api";
-import { Users, Link, Search, Filter } from "lucide-react";
+import { Users, Link, Search, Filter, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { UnifiedSearchFiltersBar } from "@/components/ui/unified-search-filters-bar";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import {
@@ -192,6 +192,7 @@ export function Connections() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<ConnectionFilter>("all");
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
 
@@ -256,58 +257,60 @@ export function Connections() {
         </div>
 
         {/* Search Bar */}
-        <UnifiedSearchFiltersBar className="mb-6">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Rechercher des connexions..."
-              className="pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+        <div className="mb-6">
+          {/* Mobile */}
+          <div className="flex gap-2 sm:hidden">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Rechercher des connexions..." className="pl-10" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            </div>
+            <Button variant="outline" size="icon" onClick={() => setShowMobileFilters((v) => !v)} className={showMobileFilters ? "border-primary text-primary" : ""}>
+              <Filter className="h-4 w-4" />
+            </Button>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant={activeFilter === "all" ? "default" : "outline"} size="sm" onClick={() => setActiveFilter("all")}>
-              <Filter className="h-4 w-4 mr-2" />
-              Tous
-            </Button>
-            <Button variant={activeFilter === "university" ? "default" : "outline"} size="sm" onClick={() => setActiveFilter("university")}>
-              Université
-            </Button>
-            <Button variant={activeFilter === "faculty" ? "default" : "outline"} size="sm" onClick={() => setActiveFilter("faculty")}>
-              Filière
-            </Button>
-            <Button variant={activeFilter === "mutual" ? "default" : "outline"} size="sm" onClick={() => setActiveFilter("mutual")}>
-              Amis communs
-            </Button>
-            <Button variant={activeFilter === "impact" ? "default" : "outline"} size="sm" onClick={() => setActiveFilter("impact")}>
-              Impact
-            </Button>
-            {hasActiveFilters && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setSearchQuery("");
-                  setActiveFilter("all");
-                }}
-              >
-                Réinitialiser
-              </Button>
-            )}
+          {showMobileFilters && (
+            <div className="mt-2 sm:hidden">
+              <Select value={activeFilter} onValueChange={(v) => setActiveFilter(v as ConnectionFilter)}>
+                <SelectTrigger><SelectValue placeholder="Filtrer" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous</SelectItem>
+                  <SelectItem value="university">Université</SelectItem>
+                  <SelectItem value="faculty">Filière</SelectItem>
+                  <SelectItem value="mutual">Amis communs</SelectItem>
+                  <SelectItem value="impact">Impact</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          {/* Desktop */}
+          <div className="hidden sm:flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Rechercher des connexions..." className="pl-10" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            </div>
+            <Select value={activeFilter} onValueChange={(v) => setActiveFilter(v as ConnectionFilter)}>
+              <SelectTrigger className="w-44"><SelectValue placeholder="Filtrer" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous</SelectItem>
+                <SelectItem value="university">Université</SelectItem>
+                <SelectItem value="faculty">Filière</SelectItem>
+                <SelectItem value="mutual">Amis communs</SelectItem>
+                <SelectItem value="impact">Impact</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        </UnifiedSearchFiltersBar>
+        </div>
 
         {/* Tabs */}
         <Tabs defaultValue="all" className="space-y-6">
-          <SharedTabsList containerClassName="mb-6">
-            <SharedTabsTrigger value="all">
+          <TabsList className="grid w-full grid-cols-2 max-w-md">
+            <TabsTrigger value="all">
               Mes Connexions ({filteredConnections.length})
-            </SharedTabsTrigger>
-            <SharedTabsTrigger value="suggestions">
+            </TabsTrigger>
+            <TabsTrigger value="suggestions">
               Suggestions ({filteredSuggestions.length})
-            </SharedTabsTrigger>
-          </SharedTabsList>
+            </TabsTrigger>
+          </TabsList>
 
           {/* All Connections */}
           <TabsContent value="all" className="space-y-4">
@@ -346,7 +349,7 @@ export function Connections() {
 
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
-                          <span className="font-semibold text-primary">⚡ {connection.impactScore}</span>
+                          <span className="font-semibold text-primary"><Zap className="h-4 w-4" /> {connection.impactScore}</span>
                         </div>
                         <div>
                           {connection.mutualFriends} amis communs
