@@ -4,6 +4,8 @@ import { createGroupConversation, getCurrentUser, getConversationMessages, getUs
 import { useTranslation } from "react-i18next";
 import { Search, Send, Phone, Video, MoreVertical, MessageSquare, Loader2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
@@ -380,33 +382,79 @@ export function Messages() {
                 </div>
                 
                 <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-8 w-8 p-0 md:h-9 md:w-9" 
-                    aria-label="Voice call"
-                    onClick={() => toast({ title: "Appel vocal", description: "Fonctionnalité à venir", duration: 2000 })}
-                  >
-                    <Phone className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-8 w-8 p-0 md:h-9 md:w-9" 
-                    aria-label="Video call"
-                    onClick={() => toast({ title: "Appel vidéo", description: "Fonctionnalité à venir", duration: 2000 })}
-                  >
-                    <Video className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-8 w-8 p-0 md:h-9 md:w-9" 
-                    aria-label="More options"
-                    onClick={() => toast({ title: "Options", description: "Fonctionnalité à venir" })}
-                  >
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 md:h-9 md:w-9"
+                          aria-label="Voice call"
+                          disabled
+                        >
+                          <Phone className="h-4 w-4" />
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Bientôt disponible</p>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 md:h-9 md:w-9"
+                          aria-label="Video call"
+                          disabled
+                        >
+                          <Video className="h-4 w-4" />
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Bientôt disponible</p>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 md:h-9 md:w-9"
+                        aria-label="More options"
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() =>
+                          handleProfileNavigation(
+                            selectedConv?.participants?.[0]?.username,
+                            selectedConv?.name
+                          )
+                        }
+                        disabled={!selectedConv?.participants?.[0]?.username}
+                      >
+                        Voir le profil
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          if (conversationId) {
+                            handleMarkAsRead(conversationId);
+                            toast({ title: "Conversation marquée comme lue", duration: 2000 });
+                          }
+                        }}
+                      >
+                        Marquer comme lu
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             </div>
