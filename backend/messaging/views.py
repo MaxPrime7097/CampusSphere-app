@@ -13,6 +13,7 @@ from .serializers import (
     MessageSerializer, MessageCreateSerializer
 )
 from notifications.services import create_message_notification
+from .errors import business_error_payload
 
 
 class ConversationListView(generics.ListCreateAPIView):
@@ -39,7 +40,10 @@ class ConversationListView(generics.ListCreateAPIView):
         conversation = Conversation.objects.prefetch_related('participants', 'messages').get(pk=serializer.instance.pk)
         output_serializer = ConversationSerializer(conversation, context={'request': request})
         headers = self.get_success_headers(output_serializer.data)
-        return Response(output_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        return Response({
+            "success": True,
+            "data": output_serializer.data
+        }, status=status.HTTP_201_CREATED, headers=headers)
 
 
 class ConversationDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -61,10 +65,10 @@ class ConversationDetailView(generics.RetrieveUpdateDestroyAPIView):
         if conversation.type == 'group':
             if conversation.created_by != user and user not in conversation.participants.all():
                 from rest_framework.exceptions import PermissionDenied
-                raise PermissionDenied("You don't have permission to update this conversation")
+                raise PermissionDenied(business_error_payload("permission_denied", "You don't have permission to update this conversation"))
         else:
             from rest_framework.exceptions import PermissionDenied
-            raise PermissionDenied("Private conversations cannot be updated")
+            raise PermissionDenied(business_error_payload("permission_denied", "Private conversations cannot be updated"))
 
         serializer.save()
 
@@ -76,7 +80,7 @@ class ConversationDetailView(generics.RetrieveUpdateDestroyAPIView):
             instance.delete()
         else:
             from rest_framework.exceptions import PermissionDenied
-            raise PermissionDenied("You don't have permission to delete this conversation")
+            raise PermissionDenied(business_error_payload("permission_denied", "You don't have permission to delete this conversation"))
 
 
 class ConversationMessagesView(generics.ListCreateAPIView):
@@ -115,7 +119,11 @@ class ConversationMessagesView(generics.ListCreateAPIView):
         )
         conversation.mark_as_read(request.user)
         
-        return super().list(request, *args, **kwargs)
+        response = super().list(request, *args, **kwargs)
+        return Response({
+            "success": True,
+            "data": response.data
+        }, status=response.status_code)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -128,7 +136,10 @@ class ConversationMessagesView(generics.ListCreateAPIView):
         )
         output_serializer = MessageSerializer(message, context=self.get_serializer_context())
         headers = self.get_success_headers(output_serializer.data)
-        return Response(output_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        return Response({
+            "success": True,
+            "data": output_serializer.data
+        }, status=status.HTTP_201_CREATED, headers=headers)
 
 
 class ConversationReadView(APIView):
@@ -171,7 +182,14 @@ def user_conversations(request):
     page = paginator.paginate_queryset(conversations, request)
     
     serializer = ConversationSerializer(page, many=True, context={'request': request})
-    return paginator.get_paginated_response(serializer.data)
+    return Response({
+        'success': True,
+        'data': serializer.data,
+        'pagination': {
+            'count': conversations.count(),
+            'page_size': paginator.page_size,
+        }
+    })
 
 
 @api_view(['POST'])
@@ -182,7 +200,7 @@ def create_private_conversation(request):
     
     if not recipient_id:
         return Response(
-            {'error': 'recipient_id is required'},
+            business_error_payload('invalid_participant', 'recipient_id is required'),
             status=status.HTTP_400_BAD_REQUEST
         )
 
@@ -191,13 +209,13 @@ def create_private_conversation(request):
         recipient = User.objects.get(id=recipient_id)
     except User.DoesNotExist:
         return Response(
-            {'error': 'Recipient not found'},
+            business_error_payload('invalid_participant', 'Recipient not found'),
             status=status.HTTP_404_NOT_FOUND
         )
 
     if recipient == request.user:
         return Response(
-            {'error': 'Cannot create conversation with yourself'},
+            business_error_payload('invalid_participant', 'Cannot create conversation with yourself'),
             status=status.HTTP_400_BAD_REQUEST
         )
 
@@ -216,7 +234,11 @@ def create_private_conversation(request):
             'success': True,
             'data': ConversationSerializer(existing_conversation, context={'request': request}).data,
             'message': 'Existing conversation found',
-            'timestamp': timezone.now().isoformat()
+            'timestamp': timezone.now().isoformat(),
+            'error': {
+                'code': 'conversation_exists',
+                'message': 'Conversation déjà existante'
+            }
         })
 
     # Create new private conversation
@@ -285,14 +307,14 @@ def add_participant(request, pk):
     # Only creator can add participants
     if conversation.created_by != request.user:
         return Response(
-            {'error': 'Only conversation creator can add participants'},
+            business_error_payload('permission_denied', 'Only conversation creator can add participants'),
             status=status.HTTP_403_FORBIDDEN
         )
 
     user_id = request.data.get('user_id')
     if not user_id:
         return Response(
-            {'error': 'user_id is required'},
+            business_error_payload('invalid_participant', 'user_id is required'),
             status=status.HTTP_400_BAD_REQUEST
         )
 
@@ -301,13 +323,13 @@ def add_participant(request, pk):
         user = User.objects.get(id=user_id)
     except User.DoesNotExist:
         return Response(
-            {'error': 'User not found'},
+            business_error_payload('invalid_participant', 'User not found'),
             status=status.HTTP_404_NOT_FOUND
         )
 
     if user in conversation.participants.all():
         return Response(
-            {'error': 'User is already a participant'},
+            business_error_payload('invalid_participant', 'User is already a participant'),
             status=status.HTTP_400_BAD_REQUEST
         )
 
@@ -334,7 +356,7 @@ def remove_participant(request, pk, user_id):
     # Only creator can remove participants
     if conversation.created_by != request.user:
         return Response(
-            {'error': 'Only conversation creator can remove participants'},
+            business_error_payload('permission_denied', 'Only conversation creator can remove participants'),
             status=status.HTTP_403_FORBIDDEN
         )
 
@@ -343,19 +365,19 @@ def remove_participant(request, pk, user_id):
         user = User.objects.get(id=user_id)
     except User.DoesNotExist:
         return Response(
-            {'error': 'User not found'},
+            business_error_payload('invalid_participant', 'User not found'),
             status=status.HTTP_404_NOT_FOUND
         )
 
     if user not in conversation.participants.all():
         return Response(
-            {'error': 'User is not a participant'},
+            business_error_payload('invalid_participant', 'User is not a participant'),
             status=status.HTTP_400_BAD_REQUEST
         )
 
     if user == conversation.created_by:
         return Response(
-            {'error': 'Cannot remove conversation creator'},
+            business_error_payload('invalid_participant', 'Cannot remove conversation creator'),
             status=status.HTTP_400_BAD_REQUEST
         )
 

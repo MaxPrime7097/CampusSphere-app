@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.utils import timezone
 from users.models import User
 from .models import Conversation, Message, ConversationReadReceipt
+from .errors import business_validation_error
 
 
 class MessageSerializer(serializers.ModelSerializer):
@@ -84,7 +85,7 @@ class ConversationSerializer(serializers.ModelSerializer):
 
 class ConversationCreateSerializer(serializers.ModelSerializer):
     participant_ids = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.none(),
+        queryset=None,
         many=True,
         write_only=True,
         source='participants'
@@ -96,6 +97,7 @@ class ConversationCreateSerializer(serializers.ModelSerializer):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        from users.models import User
         self.fields['participant_ids'].queryset = User.objects.all()
 
     def validate_participant_ids(self, value):
@@ -106,11 +108,11 @@ class ConversationCreateSerializer(serializers.ModelSerializer):
 
         # For private conversations, only 2 participants allowed (including creator)
         if self.initial_data.get('type') == 'private' and len(value) != 1:
-            raise serializers.ValidationError("Private conversations must have exactly 2 participants")
+            business_validation_error("invalid_participant", "Private conversations must have exactly 2 participants")
 
         # For group conversations, at least 2 participants (excluding creator)
         if self.initial_data.get('type') == 'group' and len(value) < 2:
-            raise serializers.ValidationError("Group conversations must have at least 3 participants")
+            business_validation_error("invalid_participant", "Group conversations must have at least 3 participants")
 
         return value
 
@@ -134,7 +136,7 @@ class ConversationCreateSerializer(serializers.ModelSerializer):
             ).first()
 
             if existing_conversation:
-                raise serializers.ValidationError("Private conversation already exists between these users")
+                business_validation_error("conversation_exists", "Private conversation already exists between these users")
 
         return data
 
