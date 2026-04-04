@@ -140,6 +140,8 @@ def create_connection_request_notification(connection):
         data={
             'connection_id': str(connection.id),
             'requester_id': str(connection.requester.id),
+            'requester_username': connection.requester.username,
+            'sender_username': connection.requester.username,
         },
     )
 
@@ -161,6 +163,7 @@ def create_message_notification(message):
                     'conversation_id': str(conversation.id),
                     'message_id': str(message.id),
                     'sender_id': str(message.author.id),
+                    'sender_username': message.author.username,
                     'conversation_type': conversation.type,
                 },
             )

@@ -5,11 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
-import { listNotifications, markNotificationRead } from "@/services/api";
+import { getUser, listNotifications, markNotificationRead } from "@/services/api";
 import { formatRelativeTime } from "@/lib/date";
+import { buildActionUrl, normalizeNotificationData, resolveConnectionProfileUrl, toCanonicalType } from "@/lib/notifications";
+import { CanonicalNotificationType } from "@/constants/notificationTypes";
 
 interface NotificationItem {
   id: string;
+  type: CanonicalNotificationType;
   user: {
     name: string;
     avatar?: string | null;
@@ -17,6 +20,9 @@ interface NotificationItem {
   content: string;
   timestamp: string | null;
   read: boolean;
+  actionUrl: string | null;
+  profileUsername: string | null;
+  senderId: string | null;
 }
 
 export function NotificationDropdown() {
@@ -32,16 +38,24 @@ export function NotificationDropdown() {
         if (!isMounted) return;
 
         const safeNotifications = Array.isArray(data) ? data : [];
-        const mapped = safeNotifications.map((notification: any) => ({
-          id: String(notification.id),
-          user: {
-            name: notification.data?.sender_name || notification.data?.user_name || notification.title || "Notification",
-            avatar: notification.data?.sender_avatar || notification.data?.user_avatar || null,
-          },
-          content: notification.message || notification.title || "",
-          timestamp: notification.created_at || notification.createdAt || null,
-          read: Boolean(notification.is_read || notification.isRead),
-        }));
+        const mapped = safeNotifications.map((notification: any) => {
+          const notificationType = toCanonicalType(notification.notification_type || notification.type);
+          const normalizedData = normalizeNotificationData(notification);
+          return {
+            id: String(notification.id),
+            type: notificationType,
+            user: {
+              name: notification.data?.sender_name || notification.data?.user_name || notification.title || "Notification",
+              avatar: notification.data?.sender_avatar || notification.data?.user_avatar || null,
+            },
+            content: notification.message || notification.title || "",
+            timestamp: notification.created_at || notification.createdAt || null,
+            read: Boolean(notification.is_read || notification.isRead),
+            actionUrl: buildActionUrl(notificationType, normalizedData),
+            profileUsername: normalizedData.profileUsername,
+            senderId: normalizedData.senderId,
+          };
+        });
         setNotifications(mapped);
       } catch {
         setNotifications([]);
@@ -55,13 +69,39 @@ export function NotificationDropdown() {
 
   const unreadCount = notifications.filter((notification) => !notification.read).length;
 
-  const handleNotificationClick = (notificationId: string) => {
-    void markNotificationRead(notificationId).catch(() => null);
+  const getUsernameById = async (senderId: string): Promise<string | null> => {
+    try {
+      const user = await getUser(senderId);
+      const username = typeof user?.username === "string" ? user.username.trim() : "";
+      return username || null;
+    } catch {
+      return null;
+    }
+  };
+
+  const handleNotificationClick = async (notification: NotificationItem) => {
+    void markNotificationRead(notification.id).catch(() => null);
     setNotifications((prev) =>
-      prev.map((notification) =>
-        notification.id === notificationId ? { ...notification, read: true } : notification
+      prev.map((item) =>
+        item.id === notification.id ? { ...item, read: true } : item
       )
     );
+
+    if (notification.actionUrl) {
+      navigate(notification.actionUrl);
+      return;
+    }
+
+    if (notification.type === "connection_request" || notification.type === "connection_accepted") {
+      const profileUrl = await resolveConnectionProfileUrl(
+        notification.profileUsername,
+        notification.senderId,
+        getUsernameById
+      );
+      navigate(profileUrl || "/notifications");
+      return;
+    }
+
     navigate("/notifications");
   };
 
@@ -99,7 +139,7 @@ export function NotificationDropdown() {
               className={`p-3 rounded-lg hover:bg-accent cursor-pointer transition-colors ${
                 !notif.read ? "bg-primary/5" : ""
               }`}
-              onClick={() => handleNotificationClick(notif.id)}
+              onClick={() => void handleNotificationClick(notif)}
             >
               <div className="flex gap-3">
                 <Avatar className="h-10 w-10 flex-shrink-0">
