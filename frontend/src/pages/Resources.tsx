@@ -17,6 +17,7 @@ import {
   Loader2,
   RefreshCw,
   Zap,
+  Filter,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -74,6 +75,7 @@ export function Resources() {
 
   const [activeTab, setActiveTab] = useState<ResourceSortKey>(DEFAULT_SORT.resources);
 
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
   const [savedResources, setSavedResources] = useState<Set<string>>(new Set());
@@ -350,7 +352,64 @@ export function Resources() {
           </div>
         </div>
 
+        {/* Recherche/Filtre */}
+        <Card className={cardClasses}>
+          <CardContent className="p-3 md:p-4">
+            {/* Mobile: recherche + bouton filtre */}
+            <div className="flex gap-2 sm:hidden">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Rechercher..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setShowMobileFilters((v) => !v)}
+                className={showMobileFilters ? "border-primary text-primary" : ""}
+              >
+                <Filter className="h-4 w-4" />
+              </Button>
+            </div>
+            {showMobileFilters && (
+              <div className="flex flex-col gap-2 mt-2 sm:hidden">
+                <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                  <SelectTrigger><SelectValue placeholder="Matière" /></SelectTrigger>
+                  <SelectContent>
+                    {subjects.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={selectedType} onValueChange={setSelectedType}>
+                  <SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger>
+                  <SelectContent>
+                    {types.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {/* Desktop */}
+            <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Rechercher..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+              </div>
+              <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                <SelectTrigger><SelectValue placeholder="Matière" /></SelectTrigger>
+                <SelectContent>
+                  {subjects.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={selectedType} onValueChange={setSelectedType}>
+                <SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger>
+                <SelectContent>
+                  {types.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Tab Navigation */}
+        <div>
         <ul className="grid grid-flow-col text-center border-b border-gray-200 text-gray-500 mb-6">
           {[
             { id: "all", label: "Toutes" },
@@ -372,52 +431,11 @@ export function Resources() {
             </li>
           ))}
         </ul>
+        </div>
 
         {/* ======= CONTENT ======= */}
         {resolvedResourceSort === "all" && (
           <>
-            {/* Filters */}
-            <Card className={cardClasses}>
-              <CardContent className="p-3 md:p-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Rechercher..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-
-                  <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Matière" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {subjects.map((subject) => (
-                        <SelectItem key={subject.value} value={subject.value}>
-                          {subject.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  <Select value={selectedType} onValueChange={setSelectedType}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {types.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
 
             {/* Resources Grid */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

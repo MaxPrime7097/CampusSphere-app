@@ -8,7 +8,7 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Users, BookOpen, ShoppingBag, Loader2, Link, Unlink, FolderOpen, User } from "lucide-react";
+import { Search, Users, BookOpen, ShoppingBag, Loader2, Link, Unlink, FolderOpen, User, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -37,6 +37,7 @@ export function SearchResults() {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("all");
   const [sortBy, setSortBy] = useState<SearchSortKey>(DEFAULT_SORT.search);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [followedUsers, setFollowedUsers] = useState(new Set());
   const [connectionIdsByUser, setConnectionIdsByUser] = useState<Record<string, string>>({});
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -327,18 +328,32 @@ export function SearchResults() {
                 "Trie les résultats"
               )}
             </p>
-            <div className="flex items-center gap-2">
+            {/* Desktop sort */}
+            <div className="hidden sm:flex items-center gap-2">
               <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-40 h-8">
-                  <SelectValue placeholder="Trier par" />
-                </SelectTrigger>
+                <SelectTrigger className="w-40 h-8"><SelectValue placeholder="Trier par" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="relevance">Pertinence</SelectItem>
                   <SelectItem value="name">Nom</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+            {/* Mobile sort button */}
+            <Button variant="outline" size="icon" className={`sm:hidden h-8 w-8 ${showMobileFilters ? "border-primary text-primary" : ""}`} onClick={() => setShowMobileFilters((v) => !v)}>
+              <Filter className="h-4 w-4" />
+            </Button>
           </div>
+          {showMobileFilters && (
+            <div className="mt-2 sm:hidden">
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger><SelectValue placeholder="Trier par" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="relevance">Pertinence</SelectItem>
+                  <SelectItem value="name">Nom</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
