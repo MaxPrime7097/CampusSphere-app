@@ -7,7 +7,7 @@ from django.contrib.auth.models import AnonymousUser
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.conversation_id = self.scope['url_route']['kwargs']['conversation_id']
-        self.conversation_group_name = f'chat_{self.conversation_id}'
+        self.conversation_group_name = f'conversation_{self.conversation_id}'
 
         # Check if user is authenticated and is a participant
         user = self.scope["user"]
@@ -51,18 +51,21 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 await self.channel_layer.group_send(
                     self.conversation_group_name,
                     {
-                        'type': 'chat_message',
-                        'message': {
-                            'id': str(message.id),
-                            'content': message.content,
-                            'author': {
-                                'id': str(message.author.id),
-                                'username': message.author.username,
-                                'first_name': message.author.first_name,
-                                'last_name': message.author.last_name,
-                                'avatar': message.author.avatar.url if message.author.avatar else None,
-                            },
-                            'created_at': message.created_at.isoformat(),
+                        'type': 'conversation_event',
+                        'event_type': 'message_created',
+                        'payload': {
+                            'message': {
+                                'id': str(message.id),
+                                'content': message.content,
+                                'author': {
+                                    'id': str(message.author.id),
+                                    'username': message.author.username,
+                                    'first_name': message.author.first_name,
+                                    'last_name': message.author.last_name,
+                                    'avatar': message.author.avatar.url if message.author.avatar else None,
+                                },
+                                'created_at': message.created_at.isoformat(),
+                            }
                         }
                     }
                 )
@@ -84,13 +87,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'error': 'Invalid message format'
             }))
 
-    async def chat_message(self, event):
-        message = event['message']
-
-        # Send message to WebSocket
+    async def conversation_event(self, event):
         await self.send(text_data=json.dumps({
-            'type': 'chat_message',
-            'message': message
+            'type': event.get('event_type', 'conversation_event'),
+            'payload': event.get('payload', {})
         }))
 
     async def typing_indicator(self, event):
