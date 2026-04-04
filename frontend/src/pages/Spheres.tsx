@@ -43,7 +43,10 @@ export function Spheres() {
   // Tab State - Initialized to page1
   const [activeTab, setActiveTab] = useState("page1");
   const debugApiError = (endpoint: string, error: unknown) => {
-    console.debug(`[Spheres] API error (${endpoint})`, error);
+    const safeMsg = String(
+      (error as any)?.message ?? (error as any)?.detail ?? error ?? ""
+    ).replace(/[\r\n\t]/g, " ").slice(0, 200);
+    console.debug(`[Spheres] API error (${endpoint}): ${safeMsg}`);
   };
 
   useEffect(() => {

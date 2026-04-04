@@ -135,14 +135,15 @@ export function SphereDetail() {
       setSphere(sphereData);
 
       const mappedMembers = (membersData || []).map((m: any) => ({
-        id: String(m.id || m.user),
+        id: String(m.id),           // ID de la ligne SphereMember (pour les actions API)
+        userId: String(m.user_info?.id ?? m.user ?? ""), // ID utilisateur (pour les comparaisons)
         user_info: m.user_info,
         role: normalizeRole(m.role || m.role_display || 'member'),
         status: m.status || 'active',
         name: m.user_info?.name || `${m.user_info?.first_name || ''} ${m.user_info?.last_name || ''}`.trim() || 'Unknown',
         username: m.user_info?.username || 'unknown',
         avatar: m.user_info?.avatar || '/placeholder-avatar.jpg',
-        isCreator: String(sphereData?.created_by_info?.id) === String(m.user_info?.id),
+        isCreator: String(sphereData?.created_by_info?.id) === String(m.user_info?.id ?? m.user ?? ""),
       }));
 
       setMembers(mappedMembers.filter((m: any) => m.status === 'active'));
@@ -152,7 +153,9 @@ export function SphereDetail() {
       // Membership state logic
       const isMemberFromServer = sphereData?.is_member ?? sphereData?.isMember ?? false;
       const membershipStatusFromServer = sphereData?.membership_status ?? sphereData?.membershipStatus ?? null;
-      const currentUserMember = mappedMembers.find((m: any) => String(m.user_info?.id) === String(currentUser?.id));
+      const currentUserMember = mappedMembers.find(
+        (m: any) => m.userId && m.userId !== "" && String(m.userId) === String(currentUser?.id)
+      );
 
       const resolvedIsMember =
         isMemberFromServer ||
@@ -170,18 +173,10 @@ export function SphereDetail() {
         setTasks((tasksData || []).map(mapTask));
         setTaskState("ready");
       } catch (taskError: any) {
-        // ApiRequestError expose .status directement (pas .response.status)
-        const errStatus = taskError?.status ?? taskError?.response?.status;
-        if (errStatus === 403) {
-          setTaskState("forbidden");
-          setTasks([]);
-        } else if (errStatus >= 500) {
-          setTaskState("server_error");
-          setTasks([]);
-        } else {
-          setTaskState("server_error");
-          setTasks([]);
-        }
+        // ApiRequestError (apiFetch) expose .status directement, pas .response.status
+        const errStatus: number = Number(taskError?.status ?? taskError?.response?.status ?? 0);
+        setTasks([]);
+        setTaskState(errStatus === 403 ? "forbidden" : "server_error");
       }
     } catch (e: any) {
       setLoadError(e?.message || "Erreur de chargement");
@@ -229,7 +224,7 @@ export function SphereDetail() {
 
   const resolvedUserRole = useMemo(() => {
     if (!currentUserId) return "member";
-    const member = members.find((m) => String(m.user_info?.id) === String(currentUserId));
+    const member = members.find((m) => String(m.userId) === String(currentUserId));
     if (member) return normalizeRole(member.role);
     return normalizeRole(sphere?.user_role || sphere?.userRole);
   }, [currentUserId, members, sphere]);
@@ -529,7 +524,7 @@ export function SphereDetail() {
                       <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">{m.role}</p>
                     </div>
                   </div>
-                  {canModerateMembers && !m.isCreator && String(m.user_info?.id) !== String(currentUserId) && (
+                  {canModerateMembers && !m.isCreator && m.userId && String(m.userId) !== String(currentUserId) && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="rounded-full"><MoreVertical className="h-4 w-4"/></Button></DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">

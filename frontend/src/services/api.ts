@@ -1473,6 +1473,26 @@ export async function deleteConversation(conversationId: number | string, token?
   });
 }
 
+export async function uploadConversationAvatar(conversationId: number | string, file: File, token?: string) {
+  const formData = new FormData();
+  formData.append('avatar', file);
+  return apiFetch<{ success: boolean; avatar_url: string | null }>(`api/conversations/${conversationId}/avatar/`, {
+    method: "POST",
+    body: formData,
+    token: token || getAccessToken(),
+  });
+}
+
+export async function removeConversationAvatar(conversationId: number | string, token?: string) {
+  const formData = new FormData();
+  formData.append('remove', 'true');
+  return apiFetch<{ success: boolean; avatar_url: null }>(`api/conversations/${conversationId}/avatar/`, {
+    method: "POST",
+    body: formData,
+    token: token || getAccessToken(),
+  });
+}
+
 // ============================================================================
 // NOTIFICATIONS
 // ============================================================================

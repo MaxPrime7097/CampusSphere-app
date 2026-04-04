@@ -11,6 +11,7 @@ class Conversation(models.Model):
 
     type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='private')
     name = models.CharField(max_length=100, blank=True)
+    avatar = models.ImageField(upload_to='conversations/avatars/', null=True, blank=True)
 
     # Participants (for private conversations, only 2 users)
     participants = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='conversations')

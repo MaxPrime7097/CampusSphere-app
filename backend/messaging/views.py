@@ -512,6 +512,55 @@ def remove_participant(request, pk, user_id):
 
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
+def upload_conversation_avatar(request, pk):
+    """Upload or remove avatar for a group conversation (creator only)."""
+    conversation = get_object_or_404(
+        Conversation, pk=pk, participants=request.user, type='group'
+    )
+    if conversation.created_by_id != request.user.id:
+        return Response(
+            business_error_payload('permission_denied', 'Only the group creator can change the avatar'),
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    # DELETE avatar
+    if request.method == 'DELETE' or request.data.get('remove'):
+        if conversation.avatar:
+            conversation.avatar.delete(save=False)
+            conversation.avatar = None
+            conversation.save(update_fields=['avatar'])
+        return Response({'success': True, 'avatar_url': None})
+
+    avatar_file = request.FILES.get('avatar')
+    if not avatar_file:
+        return Response(
+            business_error_payload('invalid_file', 'No avatar file provided'),
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Validate type + size (max 5MB)
+    if not avatar_file.content_type.startswith('image/'):
+        return Response(
+            business_error_payload('invalid_file', 'File must be an image'),
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    if avatar_file.size > 5 * 1024 * 1024:
+        return Response(
+            business_error_payload('invalid_file', 'Image must be under 5MB'),
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if conversation.avatar:
+        conversation.avatar.delete(save=False)
+    conversation.avatar = avatar_file
+    conversation.save(update_fields=['avatar'])
+
+    avatar_url = request.build_absolute_uri(conversation.avatar.url)
+    return Response({'success': True, 'avatar_url': avatar_url})
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
 def leave_conversation(request, pk):
     """Remove current user from conversation."""
     conversation = get_object_or_404(

@@ -62,15 +62,24 @@ class ConversationSerializer(serializers.ModelSerializer):
     last_message = serializers.SerializerMethodField()
     unread_count = serializers.SerializerMethodField()
     created_by_info = serializers.SerializerMethodField()
+    avatar_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Conversation
         fields = [
-            'id', 'type', 'name', 'participants', 'participants_info',
+            'id', 'type', 'name', 'avatar', 'avatar_url', 'participants', 'participants_info',
             'created_by', 'created_by_info', 'last_message', 'unread_count',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def get_avatar_url(self, obj):
+        if not obj.avatar:
+            return None
+        request = self.context.get('request')
+        if request:
+            return request.build_absolute_uri(obj.avatar.url)
+        return obj.avatar.url
 
     def get_participants_info(self, obj):
         from users.serializers import UserProfileSerializer
@@ -173,10 +182,9 @@ class ConversationCreateSerializer(serializers.ModelSerializer):
 class ConversationUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Conversation
-        fields = ['name']
+        fields = ['name', 'avatar']
 
     def validate(self, data):
-        # Only group conversations can be updated
         if self.instance.type != 'group':
             raise serializers.ValidationError("Only group conversations can be updated")
         return data

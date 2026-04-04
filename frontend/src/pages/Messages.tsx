@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { createPrivateConversation, deleteMessage, deleteConversation, getCurrentUser, getConversationMessages, getConversationParticipants, getUserConnections, getUserConversations, markConversationRead, markConversationUnread, addParticipant, removeParticipant, renameConversation, leaveConversation, sendMessage, updateMessage } from "@/services/api";
+import { createPrivateConversation, deleteMessage, deleteConversation, getCurrentUser, getConversationMessages, getConversationParticipants, getUserConnections, getUserConversations, markConversationRead, markConversationUnread, addParticipant, removeParticipant, renameConversation, leaveConversation, sendMessage, updateMessage, uploadConversationAvatar, removeConversationAvatar } from "@/services/api";
 import { useTranslation } from "react-i18next";
-import { Search, Send, Phone, Video, EllipsisVertical, MoreVertical, MessageSquare, Loader2, Users, Plus } from "lucide-react";
+import { Search, Send, Phone, Video, EllipsisVertical, MoreVertical, MessageSquare, Loader2, Users, Plus, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -53,7 +53,9 @@ function mapConversation(rawConv: any, currentUserId?: string) {
       isGroup
         ? (conv.name || `Groupe (${participants.length} membres)`)
         : (otherParticipantName || conv.name || (participants.length > 0 ? "Utilisateur" : "Conversation")),
-    avatar: isGroup ? null : (otherParticipant?.avatar || "/placeholder-avatar.jpg"),
+    avatar: isGroup
+      ? (conv.avatar_url || conv.avatar || null)
+      : (otherParticipant?.avatar || "/placeholder-avatar.jpg"),
     unread: Number(conv.unread_count || conv.unreadCount || 0),
     isOnline: false,
     createdBy: String(conv.created_by || conv.createdBy || ""),
@@ -738,9 +740,11 @@ export function Messages() {
                   <div className="flex items-center gap-2 md:gap-3">
                     <div className="relative flex-shrink-0">
                       <Avatar className="h-10 w-10 md:h-12 md:w-12">
-                        <AvatarImage src={conversation.avatar} />
+                        <AvatarImage src={conversation.avatar ?? undefined} />
                         <AvatarFallback className="bg-input text-muted-foreground font-semibold text-xs md:text-sm">
-                          {(conversation.name || "U").slice(0, 1).toUpperCase()}
+                          {conversation.type === 'group'
+                            ? <Users className="h-5 w-5" />
+                            : (conversation.name || "U").slice(0, 1).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div className="absolute bottom-0 right-0 w-2.5 h-2.5 md:w-3 md:h-3 bg-green-500 border-2 border-background rounded-full"></div>
@@ -788,24 +792,62 @@ export function Messages() {
                     ←
                   </Button>
                   
-                  <Avatar
-                    className={`h-8 w-8 flex-shrink-0 transition-opacity ${
-                      selectedConv?.participants?.[0]?.username
-                        ? "cursor-pointer hover:opacity-80"
-                        : "cursor-not-allowed opacity-60"
-                    }`}
-                    onClick={() =>
-                      handleProfileNavigation(
-                        selectedConv?.participants?.[0]?.username,
-                        selectedConv?.name
-                      )
-                    }
-                  >
-                    <AvatarImage src={selectedConv?.avatar} />
-                    <AvatarFallback className="bg-input text-muted-foreground font-semibold text-xs md:text-sm">
-                      {(selectedConv?.name || "U").slice(0, 1).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="relative flex-shrink-0">
+                    <Avatar
+                      className={`h-8 w-8 transition-opacity ${
+                        !selectedConv || selectedConv.type === 'group'
+                          ? 'cursor-default'
+                          : selectedConv?.participants?.[0]?.username
+                            ? 'cursor-pointer hover:opacity-80'
+                            : 'cursor-not-allowed opacity-60'
+                      }`}
+                      onClick={() =>
+                        selectedConv?.type !== 'group' &&
+                        handleProfileNavigation(
+                          selectedConv?.participants?.[0]?.username,
+                          selectedConv?.name
+                        )
+                      }
+                    >
+                      <AvatarImage src={selectedConv?.avatar ?? undefined} />
+                      <AvatarFallback className="bg-input text-muted-foreground font-semibold text-xs md:text-sm">
+                        {selectedConv?.type === 'group'
+                          ? <Users className="h-4 w-4" />
+                          : (selectedConv?.name || "U").slice(0, 1).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    {isGroupCreator && (
+                      <label
+                        className="absolute -bottom-1 -right-1 h-4 w-4 bg-primary rounded-full flex items-center justify-center cursor-pointer hover:bg-primary/80"
+                        title="Changer l'avatar du groupe"
+                      >
+                        <Camera className="h-2.5 w-2.5 text-white" />
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file || !conversationId) return;
+                            try {
+                              const res = await uploadConversationAvatar(conversationId, file);
+                              setConversations((prev) =>
+                                prev.map((conv) =>
+                                  conv.id === conversationId
+                                    ? { ...conv, avatar: res.avatar_url }
+                                    : conv
+                                )
+                              );
+                              toast({ title: "Avatar mis à jour !" });
+                            } catch (err: any) {
+                              toast({ title: "Erreur", description: err?.message, variant: "destructive" });
+                            }
+                            e.target.value = "";
+                          }}
+                        />
+                      </label>
+                    )}
+                  </div>
                   
                   <div className="min-w-0 flex-1">
                     <h3 className="font-semibold text-sm md:text-base truncate">
@@ -881,6 +923,22 @@ export function Messages() {
                         Ajouter/retirer membres
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={handleMarkUnread}>Marquer non lu</DropdownMenuItem>
+                      {isGroupCreator && selectedConv?.avatar && (
+                        <DropdownMenuItem onClick={async () => {
+                          if (!conversationId) return;
+                          try {
+                            await removeConversationAvatar(conversationId);
+                            setConversations((prev) => prev.map((conv) =>
+                              conv.id === conversationId ? { ...conv, avatar: null } : conv
+                            ));
+                            toast({ title: "Avatar supprimé" });
+                          } catch (err: any) {
+                            toast({ title: "Erreur", description: err?.message, variant: "destructive" });
+                          }
+                        }}>
+                          Supprimer l'avatar
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem onClick={handleLeaveSelectedConversation} disabled={isUpdatingConversation}>
                         Quitter conversation
                       </DropdownMenuItem>
