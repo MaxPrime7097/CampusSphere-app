@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from . import views, admin_views
+from .supabase_views import SupabaseTokenExchangeView, SupabaseCompleteProfileView
 from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework_simplejwt.views import TokenRefreshView
@@ -14,6 +15,8 @@ urlpatterns = [
     path('', home),
     path('admin/', admin.site.urls),
     path('api/auth/refresh/', TokenRefreshView.as_view(permission_classes=[AllowAny]), name='token_refresh'),
+    path('api/auth/supabase/exchange/', SupabaseTokenExchangeView.as_view(), name='supabase-exchange'),
+    path('api/auth/supabase/complete-profile/', SupabaseCompleteProfileView.as_view(), name='supabase-complete-profile'),
     path('api/users/', include('users.urls')),
     path('api/spheres/', include('spheres.urls')),
     path('api/posts/', include('posts.urls')),

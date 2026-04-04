@@ -673,7 +673,9 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
                 onClick={handleUpdateComment} 
                 disabled={isUpdatingComment}
               >
-                {isUpdatingComment ? "Enregistrement..." : "Enregistrer"}
+                {isUpdatingComment ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Enregistrement...</>
+                ) : "Enregistrer"}
               </Button>
             </div>
           </div>
@@ -707,7 +709,9 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
               onClick={handleDeleteComment} 
               disabled={isDeletingComment}
             >
-              {isDeletingComment ? "Suppression..." : "Supprimer"}
+              {isDeletingComment ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Suppression...</>
+              ) : "Supprimer"}
             </Button>
           </div>
         </DialogContent>

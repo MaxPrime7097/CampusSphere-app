@@ -1,5 +1,92 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { normalizeResourceType } from "@/constants/resourceTypes";
+import { supabase } from "@/lib/supabase";
+
+// ============================================================================
+// SUPABASE AUTH
+// ============================================================================
+
+export async function supabaseSignUp(email: string, password: string, metadata: { first_name: string; last_name: string; username: string }) {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: metadata },
+  });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function supabaseSignIn(email: string, password: string) {
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function supabaseSignInWithGoogle() {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: `${window.location.origin}/auth/callback` },
+  });
+  if (error) throw new Error(error.message);
+}
+
+export async function supabaseSignInWithFacebook() {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "facebook",
+    options: { redirectTo: `${window.location.origin}/auth/callback` },
+  });
+  if (error) throw new Error(error.message);
+}
+
+export async function supabaseResetPassword(email: string) {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/reset-password`,
+  });
+  if (error) throw new Error(error.message);
+}
+
+export async function supabaseSignOut() {
+  await supabase.auth.signOut();
+}
+
+export async function exchangeSupabaseToken(supabaseAccessToken: string) {
+  const response = await apiFetch<{ success: boolean; data: { tokens: { accessToken: string; refreshToken: string }; user: any } }>(
+    "api/auth/supabase/exchange/",
+    { method: "POST", body: { supabase_token: supabaseAccessToken } }
+  );
+  const tokens = response?.data?.tokens;
+  if (tokens?.accessToken) {
+    setTokens(tokens.accessToken, tokens.refreshToken);
+  }
+  return response;
+}
+
+export async function completeSupabaseProfile(data: {
+  username: string;
+  first_name: string;
+  last_name: string;
+  phone_number?: string;
+  date_of_birth?: string;
+  university?: string;
+  faculty?: string;
+  study_year?: string;
+  student_id?: string;
+  campus?: string;
+  town?: string;
+  language?: string;
+  bio?: string;
+  skills?: string[];
+  interests?: string[];
+  previous_education?: any[];
+  experiences?: any[];
+  portfolio_links?: any[];
+}) {
+  const response = await apiFetch<any>("api/auth/supabase/complete-profile/", {
+    method: "POST",
+    body: data,
+  });
+  return normalizeUser(response?.data ?? response);
+}
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 

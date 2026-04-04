@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { getCurrentUser, getUserByUsername, getUserPosts, uploadAvatar, uploadCoverPhoto, updateUserProfile, getUserConnections, getUserResources, connectWithUser, disconnectFromUser, downloadResource, getUserProfile, getUserConnectionRelation, isApiRequestErrorStatus } from "@/services/api";
-import { MapPin, Camera, Calendar, Link, Users, BookOpen, Award, Settings, FileText, Briefcase, GraduationCap, Loader2, Check, Download, Unlink, ExternalLink, Upload, X, Zap, Smile } from "lucide-react";
+import { MapPin, Camera, Calendar, Link, Users, BookOpen, Award, Settings, FileText, Briefcase, GraduationCap, Loader2, Check, Download, Unlink, ExternalLink, Upload, X, Zap, Smile, BriefcaseBusiness } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -1044,7 +1044,7 @@ export function Profile() {
           {activeTab === "connections" && (
             <section className="mt-6">
               <div className="rounded-lg border bg-card p-6">
-                <h3 className="text-lg font-semibold mb-4">Amis ({userConnections.length})</h3>
+                <h3 className="text-lg font-semibold mb-4">Connexions ({userConnections.length})</h3>
                 <div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {userConnections.map((connection) => (
@@ -1156,7 +1156,7 @@ export function Profile() {
 
               <div className="rounded-lg border bg-card p-6">
                 <h3 className="flex items-center gap-2 text-lg font-semibold mb-4">
-                  <Users className="h-5 w-5" />
+                  <User className="h-5 w-5" />
                   Informations Personnelles
                 </h3>
                 <div className="space-y-3">
@@ -1223,7 +1223,7 @@ export function Profile() {
 
               <div className="rounded-lg border bg-card p-6">
                 <h3 className="flex items-center gap-2 text-lg font-semibold mb-4">
-                  <Link className="h-5 w-5" />
+                  <BriefcaseBusiness className="h-5 w-5" />
                   Portfolio
                 </h3>
                 {user.portfolioLinks?.length > 0 ? (

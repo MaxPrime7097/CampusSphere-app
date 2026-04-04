@@ -570,20 +570,36 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
             {uploadedFiles.length > 0 && (
               <div className="mt-3 space-y-2">
                 <Label>Fichiers joints ({uploadedFiles.length})</Label>
-                {uploadedFiles.map((file, index) => (
+                {/* Image previews grid */}
+                {uploadedFiles.some(f => f.type.startsWith('image/')) && (
+                  <div className="grid grid-cols-3 gap-2">
+                    {uploadedFiles.filter(f => f.type.startsWith('image/')).map((file, index) => (
+                      <div key={index} className="relative group rounded-lg overflow-hidden border aspect-square">
+                        <img
+                          src={URL.createObjectURL(file)}
+                          alt={file.name}
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeFile(uploadedFiles.indexOf(file))}
+                          className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {/* Non-image files */}
+                {uploadedFiles.filter(f => !f.type.startsWith('image/')).map((file, index) => (
                   <div key={index} className="flex items-center justify-between p-2 border rounded-lg">
                     <div className="flex items-center gap-2">
                       <FileText className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm">{file.name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        ({(file.size / 1024).toFixed(1)} KB)
-                      </span>
+                      <span className="text-xs text-muted-foreground">({(file.size / 1024).toFixed(1)} KB)</span>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => removeFile(index)}
-                    >
+                    <Button size="sm" variant="ghost" onClick={() => removeFile(uploadedFiles.indexOf(file))}>
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
@@ -612,15 +628,22 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
 
           {/* Actions */}
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => setIsOpen(false)}>
+            <Button variant="outline" onClick={() => setIsOpen(false)} disabled={isSubmitting}>
               Annuler
             </Button>
             <Button 
               onClick={handleSubmit}
-              disabled={!content.trim() || content.length > 500}
+              disabled={!content.trim() || content.length > 500 || isSubmitting}
               className="campus-gradient text-white hover:opacity-90"
             >
-              Publier le post
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Publication...
+                </>
+              ) : (
+                "Publier le post"
+              )}
             </Button>
           </div>
         </div>

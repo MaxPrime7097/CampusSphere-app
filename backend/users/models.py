@@ -110,6 +110,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     date_joined = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # Supabase Auth
+    supabase_uid = models.CharField(max_length=255, unique=True, null=True, blank=True, db_index=True)
+    phone_number = models.CharField(max_length=30, blank=True)
+    date_of_birth = models.DateField(null=True, blank=True)
+
     objects = UserManager()
 
     USERNAME_FIELD = 'email'

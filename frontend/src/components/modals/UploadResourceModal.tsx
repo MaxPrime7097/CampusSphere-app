@@ -259,22 +259,28 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
               onDrop={handleDrop}
             >
               {file ? (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-8 w-8 text-primary" />
-                    <div className="text-left">
-                      <p className="font-medium">{file.name}</p>
-                      <p className="text-xs text-muted-foreground">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                <div className="space-y-3">
+                  {file.type.startsWith('image/') && (
+                    <div className="rounded-lg overflow-hidden border">
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt={file.name}
+                        className="w-full max-h-48 object-contain bg-muted/30"
+                      />
                     </div>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-8 w-8 text-primary" />
+                      <div className="text-left">
+                        <p className="font-medium">{file.name}</p>
+                        <p className="text-xs text-muted-foreground">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => setFile(null)} disabled={isUploading}>
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => setFile(null)}
-                    disabled={isUploading}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
                 </div>
               ) : (
                 <>

@@ -119,22 +119,26 @@ export function SimpleFileModal({ children, onFileUploaded }: SimpleFileModalPro
             <Label>Fichier *</Label>
             <div className="mt-2">
               {file ? (
-                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <Upload className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">{file.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      ({(file.size / 1024 / 1024).toFixed(1)} MB)
-                    </span>
+                <div className="space-y-2">
+                  {file.type.startsWith('image/') && (
+                    <div className="relative rounded-lg overflow-hidden border">
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt={file.name}
+                        className="w-full max-h-48 object-contain bg-muted/30"
+                      />
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Upload className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">{file.name}</span>
+                      <span className="text-xs text-muted-foreground">({(file.size / 1024 / 1024).toFixed(1)} MB)</span>
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={handleRemoveFile} className="h-6 w-6">
+                      <X className="h-3 w-3" />
+                    </Button>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleRemoveFile}
-                    className="h-6 w-6"
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
                 </div>
               ) : (
                 <div 
