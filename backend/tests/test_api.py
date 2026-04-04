@@ -10,6 +10,7 @@ from spheres.models import Sphere, SphereMember
 from posts.models import Post
 from resources.models import Resource
 from tasks.models import Task
+from messaging.models import Conversation
 
 User = get_user_model()
 
@@ -461,3 +462,53 @@ class ConnectionAPITest(APITestCase):
         delete_response = self.client.delete(relation_url, format='json')
         self.assertEqual(delete_response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Connection.objects.filter(requester=self.user1, recipient=self.user2).exists())
+
+
+class MessagingAPITest(APITestCase):
+    def setUp(self):
+        self.creator = User.objects.create_user(
+            email='messaging_creator@example.com',
+            username='messaging_creator',
+            first_name='Messaging',
+            last_name='Creator',
+            password='testpass123'
+        )
+        self.participant_1 = User.objects.create_user(
+            email='messaging_participant1@example.com',
+            username='messaging_participant1',
+            first_name='Messaging',
+            last_name='ParticipantOne',
+            password='testpass123'
+        )
+        self.participant_2 = User.objects.create_user(
+            email='messaging_participant2@example.com',
+            username='messaging_participant2',
+            first_name='Messaging',
+            last_name='ParticipantTwo',
+            password='testpass123'
+        )
+        self.client.force_authenticate(user=self.creator)
+
+    def test_create_group_conversation_with_two_participants(self):
+        """Group creation with two additional participants returns a usable payload."""
+        url = reverse('messaging:create-group-conversation')
+        payload = {
+            'name': 'Projet IA',
+            'participant_ids': [self.participant_1.id, self.participant_2.id]
+        }
+
+        response = self.client.post(url, payload, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(response.data['success'])
+        self.assertEqual(response.data['message'], 'Group conversation created')
+        self.assertEqual(response.data['data']['type'], 'group')
+        self.assertEqual(response.data['data']['name'], 'Projet IA')
+        self.assertEqual(len(response.data['data']['participants_info']), 3)
+
+        conversation = Conversation.objects.get(id=response.data['data']['id'])
+        participant_ids = set(conversation.participants.values_list('id', flat=True))
+        self.assertSetEqual(
+            participant_ids,
+            {self.creator.id, self.participant_1.id, self.participant_2.id}
+        )
