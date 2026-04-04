@@ -4,10 +4,10 @@ import { cn } from "@/lib/utils";
 import { TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const sharedTabsListClasses =
-  "grid w-full min-w-max grid-flow-col text-center border-b border-gray-200 text-gray-500";
+  "grid grid-flow-col text-center border-b border-gray-200 text-gray-500";
 
 const sharedTabsTriggerClasses =
-  "w-full flex justify-center whitespace-nowrap border-b-4 py-4 text-sm font-medium transition-all duration-200 data-[state=active]:border-primary data-[state=active]:text-primary data-[state=inactive]:border-transparent data-[state=inactive]:hover:text-primary data-[state=inactive]:hover:border-primary";
+  "w-full flex justify-center border-b-4 border-transparent py-4 transition-all duration-200 text-sm font-medium hover:text-primary hover:border-primary data-[state=active]:border-primary data-[state=active]:text-primary";
 
 interface SharedTabsListProps extends React.ComponentPropsWithoutRef<typeof TabsList> {
   containerClassName?: string;
