@@ -29,17 +29,20 @@ def can_moderate_message(user, conversation):
 
 
 def publish_conversation_event(conversation_id, event_type, payload):
-    channel_layer = get_channel_layer()
-    if not channel_layer:
-        return
-    async_to_sync(channel_layer.group_send)(
-        f'conversation_{conversation_id}',
-        {
-            'type': 'conversation_event',
-            'event_type': event_type,
-            'payload': payload,
-        }
-    )
+    try:
+        channel_layer = get_channel_layer()
+        if not channel_layer:
+            return
+        async_to_sync(channel_layer.group_send)(
+            f'conversation_{conversation_id}',
+            {
+                'type': 'conversation_event',
+                'event_type': event_type,
+                'payload': payload,
+            }
+        )
+    except Exception:
+        pass
 
 
 class ConversationListView(generics.ListCreateAPIView):
@@ -239,24 +242,21 @@ class ConversationReadView(APIView):
             pk=pk,
             participants=request.user
         )
-        
-        # Mark conversation as read
-        conversation.mark_as_read(request.user)
-        
-        # Mark all messages as read by this user
-        unread_messages = conversation.messages.exclude(read_by=request.user)
-        for message in unread_messages:
-            message.mark_as_read(request.user)
 
-        publish_conversation_event(
-            conversation.id,
-            'conversation_read',
-            {
-                'conversation_id': str(conversation.id),
-                'reader_id': str(request.user.id),
-                'timestamp': timezone.now().isoformat(),
-            }
-        )
+        conversation.mark_as_read(request.user)
+
+        try:
+            publish_conversation_event(
+                conversation.id,
+                'conversation_read',
+                {
+                    'conversation_id': str(conversation.id),
+                    'reader_id': str(request.user.id),
+                    'timestamp': timezone.now().isoformat(),
+                }
+            )
+        except Exception:
+            pass
 
         return Response({
             'success': True,

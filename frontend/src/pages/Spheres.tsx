@@ -50,57 +50,47 @@ export function Spheres() {
     let isMounted = true;
     (async () => {
       try {
-        const data = await getCurrentUser();
-        if (isMounted) {
-          setCurrentUser(data);
-          try {
-            const userSpheresData = await getUserSpheres();
-            if (isMounted && userSpheresData) {
-              const sphereIds = (userSpheresData || []).map((s: any) => String(s.id));
-              setUserJoinedSpheres(sphereIds);
-              setUserSpheres(userSpheresData || []);
-              setUserSpheresLoadError(null);
-            }
-          } catch (e: any) {
-            debugApiError("GET /users/me/spheres", e);
-            if (isMounted) {
-              setUserSpheresLoadError(e?.message || "Impossible de charger vos sphères.");
-            }
-          }
-        }
-      } catch (e: any) {
-        debugApiError("GET /users/me", e);
-        if (isMounted) {
-          setLoadError(e?.message || "Impossible de charger les données utilisateur.");
-        }
-      }
-    })();
-    return () => { isMounted = false; };
-  }, []);
-
-  useEffect(() => {
-    const pendingFromServer = (allSpheres || [])
-      .filter((sphere: any) => {
-        const status = sphere?.membership_status ?? sphere?.membershipStatus;
-        return String(status || "").toLowerCase() === "pending";
-      })
-      .map((sphere: any) => String(sphere.id));
-
-    if (pendingFromServer.length === 0) return;
-    setPendingJoinRequests((prev) => Array.from(new Set([...prev, ...pendingFromServer])));
-  }, [allSpheres]);
-
-  useEffect(() => {
-    let isMounted = true;
-    (async () => {
-      try {
         setLoadingSpheres(true);
         setLoadError(null);
-        const data = await listSpheres();
-        if (isMounted) setAllSpheres(data || []);
-      } catch (e: any) {
-        debugApiError("GET /spheres", e);
-        if (isMounted) setLoadError(e?.message || "Erreur de chargement");
+        // Charger tout en parallèle pour éviter la race condition
+        const [userData, spheresData, userSpheresData] = await Promise.allSettled([
+          getCurrentUser(),
+          listSpheres(),
+          getUserSpheres(),
+        ]);
+
+        if (!isMounted) return;
+
+        if (userData.status === "fulfilled") setCurrentUser(userData.value);
+        else debugApiError("GET /users/me", userData.reason);
+
+        if (spheresData.status === "fulfilled") {
+          setAllSpheres(spheresData.value || []);
+        } else {
+          debugApiError("GET /spheres", spheresData.reason);
+          setLoadError(spheresData.reason?.message || "Erreur de chargement");
+        }
+
+        if (userSpheresData.status === "fulfilled" && userSpheresData.value) {
+          const sphereIds = (userSpheresData.value || []).map((s: any) => String(s.id));
+          setUserJoinedSpheres(sphereIds);
+          setUserSpheres(userSpheresData.value || []);
+          setUserSpheresLoadError(null);
+
+          // Extraire les pending depuis allSpheres (is_member=false + membership_status=pending)
+          if (spheresData.status === "fulfilled") {
+            const pendingIds = (spheresData.value || [])
+              .filter((s: any) => {
+                const st = String(s?.membership_status ?? s?.membershipStatus ?? "").toLowerCase();
+                return st === "pending";
+              })
+              .map((s: any) => String(s.id));
+            if (pendingIds.length > 0) setPendingJoinRequests(pendingIds);
+          }
+        } else if (userSpheresData.status === "rejected") {
+          debugApiError("GET /users/me/spheres", userSpheresData.reason);
+          setUserSpheresLoadError(userSpheresData.reason?.message || "Impossible de charger vos sphères.");
+        }
       } finally {
         if (isMounted) setLoadingSpheres(false);
       }
@@ -167,9 +157,19 @@ export function Spheres() {
 
   const getUnifiedMembershipState = (sphere: any): "active" | "pending" | "none" => {
     const sphereId = String(sphere?.id);
-    const membershipStatus = String(sphere?.membership_status ?? sphere?.membershipStatus ?? "").toLowerCase();
-    const isCreator = currentUser?.id && String(sphere?.created_by) === String(currentUser.id);
-    const isMemberFromApi = sphere?.is_member === true || membershipStatus === "active";
+    // normalizeSphere() dans api.ts convertit is_member -> isMember et membership_status -> membershipStatus
+    const membershipStatus = String(
+      sphere?.membership_status ?? sphere?.membershipStatus ?? ""
+    ).toLowerCase();
+    const isCreator = currentUser?.id && (
+      String(sphere?.created_by) === String(currentUser.id) ||
+      String(sphere?.createdBy) === String(currentUser.id)
+    );
+    // Vérifier les deux formes (snake_case depuis API brute, camelCase après normalisation)
+    const isMemberFromApi =
+      sphere?.is_member === true ||
+      sphere?.isMember === true ||
+      membershipStatus === "active";
     const isPendingFromApi = membershipStatus === "pending";
     const isMemberFromLocal = userJoinedSpheres.includes(sphereId);
     const isPendingFromLocal = pendingJoinRequests.includes(sphereId);

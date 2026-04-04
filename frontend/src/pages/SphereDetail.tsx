@@ -117,11 +117,19 @@ export function SphereDetail() {
       setLoadError(null);
       setTaskState("ready");
 
-      const [sphereData, membersData, currentUser] = await Promise.all([
+      const [sphereData, rawMembersData, currentUser] = await Promise.all([
         getSphere(String(id)),
         listSphereMembers(String(id)),
         getCurrentUser(),
       ]);
+      // listSphereMembers retourne apiFetch<any[]> sans unwrap — normaliser ici
+      const membersData: any[] = Array.isArray(rawMembersData)
+        ? rawMembersData
+        : Array.isArray((rawMembersData as any)?.data)
+          ? (rawMembersData as any).data
+          : Array.isArray((rawMembersData as any)?.results)
+            ? (rawMembersData as any).results
+            : [];
 
       setCurrentUserId(currentUser?.id ? String(currentUser.id) : null);
       setSphere(sphereData);
@@ -162,16 +170,17 @@ export function SphereDetail() {
         setTasks((tasksData || []).map(mapTask));
         setTaskState("ready");
       } catch (taskError: any) {
-        const status = taskError?.response?.status;
-
-        if (status === 403) {
+        // ApiRequestError expose .status directement (pas .response.status)
+        const errStatus = taskError?.status ?? taskError?.response?.status;
+        if (errStatus === 403) {
           setTaskState("forbidden");
           setTasks([]);
-        } else if (status >= 500) {
+        } else if (errStatus >= 500) {
           setTaskState("server_error");
           setTasks([]);
         } else {
-          throw taskError;
+          setTaskState("server_error");
+          setTasks([]);
         }
       }
     } catch (e: any) {
@@ -524,7 +533,7 @@ export function SphereDetail() {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="rounded-full"><MoreVertical className="h-4 w-4"/></Button></DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuItem onClick={() => updateSphereMember(String(id), m.id, { role: m.role === 'admin' ? 'member' : 'admin' }).then(loadSphereData)}>
+                        <DropdownMenuItem onClick={() => updateSphereMember(String(id), m.id, { role: m.role === 'admin' ? 'member' : 'admin' }).then(loadSphereData).catch((e: any) => toast({ title: "Erreur", description: e?.message, variant: "destructive" }))}>
                           {m.role === 'admin' ? 'Retirer Admin' : 'Nommer Admin'}
                         </DropdownMenuItem>
                         <DropdownMenuItem className="text-red-600 font-medium" onClick={() => handleRemoveMember(m.id)}>Retirer de la sphère</DropdownMenuItem>

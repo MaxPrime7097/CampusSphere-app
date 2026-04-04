@@ -111,14 +111,12 @@ class SphereDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_object(self):
         sphere_id = self.kwargs.get('pk')
-        cache_key = CacheKeys.sphere_detail(sphere_id)
         user_id = getattr(self.request.user, 'id', None)
 
         try:
-            sphere = CacheManager.get_or_set(
-                cache_key,
-                lambda: generics.RetrieveUpdateDestroyAPIView.get_object(self),
-                CacheManager.SPHERE_DETAIL_TTL
+            sphere = get_object_or_404(
+                Sphere.objects.prefetch_related('members', 'tasks'),
+                pk=sphere_id
             )
 
             if sphere.is_expired and self.request.method in ['GET', 'POST']:
@@ -130,6 +128,8 @@ class SphereDetailView(generics.RetrieveUpdateDestroyAPIView):
                     raise PermissionDenied('This private sphere is only visible to active members')
 
             return sphere
+        except (ValidationError, PermissionDenied):
+            raise
         except Exception:
             logger.exception(
                 'SphereDetailView.get_object failed (sphere_id=%s user_id=%s method=%s)',
@@ -331,7 +331,7 @@ class SphereLeaveView(APIView):
             actor=request.user,
             action='delete',
             target_type='sphere_member',
-            target_id=kwargs.get('pk'),
+            target_id=pk,
             payload_diff=removed_data,
         )
 

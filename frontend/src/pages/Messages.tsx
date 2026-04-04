@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { createPrivateConversation, deleteMessage, getCurrentUser, getConversationMessages, getUserConnections, getUserConversations, markConversationRead, sendMessage, updateMessage } from "@/services/api";
+import { createPrivateConversation, deleteMessage, deleteConversation, getCurrentUser, getConversationMessages, getConversationParticipants, getUserConnections, getUserConversations, markConversationRead, markConversationUnread, addParticipant, removeParticipant, renameConversation, leaveConversation, sendMessage, updateMessage } from "@/services/api";
 import { useTranslation } from "react-i18next";
 import { Search, Send, Phone, Video, EllipsisVertical, MoreVertical, MessageSquare, Loader2, Users, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,7 @@ function unwrapApiData(payload: any) {
 
 function mapConversation(rawConv: any, currentUserId?: string) {
   const conv = unwrapApiData(rawConv) || {};
+  const isGroup = (conv.type || conv.conversation_type) === 'group';
   const participants = conv.participants_info || conv.participants || [];
   const otherParticipant =
     participants.find((participant: any) => String(participant.id) !== String(currentUserId)) || participants[0];
@@ -49,10 +50,10 @@ function mapConversation(rawConv: any, currentUserId?: string) {
     lastMessage,
     lastMessageAt,
     name:
-      otherParticipantName ||
-      conv.name ||
-      (participants.length > 0 ? "Utilisateur" : "Conversation"),
-    avatar: otherParticipant?.avatar || "/placeholder-avatar.jpg",
+      isGroup
+        ? (conv.name || `Groupe (${participants.length} membres)`)
+        : (otherParticipantName || conv.name || (participants.length > 0 ? "Utilisateur" : "Conversation")),
+    avatar: isGroup ? null : (otherParticipant?.avatar || "/placeholder-avatar.jpg"),
     unread: Number(conv.unread_count || conv.unreadCount || 0),
     isOnline: false,
     createdBy: String(conv.created_by || conv.createdBy || ""),
@@ -254,7 +255,9 @@ export function Messages() {
     }
 
     const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
-    const wsHost = (import.meta.env.VITE_API_WS_HOST as string | undefined) || window.location.host;
+    const apiUrl = (import.meta.env.VITE_API_URL as string | undefined) || "";
+    const wsHost = (import.meta.env.VITE_API_WS_HOST as string | undefined) ||
+      (apiUrl ? apiUrl.replace(/^https?:\/\//, "").replace(/\/$/, "") : window.location.host);
     const wsUrl = `${wsProtocol}://${wsHost}/ws/conversations/${conversationId}/`;
     const ws = new WebSocket(wsUrl);
     socketRef.current = ws;

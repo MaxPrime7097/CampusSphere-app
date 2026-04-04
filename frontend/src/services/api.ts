@@ -894,7 +894,8 @@ export async function cancelSphereJoinRequest(id: number | string, token?: strin
 }
 
 export async function listSphereMembers(id: number | string, token?: string) {
-  return apiFetch<any[]>(`api/spheres/${id}/members/`, { token: token || getAccessToken() });
+  const response = await apiFetch<any>(`api/spheres/${id}/members/`, { token: token || getAccessToken() });
+  return unwrapList<any>(response);
 }
 
 export async function addSphereMember(

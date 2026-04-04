@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Heart, MessageCircle, Share, Bookmark, MoreVertical, Zap, Copy, Flag, ExternalLink, Users, Plus, Minus, X, Pencil, Trash2, Loader2, FileText, Download, ChevronLeft, ChevronRight } from "lucide-react";
+import { Heart, MessageCircle, Share, Bookmark, MoreVertical, Zap, Copy, Flag, ExternalLink, Users, Plus, Minus, X, Pencil, Trash2, Loader2, FileText, Download, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -18,12 +18,13 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { CommentsModal } from "@/components/modals/CommentsModal";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { impactRatePost, likePost, savePost, reportPost, updatePost, deletePost } from "@/services/api";
+import { impactRatePost, likePost, savePost, reportPost, updatePost, deletePost, getCurrentUser, getUserConnections, createPrivateConversation, sendMessage } from "@/services/api";
 import { formatRelativeTime } from "@/lib/date";
 import { renderMentionText } from "@/lib/mentions";
 import { Textarea } from "@/components/ui/textarea";
@@ -80,6 +81,10 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
   const [isReporting, setIsReporting] = useState(false);
   const [reportError, setReportError] = useState<string | null>(null);
   const [reportedReason, setReportedReason] = useState<string | null>(null);
+  const [shareConnections, setShareConnections] = useState<any[]>([]);
+  const [shareSearch, setShareSearch] = useState("");
+  const [loadingShareConnections, setLoadingShareConnections] = useState(false);
+  const [sendingToUserId, setSendingToUserId] = useState<string | null>(null);
   const [content, setContent] = useState(post.content);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -221,6 +226,45 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
 
   const handleShare = () => {
     setShowShareDialog(true);
+    setShareSearch("");
+    if (shareConnections.length === 0) {
+      setLoadingShareConnections(true);
+      getCurrentUser().then((user) => {
+        if (!user?.id) { setLoadingShareConnections(false); return; }
+        return getUserConnections(user.id).then((conns) => {
+          const mapped = (conns || []).map((conn: any) => {
+            const isRequester = String(conn.requester) === String(user.id);
+            const counterpart = isRequester ? conn.recipient_info : conn.requester_info;
+            const counterpartId = isRequester ? conn.recipient : conn.requester;
+            return {
+              id: String(counterpart?.id || counterpartId),
+              name: counterpart?.full_name || counterpart?.name || counterpart?.username || "Utilisateur",
+              username: counterpart?.username || "",
+              avatar: counterpart?.avatar || "/placeholder-avatar.jpg",
+            };
+          }).filter((c: any) => c.id);
+          setShareConnections(mapped);
+        });
+      }).catch(() => null).finally(() => setLoadingShareConnections(false));
+    }
+  };
+
+  const handleShareToFriend = async (contactId: string, contactName: string) => {
+    if (sendingToUserId) return;
+    setSendingToUserId(contactId);
+    const postUrl = `${window.location.origin}/posts/${post.id}`;
+    const messageContent = `📌 ${post.author.name} a partagé un post avec toi :\n${postUrl}`;
+    try {
+      const conv = await createPrivateConversation(contactId);
+      const convId = conv?.id || conv?.data?.id;
+      if (!convId) throw new Error("Conversation introuvable");
+      await sendMessage(convId, messageContent);
+      toast({ title: "Post partagé !", description: `Envoyé à ${contactName}`, duration: 2000 });
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e?.message || "Impossible d'envoyer le message", variant: "destructive" });
+    } finally {
+      setSendingToUserId(null);
+    }
   };
 
   const handleCopyLink = async () => {
@@ -656,30 +700,65 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
         <DialogHeader>
           <DialogTitle>Partager ce post</DialogTitle>
           <DialogDescription>
-            Choisissez comment vous souhaitez partager ce post avec d'autres personnes.
-            Les options de partage direct sont actuellement en mode mock (UI uniquement).
+            Copiez le lien ou envoyez directement à un ami.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <Button variant="outline" className="h-20 flex flex-col gap-2">
-              <MessageCircle className="h-6 w-6" />
-              <span>Message privé</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex flex-col gap-2">
-              <ExternalLink className="h-6 w-6" />
-              <span>Réseaux sociaux</span>
-            </Button>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" className="flex-1" onClick={handleCopyLink} disabled={isCopyingLink}>
-              <Copy className="h-4 w-4 mr-2" />
-              {isCopyingLink ? "Copie..." : "Copier le lien"}
-            </Button>
-            <Button variant="outline" className="flex-1">
-              <Users className="h-4 w-4 mr-2" />
-              Partager avec des amis
-            </Button>
+          <Button variant="outline" className="w-full" onClick={handleCopyLink} disabled={isCopyingLink}>
+            <Copy className="h-4 w-4 mr-2" />
+            {isCopyingLink ? "Copie..." : "Copier le lien"}
+          </Button>
+          <div className="border-t pt-3 space-y-2">
+            <p className="text-sm font-medium flex items-center gap-2">
+              <Users className="h-4 w-4" /> Envoyer à un ami
+            </p>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher..."
+                className="pl-9"
+                value={shareSearch}
+                onChange={(e) => setShareSearch(e.target.value)}
+              />
+            </div>
+            <div className="max-h-52 overflow-y-auto space-y-1">
+              {loadingShareConnections ? (
+                <p className="text-sm text-muted-foreground py-2">Chargement...</p>
+              ) : shareConnections.filter((c) => {
+                const q = shareSearch.toLowerCase();
+                return !q || c.name.toLowerCase().includes(q) || c.username.toLowerCase().includes(q);
+              }).length === 0 ? (
+                <p className="text-sm text-muted-foreground py-2">Aucune connexion trouvée.</p>
+              ) : (
+                shareConnections
+                  .filter((c) => {
+                    const q = shareSearch.toLowerCase();
+                    return !q || c.name.toLowerCase().includes(q) || c.username.toLowerCase().includes(q);
+                  })
+                  .map((contact) => (
+                    <div key={contact.id} className="flex items-center justify-between gap-2 p-1.5 rounded-md hover:bg-accent">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Avatar className="h-8 w-8 flex-shrink-0">
+                          <AvatarImage src={contact.avatar} />
+                          <AvatarFallback>{(contact.name || "U").slice(0, 1).toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{contact.name}</p>
+                          {contact.username && <p className="text-xs text-muted-foreground">@{contact.username}</p>}
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => handleShareToFriend(contact.id, contact.name)}
+                        disabled={sendingToUserId === contact.id}
+                      >
+                        {sendingToUserId === contact.id ? <Loader2 className="h-3 w-3 animate-spin" /> : "Envoyer"}
+                      </Button>
+                    </div>
+                  ))
+              )}
+            </div>
           </div>
         </div>
       </DialogContent>
