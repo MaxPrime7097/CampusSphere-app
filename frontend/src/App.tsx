@@ -23,6 +23,14 @@ import { PostDetail } from "./pages/PostDetail";
 import { Spheres } from "./pages/Spheres";
 import { SphereDetail } from "./pages/SphereDetail";
 import { AdminPanelRouter } from "./pages/admin/AdminPanelRouter";
+import { AdminLayout } from "./admin/components/AdminLayout";
+import { AdminDashboardPage } from "./admin/pages/AdminDashboardPage";
+import { AdminUsersPage } from "./admin/pages/AdminUsersPage";
+import { AdminSpheresPage } from "./admin/pages/AdminSpheresPage";
+import { AdminModerationPage } from "./admin/pages/AdminModerationPage";
+import { AdminResourcesPage } from "./admin/pages/AdminResourcesPage";
+import { AdminLogsPage } from "./admin/pages/AdminLogsPage";
+import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { About } from "./pages/public/About";
 import { Contact } from "./pages/public/Contact";
 import { FAQ } from "./pages/public/FAQ";
@@ -37,6 +45,13 @@ import { DataDeletion } from "./pages/public/DataDeletion";
 import { Waitinglist } from "./pages/public/Waitinglist";
 import { Policies } from "./pages/public/Policies";
 import { RequireAdminRole } from "./components/auth/RequireAdminRole";
+import { AdminLayout } from "./admin/components/AdminLayout";
+import { AdminDashboardPage } from "./admin/pages/AdminDashboardPage";
+import { AdminUsersPage } from "./admin/pages/AdminUsersPage";
+import { AdminSpheresPage } from "./admin/pages/AdminSpheresPage";
+import { AdminModerationPage } from "./admin/pages/AdminModerationPage";
+import { AdminResourcesPage } from "./admin/pages/AdminResourcesPage";
+import { AdminLogsPage } from "./admin/pages/AdminLogsPage";
 
 
 const queryClient = new QueryClient();
@@ -177,6 +192,16 @@ const App = () => (
           <Route path="/admin/*" element={<RequireAdminRole><AdminPanelRouter /></RequireAdminRole>} />
           <Route path="/cs-inc/private/admin" element={<Navigate to="/admin" replace />} />
           <Route path="/cs-inc/private/admin/*" element={<Navigate to="/admin" replace />} />
+          <Route path="/cs-inc/private/admin" element={<AdminLayout />}>
+            <Route index element={<Navigate to="/cs-inc/private/admin/dashboard" replace />} />
+            <Route path="dashboard" element={<AdminDashboardPage />} />
+            <Route path="users" element={<AdminUsersPage />} />
+            <Route path="spheres" element={<AdminSpheresPage />} />
+            <Route path="moderation" element={<AdminModerationPage />} />
+            <Route path="resources" element={<AdminResourcesPage />} />
+            <Route path="logs" element={<AdminLogsPage />} />
+          </Route>
+          <Route path="/cs-inc/private/admin-legacy" element={<AdminDashboard />} />
         
           {/* Public pages */}
           <Route path="/cs-inc" element={<Landing />} />
@@ -191,6 +216,7 @@ const App = () => (
           <Route path="/cs-inc/policies/cookiepolicy" element={<CookiePolicy />} />
           <Route path="/cs-inc/policies/datadeletion" element={<DataDeletion />} />
           <Route path="/cs-inc/waitlist" element={<Waitinglist />} />
+          <Route path="/403" element={<Forbidden />} />
 
           {/* 404 */}
           <Route path="*" element={<NotFound />} />
