@@ -22,6 +22,14 @@ import { ResourceDetailRoute } from "./pages/ResourceDetailRoute";
 import { PostDetail } from "./pages/PostDetail";
 import { Spheres } from "./pages/Spheres";
 import { SphereDetail } from "./pages/SphereDetail";
+import { AdminPanelRouter } from "./pages/admin/AdminPanelRouter";
+import { AdminLayout } from "./admin/components/AdminLayout";
+import { AdminDashboardPage } from "./admin/pages/AdminDashboardPage";
+import { AdminUsersPage } from "./admin/pages/AdminUsersPage";
+import { AdminSpheresPage } from "./admin/pages/AdminSpheresPage";
+import { AdminModerationPage } from "./admin/pages/AdminModerationPage";
+import { AdminResourcesPage } from "./admin/pages/AdminResourcesPage";
+import { AdminLogsPage } from "./admin/pages/AdminLogsPage";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { About } from "./pages/public/About";
 import { Contact } from "./pages/public/Contact";
@@ -38,6 +46,13 @@ import { Waitinglist } from "./pages/public/Waitinglist";
 import { Policies } from "./pages/public/Policies";
 import { RequireAdminRole } from "./components/auth/RequireAdminRole";
 import Forbidden from "./pages/public/Forbidden";
+import { AdminLayout } from "./admin/components/AdminLayout";
+import { AdminDashboardPage } from "./admin/pages/AdminDashboardPage";
+import { AdminUsersPage } from "./admin/pages/AdminUsersPage";
+import { AdminSpheresPage } from "./admin/pages/AdminSpheresPage";
+import { AdminModerationPage } from "./admin/pages/AdminModerationPage";
+import { AdminResourcesPage } from "./admin/pages/AdminResourcesPage";
+import { AdminLogsPage } from "./admin/pages/AdminLogsPage";
 
 
 const queryClient = new QueryClient();
