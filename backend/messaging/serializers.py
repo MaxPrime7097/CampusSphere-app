@@ -97,7 +97,7 @@ class ConversationSerializer(serializers.ModelSerializer):
 
 class ConversationCreateSerializer(serializers.ModelSerializer):
     participant_ids = serializers.PrimaryKeyRelatedField(
-        queryset=None,
+        queryset=User.objects.none(),
         many=True,
         write_only=True,
         source='participants'
@@ -109,8 +109,7 @@ class ConversationCreateSerializer(serializers.ModelSerializer):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        from users.models import User
-        self.fields['participant_ids'].queryset = User.objects.all()
+        self.fields['participant_ids'].child_relation.queryset = User.objects.all()
 
     def validate_participant_ids(self, value):
         current_user = self.context['request'].user
@@ -126,7 +125,7 @@ class ConversationCreateSerializer(serializers.ModelSerializer):
         if self.initial_data.get('type') == 'group' and len(value) < 2:
             business_validation_error("invalid_participant", "Group conversations must have at least 3 participants")
 
-        return unique_ids
+        return value
 
     def validate(self, data):
         participant_ids = data.get('participant_ids', [])

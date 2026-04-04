@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { createPrivateConversation, deleteMessage, getCurrentUser, getConversationMessages, getUserConnections, getUserConversations, markConversationRead, sendMessage, updateMessage } from "@/services/api";
 import { useTranslation } from "react-i18next";
-import { Search, Send, Phone, Video, EllipsisVertical, MessageSquare, Loader2, Users, Plus } from "lucide-react";
+import { Search, Send, Phone, Video, EllipsisVertical, MoreVertical, MessageSquare, Loader2, Users, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";

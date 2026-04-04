@@ -691,27 +691,6 @@ export function Profile() {
       setIsSavingProfile(false);
     }
   };
-      
-      toast({
-        title: "Profil mis à jour !",
-        description: "Vos modifications ont été sauvegardées",
-        duration: 3000,
-      });
-      setShowEditModal(false);
-      
-      const userData = await getCurrentUser();
-      setCurrentUser(userData);
-      if (isOwnProfile) setTargetUser(userData);
-    } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: error?.message || "Impossible de mettre à jour le profil",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSavingProfile(false);
-    }
-  };
 
   const handleCoverPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
