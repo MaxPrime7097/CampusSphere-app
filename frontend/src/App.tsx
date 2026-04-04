@@ -212,6 +212,7 @@ const App = () => (
           <Route path="/cs-inc/policies/cookiepolicy" element={<CookiePolicy />} />
           <Route path="/cs-inc/policies/datadeletion" element={<DataDeletion />} />
           <Route path="/cs-inc/waitlist" element={<Waitinglist />} />
+          <Route path="/403" element={<Forbidden />} />
 
           {/* 404 */}
           <Route path="*" element={<NotFound />} />
