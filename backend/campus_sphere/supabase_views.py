@@ -14,54 +14,86 @@ logger = logging.getLogger(__name__)
 _jwks_cache = None
 
 
-def _decode_with_secret(token: str, secret: str) -> dict | None:
-    """Tente de décoder avec HS256, essaie avec et sans vérification d'audience."""
-    # Essai 1 : avec audience "authenticated"
-    try:
-        return jwt.decode(token, secret, algorithms=["HS256"], audience="authenticated")
-    except jwt.InvalidAudienceError:
-        pass
-    except jwt.ExpiredSignatureError:
-        logger.warning("Supabase token expired")
-        return None
-    except jwt.InvalidTokenError as e:
-        logger.warning(f"HS256 decode failed (with audience): {e}")
+def _get_jwks():
+    """Récupère les clés publiques Supabase via JWKS (RS256)."""
+    global _jwks_cache
+    if _jwks_cache:
+        return _jwks_cache
 
-    # Essai 2 : sans vérification d'audience (certains projets Supabase n'ont pas d'audience)
-    try:
-        return jwt.decode(token, secret, algorithms=["HS256"], options={"verify_aud": False})
-    except jwt.ExpiredSignatureError:
-        logger.warning("Supabase token expired")
-        return None
-    except jwt.InvalidTokenError as e:
-        logger.warning(f"HS256 decode failed (without audience): {e}")
+    supabase_url = getattr(settings, "SUPABASE_URL", "").strip().rstrip("/")
+    if not supabase_url:
+        logger.error("SUPABASE_URL not configured")
         return None
 
-
-def _decode_without_verification(token: str) -> dict | None:
-    """Décode sans vérifier la signature — utilisé en dernier recours ou dev."""
     try:
-        return jwt.decode(token, options={"verify_signature": False})
+        resp = requests.get(
+            f"{supabase_url}/auth/v1/.well-known/jwks.json",
+            timeout=10
+        )
+        resp.raise_for_status()
+        _jwks_cache = resp.json()
+        logger.info(f"JWKS fetched successfully: {len(_jwks_cache.get('keys', []))} keys")
+        return _jwks_cache
     except Exception as e:
-        logger.error(f"Failed to decode token without verification: {e}")
+        logger.error(f"Failed to fetch Supabase JWKS: {e}")
         return None
 
 
 def verify_supabase_token(token: str) -> dict | None:
-    """Vérifie et décode un JWT Supabase."""
+    """
+    Vérifie un JWT Supabase.
+    Essaie RS256 via JWKS en premier (nouveaux projets),
+    puis HS256 via Legacy JWT Secret (anciens projets).
+    """
+    supabase_url = getattr(settings, "SUPABASE_URL", "").strip()
     jwt_secret = getattr(settings, "SUPABASE_JWT_SECRET", "").strip()
 
-    if jwt_secret:
-        payload = _decode_with_secret(token, jwt_secret)
-        if payload:
-            return payload
-        logger.error("SUPABASE_JWT_SECRET set but token verification failed — check the secret value")
-        return None
+    # --- Méthode 1 : RS256 via JWKS (nouveaux projets Supabase) ---
+    if supabase_url:
+        jwks = _get_jwks()
+        if jwks and jwks.get("keys"):
+            for key_data in jwks["keys"]:
+                try:
+                    public_key = jwt.algorithms.RSAAlgorithm.from_jwk(key_data)
+                    payload = jwt.decode(
+                        token,
+                        public_key,
+                        algorithms=["RS256"],
+                        options={"verify_aud": False},
+                    )
+                    logger.info(f"Token verified via RS256 JWKS for sub={payload.get('sub')}")
+                    return payload
+                except jwt.ExpiredSignatureError:
+                    logger.warning("Supabase token expired")
+                    return None
+                except jwt.InvalidTokenError:
+                    continue  # Essayer la prochaine clé
 
-    # Pas de secret configuré → log clair
+    # --- Méthode 2 : HS256 via Legacy JWT Secret (anciens projets) ---
+    if jwt_secret:
+        for verify_aud in [True, False]:
+            try:
+                options = {"verify_aud": verify_aud}
+                payload = jwt.decode(
+                    token,
+                    jwt_secret,
+                    algorithms=["HS256"],
+                    audience="authenticated" if verify_aud else None,
+                    options=options,
+                )
+                logger.info(f"Token verified via HS256 for sub={payload.get('sub')}")
+                return payload
+            except jwt.ExpiredSignatureError:
+                logger.warning("Supabase token expired")
+                return None
+            except jwt.InvalidTokenError:
+                continue
+
     logger.error(
-        "SUPABASE_JWT_SECRET is not set in environment variables. "
-        "Add it in your Render dashboard: Settings > JWT Settings > JWT Secret"
+        "Could not verify Supabase token. "
+        "Make sure SUPABASE_URL is set on Render (for RS256/JWKS). "
+        f"SUPABASE_URL={'set' if supabase_url else 'NOT SET'}, "
+        f"SUPABASE_JWT_SECRET={'set' if jwt_secret else 'NOT SET'}"
     )
     return None
 
@@ -72,26 +104,35 @@ class SupabaseTokenExchangeView(APIView):
     def post(self, request):
         supabase_token = request.data.get("supabase_token")
         if not supabase_token:
-            return Response({"detail": "supabase_token requis"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "supabase_token requis"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-        # Debug : décoder sans vérification pour voir le contenu
-        raw_payload = _decode_without_verification(supabase_token)
-        logger.info(f"Supabase token sub={raw_payload.get('sub') if raw_payload else 'N/A'}, "
-                    f"email={raw_payload.get('email') if raw_payload else 'N/A'}, "
-                    f"aud={raw_payload.get('aud') if raw_payload else 'N/A'}")
+        # Décoder sans vérification pour le debug
+        try:
+            raw = jwt.decode(supabase_token, options={"verify_signature": False})
+            logger.info(
+                f"Token header alg={jwt.get_unverified_header(supabase_token).get('alg')}, "
+                f"sub={raw.get('sub')}, email={raw.get('email')}, aud={raw.get('aud')}"
+            )
+        except Exception:
+            raw = {}
 
         payload = verify_supabase_token(supabase_token)
+
         if not payload:
-            # En développement, on peut utiliser le payload non vérifié
-            # En production, on refuse
-            debug = getattr(settings, "DEBUG", False)
-            if debug and raw_payload:
-                logger.warning("DEV MODE: using unverified Supabase token payload")
-                payload = raw_payload
+            # En dev uniquement : accepter sans vérification
+            if getattr(settings, "DEBUG", False) and raw.get("sub"):
+                logger.warning("DEV MODE: skipping Supabase token verification")
+                payload = raw
             else:
                 return Response(
-                    {"detail": "Token Supabase invalide ou expiré. Vérifiez SUPABASE_JWT_SECRET sur Render."},
-                    status=status.HTTP_401_UNAUTHORIZED
+                    {
+                        "detail": "Token Supabase invalide ou expiré.",
+                        "hint": "Vérifiez que SUPABASE_URL est bien défini sur Render (Settings > Environment).",
+                    },
+                    status=status.HTTP_401_UNAUTHORIZED,
                 )
 
         supabase_uid = payload.get("sub")
@@ -99,9 +140,12 @@ class SupabaseTokenExchangeView(APIView):
         user_metadata = payload.get("user_metadata", {})
 
         if not supabase_uid:
-            return Response({"detail": "UID Supabase manquant dans le token"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "UID Supabase manquant dans le token"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-        # Chercher par supabase_uid d'abord, puis par email
+        # Chercher par supabase_uid, puis par email
         user = User.objects.filter(supabase_uid=supabase_uid).first()
         is_new_user = False
 
@@ -114,11 +158,21 @@ class SupabaseTokenExchangeView(APIView):
         if not user:
             is_new_user = True
             full_name = user_metadata.get("full_name", "")
-            first_name = user_metadata.get("first_name") or (full_name.split(" ")[0] if full_name else "Utilisateur")
-            last_name = user_metadata.get("last_name") or (" ".join(full_name.split(" ")[1:]) if full_name else "")
-            username = user_metadata.get("username") or (email.split("@")[0] if email else f"user_{supabase_uid[:8]}")
-
-            base_username = username
+            first_name = (
+                user_metadata.get("first_name")
+                or (full_name.split(" ")[0] if full_name else "")
+                or "Utilisateur"
+            )
+            last_name = (
+                user_metadata.get("last_name")
+                or (" ".join(full_name.split(" ")[1:]) if full_name else "")
+                or first_name
+            )
+            base_username = (
+                user_metadata.get("username")
+                or (email.split("@")[0] if email else f"user_{supabase_uid[:8]}")
+            )
+            username = base_username
             counter = 1
             while User.objects.filter(username=username).exists():
                 username = f"{base_username}{counter}"
@@ -129,7 +183,7 @@ class SupabaseTokenExchangeView(APIView):
                 email=email,
                 username=username,
                 first_name=first_name,
-                last_name=last_name or first_name,
+                last_name=last_name,
                 is_active=True,
             )
             user.set_unusable_password()
