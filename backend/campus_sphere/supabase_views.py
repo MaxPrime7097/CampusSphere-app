@@ -14,17 +14,16 @@ _jwks_cache = None
 
 
 def _decode_token_unverified(token: str) -> dict:
-    """Décode sans vérification — pour extraire sub/email en fallback."""
     try:
         import jwt as pyjwt
         return pyjwt.decode(token, options={"verify_signature": False})
     except Exception as e:
-        logger.error(f"Cannot decode token at all: {e}")
+        logger.error(f"Cannot decode token: {e}")
         return {}
 
 
-def _verify_rs256(token: str) -> dict | None:
-    """Vérifie via JWKS — supporte RS256 et ES256 (nouveaux projets Supabase)."""
+def _verify_jwks(token: str) -> dict | None:
+    """Vérifie via JWKS — supporte ES256 (ECDSA) et RS256 (RSA)."""
     supabase_url = getattr(settings, "SUPABASE_URL", "").strip().rstrip("/")
     if not supabase_url:
         return None
@@ -38,6 +37,7 @@ def _verify_rs256(token: str) -> dict | None:
             )
             resp.raise_for_status()
             _jwks_cache = resp.json()
+            logger.info(f"JWKS fetched: {len(_jwks_cache.get('keys', []))} keys")
         except Exception as e:
             logger.error(f"JWKS fetch failed: {e}")
             return None
@@ -46,7 +46,7 @@ def _verify_rs256(token: str) -> dict | None:
         import jwt as pyjwt
         from jwt.algorithms import RSAAlgorithm, ECAlgorithm
     except ImportError:
-        logger.error("PyJWT not installed. Run: pip install PyJWT[crypto]")
+        logger.error("PyJWT[crypto] not installed")
         return None
 
     for key_data in _jwks_cache.get("keys", []):
@@ -70,10 +70,11 @@ def _verify_rs256(token: str) -> dict | None:
             )
             logger.info(f"Token verified via {kty}/JWKS")
             return payload
-        except pyjwt.ExpiredSignatureError:
-            logger.warning("Token expired")
-            return None
-        except pyjwt.InvalidTokenError:
+        except Exception as e:
+            import jwt as pyjwt
+            if isinstance(e, pyjwt.ExpiredSignatureError):
+                logger.warning("Token expired")
+                return None
             continue
 
     return None
@@ -103,7 +104,7 @@ def _verify_hs256(token: str) -> dict | None:
 
 
 def verify_supabase_token(token: str) -> dict | None:
-    payload = _verify_rs256(token)
+    payload = _verify_jwks(token)
     if payload:
         return payload
     payload = _verify_hs256(token)
@@ -124,11 +125,10 @@ class SupabaseTokenExchangeView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # Toujours décoder sans vérification pour avoir sub/email
             raw = _decode_token_unverified(supabase_token)
             if not raw.get("sub"):
                 return Response(
-                    {"detail": "Token illisible — format invalide"},
+                    {"detail": "Token illisible"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
@@ -150,37 +150,27 @@ class SupabaseTokenExchangeView(APIView):
                     logger.warning("DEV: using unverified payload")
                     payload = raw
                 else:
-                    supabase_url = getattr(settings, "SUPABASE_URL", "")
-                    jwt_secret = getattr(settings, "SUPABASE_JWT_SECRET", "")
                     return Response(
                         {
                             "detail": "Token Supabase invalide ou expiré",
-                            "debug": {
-                                "alg": alg,
-                                "SUPABASE_URL_set": bool(supabase_url),
-                                "SUPABASE_JWT_SECRET_set": bool(jwt_secret),
-                            }
+                            "alg": alg,
+                            "SUPABASE_URL_set": bool(getattr(settings, "SUPABASE_URL", "")),
                         },
-                        status=status.HTTP_401_UNAUTHORIZED
+                        status=status.HTTP_401_UNAUTHORIZED,
                     )
 
             supabase_uid = payload.get("sub")
             email = payload.get("email", "")
             user_metadata = payload.get("user_metadata", {}) or {}
 
-            # Chercher ou créer le user Django
             user = None
             is_new_user = False
 
-            # 1. Par supabase_uid
             try:
                 user = User.objects.filter(supabase_uid=supabase_uid).first()
             except Exception:
-                # Champ supabase_uid n'existe pas encore → migration pas appliquée
                 logger.error("supabase_uid field missing — run: python manage.py migrate")
-                user = None
 
-            # 2. Par email
             if not user and email:
                 user = User.objects.filter(email__iexact=email).first()
                 if user:
@@ -190,7 +180,6 @@ class SupabaseTokenExchangeView(APIView):
                     except Exception:
                         pass
 
-            # 3. Créer
             if not user:
                 is_new_user = True
                 full_name = user_metadata.get("full_name", "") or ""
@@ -251,6 +240,20 @@ class SupabaseTokenExchangeView(APIView):
             )
 
 
+class SupabaseCompleteProfileView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = UserUpdateSerializer(request.user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({
+            "success": True,
+            "data": UserProfileSerializer(request.user).data,
+            "message": "Profil complété avec succès",
+        }, status=status.HTTP_200_OK)
+
+
 class SupabaseDebugView(APIView):
     """GET /api/auth/supabase/debug/ — diagnostic sans auth"""
     permission_classes = [permissions.AllowAny]
@@ -259,40 +262,46 @@ class SupabaseDebugView(APIView):
         import sys
         import django
 
-        # Test PyJWT
         try:
             import jwt as pyjwt
-            jwt_version = pyjwt.__version__
             jwt_ok = True
+            jwt_version = pyjwt.__version__
         except ImportError as e:
-            jwt_version = str(e)
             jwt_ok = False
+            jwt_version = str(e)
 
-        # Test cryptography (pour RS256)
         try:
             import cryptography
-            crypto_version = cryptography.__version__
             crypto_ok = True
+            crypto_version = cryptography.__version__
         except ImportError as e:
-            crypto_version = str(e)
             crypto_ok = False
+            crypto_version = str(e)
 
-        # Test champ supabase_uid
         try:
             User.objects.filter(supabase_uid=None).count()
             uid_field_ok = True
-        except Exception as e:
+        except Exception:
             uid_field_ok = False
 
-        # Test JWKS fetch
         supabase_url = getattr(settings, "SUPABASE_URL", "").strip()
         jwks_ok = False
         jwks_error = None
+        jwks_keys = []
         if supabase_url:
             try:
-                resp = requests.get(f"{supabase_url}/auth/v1/.well-known/jwks.json", timeout=5)
+                resp = requests.get(
+                    f"{supabase_url.rstrip('/')}/auth/v1/.well-known/jwks.json",
+                    timeout=5
+                )
                 jwks_ok = resp.status_code == 200
-                jwks_error = None if jwks_ok else f"HTTP {resp.status_code}"
+                if jwks_ok:
+                    jwks_keys = [
+                        {"kty": k.get("kty"), "alg": k.get("alg"), "kid": k.get("kid")}
+                        for k in resp.json().get("keys", [])
+                    ]
+                else:
+                    jwks_error = f"HTTP {resp.status_code}"
             except Exception as e:
                 jwks_error = str(e)
 
@@ -305,16 +314,6 @@ class SupabaseDebugView(APIView):
             "SUPABASE_URL_set": bool(supabase_url),
             "SUPABASE_JWT_SECRET_set": bool(getattr(settings, "SUPABASE_JWT_SECRET", "")),
             "JWKS_reachable": jwks_ok,
+            "JWKS_keys": jwks_keys,
             "JWKS_error": jwks_error,
         })
-    permission_classes = [permissions.IsAuthenticated]
-
-    def post(self, request):
-        serializer = UserUpdateSerializer(request.user, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response({
-            "success": True,
-            "data": UserProfileSerializer(request.user).data,
-            "message": "Profil complété avec succès",
-        }, status=status.HTTP_200_OK)
