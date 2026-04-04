@@ -167,6 +167,28 @@ class ConversationReadView(APIView):
         })
 
 
+class ConversationUnreadView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        conversation = get_object_or_404(
+            Conversation,
+            pk=pk,
+            participants=request.user
+        )
+
+        ConversationReadReceipt.objects.filter(
+            conversation=conversation,
+            user=request.user
+        ).delete()
+
+        return Response({
+            'success': True,
+            'message': 'Conversation marked as unread',
+            'timestamp': timezone.now().isoformat()
+        })
+
+
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def user_conversations(request):
@@ -386,5 +408,53 @@ def remove_participant(request, pk, user_id):
     return Response({
         'success': True,
         'message': f'{user.full_name} removed from conversation',
+        'timestamp': timezone.now().isoformat()
+    })
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def leave_conversation(request, pk):
+    """Remove current user from conversation."""
+    conversation = get_object_or_404(
+        Conversation,
+        pk=pk,
+        participants=request.user
+    )
+    user = request.user
+
+    if conversation.type == 'group':
+        participants = conversation.participants.all()
+
+        if conversation.created_by == user:
+            replacement_creator = participants.exclude(id=user.id).first()
+            if replacement_creator:
+                conversation.created_by = replacement_creator
+                conversation.save(update_fields=['created_by', 'updated_at'])
+
+        conversation.participants.remove(user)
+
+        if conversation.participants.count() == 0:
+            conversation.delete()
+            return Response({
+                'success': True,
+                'message': 'Conversation deleted after leaving',
+                'timestamp': timezone.now().isoformat()
+            })
+
+        return Response({
+            'success': True,
+            'message': 'You left the conversation',
+            'timestamp': timezone.now().isoformat()
+        })
+
+    # Private: leaving removes participant, then conversation is deleted if orphaned.
+    conversation.participants.remove(user)
+    if conversation.participants.count() < 2:
+        conversation.delete()
+
+    return Response({
+        'success': True,
+        'message': 'You left the conversation',
         'timestamp': timezone.now().isoformat()
     })

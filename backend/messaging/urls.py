@@ -11,6 +11,8 @@ urlpatterns = [
     # Messages
     path('conversations/<int:pk>/messages/', views.ConversationMessagesView.as_view(), name='conversation-messages'),
     path('conversations/<int:pk>/read/', views.ConversationReadView.as_view(), name='conversation-read'),
+    path('conversations/<int:pk>/unread/', views.ConversationUnreadView.as_view(), name='conversation-unread'),
+    path('conversations/<int:pk>/leave/', views.leave_conversation, name='conversation-leave'),
 
     # Conversation management
     path('conversations/<int:pk>/participants/', views.conversation_participants, name='conversation-participants'),

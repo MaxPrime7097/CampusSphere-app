@@ -1302,6 +1302,13 @@ export async function markConversationRead(conversationId: number | string, toke
   });
 }
 
+export async function markConversationUnread(conversationId: number | string, token?: string) {
+  return apiFetch<any>(`api/conversations/${conversationId}/unread/`, {
+    method: "POST",
+    token: token || getAccessToken(),
+  });
+}
+
 export async function createPrivateConversation(userId: number | string, token?: string) {
   const response = await apiFetch<any>("api/conversations/private/create/", {
     method: "POST",
@@ -1334,6 +1341,29 @@ export async function addParticipant(conversationId: number | string, userId: nu
 
 export async function removeParticipant(conversationId: number | string, userId: number | string, token?: string) {
   return apiFetch<any>(`api/conversations/${conversationId}/participants/${userId}/remove/`, {
+    method: "DELETE",
+    token: token || getAccessToken(),
+  });
+}
+
+export async function renameConversation(conversationId: number | string, name: string, token?: string) {
+  const response = await apiFetch<any>(`api/conversations/${conversationId}/`, {
+    method: "PATCH",
+    body: { name },
+    token: token || getAccessToken(),
+  });
+  return unwrapItem<any>(response);
+}
+
+export async function leaveConversation(conversationId: number | string, token?: string) {
+  return apiFetch<any>(`api/conversations/${conversationId}/leave/`, {
+    method: "POST",
+    token: token || getAccessToken(),
+  });
+}
+
+export async function deleteConversation(conversationId: number | string, token?: string) {
+  return apiFetch<any>(`api/conversations/${conversationId}/`, {
     method: "DELETE",
     token: token || getAccessToken(),
   });
