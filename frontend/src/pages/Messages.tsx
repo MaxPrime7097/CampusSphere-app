@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { createPrivateConversation, deleteMessage, getCurrentUser, getConversationMessages, getUserConnections, getUserConversations, markConversationRead, sendMessage, updateMessage } from "@/services/api";
 import { useTranslation } from "react-i18next";
-import { Search, Send, Phone, Video, MoreVertical, MessageSquare, Loader2, Users, Plus } from "lucide-react";
+import { Search, Send, Phone, Video, EllipsisVertical, MessageSquare, Loader2, Users, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -45,6 +45,7 @@ function mapConversation(rawConv: any, currentUserId?: string) {
   return {
     id: String(conv.id),
     type: conv.type || conv.conversation_type || "private",
+    createdBy: conv.created_by || conv.createdBy || null,
     participants,
     lastMessage,
     lastMessageAt,
@@ -102,6 +103,11 @@ export function Messages() {
   const [loadingConnections, setLoadingConnections] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [participantsDialogOpen, setParticipantsDialogOpen] = useState(false);
+  const [participants, setParticipants] = useState<any[]>([]);
+  const [loadingParticipants, setLoadingParticipants] = useState(false);
+  const [pendingParticipantId, setPendingParticipantId] = useState<string | null>(null);
+  const [isUpdatingConversation, setIsUpdatingConversation] = useState(false);
 
   const messageSchema = z.object({
     content: z.string()
@@ -507,6 +513,150 @@ export function Messages() {
   };
 
   const selectedConv = conversations.find(c => c.id === conversationId);
+  const selectedParticipants = selectedConv?.participants || [];
+  const isGroupCreator =
+    selectedConv?.type === "group" && String(selectedConv?.createdBy || "") === String(currentUser?.id || "");
+  const canRenameGroup = Boolean(selectedConv?.type === "group" && isGroupCreator);
+  const canDeleteConversation = Boolean(selectedConv?.type === "group" && isGroupCreator);
+
+  const openParticipantsDialog = async () => {
+    if (!conversationId) return;
+    setParticipantsDialogOpen(true);
+    setLoadingParticipants(true);
+    try {
+      const data = await getConversationParticipants(conversationId);
+      setParticipants(unwrapApiData(data) || []);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Participants indisponibles",
+        description: error?.message || "Impossible de récupérer les participants de cette conversation.",
+      });
+    } finally {
+      setLoadingParticipants(false);
+    }
+  };
+
+  const handleRenameGroup = async () => {
+    if (!conversationId || !selectedConv) return;
+    const newName = window.prompt("Nouveau nom du groupe", selectedConv.name || "");
+    if (!newName) return;
+    if (!newName.trim()) {
+      toast({ variant: "destructive", title: "Nom invalide", description: "Le nom du groupe est vide." });
+      return;
+    }
+    setIsUpdatingConversation(true);
+    try {
+      await renameConversation(conversationId, newName.trim());
+      setConversations((prev) => prev.map((conv) => (conv.id === conversationId ? { ...conv, name: newName.trim() } : conv)));
+      toast({ title: "Groupe renommé", description: `Nouveau nom : ${newName.trim()}.` });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Renommage refusé",
+        description: error?.message || "Vous n'avez pas le droit de renommer ce groupe.",
+      });
+    } finally {
+      setIsUpdatingConversation(false);
+    }
+  };
+
+  const handleAddMember = async (userId: string) => {
+    if (!conversationId) return;
+    setPendingParticipantId(userId);
+    try {
+      await addParticipant(conversationId, userId);
+      const data = await getConversationParticipants(conversationId);
+      const updatedParticipants = unwrapApiData(data) || [];
+      setParticipants(updatedParticipants);
+      setConversations((prev) => prev.map((conv) => (conv.id === conversationId ? { ...conv, participants: updatedParticipants } : conv)));
+      toast({ title: "Membre ajouté", description: "Le membre a été ajouté à la conversation." });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Ajout impossible",
+        description: error?.message || "Impossible d'ajouter ce membre.",
+      });
+    } finally {
+      setPendingParticipantId(null);
+    }
+  };
+
+  const handleRemoveMember = async (userId: string, displayName: string) => {
+    if (!conversationId) return;
+    setPendingParticipantId(userId);
+    try {
+      await removeParticipant(conversationId, userId);
+      const updatedParticipants = participants.filter((participant: any) => String(participant.id) !== String(userId));
+      setParticipants(updatedParticipants);
+      setConversations((prev) => prev.map((conv) => (conv.id === conversationId ? { ...conv, participants: updatedParticipants } : conv)));
+      toast({ title: "Membre retiré", description: `${displayName} a été retiré du groupe.` });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Retrait impossible",
+        description: error?.message || `Impossible de retirer ${displayName}.`,
+      });
+    } finally {
+      setPendingParticipantId(null);
+    }
+  };
+
+  const handleMarkUnread = async () => {
+    if (!conversationId || !selectedConv) return;
+    try {
+      await markConversationUnread(conversationId);
+      setConversations((prev) => prev.map((conv) => (conv.id === conversationId ? { ...conv, unread: Math.max(1, conv.unread || 0) } : conv)));
+      toast({ title: "Non lu", description: `« ${selectedConv.name} » est marquée comme non lue.` });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Marquage impossible",
+        description: error?.message || "Impossible de marquer cette conversation en non lu.",
+      });
+    }
+  };
+
+  const handleLeaveSelectedConversation = async () => {
+    if (!conversationId || !selectedConv) return;
+    if (!window.confirm(`Quitter « ${selectedConv.name} » ?`)) return;
+    setIsUpdatingConversation(true);
+    try {
+      await leaveConversation(conversationId);
+      setConversations((prev) => prev.filter((conv) => conv.id !== conversationId));
+      navigate("/messages");
+      toast({ title: "Conversation quittée", description: `Vous avez quitté « ${selectedConv.name} ».` });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Impossible de quitter",
+        description: error?.message || "Vous ne pouvez pas quitter cette conversation actuellement.",
+      });
+    } finally {
+      setIsUpdatingConversation(false);
+    }
+  };
+
+  const handleDeleteSelectedConversation = async () => {
+    if (!conversationId || !selectedConv) return;
+    if (!window.confirm(`Supprimer définitivement « ${selectedConv.name} » ?`)) return;
+    setIsUpdatingConversation(true);
+    try {
+      await deleteConversation(conversationId);
+      setConversations((prev) => prev.filter((conv) => conv.id !== conversationId));
+      navigate("/messages");
+      toast({ title: "Conversation supprimée", description: `« ${selectedConv.name} » a été supprimée.` });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Suppression refusée",
+        description: error?.message || "Vous n'avez pas les droits de suppression sur cette conversation.",
+      });
+    } finally {
+      setIsUpdatingConversation(false);
+    }
+  };
+
   const filteredConnections = connections.filter((contact) => {
     const query = connectionSearch.toLowerCase().trim();
     if (!query) return true;
@@ -717,30 +867,27 @@ export function Messages() {
                         className="h-8 w-8 p-0 md:h-9 md:w-9"
                         aria-label="More options"
                       >
-                        <MoreVertical className="h-4 w-4" />
+                        <EllipsisVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onClick={() =>
-                          handleProfileNavigation(
-                            selectedConv?.participants?.[0]?.username,
-                            selectedConv?.name
-                          )
-                        }
-                        disabled={!selectedConv?.participants?.[0]?.username}
-                      >
-                        Voir le profil
+                      <DropdownMenuItem onClick={openParticipantsDialog}>Voir les participants</DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleRenameGroup} disabled={!canRenameGroup || isUpdatingConversation}>
+                        Renommer groupe
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={openParticipantsDialog} disabled={selectedConv?.type !== "group"}>
+                        Ajouter/retirer membres
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleMarkUnread}>Marquer non lu</DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleLeaveSelectedConversation} disabled={isUpdatingConversation}>
+                        Quitter conversation
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => {
-                          if (conversationId) {
-                            handleMarkAsRead(conversationId);
-                            toast({ title: "Conversation marquée comme lue", duration: 2000 });
-                          }
-                        }}
+                        onClick={handleDeleteSelectedConversation}
+                        disabled={!canDeleteConversation || isUpdatingConversation}
+                        className="text-destructive focus:text-destructive"
                       >
-                        Marquer comme lu
+                        Supprimer conversation
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -935,6 +1082,66 @@ export function Messages() {
               )}
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={participantsDialogOpen} onOpenChange={setParticipantsDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Participants de la conversation</DialogTitle>
+          </DialogHeader>
+          {loadingParticipants ? (
+            <p className="text-sm text-muted-foreground py-4">Chargement des participants...</p>
+          ) : (
+            <div className="space-y-4">
+              <div className="space-y-2 max-h-56 overflow-y-auto">
+                {(participants.length > 0 ? participants : selectedParticipants).map((participant: any) => {
+                  const displayName = participant.full_name || participant.name || participant.username || "Utilisateur";
+                  const isCurrent = String(participant.id) === String(currentUser?.id || "");
+                  return (
+                    <div key={participant.id} className="flex items-center justify-between border rounded-md p-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{displayName}</p>
+                        <p className="text-xs text-muted-foreground truncate">@{participant.username || "utilisateur"}</p>
+                      </div>
+                      {isGroupCreator && !isCurrent && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleRemoveMember(String(participant.id), displayName)}
+                          disabled={pendingParticipantId === String(participant.id)}
+                        >
+                          Retirer
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {selectedConv?.type === "group" && (
+                <div className="border-t pt-3 space-y-2">
+                  <p className="text-sm font-medium">Ajouter un membre</p>
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {filteredConnections
+                      .filter((contact) => !(participants.length > 0 ? participants : selectedParticipants).some((p: any) => String(p.id) === String(contact.id)))
+                      .map((contact) => (
+                        <div key={contact.id} className="flex items-center justify-between">
+                          <span className="text-sm truncate">{contact.name}</span>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => handleAddMember(String(contact.id))}
+                            disabled={!isGroupCreator || pendingParticipantId === String(contact.id)}
+                          >
+                            Ajouter
+                          </Button>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

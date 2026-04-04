@@ -1360,6 +1360,29 @@ export async function removeParticipant(conversationId: number | string, userId:
   });
 }
 
+export async function renameConversation(conversationId: number | string, name: string, token?: string) {
+  const response = await apiFetch<any>(`api/conversations/${conversationId}/`, {
+    method: "PATCH",
+    body: { name },
+    token: token || getAccessToken(),
+  });
+  return unwrapItem<any>(response);
+}
+
+export async function leaveConversation(conversationId: number | string, token?: string) {
+  return apiFetch<any>(`api/conversations/${conversationId}/leave/`, {
+    method: "POST",
+    token: token || getAccessToken(),
+  });
+}
+
+export async function deleteConversation(conversationId: number | string, token?: string) {
+  return apiFetch<any>(`api/conversations/${conversationId}/`, {
+    method: "DELETE",
+    token: token || getAccessToken(),
+  });
+}
+
 // ============================================================================
 // NOTIFICATIONS
 // ============================================================================
