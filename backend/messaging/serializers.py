@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.utils import timezone
+from users.models import User
 from .models import Conversation, Message, ConversationReadReceipt
 from .errors import business_validation_error
 
