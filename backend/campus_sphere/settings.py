@@ -443,7 +443,7 @@ CELERY_BEAT_SCHEDULE = {
 # Static Files
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'storages.backends.s3boto3.S3StaticStorage'
+# STATICFILES_STORAGE géré par le bloc USE_S3 ci-dessus
 
 # Logging Configuration
 LOGGING = {
