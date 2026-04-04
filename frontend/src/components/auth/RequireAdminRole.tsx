@@ -9,6 +9,7 @@ interface RequireAdminRoleProps {
 }
 
 export function RequireAdminRole({ action = "view", children }: RequireAdminRoleProps) {
+  const hasToken = Boolean(localStorage.getItem("access"));
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [backendPermissions, setBackendPermissions] = useState<ApiAdminPermissions | null>(null);
@@ -16,11 +17,23 @@ export function RequireAdminRole({ action = "view", children }: RequireAdminRole
   useEffect(() => {
     let mounted = true;
 
+    if (!hasToken) {
+      setIsLoading(false);
+      return () => {
+        mounted = false;
+      };
+    }
+
     (async () => {
       try {
         const me = await getCurrentUser();
         if (!mounted) return;
         setUser(me);
+
+        if (!canAdmin(me, action)) {
+          return;
+        }
+
         try {
           const permissionPayload = await getAdminPermissionsFromApi();
           if (mounted) {
@@ -39,11 +52,11 @@ export function RequireAdminRole({ action = "view", children }: RequireAdminRole
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [action, hasToken]);
 
   const allowed = useMemo(() => canAdmin(user, action, backendPermissions), [user, action, backendPermissions]);
 
-  if (!localStorage.getItem("access")) {
+  if (!hasToken) {
     return <Navigate to="/login" replace />;
   }
 
@@ -52,7 +65,7 @@ export function RequireAdminRole({ action = "view", children }: RequireAdminRole
   }
 
   if (!allowed) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/403" replace />;
   }
 
   return <>{children}</>;

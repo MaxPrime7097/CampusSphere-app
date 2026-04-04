@@ -29,9 +29,7 @@ export function AdminDashboard() {
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [isLoadingModeration, setIsLoadingModeration] = useState(true);
   const [isLoadingReports, setIsLoadingReports] = useState(true);
-  const [statsError, setStatsError] = useState<string | null>(null);
-  const [moderationError, setModerationError] = useState<string | null>(null);
-  const [reportsError, setReportsError] = useState<string | null>(null);
+  const [adminError, setAdminError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [adminPermissions, setAdminPermissions] = useState<AdminPermissions | null>(null);
 
@@ -73,11 +71,11 @@ export function AdminDashboard() {
     (async () => {
       try {
         setIsLoadingStats(true);
-        setStatsError(null);
+        setAdminError(null);
         const summary = await getAdminUserManagementSummary();
         if (isMounted) setStats(summary);
       } catch (error: any) {
-        if (isMounted) setStatsError(error?.message || "Impossible de charger les statistiques admin.");
+        if (isMounted) setAdminError(error?.message || "Impossible de charger les données administrateur.");
       } finally {
         if (isMounted) setIsLoadingStats(false);
       }
@@ -86,11 +84,10 @@ export function AdminDashboard() {
     (async () => {
       try {
         setIsLoadingModeration(true);
-        setModerationError(null);
         const queue = await getAdminModerationQueue();
         if (isMounted) setPendingResources(queue);
       } catch (error: any) {
-        if (isMounted) setModerationError(error?.message || "Impossible de charger la file de modération.");
+        if (isMounted) setAdminError((prev) => prev ?? (error?.message || "Impossible de charger les données administrateur."));
       } finally {
         if (isMounted) setIsLoadingModeration(false);
       }
@@ -99,11 +96,10 @@ export function AdminDashboard() {
     (async () => {
       try {
         setIsLoadingReports(true);
-        setReportsError(null);
         const reports = await getAdminReportedContent();
         if (isMounted) setReportedContent(reports);
       } catch (error: any) {
-        if (isMounted) setReportsError(error?.message || "Impossible de charger les contenus signalés.");
+        if (isMounted) setAdminError((prev) => prev ?? (error?.message || "Impossible de charger les données administrateur."));
       } finally {
         if (isMounted) setIsLoadingReports(false);
       }
@@ -176,9 +172,9 @@ export function AdminDashboard() {
           ))}
         </div>
 
-        {statsError && (
+        {adminError && (
           <Card className="campus-card border-destructive/40 mb-6">
-            <CardContent className="py-4 text-sm text-destructive">{statsError}</CardContent>
+            <CardContent className="py-4 text-sm text-destructive">{adminError}</CardContent>
           </Card>
         )}
 
@@ -200,8 +196,6 @@ export function AdminDashboard() {
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Chargement de la file de modération...
                   </div>
-                ) : moderationError ? (
-                  <div className="py-4 text-sm text-destructive">{moderationError}</div>
                 ) : filteredPendingResources.length === 0 ? (
                   <div className="py-8 text-sm text-muted-foreground">Aucune ressource en attente de modération.</div>
                 ) : (
@@ -260,8 +254,6 @@ export function AdminDashboard() {
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Chargement des signalements...
                   </div>
-                ) : reportsError ? (
-                  <div className="py-4 text-sm text-destructive">{reportsError}</div>
                 ) : filteredReportedContent.length === 0 ? (
                   <div className="py-8 text-sm text-muted-foreground">Aucun contenu signalé pour le moment.</div>
                 ) : (

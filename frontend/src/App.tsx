@@ -37,6 +37,7 @@ import { DataDeletion } from "./pages/public/DataDeletion";
 import { Waitinglist } from "./pages/public/Waitinglist";
 import { Policies } from "./pages/public/Policies";
 import { RequireAdminRole } from "./components/auth/RequireAdminRole";
+import Forbidden from "./pages/public/Forbidden";
 
 
 const queryClient = new QueryClient();
@@ -174,7 +175,13 @@ const App = () => (
           } />
 
           {/* Admin routes */}
-          <Route path="/cs-inc/private/admin" element={<AdminDashboard />} />
+          <Route path="/cs-inc/private/admin" element={
+            <Protected>
+              <RequireAdminRole>
+                <AdminDashboard />
+              </RequireAdminRole>
+            </Protected>
+          } />
         
           {/* Public pages */}
           <Route path="/cs-inc" element={<Landing />} />
@@ -189,6 +196,7 @@ const App = () => (
           <Route path="/cs-inc/policies/cookiepolicy" element={<CookiePolicy />} />
           <Route path="/cs-inc/policies/datadeletion" element={<DataDeletion />} />
           <Route path="/cs-inc/waitlist" element={<Waitinglist />} />
+          <Route path="/403" element={<Forbidden />} />
 
           {/* 404 */}
           <Route path="*" element={<NotFound />} />
