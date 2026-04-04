@@ -193,6 +193,19 @@
     box-shadow: var(--shadow-medium);
     transform: translateY(-2px);
   }
+
+  /* Mobile full-width card — bord à bord, sans arrondi, sans ombre, collées */
+  @media (max-width: 639px) {
+    .mobile-card {
+      border-radius: 0 !important;
+      border-left: none !important;
+      border-right: none !important;
+      border-top: none !important;
+      box-shadow: none !important;
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+    }
+  }
   
   .campus-glass {
     background: var(--gradient-glass);

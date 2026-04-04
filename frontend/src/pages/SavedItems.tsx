@@ -120,14 +120,7 @@ export function SavedItems() {
 
           <TabsContent value="posts" className="space-y-4">
             {loading ? (
-              <Card className="campus-card">
-                <CardContent className="p-8 text-center">
-                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">Chargement...</p>
-                </CardContent>
-              </Card>
-            ) : savedPosts.length === 0 ? (
-              <Card className="campus-card">
+              <Card className="campus-card mobile-card">
                 <CardContent className="p-8 text-center text-muted-foreground">
                   Aucun post enregistré
                 </CardContent>
@@ -149,14 +142,14 @@ export function SavedItems() {
 
           <TabsContent value="resources">
             {loading ? (
-              <Card className="campus-card">
+              <Card className="campus-card mobile-card">
                 <CardContent className="p-8 text-center">
                   <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
                   <p className="text-muted-foreground">Chargement...</p>
                 </CardContent>
               </Card>
             ) : savedResources.length === 0 ? (
-              <Card className="campus-card">
+              <Card className="campus-card mobile-card">
                 <CardContent className="p-8 text-center text-muted-foreground">
                   Aucune ressource enregistrée
                 </CardContent>
@@ -164,7 +157,7 @@ export function SavedItems() {
             ) : (
               <div className="space-y-4">
                 {savedResources.map((resource) => (
-                  <Card key={resource.id} className="campus-card">
+                  <Card key={resource.id} className="campus-card mobile-card">
                     <CardContent className="p-4">
                       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
                         <div>

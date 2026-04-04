@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Heart, MessageCircle, Share, Bookmark, MoreVertical, Zap, Copy, Flag, ExternalLink, Users, Plus, Minus, X, Pencil, Trash2, Loader2, FileText, Download } from "lucide-react";
+import { Heart, MessageCircle, Share, Bookmark, MoreVertical, Zap, Copy, Flag, ExternalLink, Users, Plus, Minus, X, Pencil, Trash2, Loader2, FileText, Download, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -86,6 +86,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
   const [editingContent, setEditingContent] = useState(post.content);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [isDeleted, setIsDeleted] = useState(false);
 
   useEffect(() => {
@@ -454,41 +455,62 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
           
           {attachments.length > 0 && (
             <div className="space-y-0">
-              {imageAttachments.length > 0 && (
-                <div className={cn(
-                  isMobile ? "-mx-4" : "",
-                  "grid gap-0.5",
-                  imageAttachments.length > 1 ? "grid-cols-2" : "grid-cols-1"
-                )}>
-                  {imageAttachments.map((file) => (
-                    <div key={file.id ?? file.url} className={cn("overflow-hidden relative", !isMobile && "rounded-lg")}>
-                      <img
-                        src={file.url}
-                        alt={file.name || "Post attachment"}
-                        className="w-full h-auto object-contain hover:scale-105 transition-transform duration-300 cursor-pointer"
-                        onDoubleClick={handleImageDoubleClick}
-                      />
-                      {isLiked && (
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                          <Heart className="h-16 w-16 text-red-500 fill-current animate-ping" />
+              {imageAttachments.length > 0 && (() => {
+                const visible = imageAttachments.slice(0, 4);
+                const extra = imageAttachments.length - 4;
+                const count = visible.length;
+                const gridClass =
+                  count === 1 ? "grid-cols-1" :
+                  count === 2 ? "grid-cols-2" :
+                  count === 3 ? "grid-cols-2" :
+                  "grid-cols-2";
+                return (
+                  <div className={cn(isMobile ? "-mx-4" : "", "grid gap-0.5", gridClass)}>
+                    {visible.map((file, i) => {
+                      const isLast = i === 3 && extra > 0;
+                      const spanFull = count === 3 && i === 0;
+                      return (
+                        <div
+                          key={file.id ?? file.url}
+                          className={cn(
+                            "relative overflow-hidden cursor-pointer",
+                            !isMobile && i === 0 && "rounded-tl-lg",
+                            !isMobile && i === 1 && count <= 2 && "rounded-tr-lg",
+                            !isMobile && i === count - 1 && count <= 2 && "rounded-br-lg",
+                            !isMobile && i === count - 2 && count <= 2 && "rounded-bl-lg",
+                            spanFull && "col-span-2",
+                            spanFull ? "aspect-video" : "aspect-square"
+                          )}
+                          onClick={() => setLightboxIndex(i)}
+                        >
+                          <img
+                            src={file.url}
+                            alt={file.name || "media"}
+                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                            onDoubleClick={handleImageDoubleClick}
+                          />
+                          {isLast && (
+                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                              <span className="text-white text-2xl font-bold">+{extra + 1}</span>
+                            </div>
+                          )}
+                          {isLiked && i === 0 && (
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                              <Heart className="h-16 w-16 text-red-500 fill-current animate-ping" />
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+                      );
+                    })}
+                  </div>
+                );
+              })()}
 
               {videoAttachments.length > 0 && (
                 <div className="space-y-2">
                   {videoAttachments.map((file) => (
                     <div key={file.id ?? file.url} className={cn("overflow-hidden bg-muted", isMobile ? "-mx-4" : "rounded-lg")}>
-                      <video
-                        src={file.url}
-                        controls
-                        preload="metadata"
-                        className="w-full"
-                        onClick={(event) => event.stopPropagation()}
-                      />
+                      <video src={file.url} controls preload="metadata" className="w-full" onClick={(e) => e.stopPropagation()} />
                     </div>
                   ))}
                 </div>
@@ -497,31 +519,20 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
               {documentAttachments.length > 0 && (
                 <div className="space-y-2">
                   {documentAttachments.map((file) => (
-                    <div
-                      key={file.id ?? file.url}
-                      className="flex items-center justify-between gap-3 rounded-lg border bg-muted/40 px-3 py-2"
-                    >
+                    <div key={file.id ?? file.url} className="flex items-center justify-between gap-3 rounded-lg border bg-muted/40 px-3 py-2">
                       <div className="min-w-0 flex items-center gap-2">
                         <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
                         <div className="min-w-0">
                           <p className="truncate text-sm font-medium">{file.name}</p>
-                          {file.size > 0 && (
-                            <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
-                          )}
+                          {file.size > 0 && <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>}
                         </div>
                       </div>
-                      <div className="flex items-center gap-1" onClick={(event) => event.stopPropagation()}>
+                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                         <Button variant="ghost" size="sm" asChild>
-                          <a href={file.url} target="_blank" rel="noopener noreferrer">
-                            <ExternalLink className="h-4 w-4 mr-1" />
-                            Ouvrir
-                          </a>
+                          <a href={file.url} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4 mr-1" />Ouvrir</a>
                         </Button>
                         <Button variant="ghost" size="sm" asChild>
-                          <a href={file.url} download={file.name}>
-                            <Download className="h-4 w-4 mr-1" />
-                            Télécharger
-                          </a>
+                          <a href={file.url} download={file.name}><Download className="h-4 w-4 mr-1" />Télécharger</a>
                         </Button>
                       </div>
                     </div>
@@ -602,6 +613,42 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
       onOpenChange={setCommentsOpen}
       postId={post.id}
     />
+
+    {/* Lightbox */}
+    {lightboxIndex !== null && (
+      <Dialog open onOpenChange={() => setLightboxIndex(null)}>
+        <DialogContent className="max-w-screen-lg w-full p-0 bg-black border-0">
+          <div className="relative flex items-center justify-center min-h-[60vh]">
+            <img
+              src={imageAttachments[lightboxIndex]?.url}
+              alt={imageAttachments[lightboxIndex]?.name || "media"}
+              className="max-h-[85vh] max-w-full object-contain"
+            />
+            {imageAttachments.length > 1 && (
+              <>
+                <button
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/80 text-white rounded-full p-2"
+                  onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex - 1 + imageAttachments.length) % imageAttachments.length); }}
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+                <button
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/80 text-white rounded-full p-2"
+                  onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex + 1) % imageAttachments.length); }}
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </button>
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                  {imageAttachments.map((_, i) => (
+                    <button key={i} onClick={() => setLightboxIndex(i)} className={cn("w-2 h-2 rounded-full", i === lightboxIndex ? "bg-white" : "bg-white/40")} />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    )}
 
     {/* Modal de partage */}
     <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>

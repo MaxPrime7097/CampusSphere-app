@@ -316,7 +316,7 @@ export function Connections() {
           <TabsContent value="all" className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {filteredConnections.map((connection) => (
-                <Card key={connection.id} className="campus-card">
+                <Card key={connection.id} className="campus-card mobile-card">
                   <CardContent className="p-6">
                     <div className="flex flex-col items-center text-center space-y-4">
                       <Avatar className="h-20 w-20">
@@ -378,7 +378,7 @@ export function Connections() {
           <TabsContent value="suggestions" className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {filteredSuggestions.map((suggestion) => (
-                <Card key={suggestion.id} className="campus-card">
+                <Card key={suggestion.id} className="campus-card mobile-card">
                   <CardContent className="p-6">
                     <div className="flex flex-col items-center text-center space-y-4">
                       <Avatar className="h-20 w-20">

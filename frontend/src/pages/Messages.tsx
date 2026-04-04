@@ -1001,7 +1001,7 @@ export function Messages() {
             </div>
 
             {/* Message Input */}
-            <div className="fixed bottom-0 left-0 right-0 p-3 md:p-4 border-t bg-card/50 flex-shrink-0">
+            <div className="fixed bottom-0 left-0 right-0 md:relative md:bottom-auto md:left-auto md:right-auto p-3 md:p-4 border-t bg-card/50 flex-shrink-0">
               <div className="flex gap-2">
                 <Input
                   placeholder={t('messages.typeMessage')}

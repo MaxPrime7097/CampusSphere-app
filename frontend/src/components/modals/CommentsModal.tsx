@@ -542,7 +542,11 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
         </DialogHeader>
         
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-          {comments.map((comment) => renderComment(comment))}
+          {comments.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">Soyez le premier à commenter!</p>
+          ) : (
+            comments.map((comment) => renderComment(comment))
+          )}
         </div>
 
         <div className="border-t p-4">

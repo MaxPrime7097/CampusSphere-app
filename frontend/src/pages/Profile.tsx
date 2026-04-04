@@ -781,7 +781,7 @@ export function Profile() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
         <div className="container max-w-4xl mx-auto py-6 px-4">
-          <Card className="campus-card">
+          <Card className="campus-card mobile-card">
             <CardHeader>
               <CardTitle>Erreur de chargement</CardTitle>
             </CardHeader>
@@ -1013,7 +1013,7 @@ export function Profile() {
                 <div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {userConnections.map((connection) => (
-                      <Card key={connection.id} className="campus-card cursor-pointer hover:campus-glow transition-all">
+                      <Card key={connection.id} className="campus-card mobile-card cursor-pointer hover:campus-glow transition-all">
                         <CardContent className="p-4">
                           <div className="flex items-center gap-3">
                             <Avatar className="h-12 w-12">
