@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { listNotifications, markNotificationRead, markAllNotificationsRead, deleteNotification as deleteNotificationApi } from "@/services/api";
+import { getUser, listNotifications, markNotificationRead, markAllNotificationsRead, deleteNotification as deleteNotificationApi } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
@@ -15,7 +15,8 @@ import {
   Loader2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { CanonicalNotificationType, NOTIFICATION_TYPE_SET } from "@/constants/notificationTypes";
+import { CanonicalNotificationType } from "@/constants/notificationTypes";
+import { buildActionUrl, normalizeNotificationData, resolveConnectionProfileUrl, toCanonicalType } from "@/lib/notifications";
 
 
 type NotificationListItem = {
@@ -30,70 +31,8 @@ type NotificationListItem = {
     avatar: string | null;
     id: string | null;
   };
-  actionUrl: string | null;
-};
-
-const debugFallbackType = (rawType: unknown, notificationId: unknown) => {
-  console.debug("[Notifications] Unknown notification type, fallback to system", {
-    notificationId,
-    rawType,
-  });
-};
-
-const LEGACY_TYPE_MAP: Record<string, CanonicalNotificationType> = {
-  sphere_invite: "sphere_invitation",
-  task: "task_assigned",
-  resource: "resource_shared",
-  message_received: "message",
-};
-
-const toCanonicalType = (rawType: unknown, notificationId: unknown): CanonicalNotificationType => {
-  if (typeof rawType === "string" && NOTIFICATION_TYPE_SET.has(rawType)) {
-    return rawType as CanonicalNotificationType;
-  }
-
-  if (typeof rawType === "string" && LEGACY_TYPE_MAP[rawType]) {
-    return LEGACY_TYPE_MAP[rawType];
-  }
-
-  debugFallbackType(rawType, notificationId);
-  return "system";
-};
-
-type NormalizedNotificationData = {
-  postId: string | null;
   profileUsername: string | null;
-  sphereId: string | null;
-  taskId: string | null;
-  resourceId: string | null;
-  conversationId: string | null;
-};
-
-const toNullableString = (value: unknown): string | null => {
-  if (typeof value === "string" && value.trim().length > 0) {
-    return value;
-  }
-  if (typeof value === "number") {
-    return String(value);
-  }
-  return null;
-};
-
-const normalizeNotificationData = (n: any): NormalizedNotificationData => {
-  const data = n?.data;
-  const sender = n?.sender;
-
-  return {
-    postId: toNullableString(data?.post_id) || toNullableString(data?.post) || toNullableString(data?.postId),
-    profileUsername:
-      toNullableString(data?.requester_username) ||
-      toNullableString(data?.username) ||
-      toNullableString(sender?.id),
-    sphereId: toNullableString(data?.sphere_id) || toNullableString(data?.sphereId),
-    taskId: toNullableString(data?.task_id) || toNullableString(data?.taskId),
-    resourceId: toNullableString(data?.resource_id) || toNullableString(data?.resourceId),
-    conversationId: toNullableString(data?.conversation_id) || toNullableString(data?.conversationId),
-  };
+  actionUrl: string | null;
 };
 
 const CLICKABLE_NOTIFICATION_TYPES = new Set<CanonicalNotificationType>([
@@ -109,31 +48,6 @@ const CLICKABLE_NOTIFICATION_TYPES = new Set<CanonicalNotificationType>([
   "connection_accepted",
   "message",
 ]);
-
-const buildActionUrl = (type: CanonicalNotificationType, data: NormalizedNotificationData): string | null => {
-  switch (type) {
-    case "post_like":
-    case "post_comment":
-    case "comment_reply":
-      return data.postId ? `/posts/${data.postId}` : null;
-    case "sphere_invitation":
-    case "sphere_join_request":
-      return data.sphereId ? `/spheres/${data.sphereId}` : null;
-    case "task_assigned":
-    case "task_completed":
-      return data.taskId ? `/tasks/${data.taskId}` : null;
-    case "resource_shared":
-      return data.resourceId ? `/resources/${data.resourceId}` : null;
-    case "connection_request":
-    case "connection_accepted":
-      return data.profileUsername ? `/profile/${data.profileUsername}` : null;
-    case "message":
-      return data.conversationId ? `/messages/${data.conversationId}` : "/messages";
-    case "system":
-    default:
-      return null;
-  }
-};
 
 export function Notifications() {
   const [notifications, setNotifications] = useState<NotificationListItem[]>([]);
@@ -163,7 +77,7 @@ export function Notifications() {
               null;
             const senderAvatar = n.sender?.avatar || n.data?.sender_avatar || null;
 
-            const notificationType = toCanonicalType(n.notification_type || n.type, n.id);
+            const notificationType = toCanonicalType(n.notification_type || n.type);
             const normalizedData = normalizeNotificationData(n);
             const actionUrl = buildActionUrl(notificationType, normalizedData);
             if (!actionUrl && CLICKABLE_NOTIFICATION_TYPES.has(notificationType)) {
@@ -185,8 +99,9 @@ export function Notifications() {
               sender: {
                 name: senderName,
                 avatar: senderAvatar,
-                id: n.data?.sender_id || n.data?.user_id || n.data?.requester_id || n.data?.assigner_id || n.data?.inviter_id || null,
+                id: normalizedData.senderId,
               },
+              profileUsername: normalizedData.profileUsername,
               actionUrl,
             };
           });
@@ -289,14 +204,38 @@ export function Notifications() {
     }
   };
 
-  const handleNotificationClick = async (notification: any) => {
+  const getUsernameById = async (senderId: string): Promise<string | null> => {
+    try {
+      const user = await getUser(senderId);
+      const username = typeof user?.username === "string" ? user.username.trim() : "";
+      return username || null;
+    } catch {
+      return null;
+    }
+  };
+
+
+  const handleNotificationClick = async (notification: NotificationListItem) => {
     if (!notification.read) {
       await markAsRead(notification.id);
     }
 
     if (notification.actionUrl) {
       navigate(notification.actionUrl);
+      return;
     }
+
+    if (notification.type === "connection_request" || notification.type === "connection_accepted") {
+      const profileUrl = await resolveConnectionProfileUrl(
+        notification.profileUsername,
+        notification.sender?.id || null,
+        getUsernameById
+      );
+      navigate(profileUrl || "/notifications");
+      return;
+    }
+
+    navigate("/notifications");
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
