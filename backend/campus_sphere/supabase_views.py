@@ -240,7 +240,62 @@ class SupabaseTokenExchangeView(APIView):
             )
 
 
-class SupabaseCompleteProfileView(APIView):
+class SupabaseDebugView(APIView):
+    """GET /api/auth/supabase/debug/ — diagnostic sans auth"""
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        import sys
+        import django
+
+        # Test PyJWT
+        try:
+            import jwt as pyjwt
+            jwt_version = pyjwt.__version__
+            jwt_ok = True
+        except ImportError as e:
+            jwt_version = str(e)
+            jwt_ok = False
+
+        # Test cryptography (pour RS256)
+        try:
+            import cryptography
+            crypto_version = cryptography.__version__
+            crypto_ok = True
+        except ImportError as e:
+            crypto_version = str(e)
+            crypto_ok = False
+
+        # Test champ supabase_uid
+        try:
+            User.objects.filter(supabase_uid=None).count()
+            uid_field_ok = True
+        except Exception as e:
+            uid_field_ok = False
+
+        # Test JWKS fetch
+        supabase_url = getattr(settings, "SUPABASE_URL", "").strip()
+        jwks_ok = False
+        jwks_error = None
+        if supabase_url:
+            try:
+                resp = requests.get(f"{supabase_url}/auth/v1/.well-known/jwks.json", timeout=5)
+                jwks_ok = resp.status_code == 200
+                jwks_error = None if jwks_ok else f"HTTP {resp.status_code}"
+            except Exception as e:
+                jwks_error = str(e)
+
+        return Response({
+            "django": django.__version__,
+            "python": sys.version,
+            "PyJWT": {"ok": jwt_ok, "version": jwt_version},
+            "cryptography": {"ok": crypto_ok, "version": crypto_version},
+            "supabase_uid_field": uid_field_ok,
+            "SUPABASE_URL_set": bool(supabase_url),
+            "SUPABASE_JWT_SECRET_set": bool(getattr(settings, "SUPABASE_JWT_SECRET", "")),
+            "JWKS_reachable": jwks_ok,
+            "JWKS_error": jwks_error,
+        })
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
