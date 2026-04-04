@@ -4,37 +4,37 @@ export const ADMIN_NAVIGATION: AdminNavigationItem[] = [
   {
     key: "dashboard",
     label: "Dashboard",
-    to: "/cs-inc/private/admin/dashboard",
+    to: "/admin/dashboard",
     description: "Vue globale",
   },
   {
     key: "users",
     label: "Utilisateurs",
-    to: "/cs-inc/private/admin/users",
+    to: "/admin/users",
     description: "Gestion des comptes",
   },
   {
     key: "spheres",
     label: "Sphères",
-    to: "/cs-inc/private/admin/spheres",
+    to: "/admin/spheres",
     description: "Communautés",
   },
   {
     key: "moderation",
     label: "Modération contenu",
-    to: "/cs-inc/private/admin/moderation",
+    to: "/admin/moderation",
     description: "Signalements",
   },
   {
     key: "resources",
     label: "Ressources",
-    to: "/cs-inc/private/admin/resources",
+    to: "/admin/resources",
     description: "Validation",
   },
   {
     key: "logs",
     label: "Logs / Activité",
-    to: "/cs-inc/private/admin/logs",
+    to: "/admin/logs",
     description: "Historique système",
   },
 ];

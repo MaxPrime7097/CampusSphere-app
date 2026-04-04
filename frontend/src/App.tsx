@@ -22,6 +22,7 @@ import { ResourceDetailRoute } from "./pages/ResourceDetailRoute";
 import { PostDetail } from "./pages/PostDetail";
 import { Spheres } from "./pages/Spheres";
 import { SphereDetail } from "./pages/SphereDetail";
+import { AdminPanelRouter } from "./pages/admin/AdminPanelRouter";
 import { AdminLayout } from "./admin/components/AdminLayout";
 import { AdminDashboardPage } from "./admin/pages/AdminDashboardPage";
 import { AdminUsersPage } from "./admin/pages/AdminUsersPage";
@@ -188,6 +189,9 @@ const App = () => (
           } />
 
           {/* Admin routes */}
+          <Route path="/admin/*" element={<RequireAdminRole><AdminPanelRouter /></RequireAdminRole>} />
+          <Route path="/cs-inc/private/admin" element={<Navigate to="/admin" replace />} />
+          <Route path="/cs-inc/private/admin/*" element={<Navigate to="/admin" replace />} />
           <Route path="/cs-inc/private/admin" element={<AdminLayout />}>
             <Route index element={<Navigate to="/cs-inc/private/admin/dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboardPage />} />
