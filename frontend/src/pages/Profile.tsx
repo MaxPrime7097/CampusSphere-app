@@ -16,7 +16,7 @@ import { PostCard } from "@/components/feed/PostCard";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn, formatFileSize } from "@/lib/utils"; // si tu utilises cn dans ce fichier
 
-const NOT_AVAILABLE_TEXT = "Not available";
+const NOT_AVAILABLE_TEXT = "—";
 const MOOD_OPTIONS = [
   { value: "excited", label: "🚀 En pleine révision !" },
   { value: "focused", label: "🎯 Concentré sur mes objectifs" },
@@ -261,6 +261,15 @@ export function Profile() {
   const [relationActionUnavailable, setRelationActionUnavailable] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCoverPhotoModal, setShowCoverPhotoModal] = useState(false);
+
+  // Edit form state
+  const [editSkills, setEditSkills] = useState<string[]>([]);
+  const [editInterests, setEditInterests] = useState<string[]>([]);
+  const [editExperiences, setEditExperiences] = useState<{title: string; company: string; duration: string; description: string}[]>([]);
+  const [editPreviousEducation, setEditPreviousEducation] = useState<{degree: string; school: string; year: string}[]>([]);
+  const [editPortfolioLinks, setEditPortfolioLinks] = useState<{name: string; url: string}[]>([]);
+  const [newSkill, setNewSkill] = useState("");
+  const [newInterest, setNewInterest] = useState("");
   const [coverPhotoFile, setCoverPhotoFile] = useState<File | null>(null);
   const [coverPhotoPreview, setCoverPhotoPreview] = useState<string | null>(null);
   const coverPhotoInputRef = useRef<HTMLInputElement>(null);
@@ -270,6 +279,10 @@ export function Profile() {
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [showMoodModal, setShowMoodModal] = useState(false);
   const [newMood, setNewMood] = useState<{ value: string; label: string } | null>(null);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isSavingCover, setIsSavingCover] = useState(false);
+  const [isSavingAvatar, setIsSavingAvatar] = useState(false);
+  const [isSavingMood, setIsSavingMood] = useState(false);
 
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [targetUser, setTargetUser] = useState<any>(null);
@@ -619,11 +632,18 @@ export function Profile() {
     }
   };
 
-  const handleEditProfile = () => setShowEditModal(true);
+  const handleEditProfile = () => {
+    setEditSkills(user.skills?.map((s: any) => typeof s === "string" ? s : s?.name || "").filter(Boolean) ?? []);
+    setEditInterests(user.interests?.map((i: any) => typeof i === "string" ? i : i?.name || "").filter(Boolean) ?? []);
+    setEditExperiences(user.experiences?.length > 0 ? user.experiences : [{ title: "", company: "", duration: "", description: "" }]);
+    setEditPreviousEducation(user.previousEducation?.length > 0 ? user.previousEducation : [{ degree: "", school: "", year: "" }]);
+    setEditPortfolioLinks(user.portfolioLinks?.length > 0 ? user.portfolioLinks.map((e: any) => typeof e === "string" ? { name: "", url: e } : e) : [{ name: "", url: "" }]);
+    setShowEditModal(true);
+  };
 
   const handleSaveProfile = async () => {
-    if (!currentUser?.id) return;
-    
+    if (!currentUser?.id || isSavingProfile) return;
+    setIsSavingProfile(true);
     try {
       const firstNameInput = document.getElementById('firstName') as HTMLInputElement;
       const lastNameInput = document.getElementById('lastName') as HTMLInputElement;
@@ -643,6 +663,11 @@ export function Profile() {
       if (phoneInput?.value) updateData.phone_number = phoneInput.value;
       if (townInput?.value) updateData.town = townInput.value;
       if (languageInput?.value) updateData.language = languageInput.value;
+      updateData.skills = editSkills.filter(Boolean);
+      updateData.interests = editInterests.filter(Boolean);
+      updateData.experiences = editExperiences.filter(e => e.title || e.company);
+      updateData.previous_education = editPreviousEducation.filter(e => e.degree || e.school);
+      updateData.portfolio_links = editPortfolioLinks.filter(e => e.url);
       
       await updateUserProfile(updateData);
       
@@ -662,6 +687,29 @@ export function Profile() {
         description: error?.message || "Impossible de mettre à jour le profil",
         variant: "destructive",
       });
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+      
+      toast({
+        title: "Profil mis à jour !",
+        description: "Vos modifications ont été sauvegardées",
+        duration: 3000,
+      });
+      setShowEditModal(false);
+      
+      const userData = await getCurrentUser();
+      setCurrentUser(userData);
+      if (isOwnProfile) setTargetUser(userData);
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error?.message || "Impossible de mettre à jour le profil",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingProfile(false);
     }
   };
 
@@ -680,7 +728,8 @@ export function Profile() {
   };
 
   const handleSaveCoverPhoto = async () => {
-    if (!coverPhotoFile || !currentUser?.id) return;
+    if (!coverPhotoFile || !currentUser?.id || isSavingCover) return;
+    setIsSavingCover(true);
     try {
       await uploadCoverPhoto(currentUser.id, coverPhotoFile);
       toast({ title: "Photo de couverture mise à jour !", description: "Votre nouvelle photo de couverture a été sauvegardée", duration: 3000 });
@@ -692,6 +741,8 @@ export function Profile() {
       if (isOwnProfile) setTargetUser(userData);
     } catch (error: any) {
       toast({ title: "Erreur", description: error?.message || "Impossible de mettre à jour la photo de couverture", variant: "destructive" });
+    } finally {
+      setIsSavingCover(false);
     }
   };
 
@@ -716,7 +767,8 @@ export function Profile() {
   };
 
   const handleSaveAvatar = async () => {
-    if (!avatarFile || !currentUser?.id) return;
+    if (!avatarFile || !currentUser?.id || isSavingAvatar) return;
+    setIsSavingAvatar(true);
     try {
       await uploadAvatar(currentUser.id, avatarFile);
       toast({ title: "Avatar mis à jour !", description: "Votre nouvel avatar a été sauvegardé", duration: 3000 });
@@ -728,6 +780,8 @@ export function Profile() {
       if (isOwnProfile) setTargetUser(userData);
     } catch (error: any) {
       toast({ title: "Erreur", description: error?.message || "Impossible de mettre à jour l'avatar", variant: "destructive" });
+    } finally {
+      setIsSavingAvatar(false);
     }
   };
 
@@ -738,8 +792,8 @@ export function Profile() {
   };
 
   const handleMoodChange = async () => {
-    if (!newMood?.value || !currentUser?.id) return;
-
+    if (!newMood?.value || !currentUser?.id || isSavingMood) return;
+    setIsSavingMood(true);
     const selectedMoodValue = newMood.value;
 
     try {
@@ -769,6 +823,8 @@ export function Profile() {
       toast({ title: "Mood mis à jour !", description: "Votre mood du moment a été changé", duration: 2000 });
     } catch (error: any) {
       toast({ title: "Erreur", description: error?.message || "Impossible de mettre à jour le mood", variant: "destructive" });
+    } finally {
+      setIsSavingMood(false);
     }
   };
 
@@ -1354,6 +1410,88 @@ export function Profile() {
                 </div>
               </div>
               
+              {/* Compétences */}
+              <div>
+                <Label>Compétences</Label>
+                <div className="flex gap-2 mt-2">
+                  <Input placeholder="Ajouter une compétence..." value={newSkill} onChange={(e) => setNewSkill(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (newSkill.trim() && !editSkills.includes(newSkill.trim())) { setEditSkills([...editSkills, newSkill.trim()]); setNewSkill(""); } } }} />
+                  <Button type="button" variant="outline" onClick={() => { if (newSkill.trim() && !editSkills.includes(newSkill.trim())) { setEditSkills([...editSkills, newSkill.trim()]); setNewSkill(""); } }}>+</Button>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {editSkills.map((s, i) => (
+                    <Badge key={i} variant="secondary" className="cursor-pointer" onClick={() => setEditSkills(editSkills.filter((_, j) => j !== i))}>{s} ×</Badge>
+                  ))}
+                </div>
+              </div>
+
+              {/* Centres d'intérêt */}
+              <div>
+                <Label>Centres d'intérêt</Label>
+                <div className="flex gap-2 mt-2">
+                  <Input placeholder="Ajouter un intérêt..." value={newInterest} onChange={(e) => setNewInterest(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (newInterest.trim() && !editInterests.includes(newInterest.trim())) { setEditInterests([...editInterests, newInterest.trim()]); setNewInterest(""); } } }} />
+                  <Button type="button" variant="outline" onClick={() => { if (newInterest.trim() && !editInterests.includes(newInterest.trim())) { setEditInterests([...editInterests, newInterest.trim()]); setNewInterest(""); } }}>+</Button>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {editInterests.map((s, i) => (
+                    <Badge key={i} variant="outline" className="cursor-pointer" onClick={() => setEditInterests(editInterests.filter((_, j) => j !== i))}>{s} ×</Badge>
+                  ))}
+                </div>
+              </div>
+
+              {/* Expériences */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <Label>Expériences</Label>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setEditExperiences([...editExperiences, { title: "", company: "", duration: "", description: "" }])}>+ Ajouter</Button>
+                </div>
+                {editExperiences.map((exp, i) => (
+                  <div key={i} className="border rounded-lg p-3 mb-2 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-muted-foreground">Expérience {i + 1}</span>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => setEditExperiences(editExperiences.filter((_, j) => j !== i))}>Supprimer</Button>
+                    </div>
+                    <Input placeholder="Titre du poste" value={exp.title} onChange={(e) => { const n = [...editExperiences]; n[i] = {...n[i], title: e.target.value}; setEditExperiences(n); }} />
+                    <Input placeholder="Entreprise" value={exp.company} onChange={(e) => { const n = [...editExperiences]; n[i] = {...n[i], company: e.target.value}; setEditExperiences(n); }} />
+                    <Input placeholder="Durée (ex: 2022-2023)" value={exp.duration} onChange={(e) => { const n = [...editExperiences]; n[i] = {...n[i], duration: e.target.value}; setEditExperiences(n); }} />
+                    <Textarea placeholder="Description" value={exp.description} onChange={(e) => { const n = [...editExperiences]; n[i] = {...n[i], description: e.target.value}; setEditExperiences(n); }} rows={2} />
+                  </div>
+                ))}
+              </div>
+
+              {/* Formations précédentes */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <Label>Formations précédentes</Label>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setEditPreviousEducation([...editPreviousEducation, { degree: "", school: "", year: "" }])}>+ Ajouter</Button>
+                </div>
+                {editPreviousEducation.map((edu, i) => (
+                  <div key={i} className="border rounded-lg p-3 mb-2 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-muted-foreground">Formation {i + 1}</span>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => setEditPreviousEducation(editPreviousEducation.filter((_, j) => j !== i))}>Supprimer</Button>
+                    </div>
+                    <Input placeholder="Diplôme" value={edu.degree} onChange={(e) => { const n = [...editPreviousEducation]; n[i] = {...n[i], degree: e.target.value}; setEditPreviousEducation(n); }} />
+                    <Input placeholder="Établissement" value={edu.school} onChange={(e) => { const n = [...editPreviousEducation]; n[i] = {...n[i], school: e.target.value}; setEditPreviousEducation(n); }} />
+                    <Input placeholder="Année" value={edu.year} onChange={(e) => { const n = [...editPreviousEducation]; n[i] = {...n[i], year: e.target.value}; setEditPreviousEducation(n); }} />
+                  </div>
+                ))}
+              </div>
+
+              {/* Portfolio */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <Label>Portfolio / Liens</Label>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setEditPortfolioLinks([...editPortfolioLinks, { name: "", url: "" }])}>+ Ajouter</Button>
+                </div>
+                {editPortfolioLinks.map((link, i) => (
+                  <div key={i} className="flex gap-2 mb-2">
+                    <Input placeholder="Nom (ex: GitHub)" value={link.name} onChange={(e) => { const n = [...editPortfolioLinks]; n[i] = {...n[i], name: e.target.value}; setEditPortfolioLinks(n); }} />
+                    <Input placeholder="URL" value={link.url} onChange={(e) => { const n = [...editPortfolioLinks]; n[i] = {...n[i], url: e.target.value}; setEditPortfolioLinks(n); }} />
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setEditPortfolioLinks(editPortfolioLinks.filter((_, j) => j !== i))}>×</Button>
+                  </div>
+                ))}
+              </div>
+
               <div className="flex gap-2 pt-4">
                 <Button 
                   variant="outline" 
@@ -1365,9 +1503,10 @@ export function Profile() {
                 <Button 
                   className="flex-1 gap-2"
                   onClick={handleSaveProfile}
+                  disabled={isSavingProfile}
                 >
-                  <Check className="h-4 w-4" />
-                  Sauvegarder
+                  {isSavingProfile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                  {isSavingProfile ? "Sauvegarde..." : "Sauvegarder"}
                 </Button>
               </div>
             </div>
@@ -1462,11 +1601,11 @@ export function Profile() {
               </Button>
               <Button
                 onClick={handleSaveCoverPhoto}
-                disabled={!coverPhotoFile}
+                disabled={!coverPhotoFile || isSavingCover}
                 className="campus-gradient text-white hover:opacity-90"
               >
-                <Check className="h-4 w-4 mr-2" />
-                Sauvegarder
+                {isSavingCover ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
+                {isSavingCover ? "Sauvegarde..." : "Sauvegarder"}
               </Button>
             </div>
           </DialogContent>
@@ -1559,11 +1698,11 @@ export function Profile() {
               </Button>
               <Button
                 onClick={handleSaveAvatar}
-                disabled={!avatarFile}
+                disabled={!avatarFile || isSavingAvatar}
                 className="campus-gradient text-white hover:opacity-90"
               >
-                <Check className="h-4 w-4 mr-2" />
-                Sauvegarder
+                {isSavingAvatar ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
+                {isSavingAvatar ? "Sauvegarde..." : "Sauvegarder"}
               </Button>
             </div>
           </DialogContent>
@@ -1635,11 +1774,11 @@ export function Profile() {
               </Button>
               <Button
                 onClick={handleMoodChange}
-                disabled={!newMood?.value}
+                disabled={!newMood?.value || isSavingMood}
                 className="campus-gradient text-white hover:opacity-90"
               >
-                <Check className="h-4 w-4 mr-2" />
-                Mettre à jour
+                {isSavingMood ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
+                {isSavingMood ? "Mise à jour..." : "Mettre à jour"}
               </Button>
             </div>
           </DialogContent>

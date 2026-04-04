@@ -333,6 +333,8 @@ export function Register() {
         previous_education: formData.previousEducation || [],
         experiences: formData.experiences || [],
         portfolio_links: formData.portfolioLinks || [],
+        phone_number: formData.phoneNumber || "",
+        date_of_birth: formData.dateOfBirth || "",
       };
 
       // Appeler l'API d'inscription

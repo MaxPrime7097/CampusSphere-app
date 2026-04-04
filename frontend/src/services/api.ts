@@ -156,6 +156,8 @@ export function normalizeUser(user: any) {
     connectionsCount: user.connectionsCount ?? user.connections_count ?? 0,
     dateJoined: user.dateJoined ?? user.date_joined ?? null,
     updatedAt: user.updatedAt ?? user.updated_at ?? null,
+    phoneNumber: user.phoneNumber ?? user.phone_number ?? "",
+    dateOfBirth: user.dateOfBirth ?? user.date_of_birth ?? "",
     stats: {
       posts: toNumber(user.posts_count ?? user.stats?.posts, 0),
       connections: toNumber(user.connections_count ?? user.stats?.connections, 0),

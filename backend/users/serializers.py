@@ -8,12 +8,16 @@ from .models import User, Connection, UserBlock
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
     confirm_password = serializers.CharField(write_only=True)
+    phone_number = serializers.CharField(required=False, allow_blank=True, default="")
+    date_of_birth = serializers.DateField(required=False, allow_null=True, default=None)
 
     class Meta:
         model = User
         fields = [
             'first_name', 'last_name', 'username', 'email', 'password', 'confirm_password',
-            'university', 'faculty', 'study_year', 'student_id', 'campus', 'town', 'language'
+            'university', 'faculty', 'study_year', 'student_id', 'campus', 'town', 'language',
+            'bio', 'skills', 'interests', 'previous_education', 'experiences', 'portfolio_links',
+            'phone_number', 'date_of_birth',
         ]
 
     def validate(self, data):
@@ -23,7 +27,32 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data.pop('confirm_password')
+        phone_number = validated_data.pop('phone_number', '')
+        date_of_birth = validated_data.pop('date_of_birth', None)
+        bio = validated_data.pop('bio', '')
+        skills = validated_data.pop('skills', [])
+        interests = validated_data.pop('interests', [])
+        previous_education = validated_data.pop('previous_education', [])
+        experiences = validated_data.pop('experiences', [])
+        portfolio_links = validated_data.pop('portfolio_links', [])
         user = User.objects.create_user(**validated_data)
+        if phone_number and hasattr(user, 'phone_number'):
+            user.phone_number = phone_number
+        if date_of_birth and hasattr(user, 'date_of_birth'):
+            user.date_of_birth = date_of_birth
+        if bio:
+            user.bio = bio
+        if skills:
+            user.skills = skills
+        if interests:
+            user.interests = interests
+        if previous_education:
+            user.previous_education = previous_education
+        if experiences:
+            user.experiences = experiences
+        if portfolio_links:
+            user.portfolio_links = portfolio_links
+        user.save()
         return user
 
 
