@@ -45,7 +45,6 @@ function mapConversation(rawConv: any, currentUserId?: string) {
   return {
     id: String(conv.id),
     type: conv.type || conv.conversation_type || "private",
-    createdBy: conv.created_by || conv.createdBy || null,
     participants,
     lastMessage,
     lastMessageAt,
