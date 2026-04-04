@@ -24,7 +24,7 @@ def _decode_token_unverified(token: str) -> dict:
 
 
 def _verify_rs256(token: str) -> dict | None:
-    """Vérifie via JWKS RS256 (nouveaux projets Supabase)."""
+    """Vérifie via JWKS — supporte RS256 et ES256 (nouveaux projets Supabase)."""
     supabase_url = getattr(settings, "SUPABASE_URL", "").strip().rstrip("/")
     if not supabase_url:
         return None
@@ -44,23 +44,34 @@ def _verify_rs256(token: str) -> dict | None:
 
     try:
         import jwt as pyjwt
-        from jwt.algorithms import RSAAlgorithm
+        from jwt.algorithms import RSAAlgorithm, ECAlgorithm
     except ImportError:
         logger.error("PyJWT not installed. Run: pip install PyJWT[crypto]")
         return None
 
     for key_data in _jwks_cache.get("keys", []):
         try:
-            public_key = RSAAlgorithm.from_jwk(key_data)
+            kty = key_data.get("kty", "")
+            if kty == "EC":
+                public_key = ECAlgorithm.from_jwk(key_data)
+                algorithms = ["ES256", "ES384", "ES512"]
+            elif kty == "RSA":
+                public_key = RSAAlgorithm.from_jwk(key_data)
+                algorithms = ["RS256", "RS384", "RS512"]
+            else:
+                logger.warning(f"Unknown key type: {kty}")
+                continue
+
             payload = pyjwt.decode(
                 token,
                 public_key,
-                algorithms=["RS256"],
+                algorithms=algorithms,
                 options={"verify_aud": False},
             )
+            logger.info(f"Token verified via {kty}/JWKS")
             return payload
         except pyjwt.ExpiredSignatureError:
-            logger.warning("Token expired (RS256)")
+            logger.warning("Token expired")
             return None
         except pyjwt.InvalidTokenError:
             continue
