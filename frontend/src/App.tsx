@@ -29,6 +29,7 @@ import { Contact } from "./pages/public/Contact";
 import { FAQ } from "./pages/public/FAQ";
 import { ForgotPassword } from "./pages/public/ForgotPassword";
 import { AuthCallback } from "./pages/public/AuthCallback";
+import { CompleteProfile } from "./pages/public/CompleteProfile";
 import { Privacy } from "./pages/public/Privacy";
 import { Terms } from "./pages/public/Terms";
 import { Connections } from "./pages/Connections";
@@ -68,7 +69,7 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/register/complete" element={<Register />} />
+          <Route path="/register/complete" element={<CompleteProfile />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           
           {/* Protected routes with layout */}

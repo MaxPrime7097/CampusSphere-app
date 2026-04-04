@@ -9,7 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { 
   CheckSquare, 
   Calendar, 
-  User, 
   Flag, 
   Loader2, 
   CheckCircle,

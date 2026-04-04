@@ -226,6 +226,11 @@ export function SphereDetail() {
   }, [currentUserId, members, sphere]);
 
   const canModerateMembers = resolvedUserRole === "admin" || resolvedUserRole === "moderator";
+  const canMarkTaskComplete = (task: any) => {
+    if (!currentUserId) return false;
+    if (canModerateMembers) return true;
+    return String(task.assignedToId) === String(currentUserId);
+  };
   const sphereCreatorId = useMemo(() => {
     const candidates = [
       sphere?.created_by_info?.id,
@@ -387,19 +392,23 @@ export function SphereDetail() {
                 {membershipStateLabel}
               </Badge>
               {isMember ? (
-                canManageSphereSettings ? (
-                  <>
+                <>
+                  {canManageSphereSettings && (
                     <SphereSettingsModal sphereData={sphereFallback} onSettingsUpdated={loadSphereData} onSphereDeleted={() => navigate("/spheres")}>
                       <Button variant="outline" className="w-full justify-start gap-2"><Settings className="h-4 w-4"/> Paramètres</Button>
                     </SphereSettingsModal>
+                  )}
+                  {canModerateMembers && (
                     <ManageMembersModal sphereId={sphereFallback.id} sphereName={sphereFallback.name}>
                        <Button variant="outline" className="w-full justify-start gap-2"><Users className="h-4 w-4"/> Gérer l'équipe</Button>
                     </ManageMembersModal>
+                  )}
+                  {canModerateMembers && (
                     <AddMemberModal sphereId={sphereFallback.id} sphereName={sphereFallback.name} onMemberAdded={loadSphereData}>
                       <Button variant="outline" className="w-full justify-start gap-2"><UserPlus className="h-4 w-4"/> Inviter</Button>
                     </AddMemberModal>
-                  </>
-                ) : null
+                  )}
+                </>
               ) : (
                 <>
                   <Button

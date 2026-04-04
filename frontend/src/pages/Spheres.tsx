@@ -182,16 +182,15 @@ export function Spheres() {
   const getSphereActionModel = (sphere: any) => {
     const membership = getUnifiedMembershipState(sphere);
     const sphereId = String(sphere?.id);
-    const isCreator = currentUser?.id && String(sphere?.created_by) === String(currentUser.id);
-    const disabled = loadingSpheres || isJoining === sphereId || membership === "pending";
+    const disabled = loadingSpheres || isJoining === sphereId;
 
     if (membership === "active") {
       return {
         label: "Rejoint",
         className: "bg-green-500 hover:bg-green-600 text-white",
-        disabled: loadingSpheres || isJoining === sphereId,
+        disabled: true,
         icon: <Check className="h-3 w-3 mr-1" />,
-        onClick: () => handleLeaveSphere(sphere.id, sphere.name),
+        onClick: () => undefined,
       };
     }
 
@@ -199,22 +198,22 @@ export function Spheres() {
       return {
         label: "En attente",
         className: "bg-amber-500 hover:bg-amber-600 text-white",
-        disabled,
+        disabled: true,
         icon: <Clock className="h-3 w-3 mr-1" />,
         onClick: () => undefined,
       };
     }
 
     return {
-      label: isCreator ? "Rejoint" : "Rejoindre",
-      className: isCreator ? "bg-green-500 hover:bg-green-600 text-white" : "campus-gradient text-white",
-      disabled: disabled || isCreator,
-      icon: isCreator ? <Check className="h-3 w-3 mr-1" /> : null,
+      label: "Rejoindre",
+      className: "campus-gradient text-white",
+      disabled,
+      icon: null,
       onClick: () => handleJoinSphere(sphere.id, sphere.name),
     };
   };
 
-  const getSortedSpheres = () => {
+  const getSortedSpheres = (): any[] => {
     const sorted = [...filteredSpheres];
     switch (resolvedSphereSort) {
       case "top":
@@ -222,6 +221,7 @@ export function Spheres() {
       case "mySpheres":
         return sorted.filter((sphere: any) => getUnifiedMembershipState(sphere) === "active");
       case "discover":
+      default:
         return sorted;
     }
   };
