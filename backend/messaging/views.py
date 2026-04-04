@@ -7,13 +7,39 @@ from rest_framework.filters import OrderingFilter
 from django.shortcuts import get_object_or_404
 from django.db import models
 from django.utils import timezone
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from .models import Conversation, Message, ConversationReadReceipt
 from .serializers import (
     ConversationSerializer, ConversationCreateSerializer, ConversationUpdateSerializer,
-    MessageSerializer, MessageCreateSerializer
+    MessageSerializer, MessageCreateSerializer, MessageUpdateSerializer
 )
 from notifications.services import create_message_notification
 from .errors import business_error_payload
+
+
+def can_moderate_message(user, conversation):
+    return bool(
+        user and user.is_authenticated and (
+            user.is_staff or
+            user.is_superuser or
+            (conversation.type == 'group' and conversation.created_by_id == user.id)
+        )
+    )
+
+
+def publish_conversation_event(conversation_id, event_type, payload):
+    channel_layer = get_channel_layer()
+    if not channel_layer:
+        return
+    async_to_sync(channel_layer.group_send)(
+        f'conversation_{conversation_id}',
+        {
+            'type': 'conversation_event',
+            'event_type': event_type,
+            'payload': payload,
+        }
+    )
 
 
 class ConversationListView(generics.ListCreateAPIView):
@@ -136,10 +162,72 @@ class ConversationMessagesView(generics.ListCreateAPIView):
         )
         output_serializer = MessageSerializer(message, context=self.get_serializer_context())
         headers = self.get_success_headers(output_serializer.data)
+        publish_conversation_event(
+            self.kwargs['pk'],
+            'message_created',
+            {'message': output_serializer.data}
+        )
         return Response({
             "success": True,
             "data": output_serializer.data
         }, status=status.HTTP_201_CREATED, headers=headers)
+
+
+class MessageDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    http_method_names = ['get', 'patch', 'delete']
+    lookup_url_kwarg = 'message_pk'
+
+    def get_queryset(self):
+        return Message.objects.select_related('conversation', 'author').filter(
+            conversation__pk=self.kwargs['pk'],
+            conversation__participants=self.request.user
+        )
+
+    def get_serializer_class(self):
+        if self.request.method == 'PATCH':
+            return MessageUpdateSerializer
+        return MessageSerializer
+
+    def _check_permission(self, message):
+        user = self.request.user
+        if message.author_id == user.id or can_moderate_message(user, message.conversation):
+            return
+        from rest_framework.exceptions import PermissionDenied
+        raise PermissionDenied(
+            business_error_payload("permission_denied", "You don't have permission to modify this message")
+        )
+
+    def update(self, request, *args, **kwargs):
+        message = self.get_object()
+        self._check_permission(message)
+        super().update(request, *args, **kwargs)
+
+        refreshed = Message.objects.select_related('author', 'conversation').prefetch_related('read_by').get(
+            pk=message.pk
+        )
+        serialized = MessageSerializer(refreshed, context={'request': request}).data
+        publish_conversation_event(
+            refreshed.conversation_id,
+            'message_updated',
+            {'message': serialized}
+        )
+        return Response({'success': True, 'data': serialized}, status=status.HTTP_200_OK)
+
+    def destroy(self, request, *args, **kwargs):
+        message = self.get_object()
+        self._check_permission(message)
+        conversation_id = message.conversation_id
+        message_id = message.id
+        super().destroy(request, *args, **kwargs)
+        Conversation.objects.filter(pk=conversation_id).update(updated_at=timezone.now())
+
+        publish_conversation_event(
+            conversation_id,
+            'message_deleted',
+            {'message_id': str(message_id), 'conversation_id': str(conversation_id)}
+        )
+        return Response({'success': True}, status=status.HTTP_200_OK)
 
 
 class ConversationReadView(APIView):
@@ -159,6 +247,16 @@ class ConversationReadView(APIView):
         unread_messages = conversation.messages.exclude(read_by=request.user)
         for message in unread_messages:
             message.mark_as_read(request.user)
+
+        publish_conversation_event(
+            conversation.id,
+            'conversation_read',
+            {
+                'conversation_id': str(conversation.id),
+                'reader_id': str(request.user.id),
+                'timestamp': timezone.now().isoformat(),
+            }
+        )
 
         return Response({
             'success': True,

@@ -6,8 +6,10 @@ import { Messages } from "@/pages/Messages";
 
 const mockApi = vi.hoisted(() => ({
   createGroupConversation: vi.fn(),
+  createPrivateConversation: vi.fn(),
   getCurrentUser: vi.fn(),
   getConversationMessages: vi.fn(),
+  getUserConnections: vi.fn(),
   getUserConversations: vi.fn(),
   markConversationRead: vi.fn(),
   sendMessage: vi.fn(),
@@ -50,6 +52,7 @@ describe("Messages page smoke", () => {
   beforeEach(() => {
     mockApi.getCurrentUser.mockResolvedValue({ id: "u1", username: "alice", name: "Alice" });
     mockApi.getConversationMessages.mockResolvedValue([]);
+    mockApi.getUserConnections.mockResolvedValue([]);
     mockApi.markConversationRead.mockResolvedValue({ success: true });
     mockApi.sendMessage.mockResolvedValue({ id: "m-created", content: "Salut", author_info: { id: "u1", username: "alice", name: "Alice" }, created_at: "2026-04-04T10:00:00Z" });
     mockApi.getUserConversations.mockResolvedValue([
@@ -99,6 +102,32 @@ describe("Messages page smoke", () => {
     await waitFor(() => {
       expect(screen.getByTestId("route-echo").textContent).toBe("/messages/dm-1");
     });
+  });
+
+  it("affiche le nom de l'interlocuteur pour une DM, pas l'utilisateur courant", async () => {
+    mockApi.getCurrentUser.mockResolvedValue({ id: "u1", username: "alice", name: "Alice" });
+    mockApi.getUserConversations.mockResolvedValue([
+      {
+        id: "dm-2",
+        type: "private",
+        participants_info: [
+          { id: "u1", username: "alice", name: "Alice" },
+          { id: "u2", username: "bob_only_username" },
+        ],
+        last_message: { content: "Hey", created_at: "2026-04-04T11:00:00Z" },
+      },
+    ]);
+
+    render(
+      <MemoryRouter initialEntries={["/messages"]}>
+        <Routes>
+          <Route path="/messages" element={<Messages />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => expect(screen.getByText("bob_only_username")).toBeInTheDocument());
+    expect(screen.queryByText("Alice")).not.toBeInTheDocument();
   });
 
   it("envoie un message dans une conversation", async () => {

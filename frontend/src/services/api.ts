@@ -1302,9 +1302,23 @@ export async function markConversationRead(conversationId: number | string, toke
   });
 }
 
-export async function markConversationUnread(conversationId: number | string, token?: string) {
-  return apiFetch<any>(`api/conversations/${conversationId}/unread/`, {
-    method: "POST",
+export async function updateMessage(
+  conversationId: number | string,
+  messageId: number | string,
+  content: string,
+  token?: string
+) {
+  const response = await apiFetch<any>(`api/conversations/${conversationId}/messages/${messageId}/`, {
+    method: "PATCH",
+    body: { content },
+    token: token || getAccessToken(),
+  });
+  return unwrapItem<any>(response);
+}
+
+export async function deleteMessage(conversationId: number | string, messageId: number | string, token?: string) {
+  return apiFetch<any>(`api/conversations/${conversationId}/messages/${messageId}/`, {
+    method: "DELETE",
     token: token || getAccessToken(),
   });
 }
