@@ -1392,6 +1392,13 @@ export async function markConversationRead(conversationId: number | string, toke
   });
 }
 
+export async function markConversationUnread(conversationId: number | string, token?: string) {
+  return apiFetch<any>(`api/conversations/${conversationId}/unread/`, {
+    method: "POST",
+    token: token || getAccessToken(),
+  });
+}
+
 export async function updateMessage(
   conversationId: number | string,
   messageId: number | string,
