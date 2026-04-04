@@ -1,16 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { createGroupConversation, getCurrentUser, getConversationMessages, getUserConversations, markConversationRead, sendMessage } from "@/services/api";
+import { createPrivateConversation, getCurrentUser, getConversationMessages, getUserConnections, getUserConversations, markConversationRead, sendMessage } from "@/services/api";
 import { useTranslation } from "react-i18next";
-import { Search, Send, Phone, Video, MoreVertical, MessageSquare, Loader2, Users } from "lucide-react";
+import { Search, Send, Phone, Video, MoreVertical, MessageSquare, Loader2, Users, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { CreateGroupConversationModal } from "@/components/modals/CreateGroupConversationModal";
@@ -68,11 +66,13 @@ export function Messages() {
   const [messages, setMessages] = useState([]);
   const [isSending, setIsSending] = useState(false);
   const [showNewConversationModal, setShowNewConversationModal] = useState(false);
-  const [newConversationName, setNewConversationName] = useState("");
-  const [newConversationType, setNewConversationType] = useState("direct");
+  const [connectionSearch, setConnectionSearch] = useState("");
+  const [isCreatingPrivate, setIsCreatingPrivate] = useState(false);
   const { toast } = useToast();
 
   const [conversations, setConversations] = useState<any[]>([]);
+  const [connections, setConnections] = useState<any[]>([]);
+  const [loadingConnections, setLoadingConnections] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
@@ -124,6 +124,42 @@ export function Messages() {
       isMounted = false;
     };
   }, []);
+
+  // Load current user connections for new DM flow
+  useEffect(() => {
+    if (!currentUser?.id) return;
+
+    let isMounted = true;
+    (async () => {
+      try {
+        setLoadingConnections(true);
+        const connectionsData = await getUserConnections(currentUser.id);
+        if (isMounted) {
+          const mapped = (connectionsData || []).map((conn: any) => {
+            const isRequester = String(conn.requester) === String(currentUser.id);
+            const counterpart = isRequester ? conn.recipient_info : conn.requester_info;
+            const counterpartId = isRequester ? conn.recipient : conn.requester;
+
+            return {
+              id: String(counterpart?.id || counterpartId),
+              name: counterpart?.full_name || counterpart?.name || counterpart?.username || "Utilisateur",
+              username: counterpart?.username || "",
+              avatar: counterpart?.avatar || "/placeholder-avatar.jpg",
+            };
+          });
+          setConnections(mapped.filter((contact: any) => contact.id));
+        }
+      } catch {
+        if (isMounted) setConnections([]);
+      } finally {
+        if (isMounted) setLoadingConnections(false);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUser]);
 
   // Load messages for selected conversation
   useEffect(() => {
@@ -237,7 +273,74 @@ export function Messages() {
     navigate(`/profile/${username}`);
   };
 
+  const extractConversationFromResult = (result: any) => {
+    if (result?.data) return result.data;
+    return result;
+  };
+
+  const handleCreatePrivateConversation = async (targetUserId: string) => {
+    if (!targetUserId) return;
+
+    setIsCreatingPrivate(true);
+    try {
+      const result = await createPrivateConversation(targetUserId);
+      const rawConversation = extractConversationFromResult(result);
+      const mappedConversation = mapConversation(rawConversation, String(currentUser?.id || ""));
+
+      setConversations((prev) => [
+        mappedConversation,
+        ...prev.filter((conversation) => conversation.id !== mappedConversation.id),
+      ]);
+      setShowNewConversationModal(false);
+      setConnectionSearch("");
+      navigate(`/messages/${mappedConversation.id}`);
+      handleMarkAsRead(mappedConversation.id);
+
+      const isExistingConversation = String(result?.message || "").toLowerCase().includes("existing");
+      toast({
+        title: isExistingConversation ? "Conversation existante" : "Message privé créé",
+        description: isExistingConversation
+          ? "La conversation existante a été ouverte."
+          : "Nouvelle conversation privée créée.",
+        duration: 2000,
+      });
+    } catch (error: any) {
+      const existingConversation = conversations.find(
+        (conversation) =>
+          conversation.type === "private" &&
+          (conversation.participants || []).some((participant: any) => String(participant.id) === String(targetUserId))
+      );
+      if (existingConversation) {
+        navigate(`/messages/${existingConversation.id}`);
+        setShowNewConversationModal(false);
+        setConnectionSearch("");
+        toast({
+          title: "Conversation existante",
+          description: "La conversation existante a été ouverte.",
+          duration: 2000,
+        });
+        return;
+      }
+
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: error?.message || "Impossible de créer la conversation privée",
+      });
+    } finally {
+      setIsCreatingPrivate(false);
+    }
+  };
+
   const selectedConv = conversations.find(c => c.id === conversationId);
+  const filteredConnections = connections.filter((contact) => {
+    const query = connectionSearch.toLowerCase().trim();
+    if (!query) return true;
+    return (
+      contact.name.toLowerCase().includes(query) ||
+      contact.username.toLowerCase().includes(query)
+    );
+  });
 
   return (
     <div className="h-full w-full bg-gradient-to-br from-background to-accent/20">
@@ -249,22 +352,33 @@ export function Messages() {
               <h2 className="text-3xl font-bold text-muted-foreground">
                 Messages
               </h2>
-              <CreateGroupConversationModal
-                onGroupCreated={(groupData) => {
-                  const newConversation = mapConversation(groupData, String(currentUser?.id || ""));
-                  setConversations((prev) => [newConversation, ...prev.filter((item) => item.id !== newConversation.id)]);
-                  toast({
-                    title: "Conversation créée !",
-                    description: `Le groupe "${newConversation.name}" a été créé`,
-                    duration: 2000,
-                  });
-                  navigate(`/messages/${newConversation.id}`);
-                }}
-              >
-                <Button size="sm" variant="outline" className="h-8 w-8 p-0">
-                  <Users className="h-4 w-4" />
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 w-8 p-0"
+                  aria-label="Nouveau message privé"
+                  onClick={() => setShowNewConversationModal(true)}
+                >
+                  <Plus className="h-4 w-4" />
                 </Button>
-              </CreateGroupConversationModal>
+                <CreateGroupConversationModal
+                  onGroupCreated={(groupData) => {
+                    const newConversation = mapConversation(groupData, String(currentUser?.id || ""));
+                    setConversations((prev) => [newConversation, ...prev.filter((item) => item.id !== newConversation.id)]);
+                    toast({
+                      title: "Conversation créée !",
+                      description: `Le groupe "${newConversation.name}" a été créé`,
+                      duration: 2000,
+                    });
+                    navigate(`/messages/${newConversation.id}`);
+                  }}
+                >
+                  <Button size="sm" variant="outline" className="h-8 w-8 p-0" aria-label="Nouveau groupe">
+                    <Users className="h-4 w-4" />
+                  </Button>
+                </CreateGroupConversationModal>
+              </div>
             </div>
             
             <div className="relative">
@@ -506,6 +620,50 @@ export function Messages() {
           </div>
         )}
       </div>
+      <Dialog open={showNewConversationModal} onOpenChange={setShowNewConversationModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nouveau message</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Input
+              placeholder="Rechercher dans vos connexions..."
+              value={connectionSearch}
+              onChange={(e) => setConnectionSearch(e.target.value)}
+            />
+            <div className="max-h-72 overflow-y-auto space-y-2">
+              {loadingConnections ? (
+                <div className="text-sm text-muted-foreground">Chargement des connexions...</div>
+              ) : filteredConnections.length === 0 ? (
+                <div className="text-sm text-muted-foreground">Aucune connexion trouvée.</div>
+              ) : (
+                filteredConnections.map((contact) => (
+                  <button
+                    key={contact.id}
+                    type="button"
+                    className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-accent text-left transition-colors"
+                    onClick={() => handleCreatePrivateConversation(contact.id)}
+                    disabled={isCreatingPrivate}
+                  >
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={contact.avatar} />
+                      <AvatarFallback>
+                        {(contact.name || "U").slice(0, 1).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{contact.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {contact.username ? `@${contact.username}` : "Utilisateur"}
+                      </p>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
