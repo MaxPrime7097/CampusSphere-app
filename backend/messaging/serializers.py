@@ -83,22 +83,27 @@ class ConversationSerializer(serializers.ModelSerializer):
 
 
 class ConversationCreateSerializer(serializers.ModelSerializer):
-    participant_ids = serializers.ListField(
-        child=serializers.UUIDField(),
-        write_only=True
+    participant_ids = serializers.PrimaryKeyRelatedField(
+        queryset=None,
+        many=True,
+        write_only=True,
+        source='participants'
     )
 
     class Meta:
         model = Conversation
         fields = ['type', 'name', 'participant_ids']
 
-    def validate_participant_ids(self, value):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         from users.models import User
-        
-        # Check if all participants exist
-        existing_users = User.objects.filter(id__in=value)
-        if len(existing_users) != len(value):
-            business_validation_error("invalid_participant", "One or more participants not found")
+        self.fields['participant_ids'].queryset = User.objects.all()
+
+    def validate_participant_ids(self, value):
+        current_user = self.context['request'].user
+
+        if current_user in value:
+            raise serializers.ValidationError("Do not include the authenticated user in participant_ids")
 
         # For private conversations, only 2 participants allowed (including creator)
         if self.initial_data.get('type') == 'private' and len(value) != 1:
@@ -113,7 +118,7 @@ class ConversationCreateSerializer(serializers.ModelSerializer):
     def validate(self, data):
         # For private conversations, check if conversation already exists
         if data['type'] == 'private':
-            participant_ids = data['participant_ids']
+            participants = data['participants']
             current_user = self.context['request'].user
             
             # Check if private conversation already exists between these users
@@ -126,7 +131,7 @@ class ConversationCreateSerializer(serializers.ModelSerializer):
                 participant_count=2,
                 participants=current_user
             ).filter(
-                participants__in=participant_ids
+                participants__in=participants
             ).first()
 
             if existing_conversation:
@@ -135,7 +140,7 @@ class ConversationCreateSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        participant_ids = validated_data.pop('participant_ids')
+        participants = validated_data.pop('participants')
         current_user = self.context['request'].user
         
         # Set created_by for group conversations
@@ -145,8 +150,6 @@ class ConversationCreateSerializer(serializers.ModelSerializer):
         conversation = super().create(validated_data)
         
         # Add participants
-        from users.models import User
-        participants = User.objects.filter(id__in=participant_ids)
         conversation.participants.add(current_user, *participants)
         
         return conversation
@@ -160,5 +163,5 @@ class ConversationUpdateSerializer(serializers.ModelSerializer):
     def validate(self, data):
         # Only group conversations can be updated
         if self.instance.type != 'group':
-            business_validation_error("permission_denied", "Only group conversations can be updated")
+            raise serializers.ValidationError("Only group conversations can be updated")
         return data
