@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { listSpheres, getCurrentUser, joinSphere, getUserSpheres, leaveSphere } from "@/services/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SPHERE_CATEGORY_OPTIONS, getSphereCategoryLabel } from "@/constants/sphereCategories";
+import { SPHERE_CATEGORY_OPTIONS, getSphereCategoryLabel, SPHERE_AUDIENCE_OPTIONS } from "@/constants/sphereCategories";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +10,7 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
 import { UnifiedSearchFiltersBar } from "@/components/ui/unified-search-filters-bar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Users, TrendingUp, Clock, Loader2, Check, RefreshCw, Plus } from "lucide-react";
+import { Search, Users, TrendingUp, Clock, Loader2, Check, RefreshCw, Plus, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { CreateSphereModal } from "@/components/modals/CreateSphereModal";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -28,6 +28,8 @@ export function Spheres() {
   const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
+  const [filterAudience, setFilterAudience] = useState("all");
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userJoinedSpheres, setUserJoinedSpheres] = useState<string[]>([]);
@@ -157,7 +159,8 @@ export function Spheres() {
     const matchesSearch = sphere.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           sphere.description?.toLowerCase().includes(searchQuery.toLowerCase()) || false;
     const matchesCategory = filterCategory === "all" || sphere.category === filterCategory;
-    return matchesSearch && matchesCategory;
+    const matchesAudience = filterAudience === "all" || sphere.target_audience === filterAudience;
+    return matchesSearch && matchesCategory && matchesAudience;
   });
 
   const resolvedSphereSort = ensureValidSortKey(activeTab, SPHERE_SORT_KEYS, DEFAULT_SORT.spheres);
@@ -332,31 +335,55 @@ export function Spheres() {
           </div>
         </div>
 
-        <UnifiedSearchFiltersBar className="mb-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Rechercher une sphère..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
+        <Card className={cn(cardClasses, "mb-6")}>
+          <CardContent className="p-3">
+            {/* Mobile */}
+            <div className="flex gap-2 sm:hidden">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Rechercher une sphère..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
+              </div>
+              <Button variant="outline" size="icon" onClick={() => setShowMobileFilters((v) => !v)} className={showMobileFilters ? "border-primary text-primary" : ""}>
+                <Filter className="h-4 w-4" />
+              </Button>
             </div>
-            <Select value={filterCategory} onValueChange={setFilterCategory}>
-              <SelectTrigger>
-                <SelectValue placeholder="Catégorie" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((cat) => (
-                  <SelectItem key={cat.value} value={cat.value}>
-                    {cat.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </UnifiedSearchFiltersBar>
+            {showMobileFilters && (
+              <div className="flex flex-col gap-2 mt-2 sm:hidden">
+                <Select value={filterCategory} onValueChange={setFilterCategory}>
+                  <SelectTrigger><SelectValue placeholder="Catégorie" /></SelectTrigger>
+                  <SelectContent>
+                    {categories.map((cat) => <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={filterAudience} onValueChange={setFilterAudience}>
+                  <SelectTrigger><SelectValue placeholder="Public cible" /></SelectTrigger>
+                  <SelectContent>
+                    {SPHERE_AUDIENCE_OPTIONS.map((a) => <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {/* Desktop */}
+            <div className="hidden sm:grid sm:grid-cols-3 gap-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Rechercher une sphère..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
+              </div>
+              <Select value={filterCategory} onValueChange={setFilterCategory}>
+                <SelectTrigger><SelectValue placeholder="Catégorie" /></SelectTrigger>
+                <SelectContent>
+                  {categories.map((cat) => <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={filterAudience} onValueChange={setFilterAudience}>
+                <SelectTrigger><SelectValue placeholder="Public cible" /></SelectTrigger>
+                <SelectContent>
+                  {SPHERE_AUDIENCE_OPTIONS.map((a) => <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
 
         <Tabs
           value={resolvedSphereSort}
