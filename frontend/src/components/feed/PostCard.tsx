@@ -455,13 +455,17 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
           {attachments.length > 0 && (
             <div className="space-y-0">
               {imageAttachments.length > 0 && (
-                <div className={cn("grid gap-2", imageAttachments.length > 1 ? "grid-cols-2" : "grid-cols-1")}>
+                <div className={cn(
+                  isMobile ? "-mx-4" : "",
+                  "grid gap-0.5",
+                  imageAttachments.length > 1 ? "grid-cols-2" : "grid-cols-1"
+                )}>
                   {imageAttachments.map((file) => (
-                    <div key={file.id ?? file.url} className="rounded-lg overflow-hidden md:overflow-hidden rounded-null w-full relative">
+                    <div key={file.id ?? file.url} className={cn("overflow-hidden relative", !isMobile && "rounded-lg")}>
                       <img
                         src={file.url}
                         alt={file.name || "Post attachment"}
-                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300 cursor-pointer"
+                        className="w-full h-auto object-contain hover:scale-105 transition-transform duration-300 cursor-pointer"
                         onDoubleClick={handleImageDoubleClick}
                       />
                       {isLiked && (
@@ -477,12 +481,12 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
               {videoAttachments.length > 0 && (
                 <div className="space-y-2">
                   {videoAttachments.map((file) => (
-                    <div key={file.id ?? file.url} className="rounded-lg overflow-hidden bg-muted">
+                    <div key={file.id ?? file.url} className={cn("overflow-hidden bg-muted", isMobile ? "-mx-4" : "rounded-lg")}>
                       <video
                         src={file.url}
                         controls
                         preload="metadata"
-                        className="w-full max-h-[380px]"
+                        className="w-full"
                         onClick={(event) => event.stopPropagation()}
                       />
                     </div>

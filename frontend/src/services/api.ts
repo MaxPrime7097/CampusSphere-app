@@ -1254,11 +1254,13 @@ export async function listConversations(token?: string) {
 }
 
 export async function getUserConversations(token?: string) {
-  return apiFetch<any[]>("api/conversations/user/", { token: token || getAccessToken() });
+  const response = await apiFetch<any>("api/conversations/user/", { token: token || getAccessToken() });
+  return unwrapList<any>(response);
 }
 
 export async function getConversation(id: number | string, token?: string) {
-  return apiFetch<any>(`api/conversations/${id}/`, { token: token || getAccessToken() });
+  const response = await apiFetch<any>(`api/conversations/${id}/`, { token: token || getAccessToken() });
+  return unwrapItem<any>(response);
 }
 
 export async function createConversation(data: {
@@ -1280,15 +1282,17 @@ export async function createConversation(data: {
 }
 
 export async function getConversationMessages(id: number | string, token?: string) {
-  return apiFetch<any[]>(`api/conversations/${id}/messages/`, { token: token || getAccessToken() });
+  const response = await apiFetch<any>(`api/conversations/${id}/messages/`, { token: token || getAccessToken() });
+  return unwrapList<any>(response);
 }
 
 export async function sendMessage(conversationId: number | string, content: string, token?: string) {
-  return apiFetch<any>(`api/conversations/${conversationId}/messages/`, {
+  const response = await apiFetch<any>(`api/conversations/${conversationId}/messages/`, {
     method: "POST",
     body: { content },
     token: token || getAccessToken(),
   });
+  return unwrapItem<any>(response);
 }
 
 export async function markConversationRead(conversationId: number | string, token?: string) {
@@ -1299,19 +1303,21 @@ export async function markConversationRead(conversationId: number | string, toke
 }
 
 export async function createPrivateConversation(userId: number | string, token?: string) {
-  return apiFetch<any>("api/conversations/private/create/", {
+  const response = await apiFetch<any>("api/conversations/private/create/", {
     method: "POST",
     body: { recipient_id: userId },
     token: token || getAccessToken(),
   });
+  return unwrapItem<any>(response);
 }
 
 export async function createGroupConversation(name: string, participantIds: (number | string)[], token?: string) {
-  return apiFetch<any>("api/conversations/group/create/", {
+  const response = await apiFetch<any>("api/conversations/group/create/", {
     method: "POST",
     body: { name, participant_ids: participantIds },
     token: token || getAccessToken(),
   });
+  return unwrapItem<any>(response);
 }
 
 export async function getConversationParticipants(conversationId: number | string, token?: string) {
