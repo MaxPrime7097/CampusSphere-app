@@ -45,6 +45,7 @@ import { DataDeletion } from "./pages/public/DataDeletion";
 import { Waitinglist } from "./pages/public/Waitinglist";
 import { Policies } from "./pages/public/Policies";
 import { RequireAdminRole } from "./components/auth/RequireAdminRole";
+import Forbidden from "./pages/public/Forbidden";
 import { AdminLayout } from "./admin/components/AdminLayout";
 import { AdminDashboardPage } from "./admin/pages/AdminDashboardPage";
 import { AdminUsersPage } from "./admin/pages/AdminUsersPage";
@@ -189,19 +190,13 @@ const App = () => (
           } />
 
           {/* Admin routes */}
-          <Route path="/admin/*" element={<RequireAdminRole><AdminPanelRouter /></RequireAdminRole>} />
-          <Route path="/cs-inc/private/admin" element={<Navigate to="/admin" replace />} />
-          <Route path="/cs-inc/private/admin/*" element={<Navigate to="/admin" replace />} />
-          <Route path="/cs-inc/private/admin" element={<AdminLayout />}>
-            <Route index element={<Navigate to="/cs-inc/private/admin/dashboard" replace />} />
-            <Route path="dashboard" element={<AdminDashboardPage />} />
-            <Route path="users" element={<AdminUsersPage />} />
-            <Route path="spheres" element={<AdminSpheresPage />} />
-            <Route path="moderation" element={<AdminModerationPage />} />
-            <Route path="resources" element={<AdminResourcesPage />} />
-            <Route path="logs" element={<AdminLogsPage />} />
-          </Route>
-          <Route path="/cs-inc/private/admin-legacy" element={<AdminDashboard />} />
+          <Route path="/cs-inc/private/admin" element={
+            <Protected>
+              <RequireAdminRole>
+                <AdminDashboard />
+              </RequireAdminRole>
+            </Protected>
+          } />
         
           {/* Public pages */}
           <Route path="/cs-inc" element={<Landing />} />
