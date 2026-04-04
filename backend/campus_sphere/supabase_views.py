@@ -11,67 +11,62 @@ from users.serializers import UserProfileSerializer, UserUpdateSerializer
 
 logger = logging.getLogger(__name__)
 
-SUPABASE_JWKS_URL = None
 _jwks_cache = None
 
 
-def _get_supabase_public_key():
-    """Récupère la clé publique Supabase via JWKS ou JWT secret."""
-    # Option 1 : JWT secret (plus simple, recommandé pour débuter)
-    jwt_secret = getattr(settings, "SUPABASE_JWT_SECRET", None)
-    if jwt_secret:
-        return jwt_secret, "HS256"
-
-    # Option 2 : JWKS (RS256)
-    supabase_url = getattr(settings, "SUPABASE_URL", None)
-    if supabase_url:
-        global _jwks_cache
-        if not _jwks_cache:
-            try:
-                resp = requests.get(f"{supabase_url}/auth/v1/.well-known/jwks.json", timeout=5)
-                _jwks_cache = resp.json()
-            except Exception as e:
-                logger.error(f"Failed to fetch Supabase JWKS: {e}")
-                return None, None
-        return _jwks_cache, "RS256"
-
-    return None, None
-
-
-def verify_supabase_token(token: str) -> dict | None:
-    """Vérifie et décode un JWT Supabase. Retourne le payload ou None."""
-    key, algorithm = _get_supabase_public_key()
-    if not key:
-        logger.error("No Supabase JWT secret or URL configured")
-        return None
-
+def _decode_with_secret(token: str, secret: str) -> dict | None:
+    """Tente de décoder avec HS256, essaie avec et sans vérification d'audience."""
+    # Essai 1 : avec audience "authenticated"
     try:
-        if algorithm == "HS256":
-            payload = jwt.decode(
-                token,
-                key,
-                algorithms=["HS256"],
-                audience="authenticated",
-                options={"verify_exp": True},
-            )
-        else:
-            # RS256 via JWKS — utiliser PyJWT avec jwks-client si disponible
-            payload = jwt.decode(token, options={"verify_signature": False})
-        return payload
+        return jwt.decode(token, secret, algorithms=["HS256"], audience="authenticated")
+    except jwt.InvalidAudienceError:
+        pass
     except jwt.ExpiredSignatureError:
         logger.warning("Supabase token expired")
         return None
     except jwt.InvalidTokenError as e:
-        logger.warning(f"Invalid Supabase token: {e}")
+        logger.warning(f"HS256 decode failed (with audience): {e}")
+
+    # Essai 2 : sans vérification d'audience (certains projets Supabase n'ont pas d'audience)
+    try:
+        return jwt.decode(token, secret, algorithms=["HS256"], options={"verify_aud": False})
+    except jwt.ExpiredSignatureError:
+        logger.warning("Supabase token expired")
+        return None
+    except jwt.InvalidTokenError as e:
+        logger.warning(f"HS256 decode failed (without audience): {e}")
         return None
 
 
+def _decode_without_verification(token: str) -> dict | None:
+    """Décode sans vérifier la signature — utilisé en dernier recours ou dev."""
+    try:
+        return jwt.decode(token, options={"verify_signature": False})
+    except Exception as e:
+        logger.error(f"Failed to decode token without verification: {e}")
+        return None
+
+
+def verify_supabase_token(token: str) -> dict | None:
+    """Vérifie et décode un JWT Supabase."""
+    jwt_secret = getattr(settings, "SUPABASE_JWT_SECRET", "").strip()
+
+    if jwt_secret:
+        payload = _decode_with_secret(token, jwt_secret)
+        if payload:
+            return payload
+        logger.error("SUPABASE_JWT_SECRET set but token verification failed — check the secret value")
+        return None
+
+    # Pas de secret configuré → log clair
+    logger.error(
+        "SUPABASE_JWT_SECRET is not set in environment variables. "
+        "Add it in your Render dashboard: Settings > JWT Settings > JWT Secret"
+    )
+    return None
+
+
 class SupabaseTokenExchangeView(APIView):
-    """
-    POST /api/auth/supabase/exchange/
-    Reçoit un JWT Supabase, vérifie, crée ou récupère le User Django,
-    retourne un JWT SimpleJWT.
-    """
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
@@ -79,16 +74,32 @@ class SupabaseTokenExchangeView(APIView):
         if not supabase_token:
             return Response({"detail": "supabase_token requis"}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Debug : décoder sans vérification pour voir le contenu
+        raw_payload = _decode_without_verification(supabase_token)
+        logger.info(f"Supabase token sub={raw_payload.get('sub') if raw_payload else 'N/A'}, "
+                    f"email={raw_payload.get('email') if raw_payload else 'N/A'}, "
+                    f"aud={raw_payload.get('aud') if raw_payload else 'N/A'}")
+
         payload = verify_supabase_token(supabase_token)
         if not payload:
-            return Response({"detail": "Token Supabase invalide ou expiré"}, status=status.HTTP_401_UNAUTHORIZED)
+            # En développement, on peut utiliser le payload non vérifié
+            # En production, on refuse
+            debug = getattr(settings, "DEBUG", False)
+            if debug and raw_payload:
+                logger.warning("DEV MODE: using unverified Supabase token payload")
+                payload = raw_payload
+            else:
+                return Response(
+                    {"detail": "Token Supabase invalide ou expiré. Vérifiez SUPABASE_JWT_SECRET sur Render."},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
 
         supabase_uid = payload.get("sub")
         email = payload.get("email", "")
         user_metadata = payload.get("user_metadata", {})
 
         if not supabase_uid:
-            return Response({"detail": "UID Supabase manquant"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "UID Supabase manquant dans le token"}, status=status.HTTP_400_BAD_REQUEST)
 
         # Chercher par supabase_uid d'abord, puis par email
         user = User.objects.filter(supabase_uid=supabase_uid).first()
@@ -97,18 +108,16 @@ class SupabaseTokenExchangeView(APIView):
         if not user and email:
             user = User.objects.filter(email__iexact=email).first()
             if user:
-                # Lier le compte existant
                 user.supabase_uid = supabase_uid
                 user.save(update_fields=["supabase_uid"])
 
         if not user:
-            # Créer un user minimal — il complétera son profil ensuite
             is_new_user = True
-            first_name = user_metadata.get("first_name") or user_metadata.get("full_name", "").split(" ")[0] or "Utilisateur"
-            last_name = user_metadata.get("last_name") or " ".join(user_metadata.get("full_name", "").split(" ")[1:]) or ""
-            username = user_metadata.get("username") or email.split("@")[0]
+            full_name = user_metadata.get("full_name", "")
+            first_name = user_metadata.get("first_name") or (full_name.split(" ")[0] if full_name else "Utilisateur")
+            last_name = user_metadata.get("last_name") or (" ".join(full_name.split(" ")[1:]) if full_name else "")
+            username = user_metadata.get("username") or (email.split("@")[0] if email else f"user_{supabase_uid[:8]}")
 
-            # S'assurer que le username est unique
             base_username = username
             counter = 1
             while User.objects.filter(username=username).exists():
@@ -120,7 +129,7 @@ class SupabaseTokenExchangeView(APIView):
                 email=email,
                 username=username,
                 first_name=first_name,
-                last_name=last_name,
+                last_name=last_name or first_name,
                 is_active=True,
             )
             user.set_unusable_password()
@@ -141,11 +150,6 @@ class SupabaseTokenExchangeView(APIView):
 
 
 class SupabaseCompleteProfileView(APIView):
-    """
-    POST /api/auth/supabase/complete-profile/
-    Complète le profil Django après inscription Supabase.
-    Requiert un JWT Django valide (obtenu via exchange).
-    """
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
