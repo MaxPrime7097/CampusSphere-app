@@ -16,7 +16,17 @@ import { z } from "zod";
 import { CreateGroupConversationModal } from "@/components/modals/CreateGroupConversationModal";
 import { formatRelativeTime } from "@/lib/date";
 
-function mapConversation(conv: any, currentUserId?: string) {
+
+function unwrapApiData(payload: any) {
+  if (payload?.success !== undefined && payload?.data !== undefined) {
+    return payload.data;
+  }
+  return payload;
+}
+
+
+function mapConversation(rawConv: any, currentUserId?: string) {
+  const conv = unwrapApiData(rawConv) || {};
   const participants = conv.participants_info || conv.participants || [];
   const otherParticipant =
     participants.find((participant: any) => String(participant.id) !== String(currentUserId)) || participants[0];
@@ -43,7 +53,8 @@ function mapConversation(conv: any, currentUserId?: string) {
   };
 }
 
-function mapMessage(msg: any, currentUserId?: string) {
+function mapMessage(rawMsg: any, currentUserId?: string) {
+  const msg = unwrapApiData(rawMsg) || {};
   const author = msg.author_info || msg.author || {};
   const senderId = String(author.id || msg.author || "");
 

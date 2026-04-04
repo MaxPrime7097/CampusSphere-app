@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.utils import timezone
 from .models import Conversation, Message, ConversationReadReceipt
+from .errors import business_validation_error
 
 
 class MessageSerializer(serializers.ModelSerializer):
@@ -97,15 +98,15 @@ class ConversationCreateSerializer(serializers.ModelSerializer):
         # Check if all participants exist
         existing_users = User.objects.filter(id__in=value)
         if len(existing_users) != len(value):
-            raise serializers.ValidationError("One or more participants not found")
+            business_validation_error("invalid_participant", "One or more participants not found")
 
         # For private conversations, only 2 participants allowed (including creator)
         if self.initial_data.get('type') == 'private' and len(value) != 1:
-            raise serializers.ValidationError("Private conversations must have exactly 2 participants")
+            business_validation_error("invalid_participant", "Private conversations must have exactly 2 participants")
 
         # For group conversations, at least 2 participants (excluding creator)
         if self.initial_data.get('type') == 'group' and len(value) < 2:
-            raise serializers.ValidationError("Group conversations must have at least 3 participants")
+            business_validation_error("invalid_participant", "Group conversations must have at least 3 participants")
 
         return value
 
@@ -129,7 +130,7 @@ class ConversationCreateSerializer(serializers.ModelSerializer):
             ).first()
 
             if existing_conversation:
-                raise serializers.ValidationError("Private conversation already exists between these users")
+                business_validation_error("conversation_exists", "Private conversation already exists between these users")
 
         return data
 
@@ -159,5 +160,5 @@ class ConversationUpdateSerializer(serializers.ModelSerializer):
     def validate(self, data):
         # Only group conversations can be updated
         if self.instance.type != 'group':
-            raise serializers.ValidationError("Only group conversations can be updated")
+            business_validation_error("permission_denied", "Only group conversations can be updated")
         return data
