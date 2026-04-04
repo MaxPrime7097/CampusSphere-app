@@ -45,6 +45,18 @@ class MessageCreateSerializer(serializers.ModelSerializer):
         return message
 
 
+class MessageUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        fields = ['content']
+
+    def update(self, instance, validated_data):
+        instance = super().update(instance, validated_data)
+        instance.conversation.updated_at = timezone.now()
+        instance.conversation.save(update_fields=['updated_at'])
+        return instance
+
+
 class ConversationSerializer(serializers.ModelSerializer):
     participants_info = serializers.SerializerMethodField()
     last_message = serializers.SerializerMethodField()

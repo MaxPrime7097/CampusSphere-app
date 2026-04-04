@@ -10,6 +10,7 @@ urlpatterns = [
 
     # Messages
     path('conversations/<int:pk>/messages/', views.ConversationMessagesView.as_view(), name='conversation-messages'),
+    path('conversations/<int:pk>/messages/<int:message_pk>/', views.MessageDetailView.as_view(), name='message-detail'),
     path('conversations/<int:pk>/read/', views.ConversationReadView.as_view(), name='conversation-read'),
 
     # Conversation management

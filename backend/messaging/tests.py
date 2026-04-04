@@ -88,3 +88,54 @@ class MessagingApiTests(APITestCase):
         self.assertEqual(read_response.status_code, status.HTTP_200_OK)
         self.assertTrue(read_response.data['success'])
         self.assertEqual(conversation.get_unread_count(self.other_user), 0)
+
+    def test_message_crud_author_permissions(self):
+        conversation = Conversation.objects.create(type='private')
+        conversation.participants.add(self.user, self.other_user)
+        message = Message.objects.create(conversation=conversation, author=self.user, content='Initial')
+
+        detail_url = reverse(
+            'messaging:message-detail',
+            kwargs={'pk': conversation.id, 'message_pk': message.id}
+        )
+
+        patch_response = self.client.patch(detail_url, {'content': 'Edited'}, format='json')
+        self.assertEqual(patch_response.status_code, status.HTTP_200_OK)
+        message.refresh_from_db()
+        self.assertEqual(message.content, 'Edited')
+
+        delete_response = self.client.delete(detail_url, format='json')
+        self.assertEqual(delete_response.status_code, status.HTTP_200_OK)
+        self.assertFalse(Message.objects.filter(id=message.id).exists())
+
+    def test_message_crud_non_author_forbidden(self):
+        conversation = Conversation.objects.create(type='private')
+        conversation.participants.add(self.user, self.other_user)
+        message = Message.objects.create(conversation=conversation, author=self.user, content='Initial')
+
+        self.client.force_authenticate(user=self.other_user)
+        detail_url = reverse(
+            'messaging:message-detail',
+            kwargs={'pk': conversation.id, 'message_pk': message.id}
+        )
+
+        patch_response = self.client.patch(detail_url, {'content': 'Hack'}, format='json')
+        self.assertEqual(patch_response.status_code, status.HTTP_403_FORBIDDEN)
+
+        delete_response = self.client.delete(detail_url, format='json')
+        self.assertEqual(delete_response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_group_creator_can_moderate_messages(self):
+        group = Conversation.objects.create(type='group', name='Mods', created_by=self.user)
+        group.participants.add(self.user, self.other_user, self.third_user)
+        message = Message.objects.create(conversation=group, author=self.other_user, content='Post')
+
+        detail_url = reverse(
+            'messaging:message-detail',
+            kwargs={'pk': group.id, 'message_pk': message.id}
+        )
+
+        patch_response = self.client.patch(detail_url, {'content': 'Moderated'}, format='json')
+        self.assertEqual(patch_response.status_code, status.HTTP_200_OK)
+        message.refresh_from_db()
+        self.assertEqual(message.content, 'Moderated')

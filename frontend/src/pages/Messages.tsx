@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { createPrivateConversation, getCurrentUser, getConversationMessages, getUserConnections, getUserConversations, markConversationRead, sendMessage } from "@/services/api";
+import { createPrivateConversation, deleteMessage, getCurrentUser, getConversationMessages, getUserConnections, getUserConversations, markConversationRead, sendMessage, updateMessage } from "@/services/api";
 import { useTranslation } from "react-i18next";
 import { Search, Send, Phone, Video, MoreVertical, MessageSquare, Loader2, Users, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -50,6 +50,7 @@ function mapConversation(rawConv: any, currentUserId?: string) {
     avatar: otherParticipant?.avatar || "/placeholder-avatar.jpg",
     unread: Number(conv.unread_count || conv.unreadCount || 0),
     isOnline: false,
+    createdBy: String(conv.created_by || conv.createdBy || ""),
   };
 }
 
@@ -67,6 +68,8 @@ function mapMessage(rawMsg: any, currentUserId?: string) {
     timestamp: msg.created_at || msg.createdAt || null,
     isCurrentUser: senderId === String(currentUserId || ""),
     avatar: author.avatar || "/placeholder-avatar.jpg",
+    canEdit: msg.can_edit ?? senderId === String(currentUserId || ""),
+    canDelete: msg.can_delete ?? senderId === String(currentUserId || ""),
   };
 }
 
@@ -81,7 +84,13 @@ export function Messages() {
   const [showNewConversationModal, setShowNewConversationModal] = useState(false);
   const [connectionSearch, setConnectionSearch] = useState("");
   const [isCreatingPrivate, setIsCreatingPrivate] = useState(false);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingContent, setEditingContent] = useState("");
+  const [transportMode, setTransportMode] = useState<"ws" | "polling" | "idle">("idle");
   const { toast } = useToast();
+  const socketRef = useRef<WebSocket | null>(null);
+  const pollingRef = useRef<number | null>(null);
+  const wsRetryRef = useRef<number>(0);
 
   const [conversations, setConversations] = useState<any[]>([]);
   const [connections, setConnections] = useState<any[]>([]);
@@ -202,6 +211,115 @@ export function Messages() {
     };
   }, [conversationId, currentUser]);
 
+  const stopRealtime = () => {
+    if (socketRef.current) {
+      socketRef.current.close();
+      socketRef.current = null;
+    }
+    if (pollingRef.current) {
+      window.clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+    setTransportMode("idle");
+  };
+
+  const fetchConversationMessages = async (targetConversationId: string) => {
+    const data = await getConversationMessages(targetConversationId);
+    const mapped = (data || []).map((msg: any) => mapMessage(msg, String(currentUser?.id || "")));
+    setMessages(mapped);
+  };
+
+  const startPolling = (targetConversationId: string) => {
+    if (pollingRef.current) window.clearInterval(pollingRef.current);
+    pollingRef.current = window.setInterval(() => {
+      void fetchConversationMessages(targetConversationId).catch(() => null);
+    }, 3000);
+    setTransportMode("polling");
+  };
+
+  useEffect(() => {
+    if (!conversationId) {
+      stopRealtime();
+      return;
+    }
+
+    const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
+    const wsHost = (import.meta.env.VITE_API_WS_HOST as string | undefined) || window.location.host;
+    const wsUrl = `${wsProtocol}://${wsHost}/ws/conversations/${conversationId}/`;
+    const ws = new WebSocket(wsUrl);
+    socketRef.current = ws;
+
+    ws.onopen = () => {
+      wsRetryRef.current = 0;
+      if (pollingRef.current) {
+        window.clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+      setTransportMode("ws");
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+        const eventType = payload?.type;
+        const data = payload?.payload || {};
+        if (eventType === "message_created") {
+          const next = mapMessage(data.message, String(currentUser?.id || ""));
+          setMessages((prev) => (prev.some((item: any) => item.id === next.id) ? prev : [...prev, next]));
+          setConversations((prev) =>
+            prev.map((conversation) =>
+              conversation.id === String(conversationId)
+                ? {
+                    ...conversation,
+                    lastMessage: next.content,
+                    lastMessageAt: next.timestamp,
+                    unread: next.isCurrentUser ? conversation.unread : conversation.unread + 1,
+                  }
+                : conversation
+            )
+          );
+          if (!next.isCurrentUser) {
+            void markConversationRead(conversationId);
+          }
+        }
+        if (eventType === "message_updated") {
+          const next = mapMessage(data.message, String(currentUser?.id || ""));
+          setMessages((prev) => prev.map((item: any) => (item.id === next.id ? { ...item, ...next } : item)));
+        }
+        if (eventType === "message_deleted") {
+          const deletedId = String(data?.message_id || "");
+          setMessages((prev) => prev.filter((item: any) => item.id !== deletedId));
+        }
+        if (eventType === "conversation_read") {
+          const readerId = String(data?.reader_id || "");
+          if (readerId === String(currentUser?.id || "")) {
+            setConversations((prev) =>
+              prev.map((conversation) =>
+                conversation.id === String(conversationId) ? { ...conversation, unread: 0 } : conversation
+              )
+            );
+          }
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    ws.onerror = () => startPolling(conversationId);
+    ws.onclose = () => {
+      wsRetryRef.current += 1;
+      if (wsRetryRef.current <= 2) {
+        window.setTimeout(() => {
+          if (conversationId) void fetchConversationMessages(conversationId).catch(() => null);
+        }, 1200);
+      } else {
+        startPolling(conversationId);
+      }
+    };
+
+    return () => stopRealtime();
+  }, [conversationId, currentUser]);
+
   const filteredConversations = conversations.filter(conv => 
     conv.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     conv.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
@@ -271,6 +389,44 @@ export function Messages() {
         conversation.id === targetConversationId ? { ...conversation, unread: 0 } : conversation
       )
     );
+  };
+
+  const handleStartEdit = (message: any) => {
+    setEditingMessageId(message.id);
+    setEditingContent(message.content);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!conversationId || !editingMessageId) return;
+    const validation = messageSchema.safeParse({ content: editingContent });
+    if (!validation.success) return;
+    try {
+      const updated = await updateMessage(conversationId, editingMessageId, editingContent);
+      const mapped = mapMessage(updated, String(currentUser?.id || ""));
+      setMessages((prev) => prev.map((item: any) => (item.id === mapped.id ? { ...item, ...mapped } : item)));
+      setEditingMessageId(null);
+      setEditingContent("");
+    } catch (e: any) {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: e?.message || "Impossible de modifier le message",
+      });
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!conversationId) return;
+    try {
+      await deleteMessage(conversationId, messageId);
+      setMessages((prev) => prev.filter((item: any) => item.id !== messageId));
+    } catch (e: any) {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: e?.message || "Impossible de supprimer le message",
+      });
+    }
   };
 
   const handleProfileNavigation = (username?: string, displayName?: string) => {
@@ -503,6 +659,9 @@ export function Messages() {
                         ? `${selectedConv?.participants?.length || 0} membres`
                         : 'Conversation privée'}
                     </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {transportMode === "ws" ? "Temps réel actif" : transportMode === "polling" ? "Mode secours (polling)" : "Hors ligne"}
+                    </p>
                   </div>
                 </div>
                 
@@ -587,6 +746,14 @@ export function Messages() {
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4">
               {messages.map((message) => (
+                (() => {
+                  const isModerator = Boolean(
+                    selectedConv?.type === "group" &&
+                    String(selectedConv?.createdBy || "") === String(currentUser?.id || "")
+                  );
+                  const canEdit = Boolean(message.canEdit || isModerator);
+                  const canDelete = Boolean(message.canDelete || isModerator);
+                  return (
                 <div
                   key={message.id}
                   className={`flex gap-3 ${message.isCurrentUser ? 'flex-row-reverse' : ''}`}
@@ -627,7 +794,47 @@ export function Messages() {
                         : 'bg-card border'
                     }`}>
                       <CardContent className="p-3">
-                        <p className="text-sm">{message.content}</p>
+                        <div className="flex items-start gap-2">
+                          <div className="flex-1">
+                            {editingMessageId === message.id ? (
+                              <div className="space-y-2">
+                                <Input
+                                  value={editingContent}
+                                  onChange={(e) => setEditingContent(e.target.value)}
+                                  className="bg-background text-foreground"
+                                  maxLength={1000}
+                                />
+                                <div className="flex gap-2 justify-end">
+                                  <Button size="sm" variant="secondary" onClick={handleSaveEdit}>Enregistrer</Button>
+                                  <Button size="sm" variant="ghost" onClick={() => setEditingMessageId(null)}>Annuler</Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-sm">{message.content}</p>
+                            )}
+                          </div>
+                          {(canEdit || canDelete) && editingMessageId !== message.id && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                  <MoreVertical className="h-3 w-3" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {canEdit && (
+                                  <DropdownMenuItem onClick={() => handleStartEdit(message)}>
+                                    Modifier
+                                  </DropdownMenuItem>
+                                )}
+                                {canDelete && (
+                                  <DropdownMenuItem onClick={() => handleDeleteMessage(message.id)} className="text-red-600">
+                                    Supprimer
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                        </div>
                       </CardContent>
                     </Card>
                     
@@ -636,6 +843,8 @@ export function Messages() {
                     </p>
                   </div>
                 </div>
+                  );
+                })()
               ))}
             </div>
 

@@ -1302,6 +1302,27 @@ export async function markConversationRead(conversationId: number | string, toke
   });
 }
 
+export async function updateMessage(
+  conversationId: number | string,
+  messageId: number | string,
+  content: string,
+  token?: string
+) {
+  const response = await apiFetch<any>(`api/conversations/${conversationId}/messages/${messageId}/`, {
+    method: "PATCH",
+    body: { content },
+    token: token || getAccessToken(),
+  });
+  return unwrapItem<any>(response);
+}
+
+export async function deleteMessage(conversationId: number | string, messageId: number | string, token?: string) {
+  return apiFetch<any>(`api/conversations/${conversationId}/messages/${messageId}/`, {
+    method: "DELETE",
+    token: token || getAccessToken(),
+  });
+}
+
 export async function createPrivateConversation(userId: number | string, token?: string) {
   const response = await apiFetch<any>("api/conversations/private/create/", {
     method: "POST",
