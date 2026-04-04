@@ -30,6 +30,8 @@ function mapConversation(rawConv: any, currentUserId?: string) {
   const participants = conv.participants_info || conv.participants || [];
   const otherParticipant =
     participants.find((participant: any) => String(participant.id) !== String(currentUserId)) || participants[0];
+  const otherParticipantName =
+    otherParticipant?.full_name || otherParticipant?.name || otherParticipant?.username;
   const lastMessage = conv.last_message?.content || conv.lastMessage?.content || "";
   const lastMessageAt =
     conv.last_message?.created_at ||
@@ -46,7 +48,10 @@ function mapConversation(rawConv: any, currentUserId?: string) {
     participants,
     lastMessage,
     lastMessageAt,
-    name: conv.name || otherParticipant?.name || "Conversation",
+    name:
+      otherParticipantName ||
+      conv.name ||
+      (participants.length > 0 ? "Utilisateur" : "Conversation"),
     avatar: otherParticipant?.avatar || "/placeholder-avatar.jpg",
     unread: Number(conv.unread_count || conv.unreadCount || 0),
     isOnline: false,
@@ -145,7 +150,7 @@ export function Messages() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [currentUser?.id]);
 
   // Load current user connections for new DM flow
   useEffect(() => {
