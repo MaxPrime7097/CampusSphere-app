@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.utils import timezone
 from .models import Conversation, Message, ConversationReadReceipt
+from .errors import business_validation_error
 
 
 class MessageSerializer(serializers.ModelSerializer):
@@ -82,37 +83,42 @@ class ConversationSerializer(serializers.ModelSerializer):
 
 
 class ConversationCreateSerializer(serializers.ModelSerializer):
-    participant_ids = serializers.ListField(
-        child=serializers.UUIDField(),
-        write_only=True
+    participant_ids = serializers.PrimaryKeyRelatedField(
+        queryset=None,
+        many=True,
+        write_only=True,
+        source='participants'
     )
 
     class Meta:
         model = Conversation
         fields = ['type', 'name', 'participant_ids']
 
-    def validate_participant_ids(self, value):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         from users.models import User
-        
-        # Check if all participants exist
-        existing_users = User.objects.filter(id__in=value)
-        if len(existing_users) != len(value):
-            raise serializers.ValidationError("One or more participants not found")
+        self.fields['participant_ids'].queryset = User.objects.all()
+
+    def validate_participant_ids(self, value):
+        current_user = self.context['request'].user
+
+        if current_user in value:
+            raise serializers.ValidationError("Do not include the authenticated user in participant_ids")
 
         # For private conversations, only 2 participants allowed (including creator)
         if self.initial_data.get('type') == 'private' and len(value) != 1:
-            raise serializers.ValidationError("Private conversations must have exactly 2 participants")
+            business_validation_error("invalid_participant", "Private conversations must have exactly 2 participants")
 
         # For group conversations, at least 2 participants (excluding creator)
         if self.initial_data.get('type') == 'group' and len(value) < 2:
-            raise serializers.ValidationError("Group conversations must have at least 3 participants")
+            business_validation_error("invalid_participant", "Group conversations must have at least 3 participants")
 
         return value
 
     def validate(self, data):
         # For private conversations, check if conversation already exists
         if data['type'] == 'private':
-            participant_ids = data['participant_ids']
+            participants = data['participants']
             current_user = self.context['request'].user
             
             # Check if private conversation already exists between these users
@@ -125,16 +131,16 @@ class ConversationCreateSerializer(serializers.ModelSerializer):
                 participant_count=2,
                 participants=current_user
             ).filter(
-                participants__in=participant_ids
+                participants__in=participants
             ).first()
 
             if existing_conversation:
-                raise serializers.ValidationError("Private conversation already exists between these users")
+                business_validation_error("conversation_exists", "Private conversation already exists between these users")
 
         return data
 
     def create(self, validated_data):
-        participant_ids = validated_data.pop('participant_ids')
+        participants = validated_data.pop('participants')
         current_user = self.context['request'].user
         
         # Set created_by for group conversations
@@ -144,8 +150,6 @@ class ConversationCreateSerializer(serializers.ModelSerializer):
         conversation = super().create(validated_data)
         
         # Add participants
-        from users.models import User
-        participants = User.objects.filter(id__in=participant_ids)
         conversation.participants.add(current_user, *participants)
         
         return conversation
