@@ -44,6 +44,13 @@ import { DataDeletion } from "./pages/public/DataDeletion";
 import { Waitinglist } from "./pages/public/Waitinglist";
 import { Policies } from "./pages/public/Policies";
 import { RequireAdminRole } from "./components/auth/RequireAdminRole";
+import { AdminLayout } from "./admin/components/AdminLayout";
+import { AdminDashboardPage } from "./admin/pages/AdminDashboardPage";
+import { AdminUsersPage } from "./admin/pages/AdminUsersPage";
+import { AdminSpheresPage } from "./admin/pages/AdminSpheresPage";
+import { AdminModerationPage } from "./admin/pages/AdminModerationPage";
+import { AdminResourcesPage } from "./admin/pages/AdminResourcesPage";
+import { AdminLogsPage } from "./admin/pages/AdminLogsPage";
 
 
 const queryClient = new QueryClient();
