@@ -45,4 +45,5 @@ pytest-django==4.11.1
 python-decouple==3.8
 requests==2.32.3
 whitenoise
-PyJWT==2.9.0
+PyJWT[crypto]==2.9.0
+cryptography>=41.0.0
