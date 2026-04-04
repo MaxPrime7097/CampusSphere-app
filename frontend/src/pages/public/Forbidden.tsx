@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { ShieldX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export function Forbidden() {
+export default function Forbidden() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="max-w-md w-full text-center space-y-4">
