@@ -114,16 +114,19 @@ class ConversationCreateSerializer(serializers.ModelSerializer):
         if self.initial_data.get('type') == 'group' and len(value) < 2:
             business_validation_error("invalid_participant", "Group conversations must have at least 3 participants")
 
-        return value
+        return unique_ids
 
     def validate(self, data):
+        participant_ids = data.get('participant_ids', [])
+        data['participants'] = list(User.objects.filter(id__in=participant_ids))
+
         # For private conversations, check if conversation already exists
         if data['type'] == 'private':
             participants = data['participants']
             current_user = self.context['request'].user
             
             # Check if private conversation already exists between these users
-            from django.db.models import Q, Count
+            from django.db.models import Count
             existing_conversation = Conversation.objects.filter(
                 type='private'
             ).annotate(
