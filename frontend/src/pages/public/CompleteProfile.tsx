@@ -5,8 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
@@ -16,6 +14,7 @@ import { AddExperienceModal } from "@/components/modals/AddExperienceModal";
 import { UniversityCombobox } from "@/components/forms/UniversityCombobox";
 import { FacultyCombobox } from "@/components/forms/FacultyCombobox";
 import { StudyLevelCombobox } from "@/components/forms/StudyLevelCombobox";
+import { RegistrationErrorAlert, RegistrationPrimaryButton, RegistrationTunnelLayout } from "@/components/public/registration/RegistrationTunnelUI";
 
 type Step = 1 | 2 | 3;
 
@@ -101,28 +100,13 @@ export function CompleteProfile() {
   const progress = step === 1 ? 33 : step === 2 ? 66 : 100;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg">
-        <div className="text-center mb-8">
-          <span className="text-2xl font-bold font-automata text-primary">CampusSphere</span>
-          <p className="text-muted-foreground mt-2">Complétez votre profil — Étape {step} sur 3</p>
-        </div>
-
-        <div className="mb-6">
-          <Progress value={progress} className="h-2" />
-          <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-            <span>Infos de base</span>
-            <span>Académique</span>
-            <span>Compétences</span>
-          </div>
-        </div>
-
-        <div className="space-y-5 bg-card rounded-xl p-6 shadow-sm border">
-          {Object.keys(errors).length > 0 && (
-            <Alert variant="destructive">
-              <AlertDescription>Veuillez corriger les erreurs ci-dessous</AlertDescription>
-            </Alert>
-          )}
+    <RegistrationTunnelLayout
+      subtitle={`Complétez votre profil — Étape ${step} sur 3`}
+      progress={progress}
+      progressLabels={["Infos de base", "Académique", "Compétences"]}
+      onBrandClick={() => navigate("/")}
+    >
+      <RegistrationErrorAlert show={Object.keys(errors).length > 0} />
 
           {/* ── ÉTAPE 1 : Infos de base ── */}
           {step === 1 && (
@@ -156,9 +140,9 @@ export function CompleteProfile() {
                 </div>
               </div>
               <div className="flex justify-end pt-2">
-                <Button onClick={() => validateAndNext(step1Schema, 2)} className="campus-gradient text-white">
+                <RegistrationPrimaryButton onClick={() => validateAndNext(step1Schema, 2)}>
                   Suivant <ChevronRight className="ml-2 h-4 w-4" />
-                </Button>
+                </RegistrationPrimaryButton>
               </div>
             </div>
           )}
@@ -195,9 +179,9 @@ export function CompleteProfile() {
               </div>
               <div className="flex justify-between pt-2">
                 <Button variant="outline" onClick={() => setStep(1)}><ChevronLeft className="mr-2 h-4 w-4" />Précédent</Button>
-                <Button onClick={() => validateAndNext(step2Schema, 3)} className="campus-gradient text-white">
+                <RegistrationPrimaryButton onClick={() => validateAndNext(step2Schema, 3)}>
                   Suivant <ChevronRight className="ml-2 h-4 w-4" />
-                </Button>
+                </RegistrationPrimaryButton>
               </div>
             </div>
           )}
@@ -281,14 +265,12 @@ export function CompleteProfile() {
 
               <div className="flex justify-between pt-2">
                 <Button variant="outline" onClick={() => setStep(2)}><ChevronLeft className="mr-2 h-4 w-4" />Précédent</Button>
-                <Button onClick={handleSubmit} disabled={isLoading} className="campus-gradient text-white">
+                <RegistrationPrimaryButton onClick={handleSubmit} disabled={isLoading}>
                   {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Finalisation...</> : <><Check className="mr-2 h-4 w-4" />Terminer</>}
-                </Button>
+                </RegistrationPrimaryButton>
               </div>
             </div>
           )}
-        </div>
-      </div>
-    </div>
+    </RegistrationTunnelLayout>
   );
 }

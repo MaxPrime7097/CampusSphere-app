@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useRef, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Upload, Check, Loader2, AlertCircle, Eye, EyeOff, X, ExternalLink, Plus, FileText, Mail, RefreshCw } from "lucide-react";
+import { ChevronLeft, ChevronRight, Upload, Check, Loader2, Eye, EyeOff, X, ExternalLink, Plus, FileText, Mail, RefreshCw } from "lucide-react";
 import { FaGoogle, FaFacebook } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,8 +8,6 @@ import { Label } from "@/components/ui/label";
 import { CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +20,7 @@ import { UniversityCombobox } from "@/components/forms/UniversityCombobox";
 import { FacultyCombobox } from "@/components/forms/FacultyCombobox";
 import { StudyLevelCombobox } from "@/components/forms/StudyLevelCombobox";
 import Sphere3D from "@/components/layout/Sphere3D";
+import { RegistrationErrorAlert, RegistrationPrimaryButton, RegistrationTunnelLayout } from "@/components/public/registration/RegistrationTunnelUI";
 
 // Étapes : 1=infos perso, "verify"=attente email, 2=académique, 3=compétences
 type Step = 1 | "verify" | 2 | 3;
@@ -173,31 +172,20 @@ export function Register() {
   const progress = step === "verify" ? 33 : step === 1 ? 0 : step === 2 ? 33 : 66;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5 p-4 mx-auto grid lg:grid-cols-2 gap-12 items-center">
-      <div className="px-0 sm:px-20">
-        <div className="text-center mb-8 cursor-pointer" onClick={() => navigate("/cs-inc")}>
-          <span className="text-2xl font-bold font-automata text-primary">CampusSphere</span>
-          <p className="text-muted-foreground mt-2">
-            {step === "verify" ? "Vérification de l'email" : `Étape ${stepNumber} sur 3`}
-          </p>
+    <RegistrationTunnelLayout
+      subtitle={step === "verify" ? "Vérification de l'email" : `Étape ${stepNumber} sur 3`}
+      progress={progress}
+      progressLabels={["Infos personnelles", "Infos académiques", "Compétences"]}
+      onBrandClick={() => navigate("/cs-inc")}
+      sideVisual={<Sphere3D />}
+      footer={step !== "verify" ? (
+        <div className="text-center mt-4 text-sm text-muted-foreground">
+          Déjà un compte ?{" "}
+          <Button variant="link" className="px-0 text-primary" onClick={() => navigate("/login")}>Se connecter</Button>
         </div>
-
-        <div className="mb-8">
-          <Progress value={progress} className="h-2" />
-          <div className="flex justify-between mt-2 text-sm text-muted-foreground">
-            <span>Infos personnelles</span>
-            <span>Infos académiques</span>
-            <span>Compétences</span>
-          </div>
-        </div>
-
-        <div className="space-y-6 p-5 pt-0 mt-4">
-          {Object.keys(errors).length > 0 && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>Veuillez corriger les erreurs ci-dessous</AlertDescription>
-            </Alert>
-          )}
+      ) : undefined}
+    >
+      <RegistrationErrorAlert show={Object.keys(errors).length > 0} />
 
           {/* ── ÉTAPE 1 : Infos personnelles ── */}
           {step === 1 && (
@@ -289,10 +277,10 @@ export function Register() {
               </div>
 
               <div className="flex justify-end pt-4">
-                <Button onClick={handleStep1Submit} disabled={isLoading} className="campus-gradient text-white hover:opacity-90">
+                <RegistrationPrimaryButton onClick={handleStep1Submit} disabled={isLoading}>
                   {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   Suivant <ChevronRight className="ml-2 h-4 w-4" />
-                </Button>
+                </RegistrationPrimaryButton>
               </div>
             </div>
           )}
@@ -358,7 +346,7 @@ export function Register() {
               </div>
               <div className="flex justify-between pt-4">
                 <Button variant="outline" onClick={() => setStep(1)}><ChevronLeft className="mr-2 h-4 w-4" />Précédent</Button>
-                <Button onClick={() => {
+                <RegistrationPrimaryButton onClick={() => {
                   const v = step2Schema.safeParse(formData);
                   if (!v.success) {
                     const fe: Record<string, string> = {};
@@ -366,9 +354,9 @@ export function Register() {
                     setErrors(fe); return;
                   }
                   setErrors({}); setStep(3);
-                }} className="campus-gradient text-white hover:opacity-90">
+                }}>
                   Suivant <ChevronRight className="ml-2 h-4 w-4" />
-                </Button>
+                </RegistrationPrimaryButton>
               </div>
             </div>
           )}
@@ -456,22 +444,12 @@ export function Register() {
 
               <div className="flex justify-between pt-4">
                 <Button variant="outline" onClick={() => setStep(2)}><ChevronLeft className="mr-2 h-4 w-4" />Précédent</Button>
-                <Button onClick={handleFinalSubmit} disabled={isLoading} className="campus-gradient text-white hover:opacity-90">
+                <RegistrationPrimaryButton onClick={handleFinalSubmit} disabled={isLoading}>
                   {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Finalisation...</> : <><Check className="mr-2 h-4 w-4" />Terminer l'inscription</>}
-                </Button>
+                </RegistrationPrimaryButton>
               </div>
             </div>
           )}
-
-          {step !== "verify" && (
-            <div className="text-center mt-4 text-sm text-muted-foreground">
-              Déjà un compte ?{" "}
-              <Button variant="link" className="px-0 text-primary" onClick={() => navigate("/login")}>Se connecter</Button>
-            </div>
-          )}
-        </div>
-      </div>
-      <div className="hidden lg:block"><Sphere3D /></div>
-    </div>
+    </RegistrationTunnelLayout>
   );
 }
