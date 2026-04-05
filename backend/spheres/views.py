@@ -612,7 +612,7 @@ def sphere_files(request, pk):
                 'file_type': f.file_type,
                 'uploaded_by': {
                     'id': f.uploaded_by.id,
-                    'name': f.uploaded_by.get_full_name() or f.uploaded_by.username,
+                    'name': getattr(f.uploaded_by, 'full_name', None) or f.uploaded_by.username,
                     'avatar': avatar_url,
                 },
                 'created_at': f.created_at.isoformat(),

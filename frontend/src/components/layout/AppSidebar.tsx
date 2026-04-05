@@ -4,6 +4,7 @@ import {
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar,
 } from "@/components/ui/sidebar";
 import { useEffect, useState } from "react";
+import { ExternalLink } from "lucide-react";
 import { getCurrentUser } from "@/services/api";
 import { getNavigationSections, type NavigationUser, type NavigationItem } from "./navigationConfig";
 import { useUnreadCounts } from "@/hooks/useUnreadCounts";
@@ -60,6 +61,9 @@ export function AppSidebar() {
             {!isCollapsed && (
               <span className="flex items-center justify-between flex-1 min-w-0">
                 <span className="truncate">{item.title}</span>
+                {item.external && (
+                  <ExternalLink className="h-3 w-3 text-muted-foreground flex-shrink-0 ml-1" />
+                )}
                 {badge !== null && (
                   <span className="ml-2 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full px-1.5 py-0.5 flex-shrink-0">
                     {badge > 99 ? "99+" : badge}

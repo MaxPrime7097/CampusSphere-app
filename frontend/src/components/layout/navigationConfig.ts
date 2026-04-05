@@ -29,6 +29,7 @@ export interface NavigationItem {
   title: string;
   url: string;
   icon: LucideIcon;
+  external?: boolean;
 }
 
 export interface NavigationSections {
@@ -64,13 +65,13 @@ export function getNavigationSections(user?: NavigationUser | null): NavigationS
     { title: "Messages", url: "/messages", icon: MessageSquare },
     { title: "Enregistrements", url: "/saved", icon: Bookmark },
     { title: "Paramètres", url: "/settings", icon: Settings },
-    ...adminEntry,
   ];
 
   const utilities: NavigationItem[] = [
-    { title: "À propos", url: "/cs-inc/about", icon: Info },
-    { title: "Politiques", url: "/cs-inc/policies", icon: Scale },
-    { title: "Aide", url: "/cs-inc/contact", icon: LifeBuoy },
+    ...adminEntry,
+    { title: "À propos", url: "/cs-inc/about", icon: Info, external: true },
+    { title: "Politiques", url: "/cs-inc/policies", icon: Scale, external: true },
+    { title: "Aide", url: "/cs-inc/contact", icon: LifeBuoy, external: true },
   ];
 
   const mobileItems: NavigationItem[] = [

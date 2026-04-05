@@ -128,9 +128,7 @@ export function Privacy(): JSX.Element {
                 </p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
                   <li>Avec votre consentement explicite</li>
-                  <li>Avec votre université (pour vérification académique)</li>
                   <li>Pour respecter nos obligations légales</li>
-                  <li>En cas de fusion ou acquisition (avec notification préalable)</li>
                 </ul>
               </div>
             </div>

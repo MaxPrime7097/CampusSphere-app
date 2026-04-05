@@ -105,12 +105,12 @@ export function CookiePolicy(): JSX.Element {
                   <p>Nécessaires au fonctionnement de la plateforme (authentification, sécurité)</p>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground mb-2">Cookies de performance</h3>
-                  <p>Nous aident à comprendre comment vous utilisez CampusSphere</p>
-                </div>
-                <div>
                   <h3 className="font-semibold text-foreground mb-2">Cookies de personnalisation</h3>
                   <p>Mémorisent vos préférences (langue, thème, notifications)</p>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">Pas de cookies de tracking tiers</h3>
+                  <p>CampusSphere n'utilise pas de cookies de suivi publicitaire ou d'analyse tiers (pas de Google Analytics, Hotjar ou similaires)</p>
                 </div>
               </div>
               </div>
@@ -130,7 +130,7 @@ export function CookiePolicy(): JSX.Element {
               <p className="mt-4">
                 Pour gérer vos préférences de cookies personnelles, rendez-vous dans {" "}
                 <a className="text-primary hover:underline">
-                  Paramètres → Confidentialité
+                  Paramètres → Confidentialité 
                 </a>
                  ,en fonction de votre navigateur. Vous pouvez y voir les cookies actifs et les supprimer si vous le souhaitez.
               </p>

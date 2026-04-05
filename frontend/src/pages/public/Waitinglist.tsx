@@ -1,16 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Mail, MapPin, Clock, Send, Sparkles, Heart, CheckCircle, ChevronDown} from "lucide-react";
-import { FaFacebook, FaInstagram, FaLinkedin, FaTiktok } from "react-icons/fa";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 
 export function Waitinglist(): JSX.Element {
   const navigate = useNavigate();

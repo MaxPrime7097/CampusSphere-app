@@ -434,23 +434,23 @@ export function SearchResults() {
                       <CardContent className="p-3 md:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div className="flex-1">
                           <p 
-                            className="font-semibold cursor-pointer hover:underline"
+                            className="font-semibold cursor-pointer hover:underline truncate"
                             onClick={() => handleViewResource(res.id, res.title)}
                           >
                             {res.title}
                           </p>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-sm text-muted-foreground truncate">
                             Type: {getTypeLabel(res.type)}
                           </p>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-sm text-muted-foreground truncate">
                             Matière: {getSubjectLabel(res.subject)}
                           </p>
                           {res.category && (
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-sm text-muted-foreground truncate">
                               Catégorie: {getCategoryLabel(res.category)}
                             </p>
                           )}
-                          <p className="text-sm text-muted-foreground">Auteur: {res.authorName}</p>
+                          <p className="text-sm text-muted-foreground truncate">Auteur: {res.authorName}</p>
                         </div>
                         <Button 
                           size="sm" 
@@ -477,9 +477,9 @@ export function SearchResults() {
                   {sortedResults.spheres.map((sphere) => (
                     <Card key={sphere.id} className="rounded-none md:rounded-lg border-y md:border bg-card hover:bg-accent/30 transition-all">
                       <CardContent className="p-3 md:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <p 
-                            className="font-semibold cursor-pointer hover:underline"
+                            className="font-semibold cursor-pointer hover:underline truncate"
                             onClick={() => handleViewSphere(sphere.id, sphere.name)}
                           >
                             {sphere.name}
@@ -574,25 +574,25 @@ export function SearchResults() {
                 {sortedResults.resources.map((res) => (
                   <Card key={res.id} className="rounded-none md:rounded-lg border-y md:border bg-card hover:bg-accent/30 transition-all">
                     <CardContent className="p-3 md:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <p 
-                          className="font-semibold cursor-pointer hover:underline"
+                          className="font-semibold cursor-pointer hover:underline truncate"
                           onClick={() => handleViewResource(res.id, res.title)}
                         >
                           {res.title}
                         </p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm text-muted-foreground truncate">
                           Type: {getTypeLabel(res.type)}
                         </p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm text-muted-foreground truncate">
                           Matière: {getSubjectLabel(res.subject)}
                         </p>
                         {res.category && (
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-sm text-muted-foreground truncate">
                             Catégorie: {getCategoryLabel(res.category)}
                           </p>
                         )}
-                        <p className="text-sm text-muted-foreground">Auteur: {res.authorName}</p>
+                        <p className="text-sm text-muted-foreground truncate">Auteur: {res.authorName}</p>
                       </div>
                       <Button 
                         size="sm" 
@@ -621,9 +621,9 @@ export function SearchResults() {
                 {sortedResults.spheres.map((sphere) => (
                   <Card key={sphere.id} className="rounded-none md:rounded-lg border-y md:border bg-card hover:bg-accent/30 transition-all">
                     <CardContent className="p-3 md:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <p 
-                          className="font-semibold cursor-pointer hover:underline"
+                          className="font-semibold cursor-pointer hover:underline truncate"
                           onClick={() => handleViewSphere(sphere.id, sphere.name)}
                         >
                           {sphere.name}

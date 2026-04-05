@@ -101,11 +101,11 @@ export function Terms(): JSX.Element {
               </div>
               <div className="font-nunito font-semibold text-muted-foreground space-y-4 mt-4">
                 <ul className="list-disc list-inside space-y-2 ml-4">
-                  <li>Vous devez être étudiant dans un établissement d'enseignement supérieur</li>
+                  <li>CampusSphere est destiné en priorité aux étudiants en établissement d'enseignement supérieur</li>
                   <li>Vous devez fournir des informations exactes et à jour</li>
                   <li>Vous êtes responsable de la confidentialité de votre compte</li>
                   <li>Vous devez nous informer immédiatement de toute utilisation non autorisée</li>
-                  <li>Un seul compte par personne est autorisé</li>
+                  <li>Il est recommandé de n'utiliser qu'un seul compte par personne</li>
                 </ul>
               </div>
             </div>
