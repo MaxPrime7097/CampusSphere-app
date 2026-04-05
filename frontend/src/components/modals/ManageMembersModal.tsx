@@ -3,7 +3,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { listSphereMembers, updateSphereMember, removeSphereMember } from "@/services/api";
 import { formatRelativeTime } from "@/lib/date";
@@ -56,9 +55,7 @@ export function ManageMembersModal({ children, sphereId, sphereName }: Props) {
     }
   };
 
-  useEffect(() => {
-    if (isOpen) void loadMembers();
-  }, [isOpen, sphereId]);
+  useEffect(() => { if (isOpen) void loadMembers(); }, [isOpen, sphereId]);
 
   const activeMembers = useMemo(() =>
     members.filter((m) => m.status === "active" && (
@@ -79,9 +76,7 @@ export function ManageMembersModal({ children, sphereId, sphereName }: Props) {
       toast({ title: "Rôle mis à jour" });
     } catch (e: any) {
       toast({ variant: "destructive", title: "Erreur", description: e?.message });
-    } finally {
-      setProc(memberId, false);
-    }
+    } finally { setProc(memberId, false); }
   };
 
   const handleRemove = async (memberId: string, name: string) => {
@@ -93,9 +88,7 @@ export function ManageMembersModal({ children, sphereId, sphereName }: Props) {
       toast({ title: "Membre retiré" });
     } catch (e: any) {
       toast({ variant: "destructive", title: "Erreur", description: e?.message });
-    } finally {
-      setProc(memberId, false);
-    }
+    } finally { setProc(memberId, false); }
   };
 
   const handleApprove = async (memberId: string) => {
@@ -107,9 +100,7 @@ export function ManageMembersModal({ children, sphereId, sphereName }: Props) {
       toast({ title: "Membre approuvé" });
     } catch (e: any) {
       toast({ variant: "destructive", title: "Erreur", description: e?.message });
-    } finally {
-      setProc(memberId, false);
-    }
+    } finally { setProc(memberId, false); }
   };
 
   const handleReject = async (memberId: string) => {
@@ -121,21 +112,20 @@ export function ManageMembersModal({ children, sphereId, sphereName }: Props) {
       toast({ title: "Demande rejetée" });
     } catch (e: any) {
       toast({ variant: "destructive", title: "Erreur", description: e?.message });
-    } finally {
-      setProc(memberId, false);
-    }
+    } finally { setProc(memberId, false); }
   };
 
-  const roleIcon = (role: string) => role === "admin"
-    ? <Crown className="h-3.5 w-3.5 text-yellow-500" />
-    : role === "moderator"
-      ? <Shield className="h-3.5 w-3.5 text-blue-500" />
-      : <User className="h-3.5 w-3.5 text-muted-foreground" />;
+  const roleIcon = (role: string) =>
+    role === "admin" ? <Crown className="h-3.5 w-3.5 text-yellow-500" /> :
+    role === "moderator" ? <Shield className="h-3.5 w-3.5 text-blue-500" /> :
+    <User className="h-3.5 w-3.5 text-muted-foreground" />;
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="w-full max-w-lg max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-base">
             <Users className="h-4 w-4" />
             Membres{sphereName ? ` · ${sphereName}` : ""}
           </DialogTitle>
@@ -158,7 +148,6 @@ export function ManageMembersModal({ children, sphereId, sphereName }: Props) {
           ))}
         </div>
 
-        {/* Search (members tab only) */}
         {activeTab === "members" && (
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -194,27 +183,16 @@ export function ManageMembersModal({ children, sphereId, sphereName }: Props) {
                     <p className="text-xs text-muted-foreground">@{m.username} · {formatRelativeTime(m.joinedAt)}</p>
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
-                    <Select
-                      value={m.role}
-                      onValueChange={(val) => handleRoleChange(m.id, val)}
-                      disabled={processing[m.id]}
-                    >
-                      <SelectTrigger className="h-7 w-28 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
+                    <Select value={m.role} onValueChange={(val) => handleRoleChange(m.id, val)} disabled={processing[m.id]}>
+                      <SelectTrigger className="h-7 w-28 text-xs"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="member">Membre</SelectItem>
                         <SelectItem value="moderator">Modérateur</SelectItem>
                         <SelectItem value="admin">Admin</SelectItem>
                       </SelectContent>
                     </Select>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-                      onClick={() => handleRemove(m.id, m.name)}
-                      disabled={processing[m.id]}
-                    >
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                      onClick={() => handleRemove(m.id, m.name)} disabled={processing[m.id]}>
                       {processing[m.id] ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserMinus className="h-3.5 w-3.5" />}
                     </Button>
                   </div>
@@ -239,11 +217,13 @@ export function ManageMembersModal({ children, sphereId, sphereName }: Props) {
                     <p className="text-xs text-muted-foreground">@{m.username} · {formatRelativeTime(m.joinedAt)}</p>
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
-                    <Button size="sm" className="h-7 bg-green-600 hover:bg-green-700 text-white gap-1 px-2" onClick={() => handleApprove(m.id)} disabled={processing[m.id]}>
+                    <Button size="sm" className="h-7 bg-green-600 hover:bg-green-700 text-white gap-1 px-2"
+                      onClick={() => handleApprove(m.id)} disabled={processing[m.id]}>
                       {processing[m.id] ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserCheck className="h-3.5 w-3.5" />}
                       <span className="hidden sm:inline text-xs">Approuver</span>
                     </Button>
-                    <Button size="sm" variant="ghost" className="h-7 text-red-600 gap-1 px-2" onClick={() => handleReject(m.id)} disabled={processing[m.id]}>
+                    <Button size="sm" variant="ghost" className="h-7 text-red-600 gap-1 px-2"
+                      onClick={() => handleReject(m.id)} disabled={processing[m.id]}>
                       <UserX className="h-3.5 w-3.5" />
                       <span className="hidden sm:inline text-xs">Rejeter</span>
                     </Button>
