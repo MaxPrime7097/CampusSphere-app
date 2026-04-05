@@ -24,7 +24,7 @@ class Migration(migrations.Migration):
         ),
         # Migrate existing completed tasks to 'done'
         migrations.RunSQL(
-            "UPDATE tasks_task SET kanban_status = 'done' WHERE is_completed = 1;",
-            reverse_sql="UPDATE tasks_task SET is_completed = 0 WHERE kanban_status = 'todo';",
+            "UPDATE tasks_task SET kanban_status = 'done' WHERE is_completed = TRUE;",
+            reverse_sql="UPDATE tasks_task SET is_completed = FALSE WHERE kanban_status = 'todo';",
         ),
     ]
