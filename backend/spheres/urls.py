@@ -20,4 +20,7 @@ urlpatterns = [
 
     # User spheres
     path('user/spheres/', views.user_spheres, name='user-spheres'),
+
+    # Overview
+    path('<int:pk>/overview/', views.sphere_overview, name='sphere-overview'),
 ]

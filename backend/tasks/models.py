@@ -10,6 +10,13 @@ class Task(models.Model):
         ('high', 'Haute'),
     ]
 
+    KANBAN_STATUS_CHOICES = [
+        ('todo', 'À faire'),
+        ('in_progress', 'En cours'),
+        ('review', 'En révision'),
+        ('done', 'Terminé'),
+    ]
+
     # Basic Information
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
@@ -27,6 +34,7 @@ class Task(models.Model):
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
     due_date = models.DateTimeField(null=True, blank=True)
     is_completed = models.BooleanField(default=False)
+    kanban_status = models.CharField(max_length=20, choices=KANBAN_STATUS_CHOICES, default='todo')
     impact_points = models.IntegerField(default=5)
 
     # Relations
@@ -47,7 +55,8 @@ class Task(models.Model):
         """Mark task as completed and return impact points earned"""
         if not self.is_completed:
             self.is_completed = True
-            self.save(update_fields=['is_completed', 'updated_at'])
+            self.kanban_status = 'done'
+            self.save(update_fields=['is_completed', 'kanban_status', 'updated_at'])
             return self.impact_points
         return 0
 

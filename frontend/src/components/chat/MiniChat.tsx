@@ -1,16 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  createGroupConversation,
-  getConversationMessages,
-  getCurrentUser,
-  getUserConversations,
-  listSphereMembers,
-} from "@/services/api";
+import { useEffect, useRef, useState } from "react";
+import { getConversationMessages, getUserConversations, sendMessage, getCurrentUser } from "@/services/api";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Loader2, Maximize2, MessageCircle, MessagesSquare, Minimize2, RefreshCw, Users } from "lucide-react";
+import { Loader2, Maximize2, MessageCircle, Minimize2, Send, Users } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { formatRelativeTime } from "@/lib/date";
 
 interface MiniChatProps {
   sphereId: string;
@@ -20,289 +15,255 @@ interface MiniChatProps {
   className?: string;
 }
 
-export function MiniChat({
-  sphereId,
-  sphereName,
-  isExpanded,
-  onToggleExpanded,
-  className = "",
-}: MiniChatProps) {
-  const navigate = useNavigate();
-  const socketRef = useRef<WebSocket | null>(null);
+export function MiniChat({ sphereId, sphereName, isExpanded, onToggleExpanded, className = "" }: MiniChatProps) {
   const pollingRef = useRef<number | null>(null);
-  const wsRetryRef = useRef<number>(0);
-  const liveModeRef = useRef<"ws" | "polling" | "idle">("idle");
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const socketRef = useRef<WebSocket | null>(null);
 
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [newMessage, setNewMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [transportMode, setTransportMode] = useState<"ws" | "polling" | "idle">("idle");
 
-  const toList = (value: any): any[] => {
-    if (Array.isArray(value)) return value;
-    if (Array.isArray(value?.results)) return value.results;
-    if (Array.isArray(value?.data?.results)) return value.data.results;
-    if (Array.isArray(value?.data)) return value.data;
+  const toList = (v: any): any[] => {
+    if (Array.isArray(v)) return v;
+    if (Array.isArray(v?.data)) return v.data;
+    if (Array.isArray(v?.results)) return v.results;
+    if (Array.isArray(v?.data?.results)) return v.data.results;
     return [];
   };
 
-  const toMessage = (msg: any) => {
-    const author = msg?.author_info || msg?.author || {};
-    const authorName =
-      author?.name ||
-      `${author?.first_name || ""} ${author?.last_name || ""}`.trim() ||
-      author?.username ||
-      "Utilisateur";
-
+  const toMsg = (m: any, myId?: string) => {
+    const author = m?.author_info || m?.author || {};
+    const senderId = String(author?.id || m?.author || "");
     return {
-      id: String(msg?.id || crypto.randomUUID()),
-      content: msg?.content || "",
-      authorName,
-      createdAt: msg?.created_at || msg?.createdAt || new Date().toISOString(),
+      id: String(m?.id || ""),
+      content: m?.content || "",
+      sender: author?.name || author?.full_name || author?.username || "Utilisateur",
+      avatar: author?.avatar || null,
+      timestamp: m?.created_at || m?.createdAt || null,
+      isMe: myId ? senderId === myId : false,
     };
   };
 
-  const fetchMessages = async (targetConversationId: string, limit = 20) => {
-    const response = await getConversationMessages(targetConversationId);
-    const mapped = toList(response).map(toMessage);
-    setMessages(mapped.slice(-limit));
-  };
-
-  const startPolling = (targetConversationId: string) => {
-    if (pollingRef.current) window.clearInterval(pollingRef.current);
-    pollingRef.current = window.setInterval(() => {
-      void fetchMessages(targetConversationId).catch(() => null);
-    }, 5000);
-    liveModeRef.current = "polling";
-    setTransportMode("polling");
+  const fetchMessages = async (convId: string, myId?: string) => {
+    const data = await getConversationMessages(convId);
+    const mapped = toList(data).map((m) => toMsg(m, myId));
+    setMessages(mapped.slice(-30));
   };
 
   const stopRealtime = () => {
-    if (socketRef.current) {
-      socketRef.current.close();
-      socketRef.current = null;
-    }
-    if (pollingRef.current) {
-      window.clearInterval(pollingRef.current);
-      pollingRef.current = null;
-    }
-    liveModeRef.current = "idle";
+    if (socketRef.current) { socketRef.current.close(); socketRef.current = null; }
+    if (pollingRef.current) { window.clearInterval(pollingRef.current); pollingRef.current = null; }
     setTransportMode("idle");
   };
 
-  const connectWebSocket = (targetConversationId: string) => {
-    if (socketRef.current) {
-      socketRef.current.close();
-      socketRef.current = null;
-    }
+  const startPolling = (convId: string, myId?: string) => {
+    if (pollingRef.current) window.clearInterval(pollingRef.current);
+    pollingRef.current = window.setInterval(() => {
+      void fetchMessages(convId, myId).catch(() => null);
+    }, 4000);
+    setTransportMode("polling");
+  };
 
-    const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
-    const wsHost = (import.meta.env.VITE_API_WS_HOST as string | undefined) || window.location.host;
-    const wsUrl = `${wsProtocol}://${wsHost}/ws/chat/${targetConversationId}/`;
-    const ws = new WebSocket(wsUrl);
+  const connectWS = (convId: string, myId?: string) => {
+    if (socketRef.current) { socketRef.current.close(); socketRef.current = null; }
+    const proto = window.location.protocol === "https:" ? "wss" : "ws";
+    const apiUrl = (import.meta.env.VITE_API_URL as string | undefined) || "";
+    const host = (import.meta.env.VITE_API_WS_HOST as string | undefined) ||
+      (apiUrl ? apiUrl.replace(/^https?:\/\//, "").replace(/\/$/, "") : window.location.host);
+    const ws = new WebSocket(`${proto}://${host}/ws/conversations/${convId}/`);
     socketRef.current = ws;
 
     ws.onopen = () => {
-      wsRetryRef.current = 0;
-      if (pollingRef.current) {
-        window.clearInterval(pollingRef.current);
-        pollingRef.current = null;
-      }
-      liveModeRef.current = "ws";
+      if (pollingRef.current) { window.clearInterval(pollingRef.current); pollingRef.current = null; }
       setTransportMode("ws");
     };
-
-    ws.onmessage = (event: MessageEvent<string>) => {
+    ws.onmessage = (e) => {
       try {
-        const payload = JSON.parse(event.data);
-        if (payload?.type !== "chat_message") return;
-        const mapped = toMessage(payload?.message);
-        setMessages((prev) => {
-          if (prev.some((item) => String(item.id) === String(mapped.id))) return prev;
-          return [...prev, mapped].slice(-20);
-        });
-      } catch {
-        // ignore malformed payloads
-      }
-    };
-
-    ws.onerror = () => {
-      if (liveModeRef.current !== "polling") startPolling(targetConversationId);
-    };
-
-    ws.onclose = () => {
-      if (liveModeRef.current === "ws") {
-        wsRetryRef.current += 1;
-        if (wsRetryRef.current <= 2) {
-          window.setTimeout(() => connectWebSocket(targetConversationId), 1200);
-          return;
+        const payload = JSON.parse(e.data);
+        if (payload?.type === "message_created") {
+          const next = toMsg(payload?.payload?.message, myId);
+          setMessages((prev) => prev.some((x) => x.id === next.id) ? prev : [...prev, next].slice(-30));
         }
-      }
-      if (liveModeRef.current !== "polling") startPolling(targetConversationId);
+      } catch { /* ignore */ }
     };
+    ws.onerror = () => startPolling(convId, myId);
+    ws.onclose = () => startPolling(convId, myId);
   };
 
   useEffect(() => {
     let mounted = true;
+    const SPHERE_CONV_PREFIX = `sphere-${sphereId}`;
 
     const bootstrap = async () => {
       setIsBootstrapping(true);
       setLoadError(null);
-
       try {
-        const [currentUser, conversationsResponse, membersResponse] = await Promise.all([
-          getCurrentUser(),
-          getUserConversations(),
-          listSphereMembers(sphereId),
-        ]);
+        const [user, convsRaw] = await Promise.all([getCurrentUser(), getUserConversations()]);
+        if (!mounted) return;
 
-        const myId = String(currentUser?.id || "");
-        const allConversations = toList(conversationsResponse);
-        const sphereConversationName = `sphere-${sphereId}`;
+        const myId = user?.id ? String(user.id) : undefined;
+        setCurrentUser(user);
 
-        const existing = allConversations.find((conv: any) => {
-          const type = conv?.type || conv?.conversation_type;
-          const name = (conv?.name || "").trim().toLowerCase();
-          return type === "group" && name === sphereConversationName.toLowerCase();
+        const convs = toList(convsRaw);
+        // Chercher une conv de groupe existante liée à cette sphère (nommée sphere-<id>)
+        const existing = convs.find((c: any) => {
+          const name = (c?.name || "").trim().toLowerCase();
+          const type = c?.type || c?.conversation_type;
+          return type === "group" && name === SPHERE_CONV_PREFIX.toLowerCase();
         });
 
-        let resolvedConversation = existing;
-
-        if (!resolvedConversation) {
-          const participantIds = toList(membersResponse)
-            .map((member: any) => member?.user_info?.id || member?.user || member?.id)
-            .filter(Boolean)
-            .map(String)
-            .filter((id: string) => id !== myId);
-
-          if (participantIds.length >= 2) {
-            const created = await createGroupConversation(sphereConversationName, participantIds);
-            resolvedConversation = created?.data || created;
-          }
-        }
-
-        const resolvedId = resolvedConversation?.id ? String(resolvedConversation.id) : null;
-
-        if (!mounted) return;
-        setConversationId(resolvedId);
-
-        if (!resolvedId) {
-          setMessages([]);
-          setTransportMode("idle");
+        if (!existing) {
+          // Pas de conv dédiée — afficher message informatif, pas de création automatique
+          setConversationId(null);
+          setIsBootstrapping(false);
           return;
         }
 
-        await fetchMessages(resolvedId);
+        const convId = String(existing.id);
+        setConversationId(convId);
+        await fetchMessages(convId, myId);
         if (!mounted) return;
-        connectWebSocket(resolvedId);
-      } catch (error: any) {
-        if (!mounted) return;
-        setLoadError(error?.message || "Impossible d'initialiser le chat de sphère.");
+        connectWS(convId, myId);
+      } catch (err: any) {
+        if (mounted) setLoadError(err?.message || "Impossible de charger le chat.");
       } finally {
         if (mounted) setIsBootstrapping(false);
       }
     };
 
     void bootstrap();
-
-    return () => {
-      mounted = false;
-      stopRealtime();
-    };
+    return () => { mounted = false; stopRealtime(); };
   }, [sphereId]);
 
-  const statusText = useMemo(() => {
-    if (transportMode === "ws") return "Canal temps réel connecté";
-    if (transportMode === "polling") return "Mode secours (polling HTTP)";
-    return "Canal temps réel indisponible";
-  }, [transportMode]);
+  // Auto-scroll
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const handleSend = async () => {
+    if (!conversationId || !newMessage.trim() || isSending) return;
+    setIsSending(true);
+    const content = newMessage.trim();
+    setNewMessage("");
+    try {
+      const result = await sendMessage(conversationId, content);
+      const mapped = toMsg(result, currentUser?.id ? String(currentUser.id) : undefined);
+      setMessages((prev) => prev.some((x) => x.id === mapped.id) ? prev : [...prev, mapped].slice(-30));
+    } catch {
+      setNewMessage(content);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const statusDot = transportMode === "ws"
+    ? "bg-green-500"
+    : transportMode === "polling"
+      ? "bg-yellow-500"
+      : "bg-muted-foreground";
 
   return (
     <Card className={`campus-card transition-all duration-300 ${className}`}>
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
-              <MessageCircle className="h-4 w-4 text-white" />
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
+              <MessageCircle className="h-3.5 w-3.5 text-white" />
             </div>
             <div>
-              <CardTitle className="text-lg">Chat de la sphère</CardTitle>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Users className="h-3 w-3" />
-                <span>{statusText}</span>
-                <Badge variant="secondary" className="text-xs">
-                  {sphereName || sphereId}
-                </Badge>
+              <CardTitle className="text-base">Chat · {sphereName}</CardTitle>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span className={`w-1.5 h-1.5 rounded-full ${statusDot}`} />
+                <span>
+                  {transportMode === "ws" ? "Temps réel" : transportMode === "polling" ? "Polling" : "Hors ligne"}
+                </span>
               </div>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onToggleExpanded}
-            className="h-8 w-8 p-0"
-          >
-            {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+          <Button variant="ghost" size="sm" onClick={onToggleExpanded} className="h-7 w-7 p-0">
+            {isExpanded ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
           </Button>
         </div>
       </CardHeader>
 
-      <CardContent className="pt-0">
+      <CardContent className="pt-0 space-y-2">
+        {/* Messages area */}
         <div
-          className={`rounded-lg border border-dashed bg-muted/30 px-4 py-4 ${
-            isExpanded ? "min-h-80" : "min-h-48"
-          }`}
+          className="rounded-lg border bg-muted/20 overflow-y-auto p-2 space-y-2"
+          style={{ height: isExpanded ? 320 : 200 }}
         >
           {isBootstrapping ? (
-            <div className="h-full min-h-[140px] w-full flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Connexion au chat de sphère...
+            <div className="h-full flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Chargement...
             </div>
           ) : loadError ? (
-            <div className="h-full min-h-[140px] w-full flex flex-col items-center justify-center text-center">
-              <p className="font-medium mb-2">Impossible de charger le chat.</p>
-              <p className="text-sm text-muted-foreground mb-4 max-w-md">{loadError}</p>
-              <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Réessayer
-              </Button>
+            <div className="h-full flex items-center justify-center text-sm text-destructive text-center px-2">
+              {loadError}
             </div>
           ) : !conversationId ? (
-            <div className="h-full min-h-[140px] w-full flex flex-col items-center justify-center text-center">
-              <div className="w-12 h-12 rounded-full bg-background flex items-center justify-center mb-4">
-                <MessagesSquare className="h-6 w-6 text-muted-foreground" />
-              </div>
-              <p className="font-medium mb-2">Conversation de sphère indisponible.</p>
-              <p className="text-sm text-muted-foreground mb-4 max-w-md">
-                Il faut au moins 3 membres dans la sphère pour créer automatiquement un salon de groupe.
+            <div className="h-full flex flex-col items-center justify-center text-center gap-2 px-3">
+              <Users className="h-8 w-8 text-muted-foreground/50" />
+              <p className="text-sm text-muted-foreground">
+                Aucun canal de discussion pour cette sphère.<br />
+                L'administrateur peut en créer un depuis la messagerie.
               </p>
-              <Button onClick={() => navigate("/messages")} className="campus-gradient text-white hover:opacity-90">
-                Ouvrir la messagerie
-              </Button>
+            </div>
+          ) : messages.length === 0 ? (
+            <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+              Aucun message. Soyez le premier !
             </div>
           ) : (
-            <div className="h-full flex flex-col">
-              <div className="space-y-2 overflow-auto pr-1" style={{ maxHeight: isExpanded ? 300 : 180 }}>
-                {messages.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-6">Aucun message récent.</p>
-                ) : (
-                  messages.map((message) => (
-                    <div key={message.id} className="rounded-md bg-background/90 border px-3 py-2">
-                      <div className="text-xs text-muted-foreground mb-1">{message.authorName}</div>
-                      <p className="text-sm leading-relaxed break-words">{message.content}</p>
-                    </div>
-                  ))
-                )}
+            messages.map((msg) => (
+              <div key={msg.id} className={`flex gap-2 ${msg.isMe ? "flex-row-reverse" : ""}`}>
+                <Avatar className="h-6 w-6 flex-shrink-0">
+                  <AvatarImage src={msg.avatar ?? undefined} />
+                  <AvatarFallback className="text-[10px]">{(msg.sender || "U").slice(0, 1).toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div className={`max-w-[75%] ${msg.isMe ? "items-end" : "items-start"} flex flex-col`}>
+                  {!msg.isMe && (
+                    <span className="text-[10px] text-muted-foreground mb-0.5">{msg.sender}</span>
+                  )}
+                  <div className={`rounded-lg px-2.5 py-1.5 text-sm ${msg.isMe ? "campus-gradient text-white" : "bg-card border"}`}>
+                    {msg.content}
+                  </div>
+                  <span className="text-[10px] text-muted-foreground mt-0.5">
+                    {formatRelativeTime(msg.timestamp)}
+                  </span>
+                </div>
               </div>
-              <div className="pt-3 mt-3 border-t flex justify-end">
-                <Button onClick={() => navigate(`/messages/${conversationId}`)} className="campus-gradient text-white hover:opacity-90">
-                  Ouvrir la conversation
-                </Button>
-              </div>
-            </div>
+            ))
           )}
+          <div ref={bottomRef} />
         </div>
+
+        {/* Input */}
+        {conversationId && (
+          <div className="flex gap-2">
+            <Input
+              placeholder="Écrire un message..."
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), handleSend())}
+              className="text-sm h-8"
+              maxLength={500}
+              disabled={isSending}
+            />
+            <Button
+              size="sm"
+              className="campus-gradient text-white h-8 w-8 p-0 flex-shrink-0"
+              onClick={handleSend}
+              disabled={!newMessage.trim() || isSending}
+            >
+              {isSending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

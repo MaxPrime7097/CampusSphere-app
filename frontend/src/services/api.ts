@@ -953,6 +953,11 @@ export async function getUserSpheres(token?: string) {
   return normalizeSpheres(unwrapList(response));
 }
 
+export async function getSphereOverview(id: number | string, token?: string) {
+  const response = await apiFetch<any>(`api/spheres/${id}/overview/`, { token: token || getAccessToken() });
+  return unwrapItem<any>(response);
+}
+
 // ============================================================================
 // POSTS
 // ============================================================================
@@ -1314,6 +1319,19 @@ export async function completeTask(id: number | string, token?: string) {
     method: "POST",
     token: token || getAccessToken(),
   });
+}
+
+export async function moveTask(
+  id: number | string,
+  kanbanStatus: 'todo' | 'in_progress' | 'review' | 'done',
+  token?: string
+) {
+  const response = await apiFetch<any>(`api/tasks/${id}/move/`, {
+    method: "PATCH",
+    body: { kanban_status: kanbanStatus },
+    token: token || getAccessToken(),
+  });
+  return unwrapItem<any>(response);
 }
 
 export async function assignTask(id: number | string, userId: number | string, token?: string) {

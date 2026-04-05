@@ -1,5 +1,4 @@
 from rest_framework import serializers
-from django.utils import timezone
 from .models import Task
 
 
@@ -17,9 +16,9 @@ class TaskSerializer(serializers.ModelSerializer):
         model = Task
         fields = [
             'id', 'title', 'description', 'assigned_to', 'assigned_to_info',
-            'priority', 'due_date', 'is_completed', 'impact_points', 'sphere',
-            'sphere_info', 'created_by', 'created_by_info', 'status', 'is_overdue',
-            'can_edit', 'can_delete', 'can_complete', 'created_at', 'updated_at'
+            'priority', 'due_date', 'is_completed', 'kanban_status', 'impact_points',
+            'sphere', 'sphere_info', 'created_by', 'created_by_info', 'status',
+            'is_overdue', 'can_edit', 'can_delete', 'can_complete', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_by', 'created_at', 'updated_at']
 
@@ -40,45 +39,36 @@ class TaskSerializer(serializers.ModelSerializer):
     def get_can_edit(self, obj):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
-            # Creator or sphere moderators/admins can edit
             if obj.created_by == request.user:
                 return True
             from spheres.models import SphereMember
             return SphereMember.objects.filter(
-                sphere=obj.sphere,
-                user=request.user,
-                role__in=['admin', 'moderator'],
-                status='active'
+                sphere=obj.sphere, user=request.user,
+                role__in=['admin', 'moderator'], status='active'
             ).exists()
         return False
 
     def get_can_delete(self, obj):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
-            # Creator or sphere admins can delete
             if obj.created_by == request.user:
                 return True
             from spheres.models import SphereMember
             return SphereMember.objects.filter(
-                sphere=obj.sphere,
-                user=request.user,
-                role='admin',
-                status='active'
+                sphere=obj.sphere, user=request.user,
+                role='admin', status='active'
             ).exists()
         return False
 
     def get_can_complete(self, obj):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
-            # Assigned user or sphere moderators/admins can complete
             if obj.assigned_to == request.user:
                 return True
             from spheres.models import SphereMember
             return SphereMember.objects.filter(
-                sphere=obj.sphere,
-                user=request.user,
-                role__in=['admin', 'moderator'],
-                status='active'
+                sphere=obj.sphere, user=request.user,
+                role__in=['admin', 'moderator'], status='active'
             ).exists()
         return False
 
@@ -88,32 +78,19 @@ class TaskCreateSerializer(serializers.ModelSerializer):
         model = Task
         fields = [
             'title', 'description', 'assigned_to', 'priority', 'due_date',
-            'impact_points', 'sphere'
+            'impact_points', 'sphere', 'kanban_status'
         ]
-        extra_kwargs = {
-            'assigned_to': {'required': True, 'allow_null': False}
-        }
+        extra_kwargs = {'assigned_to': {'required': True, 'allow_null': False}}
 
     def validate(self, attrs):
         assigned_to = attrs.get('assigned_to')
         sphere = attrs.get('sphere')
-
         if not assigned_to:
-            raise serializers.ValidationError({
-                'assigned_to': "L'assignation est obligatoire"
-            })
-
+            raise serializers.ValidationError({'assigned_to': "L'assignation est obligatoire"})
         if sphere:
             from spheres.models import SphereMember
-            if not SphereMember.objects.filter(
-                sphere=sphere,
-                user=assigned_to,
-                status='active'
-            ).exists():
-                raise serializers.ValidationError({
-                    'assigned_to': "Assigned user must be an active member of the sphere"
-                })
-
+            if not SphereMember.objects.filter(sphere=sphere, user=assigned_to, status='active').exists():
+                raise serializers.ValidationError({'assigned_to': "Assigned user must be an active member of the sphere"})
         return attrs
 
     def validate_assigned_to(self, value):
@@ -122,17 +99,10 @@ class TaskCreateSerializer(serializers.ModelSerializer):
         return value
 
     def validate_sphere(self, value):
-        # Check if current user is a member of the sphere
         from spheres.models import SphereMember
         user = self.context['request'].user
-        if not SphereMember.objects.filter(
-            sphere=value,
-            user=user,
-            status='active'
-        ).exists():
-            raise serializers.ValidationError(
-                "You must be a member of this sphere to create tasks"
-            )
+        if not SphereMember.objects.filter(sphere=value, user=user, status='active').exists():
+            raise serializers.ValidationError("You must be a member of this sphere to create tasks")
         return value
 
     def create(self, validated_data):
@@ -143,25 +113,19 @@ class TaskCreateSerializer(serializers.ModelSerializer):
 class TaskUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
-        fields = [
-            'title', 'description', 'assigned_to', 'priority', 'due_date',
-            'impact_points'
-        ]
+        fields = ['title', 'description', 'assigned_to', 'priority', 'due_date', 'impact_points']
 
     def validate_assigned_to(self, value):
         if value:
             task = self.instance
             from spheres.models import SphereMember
-            # Check if assigned user is a member of the sphere
-            if not SphereMember.objects.filter(
-                sphere=task.sphere,
-                user=value,
-                status='active'
-            ).exists():
-                raise serializers.ValidationError(
-                    "Assigned user must be a member of the sphere"
-                )
+            if not SphereMember.objects.filter(sphere=task.sphere, user=value, status='active').exists():
+                raise serializers.ValidationError("Assigned user must be a member of the sphere")
         return value
+
+
+class TaskMoveSerializer(serializers.Serializer):
+    kanban_status = serializers.ChoiceField(choices=['todo', 'in_progress', 'review', 'done'])
 
 
 class TaskAssignSerializer(serializers.Serializer):
@@ -170,21 +134,11 @@ class TaskAssignSerializer(serializers.Serializer):
     def validate_assigned_to_id(self, value):
         from users.models import User
         from spheres.models import SphereMember
-        
         try:
             user = User.objects.get(id=value)
         except User.DoesNotExist:
             raise serializers.ValidationError("User not found")
-
         task = self.context['task']
-        # Check if user is a member of the sphere
-        if not SphereMember.objects.filter(
-            sphere=task.sphere,
-            user=user,
-            status='active'
-        ).exists():
-            raise serializers.ValidationError(
-                "User must be a member of the sphere"
-            )
-
+        if not SphereMember.objects.filter(sphere=task.sphere, user=user, status='active').exists():
+            raise serializers.ValidationError("User must be a member of the sphere")
         return value

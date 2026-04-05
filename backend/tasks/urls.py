@@ -11,6 +11,7 @@ urlpatterns = [
     # Task actions
     path('<int:pk>/complete/', views.TaskCompleteView.as_view(), name='task-complete'),
     path('<int:pk>/assign/', views.TaskAssignView.as_view(), name='task-assign'),
+    path('<int:pk>/move/', views.TaskMoveView.as_view(), name='task-move'),
 
     # Filtered tasks
     path('sphere/<int:sphere_id>/', views.sphere_tasks, name='sphere-tasks'),

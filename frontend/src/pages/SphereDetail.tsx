@@ -26,6 +26,8 @@ import { AddMemberModal } from "@/components/modals/AddMemberModal";
 import { SphereSettingsModal } from "@/components/modals/SphereSettingsModal";
 import { ManageMembersModal } from "@/components/modals/ManageMembersModal";
 import { MiniChat } from "@/components/chat/MiniChat";
+import { KanbanBoard, type KanbanTask } from "@/components/kanban/KanbanBoard";
+import { SphereOverview } from "@/components/sphere/SphereOverview";
 
 export function SphereDetail() {
   const { id } = useParams();
@@ -44,7 +46,7 @@ export function SphereDetail() {
   const [isJoining, setIsJoining] = useState(false);
   const [isCancellingRequest, setIsCancellingRequest] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
-  const [activeTab, setActiveTab] = useState("chat");
+  const [activeTab, setActiveTab] = useState("overview");
   const [isChatExpanded, setIsChatExpanded] = useState(false);
 
   const [loading, setLoading] = useState<boolean>(true);
@@ -94,20 +96,22 @@ export function SphereDetail() {
     return "member";
   };
 
-  const mapTask = (t: any) => ({
+  const mapTask = (t: any): KanbanTask => ({
     id: String(t.id),
     title: t.title,
-    description: t.description || '',
-    status: t.status || (t.is_completed ? 'done' : 'pending'),
-    isCompleted: t.is_completed || false,
-    assignedTo: t.assigned_to_info?.name || 
-                `${t.assigned_to_info?.first_name || ''} ${t.assigned_to_info?.last_name || ''}`.trim() || 'Non assigné',
-    assignedToId: t.assigned_to || null,
-    impactPoints: t.impact_points || 0,
-    createdAt: t.created_at || new Date().toISOString(),
-    completedAt: t.is_completed ? t.updated_at : null,
-    dueDate: t.due_date,
+    kanban_status: t.kanban_status || (t.is_completed ? 'done' : 'todo'),
     priority: t.priority || 'medium',
+    due_date: t.due_date || null,
+    is_completed: t.is_completed || false,
+    isCompleted: t.is_completed || false,
+    impact_points: t.impact_points || 0,
+    impactPoints: t.impact_points || 0,
+    assigned_to_info: t.assigned_to_info || null,
+    assignedTo: t.assigned_to_info?.name ||
+      `${t.assigned_to_info?.first_name || ''} ${t.assigned_to_info?.last_name || ''}`.trim() || 'Non assigné',
+    assignedToAvatar: t.assigned_to_info?.avatar || null,
+    is_overdue: t.is_overdue || false,
+    isOverdue: t.is_overdue || false,
   });
 
   // ==================== DATA LOADING ====================
@@ -448,66 +452,42 @@ export function SphereDetail() {
         {isMember ? (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <SharedTabsList>
+              <SharedTabsTrigger value="overview">Vue d'ensemble</SharedTabsTrigger>
               <SharedTabsTrigger value="chat">Discussion</SharedTabsTrigger>
               <SharedTabsTrigger value="tasks">Tâches ({tasks.length})</SharedTabsTrigger>
               <SharedTabsTrigger value="members">Membres</SharedTabsTrigger>
               {canModerateMembers && <SharedTabsTrigger value="pending">Demandes ({pendingMembers.length})</SharedTabsTrigger>}
             </SharedTabsList>
 
+            <TabsContent value="overview" className="mt-4">
+              <SphereOverview sphereId={String(id)} onTabChange={setActiveTab} />
+            </TabsContent>
+
             <TabsContent value="chat" className="mt-4 ring-offset-background">
               <MiniChat sphereId={String(id)} sphereName={sphereFallback.name} isExpanded={isChatExpanded} onToggleExpanded={() => setIsChatExpanded(!isChatExpanded)} />
             </TabsContent>
 
-            <TabsContent value="tasks" className="space-y-4 mt-4">
-              <div className="flex justify-between items-center bg-card p-4 rounded-lg border">
-                <h3 className="font-bold text-lg">Activités de la sphère</h3>
+            <TabsContent value="tasks" className="mt-4">
+              <div className="flex justify-between items-center bg-card p-4 rounded-lg border mb-4">
+                <h3 className="font-bold text-lg">Tableau Kanban</h3>
                 <CreateTaskModal onTaskCreated={loadSphereData} sphereId={String(id)} sphereMembers={members}>
-                  <Button size="sm" className="campus-gradient text-white"><Plus className="mr-2 h-4 w-4"/> Créer une tâche</Button>
+                  <Button size="sm" className="campus-gradient text-white"><Plus className="mr-2 h-4 w-4" /> Créer une tâche</Button>
                 </CreateTaskModal>
               </div>
-              <div className="grid gap-3">
-                {taskState === "forbidden" && (
-                  <p className="text-center py-10 text-muted-foreground italic">
-                    Vous devez être membre actif pour voir les tâches
-                  </p>
-                )}
-                {taskState === "server_error" && (
-                  <p className="text-center py-10 text-muted-foreground italic">
-                    Impossible de charger les tâches pour le moment (erreur serveur).
-                  </p>
-                )}
-                {taskState === "ready" && tasks.length === 0 && (
-                  <p className="text-center py-10 text-muted-foreground italic">Aucune tâche pour le moment.</p>
-                )}
-                {taskState === "ready" && tasks.map(task => (
-                  <div key={task.id} className={`p-5 rounded-xl border bg-card flex justify-between items-center transition-all ${task.isCompleted ? 'bg-muted/30 grayscale-[0.5]' : 'hover:border-primary/50'}`}>
-                    <div className="flex gap-4">
-                      {task.isCompleted ? (
-                        <Button variant="default" size="icon" className="rounded-full h-8 w-8" disabled>
-                          <Check className="h-4 w-4" />
-                        </Button>
-                      ) : canMarkTaskComplete(task) ? (
-                        <Button
-                          variant="outline"
-                          className="gap-2"
-                          onClick={() => handleTaskComplete(task.id)}
-                        >
-                          <Check className="h-4 w-4" />
-                          Marquer complété
-                        </Button>
-                      ) : null}
-                      <div>
-                        <p className={`font-semibold text-md ${task.isCompleted ? 'line-through text-muted-foreground' : ''}`}>{task.title}</p>
-                        <div className="flex items-center gap-3 mt-1">
-                           <span className="text-xs text-muted-foreground flex items-center gap-1"><User className="h-3 w-3"/> {task.assignedTo}</span>
-                           <span className="text-xs text-muted-foreground flex items-center gap-1"><Zap className="h-3 w-3 text-yellow-500"/> {task.impactPoints} pts</span>
-                        </div>
-                      </div>
-                    </div>
-                    <Badge variant={task.isCompleted ? "secondary" : "outline"}>{task.isCompleted ? "Terminé" : "À faire"}</Badge>
-                  </div>
-                ))}
-              </div>
+              {taskState === "forbidden" && (
+                <p className="text-center py-10 text-muted-foreground italic">Vous devez être membre actif pour voir les tâches</p>
+              )}
+              {taskState === "server_error" && (
+                <p className="text-center py-10 text-muted-foreground italic">Impossible de charger les tâches pour le moment.</p>
+              )}
+              {taskState === "ready" && (
+                <KanbanBoard
+                  tasks={tasks}
+                  onTasksChange={setTasks}
+                  onCreateTask={() => {}}
+                  canModerate={canModerateMembers}
+                />
+              )}
             </TabsContent>
 
             <TabsContent value="members" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">

@@ -10,7 +10,7 @@ from django.utils import timezone
 from .models import Task
 from .serializers import (
     TaskSerializer, TaskCreateSerializer, TaskUpdateSerializer,
-    TaskAssignSerializer
+    TaskAssignSerializer, TaskMoveSerializer
 )
 from spheres.permissions import IsSphereMember, IsSphereModerator
 from users.impact_policy import TASK_COMPLETED, apply_impact_points
@@ -214,6 +214,37 @@ class TaskAssignView(APIView):
             'message': f'Task assigned to {assigned_user.full_name}',
             'timestamp': timezone.now().isoformat()
         })
+
+
+class TaskMoveView(APIView):
+    """Move a task to a different kanban column."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def patch(self, request, pk):
+        from spheres.models import SphereMember
+        task = get_object_or_404(Task, pk=pk)
+        user = request.user
+
+        if not SphereMember.objects.filter(sphere=task.sphere, user=user, status='active').exists():
+            return Response({'error': 'You must be a member of this sphere'}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = TaskMoveSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        new_status = serializer.validated_data['kanban_status']
+
+        task.kanban_status = new_status
+        # Sync is_completed with done column
+        if new_status == 'done' and not task.is_completed:
+            task.is_completed = True
+            task.save(update_fields=['kanban_status', 'is_completed', 'updated_at'])
+            apply_impact_points(task.assigned_to or user, task.impact_points)
+        elif new_status != 'done' and task.is_completed:
+            task.is_completed = False
+            task.save(update_fields=['kanban_status', 'is_completed', 'updated_at'])
+        else:
+            task.save(update_fields=['kanban_status', 'updated_at'])
+
+        return Response({'success': True, 'data': TaskSerializer(task, context={'request': request}).data})
 
 
 @api_view(['GET'])

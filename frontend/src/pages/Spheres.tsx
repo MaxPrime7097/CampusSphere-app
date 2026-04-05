@@ -419,7 +419,7 @@ export function Spheres() {
                   <p className="text-muted-foreground">Aucune sphère à découvrir pour le moment.</p>
                 </div>
               ) : (
-              <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {(loadingSpheres ? Array.from({ length: 4 }).map((_, i) => ({ id: `skeleton-${i}`, name: "", category: "", memberCount: 0, color: "from-muted to-muted", requireApproval: false })) : getSortedSpheres()).map((sphere) => (
                   <Card key={sphere.id} className={cardClasses} onClick={() => navigate(`/spheres/${sphere.id}`)}>
                     <CardContent className="p-0">
@@ -480,7 +480,7 @@ export function Spheres() {
                   <p className="text-muted-foreground">Vous n'avez rejoint aucune sphère pour le moment.</p>
                 </div>
               ) : (
-              <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {getSortedSpheres().map((sphere) => {
                   const hasProgression = Number.isFinite(sphere.progression);
                   const progressionValue = hasProgression ? Math.max(0, Math.min(100, Number(sphere.progression))) : null;

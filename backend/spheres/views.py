@@ -544,6 +544,93 @@ class SphereMemberDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
+def sphere_overview(request, pk):
+    """Aggregate overview data for a sphere in a single request."""
+    sphere = get_object_or_404(Sphere, pk=pk)
+    user = request.user
+
+    if not sphere.members.filter(user=user, status='active').exists():
+        return Response({'error': 'You must be a member of this sphere'}, status=403)
+
+    now = timezone.now()
+
+    # Tasks
+    from tasks.models import Task
+    all_tasks = Task.objects.filter(sphere=sphere).select_related('assigned_to')
+    total_tasks = all_tasks.count()
+    done_tasks = all_tasks.filter(kanban_status='done').count()
+    overdue_tasks = list(
+        all_tasks.exclude(kanban_status='done')
+        .filter(due_date__lt=now)
+        .values('id', 'title', 'due_date', 'priority', 'kanban_status')
+        .order_by('due_date')[:5]
+    )
+    my_tasks = list(
+        all_tasks.filter(assigned_to=user)
+        .exclude(kanban_status='done')
+        .values('id', 'title', 'due_date', 'priority', 'kanban_status')
+        .order_by('due_date')[:5]
+    )
+
+    # Progression
+    progression = round((done_tasks / total_tasks) * 100) if total_tasks > 0 else 0
+
+    # Recent resources
+    recent_resources = []
+    try:
+        from resources.models import Resource
+        recent_resources = list(
+            Resource.objects.filter(sphere=sphere)
+            .order_by('-created_at')[:5]
+            .values('id', 'title', 'type', 'created_at')
+        )
+    except Exception:
+        pass
+
+    # Unread messages
+    unread_messages = 0
+    try:
+        from messaging.models import Conversation, ConversationReadReceipt
+        sphere_conv_name = f'sphere-{pk}'
+        conv = Conversation.objects.filter(
+            type='group',
+            name__iexact=sphere_conv_name,
+            participants=user
+        ).first()
+        if conv:
+            receipt = ConversationReadReceipt.objects.filter(
+                conversation=conv, user=user
+            ).first()
+            if receipt:
+                unread_messages = conv.messages.filter(
+                    created_at__gt=receipt.last_read_at
+                ).exclude(author=user).count()
+            else:
+                unread_messages = conv.messages.exclude(author=user).count()
+    except Exception:
+        pass
+
+    # Members
+    member_count = sphere.members.filter(status='active').count()
+
+    return Response({
+        'success': True,
+        'data': {
+            'progression': progression,
+            'total_tasks': total_tasks,
+            'done_tasks': done_tasks,
+            'overdue_tasks': overdue_tasks,
+            'my_tasks': my_tasks,
+            'recent_resources': recent_resources,
+            'unread_messages': unread_messages,
+            'member_count': member_count,
+        },
+        'timestamp': now.isoformat(),
+    })
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
 def user_spheres(request):
     """Get spheres where user is a member"""
     memberships = SphereMember.objects.filter(
