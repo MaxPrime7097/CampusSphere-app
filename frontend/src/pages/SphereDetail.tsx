@@ -16,10 +16,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 
 import { 
   ArrowLeft, Users, FileText, Settings, UserPlus, Share2, MoreVertical, 
-  Loader2, Plus, Check, Clock, Calendar, Zap, Crown, Shield, User, 
+  Loader2, Plus, Check, Clock, Calendar, Zap, Crown, Shield, X, 
   UserMinus, UserCheck, UserX, Camera, ExternalLink, Download 
 } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 import { useToast } from "@/hooks/use-toast";
 import { CreateTaskModal } from "@/components/modals/CreateTaskModal";
