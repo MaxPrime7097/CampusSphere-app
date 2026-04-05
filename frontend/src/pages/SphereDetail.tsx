@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { 
   getSphere, listSphereMembers, listSphereTasks, joinSphere, 
   cancelSphereJoinRequest, getCurrentUser, completeTask, 
-  updateSphereMember, removeSphereMember 
+  updateSphereMember, removeSphereMember, uploadSphereBanner, getSphereResources 
 } from "@/services/api";
 
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { 
   ArrowLeft, Users, FileText, Settings, UserPlus, Share2, MoreVertical, 
   Loader2, Plus, Check, Clock, Calendar, Zap, Crown, Shield, User, 
-  UserMinus, UserCheck, UserX 
+  UserMinus, UserCheck, UserX, Camera, ExternalLink, Download 
 } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
@@ -28,6 +28,7 @@ import { ManageMembersModal } from "@/components/modals/ManageMembersModal";
 import { MiniChat } from "@/components/chat/MiniChat";
 import { KanbanBoard, type KanbanTask } from "@/components/kanban/KanbanBoard";
 import { SphereOverview } from "@/components/sphere/SphereOverview";
+import { SphereUploadResourceModal } from "@/components/modals/SphereUploadResourceModal";
 
 export function SphereDetail() {
   const { id } = useParams();
@@ -40,6 +41,7 @@ export function SphereDetail() {
   const [members, setMembers] = useState<any[]>([]);
   const [pendingMembers, setPendingMembers] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
+  const [resources, setResources] = useState<any[]>([]);
 
   const [isMember, setIsMember] = useState(false);
   const [isPendingRequest, setIsPendingRequest] = useState(false);
@@ -182,6 +184,9 @@ export function SphereDetail() {
         setTasks([]);
         setTaskState(errStatus === 403 ? "forbidden" : "server_error");
       }
+
+      // Ressources de la sphère
+      getSphereResources(String(id)).then(setResources).catch(() => setResources([]));
     } catch (e: any) {
       setLoadError(e?.message || "Erreur de chargement");
     } finally {
@@ -363,87 +368,128 @@ export function SphereDetail() {
   // ==================== RENDER ====================
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
-      <div className="container max-w-6xl mx-auto py-4 px-4 space-y-6">
-        <Button variant="ghost" onClick={() => navigate("/spheres")} className="gap-2">
-          <ArrowLeft className="h-4 w-4" /> Retour
-        </Button>
+      <div className="max-w-6xl mx-auto py-4 md:py-6 px-0 md:px-4 space-y-4 md:space-y-6">
+        <div className="px-4 md:px-0">
+          <Button variant="ghost" onClick={() => navigate("/spheres")} className="gap-2 -ml-2">
+            <ArrowLeft className="h-4 w-4" /> Retour
+          </Button>
+        </div>
 
         {/* HEADER SECTION */}
-        <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
-          <div className="relative h-48">
-            <div className={`w-full h-full bg-gradient-to-r ${sphereFallback.color || 'from-primary to-primary/60'} flex items-center justify-center`}>
-               <h1 className="text-white font-bold text-4xl drop-shadow-md">{sphereFallback.name}</h1>
-            </div>
+        <div className="overflow-hidden md:rounded-xl border-y md:border bg-card shadow-sm">
+          <div className="relative h-36 md:h-48 group">
+            {sphere?.banner_image_url ? (
+              <img
+                src={sphere.banner_image_url}
+                alt="Bannière"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div
+                className="w-full h-full flex items-center justify-center"
+                style={{ background: `linear-gradient(135deg, ${sphereFallback.color?.startsWith('from-') ? '#6366f1, #8b5cf6' : (sphereFallback.color || '#6366f1') + ', ' + (sphereFallback.color || '#8b5cf6')})` }}
+              >
+                <h1 className="text-white font-bold text-2xl md:text-4xl drop-shadow-lg px-4 text-center">{sphereFallback.name}</h1>
+              </div>
+            )}
+            {/* Overlay titre sur image */}
+            {sphere?.banner_image_url && (
+              <div className="absolute inset-0 bg-black/40 flex items-end p-4">
+                <h1 className="text-white font-bold text-2xl md:text-3xl drop-shadow-lg">{sphereFallback.name}</h1>
+              </div>
+            )}
+            {/* Bouton upload bannière */}
+            {canManageSphereSettings && (
+              <label className="absolute top-3 right-3 bg-black/50 hover:bg-black/70 text-white rounded-lg px-2 py-1.5 flex items-center gap-1.5 text-xs cursor-pointer transition-colors opacity-0 group-hover:opacity-100">
+                <Camera className="h-3.5 w-3.5" />
+                Changer la bannière
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file || !id) return;
+                    try {
+                      const res = await uploadSphereBanner(id, file);
+                      setSphere((prev: any) => prev ? { ...prev, banner_image_url: res.banner_image_url } : prev);
+                      toast({ title: "Bannière mise à jour !" });
+                    } catch (err: any) {
+                      toast({ title: "Erreur", description: err?.message, variant: "destructive" });
+                    }
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            )}
           </div>
-          
-          <div className="p-6 flex flex-col md:flex-row justify-between gap-6">
-            <div className="flex-1 space-y-4">
-              <p className="text-lg text-muted-foreground">{sphereFallback.description}</p>
-              <div className="flex flex-wrap gap-4 text-sm font-medium">
-                <span className="flex items-center gap-1.5"><Users className="h-4 w-4 text-primary"/> {sphereMemberCount} membres</span>
-                <span className="flex items-center gap-1.5"><FileText className="h-4 w-4 text-primary"/> {sphereFileCount} fichiers</span>
+
+          <div className="p-4 md:p-6 space-y-4">
+            {/* Description + stats */}
+            <div className="space-y-3">
+              <p className="text-sm md:text-base text-muted-foreground">{sphereFallback.description}</p>
+              <div className="flex flex-wrap gap-3 text-sm font-medium">
+                <span className="flex items-center gap-1.5"><Users className="h-4 w-4 text-primary" /> {sphereMemberCount} membres</span>
+                <span className="flex items-center gap-1.5"><FileText className="h-4 w-4 text-primary" /> {sphereFileCount} fichiers</span>
                 {(sphere?.tags || sphereFallback.tags || []).map((tag: string) => (
                   <Badge key={tag} variant="secondary">#{tag}</Badge>
                 ))}
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <div className="flex justify-between text-xs font-semibold">
-                  <span>Progression</span>
-                  <span>{sphereProgress}%</span>
+                  <span>Progression</span><span>{sphereProgress}%</span>
                 </div>
                 <Progress value={sphereProgress} className="h-2" />
               </div>
             </div>
 
-            <div className="flex flex-col gap-2 min-w-[220px]">
+            {/* Actions */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
               <Badge variant={isMember ? "default" : isPendingRequest ? "secondary" : "outline"} className="w-fit">
                 {membershipStateLabel}
               </Badge>
-              {isMember ? (
-                <>
-                  {canManageSphereSettings && (
-                    <SphereSettingsModal sphereData={sphereFallback} onSettingsUpdated={loadSphereData} onSphereDeleted={() => navigate("/spheres")}>
-                      <Button variant="outline" className="w-full justify-start gap-2"><Settings className="h-4 w-4"/> Paramètres</Button>
-                    </SphereSettingsModal>
-                  )}
-                  {canModerateMembers && (
-                    <ManageMembersModal sphereId={sphereFallback.id} sphereName={sphereFallback.name}>
-                       <Button variant="outline" className="w-full justify-start gap-2"><Users className="h-4 w-4"/> Gérer l'équipe</Button>
-                    </ManageMembersModal>
-                  )}
-                  {canModerateMembers && (
-                    <AddMemberModal sphereId={sphereFallback.id} sphereName={sphereFallback.name} onMemberAdded={loadSphereData}>
-                      <Button variant="outline" className="w-full justify-start gap-2"><UserPlus className="h-4 w-4"/> Inviter</Button>
-                    </AddMemberModal>
-                  )}
-                </>
-              ) : (
-                <>
-                  <Button
-                    onClick={handleJoinSphere}
-                    disabled={isPendingRequest || isJoining || isCancellingRequest}
-                    className="campus-gradient text-white h-12 text-md font-bold"
-                  >
-                    {isJoining ? <Loader2 className="animate-spin mr-2"/> : null}
-                    {isPendingRequest ? "Demande en attente" : "Rejoindre la Sphère"}
-                  </Button>
-                  {isPendingRequest && (
+              <div className="flex flex-wrap gap-2">
+                {isMember ? (
+                  <>
+                    {canManageSphereSettings && (
+                      <SphereSettingsModal sphereData={sphereFallback} onSettingsUpdated={loadSphereData} onSphereDeleted={() => navigate("/spheres")}>
+                        <Button variant="outline" size="sm" className="gap-2"><Settings className="h-4 w-4" /> Paramètres</Button>
+                      </SphereSettingsModal>
+                    )}
+                    {canModerateMembers && (
+                      <ManageMembersModal sphereId={sphereFallback.id} sphereName={sphereFallback.name}>
+                        <Button variant="outline" size="sm" className="gap-2"><Users className="h-4 w-4" /> Équipe</Button>
+                      </ManageMembersModal>
+                    )}
+                    {canModerateMembers && (
+                      <AddMemberModal sphereId={sphereFallback.id} sphereName={sphereFallback.name} onMemberAdded={loadSphereData}>
+                        <Button variant="outline" size="sm" className="gap-2"><UserPlus className="h-4 w-4" /> Inviter</Button>
+                      </AddMemberModal>
+                    )}
+                  </>
+                ) : (
+                  <>
                     <Button
-                      onClick={handleCancelRequest}
-                      disabled={isCancellingRequest}
-                      variant="outline"
-                      className="h-10 text-sm"
+                      onClick={handleJoinSphere}
+                      disabled={isPendingRequest || isJoining || isCancellingRequest}
+                      className="campus-gradient text-white font-bold gap-2"
                     >
-                      {isCancellingRequest ? <Loader2 className="animate-spin mr-2"/> : null}
-                      Annuler la demande
+                      {isJoining && <Loader2 className="h-4 w-4 animate-spin" />}
+                      {isPendingRequest ? "Demande en attente" : "Rejoindre la Sphère"}
                     </Button>
-                  )}
-                </>
-              )}
-              <Button variant="ghost" onClick={handleShare} disabled={isSharing} className="w-full justify-start gap-2">
-                {isSharing ? <Check className="h-4 w-4 text-green-500"/> : <Share2 className="h-4 w-4"/>} 
-                Partager
-              </Button>
+                    {isPendingRequest && (
+                      <Button onClick={handleCancelRequest} disabled={isCancellingRequest} variant="outline" size="sm">
+                        {isCancellingRequest && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+                        Annuler la demande
+                      </Button>
+                    )}
+                  </>
+                )}
+                <Button variant="ghost" size="sm" onClick={handleShare} disabled={isSharing} className="gap-2">
+                  {isSharing ? <Check className="h-4 w-4 text-green-500" /> : <Share2 className="h-4 w-4" />}
+                  Partager
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -451,107 +497,182 @@ export function SphereDetail() {
         {/* TABS SECTION */}
         {isMember ? (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <SharedTabsList>
-              <SharedTabsTrigger value="overview">Vue d'ensemble</SharedTabsTrigger>
-              <SharedTabsTrigger value="chat">Discussion</SharedTabsTrigger>
-              <SharedTabsTrigger value="tasks">Tâches ({tasks.length})</SharedTabsTrigger>
-              <SharedTabsTrigger value="members">Membres</SharedTabsTrigger>
-              {canModerateMembers && <SharedTabsTrigger value="pending">Demandes ({pendingMembers.length})</SharedTabsTrigger>}
-            </SharedTabsList>
+            <div className="px-4 md:px-0">
+              <SharedTabsList>
+                <SharedTabsTrigger value="overview">Vue d'ensemble</SharedTabsTrigger>
+                <SharedTabsTrigger value="chat">Discussion</SharedTabsTrigger>
+                <SharedTabsTrigger value="tasks">Tâches ({tasks.length})</SharedTabsTrigger>
+                <SharedTabsTrigger value="files">Fichiers ({resources.length})</SharedTabsTrigger>
+                <SharedTabsTrigger value="members">Membres</SharedTabsTrigger>
+                {canModerateMembers && <SharedTabsTrigger value="pending">Demandes ({pendingMembers.length})</SharedTabsTrigger>}
+              </SharedTabsList>
+            </div>
 
-            <TabsContent value="overview" className="mt-4">
-              <SphereOverview sphereId={String(id)} onTabChange={setActiveTab} />
-            </TabsContent>
+            <div className="px-4 md:px-0">
+              <TabsContent value="overview" className="mt-4">
+                <SphereOverview sphereId={String(id)} onTabChange={setActiveTab} />
+              </TabsContent>
 
-            <TabsContent value="chat" className="mt-4 ring-offset-background">
-              <MiniChat sphereId={String(id)} sphereName={sphereFallback.name} isExpanded={isChatExpanded} onToggleExpanded={() => setIsChatExpanded(!isChatExpanded)} />
-            </TabsContent>
+              <TabsContent value="chat" className="mt-4">
+                <MiniChat sphereId={String(id)} sphereName={sphereFallback.name} isExpanded={isChatExpanded} onToggleExpanded={() => setIsChatExpanded(!isChatExpanded)} />
+              </TabsContent>
 
-            <TabsContent value="tasks" className="mt-4">
-              <div className="flex justify-between items-center bg-card p-4 rounded-lg border mb-4">
-                <h3 className="font-bold text-lg">Tableau Kanban</h3>
-                <CreateTaskModal onTaskCreated={loadSphereData} sphereId={String(id)} sphereMembers={members}>
-                  <Button size="sm" className="campus-gradient text-white"><Plus className="mr-2 h-4 w-4" /> Créer une tâche</Button>
-                </CreateTaskModal>
-              </div>
-              {taskState === "forbidden" && (
-                <p className="text-center py-10 text-muted-foreground italic">Vous devez être membre actif pour voir les tâches</p>
-              )}
-              {taskState === "server_error" && (
-                <p className="text-center py-10 text-muted-foreground italic">Impossible de charger les tâches pour le moment.</p>
-              )}
-              {taskState === "ready" && (
-                <KanbanBoard
-                  tasks={tasks}
-                  onTasksChange={setTasks}
-                  onCreateTask={() => {}}
-                  canModerate={canModerateMembers}
-                />
-              )}
-            </TabsContent>
-
-            <TabsContent value="members" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-              {members.map(m => (
-                <div key={m.id} className="p-4 border rounded-xl flex justify-between items-center bg-card hover:shadow-md transition-shadow">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10 border">
-                      <AvatarImage src={m.avatar}/><AvatarFallback>{m.name[0]}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-bold text-sm flex items-center gap-1">
-                        {m.name} {m.isCreator && <Crown className="h-3 w-3 text-yellow-500"/>}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">{m.role}</p>
-                    </div>
-                  </div>
-                  {canModerateMembers && !m.isCreator && m.userId && String(m.userId) !== String(currentUserId) && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="rounded-full"><MoreVertical className="h-4 w-4"/></Button></DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuItem onClick={() => updateSphereMember(String(id), m.id, { role: m.role === 'admin' ? 'member' : 'admin' }).then(loadSphereData).catch((e: any) => toast({ title: "Erreur", description: e?.message, variant: "destructive" }))}>
-                          {m.role === 'admin' ? 'Retirer Admin' : 'Nommer Admin'}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600 font-medium" onClick={() => handleRemoveMember(m.id)}>Retirer de la sphère</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
+              <TabsContent value="tasks" className="mt-4">
+                <div className="flex justify-between items-center bg-card p-3 md:p-4 rounded-lg border mb-4">
+                  <h3 className="font-bold">Tableau Kanban</h3>
+                  <CreateTaskModal onTaskCreated={loadSphereData} sphereId={String(id)} sphereMembers={members}>
+                    <Button size="sm" className="campus-gradient text-white"><Plus className="mr-1 h-4 w-4" /> Tâche</Button>
+                  </CreateTaskModal>
                 </div>
-              ))}
-            </TabsContent>
+                {taskState === "forbidden" && <p className="text-center py-10 text-muted-foreground italic">Vous devez être membre actif pour voir les tâches</p>}
+                {taskState === "server_error" && <p className="text-center py-10 text-muted-foreground italic">Impossible de charger les tâches.</p>}
+                {taskState === "ready" && <KanbanBoard tasks={tasks} onTasksChange={setTasks} onCreateTask={() => {}} canModerate={canModerateMembers} />}
+              </TabsContent>
 
-            <TabsContent value="pending" className="space-y-4 mt-4">
-              {pendingMembers.length === 0 && (
-                <p className="text-center py-10 text-muted-foreground italic">Aucune demande en attente.</p>
-              )}
-              {pendingMembers.map(m => (
-                  <div key={m.id} className="p-4 border rounded-xl bg-card space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Demande en attente</h4>
-                      <Badge variant="secondary">pending</Badge>
+              <TabsContent value="files" className="mt-4 space-y-4">
+                <div className="flex justify-between items-center bg-card p-3 md:p-4 rounded-lg border">
+                  <h3 className="font-bold">Fichiers partagés ({resources.length})</h3>
+                  <SphereUploadResourceModal sphereId={String(id)} onUploaded={() => getSphereResources(String(id)).then(setResources).catch(() => null)}>
+                    <Button size="sm" className="campus-gradient text-white gap-1">
+                      <Plus className="h-4 w-4" /> Partager
+                    </Button>
+                  </SphereUploadResourceModal>
+                </div>
+
+                {resources.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <FileText className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                    <p className="text-sm">Aucun fichier partagé pour le moment.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {resources.map((res: any) => {
+                      const fileInfo = res.file_info || res.fileInfo;
+                      const fileUrl = fileInfo?.url || res.file_url || res.fileUrl || res.file || "";
+                      const fileName = fileInfo?.name || res.title || "Fichier";
+                      const fileType = fileInfo?.type || res.file_type || "";
+                      const fileSize = fileInfo?.size || res.file_size || 0;
+                      const isImage = fileType.startsWith("image/");
+                      const isPdf = fileType === "application/pdf" || fileName.endsWith(".pdf");
+                      const authorName = res.author?.name || res.author_info?.name || "";
+                      const createdAt = res.createdAt || res.created_at;
+
+                      return (
+                        <div key={res.id} className="border rounded-xl bg-card overflow-hidden">
+                          {/* Preview image */}
+                          {isImage && fileUrl && (
+                            <a href={fileUrl} target="_blank" rel="noopener noreferrer">
+                              <img src={fileUrl} alt={fileName} className="w-full max-h-48 object-cover" />
+                            </a>
+                          )}
+                          {/* Preview PDF inline */}
+                          {isPdf && fileUrl && (
+                            <div className="bg-muted/30 p-2">
+                              <iframe
+                                src={`${fileUrl}#toolbar=0&view=FitH`}
+                                className="w-full h-48 rounded border"
+                                title={fileName}
+                              />
+                            </div>
+                          )}
+                          <div className="p-3 flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                <FileText className="h-4 w-4 text-primary" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium truncate">{res.title || fileName}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {authorName && <span>{authorName} · </span>}
+                                  {fileSize > 0 && <span>{(fileSize / 1024 / 1024).toFixed(1)} MB · </span>}
+                                  {createdAt && <span>{new Date(createdAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}</span>}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex gap-1 flex-shrink-0">
+                              {fileUrl && (
+                                <Button size="sm" variant="ghost" asChild className="h-8 w-8 p-0">
+                                  <a href={fileUrl} target="_blank" rel="noopener noreferrer" title="Ouvrir">
+                                    <ExternalLink className="h-4 w-4" />
+                                  </a>
+                                </Button>
+                              )}
+                              {fileUrl && (
+                                <Button size="sm" variant="ghost" asChild className="h-8 w-8 p-0">
+                                  <a href={fileUrl} download={fileName} title="Télécharger">
+                                    <Download className="h-4 w-4" />
+                                  </a>
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="members" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
+                {members.map(m => (
+                  <div key={m.id} className="p-3 border rounded-xl flex justify-between items-center bg-card">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-9 w-9 border">
+                        <AvatarImage src={m.avatar}/><AvatarFallback>{m.name[0]}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-bold text-sm flex items-center gap-1">
+                          {m.name} {m.isCreator && <Crown className="h-3 w-3 text-yellow-500" />}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">{m.role}</p>
+                      </div>
                     </div>
-                    <div className="flex justify-between items-center gap-4">
-                      <div className="flex items-center gap-4">
-                        <Avatar><AvatarImage src={m.avatar}/></Avatar>
-                        <p className="font-bold">{m.name}</p>
+                    {canModerateMembers && !m.isCreator && m.userId && String(m.userId) !== String(currentUserId) && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="rounded-full"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem onClick={() => updateSphereMember(String(id), m.id, { role: m.role === 'admin' ? 'member' : 'admin' }).then(loadSphereData).catch((e: any) => toast({ title: "Erreur", description: e?.message, variant: "destructive" }))}>
+                            {m.role === 'admin' ? 'Retirer Admin' : 'Nommer Admin'}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-red-600 font-medium" onClick={() => handleRemoveMember(m.id)}>Retirer de la sphère</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </div>
+                ))}
+              </TabsContent>
+
+              <TabsContent value="pending" className="space-y-3 mt-4">
+                {pendingMembers.length === 0 && <p className="text-center py-10 text-muted-foreground italic">Aucune demande en attente.</p>}
+                {pendingMembers.map(m => (
+                  <div key={m.id} className="p-3 border rounded-xl bg-card">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-9 w-9"><AvatarImage src={m.avatar} /></Avatar>
+                        <div>
+                          <p className="font-bold text-sm">{m.name}</p>
+                          <Badge variant="secondary" className="text-xs">En attente</Badge>
+                        </div>
                       </div>
                       <div className="flex gap-2">
-                        <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white gap-2" onClick={() => handleApproveRequest(m.id)} disabled={processingMemberIds[m.id]}>
-                          <UserCheck className="h-4 w-4"/> Approuver
+                        <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white gap-1" onClick={() => handleApproveRequest(m.id)} disabled={processingMemberIds[m.id]}>
+                          <UserCheck className="h-4 w-4" /><span className="hidden sm:inline">Approuver</span>
                         </Button>
-                        <Button size="sm" variant="ghost" className="text-red-600 hover:bg-red-50 gap-2" onClick={() => handleRejectRequest(m.id)} disabled={processingMemberIds[m.id]}>
-                          <UserX className="h-4 w-4"/> Rejeter
+                        <Button size="sm" variant="ghost" className="text-red-600 gap-1" onClick={() => handleRejectRequest(m.id)} disabled={processingMemberIds[m.id]}>
+                          <UserX className="h-4 w-4" /><span className="hidden sm:inline">Rejeter</span>
                         </Button>
                       </div>
                     </div>
                   </div>
                 ))}
-            </TabsContent>
+              </TabsContent>
+            </div>
           </Tabs>
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 bg-card rounded-xl border border-dashed border-primary/30">
-            <Shield className="h-16 w-16 text-primary/20 mb-4" />
-            <h2 className="text-xl font-bold">Contenu Protégé</h2>
-            <p className="text-muted-foreground mt-2 text-center max-w-sm">
+          <div className="mx-4 md:mx-0 flex flex-col items-center justify-center py-16 bg-card rounded-xl border border-dashed border-primary/30">
+            <Shield className="h-14 w-14 text-primary/20 mb-4" />
+            <h2 className="text-lg font-bold">Contenu Protégé</h2>
+            <p className="text-muted-foreground mt-2 text-center max-w-sm px-4 text-sm">
               {isPendingRequest
                 ? "Votre demande est en attente. Vous pourrez voir les tâches après validation."
                 : "Rejoignez cette sphère pour accéder au chat, aux tâches et aux fichiers partagés."}

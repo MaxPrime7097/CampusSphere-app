@@ -958,6 +958,26 @@ export async function getSphereOverview(id: number | string, token?: string) {
   return unwrapItem<any>(response);
 }
 
+export async function uploadSphereBanner(id: number | string, file: File, token?: string) {
+  const formData = new FormData();
+  formData.append('banner', file);
+  return apiFetch<{ success: boolean; banner_image_url: string | null }>(`api/spheres/${id}/banner/`, {
+    method: "POST",
+    body: formData,
+    token: token || getAccessToken(),
+  });
+}
+
+export async function removeSphereBanner(id: number | string, token?: string) {
+  const formData = new FormData();
+  formData.append('remove', 'true');
+  return apiFetch<{ success: boolean; banner_image_url: null }>(`api/spheres/${id}/banner/`, {
+    method: "POST",
+    body: formData,
+    token: token || getAccessToken(),
+  });
+}
+
 // ============================================================================
 // POSTS
 // ============================================================================
@@ -1079,6 +1099,11 @@ export async function getUserPosts(userId: number | string, token?: string) {
 export async function getSpherePosts(sphereId: number | string, token?: string) {
   const response = await apiFetch<any>(`api/posts/sphere/${sphereId}/`, { token: token || getAccessToken() });
   return normalizePosts(unwrapList(response));
+}
+
+export async function getSphereResources(sphereId: number | string, token?: string) {
+  const response = await apiFetch<any>(`api/resources/sphere/${sphereId}/`, { token: token || getAccessToken() });
+  return normalizeResources(unwrapList(response));
 }
 
 export async function getSavedPosts(token?: string) {

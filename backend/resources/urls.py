@@ -19,4 +19,5 @@ urlpatterns = [
     # User resources
     path('saved/', views.user_saved_resources, name='user-saved-resources'),
     path('user/<int:user_id>/', views.user_resources, name='user-resources'),
+    path('sphere/<int:sphere_id>/', views.sphere_resources, name='sphere-resources'),
 ]

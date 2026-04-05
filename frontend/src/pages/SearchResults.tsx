@@ -302,7 +302,7 @@ export function SearchResults() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
-      <div className="container max-w-4xl mx-auto py-4 md:py-6 px-4">
+      <div className="max-w-4xl mx-auto py-4 md:py-6 px-4">
         {/* Search Bar */}
         <div className="mb-6">
           <form onSubmit={handleSearch} className="relative">
@@ -383,10 +383,10 @@ export function SearchResults() {
                 <div className="space-y-2">
                   {sortedResults.users.map((user) => (
                     <Card key={user.id} className="campus-card hover:campus-glow transition-all">
-                      <CardContent className="p-4">
+                      <CardContent className="p-3 md:p-4">
                         <div className="flex items-center gap-3">
                           <Avatar 
-                            className={`h-12 w-12 transition-opacity ${user.username ? "cursor-pointer hover:opacity-80" : "cursor-not-allowed opacity-60"}`}
+                            className={`h-10 w-10 flex-shrink-0 transition-opacity ${user.username ? "cursor-pointer hover:opacity-80" : "cursor-not-allowed opacity-60"}`}
                             onClick={() => handleViewProfile(user.username, user.name)}
                           >
                             <AvatarImage src={user.avatar} />
@@ -394,32 +394,23 @@ export function SearchResults() {
                           </Avatar>
                           <div className="flex-1 min-w-0">
                             <p 
-                              className={`font-semibold ${user.username ? "cursor-pointer hover:underline" : "cursor-not-allowed opacity-60"}`}
+                              className={`font-semibold text-sm truncate ${user.username ? "cursor-pointer hover:underline" : "cursor-not-allowed opacity-60"}`}
                               onClick={() => handleViewProfile(user.username, user.name)}
                             >
                               {user.name}
                             </p>
-                            <p className="text-sm text-muted-foreground">@{user.username}</p>
-                            <p className="text-sm text-muted-foreground truncate">{user.bio}</p>
+                            <p className="text-xs text-muted-foreground">@{user.username}</p>
+                            <p className="text-xs text-muted-foreground truncate">{user.bio}</p>
                           </div>
                           <Button 
                             size="sm" 
                             variant={followedUsers.has(user.id) ? "outline" : "default"}
                             onClick={() => handleFollowUser(user.id, user.name)}
                             disabled={followLoadingUserId === user.id || !currentUserId}
-                            className={!followedUsers.has(user.id) ? "campus-gradient text-white hover:opacity-90" : ""}
+                            className={`flex-shrink-0 ${!followedUsers.has(user.id) ? "campus-gradient text-white hover:opacity-90" : ""}`}
                           >
-                            {followedUsers.has(user.id) ? (
-                              <>
-                                <Unlink className="h-4 w-4 mr-2" />
-                                Disconnect
-                              </>
-                            ) : (
-                              <>
-                                <Link className="h-4 w-4 mr-2" />
-                                Connect
-                              </>
-                            )}
+                            {followedUsers.has(user.id) ? <Unlink className="h-4 w-4" /> : <Link className="h-4 w-4" />}
+                            <span className="hidden sm:inline ml-1">{followedUsers.has(user.id) ? "Retirer" : "Connecter"}</span>
                           </Button>
                         </div>
                       </CardContent>
@@ -532,10 +523,10 @@ export function SearchResults() {
               <div className="space-y-2">
                 {sortedResults.users.map((user) => (
                   <Card key={user.id} className="campus-card hover:campus-glow transition-all">
-                    <CardContent className="p-4">
+                    <CardContent className="p-3 md:p-4">
                       <div className="flex items-center gap-3">
                         <Avatar 
-                          className={`h-12 w-12 transition-opacity ${user.username ? "cursor-pointer hover:opacity-80" : "cursor-not-allowed opacity-60"}`}
+                          className={`h-10 w-10 flex-shrink-0 transition-opacity ${user.username ? "cursor-pointer hover:opacity-80" : "cursor-not-allowed opacity-60"}`}
                           onClick={() => handleViewProfile(user.username, user.name)}
                         >
                           <AvatarImage src={user.avatar} />
@@ -543,32 +534,23 @@ export function SearchResults() {
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <p 
-                            className={`font-semibold ${user.username ? "cursor-pointer hover:underline" : "cursor-not-allowed opacity-60"}`}
+                            className={`font-semibold text-sm truncate ${user.username ? "cursor-pointer hover:underline" : "cursor-not-allowed opacity-60"}`}
                             onClick={() => handleViewProfile(user.username, user.name)}
                           >
                             {user.name}
                           </p>
-                          <p className="text-sm text-muted-foreground">@{user.username}</p>
-                          <p className="text-sm text-muted-foreground truncate">{user.bio}</p>
+                          <p className="text-xs text-muted-foreground">@{user.username}</p>
+                          <p className="text-xs text-muted-foreground truncate">{user.bio}</p>
                         </div>
                         <Button 
                           size="sm" 
                           variant={followedUsers.has(user.id) ? "outline" : "default"}
                           onClick={() => handleFollowUser(user.id, user.name)}
                           disabled={followLoadingUserId === user.id || !currentUserId}
-                          className={!followedUsers.has(user.id) ? "campus-gradient text-white hover:opacity-90" : ""}
+                          className={`flex-shrink-0 ${!followedUsers.has(user.id) ? "campus-gradient text-white hover:opacity-90" : ""}`}
                         >
-                          {followedUsers.has(user.id) ? (
-                            <>
-                              <Unlink className="h-4 w-4 mr-2" />
-                              Disconnect
-                            </>
-                          ) : (
-                            <>
-                              <Link className="h-4 w-4 mr-2" />
-                              Connect
-                            </>
-                          )}
+                          {followedUsers.has(user.id) ? <Unlink className="h-4 w-4" /> : <Link className="h-4 w-4" />}
+                          <span className="hidden sm:inline ml-1">{followedUsers.has(user.id) ? "Retirer" : "Connecter"}</span>
                         </Button>
                       </div>
                     </CardContent>

@@ -242,28 +242,18 @@ export function Notifications() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
-      <div className="container max-w-4xl mx-auto py-4 px-4">
+      <div className="max-w-4xl mx-auto py-4 px-4">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div>
-              <h1 className="text-3xl font-bold text-muted-foreground">
-                Notifications
-              </h1>
-              <p className="text-muted-foreground">
-                {unreadCount > 0 ? `${unreadCount} nouvelles notifications` : "Aucune nouvelle notification"}
-              </p>
-              {statusText && <p className="text-xs text-muted-foreground mt-1">{statusText}</p>}
-            </div>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-muted-foreground">Notifications</h1>
+            <p className="text-sm text-muted-foreground">
+              {unreadCount > 0 ? `${unreadCount} nouvelles notifications` : "Aucune nouvelle notification"}
+            </p>
+            {statusText && <p className="text-xs text-muted-foreground mt-1">{statusText}</p>}
           </div>
-          
           {unreadCount > 0 && (
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={handleMarkAllAsRead}
-              className="gap-2"
-            >
+            <Button variant="outline" size="sm" onClick={handleMarkAllAsRead} className="gap-2">
               <CheckCheck className="h-4 w-4" />
               <span className="hidden md:block">Tout marquer comme lu</span>
             </Button>
@@ -271,20 +261,21 @@ export function Notifications() {
         </div>
 
         {/* Notifications List */}
-        <div className="space-y-4">
+        {/* Sur mobile: pas d'espace entre les cartes, pas d'arrondi, bord à bord */}
+        <div className="-mx-4 md:mx-0 md:space-y-2">
           {loading && (
-            <div className="rounded-lg border bg-card p-12 text-center">
+            <div className="rounded-none md:rounded-lg border-y md:border bg-card p-12 text-center">
               <Loader2 className="h-12 w-12 text-muted-foreground mb-4 mx-auto animate-spin" />
               <p className="text-muted-foreground">Chargement des notifications...</p>
             </div>
           )}
 
           {!loading && notifications.length === 0 && (
-            <div className="rounded-lg border bg-card p-12 text-center">
+            <div className="rounded-none md:rounded-lg border-y md:border bg-card p-12 text-center">
               <Bell className="h-12 w-12 text-muted-foreground mb-4 mx-auto" />
               <h3 className="text-lg font-semibold mb-2">Aucune notification</h3>
               <p className="text-muted-foreground text-center">
-                Vous n'avez pas encore de notifications. Elles apparaîtront ici quand vous recevrez des invitations, messages ou mises à jour.
+                Vous n'avez pas encore de notifications.
               </p>
             </div>
           )}
@@ -299,7 +290,7 @@ export function Notifications() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') handleNotificationClick(notification);
                 }}
-                className={`rounded-lg border bg-card transition-all duration-200 hover:shadow-md cursor-pointer ${
+                className={`rounded-none md:rounded-lg border-y md:border bg-card transition-all duration-200 hover:bg-accent/30 cursor-pointer ${
                   !notification.read ? 'border-primary/30 bg-primary/5' : ''
                 }`}
               >

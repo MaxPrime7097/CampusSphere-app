@@ -486,7 +486,7 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
               ref={fileInputRef}
               type="file"
               multiple
-              accept="image/*,video/*,.pdf,.doc,.docx"
+              accept="image/*,video/*"
               onChange={handleFileUpload}
               className="hidden"
               aria-label="Sélectionner des fichiers à télécharger"
@@ -499,14 +499,6 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
               >
                 <Image className="h-4 w-4" />
                 Photos/Vidéos
-              </Button>
-              <Button 
-                variant="outline" 
-                className="gap-2"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <FileText className="h-4 w-4" />
-                Document
               </Button>
               <Button 
                 variant="outline" 

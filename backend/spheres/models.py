@@ -32,6 +32,7 @@ class Sphere(models.Model):
     type = models.CharField(max_length=20, choices=TYPE_CHOICES)
     color = models.CharField(max_length=20, default='#10b981')
     icon = models.CharField(max_length=50, default='users')
+    banner_image = models.ImageField(upload_to='spheres/banners/', null=True, blank=True)
 
     # Settings
     is_private = models.BooleanField(default=False)

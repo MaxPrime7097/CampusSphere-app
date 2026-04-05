@@ -1,11 +1,9 @@
 from rest_framework import serializers
-from django.utils import timezone
 from .models import Resource, ResourceSave, ResourceView
 from .constants import ACCEPTED_RESOURCE_MIME_TYPES
 from users.impact_policy import RESOURCE_UPLOADED, apply_impact_event
-LEGACY_VISIBILITY_MAP = {
-    'private': 'friends',
-}
+
+LEGACY_VISIBILITY_MAP = {'private': 'friends'}
 
 
 def normalize_visibility(value):
@@ -27,7 +25,7 @@ class ResourceSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'description', 'author', 'author_info', 'file', 'file_info',
             'file_size', 'file_type', 'subject', 'type', 'visibility', 'audience',
-            'tags', 'impact_score', 'stats', 'is_saved', 'can_edit', 'can_delete',
+            'sphere', 'tags', 'impact_score', 'stats', 'is_saved', 'can_edit', 'can_delete',
             'created_at', 'updated_at'
         ]
         read_only_fields = [
@@ -41,13 +39,11 @@ class ResourceSerializer(serializers.ModelSerializer):
 
     def get_file_info(self, obj):
         if obj.file:
-            return {
-                'id': str(obj.id),
-                'name': obj.file.name.split('/')[-1],
-                'url': obj.file.url if obj.file else None,
-                'size': obj.file_size,
-                'type': obj.file_type
-            }
+            request = self.context.get('request')
+            url = obj.file.url
+            if request:
+                url = request.build_absolute_uri(url)
+            return {'id': str(obj.id), 'name': obj.file.name.split('/')[-1], 'url': url, 'size': obj.file_size, 'type': obj.file_type}
         return None
 
     def get_is_saved(self, obj):
@@ -58,62 +54,50 @@ class ResourceSerializer(serializers.ModelSerializer):
 
     def get_can_edit(self, obj):
         request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            return obj.author == request.user
-        return False
+        return bool(request and request.user.is_authenticated and obj.author == request.user)
 
     def get_can_delete(self, obj):
         request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            return obj.author == request.user
-        return False
+        return bool(request and request.user.is_authenticated and obj.author == request.user)
 
     def get_stats(self, obj):
-        return {
-            'downloads': obj.downloads_count,
-            'views': obj.views_count,
-            'saves': obj.saves_count
-        }
+        return {'downloads': obj.downloads_count, 'views': obj.views_count, 'saves': obj.saves_count}
 
 
 class ResourceCreateSerializer(serializers.ModelSerializer):
     file = serializers.FileField()
+    subject = serializers.CharField(default='other', required=False)
+    visibility = serializers.CharField(default='public', required=False)
+    audience = serializers.CharField(default='', required=False, allow_blank=True)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from spheres.models import Sphere
+        self.fields['sphere'] = serializers.PrimaryKeyRelatedField(
+            queryset=Sphere.objects.all(), required=False, allow_null=True
+        )
 
     def validate_visibility(self, value):
         return normalize_visibility(value)
 
+    def validate_file(self, value):
+        if value.size > 50 * 1024 * 1024:
+            raise serializers.ValidationError("File size cannot exceed 50MB")
+        if value.content_type not in ACCEPTED_RESOURCE_MIME_TYPES:
+            raise serializers.ValidationError("File type not allowed.")
+        return value
+
     class Meta:
         model = Resource
-        fields = [
-            'title', 'description', 'file', 'subject', 'type', 'visibility',
-            'audience', 'tags'
-        ]
-
-    def validate_file(self, value):
-        # File size validation (50MB max)
-        max_size = 50 * 1024 * 1024  # 50MB
-        if value.size > max_size:
-            raise serializers.ValidationError("File size cannot exceed 50MB")
-
-        # File type validation
-        if value.content_type not in ACCEPTED_RESOURCE_MIME_TYPES:
-            raise serializers.ValidationError(
-                "File type not allowed. Supported types: PDF, DOC, DOCX, PPT, PPTX, ZIP, JPG, PNG, GIF"
-            )
-
-        return value
+        fields = ['title', 'description', 'file', 'subject', 'type', 'visibility', 'audience', 'sphere', 'tags']
 
     def create(self, validated_data):
         file = validated_data['file']
         validated_data['author'] = self.context['request'].user
         validated_data['file_size'] = file.size
         validated_data['file_type'] = file.content_type
-        
         resource = super().create(validated_data)
-        
-        # Apply impact for uploading a resource.
         apply_impact_event(resource.author, RESOURCE_UPLOADED)
-        
         return resource
 
 
@@ -123,10 +107,7 @@ class ResourceUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Resource
-        fields = [
-            'title', 'description', 'subject', 'type', 'visibility',
-            'audience', 'tags'
-        ]
+        fields = ['title', 'description', 'subject', 'type', 'visibility', 'audience', 'tags']
 
 
 class ResourceSaveSerializer(serializers.ModelSerializer):

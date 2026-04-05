@@ -253,10 +253,12 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
     if (sendingToUserId) return;
     setSendingToUserId(contactId);
     const postUrl = `${window.location.origin}/posts/${post.id}`;
-    const messageContent = `📌 ${post.author.name} a partagé un post avec toi :\n${postUrl}`;
+    const messageContent = `📌 Post partagé par ${post.author.name} :\n${postUrl}`;
     try {
+      // createPrivateConversation retourne la conv existante ou nouvelle via unwrapItem
       const conv = await createPrivateConversation(contactId);
-      const convId = conv?.id || conv?.data?.id;
+      // L'ID peut être directement sur conv (après unwrap) ou dans conv.data si pas unwrappé
+      const convId = String(conv?.id ?? conv?.data?.id ?? "");
       if (!convId) throw new Error("Conversation introuvable");
       await sendMessage(convId, messageContent);
       toast({ title: "Post partagé !", description: `Envoyé à ${contactName}`, duration: 2000 });

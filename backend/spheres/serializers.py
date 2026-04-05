@@ -27,11 +27,13 @@ class SphereSerializer(serializers.ModelSerializer):
     membership_status = serializers.SerializerMethodField()
     user_role = serializers.SerializerMethodField()
     is_expired = serializers.BooleanField(read_only=True)
+    banner_image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Sphere
         fields = [
             'id', 'name', 'description', 'category', 'type', 'color', 'icon',
+            'banner_image', 'banner_image_url',
             'is_private', 'require_approval', 'objective', 'target_audience',
             'duration', 'expires_at', 'auto_delete_on_expiry', 'collaboration_types', 'member_count', 'impact_score',
             'progression',
@@ -39,6 +41,14 @@ class SphereSerializer(serializers.ModelSerializer):
             'user_role', 'is_expired', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'member_count', 'created_at', 'updated_at']
+
+    def get_banner_image_url(self, obj):
+        if not obj.banner_image:
+            return None
+        request = self.context.get('request')
+        if request:
+            return request.build_absolute_uri(obj.banner_image.url)
+        return obj.banner_image.url
 
     def get_progression(self, obj):
         """

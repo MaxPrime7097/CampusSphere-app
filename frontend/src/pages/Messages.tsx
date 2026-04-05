@@ -110,6 +110,8 @@ export function Messages() {
   const [loadingParticipants, setLoadingParticipants] = useState(false);
   const [pendingParticipantId, setPendingParticipantId] = useState<string | null>(null);
   const [isUpdatingConversation, setIsUpdatingConversation] = useState(false);
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
 
   const messageSchema = z.object({
     content: z.string()
@@ -543,23 +545,20 @@ export function Messages() {
 
   const handleRenameGroup = async () => {
     if (!conversationId || !selectedConv) return;
-    const newName = window.prompt("Nouveau nom du groupe", selectedConv.name || "");
-    if (!newName) return;
-    if (!newName.trim()) {
-      toast({ variant: "destructive", title: "Nom invalide", description: "Le nom du groupe est vide." });
-      return;
-    }
+    setRenameValue(selectedConv.name || "");
+    setRenameDialogOpen(true);
+  };
+
+  const handleRenameConfirm = async () => {
+    if (!conversationId || !renameValue.trim()) return;
     setIsUpdatingConversation(true);
     try {
-      await renameConversation(conversationId, newName.trim());
-      setConversations((prev) => prev.map((conv) => (conv.id === conversationId ? { ...conv, name: newName.trim() } : conv)));
-      toast({ title: "Groupe renommé", description: `Nouveau nom : ${newName.trim()}.` });
+      await renameConversation(conversationId, renameValue.trim());
+      setConversations((prev) => prev.map((conv) => (conv.id === conversationId ? { ...conv, name: renameValue.trim() } : conv)));
+      setRenameDialogOpen(false);
+      toast({ title: "Groupe renommé", description: `Nouveau nom : ${renameValue.trim()}.` });
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Renommage refusé",
-        description: error?.message || "Vous n'avez pas le droit de renommer ce groupe.",
-      });
+      toast({ variant: "destructive", title: "Renommage refusé", description: error?.message || "Vous n'avez pas le droit de renommer ce groupe." });
     } finally {
       setIsUpdatingConversation(false);
     }
@@ -759,7 +758,7 @@ export function Messages() {
                           {formatRelativeTime(conversation.lastMessageAt)}
                         </span>
                       </div>
-                      <p className="text-xs md:text-sm text-muted-foreground truncate">
+                      <p className="text-xs md:text-sm text-muted-foreground truncate max-w-[140px] sm:max-w-none">
                         {conversation.lastMessage || (conversation.type === 'group' ? 'Conversation de groupe' : 'Message privé')}
                       </p>
                     </div>
@@ -801,13 +800,15 @@ export function Messages() {
                             ? 'cursor-pointer hover:opacity-80'
                             : 'cursor-not-allowed opacity-60'
                       }`}
-                      onClick={() =>
-                        selectedConv?.type !== 'group' &&
-                        handleProfileNavigation(
-                          selectedConv?.participants?.[0]?.username,
-                          selectedConv?.name
-                        )
-                      }
+                      onClick={() => {
+                        if (selectedConv?.type !== 'group') {
+                          // Pour les convs privées, trouver le bon participant (pas soi-même)
+                          const other = (selectedConv?.participants || []).find(
+                            (p: any) => String(p.id) !== String(currentUser?.id)
+                          ) || selectedConv?.participants?.[0];
+                          handleProfileNavigation(other?.username, other?.name || selectedConv?.name);
+                        }
+                      }}
                     >
                       <AvatarImage src={selectedConv?.avatar ?? undefined} />
                       <AvatarFallback className="bg-input text-muted-foreground font-semibold text-xs md:text-sm">
@@ -855,11 +856,17 @@ export function Messages() {
                     </h3>
                     <p className="text-xs text-muted-foreground truncate">
                       {selectedConv?.type === 'group'
-                        ? `${selectedConv?.participants?.length || 0} membres`
-                        : 'Conversation privée'}
+                        ? `${selectedConv?.participants?.length || 0} membre${(selectedConv?.participants?.length || 0) > 1 ? 's' : ''}`
+                        : (() => {
+                            const other = (selectedConv?.participants || []).find(
+                              (p: any) => String(p.id) !== String(currentUser?.id)
+                            ) || selectedConv?.participants?.[0];
+                            return other?.username ? `@${other.username}` : 'Conversation privée';
+                          })()}
                     </p>
-                    <p className="text-[10px] text-muted-foreground">
-                      {transportMode === "ws" ? "Temps réel actif" : transportMode === "polling" ? "Mode secours (polling)" : "Hors ligne"}
+                    <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${transportMode === 'ws' ? 'bg-green-500' : transportMode === 'polling' ? 'bg-yellow-500' : 'bg-muted-foreground'}`} />
+                      {transportMode === "ws" ? "Temps réel" : transportMode === "polling" ? "Polling" : "Hors ligne"}
                     </p>
                   </div>
                 </div>
@@ -1022,7 +1029,24 @@ export function Messages() {
                                 </div>
                               </div>
                             ) : (
-                              <p className="text-sm">{message.content}</p>
+                              <p className="text-sm break-words">
+                                {msg.content.split(/(https?:\/\/[^\s]+)/g).map((part, i) =>
+                                  /^https?:\/\//.test(part) ? (
+                                    <a
+                                      key={i}
+                                      href={part}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="underline underline-offset-2 hover:opacity-80 break-all"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      {part}
+                                    </a>
+                                  ) : (
+                                    <span key={i}>{part}</span>
+                                  )
+                                )}
+                              </p>
                             )}
                           </div>
                           {(canEdit || canDelete) && editingMessageId !== message.id && (
@@ -1144,6 +1168,31 @@ export function Messages() {
           </div>
         </DialogContent>
       </Dialog>
+      {/* Dialog renommage groupe */}
+      <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Renommer le groupe</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Input
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              placeholder="Nouveau nom..."
+              maxLength={50}
+              onKeyDown={(e) => e.key === 'Enter' && handleRenameConfirm()}
+              autoFocus
+            />
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setRenameDialogOpen(false)} disabled={isUpdatingConversation}>Annuler</Button>
+              <Button onClick={handleRenameConfirm} disabled={!renameValue.trim() || isUpdatingConversation} className="campus-gradient text-white">
+                {isUpdatingConversation ? <Loader2 className="h-4 w-4 animate-spin" /> : "Renommer"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={participantsDialogOpen} onOpenChange={setParticipantsDialogOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>

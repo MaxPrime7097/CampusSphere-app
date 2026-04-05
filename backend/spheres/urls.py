@@ -23,4 +23,5 @@ urlpatterns = [
 
     # Overview
     path('<int:pk>/overview/', views.sphere_overview, name='sphere-overview'),
+    path('<int:pk>/banner/', views.upload_sphere_banner, name='sphere-banner'),
 ]

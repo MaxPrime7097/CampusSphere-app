@@ -542,6 +542,38 @@ class SphereMemberDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
         })
 
 
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def upload_sphere_banner(request, pk):
+    """Upload or remove banner image for a sphere (creator only)."""
+    sphere = get_object_or_404(Sphere, pk=pk)
+    if sphere.created_by_id != request.user.id:
+        return Response({'error': 'Only the sphere creator can change the banner'}, status=403)
+
+    if request.data.get('remove'):
+        if sphere.banner_image:
+            sphere.banner_image.delete(save=False)
+            sphere.banner_image = None
+            sphere.save(update_fields=['banner_image'])
+        return Response({'success': True, 'banner_image_url': None})
+
+    banner_file = request.FILES.get('banner')
+    if not banner_file:
+        return Response({'error': 'No banner file provided'}, status=400)
+    if not banner_file.content_type.startswith('image/'):
+        return Response({'error': 'File must be an image'}, status=400)
+    if banner_file.size > 10 * 1024 * 1024:
+        return Response({'error': 'Image must be under 10MB'}, status=400)
+
+    if sphere.banner_image:
+        sphere.banner_image.delete(save=False)
+    sphere.banner_image = banner_file
+    sphere.save(update_fields=['banner_image'])
+
+    url = request.build_absolute_uri(sphere.banner_image.url)
+    return Response({'success': True, 'banner_image_url': url})
+
+
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def sphere_overview(request, pk):

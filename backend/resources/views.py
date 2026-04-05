@@ -358,6 +358,18 @@ class ResourceShareTrackingView(APIView):
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
+def sphere_resources(request, sphere_id):
+    from spheres.models import Sphere, SphereMember
+    sphere = get_object_or_404(Sphere, pk=sphere_id)
+    if not SphereMember.objects.filter(sphere=sphere, user=request.user, status='active').exists():
+        return Response({'error': 'You must be a member'}, status=403)
+    resources = Resource.objects.filter(sphere=sphere).select_related('author').order_by('-created_at')
+    serializer = ResourceSerializer(resources, many=True, context={'request': request})
+    return Response({'success': True, 'data': serializer.data})
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
 def user_saved_resources(request):
     """Get user's saved resources"""
     saves = ResourceSave.objects.filter(user=request.user).select_related('resource__author')
