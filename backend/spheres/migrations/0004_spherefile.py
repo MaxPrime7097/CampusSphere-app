@@ -7,7 +7,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ("spheres", "0003_sphere_banner_image"),
-        ("users", "0001_initial"),
+        ("users", "__latest__"),
     ]
 
     operations = [

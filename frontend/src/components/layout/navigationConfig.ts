@@ -50,7 +50,7 @@ function isAdminUser(user?: NavigationUser | null) {
 export function getNavigationSections(user?: NavigationUser | null): NavigationSections {
   const profileUrl = `/profile/${user?.username || "current"}`;
   const newPost = "#create-post";
-  const adminEntry = isAdminUser(user) ? [{ title: "Admin", url: "cs-inc/private/admin", icon: Shield }] : [];
+  const adminEntry = isAdminUser(user) ? [{ title: "Admin", url: "/admin/dashboard", icon: Shield }] : [];
 
   const navigationItems: NavigationItem[] = [
     { title: "Accueil", url: "/", icon: Home },

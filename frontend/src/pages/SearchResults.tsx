@@ -302,7 +302,8 @@ export function SearchResults() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
-      <div className="max-w-4xl mx-auto py-4 md:py-6 px-4">
+      <div className="max-w-4xl mx-auto py-4 md:py-6">
+        <div className="px-4 md:px-0">
         {/* Search Bar */}
         <div className="mb-6">
           <form onSubmit={handleSearch} className="relative">
@@ -382,7 +383,7 @@ export function SearchResults() {
                 </h3>
                 <div className="space-y-2">
                   {sortedResults.users.map((user) => (
-                    <Card key={user.id} className="campus-card hover:campus-glow transition-all">
+                    <Card key={user.id} className="rounded-none md:rounded-lg border-y md:border bg-card hover:bg-accent/30 transition-all">
                       <CardContent className="p-3 md:p-4">
                         <div className="flex items-center gap-3">
                           <Avatar 
@@ -429,8 +430,8 @@ export function SearchResults() {
                 </h3>
                 <div className="space-y-2">
                   {sortedResults.resources.map((res) => (
-                    <Card key={res.id} className="campus-card hover:campus-glow transition-all">
-                      <CardContent className="p-4 flex items-center justify-between">
+                    <Card key={res.id} className="rounded-none md:rounded-lg border-y md:border bg-card hover:bg-accent/30 transition-all">
+                      <CardContent className="p-3 md:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div className="flex-1">
                           <p 
                             className="font-semibold cursor-pointer hover:underline"
@@ -474,8 +475,8 @@ export function SearchResults() {
                 </h3>
                 <div className="space-y-2">
                   {sortedResults.spheres.map((sphere) => (
-                    <Card key={sphere.id} className="campus-card hover:campus-glow transition-all">
-                      <CardContent className="p-4 flex items-center justify-between">
+                    <Card key={sphere.id} className="rounded-none md:rounded-lg border-y md:border bg-card hover:bg-accent/30 transition-all">
+                      <CardContent className="p-3 md:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div className="flex-1">
                           <p 
                             className="font-semibold cursor-pointer hover:underline"
@@ -522,7 +523,7 @@ export function SearchResults() {
             {sortedResults.users.length > 0 ? (
               <div className="space-y-2">
                 {sortedResults.users.map((user) => (
-                  <Card key={user.id} className="campus-card hover:campus-glow transition-all">
+                  <Card key={user.id} className="rounded-none md:rounded-lg border-y md:border bg-card hover:bg-accent/30 transition-all">
                     <CardContent className="p-3 md:p-4">
                       <div className="flex items-center gap-3">
                         <Avatar 
@@ -571,8 +572,8 @@ export function SearchResults() {
             {sortedResults.resources.length > 0 ? (
               <div className="space-y-2">
                 {sortedResults.resources.map((res) => (
-                  <Card key={res.id} className="campus-card hover:campus-glow transition-all">
-                    <CardContent className="p-4 flex items-center justify-between">
+                  <Card key={res.id} className="rounded-none md:rounded-lg border-y md:border bg-card hover:bg-accent/30 transition-all">
+                    <CardContent className="p-3 md:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                       <div className="flex-1">
                         <p 
                           className="font-semibold cursor-pointer hover:underline"
@@ -618,8 +619,8 @@ export function SearchResults() {
             {sortedResults.spheres.length > 0 ? (
               <div className="space-y-2">
                 {sortedResults.spheres.map((sphere) => (
-                  <Card key={sphere.id} className="campus-card hover:campus-glow transition-all">
-                    <CardContent className="p-4 flex items-center justify-between">
+                  <Card key={sphere.id} className="rounded-none md:rounded-lg border-y md:border bg-card hover:bg-accent/30 transition-all">
+                    <CardContent className="p-3 md:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                       <div className="flex-1">
                         <p 
                           className="font-semibold cursor-pointer hover:underline"

@@ -132,7 +132,7 @@ export function CookiePolicy(): JSX.Element {
                 <a className="text-primary hover:underline">
                   Paramètres → Confidentialité
                 </a>
-                en fonction de votre navigateur. Vous pouvez y voir les cookies actifs et les supprimer si vous le souhaitez.
+                 ,en fonction de votre navigateur. Vous pouvez y voir les cookies actifs et les supprimer si vous le souhaitez.
               </p>
               </div>
             </div>

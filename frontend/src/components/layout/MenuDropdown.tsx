@@ -1,5 +1,5 @@
 import {
-  Menu, Shield
+  Menu, Shield, ExternalLink
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -147,7 +147,8 @@ export function MenuDropdown() {
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} end className={getNavClasses} onClick={closeMenu}>
                       <item.icon className="h-5 w-5" />
-                      {!isCollapsed && <span>{item.title}</span>}
+                      {!isCollapsed && <span className="flex-1">{item.title}</span>}
+                      {!isCollapsed && <ExternalLink className="h-3.5 w-3.5 text-muted-foreground opacity-60" />}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

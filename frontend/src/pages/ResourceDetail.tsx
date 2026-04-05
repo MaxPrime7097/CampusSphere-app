@@ -719,10 +719,6 @@ export function ResourceDetail() {
                 <p className="font-medium">{getAudienceLabel(resource.level)}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Pages</p>
-                <p className="font-medium">{resource.pages || "N/A"}</p>
-              </div>
-              <div>
                 <p className="text-sm text-muted-foreground mb-1">Taille du fichier</p>
                 <p className="font-medium">{formatFileSize(resource.size)}</p>
               </div>
