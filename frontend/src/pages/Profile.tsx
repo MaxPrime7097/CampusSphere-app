@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { getCurrentUser, getUserByUsername, getUserPosts, uploadAvatar, uploadCoverPhoto, updateUserProfile, getUserConnections, getUserResources, connectWithUser, disconnectFromUser, downloadResource, getUserProfile, getUserConnectionRelation, isApiRequestErrorStatus } from "@/services/api";
-import { MapPin, Camera, Calendar, Link, Users, User, BookOpen, Award, Settings, FileText, Briefcase, GraduationCap, Loader2, Check, Download, Unlink, ExternalLink, Upload, X, Zap, Smile, BriefcaseBusiness } from "lucide-react";
+import { MapPin, Camera, Calendar, Link, Users, User, BookOpen, Award, Settings, FileText, Briefcase, GraduationCap, Loader2, Check, Download, Unlink, ExternalLink, Upload, X, Zap, Smile, BriefcaseBusiness, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -199,7 +199,9 @@ function mapProfileToViewModel({
         connections: 0,
         contributions: null as number | null,
       },
-      badges: [],
+      badges: [
+      ...(profile.is_staff || profile.isStaff ? [{ id: 'admin', label: 'CampusSphere Admin', color: 'campus-gradient' }] : []),
+    ],
     };
   }
 
@@ -245,7 +247,9 @@ function mapProfileToViewModel({
       connections: connections?.length || 0,
       contributions: resourcesAvailable ? resources.length : null,
     },
-    badges: [],
+    badges: [
+      ...(profile.is_staff || profile.isStaff ? [{ id: 'admin', label: 'CampusSphere Admin', color: 'bg-gradient-to-r from-primary to-accent text-white' }] : []),
+    ],
   };
 }
 
@@ -991,10 +995,14 @@ export function Profile() {
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  {user.badges.map((badge: string) => (
-                    <Badge key={badge} variant="secondary" className="gap-1">
-                      <Award className="h-3 w-3" />
-                      {badge}
+                  {user.badges.map((badge: any) => (
+                    <Badge
+                      key={badge.id || badge}
+                      className={`gap-1 ${badge.id === 'admin' ? 'campus-gradient text-white border-0' : ''}`}
+                      variant={badge.id === 'admin' ? 'default' : 'secondary'}
+                    >
+                      {badge.id === 'admin' && <Shield className="h-3 w-3" />}
+                      {badge.label || badge}
                     </Badge>
                   ))}
                 </div>

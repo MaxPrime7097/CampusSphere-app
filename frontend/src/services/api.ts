@@ -1129,29 +1129,6 @@ export async function deleteSphereFile(sphereId: number | string, fileId: number
   });
 }
 
-export async function getSphereFiles(sphereId: number | string, token?: string) {
-  const response = await apiFetch<any>(`api/spheres/${sphereId}/files/`, { token: token || getAccessToken() });
-  return unwrapList<any>(response);
-}
-
-export async function uploadSphereFile(sphereId: number | string, file: File, title: string, token?: string) {
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('title', title);
-  return apiFetch<any>(`api/spheres/${sphereId}/files/`, {
-    method: 'POST',
-    body: formData,
-    token: token || getAccessToken(),
-  });
-}
-
-export async function deleteSphereFile(sphereId: number | string, fileId: number | string, token?: string) {
-  return apiFetch<any>(`api/spheres/${sphereId}/files/${fileId}/`, {
-    method: 'DELETE',
-    token: token || getAccessToken(),
-  });
-}
-
 export async function getSavedPosts(token?: string) {
   const response = await apiFetch<any>("api/posts/saved/", { token: token || getAccessToken() });
   return normalizePosts(unwrapList(response));
@@ -1892,6 +1869,68 @@ export async function getAdminReportedContent(token?: string): Promise<AdminRepo
 export async function getAdminUserManagementSummary(token?: string): Promise<AdminUserManagementSummary> {
   const response = await apiFetch<any>("api/admin/user-management-summary/", { token: token || getAccessToken() });
   return mapAdminSummary(unwrapItem(response));
+}
+
+// Admin V1 endpoints
+export async function getAdminUsers(params?: { page?: number; search?: string }, token?: string) {
+  const q = new URLSearchParams();
+  if (params?.page) q.set('page', String(params.page));
+  if (params?.search) q.set('search', params.search);
+  const suffix = q.toString() ? `?${q}` : '';
+  return apiFetch<any>(`api/admin/v1/users/${suffix}`, { token: token || getAccessToken() });
+}
+
+export async function banAdminUsers(ids: string[], token?: string) {
+  return apiFetch<any>('api/admin/v1/users/bulk-ban/', {
+    method: 'POST',
+    body: { ids },
+    token: token || getAccessToken(),
+  });
+}
+
+export async function getAdminSpheres(params?: { page?: number; search?: string }, token?: string) {
+  const q = new URLSearchParams();
+  if (params?.page) q.set('page', String(params.page));
+  if (params?.search) q.set('search', params.search);
+  const suffix = q.toString() ? `?${q}` : '';
+  return apiFetch<any>(`api/admin/v1/spheres/${suffix}`, { token: token || getAccessToken() });
+}
+
+export async function getAdminResources(params?: { page?: number; search?: string }, token?: string) {
+  const q = new URLSearchParams();
+  if (params?.page) q.set('page', String(params.page));
+  if (params?.search) q.set('search', params.search);
+  const suffix = q.toString() ? `?${q}` : '';
+  return apiFetch<any>(`api/admin/v1/resources/${suffix}`, { token: token || getAccessToken() });
+}
+
+export async function deleteAdminResources(ids: string[], token?: string) {
+  return apiFetch<any>('api/admin/v1/resources/bulk-delete/', {
+    method: 'POST',
+    body: { ids },
+    token: token || getAccessToken(),
+  });
+}
+
+export async function getAdminReports(params?: { page?: number; search?: string }, token?: string) {
+  const q = new URLSearchParams();
+  if (params?.page) q.set('page', String(params.page));
+  if (params?.search) q.set('search', params.search);
+  const suffix = q.toString() ? `?${q}` : '';
+  return apiFetch<any>(`api/admin/v1/reports/${suffix}`, { token: token || getAccessToken() });
+}
+
+export async function approveAdminReports(ids: string[], token?: string) {
+  return apiFetch<any>('api/admin/v1/reports/bulk-approve/', {
+    method: 'POST',
+    body: { ids },
+    token: token || getAccessToken(),
+  });
+}
+
+export async function getAdminStats(token?: string) {
+  const response = await apiFetch<any>('api/admin/v1/stats/', { token: token || getAccessToken() });
+  return unwrapItem<any>(response);
 }
 
 

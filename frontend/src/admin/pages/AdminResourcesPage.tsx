@@ -1,32 +1,119 @@
-import { CheckCircle2, Clock3 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { useEffect, useState } from "react";
+import { FileText, Search, Trash2, Loader2, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useModerationQueue } from "../hooks/useAdminData";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { getAdminResources, deleteAdminResources } from "@/services/api";
 
 export function AdminResourcesPage() {
-  const { data, loading, error } = useModerationQueue();
+  const [resources, setResources] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState<any>(null);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [deleting, setDeleting] = useState(false);
+  const { toast } = useToast();
+
+  const load = async (p = 1, s = search) => {
+    setLoading(true);
+    try {
+      const res = await getAdminResources({ page: p, search: s });
+      setResources(res?.data || []);
+      setMeta(res?.meta?.pagination || null);
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e?.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { void load(); }, []);
+
+  const handleSearch = (e: React.FormEvent) => { e.preventDefault(); setPage(1); void load(1, search); };
+  const toggleSelect = (id: string) => setSelected((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+
+  const handleDelete = async () => {
+    if (!selected.length || !confirm(`Supprimer ${selected.length} ressource(s) ?`)) return;
+    setDeleting(true);
+    try {
+      const res = await deleteAdminResources(selected);
+      toast({ title: "Ressources supprimées", description: `${res?.data?.deleted || selected.length} supprimée(s)` });
+      setSelected([]);
+      void load(page);
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e?.message, variant: "destructive" });
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2"><Clock3 className="h-4 w-4" />Ressources</CardTitle>
-        <CardDescription>Validation des ressources partagées.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {error && <p className="text-sm text-destructive">{error}</p>}
-        {loading ? <p className="text-sm">Chargement…</p> : data.map((resource) => (
-          <div key={resource.id} className="rounded-lg border p-3">
-            <div className="mb-1 flex items-center justify-between gap-2">
-              <p className="text-sm font-medium">{resource.title}</p>
-              <Badge variant="secondary">{resource.type}</Badge>
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><FileText className="h-4 w-4" />Ressources</CardTitle>
+          <CardDescription>Toutes les ressources partagées — {meta?.total_items ?? "…"} au total</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <form onSubmit={handleSearch} className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Titre, matière, auteur..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
             </div>
-            <p className="text-xs text-muted-foreground">{resource.subject} · {resource.size}</p>
-            <div className="mt-2 inline-flex items-center gap-1 text-xs text-emerald-600">
-              <CheckCircle2 className="h-3 w-3" /> Prêt pour revue
+            <Button type="submit" variant="outline" size="sm">Chercher</Button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => { setSearch(""); setPage(1); void load(1, ""); }}>
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          </form>
+
+          {selected.length > 0 && (
+            <div className="flex items-center gap-2 p-2 bg-destructive/10 rounded-lg">
+              <span className="text-sm font-medium">{selected.length} sélectionné(s)</span>
+              <Button size="sm" variant="destructive" onClick={handleDelete} disabled={deleting} className="gap-1">
+                {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                Supprimer
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setSelected([])}>Annuler</Button>
             </div>
-          </div>
-        ))}
-      </CardContent>
-    </Card>
+          )}
+
+          {loading ? (
+            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+          ) : resources.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">Aucune ressource trouvée</p>
+          ) : (
+            <div className="space-y-2">
+              {resources.map((r) => (
+                <div
+                  key={r.id}
+                  className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${selected.includes(r.id) ? "bg-primary/10 border-primary/30" : "hover:bg-muted/50"}`}
+                  onClick={() => toggleSelect(r.id)}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{r.title}</p>
+                    <p className="text-xs text-muted-foreground">{r.author} · {r.subject}</p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <Badge variant="secondary" className="text-xs">{r.type}</Badge>
+                    <span className="text-xs text-muted-foreground">{r.createdAt ? new Date(r.createdAt).toLocaleDateString("fr-FR") : ""}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {meta && meta.total_pages > 1 && (
+            <div className="flex items-center justify-between pt-2">
+              <Button size="sm" variant="outline" disabled={!meta.has_previous} onClick={() => { setPage(p => p - 1); void load(page - 1); }}>Précédent</Button>
+              <span className="text-xs text-muted-foreground">Page {meta.page} / {meta.total_pages}</span>
+              <Button size="sm" variant="outline" disabled={!meta.has_next} onClick={() => { setPage(p => p + 1); void load(page + 1); }}>Suivant</Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

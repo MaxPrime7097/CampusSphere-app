@@ -43,6 +43,7 @@ urlpatterns = [
     path('api/admin/v1/reports/', admin_views.admin_v1_reports, name='admin-v1-reports'),
     path('api/admin/v1/reports/bulk-approve/', admin_views.admin_v1_reports_bulk_approve, name='admin-v1-reports-bulk-approve'),
     path('api/admin/v1/stats/', admin_views.admin_v1_stats, name='admin-v1-stats'),
+    path('api/admin/v1/logs/', admin_views.admin_v1_logs, name='admin-v1-logs'),
 
     # Search and utility endpoints
     path('api/search/', views.global_search, name='global-search'),

@@ -485,6 +485,37 @@ def admin_v1_reports_bulk_approve(request):
     )
 
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def admin_v1_logs(request):
+    allowed, denied_response, _, _ = require_admin_permission(request, 'view')
+    if not allowed:
+        return denied_response
+
+    from .admin_audit import AdminAuditLog
+    page, page_size, ordering, search = _parse_list_params(request)
+    queryset = AdminAuditLog.objects.select_related('actor').order_by('-created_at')
+    if search:
+        queryset = queryset.filter(
+            Q(action__icontains=search) |
+            Q(target_type__icontains=search) |
+            Q(actor__username__icontains=search)
+        )
+    logs, meta = _paginate_queryset(queryset, page, page_size)
+    payload = [
+        {
+            'id': str(log.id),
+            'actor': _display_name(log.actor),
+            'action': log.action,
+            'targetType': log.target_type,
+            'targetId': str(log.target_id) if log.target_id else None,
+            'createdAt': log.created_at,
+        }
+        for log in logs
+    ]
+    return _admin_response(True, payload, meta=meta)
+
+
 @cache_page(60 * 15)
 @vary_on_headers('Authorization')
 @api_view(['GET'])

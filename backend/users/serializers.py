@@ -110,7 +110,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'data_export_requested_at', 'impact_score', 'current_mood',
             'skills', 'interests', 'previous_education', 'previousEducation', 'experiences',
             'portfolio_links', 'portfolioLinks', 'joined_spheres_count', 'connections_count', 'contributions_count',
-            'date_joined', 'updated_at'
+            'date_joined', 'updated_at', 'is_staff', 'is_superuser'
         ]
         read_only_fields = ['id', 'impact_score', 'date_joined', 'updated_at']
 
