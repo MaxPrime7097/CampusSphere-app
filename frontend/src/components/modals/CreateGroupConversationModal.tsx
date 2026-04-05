@@ -32,7 +32,6 @@ export function CreateGroupConversationModal({ children, onGroupCreated }: Props
   const [loadingConnections, setLoadingConnections] = useState(false);
   const { toast } = useToast();
 
-  // Charger les connexions à l'ouverture
   useEffect(() => {
     if (!isOpen) return;
     let mounted = true;
@@ -79,7 +78,7 @@ export function CreateGroupConversationModal({ children, onGroupCreated }: Props
       groupSchema.parse({ name, members: selectedMembers });
       setIsCreating(true);
       const result = await createGroupConversation(name.trim(), selectedMembers);
-      const groupData = result?.data ?? result;
+      const groupData = (result as any)?.data ?? result;
       toast({ title: "Groupe créé !", description: `"${name}" a été créé`, duration: 3000 });
       onGroupCreated?.(groupData);
       reset();
@@ -103,11 +102,14 @@ export function CreateGroupConversationModal({ children, onGroupCreated }: Props
     <Dialog open={isOpen} onOpenChange={(o) => { setIsOpen(o); if (!o) reset(); }}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="w-full max-w-lg max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-primary" />
+            Créer un groupe
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
-          {/* Nom */}
           <div>
             <Label htmlFor="groupName">Nom du groupe *</Label>
             <Input
@@ -121,20 +123,23 @@ export function CreateGroupConversationModal({ children, onGroupCreated }: Props
             <p className="text-xs text-muted-foreground mt-1">{name.length}/50</p>
           </div>
 
-          {/* Membres sélectionnés */}
           {selectedUsers.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {selectedUsers.map((u) => (
                 <Badge key={u.id} variant="secondary" className="flex items-center gap-1.5 pr-1">
-                  <Avatar className="h-4 w-4"><AvatarImage src={u.avatar ?? undefined} /><AvatarFallback className="text-[9px]">{u.name[0]}</AvatarFallback></Avatar>
+                  <Avatar className="h-4 w-4">
+                    <AvatarImage src={u.avatar ?? undefined} />
+                    <AvatarFallback className="text-[9px]">{u.name[0]}</AvatarFallback>
+                  </Avatar>
                   <span className="text-xs">{u.name}</span>
-                  <button type="button" onClick={() => toggle(u.id)} className="ml-0.5 hover:text-destructive"><X className="h-3 w-3" /></button>
+                  <button type="button" onClick={() => toggle(u.id)} className="ml-0.5 hover:text-destructive">
+                    <X className="h-3 w-3" />
+                  </button>
                 </Badge>
               ))}
             </div>
           )}
 
-          {/* Recherche dans les connexions */}
           <div>
             <Label>Ajouter des membres ({selectedMembers.length} sélectionné{selectedMembers.length > 1 ? "s" : ""})</Label>
             <div className="relative mt-1">
@@ -148,7 +153,6 @@ export function CreateGroupConversationModal({ children, onGroupCreated }: Props
             </div>
           </div>
 
-          {/* Liste des connexions */}
           <div className="border rounded-lg overflow-hidden max-h-52 overflow-y-auto">
             {loadingConnections ? (
               <div className="flex items-center justify-center py-8 gap-2 text-sm text-muted-foreground">
@@ -189,7 +193,9 @@ export function CreateGroupConversationModal({ children, onGroupCreated }: Props
             disabled={isCreating || !name.trim() || selectedMembers.length < 2}
             className="campus-gradient text-white hover:opacity-90"
           >
-            {isCreating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Création...</> : <><MessageSquare className="h-4 w-4 mr-2" />Créer</>}
+            {isCreating
+              ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Création...</>
+              : <><MessageSquare className="h-4 w-4 mr-2" />Créer</>}
           </Button>
         </div>
       </DialogContent>
