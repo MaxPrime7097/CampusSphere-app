@@ -12,7 +12,7 @@ import { createTask } from "@/services/api";
 interface CreateTaskModalProps {
   children: React.ReactNode;
   onTaskCreated?: (taskData: any) => void;
-  sphereMembers?: Array<{ id: string; name: string; username: string; avatar?: string }>;
+  sphereMembers?: Array<{ id: string; userId?: string; name: string; username: string; avatar?: string }>;
   sphereId: string | number;
 }
 
@@ -133,7 +133,7 @@ export function CreateTaskModal({ children, onTaskCreated, sphereMembers = [], s
                 {sphereMembers.length === 0 ? (
                   <div className="px-3 py-2 text-sm text-muted-foreground">Aucun membre disponible</div>
                 ) : sphereMembers.map((m) => (
-                  <SelectItem key={m.id} value={m.id}>
+                  <SelectItem key={m.id} value={m.userId || m.id}>
                     {m.name} {m.username ? `(@${m.username})` : ""}
                   </SelectItem>
                 ))}

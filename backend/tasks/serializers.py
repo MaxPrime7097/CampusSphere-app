@@ -80,22 +80,18 @@ class TaskCreateSerializer(serializers.ModelSerializer):
             'title', 'description', 'assigned_to', 'priority', 'due_date',
             'impact_points', 'sphere', 'kanban_status'
         ]
-        extra_kwargs = {'assigned_to': {'required': True, 'allow_null': False}}
+        extra_kwargs = {'assigned_to': {'required': False, 'allow_null': True}}
 
     def validate(self, attrs):
         assigned_to = attrs.get('assigned_to')
         sphere = attrs.get('sphere')
-        if not assigned_to:
-            raise serializers.ValidationError({'assigned_to': "L'assignation est obligatoire"})
-        if sphere:
+        if sphere and assigned_to:
             from spheres.models import SphereMember
             if not SphereMember.objects.filter(sphere=sphere, user=assigned_to, status='active').exists():
                 raise serializers.ValidationError({'assigned_to': "Assigned user must be an active member of the sphere"})
         return attrs
 
     def validate_assigned_to(self, value):
-        if not value:
-            raise serializers.ValidationError("L'assignation est obligatoire")
         return value
 
     def validate_sphere(self, value):

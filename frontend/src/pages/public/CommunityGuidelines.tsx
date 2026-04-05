@@ -74,7 +74,7 @@ export function CommunityGuidelines(): JSX.Element {
         <div className="container mx-auto max-w-5xl">
           <div className="text-center mb-12">
             <p className="font-nunito font-semibold text-muted-foreground">
-              Dernière mise à jour : {new Date().toLocaleDateString('fr-FR')}
+              Dernière mise à jour : 05/04/2026
             </p>
           </div>
 

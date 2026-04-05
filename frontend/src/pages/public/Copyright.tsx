@@ -73,7 +73,7 @@ export function Copyright(): JSX.Element {
         <div className="container mx-auto max-w-5xl">
           <div className="text-center mb-12">
             <p className="font-nunito font-semibold text-muted-foreground">
-              Dernière mise à jour : {new Date().toLocaleDateString('fr-FR')}
+              Dernière mise à jour : 05/04/2026
             </p>
           </div>
 
@@ -88,7 +88,8 @@ export function Copyright(): JSX.Element {
               <p>
                 CampusSphere respecte les droits de propriété intellectuelle d'autrui et attend de ses utilisateurs 
                 qu'ils fassent de même. Nous répondons aux notifications de violation présumée de droits d'auteur 
-                conformément au Digital Millennium Copyright Act (DMCA).
+                conformément au droit camerounais applicable, notamment la loi n°2010/012 relative à la cybersécurité 
+                et à la cybercriminalité, ainsi qu'aux règles de l'OAPI (Organisation Africaine de la Propriété Intellectuelle).
               </p>
               </div>
             </div>
@@ -118,12 +119,12 @@ export function Copyright(): JSX.Element {
             <div className="campus-animate-slide-up">
               <div className="p-0">
                 <CardTitle className="font-poppins flex items-center gap-3 p-0">
-                  Procédure de Notification DMCA
+                  Procédure de Notification
                 </CardTitle>
               </div>
               <div className="font-nunito font-semibold text-muted-foreground space-y-4 mt-4">
               <p>
-                Envoyez votre notification de violation DMCA à notre agent désigné à l'adresse suivante :
+                Envoyez votre notification de violation à notre équipe à l'adresse suivante :
               </p>
               <ul className="mt-4 space-y-2">
                 <li><p className="mt-4">
@@ -165,7 +166,7 @@ export function Copyright(): JSX.Element {
               </div>
               <div className="font-nunito font-semibold text-muted-foreground space-y-4 mt-4">
               <p>
-                Conformément au DMCA et à d'autres lois applicables, CampusSphere a adopté une politique de résiliation, 
+                Conformément au droit applicable, CampusSphere a adopté une politique de résiliation, 
                 dans des circonstances appropriées, des comptes d'utilisateurs considérés comme contrevenants récidivistes.
               </p>
               </div>
