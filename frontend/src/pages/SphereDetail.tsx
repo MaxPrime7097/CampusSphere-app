@@ -19,6 +19,7 @@ import {
   Loader2, Plus, Check, Clock, Calendar, Zap, Crown, Shield, User, 
   UserMinus, UserCheck, UserX, Camera, ExternalLink, Download 
 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 import { useToast } from "@/hooks/use-toast";
 import { CreateTaskModal } from "@/components/modals/CreateTaskModal";
@@ -426,20 +427,14 @@ export function SphereDetail() {
 
           <div className="p-4 md:p-6 space-y-4">
             {/* Description + stats */}
-            <div className="space-y-3">
+              <div className="space-y-3">
               <p className="text-sm md:text-base text-muted-foreground">{sphereFallback.description}</p>
               <div className="flex flex-wrap gap-3 text-sm font-medium">
                 <span className="flex items-center gap-1.5"><Users className="h-4 w-4 text-primary" /> {sphereMemberCount} membres</span>
-                <span className="flex items-center gap-1.5"><FileText className="h-4 w-4 text-primary" /> {sphereFileCount} fichiers</span>
+                <span className="flex items-center gap-1.5"><FileText className="h-4 w-4 text-primary" /> {resources.length} fichiers</span>
                 {(sphere?.tags || sphereFallback.tags || []).map((tag: string) => (
                   <Badge key={tag} variant="secondary">#{tag}</Badge>
                 ))}
-              </div>
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs font-semibold">
-                  <span>Progression</span><span>{sphereProgress}%</span>
-                </div>
-                <Progress value={sphereProgress} className="h-2" />
               </div>
             </div>
 
@@ -489,6 +484,24 @@ export function SphereDetail() {
                   {isSharing ? <Check className="h-4 w-4 text-green-500" /> : <Share2 className="h-4 w-4" />}
                   Partager
                 </Button>
+                {/* Bouton options mobile pour membres/demandes */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="md:hidden gap-1">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setActiveTab("members")}>
+                      <Users className="h-4 w-4 mr-2" /> Membres ({members.length})
+                    </DropdownMenuItem>
+                    {canModerateMembers && (
+                      <DropdownMenuItem onClick={() => setActiveTab("pending")}>
+                        <UserCheck className="h-4 w-4 mr-2" /> Demandes ({pendingMembers.length})
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           </div>
@@ -503,8 +516,8 @@ export function SphereDetail() {
                 <SharedTabsTrigger value="chat">Discussion</SharedTabsTrigger>
                 <SharedTabsTrigger value="tasks">Tâches ({tasks.length})</SharedTabsTrigger>
                 <SharedTabsTrigger value="files">Fichiers ({resources.length})</SharedTabsTrigger>
-                <SharedTabsTrigger value="members">Membres</SharedTabsTrigger>
-                {canModerateMembers && <SharedTabsTrigger value="pending">Demandes ({pendingMembers.length})</SharedTabsTrigger>}
+                <SharedTabsTrigger value="members" className="hidden md:flex">Membres</SharedTabsTrigger>
+                {canModerateMembers && <SharedTabsTrigger value="pending" className="hidden md:flex">Demandes ({pendingMembers.length})</SharedTabsTrigger>}
               </SharedTabsList>
             </div>
 

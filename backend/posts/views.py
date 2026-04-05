@@ -10,7 +10,7 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.shortcuts import get_object_or_404
 from django.db import models
 from django.utils import timezone
-from .models import Post, PostLike, PostSave, PostImpactRating, Comment, CommentLike
+from .models import Post, PostLike, PostSave, PostImpactRating, Comment, CommentLike, PostReport
 from .serializers import (
     PostSerializer, PostCreateSerializer, PostUpdateSerializer,
     CommentSerializer, CommentCreateSerializer, CommentUpdateSerializer, PostLikeSerializer,

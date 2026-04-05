@@ -135,9 +135,7 @@ export function ManageMembersModal({ children, sphereId, sphereName }: Props) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-base">
+      <DialogContent className="w-full max-w-lg max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
             <Users className="h-4 w-4" />
             Membres{sphereName ? ` · ${sphereName}` : ""}
           </DialogTitle>

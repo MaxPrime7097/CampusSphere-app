@@ -102,11 +102,7 @@ export function CreateGroupConversationModal({ children, onGroupCreated }: Props
   return (
     <Dialog open={isOpen} onOpenChange={(o) => { setIsOpen(o); if (!o) reset(); }}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-primary" />
-            Créer un groupe
+      <DialogContent className="w-full max-w-lg max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
           </DialogTitle>
         </DialogHeader>
 

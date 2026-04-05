@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { CreateGroupConversationModal } from "@/components/modals/CreateGroupConversationModal";
@@ -1030,21 +1030,12 @@ export function Messages() {
                               </div>
                             ) : (
                               <p className="text-sm break-words">
-                                {msg.content.split(/(https?:\/\/[^\s]+)/g).map((part, i) =>
+                                {message.content.split(/(https?:\/\/[^\s]+)/g).map((part: string, i: number) =>
                                   /^https?:\/\//.test(part) ? (
-                                    <a
-                                      key={i}
-                                      href={part}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
+                                    <a key={i} href={part} target="_blank" rel="noopener noreferrer"
                                       className="underline underline-offset-2 hover:opacity-80 break-all"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      {part}
-                                    </a>
-                                  ) : (
-                                    <span key={i}>{part}</span>
-                                  )
+                                      onClick={(e) => e.stopPropagation()}>{part}</a>
+                                  ) : <span key={i}>{part}</span>
                                 )}
                               </p>
                             )}
@@ -1125,7 +1116,7 @@ export function Messages() {
         )}
       </div>
       <Dialog open={showNewConversationModal} onOpenChange={setShowNewConversationModal}>
-        <DialogContent>
+        <DialogContent aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>Nouveau message</DialogTitle>
           </DialogHeader>
@@ -1170,7 +1161,7 @@ export function Messages() {
       </Dialog>
       {/* Dialog renommage groupe */}
       <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>Renommer le groupe</DialogTitle>
           </DialogHeader>
@@ -1194,7 +1185,7 @@ export function Messages() {
       </Dialog>
 
       <Dialog open={participantsDialogOpen} onOpenChange={setParticipantsDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>Participants de la conversation</DialogTitle>
           </DialogHeader>

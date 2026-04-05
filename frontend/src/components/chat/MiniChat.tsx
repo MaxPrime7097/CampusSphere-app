@@ -119,8 +119,34 @@ export function MiniChat({ sphereId, sphereName, isExpanded, onToggleExpanded, c
         });
 
         if (!existing) {
-          // Pas de conv dédiée — afficher message informatif, pas de création automatique
-          setConversationId(null);
+          // Pas de conv dédiée — n'importe quel membre peut en créer une
+          const participantIds = toList(convsRaw)
+            .filter((c: any) => false) // juste pour réutiliser la variable
+            .map(() => "");
+          // Chercher les membres de la sphère pour créer le canal
+          try {
+            const { listSphereMembers, createGroupConversation } = await import("@/services/api");
+            const membersRaw = await listSphereMembers(sphereId);
+            const memberIds = toList(membersRaw)
+              .map((m: any) => String(m.user_info?.id ?? m.user ?? ""))
+              .filter((id: string) => id && id !== myId);
+            if (memberIds.length >= 2) {
+              const created = await createGroupConversation(SPHERE_CONV_PREFIX, memberIds);
+              const groupData = created?.data ?? created;
+              if (mounted && groupData?.id) {
+                const convId = String(groupData.id);
+                setConversationId(convId);
+                await fetchMessages(convId, myId);
+                if (mounted) connectWS(convId, myId);
+              } else {
+                setConversationId(null);
+              }
+            } else {
+              setConversationId(null);
+            }
+          } catch {
+            setConversationId(null);
+          }
           setIsBootstrapping(false);
           return;
         }
