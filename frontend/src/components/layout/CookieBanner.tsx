@@ -41,7 +41,7 @@ export function CookieBanner() {
         <p className="text-xs text-muted-foreground leading-relaxed">
           Nous utilisons des cookies essentiels pour le fonctionnement de la plateforme et des cookies de performance pour améliorer votre expérience.{" "}
           <button
-            onClick={() => navigate("/cs-inc/policies/cookies")}
+            onClick={() => navigate("/cs-inc/policies/cookiepolicy")}
             className="text-primary underline underline-offset-2 hover:opacity-80"
           >
             En savoir plus

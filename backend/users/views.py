@@ -206,6 +206,27 @@ class ChangeEmailView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+def _delete_supabase_user(supabase_uid: str) -> None:
+    """Best-effort deletion of the Supabase Auth user via the admin API."""
+    from django.conf import settings as django_settings
+    supabase_url = getattr(django_settings, "SUPABASE_URL", "").strip().rstrip("/")
+    service_key = getattr(django_settings, "SUPABASE_SERVICE_ROLE_KEY", "").strip()
+    if not supabase_url or not service_key or not supabase_uid:
+        return
+    try:
+        import requests as req
+        req.delete(
+            f"{supabase_url}/auth/v1/admin/users/{supabase_uid}",
+            headers={
+                "apikey": service_key,
+                "Authorization": f"Bearer {service_key}",
+            },
+            timeout=5,
+        )
+    except Exception:
+        logger.warning("Failed to delete Supabase user %s", supabase_uid, exc_info=True)
+
+
 class DeleteAccountView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -213,7 +234,11 @@ class DeleteAccountView(APIView):
         serializer = DeleteAccountSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
+        supabase_uid = getattr(request.user, "supabase_uid", None)
         request.user.delete()
+        if supabase_uid:
+            _delete_supabase_user(supabase_uid)
+
         return Response({
             'success': True,
             'message': 'Account deleted successfully'

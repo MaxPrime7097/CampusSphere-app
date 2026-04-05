@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
-  BookLock,
+  Scale,
   Bookmark,
   FolderOpen,
   Home,
@@ -50,7 +50,7 @@ function isAdminUser(user?: NavigationUser | null) {
 export function getNavigationSections(user?: NavigationUser | null): NavigationSections {
   const profileUrl = `/profile/${user?.username || "current"}`;
   const newPost = "#create-post";
-  const adminEntry = isAdminUser(user) ? [{ title: "Admin", url: "/admin", icon: Shield }] : [];
+  const adminEntry = isAdminUser(user) ? [{ title: "Admin", url: "cs-inc/private/admin", icon: Shield }] : [];
 
   const navigationItems: NavigationItem[] = [
     { title: "Accueil", url: "/", icon: Home },
@@ -69,8 +69,7 @@ export function getNavigationSections(user?: NavigationUser | null): NavigationS
 
   const utilities: NavigationItem[] = [
     { title: "À propos", url: "/cs-inc/about", icon: Info },
-    { title: "Politique de confidentialité", url: "/cs-inc/policies/privacy", icon: BookLock },
-    { title: "Conditions d'utilisation", url: "/cs-inc/policies/terms", icon: ScrollText },
+    { title: "Politiques", url: "/cs-inc/policies", icon: Scale },
     { title: "Aide", url: "/cs-inc/contact", icon: LifeBuoy },
   ];
 

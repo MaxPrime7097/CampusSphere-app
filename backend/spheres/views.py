@@ -578,26 +578,45 @@ def upload_sphere_banner(request, pk):
 @permission_classes([permissions.IsAuthenticated])
 def sphere_files(request, pk):
     """List or upload files for a sphere."""
-    from .models import SphereFile
     sphere = get_object_or_404(Sphere, pk=pk)
     if not sphere.members.filter(user=request.user, status='active').exists():
         return Response({'error': 'You must be a member'}, status=403)
 
+    try:
+        from .models import SphereFile
+    except ImportError:
+        return Response({'error': 'SphereFile model not available. Run migrations.'}, status=503)
+
+    # Check table exists
+    from django.db import connection
+    if 'spheres_spherefile' not in connection.introspection.table_names():
+        return Response({'success': True, 'data': []})  # migration pas encore appliquée
+
     if request.method == 'GET':
         files = SphereFile.objects.filter(sphere=sphere).select_related('uploaded_by')
-        data = [{
-            'id': f.id,
-            'title': f.title,
-            'file_url': request.build_absolute_uri(f.file.url) if f.file else None,
-            'file_size': f.file_size,
-            'file_type': f.file_type,
-            'uploaded_by': {
-                'id': f.uploaded_by.id,
-                'name': f.uploaded_by.get_full_name() or f.uploaded_by.username,
-                'avatar': request.build_absolute_uri(f.uploaded_by.avatar.url) if hasattr(f.uploaded_by, 'avatar') and f.uploaded_by.avatar else None,
-            },
-            'created_at': f.created_at.isoformat(),
-        } for f in files]
+        data = []
+        for f in files:
+            try:
+                avatar_url = request.build_absolute_uri(f.uploaded_by.avatar.url) if getattr(f.uploaded_by, 'avatar', None) and f.uploaded_by.avatar else None
+            except Exception:
+                avatar_url = None
+            try:
+                file_url = request.build_absolute_uri(f.file.url) if f.file else None
+            except Exception:
+                file_url = None
+            data.append({
+                'id': f.id,
+                'title': f.title,
+                'file_url': file_url,
+                'file_size': f.file_size,
+                'file_type': f.file_type,
+                'uploaded_by': {
+                    'id': f.uploaded_by.id,
+                    'name': f.uploaded_by.get_full_name() or f.uploaded_by.username,
+                    'avatar': avatar_url,
+                },
+                'created_at': f.created_at.isoformat(),
+            })
         return Response({'success': True, 'data': data})
 
     # POST — upload
@@ -618,12 +637,16 @@ def sphere_files(request, pk):
         file_size=file.size,
         file_type=file.content_type or '',
     )
+    try:
+        file_url = request.build_absolute_uri(sf.file.url)
+    except Exception:
+        file_url = None
     return Response({
         'success': True,
         'data': {
             'id': sf.id,
             'title': sf.title,
-            'file_url': request.build_absolute_uri(sf.file.url),
+            'file_url': file_url,
             'file_size': sf.file_size,
             'file_type': sf.file_type,
             'created_at': sf.created_at.isoformat(),

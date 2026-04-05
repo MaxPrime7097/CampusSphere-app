@@ -253,6 +253,7 @@ FRONTEND_URL = env_config("FRONTEND_URL", default="http://localhost:8080")
 # Supabase Auth
 SUPABASE_URL = env_config("SUPABASE_URL", default="")
 SUPABASE_JWT_SECRET = env_config("SUPABASE_JWT_SECRET", default="")
+SUPABASE_SERVICE_ROLE_KEY = env_config("SUPABASE_SERVICE_ROLE_KEY", default="")
 
 # Django REST Framework Configuration
 REST_FRAMEWORK = {

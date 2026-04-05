@@ -428,7 +428,7 @@ export function SphereDetail() {
           <div className="p-4 md:p-6 space-y-4">
             {/* Description + stats */}
               <div className="space-y-3">
-              <p className="text-sm md:text-base text-muted-foreground line-clamp-3">{sphereFallback.description}</p>
+              <p className="text-sm md:text-base text-muted-foreground line-clamp-3 overflow-hidden">{sphereFallback.description}</p>
               <div className="flex flex-wrap gap-3 text-sm font-medium">
                 <span className="flex items-center gap-1.5"><Users className="h-4 w-4 text-primary" /> {sphereMemberCount} membres</span>
                 <span className="flex items-center gap-1.5"><FileText className="h-4 w-4 text-primary" /> {resources.length} fichiers</span>
@@ -539,7 +539,13 @@ export function SphereDetail() {
                 </div>
                 {taskState === "forbidden" && <p className="text-center py-10 text-muted-foreground italic">Vous devez être membre actif pour voir les tâches</p>}
                 {taskState === "server_error" && <p className="text-center py-10 text-muted-foreground italic">Impossible de charger les tâches.</p>}
-                {taskState === "ready" && <KanbanBoard tasks={tasks} onTasksChange={setTasks} onCreateTask={() => {}} canModerate={canModerateMembers} />}
+                {taskState === "ready" && (
+                  <div className="-mx-4 md:mx-0 overflow-x-auto">
+                    <div className="px-4 md:px-0 min-w-0">
+                      <KanbanBoard tasks={tasks} onTasksChange={setTasks} onCreateTask={() => {}} canModerate={canModerateMembers} />
+                    </div>
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="files" className="mt-4 space-y-4">

@@ -79,7 +79,7 @@ export function KanbanBoard({ tasks, onTasksChange, onCreateTask, canModerate }:
   const fmt = (d?: string | null) => d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }) : null;
 
   return (
-    <div className="flex gap-3 overflow-x-auto pb-4 min-h-[480px] -mx-1 px-1">
+    <div className="flex gap-3 pb-4 min-h-[480px]" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
       {COLS.map((col) => {
         const items = colTasks(col.id);
         const over = dragOverCol === col.id;

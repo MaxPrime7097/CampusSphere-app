@@ -199,9 +199,7 @@ function mapProfileToViewModel({
         connections: 0,
         contributions: null as number | null,
       },
-      badges: [
-      ...(profile.is_staff || profile.isStaff ? [{ id: 'admin', label: 'CampusSphere Admin', color: 'campus-gradient' }] : []),
-    ],
+      badges: [],
     };
   }
 
