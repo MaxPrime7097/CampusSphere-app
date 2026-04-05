@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Upload, FileText, X, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { createResource } from "@/services/api";
+import { uploadSphereFile } from "@/services/api";
 
 interface Props {
   sphereId: string;
@@ -34,15 +34,7 @@ export function SphereUploadResourceModal({ sphereId, children, onUploaded }: Pr
     if (!file || !title.trim()) return;
     setUploading(true);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("title", title.trim());
-      fd.append("description", title.trim());
-      fd.append("subject", "other");
-      fd.append("type", "other");
-      fd.append("visibility", "public");
-      fd.append("sphere", sphereId);
-      await createResource(fd);
+      await uploadSphereFile(sphereId, file, title.trim());
       toast({ title: "Fichier partagé !", duration: 2000 });
       setOpen(false);
       setFile(null);
@@ -66,7 +58,6 @@ export function SphereUploadResourceModal({ sphereId, children, onUploaded }: Pr
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Zone drop */}
           <div
             className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
             onClick={() => inputRef.current?.click()}
@@ -94,15 +85,14 @@ export function SphereUploadResourceModal({ sphereId, children, onUploaded }: Pr
             <input ref={inputRef} type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
           </div>
 
-          {/* Titre */}
           <div>
-            <Label htmlFor="res-title">Titre *</Label>
+            <Label htmlFor="sf-title">Titre *</Label>
             <Input
-              id="res-title"
+              id="sf-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Nom du fichier..."
-              maxLength={100}
+              maxLength={200}
               className="mt-1"
             />
           </div>

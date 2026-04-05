@@ -1106,6 +1106,52 @@ export async function getSphereResources(sphereId: number | string, token?: stri
   return normalizeResources(unwrapList(response));
 }
 
+export async function getSphereFiles(sphereId: number | string, token?: string) {
+  const response = await apiFetch<any>(`api/spheres/${sphereId}/files/`, { token: token || getAccessToken() });
+  return unwrapList<any>(response);
+}
+
+export async function uploadSphereFile(sphereId: number | string, file: File, title: string, token?: string) {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('title', title);
+  return apiFetch<any>(`api/spheres/${sphereId}/files/`, {
+    method: 'POST',
+    body: formData,
+    token: token || getAccessToken(),
+  });
+}
+
+export async function deleteSphereFile(sphereId: number | string, fileId: number | string, token?: string) {
+  return apiFetch<any>(`api/spheres/${sphereId}/files/${fileId}/`, {
+    method: 'DELETE',
+    token: token || getAccessToken(),
+  });
+}
+
+export async function getSphereFiles(sphereId: number | string, token?: string) {
+  const response = await apiFetch<any>(`api/spheres/${sphereId}/files/`, { token: token || getAccessToken() });
+  return unwrapList<any>(response);
+}
+
+export async function uploadSphereFile(sphereId: number | string, file: File, title: string, token?: string) {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('title', title);
+  return apiFetch<any>(`api/spheres/${sphereId}/files/`, {
+    method: 'POST',
+    body: formData,
+    token: token || getAccessToken(),
+  });
+}
+
+export async function deleteSphereFile(sphereId: number | string, fileId: number | string, token?: string) {
+  return apiFetch<any>(`api/spheres/${sphereId}/files/${fileId}/`, {
+    method: 'DELETE',
+    token: token || getAccessToken(),
+  });
+}
+
 export async function getSavedPosts(token?: string) {
   const response = await apiFetch<any>("api/posts/saved/", { token: token || getAccessToken() });
   return normalizePosts(unwrapList(response));

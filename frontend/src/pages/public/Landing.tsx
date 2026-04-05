@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
+import { CookieBanner } from "@/components/layout/CookieBanner";
 import { FaBullseye } from "react-icons/fa";
 import Countdown from "@/components/layout/Countdown"
 import ScrollTriggered from "@/components/layout/ScrollTriggered"
@@ -203,13 +204,16 @@ export function Landing() {
               </div>
               <div className="space-y-4 font-nunito text-lg">
                 <div className="flex items-start gap-3">
-                  <p><strong>Projets d'équipe</strong> : <br />Organise tes projets avec des tâches, deadlines et assignations</p>
+                  <p><strong>Projets d'équipe</strong> : <br />Organise tes projets avec un tableau Kanban, des tâches, deadlines et assignations pour chaque membre</p>
                 </div>
                 <div className="flex items-start gap-3">
-                  <p><strong>Partage de fichiers</strong> : <br />Fichiers partagés avec les membres de la sphère</p>
+                  <p><strong>Fichiers partagés</strong> : <br />Upload et accède aux fichiers de la sphère — cours, notes, ressources — directement dans l'espace collaboratif</p>
                 </div>
                 <div className="flex items-start gap-3">
-                  <p><strong>Chat intégré</strong> : <br />Communication directe avec ton équipe</p>
+                  <p><strong>Chat intégré</strong> : <br />Communication en temps réel avec tous les membres de ta sphère, sans quitter la plateforme</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <p><strong>Vue d'ensemble</strong> : <br />Un tableau de bord qui résume la progression, les tâches en retard, les fichiers récents et les messages non lus</p>
                 </div>
               </div>
             </div>
@@ -418,6 +422,7 @@ export function Landing() {
       </section>
       {/* Footer */}
       <Footer />
+      <CookieBanner />
     </div>
   );
 }

@@ -255,30 +255,31 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
     const postUrl = `${window.location.origin}/posts/${post.id}`;
     const messageContent = `📌 Post partagé par ${post.author.name} :\n${postUrl}`;
     try {
-      // createPrivateConversation retourne la conv via unwrapItem — id est direct
       const conv = await createPrivateConversation(contactId);
-      const convId = String(conv?.id ?? (conv as any)?.data?.id ?? "");
+      // conv est déjà unwrappé par createPrivateConversation (unwrapItem)
+      // id peut être int ou string selon le serializer
+      const convId = conv?.id != null ? String(conv.id) : null;
       if (!convId) throw new Error("Conversation introuvable");
       await sendMessage(convId, messageContent);
       toast({ title: "Post partagé !", description: `Envoyé à ${contactName}`, duration: 2000 });
     } catch (e: any) {
-      // Si erreur 400 conversation_exists, chercher la conv existante
-      if (e?.message?.includes("exists") || e?.message?.includes("exist")) {
-        try {
-          const { getUserConversations: getConvs } = await import("@/services/api");
-          const convs = await getConvs();
-          const existing = (convs || []).find((c: any) =>
-            c.type === "private" &&
-            (c.participants_info || c.participants || []).some((p: any) => String(p.id) === String(contactId))
-          );
-          if (existing) {
-            const convId = String(existing.id);
-            await sendMessage(convId, messageContent);
-            toast({ title: "Post partagé !", description: `Envoyé à ${contactName}`, duration: 2000 });
-            return;
-          }
-        } catch { /* ignore */ }
-      }
+      // Fallback : chercher la conv existante dans la liste locale
+      const { getUserConversations: getConvs } = await import("@/services/api");
+      try {
+        const convs = await getConvs();
+        const existing = (convs || []).find((c: any) =>
+          (c.type === "private" || !c.type) &&
+          (c.participants_info || c.participants || []).some(
+            (p: any) => String(p.id) === String(contactId)
+          )
+        );
+        if (existing) {
+          const convId = String(existing.id);
+          await sendMessage(convId, messageContent);
+          toast({ title: "Post partagé !", description: `Envoyé à ${contactName}`, duration: 2000 });
+          return;
+        }
+      } catch { /* ignore */ }
       toast({ title: "Erreur", description: e?.message || "Impossible d'envoyer le message", variant: "destructive" });
     } finally {
       setSendingToUserId(null);

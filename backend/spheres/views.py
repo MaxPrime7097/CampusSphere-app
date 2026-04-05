@@ -574,6 +574,77 @@ def upload_sphere_banner(request, pk):
     return Response({'success': True, 'banner_image_url': url})
 
 
+@api_view(['GET', 'POST'])
+@permission_classes([permissions.IsAuthenticated])
+def sphere_files(request, pk):
+    """List or upload files for a sphere."""
+    from .models import SphereFile
+    sphere = get_object_or_404(Sphere, pk=pk)
+    if not sphere.members.filter(user=request.user, status='active').exists():
+        return Response({'error': 'You must be a member'}, status=403)
+
+    if request.method == 'GET':
+        files = SphereFile.objects.filter(sphere=sphere).select_related('uploaded_by')
+        data = [{
+            'id': f.id,
+            'title': f.title,
+            'file_url': request.build_absolute_uri(f.file.url) if f.file else None,
+            'file_size': f.file_size,
+            'file_type': f.file_type,
+            'uploaded_by': {
+                'id': f.uploaded_by.id,
+                'name': f.uploaded_by.get_full_name() or f.uploaded_by.username,
+                'avatar': request.build_absolute_uri(f.uploaded_by.avatar.url) if hasattr(f.uploaded_by, 'avatar') and f.uploaded_by.avatar else None,
+            },
+            'created_at': f.created_at.isoformat(),
+        } for f in files]
+        return Response({'success': True, 'data': data})
+
+    # POST — upload
+    file = request.FILES.get('file')
+    title = request.data.get('title', '').strip()
+    if not file:
+        return Response({'error': 'No file provided'}, status=400)
+    if not title:
+        title = file.name
+    if file.size > 50 * 1024 * 1024:
+        return Response({'error': 'File too large (max 50MB)'}, status=400)
+
+    sf = SphereFile.objects.create(
+        sphere=sphere,
+        uploaded_by=request.user,
+        title=title,
+        file=file,
+        file_size=file.size,
+        file_type=file.content_type or '',
+    )
+    return Response({
+        'success': True,
+        'data': {
+            'id': sf.id,
+            'title': sf.title,
+            'file_url': request.build_absolute_uri(sf.file.url),
+            'file_size': sf.file_size,
+            'file_type': sf.file_type,
+            'created_at': sf.created_at.isoformat(),
+        }
+    }, status=201)
+
+
+@api_view(['DELETE'])
+@permission_classes([permissions.IsAuthenticated])
+def delete_sphere_file(request, pk, file_pk):
+    """Delete a sphere file (uploader or sphere admin only)."""
+    from .models import SphereFile
+    sf = get_object_or_404(SphereFile, pk=file_pk, sphere_id=pk)
+    is_admin = sf.sphere.members.filter(user=request.user, role__in=['admin', 'moderator'], status='active').exists()
+    if sf.uploaded_by != request.user and not is_admin:
+        return Response({'error': 'Permission denied'}, status=403)
+    sf.file.delete(save=False)
+    sf.delete()
+    return Response({'success': True})
+
+
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def sphere_overview(request, pk):

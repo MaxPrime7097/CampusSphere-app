@@ -10,6 +10,7 @@ import { MobileNavigation } from "./MobileNavigation";
 import { MobileTopBar } from "./MobileTopBar";
 import { ProfileBubble } from "./ProfileBubble";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { CookieBanner } from "./CookieBanner";
 
 
 interface AppLayoutProps {
@@ -127,7 +128,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           {!hideNavOnMobile && <MobileNavigation />}
         </div>
       </div>
-      
+      <CookieBanner />
     </SidebarProvider>
   );
 }

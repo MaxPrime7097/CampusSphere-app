@@ -79,14 +79,14 @@ export function KanbanBoard({ tasks, onTasksChange, onCreateTask, canModerate }:
   const fmt = (d?: string | null) => d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }) : null;
 
   return (
-    <div className="flex gap-3 overflow-x-auto pb-4 min-h-[480px]">
+    <div className="flex gap-3 overflow-x-auto pb-4 min-h-[480px] -mx-1 px-1">
       {COLS.map((col) => {
         const items = colTasks(col.id);
         const over = dragOverCol === col.id;
         return (
           <div
             key={col.id}
-            className={cn("flex flex-col rounded-xl border flex-shrink-0 w-60 sm:w-68 transition-all", col.bg, col.border, over && "ring-2 ring-primary/40 scale-[1.01]")}
+            className={cn("flex flex-col rounded-xl border flex-shrink-0 w-[260px] sm:w-72 transition-all", col.bg, col.border, over && "ring-2 ring-primary/40 scale-[1.01]")}
             onDragOver={(e) => { e.preventDefault(); setDragOverCol(col.id); }}
             onDragLeave={() => setDragOverCol(null)}
             onDrop={() => handleDrop(col.id)}

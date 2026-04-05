@@ -479,6 +479,7 @@ export function Messages() {
       ]);
       setShowNewConversationModal(false);
       setConnectionSearch("");
+      // Si la conv existait déjà, naviguer sans créer de doublon
       navigate(`/messages/${mappedConversation.id}`);
       handleMarkAsRead(mappedConversation.id);
 
@@ -1223,7 +1224,9 @@ export function Messages() {
                   <p className="text-sm font-medium">Ajouter un membre</p>
                   <div className="space-y-2 max-h-40 overflow-y-auto">
                     {filteredConnections
-                      .filter((contact) => !(participants.length > 0 ? participants : selectedParticipants).some((p: any) => String(p.id) === String(contact.id)))
+                      .filter((contact) => !(participants.length > 0 ? participants : selectedParticipants).some(
+                        (p: any) => String(p.id) === String(contact.id)
+                      ))
                       .map((contact) => (
                         <div key={contact.id} className="flex items-center justify-between">
                           <span className="text-sm truncate">{contact.name}</span>

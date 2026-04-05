@@ -483,7 +483,7 @@ export function Profile() {
         name: post.author?.name || targetUser?.name || currentUser?.name || "",
         avatar: post.author?.avatar || targetUser?.avatar || currentUser?.avatar || "",
         username: post.author?.username || targetUser?.username || currentUser?.username || "",
-        isVerified: post.author?.isVerified || targetUser?.isVerified || currentUser?.isVerified || false,
+        isVerified: post.author?.isVerified || false,
         impactScore: Number(post.author?.impactScore || 0),
       },
       content: post.content || post.text || "",
@@ -493,6 +493,11 @@ export function Profile() {
       category: post.category || "Général",
       impactScore: Number(post.impactScore ?? post.impact_score ?? 0),
       isLiked: Boolean(post.isLiked ?? post.is_liked),
+      isSaved: Boolean(post.isSaved ?? post.is_saved),
+      canEdit: Boolean(post.canEdit ?? post.can_edit),
+      canDelete: Boolean(post.canDelete ?? post.can_delete),
+      files: post.files || [],
+      image: post.image || null,
     }));
   }, [currentUser, targetUser, userPosts]);
 

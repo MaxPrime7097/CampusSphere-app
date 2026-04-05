@@ -38,6 +38,10 @@ export function SavedItems() {
             impactScore: Number(post.impactScore ?? post.impact_score ?? 0),
             isLiked: Boolean(post.isLiked ?? post.is_liked),
             isSaved: true,
+            files: post.files || [],
+            image: post.image || null,
+            canEdit: Boolean(post.canEdit ?? post.can_edit),
+            canDelete: Boolean(post.canDelete ?? post.can_delete),
           }));
           setSavedPosts(mappedPosts);
 

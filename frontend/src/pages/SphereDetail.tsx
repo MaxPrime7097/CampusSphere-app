@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { 
   getSphere, listSphereMembers, listSphereTasks, joinSphere, 
   cancelSphereJoinRequest, getCurrentUser, completeTask, 
-  updateSphereMember, removeSphereMember, uploadSphereBanner, getSphereResources 
+  updateSphereMember, removeSphereMember, uploadSphereBanner, getSphereFiles, deleteSphereFile 
 } from "@/services/api";
 
 import { Button } from "@/components/ui/button";
@@ -187,7 +187,7 @@ export function SphereDetail() {
       }
 
       // Ressources de la sphère
-      getSphereResources(String(id)).then(setResources).catch(() => setResources([]));
+      getSphereFiles(String(id)).then(setResources).catch(() => setResources([]));
     } catch (e: any) {
       setLoadError(e?.message || "Erreur de chargement");
     } finally {
@@ -428,7 +428,7 @@ export function SphereDetail() {
           <div className="p-4 md:p-6 space-y-4">
             {/* Description + stats */}
               <div className="space-y-3">
-              <p className="text-sm md:text-base text-muted-foreground">{sphereFallback.description}</p>
+              <p className="text-sm md:text-base text-muted-foreground line-clamp-3">{sphereFallback.description}</p>
               <div className="flex flex-wrap gap-3 text-sm font-medium">
                 <span className="flex items-center gap-1.5"><Users className="h-4 w-4 text-primary" /> {sphereMemberCount} membres</span>
                 <span className="flex items-center gap-1.5"><FileText className="h-4 w-4 text-primary" /> {resources.length} fichiers</span>
@@ -545,7 +545,7 @@ export function SphereDetail() {
               <TabsContent value="files" className="mt-4 space-y-4">
                 <div className="flex justify-between items-center bg-card p-3 md:p-4 rounded-lg border">
                   <h3 className="font-bold">Fichiers partagés ({resources.length})</h3>
-                  <SphereUploadResourceModal sphereId={String(id)} onUploaded={() => getSphereResources(String(id)).then(setResources).catch(() => null)}>
+                  <SphereUploadResourceModal sphereId={String(id)} onUploaded={() => getSphereFiles(String(id)).then(setResources).catch(() => null)}>
                     <Button size="sm" className="campus-gradient text-white gap-1">
                       <Plus className="h-4 w-4" /> Partager
                     </Button>
@@ -560,32 +560,26 @@ export function SphereDetail() {
                 ) : (
                   <div className="space-y-2">
                     {resources.map((res: any) => {
-                      const fileInfo = res.file_info || res.fileInfo;
-                      const fileUrl = fileInfo?.url || res.file_url || res.fileUrl || res.file || "";
-                      const fileName = fileInfo?.name || res.title || "Fichier";
-                      const fileType = fileInfo?.type || res.file_type || "";
-                      const fileSize = fileInfo?.size || res.file_size || 0;
+                      const fileUrl = res.file_url || res.fileUrl || "";
+                      const fileName = res.title || "Fichier";
+                      const fileType = res.file_type || res.fileType || "";
+                      const fileSize = res.file_size || res.fileSize || 0;
                       const isImage = fileType.startsWith("image/");
-                      const isPdf = fileType === "application/pdf" || fileName.endsWith(".pdf");
-                      const authorName = res.author?.name || res.author_info?.name || "";
-                      const createdAt = res.createdAt || res.created_at;
+                      const isPdf = fileType === "application/pdf" || fileName.toLowerCase().endsWith(".pdf");
+                      const uploaderName = res.uploaded_by?.name || res.uploadedBy?.name || "";
+                      const createdAt = res.created_at || res.createdAt;
+                      const canDelete = canModerateMembers || String(res.uploaded_by?.id) === String(currentUserId);
 
                       return (
                         <div key={res.id} className="border rounded-xl bg-card overflow-hidden">
-                          {/* Preview image */}
                           {isImage && fileUrl && (
                             <a href={fileUrl} target="_blank" rel="noopener noreferrer">
                               <img src={fileUrl} alt={fileName} className="w-full max-h-48 object-cover" />
                             </a>
                           )}
-                          {/* Preview PDF inline */}
                           {isPdf && fileUrl && (
                             <div className="bg-muted/30 p-2">
-                              <iframe
-                                src={`${fileUrl}#toolbar=0&view=FitH`}
-                                className="w-full h-48 rounded border"
-                                title={fileName}
-                              />
+                              <iframe src={`${fileUrl}#toolbar=0&view=FitH`} className="w-full h-48 rounded border" title={fileName} />
                             </div>
                           )}
                           <div className="p-3 flex items-center justify-between gap-3">
@@ -594,9 +588,9 @@ export function SphereDetail() {
                                 <FileText className="h-4 w-4 text-primary" />
                               </div>
                               <div className="min-w-0">
-                                <p className="text-sm font-medium truncate">{res.title || fileName}</p>
+                                <p className="text-sm font-medium truncate">{fileName}</p>
                                 <p className="text-xs text-muted-foreground">
-                                  {authorName && <span>{authorName} · </span>}
+                                  {uploaderName && <span>{uploaderName} · </span>}
                                   {fileSize > 0 && <span>{(fileSize / 1024 / 1024).toFixed(1)} MB · </span>}
                                   {createdAt && <span>{new Date(createdAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}</span>}
                                 </p>
@@ -615,6 +609,24 @@ export function SphereDetail() {
                                   <a href={fileUrl} download={fileName} title="Télécharger">
                                     <Download className="h-4 w-4" />
                                   </a>
+                                </Button>
+                              )}
+                              {canDelete && (
+                                <Button
+                                  size="sm" variant="ghost"
+                                  className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                                  onClick={async () => {
+                                    try {
+                                      await deleteSphereFile(String(id), res.id);
+                                      setResources((prev: any[]) => prev.filter((r: any) => r.id !== res.id));
+                                      toast({ title: "Fichier supprimé" });
+                                    } catch (e: any) {
+                                      toast({ title: "Erreur", description: e?.message, variant: "destructive" });
+                                    }
+                                  }}
+                                  title="Supprimer"
+                                >
+                                  <X className="h-4 w-4" />
                                 </Button>
                               )}
                             </div>
