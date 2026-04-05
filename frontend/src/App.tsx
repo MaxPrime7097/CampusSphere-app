@@ -186,7 +186,31 @@ const App = () => (
             </Protected>
           } />
 
-          {/* Admin routes */}
+          {/* Admin routes - v2 panel */}
+          <Route path="/admin" element={
+            <Protected>
+              <RequireAdminRole>
+                <Navigate to="/admin/dashboard" replace />
+              </RequireAdminRole>
+            </Protected>
+          } />
+          <Route path="/admin/*" element={
+            <Protected>
+              <RequireAdminRole>
+                <AdminLayout />
+              </RequireAdminRole>
+            </Protected>
+          }>
+            <Route path="dashboard" element={<AdminDashboardPage />} />
+            <Route path="users" element={<AdminUsersPage />} />
+            <Route path="spheres" element={<AdminSpheresPage />} />
+            <Route path="moderation" element={<AdminModerationPage />} />
+            <Route path="resources" element={<AdminResourcesPage />} />
+            <Route path="logs" element={<AdminLogsPage />} />
+            <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
+          </Route>
+
+          {/* Legacy admin route */}
           <Route path="/cs-inc/private/admin" element={
             <Protected>
               <RequireAdminRole>

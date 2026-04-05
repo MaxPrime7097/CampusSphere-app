@@ -428,7 +428,7 @@ export function SphereDetail() {
           <div className="p-4 md:p-6 space-y-4">
             {/* Description + stats */}
               <div className="space-y-3">
-              <p className="text-sm md:text-base text-muted-foreground line-clamp-3 overflow-hidden">{sphereFallback.description}</p>
+              <p className="text-sm md:text-base text-muted-foreground line-clamp-2 overflow-hidden">{sphereFallback.description}</p>
               <div className="flex flex-wrap gap-3 text-sm font-medium">
                 <span className="flex items-center gap-1.5"><Users className="h-4 w-4 text-primary" /> {sphereMemberCount} membres</span>
                 <span className="flex items-center gap-1.5"><FileText className="h-4 w-4 text-primary" /> {resources.length} fichiers</span>

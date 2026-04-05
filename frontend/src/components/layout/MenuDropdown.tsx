@@ -1,10 +1,11 @@
 import {
-  Menu
+  Menu, Shield
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -23,6 +24,7 @@ import {
 import { type MouseEvent, useEffect, useState } from "react";
 import { getCurrentUser } from "@/services/api";
 import { getNavigationSections, type NavigationUser } from "./navigationConfig";
+import { resolveAdminRole } from "@/lib/adminPermissions";
 
 export function MenuDropdown() {
   const { state } = useSidebar();
@@ -77,7 +79,7 @@ export function MenuDropdown() {
           <Menu className="h-4 w-4" />
         </Button>
       </SheetTrigger>
-      <SheetContent className="pt-5" onClickCapture={handleContainerClickCapture}>
+      <SheetContent className="pt-5 overflow-y-auto" onClickCapture={handleContainerClickCapture}>
         <SheetHeader>
           <h1 className="text-3xl font-bold bg-clip-text text-muted-foreground">
             Menu
@@ -154,6 +156,27 @@ export function MenuDropdown() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        {resolveAdminRole(user) !== 'none' && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Administration</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <Card className="py-2">
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild>
+                      <NavLink to="/admin/dashboard" className={getNavClasses} onClick={closeMenu}>
+                        <Shield className="h-5 w-5 text-primary" />
+                        <span>Panel Admin</span>
+                        <Badge className="ml-auto campus-gradient text-white text-[10px] px-1.5 py-0.5 border-0">Admin</Badge>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </Card>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
         <Card className="campus-card mt-5">
           <CardContent className="pt-4 md:pt-6 p-4 md:p-6">
             <div className="text-center space-y-4">

@@ -128,10 +128,11 @@ export function CookiePolicy(): JSX.Element {
                 Notez que bloquer certains cookies peut affecter le fonctionnement de CampusSphere.
               </p>
               <p className="mt-4">
-                Pour gérer vos préférences de cookies sur CampusSphere, rendez-vous dans{" "}
-                <a href="/settings" className="text-primary hover:underline">
+                Pour gérer vos préférences de cookies personnelles, rendez-vous dans {" "}
+                <a className="text-primary hover:underline">
                   Paramètres → Confidentialité
                 </a>
+                en fonction de votre navigateur. Vous pouvez y voir les cookies actifs et les supprimer si vous le souhaitez.
               </p>
               </div>
             </div>

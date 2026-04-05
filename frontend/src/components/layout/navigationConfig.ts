@@ -79,7 +79,7 @@ export function getNavigationSections(user?: NavigationUser | null): NavigationS
     { title: "NouveauPost", url: newPost, icon: Plus },
     { title: "Sphères", url: "/spheres", icon: Globe },
     { title: "Notifications", url: "/notifications", icon: Bell },
-    ...adminEntry,
+    // Admin retiré de la mobile navbar — disponible dans MenuDropdown
   ];
 
   return {
