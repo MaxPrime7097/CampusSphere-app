@@ -653,6 +653,7 @@ export function SearchResults() {
             )}
           </TabsContent>
         </Tabs>
+        </div>
       </div>
     </div>
   );

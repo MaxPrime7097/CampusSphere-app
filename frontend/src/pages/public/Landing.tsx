@@ -204,16 +204,16 @@ export function Landing() {
               </div>
               <div className="space-y-4 font-nunito text-lg">
                 <div className="flex items-start gap-3">
-                  <p><strong>Projets d'équipe</strong> : <br />Organise tes projets avec un tableau Kanban, des tâches, deadlines et assignations pour chaque membre</p>
+                  <p><strong>Tableau Kanban</strong> : <br />Visualise et pilote tes projets en temps réel — glisse les tâches de "À faire" à "Terminé", assigne des membres et fixe des deadlines sans jamais perdre le fil</p>
                 </div>
                 <div className="flex items-start gap-3">
-                  <p><strong>Fichiers partagés</strong> : <br />Upload et accède aux fichiers de la sphère — cours, notes, ressources — directement dans l'espace collaboratif</p>
+                  <p><strong>Espace fichiers partagé</strong> : <br />Centralise tous les documents de la sphère — cours, notes, slides, PDF — accessibles et téléchargeables par chaque membre en un clic</p>
                 </div>
                 <div className="flex items-start gap-3">
-                  <p><strong>Chat intégré</strong> : <br />Communication en temps réel avec tous les membres de ta sphère, sans quitter la plateforme</p>
+                  <p><strong>Chat de groupe instantané</strong> : <br />Discute avec tous les membres directement dans la sphère, sans application tierce. Les messages arrivent en temps réel, même sur mobile</p>
                 </div>
                 <div className="flex items-start gap-3">
-                  <p><strong>Vue d'ensemble</strong> : <br />Un tableau de bord qui résume la progression, les tâches en retard, les fichiers récents et les messages non lus</p>
+                  <p><strong>Vue d'ensemble intelligente</strong> : <br />Un dashboard qui agrège progression des tâches, fichiers récents, activité des membres et messages non lus — tout ce dont tu as besoin en un coup d'œil</p>
                 </div>
               </div>
             </div>
@@ -242,10 +242,13 @@ export function Landing() {
               </div>
               <div className="space-y-4 font-nunito text-lg">
                 <div className="flex items-start gap-3">
-                  <p><strong>Téléchargement direct</strong> : <br />Télécharge des ressources gratuites utiles et pertinentes partagées par les membres de la communauté</p>
+                  <p><strong>Bibliothèque communautaire</strong> : <br />Accède à des centaines de ressources gratuites — fiches de révision, annales, résumés de cours — partagées par des étudiants qui ont déjà traversé les mêmes épreuves</p>
                 </div>
                 <div className="flex items-start gap-3">
-                  <p><strong>Upload de ressources</strong> : <br />Partage des ressources utiles avec les membres de la communauté</p>
+                  <p><strong>Partage en quelques secondes</strong> : <br />Upload un fichier, ajoute un titre et une matière et après validation, ta ressource est immédiatement disponible pour toute la communauté</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <p><strong>Organisé par matière et niveau</strong> : <br />Filtre par discipline, type de document ou niveau d'études pour trouver exactement ce dont tu as besoin, sans perdre de temps</p>
                 </div>
               </div>
             </div>
@@ -264,11 +267,10 @@ export function Landing() {
               </div>
               <div className="space-y-4 font-nunito text-lg">
                 <div className="flex items-start gap-3">
-
-                  <p><strong>Le concept : “Impact Score”</strong> : Chaque post a un bouton <Zap className="inline-block w-4 h-4 text-primary fill-primary"/>, que les utilisateurs peuvent évaluer.  Ce score mesure la valeur perçue d’une publication : “À quel point ce post m’a été utile, m’a inspiré, m’a aidé, ou m’a marqué ?”</p>
+                  <p><strong>Le concept : “Impact Score”</strong> : Un système de notation unique! Chaque post a un bouton <Zap className="inline-block w-4 h-4 text-primary fill-primary"/>, que les utilisateurs peuvent évaluer.  Ce score mesure la valeur perçue d’une publication : “À quel point ce post m’a été utile, m’a inspiré, m’a aidé, ou m’a marqué ?”. Plus un post a d'impact, plus il remonte dans le feed</p>
                 </div>
                 <div className="flex items-start gap-3">
-                  <p><strong>Algorithmes adaptatifs</strong> : <br />Découvre du contenu pertinent pour tes études</p>
+                  <p><strong>Feed personnalisé</strong> : <br />Ton fil d'actualité s'adapte à tes centres d'intérêt, tes sphères et les contenus avec lesquels tu interagis — fini le bruit, place au contenu qui compte vraiment</p>
                 </div>
               </div>
             </div>

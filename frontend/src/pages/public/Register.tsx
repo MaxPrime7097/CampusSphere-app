@@ -77,7 +77,7 @@ export function Register() {
     lastName: z.string().min(2, "Au moins 2 caractères"),
     username: z.string().min(3, "Au moins 3 caractères"),
     email: z.string().email("Email invalide"),
-    phoneNumber: z.string().min(8, "Au moins 8 chiffres"),
+    phoneNumber: z.string().optional(),
     dateOfBirth: z.string().min(1, "Requis"),
     password: z.string().min(6, "Au moins 6 caractères"),
     confirmPassword: z.string(),
@@ -144,7 +144,7 @@ export function Register() {
         username: formData.username,
         first_name: formData.firstName,
         last_name: formData.lastName,
-        phone_number: formData.phoneNumber,
+        phone_number: formData.phoneNumber ? `+237${formData.phoneNumber.replace(/^\+237/, '')}` : undefined,
         date_of_birth: formData.dateOfBirth,
         university: formData.university,
         faculty: formData.faculty,
@@ -256,8 +256,11 @@ export function Register() {
                   {errors.dateOfBirth && <p className="text-xs text-destructive mt-1">{errors.dateOfBirth}</p>}
                 </div>
                 <div>
-                  <Label>Téléphone *</Label>
-                  <Input value={formData.phoneNumber} onChange={e => handleInputChange("phoneNumber", e.target.value)} className={errors.phoneNumber ? "border-destructive" : ""} />
+                  <Label>Téléphone</Label>
+                  <div className="flex">
+                    <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-sm text-muted-foreground">+237</span>
+                    <Input value={formData.phoneNumber} onChange={e => handleInputChange("phoneNumber", e.target.value)} className={`rounded-l-none ${errors.phoneNumber ? "border-destructive" : ""}`} placeholder="6XXXXXXXX" />
+                  </div>
                   {errors.phoneNumber && <p className="text-xs text-destructive mt-1">{errors.phoneNumber}</p>}
                 </div>
               </div>
