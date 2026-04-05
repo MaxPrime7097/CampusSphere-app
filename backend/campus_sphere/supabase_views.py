@@ -9,6 +9,7 @@ from users.models import User
 from users.serializers import UserProfileSerializer, UserUpdateSerializer
 
 logger = logging.getLogger(__name__)
+REQUIRED_ONBOARDING_FIELDS = ("university", "faculty", "study_year", "student_id")
 
 _jwks_cache = None
 
@@ -209,6 +210,7 @@ class SupabaseTokenExchangeView(APIView):
                     first_name=first_name,
                     last_name=last_name,
                     is_active=True,
+                    profile_completed=False,
                 )
                 try:
                     create_kwargs["supabase_uid"] = supabase_uid
@@ -243,10 +245,33 @@ class SupabaseTokenExchangeView(APIView):
 class SupabaseCompleteProfileView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    def _validate_required_onboarding_fields(self, user, payload):
+        missing_fields = []
+        for field_name in REQUIRED_ONBOARDING_FIELDS:
+            incoming_value = payload.get(field_name, getattr(user, field_name, ""))
+            if not str(incoming_value or "").strip():
+                missing_fields.append(field_name)
+
+        if missing_fields:
+            field_errors = {field: ["Ce champ est obligatoire pour finaliser l'onboarding."] for field in missing_fields}
+            return field_errors
+        return {}
+
     def post(self, request):
+        validation_errors = self._validate_required_onboarding_fields(request.user, request.data)
+        if validation_errors:
+            return Response(
+                {
+                    "success": False,
+                    "detail": "Profil incomplet",
+                    "errors": validation_errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         serializer = UserUpdateSerializer(request.user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        serializer.save(profile_completed=True)
         return Response({
             "success": True,
             "data": UserProfileSerializer(request.user).data,

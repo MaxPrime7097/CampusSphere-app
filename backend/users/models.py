@@ -32,6 +32,7 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
+    REQUIRED_ONBOARDING_FIELDS = ('university', 'faculty', 'study_year', 'student_id')
     MOOD_EXCITED = 'excited'
     MOOD_FOCUSED = 'focused'
     MOOD_COLLABORATING = 'collaborating'
@@ -105,6 +106,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     portfolio_links = models.JSONField(default=list, blank=True)
 
     # Django fields
+    profile_completed = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
@@ -141,6 +143,17 @@ class User(AbstractBaseUser, PermissionsMixin):
             Q(requester=self) | Q(recipient=self),
             status='accepted'
         ).count()
+
+    def has_required_onboarding_fields(self):
+        for field_name in self.REQUIRED_ONBOARDING_FIELDS:
+            value = getattr(self, field_name, "")
+            if not str(value or "").strip():
+                return False
+        return True
+
+    @property
+    def is_fully_onboarded(self):
+        return bool(self.profile_completed and self.has_required_onboarding_fields())
 
 
 class Connection(models.Model):
@@ -201,4 +214,3 @@ class AdminAuditLog(models.Model):
     def __str__(self):
         actor_label = self.actor.username if self.actor else 'unknown'
         return f"{self.action} by {actor_label} on {self.target_type}:{self.target_id}"
-

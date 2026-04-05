@@ -194,6 +194,7 @@ class AuthTests(APITestCase):
             self.assertEqual(by_username_after.data['data']['experiences'], payload['experiences'])
             self.assertEqual(by_username_after.data['data']['portfolio_links'], payload['portfolio_links'])
 
+
     def test_profile_put_update_invalidates_cached_profile_for_me_and_username_reads(self):
         """PUT profile update should invalidate cache for JSON profile fields."""
         self.client.post(self.register_url, self.user_data, format='json')

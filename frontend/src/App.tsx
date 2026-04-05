@@ -48,6 +48,7 @@ import { AdminSpheresPage } from "./admin/pages/AdminSpheresPage";
 import { AdminModerationPage } from "./admin/pages/AdminModerationPage";
 import { AdminResourcesPage } from "./admin/pages/AdminResourcesPage";
 import { AdminLogsPage } from "./admin/pages/AdminLogsPage";
+import { getStoredProfileCompletionStatus } from "./services/api";
 
 
 const queryClient = new QueryClient();
@@ -55,7 +56,24 @@ const queryClient = new QueryClient();
 const Protected = ({ children }: { children: ReactNode }) => {
   const token = localStorage.getItem("access");
   if (!token) return <Navigate to="/login" replace />;
+
+  const isProfileCompleted = getStoredProfileCompletionStatus();
+  if (isProfileCompleted === false) {
+    return <Navigate to="/register/complete" replace />;
+  }
   return children;
+};
+
+const CompleteProfileProtected = () => {
+  const token = localStorage.getItem("access");
+  if (!token) return <Navigate to="/login" replace />;
+
+  const isProfileCompleted = getStoredProfileCompletionStatus();
+  if (isProfileCompleted === true) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <CompleteProfile />;
 };
 
 const App = () => (
@@ -69,7 +87,7 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/register/complete" element={<CompleteProfile />} />
+          <Route path="/register/complete" element={<CompleteProfileProtected />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           
           {/* Protected routes with layout */}

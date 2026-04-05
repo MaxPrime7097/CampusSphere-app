@@ -99,6 +99,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     joined_spheres_count = serializers.SerializerMethodField()
     connections_count = serializers.SerializerMethodField()
     contributions_count = serializers.SerializerMethodField()
+    is_fully_onboarded = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -110,7 +111,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'data_export_requested_at', 'impact_score', 'current_mood',
             'skills', 'interests', 'previous_education', 'previousEducation', 'experiences',
             'portfolio_links', 'portfolioLinks', 'joined_spheres_count', 'connections_count', 'contributions_count',
-            'date_joined', 'updated_at', 'is_staff', 'is_superuser'
+            'date_joined', 'updated_at', 'is_staff', 'is_superuser', 'profile_completed', 'is_fully_onboarded'
         ]
         read_only_fields = ['id', 'impact_score', 'date_joined', 'updated_at']
 
@@ -145,6 +146,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
         posts_count = obj.posts.count() if hasattr(obj, 'posts') else 0
         resources_count = obj.resources.count() if hasattr(obj, 'resources') else 0
         return posts_count + resources_count
+
+    def get_is_fully_onboarded(self, obj):
+        return obj.is_fully_onboarded
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):

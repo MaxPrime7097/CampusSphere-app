@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { normalizeResourceType } from "@/constants/resourceTypes";
 import { supabase } from "@/lib/supabase";
+const PROFILE_COMPLETED_STORAGE_KEY = "profile_completed";
 
 // ============================================================================
 // SUPABASE AUTH
@@ -58,6 +59,7 @@ export async function exchangeSupabaseToken(supabaseAccessToken: string) {
   if (tokens?.accessToken) {
     setTokens(tokens.accessToken, tokens.refreshToken);
   }
+  persistProfileCompletionStatus(response?.data?.user);
   return response;
 }
 
@@ -85,7 +87,9 @@ export async function completeSupabaseProfile(data: {
     method: "POST",
     body: data,
   });
-  return normalizeUser(response?.data ?? response);
+  const normalizedUser = normalizeUser(response?.data ?? response);
+  persistProfileCompletionStatus(normalizedUser);
+  return normalizedUser;
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
@@ -132,6 +136,32 @@ function clearTokens() {
     localStorage.removeItem("refresh");
   } catch {
     // ignore
+  }
+}
+
+function persistProfileCompletionStatus(user: any) {
+  try {
+    if (!user) return;
+    const normalized = normalizeUser(user);
+    const isComplete = Boolean(
+      normalized?.isFullyOnboarded ??
+      normalized?.is_fully_onboarded ??
+      normalized?.profileCompleted ??
+      normalized?.profile_completed
+    );
+    localStorage.setItem(PROFILE_COMPLETED_STORAGE_KEY, String(isComplete));
+  } catch {
+    // ignore
+  }
+}
+
+export function getStoredProfileCompletionStatus(): boolean | null {
+  try {
+    const stored = localStorage.getItem(PROFILE_COMPLETED_STORAGE_KEY);
+    if (stored === null) return null;
+    return stored === "true";
+  } catch {
+    return null;
   }
 }
 
@@ -228,6 +258,10 @@ export function normalizeUser(user: any) {
     campus: user.campus ?? "",
     town: user.town ?? "",
     language: user.language ?? "",
+    profileCompleted: user.profileCompleted ?? user.profile_completed ?? false,
+    profile_completed: user.profileCompleted ?? user.profile_completed ?? false,
+    isFullyOnboarded: user.isFullyOnboarded ?? user.is_fully_onboarded ?? false,
+    is_fully_onboarded: user.isFullyOnboarded ?? user.is_fully_onboarded ?? false,
     profileVisibility: user.profileVisibility ?? user.profile_visibility ?? "public",
     postVisibility: user.postVisibility ?? user.post_visibility ?? "public",
     dataExportRequestedAt: user.dataExportRequestedAt ?? user.data_export_requested_at ?? null,
@@ -518,10 +552,12 @@ export async function register(payload: {
   experiences?: Array<{title: string, company: string, duration: string, description: string}>;
   portfolio_links?: Array<{name: string, url: string}>;
 }) {
-  return apiFetch<{ success: boolean; data: { user: any; tokens: { accessToken: string; refreshToken: string } }; message: string }>(
+  const response = await apiFetch<{ success: boolean; data: { user: any; tokens: { accessToken: string; refreshToken: string } }; message: string }>(
     "api/users/auth/register/",
     { method: "POST", body: payload }
   );
+  persistProfileCompletionStatus(response?.data?.user);
+  return response;
 }
 
 export async function login(payload: { email: string; password: string }) {
@@ -535,6 +571,7 @@ export async function login(payload: { email: string; password: string }) {
   const access = dataAny?.tokens?.accessToken || dataAny?.tokens?.access || dataAny?.access || null;
   const refresh = dataAny?.tokens?.refreshToken || dataAny?.tokens?.refresh || null;
   setTokens(access, refresh);
+  persistProfileCompletionStatus(dataAny?.user);
 
   return response;
 }
@@ -552,7 +589,9 @@ export async function getCurrentUser(token?: string) {
     "api/users/auth/me/",
     { token: token || getAccessToken() }
   );
-  return normalizeUser(response?.data ?? response);
+  const normalizedUser = normalizeUser(response?.data ?? response);
+  persistProfileCompletionStatus(normalizedUser);
+  return normalizedUser;
 }
 
 export async function getUser(id: number | string, token?: string) {

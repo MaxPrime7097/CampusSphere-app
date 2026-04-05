@@ -30,8 +30,15 @@ export function AuthCallback() {
 
         if (!isMounted) return;
 
-        // Si c'est un nouvel utilisateur OAuth, compléter le profil
-        if (response?.data?.is_new_user) {
+        const user = response?.data?.user;
+        const isFullyOnboarded = Boolean(
+          user?.is_fully_onboarded ??
+          user?.isFullyOnboarded ??
+          user?.profile_completed ??
+          user?.profileCompleted
+        );
+
+        if (!isFullyOnboarded) {
           navigate("/register/complete", { replace: true });
         } else {
           toast({ title: "Connexion réussie !", duration: 2000 });
