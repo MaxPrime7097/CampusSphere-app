@@ -19,7 +19,8 @@ from .serializers import (
     UserUpdateSerializer, ConnectionSerializer, ConnectionCreateSerializer,
     UserSearchSerializer, ChangePasswordSerializer, ChangeEmailSerializer,
     LogoutSerializer, DeleteAccountSerializer, PrivacySettingsSerializer, PasswordResetSerializer,
-    DataExportRequestSerializer, BlockListItemSerializer, BlockCreateSerializer
+    DataExportRequestSerializer, BlockListItemSerializer, BlockCreateSerializer,
+    SupabaseProfileCompletionSerializer
 )
 from campus_sphere.cache import CacheManager, CacheKeys
 from notifications.services import create_connection_request_notification
@@ -592,3 +593,97 @@ class BlockDetailView(generics.DestroyAPIView):
             'success': True,
             'message': 'User unblocked successfully',
         }, status=status.HTTP_200_OK)
+
+
+class SupabaseTokenExchangeView(APIView):
+    """Échanger un token Supabase contre un token Django JWT"""
+    permission_classes = [permissions.AllowAny]
+    
+    def post(self, request):
+        access_token = request.data.get('access_token')
+        if not access_token:
+            return Response({'error': 'access_token requis'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            from supabase import create_client
+            from django.conf import settings
+            
+            # Vérifier le token avec Supabase
+            supabase = create_client(settings.SUPABASE_URL, settings.SUPABASE_ANON_KEY)
+            user_response = supabase.auth.get_user(access_token)
+            
+            if not user_response.user:
+                return Response({'error': 'Token invalide'}, status=status.HTTP_401_UNAUTHORIZED)
+            
+            supabase_user = user_response.user
+            
+            # Chercher ou créer l'utilisateur Django
+            user, created = User.objects.get_or_create(
+                supabase_uid=supabase_user.id,
+                defaults={
+                    'email': supabase_user.email,
+                    'username': supabase_user.email.split('@')[0],  # Temporaire
+                    'first_name': supabase_user.user_metadata.get('first_name', ''),
+                    'last_name': supabase_user.user_metadata.get('last_name', ''),
+                    'is_profile_complete': False,
+                }
+            )
+            
+            # Déterminer si le profil doit être complété
+            needs_completion = False
+            
+            if created:
+                # Nouvel utilisateur : vérifier s'il vient d'OAuth ou d'inscription email
+                # Si c'est OAuth (pas de mot de passe), il faut compléter le profil
+                # Si c'est inscription email, l'utilisateur va continuer sur Register
+                is_oauth = not supabase_user.user_metadata.get('email_verified_at') or len(supabase_user.identities or []) > 1
+                needs_completion = is_oauth
+            else:
+                # Utilisateur existant : vérifier si le profil est complet
+                required_fields = ['username', 'university', 'faculty', 'study_year', 'student_id']
+                is_complete = all(getattr(user, field, None) for field in required_fields)
+                if user.is_profile_complete != is_complete:
+                    user.is_profile_complete = is_complete
+                    user.save(update_fields=['is_profile_complete'])
+                needs_completion = not is_complete
+            
+            # Générer les tokens JWT Django
+            refresh = RefreshToken.for_user(user)
+            
+            return Response({
+                'success': True,
+                'data': {
+                    'user': UserProfileSerializer(user).data,
+                    'tokens': {
+                        'accessToken': str(refresh.access_token),
+                        'refreshToken': str(refresh),
+                    },
+                    'needs_profile_completion': needs_completion,
+                    'is_new_user': created
+                }
+            })
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de l'échange de token Supabase: {e}")
+            return Response({'error': 'Erreur serveur'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class CompleteSupabaseProfileView(APIView):
+    """Compléter le profil après inscription Supabase"""
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def post(self, request):
+        if request.user.is_profile_complete:
+            return Response({'error': 'Profil déjà complet'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        serializer = SupabaseProfileCompletionSerializer(request.user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        
+        CacheManager.invalidate_user_profile(user.id)
+        
+        return Response({
+            'success': True,
+            'data': UserProfileSerializer(user).data,
+            'message': 'Profil complété avec succès'
+        })

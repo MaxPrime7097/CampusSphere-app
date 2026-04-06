@@ -9,7 +9,7 @@ export type SphereSortKey = (typeof SPHERE_SORT_KEYS)[number];
 
 export const DEFAULT_SORT = {
   search: "relevance",
-  resources: "recent",
+  resources: "all",
   spheres: "discover",
 } as const satisfies {
   search: SearchSortKey;

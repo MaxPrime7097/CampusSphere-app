@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Check, Loader2, Plus, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, Loader2, Plus, X, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +16,7 @@ import { AddExperienceModal } from "@/components/modals/AddExperienceModal";
 import { UniversityCombobox } from "@/components/forms/UniversityCombobox";
 import { FacultyCombobox } from "@/components/forms/FacultyCombobox";
 import { StudyLevelCombobox } from "@/components/forms/StudyLevelCombobox";
+import Sphere3D from "@/components/layout/Sphere3D";
 
 type Step = 1 | 2 | 3;
 
@@ -41,7 +42,7 @@ export function CompleteProfile() {
 
   const step1Schema = z.object({
     username: z.string().min(3, "Au moins 3 caractères"),
-    phoneNumber: z.string().min(8, "Au moins 8 chiffres"),
+    phoneNumber: z.string().optional(),
     dateOfBirth: z.string().min(1, "Requis"),
   });
 
@@ -101,25 +102,26 @@ export function CompleteProfile() {
   const progress = step === 1 ? 33 : step === 2 ? 66 : 100;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg">
-        <div className="text-center mb-8">
+    <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5 p-4 mx-auto grid lg:grid-cols-2 gap-12 items-center">
+      <div className="px-0 sm:px-20">
+        <div className="text-center mb-8 cursor-pointer" onClick={() => navigate("/cs-inc")}>
           <span className="text-2xl font-bold font-automata text-primary">CampusSphere</span>
           <p className="text-muted-foreground mt-2">Complétez votre profil — Étape {step} sur 3</p>
         </div>
 
-        <div className="mb-6">
+        <div className="mb-8">
           <Progress value={progress} className="h-2" />
-          <div className="flex justify-between mt-2 text-xs text-muted-foreground">
+          <div className="flex justify-between mt-2 text-sm text-muted-foreground">
             <span>Infos de base</span>
             <span>Académique</span>
             <span>Compétences</span>
           </div>
         </div>
 
-        <div className="space-y-5 bg-card rounded-xl p-6 shadow-sm border">
+        <div className="space-y-6 p-5 pt-0 mt-4">
           {Object.keys(errors).length > 0 && (
             <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
               <AlertDescription>Veuillez corriger les erreurs ci-dessous</AlertDescription>
             </Alert>
           )}
@@ -130,33 +132,36 @@ export function CompleteProfile() {
               <CardTitle>Informations de base</CardTitle>
               <div>
                 <Label>Nom d'utilisateur *</Label>
-                <Input className="mt-1" value={formData.username} onChange={e => handleInput("username", e.target.value)} placeholder="ex: john_doe" />
+                <Input value={formData.username} onChange={e => handleInput("username", e.target.value)} placeholder="ex: john_doe" className={errors.username ? "border-destructive" : ""} />
                 {errors.username && <p className="text-xs text-destructive mt-1">{errors.username}</p>}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Date de naissance *</Label>
-                  <Input className="mt-1" type="date" value={formData.dateOfBirth} onChange={e => handleInput("dateOfBirth", e.target.value)} />
+                  <Input type="date" value={formData.dateOfBirth} onChange={e => handleInput("dateOfBirth", e.target.value)} className={errors.dateOfBirth ? "border-destructive" : ""} />
                   {errors.dateOfBirth && <p className="text-xs text-destructive mt-1">{errors.dateOfBirth}</p>}
                 </div>
                 <div>
-                  <Label>Téléphone *</Label>
-                  <Input className="mt-1" value={formData.phoneNumber} onChange={e => handleInput("phoneNumber", e.target.value)} placeholder="+237..." />
+                  <Label>Téléphone</Label>
+                  <div className="flex">
+                    <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-sm text-muted-foreground">+237</span>
+                    <Input value={formData.phoneNumber} onChange={e => handleInput("phoneNumber", e.target.value)} className={`rounded-l-none ${errors.phoneNumber ? "border-destructive" : ""}`} placeholder="6XXXXXXXX" />
+                  </div>
                   {errors.phoneNumber && <p className="text-xs text-destructive mt-1">{errors.phoneNumber}</p>}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Ville</Label>
-                  <Input className="mt-1" value={formData.town} onChange={e => handleInput("town", e.target.value)} />
+                  <Input value={formData.town} onChange={e => handleInput("town", e.target.value)} />
                 </div>
                 <div>
                   <Label>Langue</Label>
-                  <Input className="mt-1" value={formData.language} onChange={e => handleInput("language", e.target.value)} placeholder="fr" />
+                  <Input value={formData.language} onChange={e => handleInput("language", e.target.value)} placeholder="fr" />
                 </div>
               </div>
-              <div className="flex justify-end pt-2">
-                <Button onClick={() => validateAndNext(step1Schema, 2)} className="campus-gradient text-white">
+              <div className="flex justify-end pt-4">
+                <Button onClick={() => validateAndNext(step1Schema, 2)} className="campus-gradient text-white hover:opacity-90">
                   Suivant <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
@@ -168,34 +173,34 @@ export function CompleteProfile() {
             <div className="space-y-4">
               <CardTitle>Informations académiques</CardTitle>
               <div>
-                <Label>Université *</Label>
-                <UniversityCombobox value={formData.university} onValueChange={v => handleInput("university", v)} className="mt-1" />
+                <Label>Université/Institut *</Label>
+                <UniversityCombobox value={formData.university} onValueChange={v => handleInput("university", v)} className="mt-2" />
                 {errors.university && <p className="text-xs text-red-500 mt-1">{errors.university}</p>}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Filière *</Label>
-                  <FacultyCombobox value={formData.faculty} onValueChange={v => handleInput("faculty", v)} className="mt-1" />
+                  <FacultyCombobox value={formData.faculty} onValueChange={v => handleInput("faculty", v)} className="mt-2" />
                   {errors.faculty && <p className="text-xs text-red-500 mt-1">{errors.faculty}</p>}
                 </div>
                 <div>
                   <Label>Niveau *</Label>
-                  <StudyLevelCombobox value={formData.studyYear} onValueChange={v => handleInput("studyYear", v)} className="mt-1" />
+                  <StudyLevelCombobox value={formData.studyYear} onValueChange={v => handleInput("studyYear", v)} className="mt-2" />
                   {errors.studyYear && <p className="text-xs text-red-500 mt-1">{errors.studyYear}</p>}
                 </div>
               </div>
               <div>
                 <Label>Matricule *</Label>
-                <Input className="mt-1" value={formData.studentId} onChange={e => handleInput("studentId", e.target.value)} />
+                <Input value={formData.studentId} onChange={e => handleInput("studentId", e.target.value)} className={errors.studentId ? "border-destructive" : ""} />
                 {errors.studentId && <p className="text-xs text-red-500 mt-1">{errors.studentId}</p>}
               </div>
               <div>
                 <Label>Campus</Label>
-                <Input className="mt-1" value={formData.campus} onChange={e => handleInput("campus", e.target.value)} placeholder="Si plusieurs campus" />
+                <Input value={formData.campus} onChange={e => handleInput("campus", e.target.value)} placeholder="Si plusieurs campus" />
               </div>
-              <div className="flex justify-between pt-2">
+              <div className="flex justify-between pt-4">
                 <Button variant="outline" onClick={() => setStep(1)}><ChevronLeft className="mr-2 h-4 w-4" />Précédent</Button>
-                <Button onClick={() => validateAndNext(step2Schema, 3)} className="campus-gradient text-white">
+                <Button onClick={() => validateAndNext(step2Schema, 3)} className="campus-gradient text-white hover:opacity-90">
                   Suivant <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
@@ -289,6 +294,7 @@ export function CompleteProfile() {
           )}
         </div>
       </div>
+      <div className="hidden lg:block"><Sphere3D /></div>
     </div>
   );
 }

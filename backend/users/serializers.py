@@ -5,6 +5,55 @@ from django.contrib.auth.password_validation import validate_password
 from .models import User, Connection, UserBlock
 
 
+class SupabaseProfileCompletionSerializer(serializers.ModelSerializer):
+    """Serializer pour compléter le profil après inscription Supabase"""
+    phone_number = serializers.CharField(required=False, allow_blank=True, default="")
+    date_of_birth = serializers.DateField(required=False, allow_null=True, default=None)
+    
+    class Meta:
+        model = User
+        fields = [
+            'username', 'first_name', 'last_name', 'phone_number', 'date_of_birth',
+            'university', 'faculty', 'study_year', 'student_id', 'campus', 'town', 'language',
+            'bio', 'skills', 'interests', 'previous_education', 'experiences', 'portfolio_links'
+        ]
+    
+    def validate_username(self, value):
+        if User.objects.filter(username__iexact=value).exists():
+            raise serializers.ValidationError("Ce nom d'utilisateur est déjà pris")
+        return value
+    
+    def validate(self, data):
+        # Vérifier que les champs obligatoires sont présents
+        required_fields = ['username', 'university', 'faculty', 'study_year', 'student_id']
+        for field in required_fields:
+            if not data.get(field):
+                raise serializers.ValidationError(f"Le champ {field} est obligatoire")
+        return data
+    
+    def update(self, instance, validated_data):
+        phone_number = validated_data.pop('phone_number', '')
+        date_of_birth = validated_data.pop('date_of_birth', None)
+        
+        # Mettre à jour tous les champs
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        
+        # Gérer les champs optionnels
+        if phone_number and hasattr(instance, 'phone_number'):
+            instance.phone_number = phone_number
+        if date_of_birth and hasattr(instance, 'date_of_birth'):
+            instance.date_of_birth = date_of_birth
+        
+        # Marquer le profil comme complet seulement si tous les champs obligatoires sont présents
+        required_fields = ['username', 'university', 'faculty', 'study_year', 'student_id']
+        is_complete = all(getattr(instance, field, None) for field in required_fields)
+        instance.is_profile_complete = is_complete
+        
+        instance.save()
+        return instance
+
+
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
     confirm_password = serializers.CharField(write_only=True)

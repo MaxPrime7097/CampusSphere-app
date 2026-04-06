@@ -4,6 +4,7 @@ export const CANONICAL_RESOURCE_TYPES = [
   "exercises",
   "projects",
   "presentations",
+  "annales",
 ] as const;
 
 export type CanonicalResourceType = (typeof CANONICAL_RESOURCE_TYPES)[number];
@@ -19,6 +20,7 @@ export const RESOURCE_TYPE_OPTIONS: Array<{ value: CanonicalResourceType; label:
   { value: "exercises", label: "Exercices" },
   { value: "projects", label: "Projets" },
   { value: "presentations", label: "Présentations" },
+  { value: "annales", label: "Annales" },
 ];
 
 export function normalizeResourceType(type: unknown): CanonicalResourceType {

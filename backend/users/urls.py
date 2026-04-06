@@ -13,6 +13,10 @@ urlpatterns = [
     path('auth/change-password/', views.ChangePasswordView.as_view(), name='change-password'),
     path('auth/change-email/', views.ChangeEmailView.as_view(), name='change-email'),
     path('auth/delete-account/', views.DeleteAccountView.as_view(), name='delete-account'),
+    
+    # Supabase Auth
+    path('auth/supabase/exchange-token/', views.SupabaseTokenExchangeView.as_view(), name='supabase-token-exchange'),
+    path('auth/supabase/complete-profile/', views.CompleteSupabaseProfileView.as_view(), name='supabase-complete-profile'),
     path('privacy/', views.PrivacySettingsView.as_view(), name='privacy-settings'),
     path('data-export/', views.DataExportView.as_view(), name='data-export'),
     path('blocks/', views.BlockListView.as_view(), name='block-list'),

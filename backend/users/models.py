@@ -114,6 +114,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     supabase_uid = models.CharField(max_length=255, unique=True, null=True, blank=True, db_index=True)
     phone_number = models.CharField(max_length=30, blank=True)
     date_of_birth = models.DateField(null=True, blank=True)
+    is_profile_complete = models.BooleanField(default=False)
 
     objects = UserManager()
 

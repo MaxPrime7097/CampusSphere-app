@@ -70,6 +70,7 @@ const App = () => (
           <Route path="/register" element={<Register />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/register/complete" element={<CompleteProfile />} />
+          <Route path="/complete-profile" element={<CompleteProfile />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           
           {/* Protected routes with layout */}

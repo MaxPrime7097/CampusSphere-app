@@ -10,7 +10,10 @@ export async function supabaseSignUp(email: string, password: string, metadata: 
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: metadata },
+    options: { 
+      data: metadata,
+      emailRedirectTo: `${window.location.origin}/register?verified=true`
+    },
   });
   if (error) throw new Error(error.message);
   return data;
@@ -50,9 +53,9 @@ export async function supabaseSignOut() {
 }
 
 export async function exchangeSupabaseToken(supabaseAccessToken: string) {
-  const response = await apiFetch<{ success: boolean; data: { tokens: { accessToken: string; refreshToken: string }; user: any } }>(
-    "api/auth/supabase/exchange/",
-    { method: "POST", body: { supabase_token: supabaseAccessToken } }
+  const response = await apiFetch<{ success: boolean; data: { tokens: { accessToken: string; refreshToken: string }; user: any; needs_profile_completion?: boolean } }>(
+    "api/users/auth/supabase/exchange-token/",
+    { method: "POST", body: { access_token: supabaseAccessToken } }
   );
   const tokens = response?.data?.tokens;
   if (tokens?.accessToken) {
@@ -63,8 +66,8 @@ export async function exchangeSupabaseToken(supabaseAccessToken: string) {
 
 export async function completeSupabaseProfile(data: {
   username: string;
-  first_name: string;
-  last_name: string;
+  first_name?: string;
+  last_name?: string;
   phone_number?: string;
   date_of_birth?: string;
   university?: string;
@@ -81,7 +84,7 @@ export async function completeSupabaseProfile(data: {
   experiences?: any[];
   portfolio_links?: any[];
 }) {
-  const response = await apiFetch<any>("api/auth/supabase/complete-profile/", {
+  const response = await apiFetch<any>("api/users/auth/supabase/complete-profile/", {
     method: "POST",
     body: data,
   });

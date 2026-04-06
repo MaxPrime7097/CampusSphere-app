@@ -30,15 +30,18 @@ export function AuthCallback() {
 
         if (!isMounted) return;
 
-        // Si c'est un nouvel utilisateur OAuth, compléter le profil
-        if (response?.data?.is_new_user) {
-          navigate("/register/complete", { replace: true });
+        // Vérifier si le profil doit être complété
+        if (response?.data?.needs_profile_completion) {
+          // Pour les nouveaux utilisateurs ou profils incomplets
+          navigate("/complete-profile", { replace: true });
         } else {
+          // Utilisateur existant avec profil complet
           toast({ title: "Connexion réussie !", duration: 2000 });
           navigate("/", { replace: true });
         }
       } catch (err: any) {
         if (!isMounted) return;
+        console.error('AuthCallback error:', err);
         toast({
           title: "Erreur de connexion",
           description: err?.message || "Impossible de finaliser la connexion",
@@ -49,7 +52,7 @@ export function AuthCallback() {
     })();
 
     return () => { isMounted = false; };
-  }, []);
+  }, [navigate, toast]);
 
   return (
     <div className="min-h-screen flex items-center justify-center">

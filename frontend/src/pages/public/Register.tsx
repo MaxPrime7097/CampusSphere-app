@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Upload, Check, Loader2, AlertCircle, Eye, EyeOff, X, ExternalLink, Plus, FileText, Mail, RefreshCw } from "lucide-react";
 import { FaGoogle, FaFacebook } from "react-icons/fa";
@@ -11,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { supabaseSignUp, supabaseSignInWithGoogle, supabaseSignInWithFacebook, exchangeSupabaseToken, completeSupabaseProfile } from "@/services/api";
@@ -28,6 +27,7 @@ type Step = 1 | "verify" | 2 | 3;
 
 export function Register() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [step, setStep] = useState<Step>(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -52,6 +52,26 @@ export function Register() {
   const [newInterest, setNewInterest] = useState("");
   const [newLink, setNewLink] = useState({ name: "", url: "" });
 
+  // Vérifier si l'utilisateur revient après vérification email
+  useEffect(() => {
+    const verified = searchParams.get('verified');
+    if (verified === 'true') {
+      // L'utilisateur a vérifié son email, échanger le token et continuer
+      (async () => {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            await exchangeSupabaseToken(session.access_token);
+            setStep(2);
+            toast({ title: "Email vérifié ✓", description: "Continuez votre inscription", duration: 3000 });
+          }
+        } catch (err: any) {
+          toast({ title: "Erreur", description: err?.message, variant: "destructive" });
+        }
+      })();
+    }
+  }, [searchParams, toast]);
+
   // Écouter la confirmation email Supabase
   useEffect(() => {
     if (step !== "verify") return;
@@ -60,7 +80,10 @@ export function Register() {
       if (event === "SIGNED_IN" && session) {
         // Email confirmé → échanger le token avec Django
         try {
-          await exchangeSupabaseToken(session.access_token);
+          const response = await exchangeSupabaseToken(session.access_token);
+          
+          // Pour l'inscription par email, on continue toujours avec les étapes 2-3
+          // car l'utilisateur a déjà rempli l'étape 1 avec ses infos
           setStep(2);
           toast({ title: "Email vérifié ✓", description: "Continuez votre inscription", duration: 3000 });
         } catch (err: any) {
@@ -70,7 +93,7 @@ export function Register() {
     });
 
     return () => subscription.unsubscribe();
-  }, [step]);
+  }, [step, navigate, toast]);
 
   const step1Schema = z.object({
     firstName: z.string().min(2, "Au moins 2 caractères"),
