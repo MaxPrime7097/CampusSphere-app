@@ -71,7 +71,7 @@ const faculties = [
       { "value": "genie_electromecanique", "label": "Génie Electromécanique" },
       { "value": "genie_chimique", "label": "Génie Chimique" },
       { "value": "genie_logiciel", "label": "Génie logiciel / Développement logiciel" },
-      { "value": "genie_informatique", "label": "Génie Informatique et Télécommunications" },
+      { "value": "genie_informatique", "label": "Génie Informatique" },
       { "value": "genie_industriel", "label": "Génie Industriel" },
       { "value": "genie_procedes", "label": "Génie des Procédés / Chimie industrielle" },
       { "value": "genie_energies", "label": "Génie des Énergies" },
