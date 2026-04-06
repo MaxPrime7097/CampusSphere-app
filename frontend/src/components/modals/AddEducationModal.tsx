@@ -3,10 +3,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, GraduationCap, Loader2, Check, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Badge } from "@/components/ui/badge";
+import { DegreeCombobox } from "@/components/forms/DegreeCombobox";
+import { InstitutionCombobox } from "@/components/forms/InstitutionCombobox";
 
 interface Education {
   degree: string;
@@ -130,21 +130,21 @@ export function AddEducationModal({ children, onEducationAdded, existingEducatio
           <div className="space-y-4">
             <div>
               <Label htmlFor="degree">Diplôme/Formation *</Label>
-              <Input
-                id="degree"
-                placeholder="Ex: Licence Informatique, Master Marketing..."
+              <DegreeCombobox
                 value={degree}
-                onChange={(e) => setDegree(e.target.value)}
+                onValueChange={setDegree}
+                placeholder="Sélectionner ou saisir un diplôme"
+                className="mt-1"
               />
             </div>
 
             <div>
               <Label htmlFor="school">Établissement *</Label>
-              <Input
-                id="school"
-                placeholder="Ex: Université de Yaoundé I, École Polytechnique..."
+              <InstitutionCombobox
                 value={school}
-                onChange={(e) => setSchool(e.target.value)}
+                onValueChange={setSchool}
+                placeholder="Sélectionner ou saisir un établissement"
+                className="mt-1"
               />
             </div>
 

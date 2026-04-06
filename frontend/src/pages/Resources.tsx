@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   listResources,
@@ -16,7 +16,6 @@ import {
   Bookmark,
   Loader2,
   RefreshCw,
-  Zap,
   Filter,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -121,11 +120,11 @@ export function Resources() {
   }, []);
 
   const subjects = [
-    { value: "all", label: "Toutes matières" },
-    { value: "math", label: "Mathématiques" },
+    { value: "all", label: "Toutes matiÃ¨res" },
+    { value: "math", label: "MathÃ©matiques" },
     { value: "cs", label: "Informatique" },
     { value: "physics", label: "Physique" },
-    { value: "economics", label: "Économie" },
+    { value: "economics", label: "Ã‰conomie" },
     { value: "language", label: "Langues" },
   ];
 
@@ -203,10 +202,10 @@ export function Resources() {
       );
 
       toast({
-        title: saved ? "Ressource sauvegardée !" : "Ressource retirée",
+        title: saved ? "Ressource sauvegardÃ©e !" : "Ressource retirÃ©e",
         description: saved
-          ? "Cette ressource a été ajoutée à vos sauvegardes"
-          : "Cette ressource a été retirée de vos sauvegardes",
+          ? "Cette ressource a Ã©tÃ© ajoutÃ©e Ã  vos sauvegardes"
+          : "Cette ressource a Ã©tÃ© retirÃ©e de vos sauvegardes",
         duration: 2000,
       });
     } catch (error: any) {
@@ -247,14 +246,14 @@ export function Resources() {
       );
 
       toast({
-        title: "Téléchargement démarré !",
-        description: "Votre fichier va être téléchargé dans quelques instants",
+        title: "TÃ©lÃ©chargement dÃ©marrÃ© !",
+        description: "Votre fichier va Ãªtre tÃ©lÃ©chargÃ© dans quelques instants",
         duration: 3000,
       });
     } catch (error: any) {
       toast({
         title: "Erreur",
-        description: error?.message || "Impossible de télécharger la ressource",
+        description: error?.message || "Impossible de tÃ©lÃ©charger la ressource",
         variant: "destructive",
       });
     } finally {
@@ -275,14 +274,14 @@ export function Resources() {
       setResources(mapped);
 
       toast({
-        title: "Ressources actualisées",
-        description: "La liste des ressources a été mise à jour",
+        title: "Ressources actualisÃ©es",
+        description: "La liste des ressources a Ã©tÃ© mise Ã  jour",
         duration: 2000,
       });
     } catch (error: any) {
       toast({
         title: "Erreur",
-        description: error?.message || "Impossible de rafraîchir les ressources",
+        description: error?.message || "Impossible de rafraÃ®chir les ressources",
         variant: "destructive",
       });
     } finally {
@@ -319,10 +318,10 @@ export function Resources() {
         <div className="flex flex-col px-4 sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 campus-animate-fade-in px-0">
           <div>
             <h1 className="text-3xl font-bold bg-clip-text text-muted-foreground">
-              Ressources Étudiantes
+              Ressources Ã‰tudiantes
             </h1>
             <p className="text-sm md:text-base text-muted-foreground mt-1">
-              Partagez et accédez aux ressources partagées par la communauté
+              Partagez et accÃ©dez aux ressources partagÃ©es par la communautÃ©
             </p>
           </div>
           <div className="flex gap-2">
@@ -373,7 +372,7 @@ export function Resources() {
             {showMobileFilters && (
               <div className="flex flex-col gap-2 mt-2 sm:hidden">
                 <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                  <SelectTrigger><SelectValue placeholder="Matière" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="MatiÃ¨re" /></SelectTrigger>
                   <SelectContent>
                     {subjects.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
                   </SelectContent>
@@ -393,7 +392,7 @@ export function Resources() {
                 <Input placeholder="Rechercher..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
               </div>
               <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                <SelectTrigger><SelectValue placeholder="Matière" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="MatiÃ¨re" /></SelectTrigger>
                 <SelectContent>
                   {subjects.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
                 </SelectContent>
@@ -414,7 +413,7 @@ export function Resources() {
           {[
             { id: "all", label: "Toutes" },
             { id: "suggestions", label: "Suggestions" },
-            { id: "recent", label: "Récentes" },
+            { id: "recent", label: "RÃ©centes" },
           ].map((tab) => (
             <li key={tab.id}>
               <button
@@ -681,9 +680,9 @@ export function Resources() {
         {filteredResources.length === 0 && (
           <div className="text-center py-12">
             <FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Aucune ressource trouvée</h3>
+            <h3 className="text-lg font-semibold mb-2">Aucune ressource trouvÃ©e</h3>
             <p className="text-muted-foreground mb-6">
-              Soyez le premier à partager une ressource dans cette catégorie !
+              Soyez le premier Ã  partager une ressource dans cette catÃ©gorie !
             </p>
             <UploadResourceModal onResourceUploaded={handleResourceUploaded}>
               <Button className="campus-gradient text-white hover:opacity-90">

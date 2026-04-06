@@ -26,6 +26,7 @@ interface ComboboxProps {
   emptyMessage?: string
   className?: string
   disabled?: boolean
+  allowCustomValue?: boolean
 }
 
 export function Combobox({
@@ -37,10 +38,28 @@ export function Combobox({
   emptyMessage = "Aucun résultat trouvé.",
   className,
   disabled = false,
+  allowCustomValue = false,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
+  const [searchValue, setSearchValue] = React.useState("")
 
   const selectedOption = options.find((option) => option.value === value)
+  const displayValue = selectedOption ? selectedOption.label : (allowCustomValue && value ? value : "")
+
+  const handleSelect = (currentValue: string) => {
+    onValueChange?.(currentValue === value ? "" : currentValue)
+    setOpen(false)
+    setSearchValue("")
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && allowCustomValue && searchValue.trim()) {
+      e.preventDefault()
+      onValueChange?.(searchValue.trim())
+      setOpen(false)
+      setSearchValue("")
+    }
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -52,24 +71,41 @@ export function Combobox({
           className={cn("w-full justify-between", className)}
           disabled={disabled}
         >
-          {selectedOption ? selectedOption.label : placeholder}
+          {displayValue || placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0" align="start">
         <Command>
-          <CommandInput placeholder={searchPlaceholder} />
+          <CommandInput 
+            placeholder={searchPlaceholder} 
+            value={searchValue}
+            onValueChange={setSearchValue}
+            onKeyDown={handleKeyDown}
+          />
           <CommandList>
-            <CommandEmpty>{emptyMessage}</CommandEmpty>
+            <CommandEmpty>
+              {allowCustomValue && searchValue.trim() ? (
+                <div className="p-2">
+                  <div className="text-sm text-muted-foreground mb-2">{emptyMessage}</div>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start text-left"
+                    onClick={() => handleSelect(searchValue.trim())}
+                  >
+                    Ajouter "{searchValue.trim()}"
+                  </Button>
+                </div>
+              ) : (
+                emptyMessage
+              )}
+            </CommandEmpty>
             <CommandGroup>
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
                   value={option.value}
-                  onSelect={(currentValue) => {
-                    onValueChange?.(currentValue === value ? "" : currentValue)
-                    setOpen(false)
-                  }}
+                  onSelect={handleSelect}
                 >
                   <Check
                     className={cn(

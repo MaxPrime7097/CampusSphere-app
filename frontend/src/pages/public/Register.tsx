@@ -20,6 +20,8 @@ import { AddExperienceModal } from "@/components/modals/AddExperienceModal";
 import { UniversityCombobox } from "@/components/forms/UniversityCombobox";
 import { FacultyCombobox } from "@/components/forms/FacultyCombobox";
 import { StudyLevelCombobox } from "@/components/forms/StudyLevelCombobox";
+import { SkillsCombobox } from "@/components/forms/SkillsCombobox";
+import { InterestsCombobox } from "@/components/forms/InterestsCombobox";
 import Sphere3D from "@/components/layout/Sphere3D";
 
 // Étapes : 1=infos perso, "verify"=attente email, 2=académique, 3=compétences
@@ -48,8 +50,6 @@ export function Register() {
     portfolioLinks: [] as Array<{name: string; url: string}>,
   });
 
-  const [newSkill, setNewSkill] = useState("");
-  const [newInterest, setNewInterest] = useState("");
   const [newLink, setNewLink] = useState({ name: "", url: "" });
 
   // Vérifier si l'utilisateur revient après vérification email
@@ -233,7 +233,7 @@ export function Register() {
                   <FaGoogle className="mr-2 h-4 w-4 text-red-500" />
                   Continuer avec Google
                 </Button>
-                <Button variant="outline" className="w-full" onClick={() => supabaseSignInWithFacebook()} type="button">
+                <Button variant="outline" className="w-full disabled" onClick={() => supabaseSignInWithFacebook()} type="button">
                   <FaFacebook className="mr-2 h-4 w-4 text-blue-600" />
                   Continuer avec Facebook
                 </Button>
@@ -248,12 +248,12 @@ export function Register() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Prénom *</Label>
+                  <Label>Nom *</Label>
                   <Input value={formData.firstName} onChange={e => handleInputChange("firstName", e.target.value)} className={errors.firstName ? "border-destructive" : ""} />
                   {errors.firstName && <p className="text-xs text-destructive mt-1">{errors.firstName}</p>}
                 </div>
                 <div>
-                  <Label>Nom *</Label>
+                  <Label>Prénom *</Label>
                   <Input value={formData.lastName} onChange={e => handleInputChange("lastName", e.target.value)} className={errors.lastName ? "border-destructive" : ""} />
                   {errors.lastName && <p className="text-xs text-destructive mt-1">{errors.lastName}</p>}
                 </div>
@@ -440,10 +440,12 @@ export function Register() {
               {/* Compétences */}
               <div>
                 <Label>Compétences</Label>
-                <div className="flex gap-2 mt-2">
-                  <Input placeholder="Ajouter une compétence" value={newSkill} onChange={e => setNewSkill(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); if (newSkill.trim() && !formData.skills.includes(newSkill.trim())) { setFormData(p => ({ ...p, skills: [...p.skills, newSkill.trim()] })); setNewSkill(""); } } }} />
-                  <Button type="button" variant="outline" onClick={() => { if (newSkill.trim() && !formData.skills.includes(newSkill.trim())) { setFormData(p => ({ ...p, skills: [...p.skills, newSkill.trim()] })); setNewSkill(""); } }}>+</Button>
-                </div>
+                <SkillsCombobox
+                  onSkillAdd={(skill) => {
+                    if (!formData.skills.includes(skill)) setFormData(p => ({ ...p, skills: [...p.skills, skill] }));
+                  }}
+                  className="mt-2"
+                />
                 <div className="flex flex-wrap gap-2 mt-2">
                   {formData.skills.map(s => <Badge key={s} variant="secondary" className="cursor-pointer" onClick={() => setFormData(p => ({ ...p, skills: p.skills.filter(x => x !== s) }))}>{s} ×</Badge>)}
                 </div>
@@ -452,10 +454,12 @@ export function Register() {
               {/* Intérêts */}
               <div>
                 <Label>Centres d'intérêt</Label>
-                <div className="flex gap-2 mt-2">
-                  <Input placeholder="Ajouter un intérêt" value={newInterest} onChange={e => setNewInterest(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); if (newInterest.trim() && !formData.interests.includes(newInterest.trim())) { setFormData(p => ({ ...p, interests: [...p.interests, newInterest.trim()] })); setNewInterest(""); } } }} />
-                  <Button type="button" variant="outline" onClick={() => { if (newInterest.trim() && !formData.interests.includes(newInterest.trim())) { setFormData(p => ({ ...p, interests: [...p.interests, newInterest.trim()] })); setNewInterest(""); } }}>+</Button>
-                </div>
+                <InterestsCombobox
+                  onInterestAdd={(interest) => {
+                    if (!formData.interests.includes(interest)) setFormData(p => ({ ...p, interests: [...p.interests, interest] }));
+                  }}
+                  className="mt-2"
+                />
                 <div className="flex flex-wrap gap-2 mt-2">
                   {formData.interests.map(s => <Badge key={s} variant="outline" className="cursor-pointer" onClick={() => setFormData(p => ({ ...p, interests: p.interests.filter(x => x !== s) }))}>{s} ×</Badge>)}
                 </div>

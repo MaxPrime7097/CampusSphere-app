@@ -1,27 +1,43 @@
-# Impact Policy (Source of Truth)
+# Impact Policy
 
-CampusSphere centralizes impact score rules in:
+## Règles actives
 
-- `backend/users/impact_policy.py`
+| Événement | Points | Déclencheur |
+|-----------|--------|-------------|
+| Upload d'une ressource | **+5** | `resource.uploaded` — quand un utilisateur publie une ressource |
+| Notation d'un post | **dynamique** | Quand un utilisateur note l'impact d'un post (valeur 1-5 envoyée par le frontend) |
 
-Use the named events below in backend/frontend/product discussions to avoid drift.
+## Implémentation backend
 
-| Event constant | Event value | Business meaning | Points |
-|---|---|---|---:|
-| `POST_CREATED` | `post.created` | User creates a new post | `+10` |
-| `COMMENT_CREATED` | `comment.created` | User creates a comment or reply | `+2` |
-| `RESOURCE_UPLOADED` | `resource.uploaded` | User uploads a new resource | `+3` |
-| `RESOURCE_DOWNLOADED` | `resource.downloaded` | User downloads another user's resource | `+1` |
-| `TASK_COMPLETED` | `task.completed` | User completes a task and gets the task's configured `impact_points` | dynamic |
+- `backend/users/impact_policy.py` — source de vérité
+- `resources/serializers.py` — applique `RESOURCE_UPLOADED` (+5) à la création
+- `posts/views.py` — applique `apply_impact_points(user, value)` sur `POST /api/posts/<id>/impact-rate/`
 
-## Backend usage
+## Utilisation
 
-- `posts/views.py`: applies `POST_CREATED` and `COMMENT_CREATED`.
-- `resources/serializers.py`: applies `RESOURCE_UPLOADED`.
-- `resources/views.py`: applies `RESOURCE_DOWNLOADED`.
-- `tasks/views.py`: uses `TASK_COMPLETED` event naming and applies dynamic points through the same policy module helper.
+```python
+from users.impact_policy import apply_impact_event, apply_impact_points, RESOURCE_UPLOADED
 
-## Notes
+# Upload ressource → +5 pts à l'auteur
+apply_impact_event(user, RESOURCE_UPLOADED)
 
-- Prefer `apply_impact_event(user, EVENT_NAME)` for fixed event values.
-- Prefer `apply_impact_points(user, points)` when points are dynamic (task-specific).
+# Notation d'un post → points dynamiques (valeur de la note)
+apply_impact_points(post.author, rating_value)
+```
+
+## Propositions d'évolution (à valider)
+
+Ces règles sont pensées pour refléter l'**impact réel** sur la communauté :
+
+| Événement | Points proposés | Justification |
+|-----------|----------------|---------------|
+| Ressource téléchargée par un autre | +1 | La ressource est utile à quelqu'un |
+| Ressource sauvegardée par un autre | +1 | La ressource est jugée précieuse |
+| Post noté avec impact élevé (≥4) | +3 | Le contenu a eu un impact fort |
+| Tâche complétée dans une sphère | +2 | Contribution concrète à un projet |
+| Commentaire reçu sur une ressource | +1 | La ressource génère de l'engagement |
+| Première ressource uploadée | +10 | Bonus d'onboarding |
+| Sphère créée avec 10+ membres | +5 | Création d'une communauté active |
+
+> Ces règles favorisent les **contributions qui profitent aux autres** plutôt que la simple activité.
+> Un utilisateur qui uploade des ressources très téléchargées gagne plus qu'un utilisateur qui poste beaucoup sans engagement.

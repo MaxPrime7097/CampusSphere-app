@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Briefcase, Loader2, Check, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { JobTitleCombobox } from "@/components/forms/JobTitleCombobox";
+import { CompanyCombobox } from "@/components/forms/CompanyCombobox";
 
 interface Experience {
   title: string;
@@ -134,21 +136,21 @@ export function AddExperienceModal({ children, onExperienceAdded, existingExperi
           <div className="space-y-4">
             <div>
               <Label htmlFor="title">Poste/Intitulé *</Label>
-              <Input
-                id="title"
-                placeholder="Ex: Développeur Full-Stack, Assistant de recherche..."
+              <JobTitleCombobox
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onValueChange={setTitle}
+                placeholder="Sélectionner ou saisir un poste"
+                className="mt-1"
               />
             </div>
 
             <div>
               <Label htmlFor="company">Entreprise/Organisation *</Label>
-              <Input
-                id="company"
-                placeholder="Ex: TechCorp, Lab IA - Université..."
+              <CompanyCombobox
                 value={company}
-                onChange={(e) => setCompany(e.target.value)}
+                onValueChange={setCompany}
+                placeholder="Sélectionner ou saisir une entreprise"
+                className="mt-1"
               />
             </div>
 

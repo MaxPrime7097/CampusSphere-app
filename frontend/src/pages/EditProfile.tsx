@@ -4,11 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Camera, Loader2, Save, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { getCurrentUser, updateUserProfile, uploadAvatar } from "@/services/api";
+import { UniversityCombobox } from "@/components/forms/UniversityCombobox";
+import { FacultyCombobox } from "@/components/forms/FacultyCombobox";
+import { StudyLevelCombobox } from "@/components/forms/StudyLevelCombobox";
+import { SkillsCombobox } from "@/components/forms/SkillsCombobox";
+import { InterestsCombobox } from "@/components/forms/InterestsCombobox";
 
 type ProfileFormData = {
   first_name: string;

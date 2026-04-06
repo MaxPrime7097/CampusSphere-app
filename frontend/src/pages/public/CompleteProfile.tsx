@@ -16,6 +16,8 @@ import { AddExperienceModal } from "@/components/modals/AddExperienceModal";
 import { UniversityCombobox } from "@/components/forms/UniversityCombobox";
 import { FacultyCombobox } from "@/components/forms/FacultyCombobox";
 import { StudyLevelCombobox } from "@/components/forms/StudyLevelCombobox";
+import { SkillsCombobox } from "@/components/forms/SkillsCombobox";
+import { InterestsCombobox } from "@/components/forms/InterestsCombobox";
 import Sphere3D from "@/components/layout/Sphere3D";
 
 type Step = 1 | 2 | 3;
@@ -36,8 +38,6 @@ export function CompleteProfile() {
     portfolioLinks: [] as Array<{name: string; url: string}>,
   });
 
-  const [newSkill, setNewSkill] = useState("");
-  const [newInterest, setNewInterest] = useState("");
   const [newLink, setNewLink] = useState({ name: "", url: "" });
 
   const step1Schema = z.object({
@@ -78,7 +78,7 @@ export function CompleteProfile() {
         phone_number: formData.phoneNumber,
         date_of_birth: formData.dateOfBirth,
         town: formData.town,
-        language: formData.language || "fr",
+        language: formData.language || "Français",
         university: formData.university,
         faculty: formData.faculty,
         study_year: formData.studyYear,
@@ -157,7 +157,7 @@ export function CompleteProfile() {
                 </div>
                 <div>
                   <Label>Langue</Label>
-                  <Input value={formData.language} onChange={e => handleInput("language", e.target.value)} placeholder="fr" />
+                  <Input value={formData.language} onChange={e => handleInput("language", e.target.value)} placeholder="Français" />
                 </div>
               </div>
               <div className="flex justify-end pt-4">
@@ -247,10 +247,14 @@ export function CompleteProfile() {
               {/* Compétences */}
               <div>
                 <Label>Compétences</Label>
-                <div className="flex gap-2 mt-1">
-                  <Input placeholder="Ajouter..." value={newSkill} onChange={e => setNewSkill(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); if (newSkill.trim()) { setFormData(p => ({ ...p, skills: [...p.skills, newSkill.trim()] })); setNewSkill(""); } } }} />
-                  <Button type="button" variant="outline" onClick={() => { if (newSkill.trim()) { setFormData(p => ({ ...p, skills: [...p.skills, newSkill.trim()] })); setNewSkill(""); } }}>+</Button>
-                </div>
+                <SkillsCombobox
+                  onSkillAdd={(skill) => {
+                    if (!formData.skills.includes(skill)) {
+                      setFormData(p => ({ ...p, skills: [...p.skills, skill] }));
+                    }
+                  }}
+                  className="mt-1"
+                />
                 <div className="flex flex-wrap gap-2 mt-2">
                   {formData.skills.map((s, i) => <Badge key={i} variant="secondary" className="cursor-pointer" onClick={() => setFormData(p => ({ ...p, skills: p.skills.filter((_, j) => j !== i) }))}>{s} ×</Badge>)}
                 </div>
@@ -259,10 +263,14 @@ export function CompleteProfile() {
               {/* Intérêts */}
               <div>
                 <Label>Centres d'intérêt</Label>
-                <div className="flex gap-2 mt-1">
-                  <Input placeholder="Ajouter..." value={newInterest} onChange={e => setNewInterest(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); if (newInterest.trim()) { setFormData(p => ({ ...p, interests: [...p.interests, newInterest.trim()] })); setNewInterest(""); } } }} />
-                  <Button type="button" variant="outline" onClick={() => { if (newInterest.trim()) { setFormData(p => ({ ...p, interests: [...p.interests, newInterest.trim()] })); setNewInterest(""); } }}>+</Button>
-                </div>
+                <InterestsCombobox
+                  onInterestAdd={(interest) => {
+                    if (!formData.interests.includes(interest)) {
+                      setFormData(p => ({ ...p, interests: [...p.interests, interest] }));
+                    }
+                  }}
+                  className="mt-1"
+                />
                 <div className="flex flex-wrap gap-2 mt-2">
                   {formData.interests.map((s, i) => <Badge key={i} variant="outline" className="cursor-pointer" onClick={() => setFormData(p => ({ ...p, interests: p.interests.filter((_, j) => j !== i) }))}>{s} ×</Badge>)}
                 </div>

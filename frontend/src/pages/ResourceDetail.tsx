@@ -502,10 +502,6 @@ export function ResourceDetail() {
                 <Download className="h-4 w-4" />
                 {resource.stats.downloads}
               </span>
-              <span className="flex items-center gap-1 text-primary">
-                <Zap className="h-4 w-4" />
-                {resource.impactScore}
-              </span>
               <span className="flex items-center gap-1">
                 <Eye className="h-4 w-4" />
                 {resource.stats.views}
@@ -620,10 +616,6 @@ export function ResourceDetail() {
                   )}
                   Signaler
                 </Button>
-                <Badge className="flex items-center gap-1 rounded-lg px-3 py-2 h-10 text-sm bg-secondary/20 text-secondary">
-                  <Zap className="h-4 w-4" />
-                  <span>{resource.impactScore}</span>
-                </Badge>
               </div>
             </div>
           </CardContent>
