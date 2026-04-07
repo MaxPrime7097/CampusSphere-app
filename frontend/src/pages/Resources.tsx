@@ -444,9 +444,18 @@ export function Resources() {
                   className={cardClasses}
                   onClick={() => navigate(`/resources/${resource.id}`)}
                 >
-                  <CardContent className="p-0">
-                    <div className="h-24 rounded-t-lg bg-input flex items-center justify-center mb-0">
-                      <FileText className="h-12 w-12 text-muted-foreground" />
+<CardContent className="p-0">
+                  <div className="h-24 rounded-t-lg bg-input flex items-center justify-center mb-0">
+                    <FileText className="h-12 w-12 text-muted-foreground" />
+                  </div>
+                  <div className="px-2 py-2">
+                    <h3 className="flex-1 font-semibold text-sm line-clamp-2 mb-2">
+                      {resource.title}
+                    </h3>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+                      <p className="text-left">
+                        Par {resource.authorName || "Utilisateur"}
+                      </p>
                     </div>
                     <div className="px-2 py-2">
                       <h3 className="flex-1 font-semibold text-sm line-clamp-2 mb-2">
@@ -456,10 +465,7 @@ export function Resources() {
                         <p className="text-left">
                           Par {resource.authorName || "Utilisateur"}
                         </p>
-                        <span className="flex items-center gap-1 text-primary">
-                          <Zap className="h-3 w-3" />
-                          {resource.impactScore || 0}
-                        </span>
+                        
                       </div>
                       <div className="mb-2 flex flex-wrap gap-1">
                         <Badge variant="outline" className="text-xs">
@@ -539,10 +545,7 @@ export function Resources() {
                       <p className="text-left">
                         Par {resource.authorName || "Utilisateur"}
                       </p>
-                      <span className="flex items-center gap-1 text-primary">
-                        <Zap className="h-3 w-3" />
-                        {resource.impactScore || 0}
-                      </span>
+                      
                     </div>
                     <div className="mb-2 flex flex-wrap gap-1">
                       <Badge variant="outline" className="text-xs">
@@ -618,10 +621,7 @@ export function Resources() {
                       <p className="text-left">
                         Par {resource.authorName || "Utilisateur"}
                       </p>
-                      <span className="flex items-center gap-1 text-primary">
-                        <Zap className="h-3 w-3" />
-                        {resource.impactScore || 0}
-                      </span>
+                      
                     </div>
                     <div className="mb-2 flex flex-wrap gap-1">
                       <Badge variant="outline" className="text-xs">

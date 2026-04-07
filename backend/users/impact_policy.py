@@ -13,16 +13,8 @@ from django.db.models import F
 # Event fired when a user uploads a new learning resource.
 RESOURCE_UPLOADED = "resource.uploaded"
 
-# Event fired when a user creates a new post.
-POST_CREATED = "post.created"
-
-# Event fired when a user creates a comment on a post.
-COMMENT_CREATED = "comment.created"
-
 IMPACT_POINTS = {
     RESOURCE_UPLOADED: 5,
-    POST_CREATED: 5,
-    COMMENT_CREATED: 3,
 }
 
 
