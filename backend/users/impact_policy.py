@@ -2,19 +2,23 @@
 
 This module is the single source of truth for impact-score event names
 and point values used across backend endpoints.
-
-Active events:
-- RESOURCE_UPLOADED (+5) : upload d'une ressource
-- POST_IMPACT_RATED     : notation d'un post (points dynamiques via apply_impact_points)
 """
 
 from django.db.models import F
 
-# Event fired when a user uploads a new learning resource.
+# Event names.
+POST_CREATED = "post.created"
+COMMENT_CREATED = "comment.created"
 RESOURCE_UPLOADED = "resource.uploaded"
+RESOURCE_DOWNLOADED = "resource.downloaded"
+TASK_COMPLETED = "task.completed"
 
+# Static event points. TASK_COMPLETED intentionally uses dynamic points.
 IMPACT_POINTS = {
-    RESOURCE_UPLOADED: 5,
+    POST_CREATED: 10,
+    COMMENT_CREATED: 2,
+    RESOURCE_UPLOADED: 3,
+    RESOURCE_DOWNLOADED: 1,
 }
 
 
