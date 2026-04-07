@@ -420,7 +420,7 @@ export function Spheres() {
                 </div>
               ) : (
               <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-                {(loadingSpheres ? Array.from({ length: 4 }).map((_, i) => ({ id: `skeleton-${i}`, name: "", category: "", memberCount: 0, color: "from-muted to-muted", requireApproval: false })) : getSortedSpheres()).map((sphere) => (
+                {(loadingSpheres ? Array.from({ length: 4 }).map((_, i) => ({ id: `skeleton-${i}`, name: "", category: "", memberCount: 0, color: "from-primary/20 to-accent/20", requireApproval: false })) : getSortedSpheres()).map((sphere) => (
                   <Card key={sphere.id} className={cardClasses} onClick={() => navigate(`/spheres/${sphere.id}`)}>
                     <CardContent className="p-0">
                       <div className={`aspect-video bg-gradient-to-br ${sphere.color || "from-primary/20 to-accent/20"} rounded-t-lg flex items-center justify-center text-white font-bold text-2xl`}>
@@ -488,7 +488,7 @@ export function Spheres() {
                   return (
                   <Card key={sphere.id} className={cardClasses}>
                     <CardHeader className="pb-3">
-                      <div className={`h-16 w-16 rounded-full bg-gradient-to-br ${sphere.color || "from-primary/20 to-accent/20"} mx-auto mb-2 flex items-center justify-center text-white font-bold text-xl`}>{sphere.name.charAt(0)}</div>
+                      <div className={`h-16 w-16 rounded-full bg-gradient-to-br ${sphere.color || "from-primary/20 to-accent/20"} mx-auto mb-2 flex items-center justify-center text-white font-bold text-xl`}>{sphere.name?.charAt(0) || ""}</div>
                       <CardTitle className="text-sm text-center line-clamp-1">{sphere.name}</CardTitle>
                       <p className="text-xs text-muted-foreground text-center">{sphere.memberCount} membres</p>
                     </CardHeader>
@@ -497,7 +497,7 @@ export function Spheres() {
                         <div className="space-y-1 mb-3">
                           <div className="flex justify-between text-xs"><span className="text-muted-foreground">Progression</span><span className="font-semibold">{progressionValue}%</span></div>
                           <div className="w-full bg-muted rounded-full h-1.5">
-                            <div className={`h-1.5 rounded-full bg-gradient-to-r ${sphere.color} progress-bar`} style={{ '--progress-width': `${progressionValue}%` } as React.CSSProperties} />
+                            <div className={`h-1.5 rounded-full bg-gradient-to-r ${sphere.color || "from-primary/20 to-accent/20"} progress-bar`} style={{ '--progress-width': `${progressionValue}%` } as React.CSSProperties} />
                           </div>
                         </div>
                       )}
@@ -542,8 +542,8 @@ export function Spheres() {
                         <Card key={sphere.id} className={cardClasses} onClick={() => navigate(`/spheres/${sphere.id}`)}>
                           <CardContent className="p-4">
                             <div className="flex items-center gap-3">
-                              <div className={`w-8 h-8 rounded-full bg-gradient-to-r ${sphere.color} flex items-center justify-center text-white font-bold text-sm`}>#{index + 1}</div>
-                              <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${sphere.color || "from-primary/20 to-accent/20"} flex items-center justify-center text-white font-bold`}>{sphere.name.charAt(0)}</div>
+                              <div className={`w-8 h-8 rounded-full bg-gradient-to-r ${sphere.color || "from-primary/20 to-accent/20"} flex items-center justify-center text-white font-bold text-sm`}>#{index + 1}</div>
+                              <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${sphere.color || "from-primary/20 to-accent/20"} flex items-center justify-center text-white font-bold`}>{sphere.name?.charAt(0) || ""}</div>
                               <div className="flex-1">
                                 <p className="font-semibold">{sphere.name}</p>
                                 <p className="text-xs text-muted-foreground flex items-center gap-1"><Users className="h-3 w-3" />{sphere.memberCount} membres</p>
