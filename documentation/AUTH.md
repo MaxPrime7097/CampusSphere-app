@@ -70,7 +70,7 @@ OAuth :
 
 ## Endpoint d'échange de token
 
-### POST /api/users/auth/supabase/exchange-token/
+### POST /api/auth/supabase/exchange/
 
 **Body** :
 ```json
@@ -95,7 +95,7 @@ OAuth :
 
 ## Endpoint de complétion de profil
 
-### POST /api/users/auth/supabase/complete-profile/
+### POST /api/auth/supabase/complete-profile/
 
 **Authentification** : Bearer token Django requis
 
@@ -144,11 +144,19 @@ Dans **Authentication → URL Configuration** :
 ```
 Site URL: http://localhost:5173 (dev) / https://votre-domaine.com (prod)
 
-Redirect URLs:
+Redirect URLs (minimum recommandé):
   http://localhost:5173/register
   http://localhost:5173/auth/callback
+  http://127.0.0.1:5173/register
+  http://127.0.0.1:5173/auth/callback
   https://votre-domaine.com/register
   https://votre-domaine.com/auth/callback
+  https://www.votre-domaine.com/register
+  https://www.votre-domaine.com/auth/callback
+
+Notes:
+- Le paramètre `?verified=true` est ajouté côté frontend, donc l'URL `/register` suffit dans Supabase (la query string est conservée au retour).
+- Le `redirectTo` utilisé dans le code est toujours basé sur `window.location.origin`, donc il faut whitelister toutes les variantes d'origine réellement utilisées (localhost, 127.0.0.1, domaine, www).
 ```
 
 ## Champ is_profile_complete
