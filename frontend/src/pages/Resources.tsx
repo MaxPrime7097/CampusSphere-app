@@ -120,11 +120,11 @@ export function Resources() {
   }, []);
 
   const subjects = [
-    { value: "all", label: "Toutes matiÃ¨res" },
-    { value: "math", label: "MathÃ©matiques" },
+    { value: "all", label: "Toutes matières" },
+    { value: "math", label: "Mathématiques" },
     { value: "cs", label: "Informatique" },
     { value: "physics", label: "Physique" },
-    { value: "economics", label: "Ã‰conomie" },
+    { value: "economics", label: "Économie" },
     { value: "language", label: "Langues" },
   ];
 
@@ -202,10 +202,10 @@ export function Resources() {
       );
 
       toast({
-        title: saved ? "Ressource sauvegardÃ©e !" : "Ressource retirÃ©e",
+        title: saved ? "Ressource sauvegardée !" : "Ressource retirée",
         description: saved
-          ? "Cette ressource a Ã©tÃ© ajoutÃ©e Ã  vos sauvegardes"
-          : "Cette ressource a Ã©tÃ© retirÃ©e de vos sauvegardes",
+          ? "Cette ressource a été ajoutée à vos sauvegardes"
+          : "Cette ressource a été retirée de vos sauvegardes",
         duration: 2000,
       });
     } catch (error: any) {
@@ -246,14 +246,14 @@ export function Resources() {
       );
 
       toast({
-        title: "TÃ©lÃ©chargement dÃ©marrÃ© !",
-        description: "Votre fichier va Ãªtre tÃ©lÃ©chargÃ© dans quelques instants",
+        title: "Téléchargement démarré !",
+        description: "Votre fichier va être téléchargé dans quelques instants",
         duration: 3000,
       });
     } catch (error: any) {
       toast({
         title: "Erreur",
-        description: error?.message || "Impossible de tÃ©lÃ©charger la ressource",
+        description: error?.message || "Impossible de télécharger la ressource",
         variant: "destructive",
       });
     } finally {
@@ -274,14 +274,14 @@ export function Resources() {
       setResources(mapped);
 
       toast({
-        title: "Ressources actualisÃ©es",
-        description: "La liste des ressources a Ã©tÃ© mise Ã  jour",
+        title: "Ressources actualisées",
+        description: "La liste des ressources a été mise à jour",
         duration: 2000,
       });
     } catch (error: any) {
       toast({
         title: "Erreur",
-        description: error?.message || "Impossible de rafraÃ®chir les ressources",
+        description: error?.message || "Impossible de rafraichir les ressources",
         variant: "destructive",
       });
     } finally {
@@ -318,10 +318,10 @@ export function Resources() {
         <div className="flex flex-col px-4 sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 campus-animate-fade-in px-0">
           <div>
             <h1 className="text-3xl font-bold bg-clip-text text-muted-foreground">
-              Ressources Ã‰tudiantes
+              Ressources Étudiantes
             </h1>
             <p className="text-sm md:text-base text-muted-foreground mt-1">
-              Partagez et accÃ©dez aux ressources partagÃ©es par la communautÃ©
+              Partagez et accédez aux ressources partagées par la communautés
             </p>
           </div>
           <div className="flex gap-2">
@@ -433,23 +433,160 @@ export function Resources() {
         </div>
 
         {/* ======= CONTENT ======= */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {getSortedResources().map((resource) => (
-            <Card
-              key={resource.id}
-              className={cardClasses}
-              onClick={() => navigate(`/resources/${resource.id}`)}
-            >
-              <CardContent className="p-0">
-                <div className="h-24 rounded-t-lg bg-input flex items-center justify-center mb-0">
-                  <FileText className="h-12 w-12 text-muted-foreground" />
-                </div>
-                <div className="px-2 py-2">
-                  <h3 className="flex-1 font-semibold text-sm line-clamp-2 mb-2">
-                    {resource.title}
-                  </h3>
-                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-                    <p className="text-left">Par {resource.authorName || "Utilisateur"}</p>
+        {resolvedResourceSort === "all" && (
+          <>
+
+            {/* Resources Grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {getSortedResources().map((resource) => (
+                <Card
+                  key={resource.id}
+                  className={cardClasses}
+                  onClick={() => navigate(`/resources/${resource.id}`)}
+                >
+                  <CardContent className="p-0">
+                    <div className="h-24 rounded-t-lg bg-input flex items-center justify-center mb-0">
+                      <FileText className="h-12 w-12 text-muted-foreground" />
+                    </div>
+                    <div className="px-2 py-2">
+                      <h3 className="flex-1 font-semibold text-sm line-clamp-2 mb-2">
+                        {resource.title}
+                      </h3>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+                        <p className="text-left">
+                          Par {resource.authorName || "Utilisateur"}
+                        </p>
+                      </div>
+                      <div className="mb-2 flex flex-wrap gap-1">
+                        <Badge variant="outline" className="text-xs">
+                          {getTypeLabel(resource.type)}
+                        </Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          {getSubjectLabel(resource.subject)}
+                        </Badge>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mb-2">
+                        Taille: {formatFileSize(resource.fileSize)}
+                      </p>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 flex-1 text-xs gap-1"
+                          onClick={(e) => handlePreview(e, resource.id)}
+                        >
+                          <Eye className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className={`h-7 flex-1 text-xs gap-1 ${
+                            savedResources.has(resource.id)
+                              ? "text-blue-500 hover:text-blue-600"
+                              : ""
+                          }`}
+                          onClick={(e) => handleSave(e, resource.id)}
+                        >
+                          <Bookmark
+                            className={`h-3 w-3 ${
+                              savedResources.has(resource.id) ? "fill-current" : ""
+                            }`}
+                          />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="default"
+                          className="h-7 flex-1 text-xs gap-1 campus-gradient text-white"
+                          onClick={(e) => handleDownload(e, resource.id)}
+                          disabled={downloadingIds.has(resource.id)}
+                        >
+                          {downloadingIds.has(resource.id) ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Download className="h-3 w-3" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </>
+        )}
+
+        {resolvedResourceSort === "suggestions" && (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {getSortedResources().map((resource) => (
+              <Card
+                key={resource.id}
+                className={cardClasses}
+                onClick={() => navigate(`/resources/${resource.id}`)}
+              >
+                <CardContent className="p-0">
+                  <div className="h-24 rounded-t-lg bg-input flex items-center justify-center mb-0">
+                    <FileText className="h-12 w-12 text-muted-foreground" />
+                  </div>
+                  <div className="px-2 py-2">
+                    <h3 className="flex-1 font-semibold text-sm line-clamp-2 mb-2">
+                      {resource.title}
+                    </h3>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+                      <p className="text-left">
+                        Par {resource.authorName || "Utilisateur"}
+                      </p>
+                      <span className="flex items-center gap-1 text-primary">
+                        <Zap className="h-3 w-3" />
+                        {resource.impactScore || 0}
+                      </span>
+                    </div>
+                    <div className="mb-2 flex flex-wrap gap-1">
+                      <Badge variant="outline" className="text-xs">
+                        {getTypeLabel(resource.type)}
+                      </Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        {getSubjectLabel(resource.subject)}
+                      </Badge>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 flex-1 text-xs gap-1"
+                        onClick={(e) => handlePreview(e, resource.id)}
+                      >
+                        <Eye className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className={`h-7 flex-1 text-xs gap-1 ${
+                          savedResources.has(resource.id)
+                            ? "text-blue-500 hover:text-blue-600"
+                            : ""
+                        }`}
+                        onClick={(e) => handleSave(e, resource.id)}
+                      >
+                        <Bookmark
+                          className={`h-3 w-3 ${
+                            savedResources.has(resource.id) ? "fill-current" : ""
+                          }`}
+                        />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="h-7 flex-1 text-xs gap-1 campus-gradient text-white"
+                        onClick={(e) => handleDownload(e, resource.id)}
+                        disabled={downloadingIds.has(resource.id)}
+                      >
+                        {downloadingIds.has(resource.id) ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Download className="h-3 w-3" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
                   <div className="mb-2 flex flex-wrap gap-1">
                     <Badge variant="outline" className="text-xs">
@@ -459,31 +596,43 @@ export function Resources() {
                       {getSubjectLabel(resource.subject)}
                     </Badge>
                   </div>
-                  <p className="text-[11px] text-muted-foreground mb-2">
-                    Taille: {formatFileSize(resource.fileSize)}
-                  </p>
-                  <div className="flex gap-1">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 flex-1 text-xs gap-1"
-                      onClick={(e) => handlePreview(e, resource.id)}
-                    >
-                      <Eye className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className={`h-7 flex-1 text-xs gap-1 ${
-                        savedResources.has(resource.id)
-                          ? "text-blue-500 hover:text-blue-600"
-                          : ""
-                      }`}
-                      onClick={(e) => handleSave(e, resource.id)}
-                    >
-                      <Bookmark
-                        className={`h-3 w-3 ${
-                          savedResources.has(resource.id) ? "fill-current" : ""
+                  <div className="px-2 py-2">
+                    <h3 className="flex-1 font-semibold text-sm line-clamp-2 mb-2">
+                      {resource.title}
+                    </h3>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+                      <p className="text-left">
+                        Par {resource.authorName || "Utilisateur"}
+                      </p>
+                      <span className="flex items-center gap-1 text-primary">
+                        <Zap className="h-3 w-3" />
+                        {resource.impactScore || 0}
+                      </span>
+                    </div>
+                    <div className="mb-2 flex flex-wrap gap-1">
+                      <Badge variant="outline" className="text-xs">
+                        {getTypeLabel(resource.type)}
+                      </Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        {getSubjectLabel(resource.subject)}
+                      </Badge>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 flex-1 text-xs gap-1"
+                        onClick={(e) => handlePreview(e, resource.id)}
+                      >
+                        <Eye className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className={`h-7 flex-1 text-xs gap-1 ${
+                          savedResources.has(resource.id)
+                            ? "text-blue-500 hover:text-blue-600"
+                            : ""
                         }`}
                       />
                     </Button>
@@ -510,9 +659,9 @@ export function Resources() {
         {filteredResources.length === 0 && (
           <div className="text-center py-12">
             <FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Aucune ressource trouvÃ©e</h3>
+            <h3 className="text-lg font-semibold mb-2">Aucune ressource trouvée</h3>
             <p className="text-muted-foreground mb-6">
-              Soyez le premier Ã  partager une ressource dans cette catÃ©gorie !
+              Soyez le premier a partager une ressource dans cette catégorie !
             </p>
             <UploadResourceModal onResourceUploaded={handleResourceUploaded}>
               <Button className="campus-gradient text-white hover:opacity-90">

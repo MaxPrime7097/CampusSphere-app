@@ -6,19 +6,23 @@ and point values used across backend endpoints.
 
 from django.db.models import F
 
-# Event names.
+# Event fired when a user publishes a new post.
 POST_CREATED = "post.created"
+# Event fired when a user publishes a new comment (including replies).
 COMMENT_CREATED = "comment.created"
+# Event fired when a user uploads a new learning resource.
 RESOURCE_UPLOADED = "resource.uploaded"
+# Event fired when a user downloads a resource shared by someone else.
 RESOURCE_DOWNLOADED = "resource.downloaded"
+# Event fired when a user completes a task and receives its impact points.
 TASK_COMPLETED = "task.completed"
 
 # Static event points. TASK_COMPLETED intentionally uses dynamic points.
 IMPACT_POINTS = {
-    POST_CREATED: 10,
-    COMMENT_CREATED: 2,
-    RESOURCE_UPLOADED: 3,
-    RESOURCE_DOWNLOADED: 1,
+    POST_CREATED: 1,
+    COMMENT_CREATED: 0,
+    RESOURCE_UPLOADED: 5,
+    RESOURCE_DOWNLOADED: 0,
 }
 
 
