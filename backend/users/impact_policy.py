@@ -17,6 +17,7 @@ RESOURCE_DOWNLOADED = "resource.downloaded"
 # Event fired when a user completes a task and receives its impact points.
 TASK_COMPLETED = "task.completed"
 
+# Static event points. TASK_COMPLETED intentionally uses dynamic points.
 IMPACT_POINTS = {
     POST_CREATED: 1,
     COMMENT_CREATED: 0,

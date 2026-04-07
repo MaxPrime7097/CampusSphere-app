@@ -629,23 +629,17 @@ class SupabaseTokenExchangeView(APIView):
                 }
             )
             
-            # Déterminer si le profil doit être complété
-            needs_completion = False
-            
-            if created:
-                # Nouvel utilisateur : vérifier s'il vient d'OAuth ou d'inscription email
-                # Si c'est OAuth (pas de mot de passe), il faut compléter le profil
-                # Si c'est inscription email, l'utilisateur va continuer sur Register
-                is_oauth = not supabase_user.user_metadata.get('email_verified_at') or len(supabase_user.identities or []) > 1
-                needs_completion = is_oauth
-            else:
-                # Utilisateur existant : vérifier si le profil est complet
-                required_fields = ['username', 'university', 'faculty', 'study_year', 'student_id']
-                is_complete = all(getattr(user, field, None) for field in required_fields)
-                if user.is_profile_complete != is_complete:
-                    user.is_profile_complete = is_complete
-                    user.save(update_fields=['is_profile_complete'])
-                needs_completion = not is_complete
+            # Déterminer si le profil doit être complété.
+            # Important: this must be data-driven (required fields), not provider-driven,
+            # otherwise OAuth users can be redirected to home before finishing onboarding.
+            required_fields = ['username', 'university', 'faculty', 'study_year', 'student_id']
+            is_complete = all(getattr(user, field, None) for field in required_fields)
+
+            if user.is_profile_complete != is_complete:
+                user.is_profile_complete = is_complete
+                user.save(update_fields=['is_profile_complete'])
+
+            needs_completion = not is_complete
             
             # Générer les tokens JWT Django
             refresh = RefreshToken.for_user(user)
