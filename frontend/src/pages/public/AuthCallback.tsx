@@ -30,12 +30,15 @@ export function AuthCallback() {
 
         if (!isMounted) return;
 
-        // Vérifier si le profil doit être complété
-        if (response?.data?.needs_profile_completion) {
-          // Pour les nouveaux utilisateurs ou profils incomplets
+        // Vérifier si le profil doit être complété.
+        // Fallback on user.is_profile_complete for backward compatibility.
+        const needsProfileCompletion =
+          response?.data?.needs_profile_completion ??
+          !Boolean(response?.data?.user?.is_profile_complete);
+
+        if (needsProfileCompletion) {
           navigate("/complete-profile", { replace: true });
         } else {
-          // Utilisateur existant avec profil complet
           toast({ title: "Connexion réussie !", duration: 2000 });
           navigate("/", { replace: true });
         }
