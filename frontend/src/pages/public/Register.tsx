@@ -27,6 +27,33 @@ import Sphere3D from "@/components/layout/Sphere3D";
 
 // Étapes : 1=infos perso, "verify"=attente email, 2=académique, 3=compétences
 type Step = 1 | "verify" | 2 | 3;
+const MINIMUM_AGE = 16;
+
+const parseISODate = (value: string) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const [year, month, day] = value.split("-").map(Number);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  const isExactMatch =
+    parsed.getUTCFullYear() === year &&
+    parsed.getUTCMonth() === month - 1 &&
+    parsed.getUTCDate() === day;
+  return isExactMatch ? parsed : null;
+};
+
+const getAgeFromDate = (birthDate: Date, today: Date) => {
+  let age = today.getUTCFullYear() - birthDate.getUTCFullYear();
+  const hasHadBirthdayThisYear =
+    today.getUTCMonth() > birthDate.getUTCMonth() ||
+    (today.getUTCMonth() === birthDate.getUTCMonth() && today.getUTCDate() >= birthDate.getUTCDate());
+  if (!hasHadBirthdayThisYear) age -= 1;
+  return age;
+};
+
+const getBirthDateMax = () => {
+  const now = new Date();
+  const maxDate = new Date(Date.UTC(now.getUTCFullYear() - MINIMUM_AGE, now.getUTCMonth(), now.getUTCDate()));
+  return maxDate.toISOString().split("T")[0];
+};
 
 export function Register() {
   const navigate = useNavigate();
@@ -120,13 +147,30 @@ export function Register() {
     return () => subscription.unsubscribe();
   }, [step, navigate, toast]);
 
+  const minimumAgeMessage = `Vous devez avoir au moins ${MINIMUM_AGE} ans`;
   const step1Schema = z.object({
     firstName: z.string().min(2, "Au moins 2 caractères"),
     lastName: z.string().min(2, "Au moins 2 caractères"),
     username: z.string().min(3, "Au moins 3 caractères"),
     email: z.string().email("Email invalide"),
     phoneNumber: z.string().optional(),
-    dateOfBirth: z.string().min(1, "Requis"),
+    dateOfBirth: z.string()
+      .min(1, "Requis")
+      .refine((value) => parseISODate(value) !== null, "Date de naissance invalide")
+      .refine((value) => {
+        const birthDate = parseISODate(value);
+        if (!birthDate) return false;
+        const today = new Date();
+        const todayUtc = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+        return birthDate <= todayUtc;
+      }, "La date de naissance ne peut pas être dans le futur")
+      .refine((value) => {
+        const birthDate = parseISODate(value);
+        if (!birthDate) return false;
+        const today = new Date();
+        const todayUtc = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+        return getAgeFromDate(birthDate, todayUtc) >= MINIMUM_AGE;
+      }, minimumAgeMessage),
     password: z.string()
       .min(8, "Le mot de passe doit contenir au moins 8 caractères")
       .regex(/[a-z]/, "Le mot de passe doit contenir au moins une lettre minuscule")
@@ -318,7 +362,7 @@ export function Register() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="min-w-0">
                   <Label>Date de naissance *</Label>
-                  <Input type="date" value={formData.dateOfBirth} onChange={e => handleInputChange("dateOfBirth", e.target.value)} className={`w-full min-w-0 ${errors.dateOfBirth ? "border-destructive" : ""}`} />
+                  <Input type="date" max={getBirthDateMax()} value={formData.dateOfBirth} onChange={e => handleInputChange("dateOfBirth", e.target.value)} className={`w-full min-w-0 ${errors.dateOfBirth ? "border-destructive" : ""}`} />
                   {errors.dateOfBirth && <p className="text-xs text-destructive mt-1">{errors.dateOfBirth}</p>}
                 </div>
                 <div className="min-w-0">
