@@ -4,6 +4,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.utils import timezone
 import re
 from .models import User, Connection, UserBlock
 
@@ -22,6 +23,7 @@ class SupabaseProfileCompletionSerializer(serializers.ModelSerializer):
     STUDENT_ID_HAS_LETTER_REGEX = re.compile(r"[A-Za-z]")
     STUDENT_ID_HAS_DIGIT_REGEX = re.compile(r"\d")
     PHONE_REGEX = re.compile(r"^\+?[0-9][0-9\s().-]{6,29}$")
+    MINIMUM_AGE = 16
     
     class Meta:
         model = User
@@ -54,6 +56,19 @@ class SupabaseProfileCompletionSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Le numéro de téléphone ne peut pas dépasser 30 caractères")
         if not self.PHONE_REGEX.match(value):
             raise serializers.ValidationError("Format de numéro de téléphone invalide")
+        return value
+
+    def validate_date_of_birth(self, value):
+        if value is None:
+            return value
+
+        today = timezone.now().date()
+        if value > today:
+            raise serializers.ValidationError("La date de naissance ne peut pas être dans le futur.")
+
+        age = today.year - value.year - ((today.month, today.day) < (value.month, value.day))
+        if age < self.MINIMUM_AGE:
+            raise serializers.ValidationError(f"Vous devez avoir au moins {self.MINIMUM_AGE} ans.")
         return value
 
     def validate_language(self, value):

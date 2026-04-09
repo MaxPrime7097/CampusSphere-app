@@ -22,6 +22,27 @@ import { InterestsCombobox } from "@/components/forms/InterestsCombobox";
 import Sphere3D from "@/components/layout/Sphere3D";
 
 type Step = 1 | 2 | 3;
+const MINIMUM_AGE = 16;
+
+const parseISODate = (value: string) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const [year, month, day] = value.split("-").map(Number);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  const isExactMatch =
+    parsed.getUTCFullYear() === year &&
+    parsed.getUTCMonth() === month - 1 &&
+    parsed.getUTCDate() === day;
+  return isExactMatch ? parsed : null;
+};
+
+const getAgeFromDate = (birthDate: Date, today: Date) => {
+  let age = today.getUTCFullYear() - birthDate.getUTCFullYear();
+  const hasHadBirthdayThisYear =
+    today.getUTCMonth() > birthDate.getUTCMonth() ||
+    (today.getUTCMonth() === birthDate.getUTCMonth() && today.getUTCDate() >= birthDate.getUTCDate());
+  if (!hasHadBirthdayThisYear) age -= 1;
+  return age;
+};
 
 export function CompleteProfile() {
   const navigate = useNavigate();
@@ -43,10 +64,27 @@ export function CompleteProfile() {
 
   const [newLink, setNewLink] = useState({ name: "", url: "" });
 
+  const minimumAgeMessage = `Vous devez avoir au moins ${MINIMUM_AGE} ans`;
   const step1Schema = z.object({
     username: z.string().min(3, "Au moins 3 caractères"),
     phoneNumber: z.string().optional(),
-    dateOfBirth: z.string().min(1, "Requis"),
+    dateOfBirth: z.string()
+      .min(1, "Requis")
+      .refine((value) => parseISODate(value) !== null, "Date de naissance invalide")
+      .refine((value) => {
+        const birthDate = parseISODate(value);
+        if (!birthDate) return false;
+        const today = new Date();
+        const todayUtc = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+        return birthDate <= todayUtc;
+      }, "La date de naissance ne peut pas être dans le futur")
+      .refine((value) => {
+        const birthDate = parseISODate(value);
+        if (!birthDate) return false;
+        const today = new Date();
+        const todayUtc = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+        return getAgeFromDate(birthDate, todayUtc) >= MINIMUM_AGE;
+      }, minimumAgeMessage),
     password: z.string().optional(),
     confirmPassword: z.string().optional(),
   }).superRefine((data, ctx) => {
