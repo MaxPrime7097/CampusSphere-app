@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
-import { exchangeSupabaseToken, getUserProfile } from "@/services/api";
+import { exchangeSupabaseToken, getCurrentUser } from "@/services/api";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -13,7 +13,11 @@ const REQUIRED_PROFILE_FIELDS = [
   "student_id",
 ] as const;
 
-const isFieldFilled = (value: unknown) => typeof value === "string" && value.trim().length > 0;
+const isFieldFilled = (value: unknown) => {
+  if (typeof value === "string") return value.trim().length > 0;
+  if (typeof value === "number") return Number.isFinite(value);
+  return false;
+};
 
 const hasCompleteProfile = (profile: Record<string, unknown> | null | undefined) => {
   if (!profile) return false;
@@ -70,7 +74,7 @@ export function AuthCallback() {
             destination: shouldCompleteProfile ? "/complete-profile" : "/",
           });
         } else {
-          const profile = await getUserProfile();
+          const profile = await getCurrentUser();
           shouldCompleteProfile = !hasCompleteProfile(profile as Record<string, unknown>);
           debugRoutingDecision({
             source: "fallback_profile_check",
