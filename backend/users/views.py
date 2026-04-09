@@ -20,13 +20,71 @@ from .serializers import (
     UserSearchSerializer, ChangePasswordSerializer, ChangeEmailSerializer,
     LogoutSerializer, DeleteAccountSerializer, PrivacySettingsSerializer, PasswordResetSerializer,
     DataExportRequestSerializer, BlockListItemSerializer, BlockCreateSerializer,
-    SupabaseProfileCompletionSerializer
+    SupabaseProfileCompletionSerializer, normalize_email_for_lookup, normalize_username_for_lookup
 )
 from campus_sphere.cache import CacheManager, CacheKeys
 from notifications.services import create_connection_request_notification
 from .throttles import AuthScopedRateThrottle
 
 logger = logging.getLogger(__name__)
+
+
+class CheckAvailabilityView(APIView):
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [AuthScopedRateThrottle]
+
+    def _get_payload(self, request):
+        if request.method == "GET":
+            return request.query_params
+        return request.data
+
+    def _build_response(self, email_raw, username_raw):
+        normalized_email = normalize_email_for_lookup(email_raw)
+        normalized_username = normalize_username_for_lookup(username_raw)
+
+        email_available = True
+        username_available = True
+
+        if normalized_email:
+            email_available = not User.objects.filter(email__iexact=normalized_email).exists()
+        if normalized_username:
+            username_available = not User.objects.filter(username__iexact=normalized_username).exists()
+
+        field_messages = {}
+        if normalized_email and not email_available:
+            field_messages["email"] = "Cet email est déjà utilisé"
+        if normalized_username and not username_available:
+            field_messages["username"] = "Ce nom d'utilisateur est déjà pris"
+
+        return {
+            "success": True,
+            "data": {
+                "email": {
+                    "value": normalized_email,
+                    "available": email_available,
+                },
+                "username": {
+                    "value": normalized_username,
+                    "available": username_available,
+                },
+            },
+            "field_messages": field_messages,
+        }
+
+    def get(self, request):
+        payload = self._get_payload(request)
+        return Response(self._build_response(payload.get("email"), payload.get("username")))
+
+    def post(self, request):
+        payload = self._get_payload(request)
+        return Response(self._build_response(payload.get("email"), payload.get("username")))
+
+
+def _are_accepted_connections(user_a, user_b):
+    return Connection.objects.filter(
+        models.Q(requester=user_a, recipient=user_b) | models.Q(requester=user_b, recipient=user_a),
+        status='accepted'
+    ).exists()
 
 
 def _can_view_sensitive_profile_fields(request_user, target_user):
@@ -625,11 +683,15 @@ class SupabaseTokenExchangeView(APIView):
             supabase_user = user_response.user
             
             # Chercher ou créer l'utilisateur Django
+            supabase_email = normalize_email_for_lookup(supabase_user.email)
+            default_username = normalize_username_for_lookup(
+                supabase_user.user_metadata.get('username') or (supabase_email.split('@')[0] if supabase_email else '')
+            )
             user, created = User.objects.get_or_create(
                 supabase_uid=supabase_user.id,
                 defaults={
-                    'email': supabase_user.email,
-                    'username': supabase_user.email.split('@')[0],  # Temporaire
+                    'email': supabase_email,
+                    'username': default_username,  # Temporaire
                     'first_name': supabase_user.user_metadata.get('first_name', ''),
                     'last_name': supabase_user.user_metadata.get('last_name', ''),
                     'is_profile_complete': False,
