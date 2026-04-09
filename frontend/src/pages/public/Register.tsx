@@ -53,6 +53,30 @@ export function Register() {
 
   const [newLink, setNewLink] = useState({ name: "", url: "" });
 
+  const getPasswordStrength = (password: string) => {
+    if (!password) return { score: 0, label: "Faible", color: "text-muted-foreground" };
+
+    let score = 0;
+    if (password.length >= 8) score += 35;
+    else if (password.length >= 6) score += 20;
+    else score += 10;
+
+    if (/[a-z]/.test(password)) score += 15;
+    if (/[A-Z]/.test(password)) score += 15;
+    if (/\d/.test(password)) score += 15;
+    if (/[^A-Za-z0-9]/.test(password)) score += 20;
+
+    const cappedScore = Math.min(score, 100);
+
+    if (cappedScore >= 75) return { score: cappedScore, label: "Fort", color: "text-emerald-600" };
+    if (cappedScore >= 45) return { score: cappedScore, label: "Moyen", color: "text-amber-600" };
+    return { score: cappedScore, label: "Faible", color: "text-red-500" };
+  };
+
+  const passwordStrength = getPasswordStrength(formData.password);
+  const passwordsMatch = !!formData.password && !!formData.confirmPassword && formData.password === formData.confirmPassword;
+  const hasConfirmInput = formData.confirmPassword.length > 0;
+
   // Vérifier si l'utilisateur revient après vérification email
   useEffect(() => {
     const verified = searchParams.get('verified');
@@ -311,6 +335,13 @@ export function Register() {
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
                   </div>
+                  <div className="mt-2 space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Force du mot de passe</span>
+                      <span className={`font-medium ${passwordStrength.color}`}>{passwordStrength.label}</span>
+                    </div>
+                    <Progress value={passwordStrength.score} className="h-1.5" />
+                  </div>
                   {errors.password && <p className="text-xs text-destructive mt-1">{errors.password}</p>}
                 </div>
                 <div>
@@ -321,6 +352,12 @@ export function Register() {
                       {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
                   </div>
+                  {hasConfirmInput && (
+                    <p className={`mt-1 flex items-center gap-1 text-xs ${passwordsMatch ? "text-emerald-600" : "text-red-500"}`}>
+                      {passwordsMatch ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+                      {passwordsMatch ? "Les mots de passe correspondent" : "Les mots de passe ne correspondent pas"}
+                    </p>
+                  )}
                   {errors.confirmPassword && <p className="text-xs text-destructive mt-1">{errors.confirmPassword}</p>}
                 </div>
               </div>
