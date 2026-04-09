@@ -53,6 +53,30 @@ export function Register() {
 
   const [newLink, setNewLink] = useState({ name: "", url: "" });
 
+  const getPasswordStrength = (password: string) => {
+    if (!password) return { score: 0, label: "Faible", color: "text-muted-foreground" };
+
+    let score = 0;
+    if (password.length >= 8) score += 35;
+    else if (password.length >= 6) score += 20;
+    else score += 10;
+
+    if (/[a-z]/.test(password)) score += 15;
+    if (/[A-Z]/.test(password)) score += 15;
+    if (/\d/.test(password)) score += 15;
+    if (/[^A-Za-z0-9]/.test(password)) score += 20;
+
+    const cappedScore = Math.min(score, 100);
+
+    if (cappedScore >= 75) return { score: cappedScore, label: "Fort", color: "text-emerald-600" };
+    if (cappedScore >= 45) return { score: cappedScore, label: "Moyen", color: "text-amber-600" };
+    return { score: cappedScore, label: "Faible", color: "text-red-500" };
+  };
+
+  const passwordStrength = getPasswordStrength(formData.password);
+  const passwordsMatch = !!formData.password && !!formData.confirmPassword && formData.password === formData.confirmPassword;
+  const hasConfirmInput = formData.confirmPassword.length > 0;
+
   // Vérifier si l'utilisateur revient après vérification email
   useEffect(() => {
     const verified = searchParams.get('verified');
@@ -103,8 +127,13 @@ export function Register() {
     email: z.string().email("Email invalide"),
     phoneNumber: z.string().optional(),
     dateOfBirth: z.string().min(1, "Requis"),
-    password: z.string().trim().min(6, "Au moins 6 caractères"),
-    confirmPassword: z.string().trim(),
+    password: z.string()
+      .min(8, "Le mot de passe doit contenir au moins 8 caractères")
+      .regex(/[a-z]/, "Le mot de passe doit contenir au moins une lettre minuscule")
+      .regex(/[A-Z]/, "Le mot de passe doit contenir au moins une lettre majuscule")
+      .regex(/[0-9]/, "Le mot de passe doit contenir au moins un chiffre")
+      .regex(/[^A-Za-z0-9]/, "Le mot de passe doit contenir au moins un symbole"),
+    confirmPassword: z.string(),
   }).refine(d => d.password === d.confirmPassword, {
     message: "Les mots de passe ne correspondent pas",
     path: ["confirmPassword"],
@@ -262,67 +291,80 @@ export function Register() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="min-w-0">
                   <Label>Nom *</Label>
-                  <Input maxLength={REGISTRATION_MAX_LENGTHS.firstName} value={formData.firstName} onChange={e => handleInputChange("firstName", e.target.value)} className={errors.firstName ? "border-destructive" : ""} />
+                  <Input maxLength={REGISTRATION_MAX_LENGTHS.firstName} value={formData.firstName} onChange={e => handleInputChange("firstName", e.target.value)} className={`w-full min-w-0 ${errors.firstName ? "border-destructive" : ""}`} />
                   {errors.firstName && <p className="text-xs text-destructive mt-1">{errors.firstName}</p>}
                 </div>
-                <div>
+                <div className="min-w-0">
                   <Label>Prénom *</Label>
-                  <Input maxLength={REGISTRATION_MAX_LENGTHS.lastName} value={formData.lastName} onChange={e => handleInputChange("lastName", e.target.value)} className={errors.lastName ? "border-destructive" : ""} />
+                  <Input maxLength={REGISTRATION_MAX_LENGTHS.lastName} value={formData.lastName} onChange={e => handleInputChange("lastName", e.target.value)} className={`w-full min-w-0 ${errors.lastName ? "border-destructive" : ""}`} />
                   {errors.lastName && <p className="text-xs text-destructive mt-1">{errors.lastName}</p>}
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="min-w-0">
                   <Label>Nom d'utilisateur *</Label>
-                  <Input maxLength={REGISTRATION_MAX_LENGTHS.username} value={formData.username} onChange={e => handleInputChange("username", e.target.value)} className={errors.username ? "border-destructive" : ""} />
+                  <Input maxLength={REGISTRATION_MAX_LENGTHS.username} value={formData.username} onChange={e => handleInputChange("username", e.target.value)} className={`w-full min-w-0 ${errors.username ? "border-destructive" : ""}`} />
                   {errors.username && <p className="text-xs text-destructive mt-1">{errors.username}</p>}
                 </div>
-                <div>
+                <div className="min-w-0">
                   <Label>Email *</Label>
-                  <Input maxLength={REGISTRATION_MAX_LENGTHS.email} type="email" value={formData.email} onChange={e => handleInputChange("email", e.target.value)} className={errors.email ? "border-destructive" : ""} />
+                  <Input maxLength={REGISTRATION_MAX_LENGTHS.email} type="email" value={formData.email} onChange={e => handleInputChange("email", e.target.value)} className={`w-full min-w-0 ${errors.email ? "border-destructive" : ""}`} />
                   {errors.email && <p className="text-xs text-destructive mt-1">{errors.email}</p>}
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="min-w-0">
                   <Label>Date de naissance *</Label>
-                  <Input type="date" value={formData.dateOfBirth} onChange={e => handleInputChange("dateOfBirth", e.target.value)} className={errors.dateOfBirth ? "border-destructive" : ""} />
+                  <Input type="date" value={formData.dateOfBirth} onChange={e => handleInputChange("dateOfBirth", e.target.value)} className={`w-full min-w-0 ${errors.dateOfBirth ? "border-destructive" : ""}`} />
                   {errors.dateOfBirth && <p className="text-xs text-destructive mt-1">{errors.dateOfBirth}</p>}
                 </div>
-                <div>
+                <div className="min-w-0">
                   <Label>Téléphone</Label>
-                  <div className="flex">
+                  <div className="flex min-w-0 w-full">
                     <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-sm text-muted-foreground">+237</span>
-                    <Input maxLength={REGISTRATION_MAX_LENGTHS.phoneNumber} value={formData.phoneNumber} onChange={e => handleInputChange("phoneNumber", e.target.value)} className={`rounded-l-none ${errors.phoneNumber ? "border-destructive" : ""}`} placeholder="6XXXXXXXX" />
+                    <Input maxLength={REGISTRATION_MAX_LENGTHS.phoneNumber} value={formData.phoneNumber} onChange={e => handleInputChange("phoneNumber", e.target.value)} className={`w-full min-w-0 rounded-l-none ${errors.phoneNumber ? "border-destructive" : ""}`} placeholder="6XXXXXXXX" />
                   </div>
                   {errors.phoneNumber && <p className="text-xs text-destructive mt-1">{errors.phoneNumber}</p>}
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="min-w-0">
                   <Label>Mot de passe *</Label>
                   <div className="relative">
-                    <Input maxLength={REGISTRATION_MAX_LENGTHS.password} type={showPassword ? "text" : "password"} value={formData.password} onChange={e => handleInputChange("password", e.target.value)} className={`pr-10 ${errors.password ? "border-destructive" : ""}`} />
+                    <Input maxLength={REGISTRATION_MAX_LENGTHS.password} type={showPassword ? "text" : "password"} value={formData.password} onChange={e => handleInputChange("password", e.target.value)} className={`w-full min-w-0 pr-10 ${errors.password ? "border-destructive" : ""}`} />
                     <Button type="button" variant="ghost" size="sm" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0" onClick={() => setShowPassword(!showPassword)}>
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
                   </div>
+                  <div className="mt-2 space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Force du mot de passe</span>
+                      <span className={`font-medium ${passwordStrength.color}`}>{passwordStrength.label}</span>
+                    </div>
+                    <Progress value={passwordStrength.score} className="h-1.5" />
+                  </div>
                   {errors.password && <p className="text-xs text-destructive mt-1">{errors.password}</p>}
                 </div>
-                <div>
+                <div className="min-w-0">
                   <Label>Confirmer *</Label>
                   <div className="relative">
-                    <Input maxLength={REGISTRATION_MAX_LENGTHS.password} type={showConfirmPassword ? "text" : "password"} value={formData.confirmPassword} onChange={e => handleInputChange("confirmPassword", e.target.value)} className={`pr-10 ${errors.confirmPassword ? "border-destructive" : ""}`} />
+                    <Input maxLength={REGISTRATION_MAX_LENGTHS.password} type={showConfirmPassword ? "text" : "password"} value={formData.confirmPassword} onChange={e => handleInputChange("confirmPassword", e.target.value)} className={`w-full min-w-0 pr-10 ${errors.confirmPassword ? "border-destructive" : ""}`} />
                     <Button type="button" variant="ghost" size="sm" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
                       {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
                   </div>
+                  {hasConfirmInput && (
+                    <p className={`mt-1 flex items-center gap-1 text-xs ${passwordsMatch ? "text-emerald-600" : "text-red-500"}`}>
+                      {passwordsMatch ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+                      {passwordsMatch ? "Les mots de passe correspondent" : "Les mots de passe ne correspondent pas"}
+                    </p>
+                  )}
                   {errors.confirmPassword && <p className="text-xs text-destructive mt-1">{errors.confirmPassword}</p>}
                 </div>
               </div>
@@ -374,7 +416,7 @@ export function Register() {
                 <UniversityCombobox value={formData.university} onValueChange={v => handleInputChange("university", v)} className="mt-2" />
                 {errors.university && <p className="text-xs text-red-500 mt-1">{errors.university}</p>}
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label>Filière *</Label>
                   <FacultyCombobox value={formData.faculty} onValueChange={v => handleInputChange("faculty", v)} className="mt-2" />
@@ -492,9 +534,9 @@ export function Register() {
               {/* Portfolio */}
               <div>
                 <Label>Portfolio / Liens</Label>
-                <div className="flex gap-2 mt-2">
-                  <Input maxLength={REGISTRATION_MAX_LENGTHS.portfolioName} placeholder="Nom (ex: GitHub)" value={newLink.name} onChange={e => setNewLink(p => ({ ...p, name: e.target.value }))} className="w-1/3" />
-                  <Input maxLength={REGISTRATION_MAX_LENGTHS.portfolioUrl} placeholder="URL" value={newLink.url} onChange={e => setNewLink(p => ({ ...p, url: e.target.value }))} />
+                <div className="flex gap-2 mt-2 min-w-0 w-full">
+                  <Input maxLength={REGISTRATION_MAX_LENGTHS.portfolioName} placeholder="Nom (ex: GitHub)" value={newLink.name} onChange={e => setNewLink(p => ({ ...p, name: e.target.value }))} className="w-1/3 min-w-0" />
+                  <Input maxLength={REGISTRATION_MAX_LENGTHS.portfolioUrl} placeholder="URL" value={newLink.url} onChange={e => setNewLink(p => ({ ...p, url: e.target.value }))} className="w-full min-w-0" />
                   <Button type="button" variant="outline" onClick={() => { if (newLink.name.trim() && newLink.url.trim()) { setFormData(p => ({ ...p, portfolioLinks: [...p.portfolioLinks, { name: newLink.name.trim(), url: newLink.url.trim() }] })); setNewLink({ name: "", url: "" }); } }}>+</Button>
                 </div>
                 {errors.portfolioLinks && <p className="text-xs text-red-500 mt-1">{errors.portfolioLinks}</p>}
