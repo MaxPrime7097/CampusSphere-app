@@ -127,7 +127,12 @@ export function Register() {
     email: z.string().email("Email invalide"),
     phoneNumber: z.string().optional(),
     dateOfBirth: z.string().min(1, "Requis"),
-    password: z.string().min(6, "Au moins 6 caractères"),
+    password: z.string()
+      .min(8, "Le mot de passe doit contenir au moins 8 caractères")
+      .regex(/[a-z]/, "Le mot de passe doit contenir au moins une lettre minuscule")
+      .regex(/[A-Z]/, "Le mot de passe doit contenir au moins une lettre majuscule")
+      .regex(/[0-9]/, "Le mot de passe doit contenir au moins un chiffre")
+      .regex(/[^A-Za-z0-9]/, "Le mot de passe doit contenir au moins un symbole"),
     confirmPassword: z.string(),
   }).refine(d => d.password === d.confirmPassword, {
     message: "Les mots de passe ne correspondent pas",
