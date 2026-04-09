@@ -168,6 +168,36 @@ class PasswordResetView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+class CheckAvailabilityView(APIView):
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [AuthScopedRateThrottle]
+
+    def post(self, request):
+        username = (request.data.get("username") or "").strip()
+        email = (request.data.get("email") or "").strip().lower()
+
+        response_data = {}
+        if username:
+            response_data["username_available"] = not User.objects.filter(
+                username__iexact=username
+            ).exists()
+        if email:
+            response_data["email_available"] = not User.objects.filter(
+                email__iexact=email
+            ).exists()
+
+        if not response_data:
+            return Response(
+                {
+                    "success": False,
+                    "error": "Provide username and/or email to check availability.",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response({"success": True, "data": response_data}, status=status.HTTP_200_OK)
+
+
 class UserProfileView(generics.RetrieveUpdateAPIView):
     serializer_class = UserProfileSerializer
     permission_classes = [permissions.IsAuthenticated]

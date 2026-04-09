@@ -41,6 +41,7 @@ class AuthTests(APITestCase):
         self.register_url = reverse('users:register')
         self.login_url = reverse('users:login')
         self.password_reset_url = reverse('users:password-reset')
+        self.check_availability_url = reverse('users:check-availability')
         self.me_url = reverse('users:current-user')
 
         self.user_data = {
@@ -121,6 +122,22 @@ class AuthTests(APITestCase):
         }
         response = self.client.post(self.login_url, login_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_check_availability_endpoint(self):
+        User.objects.create_user(
+            email='taken@example.com',
+            username='takenusername',
+            password='password123',
+            is_profile_complete=True,
+        )
+        response = self.client.post(
+            self.check_availability_url,
+            {'email': 'taken@example.com', 'username': 'takenusername'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data['data']['email_available'])
+        self.assertFalse(response.data['data']['username_available'])
 
     def test_get_current_user_profile(self):
         """Test getting current user profile"""
