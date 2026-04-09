@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Check, Loader2, Plus, X, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input, REGISTRATION_MAX_LENGTHS } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -146,7 +146,7 @@ export function CompleteProfile() {
               <CardTitle>Informations de base</CardTitle>
               <div>
                 <Label>Nom d'utilisateur *</Label>
-                <Input value={formData.username} onChange={e => handleInput("username", e.target.value)} placeholder="ex: john_doe" className={errors.username ? "border-destructive" : ""} />
+                <Input maxLength={REGISTRATION_MAX_LENGTHS.username} value={formData.username} onChange={e => handleInput("username", e.target.value)} placeholder="ex: john_doe" className={errors.username ? "border-destructive" : ""} />
                 {errors.username && <p className="text-xs text-destructive mt-1">{errors.username}</p>}
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -159,7 +159,7 @@ export function CompleteProfile() {
                   <Label>Téléphone</Label>
                   <div className="flex">
                     <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-sm text-muted-foreground">+237</span>
-                    <Input value={formData.phoneNumber} onChange={e => handleInput("phoneNumber", e.target.value)} className={`rounded-l-none ${errors.phoneNumber ? "border-destructive" : ""}`} placeholder="6XXXXXXXX" />
+                    <Input maxLength={REGISTRATION_MAX_LENGTHS.phoneNumber} value={formData.phoneNumber} onChange={e => handleInput("phoneNumber", e.target.value)} className={`rounded-l-none ${errors.phoneNumber ? "border-destructive" : ""}`} placeholder="6XXXXXXXX" />
                   </div>
                   {errors.phoneNumber && <p className="text-xs text-destructive mt-1">{errors.phoneNumber}</p>}
                 </div>
@@ -167,13 +167,11 @@ export function CompleteProfile() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Ville</Label>
-                  <Input value={formData.town} onChange={e => handleInput("town", e.target.value)} />
-                  {errors.town && <p className="text-xs text-destructive mt-1">{errors.town}</p>}
+                  <Input maxLength={REGISTRATION_MAX_LENGTHS.town} value={formData.town} onChange={e => handleInput("town", e.target.value)} />
                 </div>
                 <div>
                   <Label>Langue</Label>
-                  <Input value={formData.language} onChange={e => handleInput("language", e.target.value)} placeholder="Français" />
-                  {errors.language && <p className="text-xs text-destructive mt-1">{errors.language}</p>}
+                  <Input maxLength={REGISTRATION_MAX_LENGTHS.language} value={formData.language} onChange={e => handleInput("language", e.target.value)} placeholder="Français" />
                 </div>
               </div>
               <div className="flex justify-end pt-4">
@@ -207,13 +205,12 @@ export function CompleteProfile() {
               </div>
               <div>
                 <Label>Matricule *</Label>
-                <Input value={formData.studentId} onChange={e => handleInput("studentId", e.target.value)} className={errors.studentId ? "border-destructive" : ""} />
+                <Input maxLength={REGISTRATION_MAX_LENGTHS.studentId} value={formData.studentId} onChange={e => handleInput("studentId", e.target.value)} className={errors.studentId ? "border-destructive" : ""} />
                 {errors.studentId && <p className="text-xs text-red-500 mt-1">{errors.studentId}</p>}
               </div>
               <div>
                 <Label>Campus</Label>
-                <Input value={formData.campus} onChange={e => handleInput("campus", e.target.value)} placeholder="Si plusieurs campus" />
-                {errors.campus && <p className="text-xs text-red-500 mt-1">{errors.campus}</p>}
+                <Input maxLength={REGISTRATION_MAX_LENGTHS.campus} value={formData.campus} onChange={e => handleInput("campus", e.target.value)} placeholder="Si plusieurs campus" />
               </div>
               <div className="flex justify-between pt-4">
                 <Button variant="outline" onClick={() => setStep(1)}><ChevronLeft className="mr-2 h-4 w-4" />Précédent</Button>
@@ -238,8 +235,11 @@ export function CompleteProfile() {
                   </AddEducationModal>
                 </div>
                 {formData.previousEducation.map((edu, i) => (
-                  <div key={i} className="flex justify-between items-center border-l-2 border-primary/50 pl-3 py-1 mb-1 bg-muted/50 rounded-r">
-                    <div><p className="text-sm font-medium">{edu.degree}</p><p className="text-xs text-muted-foreground">{edu.school} · {edu.year}</p></div>
+                  <div key={i} className="flex justify-between items-center gap-2 border-l-2 border-primary/50 pl-3 py-1 mb-1 bg-muted/50 rounded-r">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap">{edu.degree}</p>
+                      <p className="text-xs text-muted-foreground break-words">{edu.school} · {edu.year}</p>
+                    </div>
                     <Button variant="ghost" size="sm" onClick={() => setFormData(p => ({ ...p, previousEducation: p.previousEducation.filter((_, j) => j !== i) }))}><X className="h-4 w-4" /></Button>
                   </div>
                 ))}
@@ -255,8 +255,11 @@ export function CompleteProfile() {
                   </AddExperienceModal>
                 </div>
                 {formData.experiences.map((exp, i) => (
-                  <div key={i} className="flex justify-between items-center border-l-2 border-primary/50 pl-3 py-1 mb-1 bg-muted/50 rounded-r">
-                    <div><p className="text-sm font-medium">{exp.title}</p><p className="text-xs text-muted-foreground">{exp.company} · {exp.duration}</p></div>
+                  <div key={i} className="flex justify-between items-center gap-2 border-l-2 border-primary/50 pl-3 py-1 mb-1 bg-muted/50 rounded-r">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap">{exp.title}</p>
+                      <p className="text-xs text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap">{exp.company} · {exp.duration}</p>
+                    </div>
                     <Button variant="ghost" size="sm" onClick={() => setFormData(p => ({ ...p, experiences: p.experiences.filter((_, j) => j !== i) }))}><X className="h-4 w-4" /></Button>
                   </div>
                 ))}
@@ -299,14 +302,17 @@ export function CompleteProfile() {
               <div>
                 <Label>Portfolio / Liens</Label>
                 <div className="flex gap-2 mt-1">
-                  <Input placeholder="Nom" value={newLink.name} onChange={e => setNewLink(p => ({ ...p, name: e.target.value }))} className="w-1/3" />
-                  <Input placeholder="URL" value={newLink.url} onChange={e => setNewLink(p => ({ ...p, url: e.target.value }))} />
+                  <Input maxLength={REGISTRATION_MAX_LENGTHS.portfolioName} placeholder="Nom" value={newLink.name} onChange={e => setNewLink(p => ({ ...p, name: e.target.value }))} className="w-1/3" />
+                  <Input maxLength={REGISTRATION_MAX_LENGTHS.portfolioUrl} placeholder="URL" value={newLink.url} onChange={e => setNewLink(p => ({ ...p, url: e.target.value }))} />
                   <Button type="button" variant="outline" onClick={() => { if (newLink.name && newLink.url) { setFormData(p => ({ ...p, portfolioLinks: [...p.portfolioLinks, newLink] })); setNewLink({ name: "", url: "" }); } }}>+</Button>
                 </div>
                 {errors.portfolioLinks && <p className="text-xs text-red-500 mt-1">{errors.portfolioLinks}</p>}
                 {formData.portfolioLinks.map((l, i) => (
-                  <div key={i} className="flex justify-between items-center p-2 border rounded mt-1 bg-muted/50">
-                    <div><p className="text-sm font-medium">{l.name}</p><p className="text-xs text-muted-foreground">{l.url}</p></div>
+                  <div key={i} className="flex justify-between items-center gap-2 p-2 border rounded mt-1 bg-muted/50">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap">{l.name}</p>
+                      <p className="text-xs text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap" title={l.url}>{l.url}</p>
+                    </div>
                     <Button variant="ghost" size="sm" onClick={() => setFormData(p => ({ ...p, portfolioLinks: p.portfolioLinks.filter((_, j) => j !== i) }))}><X className="h-4 w-4" /></Button>
                   </div>
                 ))}
