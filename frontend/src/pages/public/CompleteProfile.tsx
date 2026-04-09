@@ -146,32 +146,32 @@ export function CompleteProfile() {
               <CardTitle>Informations de base</CardTitle>
               <div>
                 <Label>Nom d'utilisateur *</Label>
-                <Input maxLength={REGISTRATION_MAX_LENGTHS.username} value={formData.username} onChange={e => handleInput("username", e.target.value)} placeholder="ex: john_doe" className={errors.username ? "border-destructive" : ""} />
+                <Input maxLength={REGISTRATION_MAX_LENGTHS.username} value={formData.username} onChange={e => handleInput("username", e.target.value)} placeholder="ex: john_doe" className={`w-full min-w-0 ${errors.username ? "border-destructive" : ""}`} />
                 {errors.username && <p className="text-xs text-destructive mt-1">{errors.username}</p>}
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="min-w-0">
                   <Label>Date de naissance *</Label>
-                  <Input type="date" value={formData.dateOfBirth} onChange={e => handleInput("dateOfBirth", e.target.value)} className={errors.dateOfBirth ? "border-destructive" : ""} />
+                  <Input type="date" value={formData.dateOfBirth} onChange={e => handleInput("dateOfBirth", e.target.value)} className={`w-full min-w-0 ${errors.dateOfBirth ? "border-destructive" : ""}`} />
                   {errors.dateOfBirth && <p className="text-xs text-destructive mt-1">{errors.dateOfBirth}</p>}
                 </div>
-                <div>
+                <div className="min-w-0">
                   <Label>Téléphone</Label>
-                  <div className="flex">
+                  <div className="flex min-w-0 w-full">
                     <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-sm text-muted-foreground">+237</span>
-                    <Input maxLength={REGISTRATION_MAX_LENGTHS.phoneNumber} value={formData.phoneNumber} onChange={e => handleInput("phoneNumber", e.target.value)} className={`rounded-l-none ${errors.phoneNumber ? "border-destructive" : ""}`} placeholder="6XXXXXXXX" />
+                    <Input maxLength={REGISTRATION_MAX_LENGTHS.phoneNumber} value={formData.phoneNumber} onChange={e => handleInput("phoneNumber", e.target.value)} className={`w-full min-w-0 rounded-l-none ${errors.phoneNumber ? "border-destructive" : ""}`} placeholder="6XXXXXXXX" />
                   </div>
                   {errors.phoneNumber && <p className="text-xs text-destructive mt-1">{errors.phoneNumber}</p>}
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="min-w-0">
                   <Label>Ville</Label>
-                  <Input maxLength={REGISTRATION_MAX_LENGTHS.town} value={formData.town} onChange={e => handleInput("town", e.target.value)} />
+                  <Input maxLength={REGISTRATION_MAX_LENGTHS.town} value={formData.town} onChange={e => handleInput("town", e.target.value)} className="w-full min-w-0" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <Label>Langue</Label>
-                  <Input maxLength={REGISTRATION_MAX_LENGTHS.language} value={formData.language} onChange={e => handleInput("language", e.target.value)} placeholder="Français" />
+                  <Input maxLength={REGISTRATION_MAX_LENGTHS.language} value={formData.language} onChange={e => handleInput("language", e.target.value)} placeholder="Français" className="w-full min-w-0" />
                 </div>
               </div>
               <div className="flex justify-end pt-4">
@@ -191,13 +191,13 @@ export function CompleteProfile() {
                 <UniversityCombobox value={formData.university} onValueChange={v => handleInput("university", v)} className="mt-2" />
                 {errors.university && <p className="text-xs text-red-500 mt-1">{errors.university}</p>}
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="min-w-0">
                   <Label>Filière *</Label>
                   <FacultyCombobox value={formData.faculty} onValueChange={v => handleInput("faculty", v)} className="mt-2" />
                   {errors.faculty && <p className="text-xs text-red-500 mt-1">{errors.faculty}</p>}
                 </div>
-                <div>
+                <div className="min-w-0">
                   <Label>Niveau *</Label>
                   <StudyLevelCombobox value={formData.studyYear} onValueChange={v => handleInput("studyYear", v)} className="mt-2" />
                   {errors.studyYear && <p className="text-xs text-red-500 mt-1">{errors.studyYear}</p>}
@@ -301,9 +301,9 @@ export function CompleteProfile() {
               {/* Portfolio */}
               <div>
                 <Label>Portfolio / Liens</Label>
-                <div className="flex gap-2 mt-1">
-                  <Input maxLength={REGISTRATION_MAX_LENGTHS.portfolioName} placeholder="Nom" value={newLink.name} onChange={e => setNewLink(p => ({ ...p, name: e.target.value }))} className="w-1/3" />
-                  <Input maxLength={REGISTRATION_MAX_LENGTHS.portfolioUrl} placeholder="URL" value={newLink.url} onChange={e => setNewLink(p => ({ ...p, url: e.target.value }))} />
+                <div className="flex gap-2 mt-1 min-w-0 w-full">
+                  <Input maxLength={REGISTRATION_MAX_LENGTHS.portfolioName} placeholder="Nom" value={newLink.name} onChange={e => setNewLink(p => ({ ...p, name: e.target.value }))} className="w-1/3 min-w-0" />
+                  <Input maxLength={REGISTRATION_MAX_LENGTHS.portfolioUrl} placeholder="URL" value={newLink.url} onChange={e => setNewLink(p => ({ ...p, url: e.target.value }))} className="w-full min-w-0" />
                   <Button type="button" variant="outline" onClick={() => { if (newLink.name && newLink.url) { setFormData(p => ({ ...p, portfolioLinks: [...p.portfolioLinks, newLink] })); setNewLink({ name: "", url: "" }); } }}>+</Button>
                 </div>
                 {errors.portfolioLinks && <p className="text-xs text-red-500 mt-1">{errors.portfolioLinks}</p>}
