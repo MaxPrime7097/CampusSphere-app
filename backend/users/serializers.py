@@ -4,8 +4,17 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.utils import timezone
 import re
 from .models import User, Connection, UserBlock
+
+
+def normalize_email_for_lookup(value):
+    return (value or "").strip().lower()
+
+
+def normalize_username_for_lookup(value):
+    return (value or "").strip()
 
 
 class SupabaseProfileCompletionSerializer(serializers.ModelSerializer):
@@ -23,6 +32,7 @@ class SupabaseProfileCompletionSerializer(serializers.ModelSerializer):
     STUDENT_ID_HAS_DIGIT_REGEX = re.compile(r"\d")
     STUDENT_ID_WHITESPACE_REGEX = re.compile(r"\s")
     PHONE_REGEX = re.compile(r"^\+?[0-9][0-9\s().-]{6,29}$")
+    MINIMUM_AGE = 16
     
     class Meta:
         model = User
@@ -33,7 +43,7 @@ class SupabaseProfileCompletionSerializer(serializers.ModelSerializer):
         ]
     
     def validate_username(self, value):
-        value = value.strip()
+        value = normalize_username_for_lookup(value)
         if not (3 <= len(value) <= 50):
             raise serializers.ValidationError("Le nom d'utilisateur doit contenir entre 3 et 50 caractères")
         if not self.USERNAME_REGEX.match(value):
@@ -55,6 +65,19 @@ class SupabaseProfileCompletionSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Le numéro de téléphone ne peut pas dépasser 30 caractères")
         if not self.PHONE_REGEX.match(value):
             raise serializers.ValidationError("Format de numéro de téléphone invalide")
+        return value
+
+    def validate_date_of_birth(self, value):
+        if value is None:
+            return value
+
+        today = timezone.now().date()
+        if value > today:
+            raise serializers.ValidationError("La date de naissance ne peut pas être dans le futur.")
+
+        age = today.year - value.year - ((today.month, today.day) < (value.month, value.day))
+        if age < self.MINIMUM_AGE:
+            raise serializers.ValidationError(f"Vous devez avoir au moins {self.MINIMUM_AGE} ans.")
         return value
 
     def validate_language(self, value):
@@ -216,6 +239,18 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Passwords do not match")
         return data
 
+    def validate_email(self, value):
+        normalized = normalize_email_for_lookup(value)
+        if User.objects.filter(email__iexact=normalized).exists():
+            raise serializers.ValidationError("This email is already in use")
+        return normalized
+
+    def validate_username(self, value):
+        normalized = normalize_username_for_lookup(value)
+        if User.objects.filter(username__iexact=normalized).exists():
+            raise serializers.ValidationError("This username is already in use")
+        return normalized
+
     def create(self, validated_data):
         validated_data.pop('confirm_password')
         phone_number = validated_data.pop('phone_number', '')
@@ -252,7 +287,7 @@ class UserLoginSerializer(serializers.Serializer):
     password = serializers.CharField()
 
     def validate(self, data):
-        email = data.get('email')
+        email = normalize_email_for_lookup(data.get('email'))
         password = data.get('password')
 
         if email and password:
@@ -353,6 +388,7 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         ]
 
     def validate_username(self, value):
+        value = normalize_username_for_lookup(value)
         user = self.instance
         if User.objects.exclude(id=user.id).filter(username__iexact=value).exists():
             raise serializers.ValidationError("This username is already in use")
@@ -414,8 +450,8 @@ class ChangeEmailSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         user = self.context['request'].user
-        current_email = attrs.get('current_email', '').strip().lower()
-        new_email = attrs.get('new_email', '').strip().lower()
+        current_email = normalize_email_for_lookup(attrs.get('current_email'))
+        new_email = normalize_email_for_lookup(attrs.get('new_email'))
 
         if current_email != user.email.lower():
             raise serializers.ValidationError({'current_email': 'Current email does not match your account'})

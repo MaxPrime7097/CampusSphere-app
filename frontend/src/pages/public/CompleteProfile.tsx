@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Check, Loader2, Plus, X, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, REGISTRATION_MAX_LENGTHS } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { completeSupabaseProfile } from "@/services/api";
+import { completeSupabaseProfile, checkUserAvailability } from "@/services/api";
 import { completeSupabaseProfilePayloadSchema, mapCompleteProfileErrors } from "@/schemas/completeProfilePayload";
 import { AddEducationModal } from "@/components/modals/AddEducationModal";
 import { AddExperienceModal } from "@/components/modals/AddExperienceModal";
@@ -22,6 +22,27 @@ import { InterestsCombobox } from "@/components/forms/InterestsCombobox";
 import Sphere3D from "@/components/layout/Sphere3D";
 
 type Step = 1 | 2 | 3;
+const MINIMUM_AGE = 16;
+
+const parseISODate = (value: string) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const [year, month, day] = value.split("-").map(Number);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  const isExactMatch =
+    parsed.getUTCFullYear() === year &&
+    parsed.getUTCMonth() === month - 1 &&
+    parsed.getUTCDate() === day;
+  return isExactMatch ? parsed : null;
+};
+
+const getAgeFromDate = (birthDate: Date, today: Date) => {
+  let age = today.getUTCFullYear() - birthDate.getUTCFullYear();
+  const hasHadBirthdayThisYear =
+    today.getUTCMonth() > birthDate.getUTCMonth() ||
+    (today.getUTCMonth() === birthDate.getUTCMonth() && today.getUTCDate() >= birthDate.getUTCDate());
+  if (!hasHadBirthdayThisYear) age -= 1;
+  return age;
+};
 
 export function CompleteProfile() {
   const navigate = useNavigate();
@@ -31,6 +52,7 @@ export function CompleteProfile() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [usernameCheck, setUsernameCheck] = useState({ checking: false, available: true, checkedValue: "" });
 
   const [formData, setFormData] = useState({
     username: "", phoneNumber: "", dateOfBirth: "", password: "", confirmPassword: "", town: "", language: "",
@@ -43,10 +65,27 @@ export function CompleteProfile() {
 
   const [newLink, setNewLink] = useState({ name: "", url: "" });
 
+  const minimumAgeMessage = `Vous devez avoir au moins ${MINIMUM_AGE} ans`;
   const step1Schema = z.object({
-    username: z.string().min(3, "Au moins 3 caractères"),
+    username: z.string().trim().min(3, "Au moins 3 caractères"),
     phoneNumber: z.string().optional(),
-    dateOfBirth: z.string().min(1, "Requis"),
+    dateOfBirth: z.string()
+      .min(1, "Requis")
+      .refine((value) => parseISODate(value) !== null, "Date de naissance invalide")
+      .refine((value) => {
+        const birthDate = parseISODate(value);
+        if (!birthDate) return false;
+        const today = new Date();
+        const todayUtc = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+        return birthDate <= todayUtc;
+      }, "La date de naissance ne peut pas être dans le futur")
+      .refine((value) => {
+        const birthDate = parseISODate(value);
+        if (!birthDate) return false;
+        const today = new Date();
+        const todayUtc = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+        return getAgeFromDate(birthDate, todayUtc) >= MINIMUM_AGE;
+      }, minimumAgeMessage),
     password: z.string().optional(),
     confirmPassword: z.string().optional(),
   }).superRefine((data, ctx) => {
@@ -75,9 +114,33 @@ export function CompleteProfile() {
   });
 
   const handleInput = (field: string, value: string) => {
-    setFormData(p => ({ ...p, [field]: value }));
+    const sensitiveFields = new Set(["username", "email", "phoneNumber"]);
+    const sanitizedValue = sensitiveFields.has(field) ? value.trim() : value;
+    setFormData(p => ({ ...p, [field]: sanitizedValue }));
     if (errors[field]) setErrors(p => ({ ...p, [field]: "" }));
   };
+
+  useEffect(() => {
+    const username = formData.username.trim();
+    if (step !== 1 || username.length < 3) {
+      setUsernameCheck({ checking: false, available: true, checkedValue: "" });
+      return;
+    }
+
+    const timeout = setTimeout(async () => {
+      setUsernameCheck((prev) => ({ ...prev, checking: true }));
+      try {
+        const response = await checkUserAvailability({ username });
+        const isAvailable = response?.data?.username?.available ?? true;
+        setUsernameCheck({ checking: false, available: isAvailable, checkedValue: username });
+        setErrors((prev) => ({ ...prev, username: isAvailable ? "" : "Ce nom d'utilisateur est déjà pris" }));
+      } catch {
+        setUsernameCheck((prev) => ({ ...prev, checking: false }));
+      }
+    }, 400);
+
+    return () => clearTimeout(timeout);
+  }, [formData.username, step]);
 
   const validateAndNext = (schema: z.ZodTypeAny, nextStep: Step) => {
     const v = schema.safeParse(formData);
@@ -85,6 +148,15 @@ export function CompleteProfile() {
       const fe: Record<string, string> = {};
       v.error.errors.forEach(e => { if (e.path[0]) fe[e.path[0] as string] = e.message; });
       setErrors(fe);
+      return;
+    }
+    const normalizedUsername = formData.username.trim();
+    if (
+      step === 1 &&
+      usernameCheck.checkedValue === normalizedUsername &&
+      !usernameCheck.available
+    ) {
+      setErrors((prev) => ({ ...prev, username: "Ce nom d'utilisateur est déjà pris" }));
       return;
     }
     setErrors({});
@@ -191,6 +263,7 @@ export function CompleteProfile() {
               <div>
                 <Label>Nom d'utilisateur *</Label>
                 <Input maxLength={REGISTRATION_MAX_LENGTHS.username} value={formData.username} onChange={e => handleInput("username", e.target.value)} placeholder="ex: john_doe" className={`w-full min-w-0 ${errors.username ? "border-destructive" : ""}`} />
+                {usernameCheck.checking && <p className="text-xs text-muted-foreground mt-1">Vérification du nom d'utilisateur…</p>}
                 {errors.username && <p className="text-xs text-destructive mt-1">{errors.username}</p>}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -266,7 +339,7 @@ export function CompleteProfile() {
                 </div>
               </div>
               <div className="flex justify-end pt-4">
-                <Button onClick={() => validateAndNext(step1Schema, 2)} className="campus-gradient text-white hover:opacity-90">
+                <Button onClick={() => validateAndNext(step1Schema, 2)} disabled={usernameCheck.checking} className="campus-gradient text-white hover:opacity-90">
                   Suivant <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
