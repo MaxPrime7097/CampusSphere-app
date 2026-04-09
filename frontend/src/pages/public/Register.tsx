@@ -149,9 +149,9 @@ export function Register() {
 
   const minimumAgeMessage = `Vous devez avoir au moins ${MINIMUM_AGE} ans`;
   const step1Schema = z.object({
-    firstName: z.string().min(2, "Au moins 2 caractères"),
-    lastName: z.string().min(2, "Au moins 2 caractères"),
-    username: z.string().min(3, "Au moins 3 caractères"),
+    firstName: z.string().trim().min(2, "Au moins 2 caractères"),
+    lastName: z.string().trim().min(2, "Au moins 2 caractères"),
+    username: z.string().trim().min(3, "Au moins 3 caractères"),
     email: z.string().email("Email invalide"),
     phoneNumber: z.string().optional(),
     dateOfBirth: z.string()
@@ -191,7 +191,9 @@ export function Register() {
   });
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    const sensitiveFields = new Set(["username", "email", "phoneNumber"]);
+    const sanitizedValue = sensitiveFields.has(field) ? value.trim() : value;
+    setFormData(prev => ({ ...prev, [field]: sanitizedValue }));
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: "" }));
   };
 

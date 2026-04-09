@@ -66,7 +66,7 @@ export function CompleteProfile() {
 
   const minimumAgeMessage = `Vous devez avoir au moins ${MINIMUM_AGE} ans`;
   const step1Schema = z.object({
-    username: z.string().min(3, "Au moins 3 caractères"),
+    username: z.string().trim().min(3, "Au moins 3 caractères"),
     phoneNumber: z.string().optional(),
     dateOfBirth: z.string()
       .min(1, "Requis")
@@ -113,7 +113,9 @@ export function CompleteProfile() {
   });
 
   const handleInput = (field: string, value: string) => {
-    setFormData(p => ({ ...p, [field]: value }));
+    const sensitiveFields = new Set(["username", "email", "phoneNumber"]);
+    const sanitizedValue = sensitiveFields.has(field) ? value.trim() : value;
+    setFormData(p => ({ ...p, [field]: sanitizedValue }));
     if (errors[field]) setErrors(p => ({ ...p, [field]: "" }));
   };
 
