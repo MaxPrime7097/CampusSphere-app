@@ -13,6 +13,7 @@ urlpatterns = [
     path('auth/change-password/', views.ChangePasswordView.as_view(), name='change-password'),
     path('auth/change-email/', views.ChangeEmailView.as_view(), name='change-email'),
     path('auth/delete-account/', views.DeleteAccountView.as_view(), name='delete-account'),
+    path('check-availability/', views.CheckAvailabilityView.as_view(), name='check-availability'),
     
     # Supabase Auth
     path('auth/supabase/exchange-token/', views.SupabaseTokenExchangeView.as_view(), name='supabase-token-exchange'),

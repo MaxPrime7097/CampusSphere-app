@@ -527,6 +527,20 @@ export async function register(payload: {
   );
 }
 
+export async function checkUserAvailability(payload: { email?: string; username?: string }) {
+  return apiFetch<{
+    success: boolean;
+    data: {
+      email: { value: string; available: boolean };
+      username: { value: string; available: boolean };
+    };
+    field_messages: Record<string, string>;
+  }>("api/users/check-availability/", {
+    method: "POST",
+    body: payload,
+  });
+}
+
 export async function login(payload: { email: string; password: string }) {
   const response = await apiFetch<{ success: boolean; data: { user: any; tokens: { accessToken: string; refreshToken: string } }; message: string }>(
     "api/users/auth/login/",
