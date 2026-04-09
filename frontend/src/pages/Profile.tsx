@@ -367,6 +367,7 @@ export function Profile() {
   const [resourcesAvailable, setResourcesAvailable] = useState(false);
   const [loading, setLoading] = useState(true);
   const [profileLoadError, setProfileLoadError] = useState(false);
+  const [profileUnavailableDueToOnboarding, setProfileUnavailableDueToOnboarding] = useState(false);
 
   // Tab State - NEW (same as Spheres)
   const [activeTab, setActiveTab] = useState("posts");
@@ -410,14 +411,22 @@ export function Profile() {
         if (isMounted && user && isProfilePayloadValid(user)) {
           setTargetUser(user);
           setProfileLoadError(false);
+          setProfileUnavailableDueToOnboarding(false);
         } else if (isMounted) {
           setProfileLoadError(true);
+          setProfileUnavailableDueToOnboarding(false);
         }
       } catch (e: any) {
         // User not found
         console.error('Error loading user:', e);
         if (isMounted) {
+          const rawMessage = String(e?.message || "").toLowerCase();
+          const onboardingRestricted =
+            isApiRequestErrorStatus(e, 403) ||
+            (isApiRequestErrorStatus(e, 404) && rawMessage.includes("onboarding"));
+
           setProfileLoadError(true);
+          setProfileUnavailableDueToOnboarding(onboardingRestricted);
         }
       } finally {
         if (isMounted) setLoading(false);
@@ -902,7 +911,9 @@ export function Profile() {
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                Le profil reçu est invalide ou obsolète. Veuillez recharger la page.
+                {profileUnavailableDueToOnboarding
+                  ? "Ce profil n’est pas encore accessible : l’onboarding de ce compte n’est pas terminé."
+                  : "Le profil reçu est invalide ou obsolète. Veuillez recharger la page."}
               </p>
             </CardContent>
           </Card>
