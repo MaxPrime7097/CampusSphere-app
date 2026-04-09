@@ -59,7 +59,7 @@ class SearchService:
     @staticmethod
     def search_users(query, filters=None, limit=20):
         """Search users with advanced filtering"""
-        queryset = User.objects.all()
+        queryset = User.objects.filter(is_profile_complete=True)
 
         # Text search (basic implementation without PostgreSQL full-text search)
         if query:
