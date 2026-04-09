@@ -53,7 +53,7 @@ export async function supabaseSignOut() {
 }
 
 export async function exchangeSupabaseToken(supabaseAccessToken: string) {
-  const response = await apiFetch<{ success: boolean; data: { tokens: { accessToken: string; refreshToken: string }; user: any; needs_profile_completion?: boolean } }>(
+  const response = await apiFetch<{ success: boolean; data: { tokens: { accessToken: string; refreshToken: string }; user: any; needs_profile_completion?: boolean; is_new_user?: boolean } }>(
     "api/auth/supabase/exchange/",
     { method: "POST", body: { access_token: supabaseAccessToken } }
   );

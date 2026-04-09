@@ -64,8 +64,8 @@ OAuth :
   supabaseSignInWithGoogle/Facebook()
   → /auth/callback
   → exchangeSupabaseToken()
-  → Si profil complet → /
-  → Si profil incomplet → /complete-profile
+  → Si `needs_profile_completion=true` (ou `is_new_user=true`) → /complete-profile
+  → Sinon → /
 ```
 
 ## Endpoint d'échange de token
