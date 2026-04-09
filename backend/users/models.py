@@ -6,13 +6,22 @@ from django.utils import timezone
 
 
 class UserManager(BaseUserManager):
+    @staticmethod
+    def normalize_email_value(email):
+        return (email or "").strip().lower()
+
+    @staticmethod
+    def normalize_username_value(username):
+        return (username or "").strip()
+
     def create_user(self, email, username, first_name, last_name, password=None, **extra_fields):
         if not email:
             raise ValueError('The Email field must be set')
         if not username:
             raise ValueError('The Username field must be set')
 
-        email = self.normalize_email(email)
+        email = self.normalize_email_value(email)
+        username = self.normalize_username_value(username)
         user = self.model(
             email=email,
             username=username,
@@ -202,4 +211,3 @@ class AdminAuditLog(models.Model):
     def __str__(self):
         actor_label = self.actor.username if self.actor else 'unknown'
         return f"{self.action} by {actor_label} on {self.target_type}:{self.target_id}"
-

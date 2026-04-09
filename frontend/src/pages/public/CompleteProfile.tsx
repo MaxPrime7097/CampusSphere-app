@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Check, Loader2, Plus, X, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, REGISTRATION_MAX_LENGTHS } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { completeSupabaseProfile } from "@/services/api";
+import { completeSupabaseProfile, checkUserAvailability } from "@/services/api";
 import { completeSupabaseProfilePayloadSchema, mapCompleteProfileErrors } from "@/schemas/completeProfilePayload";
 import { AddEducationModal } from "@/components/modals/AddEducationModal";
 import { AddExperienceModal } from "@/components/modals/AddExperienceModal";
@@ -52,6 +52,7 @@ export function CompleteProfile() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [usernameCheck, setUsernameCheck] = useState({ checking: false, available: true, checkedValue: "" });
 
   const [formData, setFormData] = useState({
     username: "", phoneNumber: "", dateOfBirth: "", password: "", confirmPassword: "", town: "", language: "",
@@ -119,12 +120,43 @@ export function CompleteProfile() {
     if (errors[field]) setErrors(p => ({ ...p, [field]: "" }));
   };
 
+  useEffect(() => {
+    const username = formData.username.trim();
+    if (step !== 1 || username.length < 3) {
+      setUsernameCheck({ checking: false, available: true, checkedValue: "" });
+      return;
+    }
+
+    const timeout = setTimeout(async () => {
+      setUsernameCheck((prev) => ({ ...prev, checking: true }));
+      try {
+        const response = await checkUserAvailability({ username });
+        const isAvailable = response?.data?.username?.available ?? true;
+        setUsernameCheck({ checking: false, available: isAvailable, checkedValue: username });
+        setErrors((prev) => ({ ...prev, username: isAvailable ? "" : "Ce nom d'utilisateur est déjà pris" }));
+      } catch {
+        setUsernameCheck((prev) => ({ ...prev, checking: false }));
+      }
+    }, 400);
+
+    return () => clearTimeout(timeout);
+  }, [formData.username, step]);
+
   const validateAndNext = (schema: z.ZodTypeAny, nextStep: Step) => {
     const v = schema.safeParse(formData);
     if (!v.success) {
       const fe: Record<string, string> = {};
       v.error.errors.forEach(e => { if (e.path[0]) fe[e.path[0] as string] = e.message; });
       setErrors(fe);
+      return;
+    }
+    const normalizedUsername = formData.username.trim();
+    if (
+      step === 1 &&
+      usernameCheck.checkedValue === normalizedUsername &&
+      !usernameCheck.available
+    ) {
+      setErrors((prev) => ({ ...prev, username: "Ce nom d'utilisateur est déjà pris" }));
       return;
     }
     setErrors({});
@@ -231,6 +263,7 @@ export function CompleteProfile() {
               <div>
                 <Label>Nom d'utilisateur *</Label>
                 <Input maxLength={REGISTRATION_MAX_LENGTHS.username} value={formData.username} onChange={e => handleInput("username", e.target.value)} placeholder="ex: john_doe" className={`w-full min-w-0 ${errors.username ? "border-destructive" : ""}`} />
+                {usernameCheck.checking && <p className="text-xs text-muted-foreground mt-1">Vérification du nom d'utilisateur…</p>}
                 {errors.username && <p className="text-xs text-destructive mt-1">{errors.username}</p>}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -306,7 +339,7 @@ export function CompleteProfile() {
                 </div>
               </div>
               <div className="flex justify-end pt-4">
-                <Button onClick={() => validateAndNext(step1Schema, 2)} className="campus-gradient text-white hover:opacity-90">
+                <Button onClick={() => validateAndNext(step1Schema, 2)} disabled={usernameCheck.checking} className="campus-gradient text-white hover:opacity-90">
                   Suivant <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>

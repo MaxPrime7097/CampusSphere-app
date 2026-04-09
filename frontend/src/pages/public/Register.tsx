@@ -76,6 +76,10 @@ export function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [availability, setAvailability] = useState({
+    email: { checking: false, available: true, checkedValue: "" },
+    username: { checking: false, available: true, checkedValue: "" },
+  });
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const signupLastSubmitAtRef = useRef(0);
   const resendLastSubmitAtRef = useRef(0);
@@ -218,6 +222,50 @@ export function Register() {
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: "" }));
   };
 
+  useEffect(() => {
+    const username = formData.username.trim();
+    if (step !== 1 || username.length < 3) {
+      setAvailability(prev => ({ ...prev, username: { checking: false, available: true, checkedValue: "" } }));
+      return;
+    }
+
+    const timeout = setTimeout(async () => {
+      setAvailability(prev => ({ ...prev, username: { ...prev.username, checking: true } }));
+      try {
+        const response = await checkUserAvailability({ username });
+        const isAvailable = response?.data?.username?.available ?? true;
+        setAvailability(prev => ({ ...prev, username: { checking: false, available: isAvailable, checkedValue: username } }));
+        setErrors(prev => ({ ...prev, username: isAvailable ? "" : "Ce nom d'utilisateur est déjà pris" }));
+      } catch {
+        setAvailability(prev => ({ ...prev, username: { ...prev.username, checking: false } }));
+      }
+    }, 400);
+
+    return () => clearTimeout(timeout);
+  }, [formData.username, step]);
+
+  useEffect(() => {
+    const email = formData.email.trim().toLowerCase();
+    if (step !== 1 || !email || !z.string().email().safeParse(email).success) {
+      setAvailability(prev => ({ ...prev, email: { checking: false, available: true, checkedValue: "" } }));
+      return;
+    }
+
+    const timeout = setTimeout(async () => {
+      setAvailability(prev => ({ ...prev, email: { ...prev.email, checking: true } }));
+      try {
+        const response = await checkUserAvailability({ email });
+        const isAvailable = response?.data?.email?.available ?? true;
+        setAvailability(prev => ({ ...prev, email: { checking: false, available: isAvailable, checkedValue: email } }));
+        setErrors(prev => ({ ...prev, email: isAvailable ? "" : "Cet email est déjà utilisé" }));
+      } catch {
+        setAvailability(prev => ({ ...prev, email: { ...prev.email, checking: false } }));
+      }
+    }, 400);
+
+    return () => clearTimeout(timeout);
+  }, [formData.email, step]);
+
   // Étape 1 → Supabase signUp → écran de vérification email
   const handleStep1Submit = async () => {
     const now = Date.now();
@@ -231,6 +279,18 @@ export function Register() {
       const fieldErrors: Record<string, string> = {};
       validation.error.errors.forEach(e => { if (e.path[0]) fieldErrors[e.path[0] as string] = e.message; });
       setErrors(fieldErrors);
+      return;
+    }
+    const normalizedUsername = formData.username.trim();
+    const normalizedEmail = formData.email.trim().toLowerCase();
+    const usernameUnavailable = availability.username.checkedValue === normalizedUsername && !availability.username.available;
+    const emailUnavailable = availability.email.checkedValue === normalizedEmail && !availability.email.available;
+    if (usernameUnavailable || emailUnavailable) {
+      setErrors(prev => ({
+        ...prev,
+        ...(usernameUnavailable ? { username: "Ce nom d'utilisateur est déjà pris" } : {}),
+        ...(emailUnavailable ? { email: "Cet email est déjà utilisé" } : {}),
+      }));
       return;
     }
 
@@ -413,11 +473,13 @@ export function Register() {
                 <div className="min-w-0">
                   <Label>Nom d'utilisateur *</Label>
                   <Input maxLength={REGISTRATION_MAX_LENGTHS.username} value={formData.username} onChange={e => handleInputChange("username", e.target.value)} className={`w-full min-w-0 ${errors.username ? "border-destructive" : ""}`} />
+                  {availability.username.checking && <p className="text-xs text-muted-foreground mt-1">Vérification du nom d'utilisateur…</p>}
                   {errors.username && <p className="text-xs text-destructive mt-1">{errors.username}</p>}
                 </div>
                 <div className="min-w-0">
                   <Label>Email *</Label>
                   <Input maxLength={REGISTRATION_MAX_LENGTHS.email} type="email" value={formData.email} onChange={e => handleInputChange("email", e.target.value)} className={`w-full min-w-0 ${errors.email ? "border-destructive" : ""}`} />
+                  {availability.email.checking && <p className="text-xs text-muted-foreground mt-1">Vérification de l'email…</p>}
                   {errors.email && <p className="text-xs text-destructive mt-1">{errors.email}</p>}
                 </div>
               </div>
@@ -475,7 +537,7 @@ export function Register() {
               </div>
 
               <div className="flex justify-end pt-4">
-                <Button onClick={handleStep1Submit} disabled={isLoading} className="campus-gradient text-white hover:opacity-90">
+                <Button onClick={handleStep1Submit} disabled={isLoading || availability.email.checking || availability.username.checking} className="campus-gradient text-white hover:opacity-90">
                   {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   Suivant <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
