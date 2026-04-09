@@ -29,31 +29,38 @@ from .throttles import AuthScopedRateThrottle
 logger = logging.getLogger(__name__)
 
 
-def _are_accepted_connections(user_a, user_b):
-    return Connection.objects.filter(
-        models.Q(requester=user_a, recipient=user_b) | models.Q(requester=user_b, recipient=user_a),
-        status='accepted'
-    ).exists()
-
-
 def _can_view_sensitive_profile_fields(request_user, target_user):
-    if not request_user or not request_user.is_authenticated:
-        return False
-
-    if request_user.id == target_user.id:
-        return True
-
-    return _are_accepted_connections(request_user, target_user)
+    return bool(
+        request_user
+        and request_user.is_authenticated
+        and request_user.id == target_user.id
+    )
 
 
 def _apply_profile_privacy(user_data, request_user, target_user):
     """
-    Redact sensitive fields for viewers who are not authorized by privacy policy.
+    Redact sensitive profile fields for everyone except the profile owner.
+
+    Note: `profile_visibility` can remain configurable for non-sensitive sections of
+    the profile, but sensitive personal data now follows a strict `self` policy
+    (no `connections` access).
     """
     if _can_view_sensitive_profile_fields(request_user, target_user):
         return user_data
 
-    for field in ['email', 'phone_number', 'date_of_birth', 'student_id', 'data_export_requested_at']:
+    sensitive_fields = [
+        'email',
+        'phone_number',
+        'phoneNumber',
+        'date_of_birth',
+        'dateOfBirth',
+        'student_id',
+        'studentId',
+        'town',
+        'language',
+        'data_export_requested_at',
+    ]
+    for field in sensitive_fields:
         user_data[field] = None
 
     return user_data
