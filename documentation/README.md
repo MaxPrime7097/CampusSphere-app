@@ -9,6 +9,7 @@
 | [API.md](./API.md) | Référence complète de tous les endpoints REST |
 | [COMPONENTS.md](./COMPONENTS.md) | Guide des composants frontend (combobox, modales, pages, hooks) |
 | [DEPLOYMENT.md](./DEPLOYMENT.md) | Déploiement Vercel + Render, configuration Supabase, checklist |
+| [SUPABASE_EMAIL_LIMITS.md](./SUPABASE_EMAIL_LIMITS.md) | Procédure d’ajustement des limites d’envoi email Supabase |
 | [IMPACT_POLICY.md](./IMPACT_POLICY.md) | Règles de calcul du score d'impact utilisateur |
 | [CACHE_POLICY.md](./CACHE_POLICY.md) | Politique de cache API backend |
 

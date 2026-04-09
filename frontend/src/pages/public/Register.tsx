@@ -13,7 +13,15 @@ import { Separator } from "@/components/ui/separator";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { supabaseSignUp, supabaseSignInWithGoogle, supabaseSignInWithFacebook, exchangeSupabaseToken, completeSupabaseProfile, checkUserAvailability } from "@/services/api";
+import {
+  supabaseSignUp,
+  supabaseSignInWithGoogle,
+  supabaseSignInWithFacebook,
+  exchangeSupabaseToken,
+  completeSupabaseProfile,
+  getSupabaseRateLimitMetadata,
+  supabaseResendSignupEmail,
+} from "@/services/api";
 import { supabase } from "@/lib/supabase";
 import { completeSupabaseProfilePayloadSchema, mapCompleteProfileErrors } from "@/schemas/completeProfilePayload";
 import { AddEducationModal } from "@/components/modals/AddEducationModal";
@@ -28,6 +36,8 @@ import Sphere3D from "@/components/layout/Sphere3D";
 // Étapes : 1=infos perso, "verify"=attente email, 2=académique, 3=compétences
 type Step = 1 | "verify" | 2 | 3;
 const MINIMUM_AGE = 16;
+const RESEND_COOLDOWN_SECONDS = 60;
+const SUBMIT_DEBOUNCE_MS = 1000;
 
 const parseISODate = (value: string) => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
@@ -62,6 +72,7 @@ export function Register() {
   const [step, setStep] = useState<Step>(1);
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const [resendCooldownRemaining, setResendCooldownRemaining] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -70,6 +81,8 @@ export function Register() {
     username: { checking: false, available: true, checkedValue: "" },
   });
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  const signupLastSubmitAtRef = useRef(0);
+  const resendLastSubmitAtRef = useRef(0);
 
   const [formData, setFormData] = useState({
     firstName: "", lastName: "", username: "", email: "",
@@ -150,6 +163,14 @@ export function Register() {
 
     return () => subscription.unsubscribe();
   }, [step, navigate, toast]);
+
+  useEffect(() => {
+    if (resendCooldownRemaining <= 0) return;
+    const timeoutId = window.setTimeout(() => {
+      setResendCooldownRemaining((previous) => Math.max(previous - 1, 0));
+    }, 1000);
+    return () => window.clearTimeout(timeoutId);
+  }, [resendCooldownRemaining]);
 
   const minimumAgeMessage = `Vous devez avoir au moins ${MINIMUM_AGE} ans`;
   const step1Schema = z.object({
@@ -247,6 +268,12 @@ export function Register() {
 
   // Étape 1 → Supabase signUp → écran de vérification email
   const handleStep1Submit = async () => {
+    const now = Date.now();
+    if (now - signupLastSubmitAtRef.current < SUBMIT_DEBOUNCE_MS || isLoading) {
+      return;
+    }
+    signupLastSubmitAtRef.current = now;
+
     const validation = step1Schema.safeParse(formData);
     if (!validation.success) {
       const fieldErrors: Record<string, string> = {};
@@ -275,21 +302,53 @@ export function Register() {
         username: formData.username,
       });
       setStep("verify");
+      setResendCooldownRemaining(RESEND_COOLDOWN_SECONDS);
     } catch (err: any) {
-      toast({ title: "Erreur", description: err?.message, variant: "destructive" });
+      const rateLimit = getSupabaseRateLimitMetadata(err);
+      if (rateLimit) {
+        const waitSeconds = rateLimit.waitSeconds ?? RESEND_COOLDOWN_SECONDS;
+        toast({
+          title: "Trop de tentatives",
+          description: `Supabase limite temporairement les inscriptions. Réessayez dans ${waitSeconds}s.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: "Erreur", description: err?.message, variant: "destructive" });
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleResendEmail = async () => {
+    const now = Date.now();
+    if (
+      resendCooldownRemaining > 0 ||
+      isResending ||
+      now - resendLastSubmitAtRef.current < SUBMIT_DEBOUNCE_MS
+    ) {
+      return;
+    }
+    resendLastSubmitAtRef.current = now;
+
     setIsResending(true);
     try {
-      const { error } = await supabase.auth.resend({ type: "signup", email: formData.email });
-      if (error) throw error;
+      await supabaseResendSignupEmail(formData.email);
+      setResendCooldownRemaining(RESEND_COOLDOWN_SECONDS);
       toast({ title: "Email renvoyé !", duration: 2000 });
     } catch (err: any) {
-      toast({ title: "Erreur", description: err?.message, variant: "destructive" });
+      const rateLimit = getSupabaseRateLimitMetadata(err);
+      if (rateLimit) {
+        const waitSeconds = rateLimit.waitSeconds ?? RESEND_COOLDOWN_SECONDS;
+        setResendCooldownRemaining(waitSeconds);
+        toast({
+          title: "Envoi limité temporairement",
+          description: `Merci de patienter ${waitSeconds}s avant de renvoyer l'email.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: "Erreur", description: err?.message, variant: "destructive" });
+      }
     } finally {
       setIsResending(false);
     }
@@ -297,6 +356,8 @@ export function Register() {
 
   // Étape 3 → compléter le profil Django
   const handleFinalSubmit = async () => {
+    if (isLoading) return;
+
     const normalizedPhoneNumber = formData.phoneNumber
       ? `+237${formData.phoneNumber.replace(/^\+?237/, "")}`
       : undefined;
@@ -502,9 +563,9 @@ export function Register() {
                 <p className="mt-1">Cette page se mettra à jour automatiquement.</p>
               </div>
               <div className="flex flex-col gap-2">
-                <Button variant="outline" onClick={handleResendEmail} disabled={isResending}>
+                <Button variant="outline" onClick={handleResendEmail} disabled={isResending || resendCooldownRemaining > 0}>
                   {isResending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                  Renvoyer l'email
+                  {resendCooldownRemaining > 0 ? `Renvoyer l'email (${resendCooldownRemaining}s)` : "Renvoyer l'email"}
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => setStep(1)}>
                   Modifier l'email
