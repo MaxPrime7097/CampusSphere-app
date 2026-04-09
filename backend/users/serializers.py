@@ -2,6 +2,9 @@ from rest_framework import serializers
 from django.db.models import Q
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
+from django.core.validators import URLValidator
+from django.core.exceptions import ValidationError as DjangoValidationError
+import re
 from .models import User, Connection, UserBlock
 
 
@@ -9,6 +12,14 @@ class SupabaseProfileCompletionSerializer(serializers.ModelSerializer):
     """Serializer pour compléter le profil après inscription Supabase"""
     phone_number = serializers.CharField(required=False, allow_blank=True, default="")
     date_of_birth = serializers.DateField(required=False, allow_null=True, default=None)
+    MAX_PREVIOUS_EDUCATION_ITEMS = 10
+    MAX_EXPERIENCES_ITEMS = 10
+    MAX_PORTFOLIO_LINKS_ITEMS = 20
+    ISO_LANGUAGE_REGEX = re.compile(r"^[a-z]{2}(?:-[A-Z]{2})?$")
+    USERNAME_REGEX = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
+    STUDY_YEAR_REGEX = re.compile(r"^[A-Za-z0-9][A-Za-z0-9\s._/-]*$")
+    STUDENT_ID_REGEX = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
+    PHONE_REGEX = re.compile(r"^\+?[0-9][0-9\s().-]{6,29}$")
     
     class Meta:
         model = User
@@ -19,16 +30,136 @@ class SupabaseProfileCompletionSerializer(serializers.ModelSerializer):
         ]
     
     def validate_username(self, value):
-        if User.objects.filter(username__iexact=value).exists():
+        value = value.strip()
+        if not (3 <= len(value) <= 50):
+            raise serializers.ValidationError("Le nom d'utilisateur doit contenir entre 3 et 50 caractères")
+        if not self.USERNAME_REGEX.match(value):
+            raise serializers.ValidationError(
+                "Le nom d'utilisateur ne peut contenir que lettres, chiffres, points, tirets et underscores"
+            )
+        queryset = User.objects.filter(username__iexact=value)
+        if self.instance:
+            queryset = queryset.exclude(id=self.instance.id)
+        if queryset.exists():
             raise serializers.ValidationError("Ce nom d'utilisateur est déjà pris")
         return value
+
+    def validate_phone_number(self, value):
+        value = value.strip()
+        if not value:
+            return value
+        if len(value) > 30:
+            raise serializers.ValidationError("Le numéro de téléphone ne peut pas dépasser 30 caractères")
+        if not self.PHONE_REGEX.match(value):
+            raise serializers.ValidationError("Format de numéro de téléphone invalide")
+        return value
+
+    def validate_language(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("La langue est obligatoire")
+        if len(value) > 10:
+            raise serializers.ValidationError("Le champ langue ne peut pas dépasser 10 caractères")
+        if not self.ISO_LANGUAGE_REGEX.match(value):
+            raise serializers.ValidationError("La langue doit suivre le format ISO (ex: fr, en, fr-CA)")
+        return value
+
+    def validate_student_id(self, value):
+        value = value.strip()
+        if not (4 <= len(value) <= 50):
+            raise serializers.ValidationError("L'identifiant étudiant doit contenir entre 4 et 50 caractères")
+        if not self.STUDENT_ID_REGEX.match(value):
+            raise serializers.ValidationError("Format d'identifiant étudiant invalide")
+        return value
+
+    def validate_study_year(self, value):
+        value = value.strip()
+        if not (2 <= len(value) <= 20):
+            raise serializers.ValidationError("L'année d'étude doit contenir entre 2 et 20 caractères")
+        if not self.STUDY_YEAR_REGEX.match(value):
+            raise serializers.ValidationError("Format de l'année d'étude invalide")
+        return value
+
+    def _validate_json_list_field(self, value, *, field_name, required_keys, max_items, value_max_length=200):
+        if value is None:
+            return []
+        if not isinstance(value, list):
+            raise serializers.ValidationError(f"{field_name} doit être une liste d'objets")
+        if len(value) > max_items:
+            raise serializers.ValidationError(f"{field_name} ne peut pas dépasser {max_items} éléments")
+
+        cleaned_items = []
+        for index, item in enumerate(value):
+            if not isinstance(item, dict):
+                raise serializers.ValidationError({index: "Chaque entrée doit être un objet JSON"})
+            missing_keys = [key for key in required_keys if key not in item or item.get(key) in (None, "")]
+            if missing_keys:
+                raise serializers.ValidationError({index: f"Clés obligatoires manquantes: {', '.join(missing_keys)}"})
+
+            cleaned_item = {}
+            for key, raw_value in item.items():
+                if isinstance(raw_value, str):
+                    normalized_value = raw_value.strip()
+                    if len(normalized_value) > value_max_length:
+                        raise serializers.ValidationError(
+                            {index: f"La valeur '{key}' dépasse {value_max_length} caractères"}
+                        )
+                    cleaned_item[key] = normalized_value
+                else:
+                    cleaned_item[key] = raw_value
+            cleaned_items.append(cleaned_item)
+        return cleaned_items
+
+    def validate_previous_education(self, value):
+        return self._validate_json_list_field(
+            value,
+            field_name="previous_education",
+            required_keys=("school", "year"),
+            max_items=self.MAX_PREVIOUS_EDUCATION_ITEMS,
+            value_max_length=150,
+        )
+
+    def validate_experiences(self, value):
+        return self._validate_json_list_field(
+            value,
+            field_name="experiences",
+            required_keys=("company", "role"),
+            max_items=self.MAX_EXPERIENCES_ITEMS,
+            value_max_length=150,
+        )
+
+    def validate_portfolio_links(self, value):
+        validated = self._validate_json_list_field(
+            value,
+            field_name="portfolio_links",
+            required_keys=("url",),
+            max_items=self.MAX_PORTFOLIO_LINKS_ITEMS,
+            value_max_length=255,
+        )
+        url_validator = URLValidator()
+        for index, link in enumerate(validated):
+            try:
+                url_validator(link["url"])
+            except DjangoValidationError:
+                raise serializers.ValidationError({index: "URL de portfolio invalide"})
+        return validated
+
+    @staticmethod
+    def _ensure_required_text(field_name, value):
+        if not isinstance(value, str) or not value.strip():
+            raise serializers.ValidationError({field_name: f"Le champ {field_name} est obligatoire"})
+        return value.strip()
     
     def validate(self, data):
-        # Vérifier que les champs obligatoires sont présents
+        # Vérifier que les champs obligatoires sont présents avec règles de format robustes
         required_fields = ['username', 'university', 'faculty', 'study_year', 'student_id']
         for field in required_fields:
-            if not data.get(field):
-                raise serializers.ValidationError(f"Le champ {field} est obligatoire")
+            current_value = data.get(field, getattr(self.instance, field, None))
+            cleaned_value = self._ensure_required_text(field, current_value)
+            validator = getattr(self, f"validate_{field}", None)
+            if callable(validator):
+                cleaned_value = validator(cleaned_value)
+            data[field] = cleaned_value
         return data
     
     def update(self, instance, validated_data):

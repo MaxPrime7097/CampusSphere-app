@@ -71,3 +71,87 @@ class SupabaseTokenExchangeTests(APITestCase):
 
         user.refresh_from_db()
         self.assertFalse(user.is_profile_complete)
+
+
+class SupabaseProfileCompletionValidationTests(APITestCase):
+    def setUp(self):
+        self.url = reverse("users:supabase-complete-profile")
+        if not self.url.endswith("/"):
+            self.url = f"{self.url}/"
+        self.user = User.objects.create_user(
+            email="supabase-profile@example.com",
+            username="supabase-temp",
+            first_name="Supabase",
+            last_name="User",
+            password="irrelevant-password",
+            supabase_uid="supabase-profile-uid",
+            is_profile_complete=False,
+        )
+        self.client.force_authenticate(user=self.user)
+        self.valid_payload = {
+            "username": "student.valid",
+            "university": "Université de Douala",
+            "faculty": "Informatique",
+            "study_year": "L3",
+            "student_id": "STU-2026-001",
+            "language": "fr",
+            "phone_number": "+237 699 11 22 33",
+            "previous_education": [
+                {"school": "Lycée Leclerc", "year": "2021", "degree": "Baccalauréat"}
+            ],
+            "experiences": [
+                {"company": "Campus Labs", "role": "Stagiaire backend", "duration": "3 mois"}
+            ],
+            "portfolio_links": [
+                {"url": "https://portfolio.example.com", "label": "Portfolio"}
+            ],
+        }
+
+    def test_profile_completion_rejects_invalid_scalar_formats(self):
+        payload = {
+            **self.valid_payload,
+            "phone_number": "abc###",
+            "language": "french",
+            "student_id": "!!",
+            "study_year": "@@@",
+            "username": "x",
+        }
+
+        response = self.client.post(self.url, payload, format="json", secure=True)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("phone_number", response.data)
+        self.assertIn("language", response.data)
+        self.assertIn("student_id", response.data)
+        self.assertIn("study_year", response.data)
+        self.assertIn("username", response.data)
+
+    def test_profile_completion_rejects_invalid_json_structures(self):
+        payload = {
+            **self.valid_payload,
+            "previous_education": [{"school": "Lycée A"}],
+            "experiences": ["not-an-object"],
+            "portfolio_links": [{"url": "invalid-url"}],
+        }
+
+        response = self.client.post(self.url, payload, format="json", secure=True)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("previous_education", response.data)
+        self.assertIn("experiences", response.data)
+        self.assertIn("portfolio_links", response.data)
+
+    def test_profile_completion_rejects_oversized_json_payloads(self):
+        oversized_previous_education = [{"school": "Lycée", "year": "2020"}] * 11
+        too_long_label = "x" * 260
+        payload = {
+            **self.valid_payload,
+            "previous_education": oversized_previous_education,
+            "portfolio_links": [{"url": "https://portfolio.example.com", "label": too_long_label}],
+        }
+
+        response = self.client.post(self.url, payload, format="json", secure=True)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("previous_education", response.data)
+        self.assertIn("portfolio_links", response.data)
