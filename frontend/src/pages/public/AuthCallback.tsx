@@ -40,7 +40,6 @@ export function AuthCallback() {
           // Pour les nouveaux utilisateurs ou profils incomplets
           navigate("/complete-profile", { replace: true });
         } else {
-          // Utilisateur existant avec profil complet
           toast({ title: "Connexion réussie !", duration: 2000 });
           navigate("/", { replace: true });
         }
