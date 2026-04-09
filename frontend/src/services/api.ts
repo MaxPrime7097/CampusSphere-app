@@ -2,6 +2,62 @@
 import { normalizeResourceType } from "@/constants/resourceTypes";
 import { supabase } from "@/lib/supabase";
 
+type SupabaseRateLimitMetadata = {
+  waitSeconds: number | null;
+  originalMessage: string;
+};
+
+export class SupabaseRateLimitError extends Error {
+  readonly waitSeconds: number | null;
+  readonly status?: number;
+
+  constructor(message: string, waitSeconds: number | null, status?: number) {
+    super(message);
+    this.name = "SupabaseRateLimitError";
+    this.waitSeconds = waitSeconds;
+    this.status = status;
+  }
+}
+
+function extractWaitSecondsFromMessage(message: string): number | null {
+  const sanitized = message.toLowerCase();
+  const patterns = [
+    /(\d+)\s*(?:s|sec|secs|second|seconds|seconde|secondes)/i,
+    /(?:after|dans)\s*(\d+)\s*(?:s|sec|secs|second|seconds|seconde|secondes)?/i,
+    /(?:in|wait)\s*(\d+)\s*(?:s|sec|secs|second|seconds|seconde|secondes)?/i,
+  ];
+  for (const pattern of patterns) {
+    const match = sanitized.match(pattern);
+    if (match?.[1]) {
+      const waitSeconds = Number(match[1]);
+      if (Number.isFinite(waitSeconds) && waitSeconds > 0) return waitSeconds;
+    }
+  }
+  return null;
+}
+
+export function getSupabaseRateLimitMetadata(error: unknown): SupabaseRateLimitMetadata | null {
+  const status = (error as any)?.status ?? (error as any)?.code;
+  const message = String((error as any)?.message ?? "");
+  const hasTooManyRequestsStatus = Number(status) === 429;
+  const mentionsRateLimit = /too many requests|rate limit|security purposes/i.test(message);
+
+  if (!hasTooManyRequestsStatus && !mentionsRateLimit) return null;
+
+  return {
+    waitSeconds: extractWaitSecondsFromMessage(message),
+    originalMessage: message || "Too many requests",
+  };
+}
+
+function withSupabaseRateLimitError(error: unknown): never {
+  const metadata = getSupabaseRateLimitMetadata(error);
+  if (metadata) {
+    throw new SupabaseRateLimitError(metadata.originalMessage, metadata.waitSeconds, Number((error as any)?.status) || undefined);
+  }
+  throw new Error((error as any)?.message || "Unexpected Supabase error");
+}
+
 // ============================================================================
 // SUPABASE AUTH
 // ============================================================================
@@ -15,7 +71,7 @@ export async function supabaseSignUp(email: string, password: string, metadata: 
       emailRedirectTo: `${window.location.origin}/register?verified=true`
     },
   });
-  if (error) throw new Error(error.message);
+  if (error) withSupabaseRateLimitError(error);
   return data;
 }
 
@@ -45,7 +101,12 @@ export async function supabaseResetPassword(email: string) {
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${window.location.origin}/reset-password`,
   });
-  if (error) throw new Error(error.message);
+  if (error) withSupabaseRateLimitError(error);
+}
+
+export async function supabaseResendSignupEmail(email: string) {
+  const { error } = await supabase.auth.resend({ type: "signup", email });
+  if (error) withSupabaseRateLimitError(error);
 }
 
 export async function supabaseSignOut() {
@@ -525,6 +586,20 @@ export async function register(payload: {
     "api/users/auth/register/",
     { method: "POST", body: payload }
   );
+}
+
+export async function checkUserAvailability(payload: { email?: string; username?: string }) {
+  return apiFetch<{
+    success: boolean;
+    data: {
+      email: { value: string; available: boolean };
+      username: { value: string; available: boolean };
+    };
+    field_messages: Record<string, string>;
+  }>("api/users/check-availability/", {
+    method: "POST",
+    body: payload,
+  });
 }
 
 export async function login(payload: { email: string; password: string }) {

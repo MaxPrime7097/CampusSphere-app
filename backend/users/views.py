@@ -21,7 +21,7 @@ from .serializers import (
     UserSearchSerializer, ChangePasswordSerializer, ChangeEmailSerializer,
     LogoutSerializer, DeleteAccountSerializer, PrivacySettingsSerializer, PasswordResetSerializer,
     DataExportRequestSerializer, BlockListItemSerializer, BlockCreateSerializer,
-    SupabaseProfileCompletionSerializer
+    SupabaseProfileCompletionSerializer, normalize_email_for_lookup, normalize_username_for_lookup
 )
 from campus_sphere.cache import CacheManager, CacheKeys
 from notifications.services import create_connection_request_notification
@@ -41,23 +41,37 @@ def _are_accepted_connections(user_a, user_b):
 
 
 def _can_view_sensitive_profile_fields(request_user, target_user):
-    if not request_user or not request_user.is_authenticated:
-        return False
-
-    if request_user.id == target_user.id:
-        return True
-
-    return _are_accepted_connections(request_user, target_user)
+    return bool(
+        request_user
+        and request_user.is_authenticated
+        and request_user.id == target_user.id
+    )
 
 
 def _apply_profile_privacy(user_data, request_user, target_user):
     """
-    Redact sensitive fields for viewers who are not authorized by privacy policy.
+    Redact sensitive profile fields for everyone except the profile owner.
+
+    Note: `profile_visibility` can remain configurable for non-sensitive sections of
+    the profile, but sensitive personal data now follows a strict `self` policy
+    (no `connections` access).
     """
     if _can_view_sensitive_profile_fields(request_user, target_user):
         return user_data
 
-    for field in ['email', 'phone_number', 'date_of_birth', 'student_id', 'data_export_requested_at']:
+    sensitive_fields = [
+        'email',
+        'phone_number',
+        'phoneNumber',
+        'date_of_birth',
+        'dateOfBirth',
+        'student_id',
+        'studentId',
+        'town',
+        'language',
+        'data_export_requested_at',
+    ]
+    for field in sensitive_fields:
         user_data[field] = None
 
     return user_data
@@ -641,11 +655,15 @@ class SupabaseTokenExchangeView(APIView):
             supabase_user = user_response.user
             
             # Chercher ou créer l'utilisateur Django
+            supabase_email = normalize_email_for_lookup(supabase_user.email)
+            default_username = normalize_username_for_lookup(
+                supabase_user.user_metadata.get('username') or (supabase_email.split('@')[0] if supabase_email else '')
+            )
             user, created = User.objects.get_or_create(
                 supabase_uid=supabase_user.id,
                 defaults={
-                    'email': supabase_user.email,
-                    'username': supabase_user.email.split('@')[0],  # Temporaire
+                    'email': supabase_email,
+                    'username': default_username,  # Temporaire
                     'first_name': supabase_user.user_metadata.get('first_name', ''),
                     'last_name': supabase_user.user_metadata.get('last_name', ''),
                     'is_profile_complete': False,
