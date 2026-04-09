@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input, REGISTRATION_MAX_LENGTHS } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Briefcase, Loader2, Check, X } from "lucide-react";
@@ -111,11 +111,11 @@ export function AddExperienceModal({ children, onExperienceAdded, existingExperi
                 {existingExperiences.map((exp, index) => (
                   <div key={index} className="border-l-2 border-primary/50 pl-4 py-2 bg-muted/50 rounded-r-md">
                     <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-semibold">{exp.title}</p>
-                        <p className="text-sm text-muted-foreground">{exp.company}</p>
-                        <p className="text-xs text-muted-foreground mb-2">{exp.duration}</p>
-                        <p className="text-sm">{exp.description}</p>
+                      <div className="min-w-0">
+                        <p className="font-semibold overflow-hidden text-ellipsis whitespace-nowrap">{exp.title}</p>
+                        <p className="text-sm text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap">{exp.company}</p>
+                        <p className="text-xs text-muted-foreground mb-2 overflow-hidden text-ellipsis whitespace-nowrap">{exp.duration}</p>
+                        <p className="text-sm break-words">{exp.description}</p>
                       </div>
                       <Button
                         variant="ghost"
@@ -160,6 +160,7 @@ export function AddExperienceModal({ children, onExperienceAdded, existingExperi
                 id="duration"
                 placeholder="Ex: 6 mois, 1 an, Été 2023..."
                 value={duration}
+                maxLength={REGISTRATION_MAX_LENGTHS.experienceDuration}
                 onChange={(e) => setDuration(e.target.value)}
               />
             </div>
@@ -171,6 +172,7 @@ export function AddExperienceModal({ children, onExperienceAdded, existingExperi
                 placeholder="Décrivez vos missions et responsabilités..."
                 rows={3}
                 value={description}
+                maxLength={REGISTRATION_MAX_LENGTHS.experienceDescription}
                 onChange={(e) => setDescription(e.target.value)}
               />
             </div>

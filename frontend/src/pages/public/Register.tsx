@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Upload, Check, Loader2, AlertCircle, Eye, EyeOff, X, ExternalLink, Plus, FileText, Mail, RefreshCw } from "lucide-react";
 import { FaGoogle, FaFacebook } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input, REGISTRATION_MAX_LENGTHS } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -249,12 +249,12 @@ export function Register() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Nom *</Label>
-                  <Input value={formData.firstName} onChange={e => handleInputChange("firstName", e.target.value)} className={errors.firstName ? "border-destructive" : ""} />
+                  <Input maxLength={REGISTRATION_MAX_LENGTHS.firstName} value={formData.firstName} onChange={e => handleInputChange("firstName", e.target.value)} className={errors.firstName ? "border-destructive" : ""} />
                   {errors.firstName && <p className="text-xs text-destructive mt-1">{errors.firstName}</p>}
                 </div>
                 <div>
                   <Label>Prénom *</Label>
-                  <Input value={formData.lastName} onChange={e => handleInputChange("lastName", e.target.value)} className={errors.lastName ? "border-destructive" : ""} />
+                  <Input maxLength={REGISTRATION_MAX_LENGTHS.lastName} value={formData.lastName} onChange={e => handleInputChange("lastName", e.target.value)} className={errors.lastName ? "border-destructive" : ""} />
                   {errors.lastName && <p className="text-xs text-destructive mt-1">{errors.lastName}</p>}
                 </div>
               </div>
@@ -262,12 +262,12 @@ export function Register() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Nom d'utilisateur *</Label>
-                  <Input value={formData.username} onChange={e => handleInputChange("username", e.target.value)} className={errors.username ? "border-destructive" : ""} />
+                  <Input maxLength={REGISTRATION_MAX_LENGTHS.username} value={formData.username} onChange={e => handleInputChange("username", e.target.value)} className={errors.username ? "border-destructive" : ""} />
                   {errors.username && <p className="text-xs text-destructive mt-1">{errors.username}</p>}
                 </div>
                 <div>
                   <Label>Email *</Label>
-                  <Input type="email" value={formData.email} onChange={e => handleInputChange("email", e.target.value)} className={errors.email ? "border-destructive" : ""} />
+                  <Input maxLength={REGISTRATION_MAX_LENGTHS.email} type="email" value={formData.email} onChange={e => handleInputChange("email", e.target.value)} className={errors.email ? "border-destructive" : ""} />
                   {errors.email && <p className="text-xs text-destructive mt-1">{errors.email}</p>}
                 </div>
               </div>
@@ -282,7 +282,7 @@ export function Register() {
                   <Label>Téléphone</Label>
                   <div className="flex">
                     <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-sm text-muted-foreground">+237</span>
-                    <Input value={formData.phoneNumber} onChange={e => handleInputChange("phoneNumber", e.target.value)} className={`rounded-l-none ${errors.phoneNumber ? "border-destructive" : ""}`} placeholder="6XXXXXXXX" />
+                    <Input maxLength={REGISTRATION_MAX_LENGTHS.phoneNumber} value={formData.phoneNumber} onChange={e => handleInputChange("phoneNumber", e.target.value)} className={`rounded-l-none ${errors.phoneNumber ? "border-destructive" : ""}`} placeholder="6XXXXXXXX" />
                   </div>
                   {errors.phoneNumber && <p className="text-xs text-destructive mt-1">{errors.phoneNumber}</p>}
                 </div>
@@ -292,7 +292,7 @@ export function Register() {
                 <div>
                   <Label>Mot de passe *</Label>
                   <div className="relative">
-                    <Input type={showPassword ? "text" : "password"} value={formData.password} onChange={e => handleInputChange("password", e.target.value)} className={`pr-10 ${errors.password ? "border-destructive" : ""}`} />
+                    <Input maxLength={REGISTRATION_MAX_LENGTHS.password} type={showPassword ? "text" : "password"} value={formData.password} onChange={e => handleInputChange("password", e.target.value)} className={`pr-10 ${errors.password ? "border-destructive" : ""}`} />
                     <Button type="button" variant="ghost" size="sm" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0" onClick={() => setShowPassword(!showPassword)}>
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
@@ -302,7 +302,7 @@ export function Register() {
                 <div>
                   <Label>Confirmer *</Label>
                   <div className="relative">
-                    <Input type={showConfirmPassword ? "text" : "password"} value={formData.confirmPassword} onChange={e => handleInputChange("confirmPassword", e.target.value)} className={`pr-10 ${errors.confirmPassword ? "border-destructive" : ""}`} />
+                    <Input maxLength={REGISTRATION_MAX_LENGTHS.password} type={showConfirmPassword ? "text" : "password"} value={formData.confirmPassword} onChange={e => handleInputChange("confirmPassword", e.target.value)} className={`pr-10 ${errors.confirmPassword ? "border-destructive" : ""}`} />
                     <Button type="button" variant="ghost" size="sm" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
                       {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
@@ -372,12 +372,12 @@ export function Register() {
               </div>
               <div>
                 <Label>Matricule *</Label>
-                <Input value={formData.studentId} onChange={e => handleInputChange("studentId", e.target.value)} />
+                <Input maxLength={REGISTRATION_MAX_LENGTHS.studentId} value={formData.studentId} onChange={e => handleInputChange("studentId", e.target.value)} />
                 {errors.studentId && <p className="text-xs text-red-500 mt-1">{errors.studentId}</p>}
               </div>
               <div>
                 <Label>Campus</Label>
-                <Input value={formData.campus} onChange={e => handleInputChange("campus", e.target.value)} placeholder="Si plusieurs campus" />
+                <Input maxLength={REGISTRATION_MAX_LENGTHS.campus} value={formData.campus} onChange={e => handleInputChange("campus", e.target.value)} placeholder="Si plusieurs campus" />
               </div>
               <div className="flex justify-between pt-4">
                 <Button variant="outline" onClick={() => setStep(1)}><ChevronLeft className="mr-2 h-4 w-4" />Précédent</Button>
@@ -412,8 +412,11 @@ export function Register() {
                 {formData.previousEducation.length === 0 ? (
                   <div className="text-center py-6 text-muted-foreground border-2 border-dashed rounded-lg text-sm">Aucune formation ajoutée</div>
                 ) : formData.previousEducation.map((edu, i) => (
-                  <div key={i} className="border-l-2 border-primary/50 pl-4 py-2 bg-muted/50 rounded-r-md mb-2 flex justify-between">
-                    <div><p className="font-semibold text-sm">{edu.degree}</p><p className="text-xs text-muted-foreground">{edu.school} · {edu.year}</p></div>
+                  <div key={i} className="border-l-2 border-primary/50 pl-4 py-2 bg-muted/50 rounded-r-md mb-2 flex justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-sm overflow-hidden text-ellipsis whitespace-nowrap">{edu.degree}</p>
+                      <p className="text-xs text-muted-foreground break-words">{edu.school} · {edu.year}</p>
+                    </div>
                     <Button variant="ghost" size="sm" onClick={() => setFormData(p => ({ ...p, previousEducation: p.previousEducation.filter((_, j) => j !== i) }))}><X className="h-4 w-4" /></Button>
                   </div>
                 ))}
@@ -430,8 +433,11 @@ export function Register() {
                 {formData.experiences.length === 0 ? (
                   <div className="text-center py-6 text-muted-foreground border-2 border-dashed rounded-lg text-sm">Aucune expérience ajoutée</div>
                 ) : formData.experiences.map((exp, i) => (
-                  <div key={i} className="border-l-2 border-primary/50 pl-4 py-2 bg-muted/50 rounded-r-md mb-2 flex justify-between">
-                    <div><p className="font-semibold text-sm">{exp.title}</p><p className="text-xs text-muted-foreground">{exp.company} · {exp.duration}</p></div>
+                  <div key={i} className="border-l-2 border-primary/50 pl-4 py-2 bg-muted/50 rounded-r-md mb-2 flex justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-sm overflow-hidden text-ellipsis whitespace-nowrap">{exp.title}</p>
+                      <p className="text-xs text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap">{exp.company} · {exp.duration}</p>
+                    </div>
                     <Button variant="ghost" size="sm" onClick={() => setFormData(p => ({ ...p, experiences: p.experiences.filter((_, j) => j !== i) }))}><X className="h-4 w-4" /></Button>
                   </div>
                 ))}
@@ -469,13 +475,16 @@ export function Register() {
               <div>
                 <Label>Portfolio / Liens</Label>
                 <div className="flex gap-2 mt-2">
-                  <Input placeholder="Nom (ex: GitHub)" value={newLink.name} onChange={e => setNewLink(p => ({ ...p, name: e.target.value }))} className="w-1/3" />
-                  <Input placeholder="URL" value={newLink.url} onChange={e => setNewLink(p => ({ ...p, url: e.target.value }))} />
+                  <Input maxLength={REGISTRATION_MAX_LENGTHS.portfolioName} placeholder="Nom (ex: GitHub)" value={newLink.name} onChange={e => setNewLink(p => ({ ...p, name: e.target.value }))} className="w-1/3" />
+                  <Input maxLength={REGISTRATION_MAX_LENGTHS.portfolioUrl} placeholder="URL" value={newLink.url} onChange={e => setNewLink(p => ({ ...p, url: e.target.value }))} />
                   <Button type="button" variant="outline" onClick={() => { if (newLink.name.trim() && newLink.url.trim()) { setFormData(p => ({ ...p, portfolioLinks: [...p.portfolioLinks, { name: newLink.name.trim(), url: newLink.url.trim() }] })); setNewLink({ name: "", url: "" }); } }}>+</Button>
                 </div>
                 {formData.portfolioLinks.map((l, i) => (
-                  <div key={i} className="flex items-center justify-between p-2 border rounded-lg mt-2 bg-muted/50">
-                    <div><p className="text-sm font-medium">{l.name}</p><p className="text-xs text-muted-foreground">{l.url}</p></div>
+                  <div key={i} className="flex items-center justify-between gap-2 p-2 border rounded-lg mt-2 bg-muted/50">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap">{l.name}</p>
+                      <p className="text-xs text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap" title={l.url}>{l.url}</p>
+                    </div>
                     <Button variant="ghost" size="sm" onClick={() => setFormData(p => ({ ...p, portfolioLinks: p.portfolioLinks.filter((_, j) => j !== i) }))}><X className="h-4 w-4" /></Button>
                   </div>
                 ))}

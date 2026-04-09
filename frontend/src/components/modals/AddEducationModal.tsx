@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input, REGISTRATION_MAX_LENGTHS } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, GraduationCap, Loader2, Check, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -106,10 +106,10 @@ export function AddEducationModal({ children, onEducationAdded, existingEducatio
                 {existingEducations.map((edu, index) => (
                   <div key={index} className="border-l-2 border-primary/50 pl-4 py-2 bg-muted/50 rounded-r-md">
                     <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-semibold">{edu.degree}</p>
-                        <p className="text-sm text-muted-foreground">{edu.school}</p>
-                        <p className="text-xs text-muted-foreground">{edu.year}</p>
+                      <div className="min-w-0">
+                        <p className="font-semibold overflow-hidden text-ellipsis whitespace-nowrap">{edu.degree}</p>
+                        <p className="text-sm text-muted-foreground break-words">{edu.school}</p>
+                        <p className="text-xs text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap">{edu.year}</p>
                       </div>
                       <Button
                         variant="ghost"
@@ -154,6 +154,7 @@ export function AddEducationModal({ children, onEducationAdded, existingEducatio
                 id="year"
                 placeholder="Ex: 2020-2023, 2022..."
                 value={year}
+                maxLength={REGISTRATION_MAX_LENGTHS.educationYear}
                 onChange={(e) => setYear(e.target.value)}
               />
             </div>
