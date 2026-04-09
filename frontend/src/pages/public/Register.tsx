@@ -97,14 +97,14 @@ export function Register() {
   }, [step, navigate, toast]);
 
   const step1Schema = z.object({
-    firstName: z.string().min(2, "Au moins 2 caractères"),
-    lastName: z.string().min(2, "Au moins 2 caractères"),
-    username: z.string().min(3, "Au moins 3 caractères"),
+    firstName: z.string().trim().min(2, "Au moins 2 caractères"),
+    lastName: z.string().trim().min(2, "Au moins 2 caractères"),
+    username: z.string().trim().min(3, "Au moins 3 caractères"),
     email: z.string().email("Email invalide"),
     phoneNumber: z.string().optional(),
     dateOfBirth: z.string().min(1, "Requis"),
-    password: z.string().min(6, "Au moins 6 caractères"),
-    confirmPassword: z.string(),
+    password: z.string().trim().min(6, "Au moins 6 caractères"),
+    confirmPassword: z.string().trim(),
   }).refine(d => d.password === d.confirmPassword, {
     message: "Les mots de passe ne correspondent pas",
     path: ["confirmPassword"],
@@ -118,7 +118,9 @@ export function Register() {
   });
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    const sensitiveFields = new Set(["username", "email", "phoneNumber"]);
+    const sanitizedValue = sensitiveFields.has(field) ? value.trim() : value;
+    setFormData(prev => ({ ...prev, [field]: sanitizedValue }));
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: "" }));
   };
 
