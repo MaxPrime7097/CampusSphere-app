@@ -9,6 +9,14 @@ import re
 from .models import User, Connection, UserBlock
 
 
+def normalize_email_for_lookup(value):
+    return (value or "").strip().lower()
+
+
+def normalize_username_for_lookup(value):
+    return (value or "").strip()
+
+
 class SupabaseProfileCompletionSerializer(serializers.ModelSerializer):
     """Serializer pour compléter le profil après inscription Supabase"""
     phone_number = serializers.CharField(required=False, allow_blank=True, default="")
@@ -19,9 +27,10 @@ class SupabaseProfileCompletionSerializer(serializers.ModelSerializer):
     ISO_LANGUAGE_REGEX = re.compile(r"^[a-z]{2}(?:-[A-Z]{2})?$")
     USERNAME_REGEX = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
     STUDY_YEAR_REGEX = re.compile(r"^[A-Za-z0-9][A-Za-z0-9\s._/-]*$")
-    STUDENT_ID_REGEX = re.compile(r"^[A-Za-z][A-Za-z0-9]*$")
-    STUDENT_ID_HAS_LETTER_REGEX = re.compile(r"[A-Za-z]")
+    STUDENT_ID_REGEX = re.compile(r"^[A-Z][A-Z0-9]*$")
+    STUDENT_ID_HAS_LETTER_REGEX = re.compile(r"[A-Z]")
     STUDENT_ID_HAS_DIGIT_REGEX = re.compile(r"\d")
+    STUDENT_ID_WHITESPACE_REGEX = re.compile(r"\s")
     PHONE_REGEX = re.compile(r"^\+?[0-9][0-9\s().-]{6,29}$")
     MINIMUM_AGE = 16
     
@@ -34,7 +43,7 @@ class SupabaseProfileCompletionSerializer(serializers.ModelSerializer):
         ]
     
     def validate_username(self, value):
-        value = value.strip()
+        value = normalize_username_for_lookup(value)
         if not (3 <= len(value) <= 50):
             raise serializers.ValidationError("Le nom d'utilisateur doit contenir entre 3 et 50 caractères")
         if not self.USERNAME_REGEX.match(value):
@@ -82,18 +91,20 @@ class SupabaseProfileCompletionSerializer(serializers.ModelSerializer):
         return value
 
     def validate_student_id(self, value):
-        value = value.strip()
-        if not (4 <= len(value) <= 50):
+        normalized_value = value.strip().upper()
+        if self.STUDENT_ID_WHITESPACE_REGEX.search(normalized_value):
+            raise serializers.ValidationError("L'identifiant étudiant ne doit pas contenir d'espaces")
+        if not (4 <= len(normalized_value) <= 50):
             raise serializers.ValidationError("L'identifiant étudiant doit contenir entre 4 et 50 caractères")
-        if not self.STUDENT_ID_REGEX.match(value):
+        if not self.STUDENT_ID_REGEX.match(normalized_value):
             raise serializers.ValidationError(
                 "L'identifiant étudiant doit commencer par une lettre et contenir uniquement des lettres et des chiffres"
             )
-        if not self.STUDENT_ID_HAS_LETTER_REGEX.search(value):
+        if not self.STUDENT_ID_HAS_LETTER_REGEX.search(normalized_value):
             raise serializers.ValidationError("L'identifiant étudiant doit contenir au moins une lettre")
-        if not self.STUDENT_ID_HAS_DIGIT_REGEX.search(value):
+        if not self.STUDENT_ID_HAS_DIGIT_REGEX.search(normalized_value):
             raise serializers.ValidationError("L'identifiant étudiant doit contenir au moins un chiffre")
-        return value
+        return normalized_value
 
     def validate_study_year(self, value):
         value = value.strip()
@@ -228,6 +239,18 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Passwords do not match")
         return data
 
+    def validate_email(self, value):
+        normalized = normalize_email_for_lookup(value)
+        if User.objects.filter(email__iexact=normalized).exists():
+            raise serializers.ValidationError("This email is already in use")
+        return normalized
+
+    def validate_username(self, value):
+        normalized = normalize_username_for_lookup(value)
+        if User.objects.filter(username__iexact=normalized).exists():
+            raise serializers.ValidationError("This username is already in use")
+        return normalized
+
     def create(self, validated_data):
         validated_data.pop('confirm_password')
         phone_number = validated_data.pop('phone_number', '')
@@ -264,7 +287,7 @@ class UserLoginSerializer(serializers.Serializer):
     password = serializers.CharField()
 
     def validate(self, data):
-        email = data.get('email')
+        email = normalize_email_for_lookup(data.get('email'))
         password = data.get('password')
 
         if email and password:
@@ -365,6 +388,7 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         ]
 
     def validate_username(self, value):
+        value = normalize_username_for_lookup(value)
         user = self.instance
         if User.objects.exclude(id=user.id).filter(username__iexact=value).exists():
             raise serializers.ValidationError("This username is already in use")
@@ -426,8 +450,8 @@ class ChangeEmailSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         user = self.context['request'].user
-        current_email = attrs.get('current_email', '').strip().lower()
-        new_email = attrs.get('new_email', '').strip().lower()
+        current_email = normalize_email_for_lookup(attrs.get('current_email'))
+        new_email = normalize_email_for_lookup(attrs.get('new_email'))
 
         if current_email != user.email.lower():
             raise serializers.ValidationError({'current_email': 'Current email does not match your account'})

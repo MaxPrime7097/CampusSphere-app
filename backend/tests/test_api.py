@@ -257,7 +257,8 @@ class SearchAPITest(APITestCase):
             username='search_test',
             first_name='Search',
             last_name='Test',
-            password='testpass123'
+            password='testpass123',
+            is_profile_complete=True,
         )
         self.client.force_authenticate(user=self.user)
 
@@ -367,6 +368,38 @@ class SearchAPITest(APITestCase):
             self.assertTrue(response.data['success'])
             self.assertIn('errors', response.data)
             self.assertIn(entity_type, response.data['data'])
+
+    def test_user_search_and_global_search_exclude_incomplete_profiles(self):
+        User.objects.create_user(
+            email='search-complete@example.com',
+            username='search_complete',
+            first_name='Search',
+            last_name='Complete',
+            password='testpass123',
+            is_profile_complete=True,
+        )
+        User.objects.create_user(
+            email='search-incomplete@example.com',
+            username='search_incomplete',
+            first_name='Search',
+            last_name='Incomplete',
+            password='testpass123',
+            is_profile_complete=False,
+        )
+
+        user_search_url = reverse('users:user-search')
+        user_search_response = self.client.get(user_search_url, {'search': 'search_'}, format='json')
+        self.assertEqual(user_search_response.status_code, status.HTTP_200_OK)
+        usernames = {item.get('username') for item in user_search_response.data}
+        self.assertIn('search_complete', usernames)
+        self.assertNotIn('search_incomplete', usernames)
+
+        global_search_url = reverse('global-search')
+        global_search_response = self.client.get(global_search_url, {'q': 'search_', 'type': 'users'}, format='json')
+        self.assertEqual(global_search_response.status_code, status.HTTP_200_OK)
+        global_usernames = {item.get('username') for item in global_search_response.data['data']['users']}
+        self.assertIn('search_complete', global_usernames)
+        self.assertNotIn('search_incomplete', global_usernames)
 
 
 class ConnectionAPITest(APITestCase):

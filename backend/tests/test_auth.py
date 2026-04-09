@@ -41,6 +41,7 @@ class AuthTests(APITestCase):
         self.register_url = reverse('users:register')
         self.login_url = reverse('users:login')
         self.password_reset_url = reverse('users:password-reset')
+        self.check_availability_url = reverse('users:check-availability')
         self.me_url = reverse('users:current-user')
 
         self.user_data = {
@@ -121,6 +122,22 @@ class AuthTests(APITestCase):
         }
         response = self.client.post(self.login_url, login_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_check_availability_endpoint(self):
+        User.objects.create_user(
+            email='taken@example.com',
+            username='takenusername',
+            password='password123',
+            is_profile_complete=True,
+        )
+        response = self.client.post(
+            self.check_availability_url,
+            {'email': 'taken@example.com', 'username': 'takenusername'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data['data']['email_available'])
+        self.assertFalse(response.data['data']['username_available'])
 
     def test_get_current_user_profile(self):
         """Test getting current user profile"""
@@ -244,3 +261,51 @@ class AuthTests(APITestCase):
             self.assertEqual(by_username_after.data['data']['previous_education'], payload['previous_education'])
             self.assertEqual(by_username_after.data['data']['experiences'], payload['experiences'])
             self.assertEqual(by_username_after.data['data']['portfolio_links'], payload['portfolio_links'])
+
+    def test_by_username_returns_404_for_incomplete_profile_to_other_users(self):
+        owner = User.objects.create_user(
+            email='incomplete-owner@example.com',
+            username='incomplete_owner',
+            first_name='Incomplete',
+            last_name='Owner',
+            password='password123',
+            is_profile_complete=False,
+        )
+        viewer = User.objects.create_user(
+            email='viewer@example.com',
+            username='viewer_user',
+            first_name='Viewer',
+            last_name='User',
+            password='password123',
+            is_profile_complete=True,
+        )
+        self.client.force_authenticate(user=viewer)
+
+        url = reverse('users:user-by-username', kwargs={'username': owner.username})
+        response = self.client.get(url, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_user_detail_returns_404_for_incomplete_profile_to_other_users(self):
+        owner = User.objects.create_user(
+            email='hidden-owner@example.com',
+            username='hidden_owner',
+            first_name='Hidden',
+            last_name='Owner',
+            password='password123',
+            is_profile_complete=False,
+        )
+        viewer = User.objects.create_user(
+            email='viewer-two@example.com',
+            username='viewer_two',
+            first_name='Viewer',
+            last_name='Two',
+            password='password123',
+            is_profile_complete=True,
+        )
+        self.client.force_authenticate(user=viewer)
+
+        url = reverse('users:user-detail', kwargs={'id': owner.id})
+        response = self.client.get(url, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)

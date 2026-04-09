@@ -13,7 +13,15 @@ import { Separator } from "@/components/ui/separator";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { supabaseSignUp, supabaseSignInWithGoogle, supabaseSignInWithFacebook, exchangeSupabaseToken, completeSupabaseProfile } from "@/services/api";
+import {
+  supabaseSignUp,
+  supabaseSignInWithGoogle,
+  supabaseSignInWithFacebook,
+  exchangeSupabaseToken,
+  completeSupabaseProfile,
+  getSupabaseRateLimitMetadata,
+  supabaseResendSignupEmail,
+} from "@/services/api";
 import { supabase } from "@/lib/supabase";
 import { completeSupabaseProfilePayloadSchema, mapCompleteProfileErrors } from "@/schemas/completeProfilePayload";
 import { AddEducationModal } from "@/components/modals/AddEducationModal";
@@ -28,6 +36,8 @@ import Sphere3D from "@/components/layout/Sphere3D";
 // Étapes : 1=infos perso, "verify"=attente email, 2=académique, 3=compétences
 type Step = 1 | "verify" | 2 | 3;
 const MINIMUM_AGE = 16;
+const RESEND_COOLDOWN_SECONDS = 60;
+const SUBMIT_DEBOUNCE_MS = 1000;
 
 const parseISODate = (value: string) => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
@@ -62,10 +72,17 @@ export function Register() {
   const [step, setStep] = useState<Step>(1);
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const [resendCooldownRemaining, setResendCooldownRemaining] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [availability, setAvailability] = useState({
+    email: { checking: false, available: true, checkedValue: "" },
+    username: { checking: false, available: true, checkedValue: "" },
+  });
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  const signupLastSubmitAtRef = useRef(0);
+  const resendLastSubmitAtRef = useRef(0);
 
   const [formData, setFormData] = useState({
     firstName: "", lastName: "", username: "", email: "",
@@ -147,6 +164,14 @@ export function Register() {
     return () => subscription.unsubscribe();
   }, [step, navigate, toast]);
 
+  useEffect(() => {
+    if (resendCooldownRemaining <= 0) return;
+    const timeoutId = window.setTimeout(() => {
+      setResendCooldownRemaining((previous) => Math.max(previous - 1, 0));
+    }, 1000);
+    return () => window.clearTimeout(timeoutId);
+  }, [resendCooldownRemaining]);
+
   const minimumAgeMessage = `Vous devez avoir au moins ${MINIMUM_AGE} ans`;
   const step1Schema = z.object({
     firstName: z.string().trim().min(2, "Au moins 2 caractères"),
@@ -197,13 +222,75 @@ export function Register() {
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: "" }));
   };
 
+  useEffect(() => {
+    const username = formData.username.trim();
+    if (step !== 1 || username.length < 3) {
+      setAvailability(prev => ({ ...prev, username: { checking: false, available: true, checkedValue: "" } }));
+      return;
+    }
+
+    const timeout = setTimeout(async () => {
+      setAvailability(prev => ({ ...prev, username: { ...prev.username, checking: true } }));
+      try {
+        const response = await checkUserAvailability({ username });
+        const isAvailable = response?.data?.username?.available ?? true;
+        setAvailability(prev => ({ ...prev, username: { checking: false, available: isAvailable, checkedValue: username } }));
+        setErrors(prev => ({ ...prev, username: isAvailable ? "" : "Ce nom d'utilisateur est déjà pris" }));
+      } catch {
+        setAvailability(prev => ({ ...prev, username: { ...prev.username, checking: false } }));
+      }
+    }, 400);
+
+    return () => clearTimeout(timeout);
+  }, [formData.username, step]);
+
+  useEffect(() => {
+    const email = formData.email.trim().toLowerCase();
+    if (step !== 1 || !email || !z.string().email().safeParse(email).success) {
+      setAvailability(prev => ({ ...prev, email: { checking: false, available: true, checkedValue: "" } }));
+      return;
+    }
+
+    const timeout = setTimeout(async () => {
+      setAvailability(prev => ({ ...prev, email: { ...prev.email, checking: true } }));
+      try {
+        const response = await checkUserAvailability({ email });
+        const isAvailable = response?.data?.email?.available ?? true;
+        setAvailability(prev => ({ ...prev, email: { checking: false, available: isAvailable, checkedValue: email } }));
+        setErrors(prev => ({ ...prev, email: isAvailable ? "" : "Cet email est déjà utilisé" }));
+      } catch {
+        setAvailability(prev => ({ ...prev, email: { ...prev.email, checking: false } }));
+      }
+    }, 400);
+
+    return () => clearTimeout(timeout);
+  }, [formData.email, step]);
+
   // Étape 1 → Supabase signUp → écran de vérification email
   const handleStep1Submit = async () => {
+    const now = Date.now();
+    if (now - signupLastSubmitAtRef.current < SUBMIT_DEBOUNCE_MS || isLoading) {
+      return;
+    }
+    signupLastSubmitAtRef.current = now;
+
     const validation = step1Schema.safeParse(formData);
     if (!validation.success) {
       const fieldErrors: Record<string, string> = {};
       validation.error.errors.forEach(e => { if (e.path[0]) fieldErrors[e.path[0] as string] = e.message; });
       setErrors(fieldErrors);
+      return;
+    }
+    const normalizedUsername = formData.username.trim();
+    const normalizedEmail = formData.email.trim().toLowerCase();
+    const usernameUnavailable = availability.username.checkedValue === normalizedUsername && !availability.username.available;
+    const emailUnavailable = availability.email.checkedValue === normalizedEmail && !availability.email.available;
+    if (usernameUnavailable || emailUnavailable) {
+      setErrors(prev => ({
+        ...prev,
+        ...(usernameUnavailable ? { username: "Ce nom d'utilisateur est déjà pris" } : {}),
+        ...(emailUnavailable ? { email: "Cet email est déjà utilisé" } : {}),
+      }));
       return;
     }
 
@@ -215,21 +302,53 @@ export function Register() {
         username: formData.username,
       });
       setStep("verify");
+      setResendCooldownRemaining(RESEND_COOLDOWN_SECONDS);
     } catch (err: any) {
-      toast({ title: "Erreur", description: err?.message, variant: "destructive" });
+      const rateLimit = getSupabaseRateLimitMetadata(err);
+      if (rateLimit) {
+        const waitSeconds = rateLimit.waitSeconds ?? RESEND_COOLDOWN_SECONDS;
+        toast({
+          title: "Trop de tentatives",
+          description: `Supabase limite temporairement les inscriptions. Réessayez dans ${waitSeconds}s.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: "Erreur", description: err?.message, variant: "destructive" });
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleResendEmail = async () => {
+    const now = Date.now();
+    if (
+      resendCooldownRemaining > 0 ||
+      isResending ||
+      now - resendLastSubmitAtRef.current < SUBMIT_DEBOUNCE_MS
+    ) {
+      return;
+    }
+    resendLastSubmitAtRef.current = now;
+
     setIsResending(true);
     try {
-      const { error } = await supabase.auth.resend({ type: "signup", email: formData.email });
-      if (error) throw error;
+      await supabaseResendSignupEmail(formData.email);
+      setResendCooldownRemaining(RESEND_COOLDOWN_SECONDS);
       toast({ title: "Email renvoyé !", duration: 2000 });
     } catch (err: any) {
-      toast({ title: "Erreur", description: err?.message, variant: "destructive" });
+      const rateLimit = getSupabaseRateLimitMetadata(err);
+      if (rateLimit) {
+        const waitSeconds = rateLimit.waitSeconds ?? RESEND_COOLDOWN_SECONDS;
+        setResendCooldownRemaining(waitSeconds);
+        toast({
+          title: "Envoi limité temporairement",
+          description: `Merci de patienter ${waitSeconds}s avant de renvoyer l'email.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: "Erreur", description: err?.message, variant: "destructive" });
+      }
     } finally {
       setIsResending(false);
     }
@@ -237,6 +356,8 @@ export function Register() {
 
   // Étape 3 → compléter le profil Django
   const handleFinalSubmit = async () => {
+    if (isLoading) return;
+
     const normalizedPhoneNumber = formData.phoneNumber
       ? `+237${formData.phoneNumber.replace(/^\+?237/, "")}`
       : undefined;
@@ -352,11 +473,13 @@ export function Register() {
                 <div className="min-w-0">
                   <Label>Nom d'utilisateur *</Label>
                   <Input maxLength={REGISTRATION_MAX_LENGTHS.username} value={formData.username} onChange={e => handleInputChange("username", e.target.value)} className={`w-full min-w-0 ${errors.username ? "border-destructive" : ""}`} />
+                  {availability.username.checking && <p className="text-xs text-muted-foreground mt-1">Vérification du nom d'utilisateur…</p>}
                   {errors.username && <p className="text-xs text-destructive mt-1">{errors.username}</p>}
                 </div>
                 <div className="min-w-0">
                   <Label>Email *</Label>
                   <Input maxLength={REGISTRATION_MAX_LENGTHS.email} type="email" value={formData.email} onChange={e => handleInputChange("email", e.target.value)} className={`w-full min-w-0 ${errors.email ? "border-destructive" : ""}`} />
+                  {availability.email.checking && <p className="text-xs text-muted-foreground mt-1">Vérification de l'email…</p>}
                   {errors.email && <p className="text-xs text-destructive mt-1">{errors.email}</p>}
                 </div>
               </div>
@@ -414,7 +537,7 @@ export function Register() {
               </div>
 
               <div className="flex justify-end pt-4">
-                <Button onClick={handleStep1Submit} disabled={isLoading} className="campus-gradient text-white hover:opacity-90">
+                <Button onClick={handleStep1Submit} disabled={isLoading || availability.email.checking || availability.username.checking} className="campus-gradient text-white hover:opacity-90">
                   {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   Suivant <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -440,9 +563,9 @@ export function Register() {
                 <p className="mt-1">Cette page se mettra à jour automatiquement.</p>
               </div>
               <div className="flex flex-col gap-2">
-                <Button variant="outline" onClick={handleResendEmail} disabled={isResending}>
+                <Button variant="outline" onClick={handleResendEmail} disabled={isResending || resendCooldownRemaining > 0}>
                   {isResending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                  Renvoyer l'email
+                  {resendCooldownRemaining > 0 ? `Renvoyer l'email (${resendCooldownRemaining}s)` : "Renvoyer l'email"}
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => setStep(1)}>
                   Modifier l'email

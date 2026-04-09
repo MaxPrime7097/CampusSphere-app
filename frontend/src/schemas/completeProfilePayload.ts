@@ -22,7 +22,7 @@ const MAX = {
 } as const;
 
 const phoneRegex = /^(?:\+237\d{9}|\d{9})$/;
-const studentIdRegex = /^[A-Za-z][A-Za-z0-9]*$/;
+const studentIdRegex = /^[A-Z][A-Z0-9]*$/;
 
 const previousEducationItemSchema = z.object({
   degree: z.string().trim().max(MAX.educationDegree, `Maximum ${MAX.educationDegree} caractères`).optional().default(""),
@@ -51,15 +51,16 @@ export const completeSupabaseProfilePayloadSchema = z.object({
   university: z.string().trim().max(MAX.university, `Maximum ${MAX.university} caractères`).optional(),
   faculty: z.string().trim().max(MAX.faculty, `Maximum ${MAX.faculty} caractères`).optional(),
   study_year: z.string().trim().max(60, "Maximum 60 caractères").optional(),
-  student_id: z
-    .string()
-    .trim()
-    .min(4, "Au moins 4 caractères")
-    .max(MAX.studentId, `Maximum ${MAX.studentId} caractères`)
-    .regex(studentIdRegex, "Doit commencer par une lettre et contenir uniquement lettres et chiffres")
-    .refine((value) => /[A-Za-z]/.test(value), "Doit contenir au moins une lettre")
-    .refine((value) => /\d/.test(value), "Doit contenir au moins un chiffre")
-    .optional(),
+  student_id: z.preprocess(
+    (value) => (typeof value === "string" ? value.trim().toUpperCase() : value),
+    z
+      .string()
+      .min(4, "Au moins 4 caractères")
+      .max(MAX.studentId, `Maximum ${MAX.studentId} caractères`)
+      .regex(studentIdRegex, "Doit commencer par une lettre et contenir uniquement lettres et chiffres (sans espaces)")
+      .refine((value) => /[A-Z]/.test(value), "Doit contenir au moins une lettre")
+      .refine((value) => /\d/.test(value), "Doit contenir au moins un chiffre")
+  ).optional(),
   campus: z.string().trim().max(MAX.campus, `Maximum ${MAX.campus} caractères`).optional(),
   town: z.string().trim().max(MAX.town, `Maximum ${MAX.town} caractères`).optional(),
   language: z.string().trim().max(MAX.language, `Maximum ${MAX.language} caractères`).optional(),

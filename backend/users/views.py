@@ -1,5 +1,6 @@
 import logging
 from django.conf import settings
+from django.http import Http404
 from rest_framework import generics, status, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -20,13 +21,16 @@ from .serializers import (
     UserSearchSerializer, ChangePasswordSerializer, ChangeEmailSerializer,
     LogoutSerializer, DeleteAccountSerializer, PrivacySettingsSerializer, PasswordResetSerializer,
     DataExportRequestSerializer, BlockListItemSerializer, BlockCreateSerializer,
-    SupabaseProfileCompletionSerializer
+    SupabaseProfileCompletionSerializer, normalize_email_for_lookup, normalize_username_for_lookup
 )
 from campus_sphere.cache import CacheManager, CacheKeys
 from notifications.services import create_connection_request_notification
 from .throttles import AuthScopedRateThrottle
 
 logger = logging.getLogger(__name__)
+
+
+INCOMPLETE_PROFILE_NOT_ACCESSIBLE_MESSAGE = "This profile is not accessible until onboarding is completed."
 
 
 def _are_accepted_connections(user_a, user_b):
@@ -37,26 +41,55 @@ def _are_accepted_connections(user_a, user_b):
 
 
 def _can_view_sensitive_profile_fields(request_user, target_user):
-    if not request_user or not request_user.is_authenticated:
-        return False
-
-    if request_user.id == target_user.id:
-        return True
-
-    return _are_accepted_connections(request_user, target_user)
+    return bool(
+        request_user
+        and request_user.is_authenticated
+        and request_user.id == target_user.id
+    )
 
 
 def _apply_profile_privacy(user_data, request_user, target_user):
     """
-    Redact sensitive fields for viewers who are not authorized by privacy policy.
+    Redact sensitive profile fields for everyone except the profile owner.
+
+    Note: `profile_visibility` can remain configurable for non-sensitive sections of
+    the profile, but sensitive personal data now follows a strict `self` policy
+    (no `connections` access).
     """
     if _can_view_sensitive_profile_fields(request_user, target_user):
         return user_data
 
-    for field in ['email', 'phone_number', 'date_of_birth', 'student_id', 'data_export_requested_at']:
+    sensitive_fields = [
+        'email',
+        'phone_number',
+        'phoneNumber',
+        'date_of_birth',
+        'dateOfBirth',
+        'student_id',
+        'studentId',
+        'town',
+        'language',
+        'data_export_requested_at',
+    ]
+    for field in sensitive_fields:
         user_data[field] = None
 
     return user_data
+
+
+def _can_access_profile(request_user, target_user):
+    if target_user.is_profile_complete:
+        return True
+
+    if not request_user or not request_user.is_authenticated:
+        return False
+
+    return request_user.id == target_user.id
+
+
+def _enforce_profile_access(request_user, target_user):
+    if not _can_access_profile(request_user, target_user):
+        raise Http404(INCOMPLETE_PROFILE_NOT_ACCESSIBLE_MESSAGE)
 
 
 class UserRegistrationView(generics.CreateAPIView):
@@ -133,6 +166,36 @@ class PasswordResetView(APIView):
             "success": True,
             "message": "If this email exists, a password reset link has been sent."
         }, status=status.HTTP_200_OK)
+
+
+class CheckAvailabilityView(APIView):
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [AuthScopedRateThrottle]
+
+    def post(self, request):
+        username = (request.data.get("username") or "").strip()
+        email = (request.data.get("email") or "").strip().lower()
+
+        response_data = {}
+        if username:
+            response_data["username_available"] = not User.objects.filter(
+                username__iexact=username
+            ).exists()
+        if email:
+            response_data["email_available"] = not User.objects.filter(
+                email__iexact=email
+            ).exists()
+
+        if not response_data:
+            return Response(
+                {
+                    "success": False,
+                    "error": "Provide username and/or email to check availability.",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response({"success": True, "data": response_data}, status=status.HTTP_200_OK)
 
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
@@ -264,6 +327,7 @@ class UserDetailView(generics.RetrieveAPIView):
 
     def retrieve(self, request, *args, **kwargs):
         user = self.get_object()
+        _enforce_profile_access(request.user, user)
         user_data = UserProfileSerializer(user).data
         user_data = _apply_profile_privacy(user_data, request.user, user)
         return Response(user_data)
@@ -278,7 +342,9 @@ class UserSearchView(generics.ListAPIView):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        return queryset.exclude(id=self.request.user.id)
+        return queryset.filter(
+            is_profile_complete=True
+        ).exclude(id=self.request.user.id)
 
 
 class ConnectionListView(generics.ListCreateAPIView):
@@ -456,6 +522,7 @@ def get_user_by_username(request, username):
     """Get user profile by username"""
     try:
         user = User.objects.get(username=username)
+        _enforce_profile_access(request.user, user)
         cache_key = CacheKeys.user_profile(user.id)
 
         user_data = CacheManager.get_or_set(
@@ -618,11 +685,15 @@ class SupabaseTokenExchangeView(APIView):
             supabase_user = user_response.user
             
             # Chercher ou créer l'utilisateur Django
+            supabase_email = normalize_email_for_lookup(supabase_user.email)
+            default_username = normalize_username_for_lookup(
+                supabase_user.user_metadata.get('username') or (supabase_email.split('@')[0] if supabase_email else '')
+            )
             user, created = User.objects.get_or_create(
                 supabase_uid=supabase_user.id,
                 defaults={
-                    'email': supabase_user.email,
-                    'username': supabase_user.email.split('@')[0],  # Temporaire
+                    'email': supabase_email,
+                    'username': default_username,  # Temporaire
                     'first_name': supabase_user.user_metadata.get('first_name', ''),
                     'last_name': supabase_user.user_metadata.get('last_name', ''),
                     'is_profile_complete': False,
