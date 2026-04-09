@@ -30,8 +30,13 @@ export function AuthCallback() {
 
         if (!isMounted) return;
 
+        const shouldCompleteProfile =
+          response?.data?.needs_profile_completion ??
+          response?.data?.is_new_user ??
+          false;
+
         // Vérifier si le profil doit être complété
-        if (response?.data?.needs_profile_completion) {
+        if (shouldCompleteProfile) {
           // Pour les nouveaux utilisateurs ou profils incomplets
           navigate("/complete-profile", { replace: true });
         } else {

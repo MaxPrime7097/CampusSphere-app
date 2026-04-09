@@ -53,8 +53,8 @@ export async function supabaseSignOut() {
 }
 
 export async function exchangeSupabaseToken(supabaseAccessToken: string) {
-  const response = await apiFetch<{ success: boolean; data: { tokens: { accessToken: string; refreshToken: string }; user: any; needs_profile_completion?: boolean } }>(
-    "api/users/auth/supabase/exchange-token/",
+  const response = await apiFetch<{ success: boolean; data: { tokens: { accessToken: string; refreshToken: string }; user: any; needs_profile_completion?: boolean; is_new_user?: boolean } }>(
+    "api/auth/supabase/exchange/",
     { method: "POST", body: { access_token: supabaseAccessToken } }
   );
   const tokens = response?.data?.tokens;
@@ -84,7 +84,7 @@ export async function completeSupabaseProfile(data: {
   experiences?: any[];
   portfolio_links?: any[];
 }) {
-  const response = await apiFetch<any>("api/users/auth/supabase/complete-profile/", {
+  const response = await apiFetch<any>("api/auth/supabase/complete-profile/", {
     method: "POST",
     body: data,
   });

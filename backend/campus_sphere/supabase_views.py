@@ -118,10 +118,17 @@ class SupabaseTokenExchangeView(APIView):
 
     def post(self, request):
         try:
-            supabase_token = request.data.get("supabase_token", "").strip()
+            # Backward/forward compatibility:
+            # - legacy payloads use `supabase_token`
+            # - frontend payloads currently send `access_token`
+            supabase_token = (
+                request.data.get("supabase_token")
+                or request.data.get("access_token")
+                or ""
+            ).strip()
             if not supabase_token:
                 return Response(
-                    {"detail": "supabase_token requis"},
+                    {"detail": "supabase_token ou access_token requis"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
@@ -220,6 +227,7 @@ class SupabaseTokenExchangeView(APIView):
                 user.save()
 
             refresh = RefreshToken.for_user(user)
+            needs_profile_completion = not bool(getattr(user, "is_profile_complete", False))
             return Response({
                 "success": True,
                 "data": {
@@ -229,6 +237,7 @@ class SupabaseTokenExchangeView(APIView):
                     },
                     "user": UserProfileSerializer(user).data,
                     "is_new_user": is_new_user,
+                    "needs_profile_completion": needs_profile_completion,
                 }
             }, status=status.HTTP_200_OK)
 
