@@ -18,7 +18,10 @@ class SupabaseProfileCompletionSerializer(serializers.ModelSerializer):
     ISO_LANGUAGE_REGEX = re.compile(r"^[a-z]{2}(?:-[A-Z]{2})?$")
     USERNAME_REGEX = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
     STUDY_YEAR_REGEX = re.compile(r"^[A-Za-z0-9][A-Za-z0-9\s._/-]*$")
-    STUDENT_ID_REGEX = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
+    STUDENT_ID_REGEX = re.compile(r"^[A-Z][A-Z0-9]*$")
+    STUDENT_ID_HAS_LETTER_REGEX = re.compile(r"[A-Z]")
+    STUDENT_ID_HAS_DIGIT_REGEX = re.compile(r"\d")
+    STUDENT_ID_WHITESPACE_REGEX = re.compile(r"\s")
     PHONE_REGEX = re.compile(r"^\+?[0-9][0-9\s().-]{6,29}$")
     
     class Meta:
@@ -65,12 +68,20 @@ class SupabaseProfileCompletionSerializer(serializers.ModelSerializer):
         return value
 
     def validate_student_id(self, value):
-        value = value.strip()
-        if not (4 <= len(value) <= 50):
+        normalized_value = value.strip().upper()
+        if self.STUDENT_ID_WHITESPACE_REGEX.search(normalized_value):
+            raise serializers.ValidationError("L'identifiant étudiant ne doit pas contenir d'espaces")
+        if not (4 <= len(normalized_value) <= 50):
             raise serializers.ValidationError("L'identifiant étudiant doit contenir entre 4 et 50 caractères")
-        if not self.STUDENT_ID_REGEX.match(value):
-            raise serializers.ValidationError("Format d'identifiant étudiant invalide")
-        return value
+        if not self.STUDENT_ID_REGEX.match(normalized_value):
+            raise serializers.ValidationError(
+                "L'identifiant étudiant doit commencer par une lettre et contenir uniquement des lettres et des chiffres"
+            )
+        if not self.STUDENT_ID_HAS_LETTER_REGEX.search(normalized_value):
+            raise serializers.ValidationError("L'identifiant étudiant doit contenir au moins une lettre")
+        if not self.STUDENT_ID_HAS_DIGIT_REGEX.search(normalized_value):
+            raise serializers.ValidationError("L'identifiant étudiant doit contenir au moins un chiffre")
+        return normalized_value
 
     def validate_study_year(self, value):
         value = value.strip()
