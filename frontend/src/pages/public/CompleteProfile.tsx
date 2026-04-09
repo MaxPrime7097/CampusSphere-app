@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { completeSupabaseProfile } from "@/services/api";
+import { completeSupabaseProfilePayloadSchema, mapCompleteProfileErrors } from "@/schemas/completeProfilePayload";
 import { AddEducationModal } from "@/components/modals/AddEducationModal";
 import { AddExperienceModal } from "@/components/modals/AddExperienceModal";
 import { UniversityCombobox } from "@/components/forms/UniversityCombobox";
@@ -71,25 +72,38 @@ export function CompleteProfile() {
   };
 
   const handleSubmit = async () => {
+    const normalizedPhoneNumber = formData.phoneNumber
+      ? `+237${formData.phoneNumber.replace(/^\+?237/, "")}`
+      : undefined;
+
+    const payload = {
+      username: formData.username,
+      phone_number: normalizedPhoneNumber,
+      date_of_birth: formData.dateOfBirth,
+      town: formData.town,
+      language: formData.language || "Français",
+      university: formData.university,
+      faculty: formData.faculty,
+      study_year: formData.studyYear,
+      student_id: formData.studentId,
+      campus: formData.campus,
+      skills: formData.skills,
+      interests: formData.interests,
+      previous_education: formData.previousEducation,
+      experiences: formData.experiences,
+      portfolio_links: formData.portfolioLinks,
+    };
+
+    const validation = completeSupabaseProfilePayloadSchema.safeParse(payload);
+    if (!validation.success) {
+      setErrors(mapCompleteProfileErrors(validation.error));
+      return;
+    }
+
+    setErrors({});
     setIsLoading(true);
     try {
-      await completeSupabaseProfile({
-        username: formData.username,
-        phone_number: formData.phoneNumber,
-        date_of_birth: formData.dateOfBirth,
-        town: formData.town,
-        language: formData.language || "Français",
-        university: formData.university,
-        faculty: formData.faculty,
-        study_year: formData.studyYear,
-        student_id: formData.studentId,
-        campus: formData.campus,
-        skills: formData.skills,
-        interests: formData.interests,
-        previous_education: formData.previousEducation,
-        experiences: formData.experiences,
-        portfolio_links: formData.portfolioLinks,
-      });
+      await completeSupabaseProfile(payload);
       toast({ title: "Profil complété ! 🎉", description: "Bienvenue sur CampusSphere", duration: 4000 });
       navigate("/");
     } catch (err: any) {
@@ -154,10 +168,12 @@ export function CompleteProfile() {
                 <div>
                   <Label>Ville</Label>
                   <Input value={formData.town} onChange={e => handleInput("town", e.target.value)} />
+                  {errors.town && <p className="text-xs text-destructive mt-1">{errors.town}</p>}
                 </div>
                 <div>
                   <Label>Langue</Label>
                   <Input value={formData.language} onChange={e => handleInput("language", e.target.value)} placeholder="Français" />
+                  {errors.language && <p className="text-xs text-destructive mt-1">{errors.language}</p>}
                 </div>
               </div>
               <div className="flex justify-end pt-4">
@@ -197,6 +213,7 @@ export function CompleteProfile() {
               <div>
                 <Label>Campus</Label>
                 <Input value={formData.campus} onChange={e => handleInput("campus", e.target.value)} placeholder="Si plusieurs campus" />
+                {errors.campus && <p className="text-xs text-red-500 mt-1">{errors.campus}</p>}
               </div>
               <div className="flex justify-between pt-4">
                 <Button variant="outline" onClick={() => setStep(1)}><ChevronLeft className="mr-2 h-4 w-4" />Précédent</Button>
@@ -226,6 +243,7 @@ export function CompleteProfile() {
                     <Button variant="ghost" size="sm" onClick={() => setFormData(p => ({ ...p, previousEducation: p.previousEducation.filter((_, j) => j !== i) }))}><X className="h-4 w-4" /></Button>
                   </div>
                 ))}
+                {errors.previousEducation && <p className="text-xs text-red-500 mt-1">{errors.previousEducation}</p>}
               </div>
 
               {/* Expériences */}
@@ -242,6 +260,7 @@ export function CompleteProfile() {
                     <Button variant="ghost" size="sm" onClick={() => setFormData(p => ({ ...p, experiences: p.experiences.filter((_, j) => j !== i) }))}><X className="h-4 w-4" /></Button>
                   </div>
                 ))}
+                {errors.experiences && <p className="text-xs text-red-500 mt-1">{errors.experiences}</p>}
               </div>
 
               {/* Compétences */}
@@ -284,6 +303,7 @@ export function CompleteProfile() {
                   <Input placeholder="URL" value={newLink.url} onChange={e => setNewLink(p => ({ ...p, url: e.target.value }))} />
                   <Button type="button" variant="outline" onClick={() => { if (newLink.name && newLink.url) { setFormData(p => ({ ...p, portfolioLinks: [...p.portfolioLinks, newLink] })); setNewLink({ name: "", url: "" }); } }}>+</Button>
                 </div>
+                {errors.portfolioLinks && <p className="text-xs text-red-500 mt-1">{errors.portfolioLinks}</p>}
                 {formData.portfolioLinks.map((l, i) => (
                   <div key={i} className="flex justify-between items-center p-2 border rounded mt-1 bg-muted/50">
                     <div><p className="text-sm font-medium">{l.name}</p><p className="text-xs text-muted-foreground">{l.url}</p></div>
