@@ -123,6 +123,13 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     class Meta:
         ordering = ['-date_joined']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['phone_number'],
+                condition=~Q(phone_number=''),
+                name='uniq_user_phone_number_non_empty',
+            ),
+        ]
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.username})"
@@ -202,4 +209,3 @@ class AdminAuditLog(models.Model):
     def __str__(self):
         actor_label = self.actor.username if self.actor else 'unknown'
         return f"{self.action} by {actor_label} on {self.target_type}:{self.target_id}"
-

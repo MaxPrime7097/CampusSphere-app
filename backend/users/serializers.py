@@ -20,6 +20,13 @@ class SupabaseProfileCompletionSerializer(serializers.ModelSerializer):
     STUDY_YEAR_REGEX = re.compile(r"^[A-Za-z0-9][A-Za-z0-9\s._/-]*$")
     STUDENT_ID_REGEX = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
     PHONE_REGEX = re.compile(r"^\+?[0-9][0-9\s().-]{6,29}$")
+
+    @staticmethod
+    def _normalize_phone_number(value):
+        cleaned = re.sub(r"[\s().-]", "", value)
+        if cleaned.startswith("+"):
+            return f"+{re.sub(r'[^0-9]', '', cleaned[1:])}"
+        return re.sub(r"[^0-9]", "", cleaned)
     
     class Meta:
         model = User
@@ -52,7 +59,15 @@ class SupabaseProfileCompletionSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Le numéro de téléphone ne peut pas dépasser 30 caractères")
         if not self.PHONE_REGEX.match(value):
             raise serializers.ValidationError("Format de numéro de téléphone invalide")
-        return value
+
+        normalized_value = self._normalize_phone_number(value)
+        queryset = User.objects.filter(phone_number=normalized_value)
+        if self.instance:
+            queryset = queryset.exclude(id=self.instance.id)
+        if queryset.exists():
+            raise serializers.ValidationError("Ce numéro de téléphone est déjà utilisé")
+
+        return normalized_value
 
     def validate_language(self, value):
         value = value.strip()
