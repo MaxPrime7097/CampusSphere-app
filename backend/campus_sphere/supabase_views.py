@@ -226,8 +226,18 @@ class SupabaseTokenExchangeView(APIView):
                 user.set_unusable_password()
                 user.save()
 
+            # Recompute profile completion from required fields in case the boolean
+            # is stale or the user was created before this field existed.
+            required_fields = [
+                "username", "university", "faculty", "study_year", "student_id"
+            ]
+            is_complete = all(getattr(user, field, None) for field in required_fields)
+            if user.is_profile_complete != is_complete:
+                user.is_profile_complete = is_complete
+                user.save(update_fields=["is_profile_complete"])
+
             refresh = RefreshToken.for_user(user)
-            needs_profile_completion = not bool(getattr(user, "is_profile_complete", False))
+            needs_profile_completion = not is_complete
             return Response({
                 "success": True,
                 "data": {

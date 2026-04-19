@@ -114,6 +114,40 @@ class AuthTests(APITestCase):
         self.assertIn('user', response.data['data'])
         self.assertIn('tokens', response.data['data'])
 
+    @patch('campus_sphere.supabase_views._decode_token_unverified')
+    @patch('campus_sphere.supabase_views.verify_supabase_token')
+    def test_existing_user_with_complete_profile_does_not_require_profile_completion(self, mock_verify, mock_decode):
+        user = User.objects.create_user(
+            email='google-existing@example.com',
+            username='googleexisting',
+            first_name='Google',
+            last_name='User',
+            password='password123',
+            university='Université Test',
+            faculty='Informatique',
+            study_year='L3',
+            student_id='STU-123456',
+            is_profile_complete=False,
+        )
+
+        payload = {
+            'sub': 'google-uid-2',
+            'email': user.email,
+            'user_metadata': {'first_name': user.first_name, 'last_name': user.last_name},
+        }
+        mock_decode.return_value = payload
+        mock_verify.return_value = payload
+
+        url = reverse('supabase-exchange')
+        response = self.client.post(url, {'access_token': 'dummy-token'}, format='json', secure=True)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data['data']['needs_profile_completion'])
+
+        user.refresh_from_db()
+        self.assertEqual(user.supabase_uid, 'google-uid-2')
+        self.assertTrue(user.is_profile_complete)
+
     def test_invalid_login(self):
         """Test invalid login credentials"""
         login_data = {
