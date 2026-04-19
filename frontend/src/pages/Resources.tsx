@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   listResources,
@@ -392,7 +392,7 @@ export function Resources() {
                 <Input placeholder="Rechercher..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
               </div>
               <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                <SelectTrigger><SelectValue placeholder="MatiÃ¨re" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Matière" /></SelectTrigger>
                 <SelectContent>
                   {subjects.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
                 </SelectContent>
@@ -413,7 +413,7 @@ export function Resources() {
           {[
             { id: "all", label: "Toutes" },
             { id: "suggestions", label: "Suggestions" },
-            { id: "recent", label: "RÃ©centes" },
+            { id: "recent", label: "Récentes" },
           ].map((tab) => (
             <li key={tab.id}>
               <button
