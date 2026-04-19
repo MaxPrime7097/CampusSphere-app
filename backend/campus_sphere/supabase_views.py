@@ -227,6 +227,7 @@ class SupabaseTokenExchangeView(APIView):
                 user.save()
 
             refresh = RefreshToken.for_user(user)
+            needs_profile_completion = not bool(getattr(user, "is_profile_complete", False))
             return Response({
                 "success": True,
                 "data": {
@@ -236,6 +237,7 @@ class SupabaseTokenExchangeView(APIView):
                     },
                     "user": UserProfileSerializer(user).data,
                     "is_new_user": is_new_user,
+                    "needs_profile_completion": needs_profile_completion,
                 }
             }, status=status.HTTP_200_OK)
 

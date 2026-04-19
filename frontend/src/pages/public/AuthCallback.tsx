@@ -1,9 +1,42 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
-import { exchangeSupabaseToken } from "@/services/api";
+import { exchangeSupabaseToken, getCurrentUser } from "@/services/api";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+const REQUIRED_PROFILE_FIELDS = [
+  "username",
+  "university",
+  "faculty",
+  "study_year",
+  "student_id",
+] as const;
+
+const isFieldFilled = (value: unknown) => {
+  if (typeof value === "string") return value.trim().length > 0;
+  if (typeof value === "number") return Number.isFinite(value);
+  return false;
+};
+
+const hasCompleteProfile = (profile: Record<string, unknown> | null | undefined) => {
+  if (!profile) return false;
+
+  return REQUIRED_PROFILE_FIELDS.every((field) => {
+    if (field === "study_year") {
+      return isFieldFilled(profile.study_year ?? profile.studyYear);
+    }
+    if (field === "student_id") {
+      return isFieldFilled(profile.student_id ?? profile.studentId);
+    }
+    return isFieldFilled(profile[field]);
+  });
+};
+
+const debugRoutingDecision = (details: Record<string, unknown>) => {
+  if (!import.meta.env.DEV) return;
+  console.debug("[AuthCallback] OAuth routing decision", details);
+};
 
 export function AuthCallback() {
   const navigate = useNavigate();
@@ -30,13 +63,29 @@ export function AuthCallback() {
 
         if (!isMounted) return;
 
-        // Vérifier si le profil doit être complété.
-        // Fallback on user.is_profile_complete for backward compatibility.
-        const needsProfileCompletion =
-          response?.data?.needs_profile_completion ??
-          !Boolean(response?.data?.user?.is_profile_complete);
+        const needsProfileCompletion = response?.data?.needs_profile_completion;
+        let shouldCompleteProfile: boolean;
 
-        if (needsProfileCompletion) {
+        if (typeof needsProfileCompletion === "boolean") {
+          shouldCompleteProfile = needsProfileCompletion;
+          debugRoutingDecision({
+            source: "needs_profile_completion",
+            needs_profile_completion: needsProfileCompletion,
+            destination: shouldCompleteProfile ? "/complete-profile" : "/",
+          });
+        } else {
+          const profile = await getCurrentUser();
+          shouldCompleteProfile = !hasCompleteProfile(profile as Record<string, unknown>);
+          debugRoutingDecision({
+            source: "fallback_profile_check",
+            needs_profile_completion: needsProfileCompletion,
+            profile_completion_required: shouldCompleteProfile,
+            required_fields: REQUIRED_PROFILE_FIELDS,
+            destination: shouldCompleteProfile ? "/complete-profile" : "/",
+          });
+        }
+
+        if (shouldCompleteProfile) {
           navigate("/complete-profile", { replace: true });
         } else {
           toast({ title: "Connexion réussie !", duration: 2000 });
