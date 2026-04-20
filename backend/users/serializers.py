@@ -8,6 +8,9 @@ from django.utils import timezone
 import re
 from .models import User, Connection, UserBlock
 
+REQUIRED_PROFILE_FIELDS = ['username', 'university', 'faculty', 'study_year', 'student_id']
+USERNAME_REGEX = re.compile(r'^[A-Za-z0-9][A-Za-z0-9_.-]*$')
+
 
 def normalize_email_for_lookup(value):
     return (value or "").strip().lower()
@@ -186,8 +189,7 @@ class SupabaseProfileCompletionSerializer(serializers.ModelSerializer):
     
     def validate(self, data):
         # Vérifier que les champs obligatoires sont présents avec règles de format robustes
-        required_fields = ['username', 'university', 'faculty', 'study_year', 'student_id']
-        for field in required_fields:
+        for field in REQUIRED_PROFILE_FIELDS:
             current_value = data.get(field, getattr(self.instance, field, None))
             cleaned_value = self._ensure_required_text(field, current_value)
             validator = getattr(self, f"validate_{field}", None)
@@ -211,8 +213,7 @@ class SupabaseProfileCompletionSerializer(serializers.ModelSerializer):
             instance.date_of_birth = date_of_birth
         
         # Marquer le profil comme complet seulement si tous les champs obligatoires sont présents
-        required_fields = ['username', 'university', 'faculty', 'study_year', 'student_id']
-        is_complete = all(getattr(instance, field, None) for field in required_fields)
+        is_complete = all(getattr(instance, field, None) for field in REQUIRED_PROFILE_FIELDS)
         instance.is_profile_complete = is_complete
         
         instance.save()
@@ -245,8 +246,18 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("This email is already in use")
         return normalized
 
+    def validate_password(self, value):
+        validate_password(value)
+        return value
+
     def validate_username(self, value):
         normalized = normalize_username_for_lookup(value)
+        if not (3 <= len(normalized) <= 50):
+            raise serializers.ValidationError("Le nom d'utilisateur doit contenir entre 3 et 50 caractères")
+        if not USERNAME_REGEX.match(normalized):
+            raise serializers.ValidationError(
+                "Le nom d'utilisateur ne peut contenir que des lettres, chiffres, points, tirets et underscores"
+            )
         if User.objects.filter(username__iexact=normalized).exists():
             raise serializers.ValidationError("This username is already in use")
         return normalized
@@ -261,6 +272,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         previous_education = validated_data.pop('previous_education', [])
         experiences = validated_data.pop('experiences', [])
         portfolio_links = validated_data.pop('portfolio_links', [])
+
+        is_complete = all(validated_data.get(field) for field in REQUIRED_PROFILE_FIELDS)
         user = User.objects.create_user(**validated_data)
         if phone_number and hasattr(user, 'phone_number'):
             user.phone_number = phone_number
@@ -278,6 +291,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             user.experiences = experiences
         if portfolio_links:
             user.portfolio_links = portfolio_links
+        if is_complete:
+            user.is_profile_complete = True
         user.save()
         return user
 

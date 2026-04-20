@@ -98,6 +98,45 @@ class AuthTests(APITestCase):
         self.assertEqual(user.first_name, 'John')
         self.assertEqual(user.username, 'johndoe')
 
+    def test_registration_rejects_weak_passwords(self):
+        bad_data = self.user_data.copy()
+        bad_data['password'] = bad_data['confirm_password'] = '12345678'
+
+        response = self.client.post(self.register_url, bad_data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('password', response.data)
+
+    def test_supabase_complete_profile_requires_required_fields(self):
+        user = User.objects.create_user(
+            email='incomplete@example.com',
+            username='incompleteuser',
+            first_name='Incomplete',
+            last_name='User',
+            password='password123',
+            is_profile_complete=False,
+        )
+        self.client.force_authenticate(user=user)
+
+        incomplete_payload = {
+            'username': 'incompleteuser',
+        }
+        response = self.client.post(reverse('supabase-complete-profile'), incomplete_payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        complete_payload = {
+            'username': 'incompleteuser',
+            'university': 'Université de Test',
+            'faculty': 'Informatique',
+            'study_year': 'L3',
+            'student_id': 'STU-123456',
+        }
+        response = self.client.post(reverse('supabase-complete-profile'), complete_payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+        self.assertTrue(user.is_profile_complete)
+
     def test_user_login(self):
         """Test user login"""
         # First register user

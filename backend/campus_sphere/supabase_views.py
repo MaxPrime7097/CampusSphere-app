@@ -5,8 +5,13 @@ from rest_framework import status, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+from campus_sphere.cache import CacheManager
 from users.models import User
-from users.serializers import UserProfileSerializer, UserUpdateSerializer
+from users.serializers import (
+    UserProfileSerializer,
+    SupabaseProfileCompletionSerializer,
+    REQUIRED_PROFILE_FIELDS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -101,6 +106,10 @@ def _verify_hs256(token: str) -> dict | None:
             continue
 
     return None
+
+
+def _is_profile_complete(user: User) -> bool:
+    return all(getattr(user, field, None) for field in REQUIRED_PROFILE_FIELDS)
 
 
 def verify_supabase_token(token: str) -> dict | None:
@@ -228,10 +237,7 @@ class SupabaseTokenExchangeView(APIView):
 
             # Recompute profile completion from required fields in case the boolean
             # is stale or the user was created before this field existed.
-            required_fields = [
-                "username", "university", "faculty", "study_year", "student_id"
-            ]
-            is_complete = all(getattr(user, field, None) for field in required_fields)
+            is_complete = _is_profile_complete(user)
             if user.is_profile_complete != is_complete:
                 user.is_profile_complete = is_complete
                 user.save(update_fields=["is_profile_complete"])
@@ -263,12 +269,13 @@ class SupabaseCompleteProfileView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        serializer = UserUpdateSerializer(request.user, data=request.data, partial=True)
+        serializer = SupabaseProfileCompletionSerializer(request.user, data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        user = serializer.save()
+        CacheManager.invalidate_user_profile(user.id)
         return Response({
             "success": True,
-            "data": UserProfileSerializer(request.user).data,
+            "data": UserProfileSerializer(user).data,
             "message": "Profil complété avec succès",
         }, status=status.HTTP_200_OK)
 
