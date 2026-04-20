@@ -66,7 +66,7 @@ export function Combobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("w-full justify-between", className)}
+          className={cn("w-full justify-between min-w-0 whitespace-normal break-words text-left", className)}
           disabled={disabled}
         >
           {selectedLabel ?? placeholder}
