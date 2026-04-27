@@ -1,31 +1,30 @@
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
-interface OptimizedImageProps {
-  src: string;
-  alt: string;
-  className?: string;
+interface OptimizedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   fallback?: string;
   placeholder?: string;
-  width?: number;
-  height?: number;
+  containerClassName?: string;
   priority?: boolean;
 }
 
-export function OptimizedImage({
+export const OptimizedImage = React.forwardRef<HTMLImageElement, OptimizedImageProps>(({
   src,
   alt,
   className,
+  containerClassName,
   fallback,
   placeholder = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PC9zdmc+",
   width,
   height,
-  priority = false
-}: OptimizedImageProps) {
+  priority = false,
+  ...props
+}, forwardedRef) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isInView, setIsInView] = useState(priority);
   const [hasError, setHasError] = useState(false);
-  const imgRef = useRef<HTMLImageElement>(null);
+  const internalRef = useRef<HTMLImageElement>(null);
+  const imgRef = (forwardedRef as React.RefObject<HTMLImageElement>) || internalRef;
 
   // Intersection Observer for lazy loading
   useEffect(() => {
@@ -75,12 +74,11 @@ export function OptimizedImage({
 
   return (
     <div 
-      ref={imgRef}
       className={cn(
         "relative overflow-hidden bg-muted",
-        className
+        containerClassName
       )}
-      style={{ width, height }}
+      style={width || height ? { width, height } : undefined}
     >
       {/* Placeholder */}
       {!isLoaded && (
@@ -97,18 +95,28 @@ export function OptimizedImage({
       {/* Actual image */}
       {isInView && (
         <img
-          src={hasError ? (fallback || src) : getOptimizedSrc(src)}
+          ref={imgRef}
+          src={hasError ? (fallback || src) : getOptimizedSrc(src!)}
           alt={alt}
           className={cn(
             "w-full h-full object-cover transition-opacity duration-300",
-            isLoaded ? "opacity-100" : "opacity-0"
+            isLoaded ? "opacity-100" : "opacity-0",
+            className
           )}
-          onLoad={handleLoad}
-          onError={handleError}
+          onLoad={(e) => {
+            handleLoad();
+            props.onLoad && props.onLoad(e);
+          }}
+          onError={(e) => {
+            handleError();
+            props.onError && props.onError(e);
+          }}
           loading={priority ? "eager" : "lazy"}
           decoding="async"
+          {...props}
         />
       )}
     </div>
   );
-}
+});
+OptimizedImage.displayName = "OptimizedImage";

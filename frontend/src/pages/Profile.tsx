@@ -14,7 +14,9 @@ import { useToast } from "@/hooks/use-toast";
 import { CreatePost } from "@/components/feed/CreatePost";
 import { PostCard } from "@/components/feed/PostCard";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { cn, formatFileSize } from "@/lib/utils"; // si tu utilises cn dans ce fichier
+import { cn, formatFileSize } from "@/lib/utils";
+import { ProfileSkeleton } from "@/components/ui/skeletons";
+import { OptimizedImage } from "@/components/ui/optimized-image";
 
 const NOT_AVAILABLE_TEXT = "—";
 const MOOD_OPTIONS = [
@@ -901,6 +903,18 @@ export function Profile() {
     isMobile ? "rounded-none border-x-0 border-t-0 shadow-none bg-card" : "campus-card hover:campus-glow"
   );
 
+  if (loading) {
+    return (
+      <div className="min-h-screen w-full bg-gradient-to-br from-background to-accent/20">
+        <div className="container max-w-4xl mx-auto py-0 px-0 sm:py-4">
+          <div className={cardClasses}>
+            <ProfileSkeleton />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!loading && profileLoadError) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
@@ -930,10 +944,12 @@ export function Profile() {
           {/* Photo de couverture */}
           <div className="relative rounded-t-null sm:rounded-t-lg h-48 bg-gradient-to-br from-primary/20 via-accent/20 to-primary/30 overflow-hidden">
             {user.coverPhoto ? (
-              <img 
+              <OptimizedImage 
                 src={user.coverPhoto} 
                 alt="Photo de couverture" 
                 className="w-full h-full object-cover"
+                containerClassName="w-full h-full absolute inset-0"
+                priority={true}
               />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-primary/30 via-accent/30 to-primary/40 flex items-center justify-center">

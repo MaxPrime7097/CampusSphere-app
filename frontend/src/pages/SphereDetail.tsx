@@ -29,6 +29,7 @@ import { MiniChat } from "@/components/chat/MiniChat";
 import { KanbanBoard, type KanbanTask } from "@/components/kanban/KanbanBoard";
 import { SphereOverview } from "@/components/sphere/SphereOverview";
 import { SphereUploadResourceModal } from "@/components/modals/SphereUploadResourceModal";
+import { OptimizedImage } from "@/components/ui/optimized-image";
 
 export function SphereDetail() {
   const { id } = useParams();
@@ -379,10 +380,12 @@ export function SphereDetail() {
         <div className="overflow-hidden md:rounded-xl border-y md:border bg-card shadow-sm">
           <div className="relative h-36 md:h-48 group">
             {sphere?.banner_image_url ? (
-              <img
+              <OptimizedImage
                 src={sphere.banner_image_url}
                 alt="Bannière"
                 className="w-full h-full object-cover"
+                containerClassName="w-full h-full absolute inset-0"
+                priority={true}
               />
             ) : (
               <div
@@ -578,8 +581,13 @@ export function SphereDetail() {
                       return (
                         <div key={res.id} className="border rounded-xl bg-card overflow-hidden">
                           {isImage && fileUrl && (
-                            <a href={fileUrl} target="_blank" rel="noopener noreferrer">
-                              <img src={fileUrl} alt={fileName} className="w-full max-h-48 object-cover" />
+                            <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="block relative w-full h-48">
+                              <OptimizedImage 
+                                src={fileUrl} 
+                                alt={fileName} 
+                                className="w-full h-full object-contain" 
+                                containerClassName="w-full h-full max-h-48 bg-muted"
+                              />
                             </a>
                           )}
                           {isPdf && fileUrl && (

@@ -2,6 +2,7 @@ import * as React from "react";
 import * as AvatarPrimitive from "@radix-ui/react-avatar";
 
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Avatar = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Root>,
@@ -18,9 +19,25 @@ Avatar.displayName = AvatarPrimitive.Root.displayName;
 const AvatarImage = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Image>,
   React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image>
->(({ className, ...props }, ref) => (
-  <AvatarPrimitive.Image ref={ref} className={cn("aspect-square h-full w-full", className)} {...props} />
-));
+>(({ className, ...props }, ref) => {
+  const [status, setStatus] = React.useState<"idle" | "loading" | "loaded" | "error">("idle");
+  return (
+    <>
+      <AvatarPrimitive.Image
+        ref={ref}
+        className={cn("aspect-square h-full w-full", status !== "loaded" && "hidden", className)}
+        onLoadingStatusChange={(s) => {
+          setStatus(s);
+          if (props.onLoadingStatusChange) {
+            props.onLoadingStatusChange(s);
+          }
+        }}
+        {...props}
+      />
+      {status === "loading" && <Skeleton className="absolute inset-0 h-full w-full rounded-full" />}
+    </>
+  );
+});
 AvatarImage.displayName = AvatarPrimitive.Image.displayName;
 
 const AvatarFallback = React.forwardRef<

@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getSavedPosts, getSavedResources, savePost, saveResource } from "@/services/api";
 import { getSubjectLabel, getTypeLabel, normalizeResourceType, normalizeSubject } from "@/lib/resourceMetadata";
 import { formatFileSize } from "@/lib/utils";
+import { PostSkeleton, ResourceSkeleton } from "@/components/ui/skeletons";
 
 export function SavedItems() {
   const [savedPosts, setSavedPosts] = useState<any[]>([]);
@@ -124,6 +125,11 @@ export function SavedItems() {
 
           <TabsContent value="posts" className="space-y-4">
             {loading ? (
+              <>
+                <PostSkeleton />
+                <PostSkeleton />
+              </>
+            ) : savedPosts.length === 0 ? (
               <Card className="campus-card mobile-card">
                 <CardContent className="p-8 text-center text-muted-foreground">
                   Aucun post enregistré
@@ -144,14 +150,12 @@ export function SavedItems() {
             )}
           </TabsContent>
 
-          <TabsContent value="resources">
+          <TabsContent value="resources" className="space-y-4">
             {loading ? (
-              <Card className="campus-card mobile-card">
-                <CardContent className="p-8 text-center">
-                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">Chargement...</p>
-                </CardContent>
-              </Card>
+              <>
+                <ResourceSkeleton />
+                <ResourceSkeleton />
+              </>
             ) : savedResources.length === 0 ? (
               <Card className="campus-card mobile-card">
                 <CardContent className="p-8 text-center text-muted-foreground">

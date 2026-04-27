@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   listResources,
@@ -41,6 +41,7 @@ import {
   type ResourceSortKey,
   ensureValidSortKey,
 } from "@/constants/defaultSort";
+import { ResourceSkeleton } from "@/components/ui/skeletons";
 
 function mapResourceCard(r: any) {
   return {
@@ -433,8 +434,20 @@ export function Resources() {
         </div>
 
         {/* ======= CONTENT ======= */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {getSortedResources().map((resource) => (
+        {loading ? (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <ResourceSkeleton />
+            <ResourceSkeleton />
+            <ResourceSkeleton />
+            <ResourceSkeleton />
+            <ResourceSkeleton />
+            <ResourceSkeleton />
+            <ResourceSkeleton />
+            <ResourceSkeleton />
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {getSortedResources().map((resource) => (
             <Card
               key={resource.id}
               className={cardClasses}
@@ -506,8 +519,9 @@ export function Resources() {
             </Card>
           ))}
         </div>
+        )}
 
-        {filteredResources.length === 0 && (
+        {!loading && filteredResources.length === 0 && (
           <div className="text-center py-12">
             <FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">Aucune ressource trouvée</h3>

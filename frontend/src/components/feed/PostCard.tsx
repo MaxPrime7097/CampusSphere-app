@@ -28,6 +28,7 @@ import { impactRatePost, likePost, savePost, reportPost, updatePost, deletePost,
 import { formatRelativeTime } from "@/lib/date";
 import { renderMentionText } from "@/lib/mentions";
 import { Textarea } from "@/components/ui/textarea";
+import { OptimizedImage } from "@/components/ui/optimized-image";
 
 interface PostCardProps {
   post: {
@@ -542,14 +543,18 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                             !isMobile && i === count - 1 && count <= 2 && "rounded-br-lg",
                             !isMobile && i === count - 2 && count <= 2 && "rounded-bl-lg",
                             spanFull && "col-span-2",
-                            spanFull ? "aspect-video" : "aspect-square"
+                            count === 1 ? "max-h-[500px]" : (spanFull ? "aspect-video" : "aspect-square")
                           )}
                           onClick={() => setLightboxIndex(i)}
                         >
-                          <img
+                          <OptimizedImage
                             src={file.url}
                             alt={file.name || "media"}
-                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                            className={cn(
+                              "w-full h-full hover:scale-105 transition-transform duration-300",
+                              count === 1 ? "object-contain bg-muted" : "object-cover"
+                            )}
+                            containerClassName="w-full h-full"
                             onDoubleClick={handleImageDoubleClick}
                           />
                           {isLast && (

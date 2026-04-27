@@ -17,6 +17,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { CanonicalNotificationType } from "@/constants/notificationTypes";
 import { buildActionUrl, normalizeNotificationData, resolveConnectionProfileUrl, toCanonicalType } from "@/lib/notifications";
+import { NotificationSkeleton } from "@/components/ui/skeletons";
 
 
 type NotificationListItem = {
@@ -264,9 +265,22 @@ export function Notifications() {
         {/* Sur mobile: pas d'espace entre les cartes, pas d'arrondi, bord à bord */}
         <div className="-mx-4 md:mx-0 md:space-y-2">
           {loading && (
-            <div className="rounded-none md:rounded-lg border-y md:border bg-card p-12 text-center">
-              <Loader2 className="h-12 w-12 text-muted-foreground mb-4 mx-auto animate-spin" />
-              <p className="text-muted-foreground">Chargement des notifications...</p>
+            <div className="space-y-2 w-full">
+              <div className="rounded-none md:rounded-lg border-y md:border bg-card">
+                <NotificationSkeleton />
+              </div>
+              <div className="rounded-none md:rounded-lg border-y md:border bg-card">
+                <NotificationSkeleton />
+              </div>
+              <div className="rounded-none md:rounded-lg border-y md:border bg-card">
+                <NotificationSkeleton />
+              </div>
+              <div className="rounded-none md:rounded-lg border-y md:border bg-card">
+                <NotificationSkeleton />
+              </div>
+              <div className="rounded-none md:rounded-lg border-y md:border bg-card">
+                <NotificationSkeleton />
+              </div>
             </div>
           )}
 

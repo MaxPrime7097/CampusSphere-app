@@ -13,6 +13,7 @@ import { RefreshCw, Loader2, Users, MessageCircle, BookOpen, ArrowRight, Sparkle
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { mapPostToCard } from "@/lib/postCardMapper";
+import { PostSkeleton } from "@/components/ui/skeletons";
 
 export function Home() {
   const isMobile = useIsMobile();
@@ -63,6 +64,7 @@ export function Home() {
   
   const [posts, setPosts] = useState<any[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   const fetchPosts = async () => {
     const data = await listPosts();
@@ -80,6 +82,8 @@ export function Home() {
         setLoadError(null);
       } catch (e: any) {
         setLoadError(e?.message || "Erreur de chargement du fil d'actualité");
+      } finally {
+        if (isMounted) setIsInitialLoading(false);
       }
     })();
     return () => {
@@ -138,14 +142,22 @@ export function Home() {
               <CardContent className="py-4 text-sm text-destructive">{loadError}</CardContent>
             </Card>
           )}
-          {posts.map((post, index) => (
-            <div 
-              key={post.id} 
-              className="campus-animate-fade-in"
-            >
-              <PostCard post={post} />
-            </div>
-          ))}
+          {isInitialLoading ? (
+            <>
+              <PostSkeleton />
+              <PostSkeleton />
+              <PostSkeleton />
+            </>
+          ) : (
+            posts.map((post, index) => (
+              <div 
+                key={post.id} 
+                className="campus-animate-fade-in"
+              >
+                <PostCard post={post} />
+              </div>
+            ))
+          )}
         </div>
 
         {/* Load More */}

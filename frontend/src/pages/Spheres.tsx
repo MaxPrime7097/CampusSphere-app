@@ -21,6 +21,7 @@ import {
   type SphereSortKey,
   ensureValidSortKey,
 } from "@/constants/defaultSort";
+import { SphereSkeleton } from "@/components/ui/skeletons";
 
 export function Spheres() {
   const navigate = useNavigate();
@@ -420,42 +421,51 @@ export function Spheres() {
                 </div>
               ) : (
               <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-                {(loadingSpheres ? Array.from({ length: 4 }).map((_, i) => ({ id: `skeleton-${i}`, name: "", category: "", memberCount: 0, color: "from-primary/20 to-accent/20", requireApproval: false })) : getSortedSpheres()).map((sphere) => (
-                  <Card key={sphere.id} className={cardClasses} onClick={() => navigate(`/spheres/${sphere.id}`)}>
-                    <CardContent className="p-0">
-                      <div className={`aspect-video bg-gradient-to-br ${sphere.color || "from-primary/20 to-accent/20"} rounded-t-lg flex items-center justify-center text-white font-bold text-2xl`}>
-                        {sphere.name?.charAt?.(0) || ""}
-                      </div>
-                      <div className="px-4 py-2">
-                        <div className="flex flex-wrap gap-1 mb-2">
-                          <Badge variant="outline" className="text-xs">{getSphereCategoryLabel(sphere.category)}</Badge>
-                          {sphere.requireApproval && <Badge variant="destructive" className="text-xs">Approbation</Badge>}
+                {loadingSpheres ? (
+                  <>
+                    <SphereSkeleton />
+                    <SphereSkeleton />
+                    <SphereSkeleton />
+                    <SphereSkeleton />
+                  </>
+                ) : (
+                  getSortedSpheres().map((sphere) => (
+                    <Card key={sphere.id} className={cardClasses} onClick={() => navigate(`/spheres/${sphere.id}`)}>
+                      <CardContent className="p-0">
+                        <div className={`aspect-video bg-gradient-to-br ${sphere.color || "from-primary/20 to-accent/20"} rounded-t-lg flex items-center justify-center text-white font-bold text-2xl`}>
+                          {sphere.name?.charAt?.(0) || ""}
                         </div>
-                        <h3 className="font-semibold text-sm line-clamp-2 mb-2">{sphere.name || ""}</h3>
-                        <div className="space-y-1 text-xs text-muted-foreground mb-2">
-                          <div className="flex items-center gap-1"><Users className="h-3 w-3" /> {sphere.memberCount || 0} membres</div>
+                        <div className="px-4 py-2">
+                          <div className="flex flex-wrap gap-1 mb-2">
+                            <Badge variant="outline" className="text-xs">{getSphereCategoryLabel(sphere.category)}</Badge>
+                            {sphere.requireApproval && <Badge variant="destructive" className="text-xs">Approbation</Badge>}
+                          </div>
+                          <h3 className="font-semibold text-sm line-clamp-2 mb-2">{sphere.name || ""}</h3>
+                          <div className="space-y-1 text-xs text-muted-foreground mb-2">
+                            <div className="flex items-center gap-1"><Users className="h-3 w-3" /> {sphere.memberCount || 0} membres</div>
+                          </div>
+                          {(() => {
+                            const actionModel = getSphereActionModel(sphere);
+                            return (
+                          <Button 
+                            size="sm" 
+                            className={`w-full h-7 text-xs ${actionModel.className}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              actionModel.onClick();
+                            }}
+                            disabled={actionModel.disabled}
+                          >
+                            {isJoining === sphere.id
+                              ? <Loader2 className="h-3 w-3 animate-spin" />
+                              : <>{actionModel.icon}{actionModel.label}</>}
+                          </Button>
+                          )})()}
                         </div>
-                        {(() => {
-                          const actionModel = getSphereActionModel(sphere);
-                          return (
-                        <Button 
-                          size="sm" 
-                          className={`w-full h-7 text-xs ${actionModel.className}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            actionModel.onClick();
-                          }}
-                          disabled={actionModel.disabled}
-                        >
-                          {isJoining === sphere.id
-                            ? <Loader2 className="h-3 w-3 animate-spin" />
-                            : <>{actionModel.icon}{actionModel.label}</>}
-                        </Button>
-                        )})()}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
               </div>
               )}
             </section>
@@ -474,6 +484,13 @@ export function Spheres() {
                     </Button>
                   </CardContent>
                 </Card>
+              ) : loadingSpheres ? (
+                <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+                  <SphereSkeleton />
+                  <SphereSkeleton />
+                  <SphereSkeleton />
+                  <SphereSkeleton />
+                </div>
               ) : getSortedSpheres().length === 0 ? (
                 <div className="text-center py-8">
                   <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />

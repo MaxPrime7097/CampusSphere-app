@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { formatRelativeTime } from "@/lib/date";
 import { findInvalidMentions, getActiveMentionQuery, renderMentionText } from "@/lib/mentions";
+import { CommentSkeleton } from "@/components/ui/skeletons";
 
 const MAX_COMMENT_THREAD_DEPTH = 4;
 
@@ -98,6 +99,7 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
   const [commentToDelete, setCommentToDelete] = useState<Comment | null>(null);
   const [isDeletingComment, setIsDeletingComment] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
@@ -187,6 +189,7 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
 
     let isMounted = true;
     (async () => {
+      setIsLoading(true);
       try {
         const data = await getPostComments(postId);
         if (isMounted && Array.isArray(data)) {
@@ -195,6 +198,10 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
         }
       } catch (error) {
         console.error("Error loading comments:", error);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     })();
 
@@ -446,12 +453,6 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
           <div className="flex-1">
             <div className={`${depth === 0 ? "bg-muted" : "bg-muted/50"} rounded-lg p-3`}>
               <div className="flex items-center gap-2 mb-1">
-                <span className="font-semibold text-sm">{comment.author.name}</span>
-                {comment.author.isVerified && (
-                  <Badge variant="secondary" className="text-xs px-1 py-0">
-                    ✓
-                  </Badge>
-                )}
                 <span className="text-xs text-muted-foreground">@{comment.author.username}</span>
                 {depth === 0 && comment.author.impactScore && (
                   <Badge variant="outline" className="text-xs flex items-center gap-1">
@@ -542,7 +543,13 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
         </DialogHeader>
         
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-          {comments.length === 0 ? (
+          {isLoading ? (
+            <>
+              <CommentSkeleton />
+              <CommentSkeleton />
+              <CommentSkeleton />
+            </>
+          ) : comments.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">Soyez le premier à commenter!</p>
           ) : (
             comments.map((comment) => renderComment(comment))

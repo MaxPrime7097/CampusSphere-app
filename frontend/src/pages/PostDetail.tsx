@@ -7,6 +7,7 @@ import { Loader2, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { mapPostToCard } from "@/lib/postCardMapper";
+import { PostSkeleton } from "@/components/ui/skeletons";
 
 export function PostDetail() {
   const { id } = useParams();
@@ -53,12 +54,9 @@ export function PostDetail() {
         </Button>
 
         {loading ? (
-          <Card className="campus-card">
-            <CardContent className="p-8 text-center">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground">Chargement du post...</p>
-            </CardContent>
-          </Card>
+          <div className="campus-animate-fade-in">
+            <PostSkeleton />
+          </div>
         ) : post ? (
           <PostCard post={mapPostToCard(post)} />
         ) : (
