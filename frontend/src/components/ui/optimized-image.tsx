@@ -1,3 +1,4 @@
+import * as React from "react";
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
