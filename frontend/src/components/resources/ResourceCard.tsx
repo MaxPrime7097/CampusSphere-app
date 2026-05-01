@@ -1,3 +1,4 @@
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,10 +21,10 @@ interface ResourceCardProps {
   className?: string;
 }
 
-export function ResourceCard({ 
+export const ResourceCard = React.memo(({ 
   resource, isDownloading, isSaved, 
   onDownload, onSave, onPreview, className 
-}: ResourceCardProps) {
+}: ResourceCardProps) => {
   const navigate = useNavigate();
 
   const getFileIcon = (type: string) => {
@@ -46,7 +47,7 @@ export function ResourceCard({
   return (
     <Card 
       className={cn(
-        "group overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 campus-card cursor-pointer border-none bg-card/50 backdrop-blur-sm",
+        "group overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 campus-card cursor-pointer border-none bg-card/50 backdrop-blur-sm active:scale-[0.98]",
         className
       )}
       onClick={() => navigate(`/resources/${resource.id}`)}
@@ -90,7 +91,7 @@ export function ResourceCard({
             <Button 
               size="sm" 
               variant="outline" 
-              className="h-8 w-8 p-0 rounded-lg hover:bg-primary/5 hover:text-primary border-muted" 
+              className="h-8 w-8 p-0 rounded-lg hover:bg-primary/5 hover:text-primary border-muted transition-all active:scale-90" 
               onClick={onPreview} 
               title="Aperçu"
             >
@@ -99,7 +100,7 @@ export function ResourceCard({
             <Button 
               size="sm" 
               variant="outline" 
-              className={cn("h-8 w-8 p-0 rounded-lg transition-colors border-muted", isSaved ? "text-primary bg-primary/5 border-primary/20" : "")} 
+              className={cn("h-8 w-8 p-0 rounded-lg transition-all border-muted active:scale-90", isSaved ? "text-primary bg-primary/5 border-primary/20" : "")} 
               onClick={onSave}
               title="Sauvegarder"
             >
@@ -107,7 +108,7 @@ export function ResourceCard({
             </Button>
             <Button 
               size="sm" 
-              className="h-8 flex-1 gap-1 campus-gradient text-white rounded-lg shadow-sm hover:opacity-90" 
+              className="h-8 flex-1 gap-1 campus-gradient text-white rounded-lg shadow-sm hover:opacity-90 transition-all active:scale-95" 
               onClick={onDownload}
               disabled={isDownloading}
             >
@@ -125,4 +126,6 @@ export function ResourceCard({
       </CardContent>
     </Card>
   );
-}
+});
+
+ResourceCard.displayName = "ResourceCard";

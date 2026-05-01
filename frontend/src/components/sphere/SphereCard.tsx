@@ -1,3 +1,4 @@
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +16,7 @@ interface SphereCardProps {
   className?: string;
 }
 
-export function SphereCard({ sphere, isJoining, membership = "none", onJoin, className }: SphereCardProps) {
+export const SphereCard = React.memo(({ sphere, isJoining, membership = "none", onJoin, className }: SphereCardProps) => {
   const navigate = useNavigate();
   
   // Design details
@@ -25,7 +26,7 @@ export function SphereCard({ sphere, isJoining, membership = "none", onJoin, cla
   return (
     <Card 
       className={cn(
-        "group overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 campus-card cursor-pointer border-none bg-card/50 backdrop-blur-sm",
+        "group overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 campus-card cursor-pointer border-none bg-card/50 backdrop-blur-sm active:scale-[0.98]",
         className
       )}
       onClick={() => navigate(`/spheres/${sphere.id}`)}
@@ -91,7 +92,7 @@ export function SphereCard({ sphere, isJoining, membership = "none", onJoin, cla
           {/* Action Button */}
           <div onClick={(e) => e.stopPropagation()}>
             {membership === "active" ? (
-              <Button size="sm" variant="outline" className="w-full h-8 text-xs gap-1 border-primary/20 text-primary bg-primary/5 hover:bg-primary/10">
+              <Button size="sm" variant="outline" className="w-full h-8 text-xs gap-1 border-primary/20 text-primary bg-primary/5 hover:bg-primary/10 transition-all active:scale-95">
                 <Check className="h-3.5 w-3.5" />
                 Rejoint
               </Button>
@@ -103,7 +104,7 @@ export function SphereCard({ sphere, isJoining, membership = "none", onJoin, cla
             ) : (
               <Button 
                 size="sm" 
-                className="w-full h-8 text-xs gap-1 campus-gradient text-white hover:opacity-90"
+                className="w-full h-8 text-xs gap-1 campus-gradient text-white hover:opacity-90 transition-all active:scale-95"
                 onClick={onJoin}
                 disabled={isJoining}
               >
@@ -115,4 +116,6 @@ export function SphereCard({ sphere, isJoining, membership = "none", onJoin, cla
       </CardContent>
     </Card>
   );
-}
+});
+
+SphereCard.displayName = "SphereCard";

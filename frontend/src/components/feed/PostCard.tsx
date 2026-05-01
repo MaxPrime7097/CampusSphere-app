@@ -651,7 +651,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                 variant="ghost"
                 size="sm"
                 onClick={handleLike}
-                className={`gap-2 ${isLiked ? 'text-red-500 hover:text-red-600' : 'hover:text-red-500'}`}
+                className={`gap-2 transition-all active:scale-95 ${isLiked ? 'text-red-500 hover:text-red-600' : 'hover:text-red-500'}`}
               >
                 <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
                 <span className="text-xs">{likesCount}</span>
@@ -660,14 +660,14 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="gap-2 hover:text-primary"
+                className="gap-2 hover:text-primary transition-all active:scale-95"
                 onClick={() => setCommentsOpen(true)}
               >
                 <MessageCircle className="h-4 w-4" />
                 <span className="text-xs">{post.comments}</span>
               </Button>
               
-              <Button variant="ghost" size="sm" className="gap-2 hover:text-primary" onClick={handleShare}>
+              <Button variant="ghost" size="sm" className="gap-2 hover:text-primary transition-all active:scale-95" onClick={handleShare}>
                 <Share className="h-4 w-4" />
               </Button>
             </div>

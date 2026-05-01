@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/select";
 import { UploadResourceModal } from "@/components/modals/UploadResourceModal";
 import { ResourceCard } from "@/components/resources/ResourceCard";
+import { EmptyState } from "@/components/ui/empty-state";
 import { cn, formatFileSize } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { RESOURCE_TYPE_OPTIONS, normalizeResourceType } from "@/constants/resourceTypes";
@@ -437,15 +438,22 @@ export function Resources() {
         {/* ======= CONTENT ======= */}
         {loading ? (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <ResourceSkeleton />
-            <ResourceSkeleton />
-            <ResourceSkeleton />
-            <ResourceSkeleton />
-            <ResourceSkeleton />
-            <ResourceSkeleton />
-            <ResourceSkeleton />
-            <ResourceSkeleton />
+            {Array.from({ length: 8 }).map((_, i) => (
+              <ResourceSkeleton key={i} />
+            ))}
           </div>
+        ) : getSortedResources().length === 0 ? (
+          <EmptyState
+            icon={Search}
+            title="Aucune ressource trouvée"
+            description="Aucun fichier ne correspond à vos critères. Essayez de changer de sujet ou de type."
+            actionLabel="Tout voir"
+            onAction={() => {
+              setSearchQuery("");
+              setSelectedSubject("all");
+              setSelectedType("all");
+            }}
+          />
         ) : (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {getSortedResources().map((resource) => (

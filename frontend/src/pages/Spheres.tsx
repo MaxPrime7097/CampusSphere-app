@@ -14,6 +14,7 @@ import { Search, Users, TrendingUp, Clock, Loader2, Check, RefreshCw, Plus, Filt
 import { useToast } from "@/hooks/use-toast";
 import { CreateSphereModal } from "@/components/modals/CreateSphereModal";
 import { SphereCard } from "@/components/sphere/SphereCard";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import {
@@ -416,19 +417,23 @@ export function Spheres() {
                   </CardContent>
                 </Card>
               ) : !loadingSpheres && getSortedSpheres().length === 0 ? (
-                <div className="text-center py-8">
-                  <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">Aucune sphère à découvrir pour le moment.</p>
-                </div>
+                <EmptyState
+                  icon={Search}
+                  title="Aucune sphère trouvée"
+                  description="Essayez d'ajuster vos filtres pour trouver ce que vous cherchez."
+                  actionLabel="Tout réinitialiser"
+                  onAction={() => {
+                    setSearchQuery("");
+                    setFilterCategory("all");
+                    setFilterAudience("all");
+                  }}
+                />
               ) : (
               <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
                 {loadingSpheres ? (
-                  <>
-                    <SphereSkeleton />
-                    <SphereSkeleton />
-                    <SphereSkeleton />
-                    <SphereSkeleton />
-                  </>
+                  Array.from({ length: 8 }).map((_, i) => (
+                    <SphereSkeleton key={i} />
+                  ))
                 ) : (
                   getSortedSpheres().map((sphere) => (
                     <SphereCard

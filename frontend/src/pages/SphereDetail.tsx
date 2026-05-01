@@ -31,6 +31,8 @@ import { SphereOverview } from "@/components/sphere/SphereOverview";
 import { SphereUploadResourceModal } from "@/components/modals/SphereUploadResourceModal";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import { ResourceCard } from "@/components/resources/ResourceCard";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ResourceSkeleton } from "@/components/ui/skeletons";
 
 export function SphereDetail() {
   const { id } = useParams();
@@ -561,38 +563,39 @@ export function SphereDetail() {
                   </SphereUploadResourceModal>
                 </div>
 
-                {resources.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <FileText className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                    <p className="text-sm">Aucun fichier partagé pour le moment.</p>
+                {loading ? (
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <ResourceSkeleton key={i} />
+                    ))}
                   </div>
+                ) : resources.length === 0 ? (
+                  <EmptyState
+                    icon={FileText}
+                    title="Aucun fichier"
+                    description="Soyez le premier à partager un document dans cette sphère."
+                  />
                 ) : (
-                  <div className="space-y-2">
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
                     {resources.map((res: any) => {
-                      const fileUrl = res.file_url || res.fileUrl || "";
-                      const fileName = res.title || "Fichier";
-                      const fileType = res.file_type || res.fileType || "";
-                      const fileSize = res.file_size || res.fileSize || 0;
-                      const isImage = fileType.startsWith("image/");
-                      const isPdf = fileType === "application/pdf" || fileName.toLowerCase().endsWith(".pdf");
-                      const uploaderName = res.uploaded_by?.name || res.uploadedBy?.name || "";
-                      const createdAt = res.created_at || res.createdAt;
-                      const canDelete = canModerateMembers || String(res.uploaded_by?.id) === String(currentUserId);
+                      const mappedResource = {
+                        id: res.id,
+                        title: res.file_name || res.fileName || res.title || "Fichier",
+                        fileSize: res.file_size || res.fileSize || 0,
+                        fileUrl: res.file_url || res.fileUrl || res.file || "",
+                        authorName: res.uploader_info?.name || res.uploaderName || res.uploaded_by?.name || "Inconnu",
+                        type: res.type || "notes",
+                        subject: sphere?.category || "other",
+                        viewCount: 0,
+                        downloadCount: 0,
+                      };
 
                       return (
-                        <div key={res.id} className="border rounded-xl bg-card overflow-hidden">
-                          {isImage && fileUrl && (
-                            <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="block relative w-full h-48">
-                              <OptimizedImage 
-                                src={fileUrl} 
-                                alt={fileName} 
-                                className="w-full h-full object-contain" 
-                                containerClassName="w-full h-full max-h-48 bg-muted"
-                              />
                         <ResourceCard
                           key={res.id}
                           resource={mappedResource}
-                          onDownload={() => {
+                          onDownload={(e) => {
+                            e.stopPropagation();
                             const link = document.createElement("a");
                             link.href = mappedResource.fileUrl;
                             link.download = mappedResource.title;
@@ -600,8 +603,14 @@ export function SphereDetail() {
                             link.click();
                             link.remove();
                           }}
-                          onPreview={() => window.open(mappedResource.fileUrl, "_blank")}
-                          onSave={() => toast({ title: "Bientôt disponible", description: "La sauvegarde depuis une sphère arrive bientôt." })}
+                          onPreview={(e) => {
+                            e.stopPropagation();
+                            window.open(mappedResource.fileUrl, "_blank");
+                          }}
+                          onSave={(e) => {
+                            e.stopPropagation();
+                            toast({ title: "Bientôt disponible", description: "La sauvegarde arrive bientôt." });
+                          }}
                         />
                       );
                     })}
@@ -639,8 +648,14 @@ export function SphereDetail() {
               </TabsContent>
 
               <TabsContent value="pending" className="space-y-3 mt-4">
-                {pendingMembers.length === 0 && <p className="text-center py-10 text-muted-foreground italic">Aucune demande en attente.</p>}
-                {pendingMembers.map(m => (
+                {pendingMembers.length === 0 ? (
+                  <EmptyState
+                    icon={Users}
+                    title="Aucune demande"
+                    description="Il n'y a aucune demande d'adhésion en attente pour le moment."
+                  />
+                ) : (
+                  pendingMembers.map(m => (
                   <div key={m.id} className="p-3 border rounded-xl bg-card">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
@@ -660,20 +675,22 @@ export function SphereDetail() {
                       </div>
                     </div>
                   </div>
-                ))}
-              </TabsContent>
+                ))
+              )}
+            </TabsContent>
             </div>
           </Tabs>
         ) : (
-          <div className="mx-4 md:mx-0 flex flex-col items-center justify-center py-16 bg-card rounded-xl border border-dashed border-primary/30">
-            <Shield className="h-14 w-14 text-primary/20 mb-4" />
-            <h2 className="text-lg font-bold">Contenu Protégé</h2>
-            <p className="text-muted-foreground mt-2 text-center max-w-sm px-4 text-sm">
-              {isPendingRequest
-                ? "Votre demande est en attente. Vous pourrez voir les tâches après validation."
-                : "Rejoignez cette sphère pour accéder au chat, aux tâches et aux fichiers partagés."}
-            </p>
-          </div>
+          <EmptyState
+            icon={Shield}
+            title="Contenu Protégé"
+            description={isPendingRequest
+              ? "Votre demande est en attente. Vous pourrez accéder au contenu dès qu'un administrateur l'aura validée."
+              : "Rejoignez cette sphère pour accéder au chat, aux tâches et aux fichiers partagés."}
+            actionLabel={!isPendingRequest ? "Rejoindre la sphère" : undefined}
+            onAction={!isPendingRequest ? handleJoinSphere : undefined}
+            className="mx-4 md:mx-0"
+          />
         )}
       </div>
     </div>

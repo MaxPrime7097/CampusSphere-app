@@ -44,46 +44,64 @@ export function CommentSkeleton() {
 
 export function ResourceSkeleton() {
   return (
-    <Card className="flex flex-col h-full">
-      <CardHeader>
-        <Skeleton className="h-6 w-3/4 mb-2" />
-        <Skeleton className="h-4 w-1/2" />
-      </CardHeader>
-      <CardContent className="flex-1">
-        <Skeleton className="h-20 w-full mb-4" />
-        <div className="flex gap-2">
-          <Skeleton className="h-6 w-16 rounded-full" />
-          <Skeleton className="h-6 w-16 rounded-full" />
+    <Card className="group overflow-hidden campus-card border-none bg-card/50 backdrop-blur-sm">
+      <CardContent className="p-0">
+        <div className="h-24 bg-muted animate-pulse flex flex-col items-center justify-center">
+          <Skeleton className="h-12 w-12 rounded-2xl bg-background/50" />
+        </div>
+        <div className="p-4 space-y-3">
+          <div className="min-h-[50px]">
+            <Skeleton className="h-5 w-3/4 mb-2" />
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-4 w-16 rounded-full" />
+              <Skeleton className="h-3 w-12" />
+            </div>
+          </div>
+          <div className="flex items-center justify-between pt-1 border-t border-muted/50">
+            <Skeleton className="h-3 w-20" />
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-3 w-8" />
+              <Skeleton className="h-3 w-8" />
+            </div>
+          </div>
+          <div className="flex gap-1.5 pt-1">
+            <Skeleton className="h-8 w-8 rounded-lg" />
+            <Skeleton className="h-8 w-8 rounded-lg" />
+            <Skeleton className="h-8 flex-1 rounded-lg" />
+          </div>
         </div>
       </CardContent>
-      <CardFooter className="flex justify-between border-t pt-4">
-        <Skeleton className="h-4 w-20" />
-        <Skeleton className="h-8 w-24" />
-      </CardFooter>
     </Card>
   );
 }
 
 export function SphereSkeleton() {
   return (
-    <Card className="overflow-hidden">
-      <div className="h-32 w-full bg-muted animate-pulse" />
-      <div className="px-6 -mt-8 mb-2">
-        <Skeleton className="h-16 w-16 rounded-lg border-4 border-background" />
-      </div>
-      <CardContent className="space-y-3">
-        <Skeleton className="h-6 w-3/4" />
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-5/6" />
-      </CardContent>
-      <CardFooter className="flex items-center justify-between">
-        <div className="flex -space-x-2">
-          {[1, 2, 3].map((i) => (
-             <Skeleton key={i} className="h-8 w-8 rounded-full border-2 border-background" />
-          ))}
+    <Card className="overflow-hidden campus-card border-none bg-card/50 backdrop-blur-sm">
+      <div className="h-24 bg-muted animate-pulse" />
+      <div className="p-4 space-y-4">
+        <div className="flex justify-between items-start">
+          <div className="space-y-2 flex-1">
+            <Skeleton className="h-5 w-3/4" />
+            <div className="flex gap-1.5">
+              <Skeleton className="h-4 w-16 rounded-md" />
+              <Skeleton className="h-4 w-20 rounded-md" />
+            </div>
+          </div>
+          <Skeleton className="h-5 w-12 rounded-md" />
         </div>
-        <Skeleton className="h-9 w-24" />
-      </CardFooter>
+        
+        <div className="flex items-center justify-between py-1">
+          <div className="flex -space-x-2">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-7 w-7 rounded-full border-2 border-background" />
+            ))}
+          </div>
+          <Skeleton className="h-3 w-20" />
+        </div>
+
+        <Skeleton className="h-9 w-full rounded-xl" />
+      </div>
     </Card>
   );
 }
