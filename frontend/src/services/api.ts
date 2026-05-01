@@ -939,7 +939,11 @@ export async function updateSphere(id: number | string, data: Partial<{
   require_approval: boolean;
   duration: string;
   auto_delete_on_expiry: boolean;
+  objective: string;
+  target_audience: string;
+  collaboration_types: string[];
 }>, token?: string) {
+
   return apiFetch<any>(`api/spheres/${id}/`, {
     method: "PUT",
     body: data,

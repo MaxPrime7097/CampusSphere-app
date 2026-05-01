@@ -519,10 +519,10 @@ export function SphereDetail() {
                       disabled={isPendingRequest || isJoining || isCancellingRequest}
                       className="campus-gradient text-white font-bold gap-2"
                     >
-                      {isJoining && <Loader2 className="h-4 w-4 animate-spin" />}
+                      {isJoining ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
                       <span className="hidden sm:inline">{isPendingRequest ? "Demande en attente" : "Rejoindre la Sphère"}</span>
-
                     </Button>
+
                     {isPendingRequest && (
                       <Button onClick={handleCancelRequest} disabled={isCancellingRequest} variant="outline" size="sm">
                         {isCancellingRequest && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
@@ -574,8 +574,9 @@ export function SphereDetail() {
 
             <div className="px-4 md:px-0">
               <TabsContent value="overview" className="mt-4">
-                <SphereOverview sphereId={String(id)} onTabChange={setActiveTab} />
+                <SphereOverview sphereId={String(id)} objective={sphere?.objective} onTabChange={setActiveTab} />
               </TabsContent>
+
 
               <TabsContent value="chat" className="mt-4">
                 <MiniChat sphereId={String(id)} sphereName={sphereFallback.name} isExpanded={isChatExpanded} onToggleExpanded={() => setIsChatExpanded(!isChatExpanded)} />
@@ -667,7 +668,10 @@ export function SphereDetail() {
               <TabsContent value="members" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
                 {members.map(m => (
                   <div key={m.id} className="p-3 border rounded-xl flex justify-between items-center bg-card">
-                    <div className="flex items-center gap-3">
+                    <div 
+                      className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={() => m.username && navigate(`/profile/${m.username}`)}
+                    >
                       <Avatar className="h-9 w-9 border">
                         <AvatarImage src={m.avatar}/><AvatarFallback>{m.name[0]}</AvatarFallback>
                       </Avatar>
@@ -678,6 +682,7 @@ export function SphereDetail() {
                         <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">{m.role}</p>
                       </div>
                     </div>
+
                     {canModerateMembers && !m.isCreator && m.userId && String(m.userId) !== String(currentUserId) && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="rounded-full"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>

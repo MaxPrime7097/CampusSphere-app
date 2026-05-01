@@ -28,7 +28,9 @@ interface SphereSettings {
   allowResourceSharing: boolean;
   allowTaskCreation: boolean;
   maxMembers: number;
+  objective?: string;
 }
+
 
 interface SphereSettingsModalProps {
   children: React.ReactNode;
@@ -78,8 +80,10 @@ export function SphereSettingsModal({
     allowTaskCreation: true,
     maxMembers: 100,
     duration: "Permanent",
-    autoDeleteOnExpiry: false
+    autoDeleteOnExpiry: false,
+    objective: ""
   });
+
 
   const { toast } = useToast();
 
@@ -96,8 +100,10 @@ export function SphereSettingsModal({
         allowTaskCreation: sphereData.allowTaskCreation ?? true,
         maxMembers: sphereData.maxMembers || 100,
         duration: sphereData.duration || "Permanent",
-        autoDeleteOnExpiry: sphereData.autoDeleteOnExpiry ?? false
+        autoDeleteOnExpiry: sphereData.autoDeleteOnExpiry ?? false,
+        objective: sphereData.objective || ""
       });
+
     }
   }, [sphereData]);
 
@@ -155,12 +161,13 @@ export function SphereSettingsModal({
         type: sphereData.type,
         is_private: sphereData.isPrivate ?? false,
         require_approval: settings.requireApproval,
-        objective: sphereData.objective,
+        objective: settings.objective,
         target_audience: sphereData.targetAudience,
         duration: settings.duration,
         auto_delete_on_expiry: settings.autoDeleteOnExpiry,
         collaboration_types: sphereData.collaborationTypes,
       };
+
 
       const response = await updateSphere(sphereData.id, payload);
       const isSuccess = response?.success ?? true;
@@ -316,7 +323,23 @@ export function SphereSettingsModal({
                 maxLength={500}
               />
             </div>
+
+            <div>
+              <Label htmlFor="objective">Objectif de la sphère *</Label>
+              <Textarea
+                id="objective"
+                value={settings.objective}
+                onChange={(e) => updateSetting("objective", e.target.value)}
+                placeholder="Quel est l'objectif principal ?"
+                rows={2}
+                maxLength={300}
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                L'objectif s'affiche en haut de la vue d'ensemble.
+              </p>
+            </div>
           </div>
+
 
           {/* Paramètres de confidentialité */}
           <div className="space-y-4">

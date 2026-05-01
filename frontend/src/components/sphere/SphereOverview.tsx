@@ -3,13 +3,15 @@ import { getSphereOverview } from "@/services/api";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, CheckCircle2, FileText, MessageSquare, RefreshCw, Users, Zap, Clock, Loader2, Target } from "lucide-react";
+import { AlertTriangle, CheckCircle2, FileText, MessageSquare, RefreshCw, Users, Zap, Clock, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Props {
   sphereId: string;
+  objective?: string;
   onTabChange: (tab: string) => void;
 }
+
 
 const PRI: Record<string, string> = {
   high:   "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
@@ -19,7 +21,8 @@ const PRI: Record<string, string> = {
 const PRI_LABEL: Record<string, string> = { high: "Haute", medium: "Moyenne", low: "Basse" };
 const KAN: Record<string, string> = { todo: "À faire", in_progress: "En cours", review: "Révision", done: "Terminé" };
 
-export function SphereOverview({ sphereId, onTabChange }: Props) {
+export function SphereOverview({ sphereId, objective, onTabChange }: Props) {
+
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -71,28 +74,29 @@ export function SphereOverview({ sphereId, onTabChange }: Props) {
         ))}
       </div>
 
-      {/* Objective & Progress */}
+      {/* Progress & Objective */}
       <div className="bg-card border rounded-xl p-4 space-y-4">
-        {data?.objective && (
-          <div className="space-y-2">
-            <h3 className="text-sm font-semibold flex items-center gap-2 text-primary">
-              <Target className="h-4 w-4" /> Objectif de la sphère
-            </h3>
-            <p className="text-sm text-foreground/80 bg-primary/5 p-3 rounded-lg border border-primary/10 italic">
-              "{data.objective}"
-            </p>
-          </div>
-        )}
-
-        <div className="space-y-3 pt-2">
+        <div className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold">Progression du projet</span>
             <span className={cn("text-2xl font-bold", prog >= 75 ? "text-green-600" : prog >= 40 ? "text-amber-600" : "text-blue-600")}>{prog}%</span>
           </div>
-          <Progress value={prog} className="h-3" />
-          <p className="text-xs text-muted-foreground">{data?.done_tasks ?? 0} tâche{(data?.done_tasks ?? 0) !== 1 ? "s" : ""} terminée{(data?.done_tasks ?? 0) !== 1 ? "s" : ""} sur {data?.total_tasks ?? 0}</p>
+          
+          {objective && (
+            <div className="bg-primary/5 border-l-2 border-primary/30 px-3 py-2 rounded-r-md">
+              <p className="text-sm text-foreground/80 leading-relaxed italic">"{objective}"</p>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Progress value={prog} className="h-3" />
+            <p className="text-xs text-muted-foreground">
+              {data?.done_tasks ?? 0} tâche{(data?.done_tasks ?? 0) !== 1 ? "s" : ""} terminée{(data?.done_tasks ?? 0) !== 1 ? "s" : ""} sur {data?.total_tasks ?? 0}
+            </p>
+          </div>
         </div>
       </div>
+
 
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

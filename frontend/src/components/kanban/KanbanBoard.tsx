@@ -86,7 +86,14 @@ function TaskCard({ task, col, draggingId, loading, onDragStart, onDragEnd }: {
       </div>
       <div className="flex items-center justify-between gap-1">
         {name && (
-          <div className="flex items-center gap-1 min-w-0">
+          <div 
+            className="flex items-center gap-1 min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={(e) => {
+              e.stopPropagation();
+              const username = task.assigned_to_info?.username;
+              if (username) window.location.href = `/profile/${username}`;
+            }}
+          >
             <Avatar className="h-5 w-5 flex-shrink-0">
               <AvatarImage src={avatar ?? undefined} />
               <AvatarFallback className="text-[9px]">{name.slice(0, 1).toUpperCase()}</AvatarFallback>
@@ -94,6 +101,7 @@ function TaskCard({ task, col, draggingId, loading, onDragStart, onDragEnd }: {
             <span className="text-[10px] text-muted-foreground truncate max-w-[80px]">{name}</span>
           </div>
         )}
+
         <div className="flex items-center gap-1.5 flex-shrink-0 ml-auto">
           {task.due_date && (
             <span className={cn("text-[10px] flex items-center gap-0.5", overdue ? "text-red-500" : "text-muted-foreground")}>

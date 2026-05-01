@@ -555,7 +555,10 @@ export function ResourceDetail() {
 
             {/* Uploader Info */}
             <div className="flex flex-col gap-3 p-3 bg-accent/50 rounded-lg mb-4 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center gap-3">
+              <div 
+                className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => resource.uploader.username && navigate(`/profile/${resource.uploader.username}`)}
+              >
                 <Avatar className="h-12 w-12">
                   <AvatarImage src={resource.uploader.avatar} />
                   <AvatarFallback>{resource.uploader.name.slice(0, 1)}</AvatarFallback>
@@ -573,15 +576,8 @@ export function ResourceDetail() {
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2 md:justify-end">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => resource.uploader.username && navigate(`/profile/${resource.uploader.username}`)}
-                  disabled={!resource.uploader.username}
-                  aria-label="Voir le profil de l'auteur"
-                >
-                  <span className="hidden md:inline">Voir le profil</span>
-                </Button>
+
+
 
                 <Button
                   variant={isSaved ? "secondary" : "outline"}
@@ -591,8 +587,10 @@ export function ResourceDetail() {
                   className="gap-2"
                   aria-label={isSaved ? "Retirer des enregistrements" : "Enregistrer la ressource"}
                 >
+                  <Bookmark className={cn("h-4 w-4", isSaved && "fill-current")} />
                   <span className="hidden md:inline">{isSaved ? "Enregistré" : "Enregistrer"}</span>
                 </Button>
+
 
                 {resource.canEdit && (
                   <Button
