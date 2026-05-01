@@ -15,8 +15,9 @@ import { Progress } from "@/components/ui/progress";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 import { 
-  UserMinus, UserCheck, UserX, Camera, ExternalLink, Download, Info, X, Facebook, Twitter, Instagram, Linkedin, Copy, Share
+  UserMinus, UserCheck, UserX, Camera, ExternalLink, Download, Info, X, Facebook, Twitter, Instagram, Linkedin, Copy, Share, ArrowLeft, Share2
 } from "lucide-react";
+
 import { renderMentionText } from "@/lib/mentions";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";

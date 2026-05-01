@@ -604,11 +604,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                               <span className="text-white text-2xl font-bold">+{extra + 1}</span>
                             </div>
                           )}
-                          {isLiked && i === 0 && (
-                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                              <Heart className="h-16 w-16 text-red-500 fill-current animate-ping" />
-                            </div>
-                          )}
+
                         </div>
                       );
                     })}
@@ -723,8 +719,9 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                     e.stopPropagation();
                     toast({
                       title: "Score d'impact",
-                      description: "Ce score mesure l'engagement et l'influence de ce post sur la plateforme.",
+                      description: "Le Score d'Impact mesure l'utilité et la pertinence de ce contenu pour la communauté CampusSphere. Il est calculé en fonction des interactions et des retours des étudiants.",
                     });
+
                   }}
                 >
                   <Info className="h-3 w-3 text-primary/60" />

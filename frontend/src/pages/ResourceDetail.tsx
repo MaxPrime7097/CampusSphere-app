@@ -11,6 +11,9 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+
 import { useToast } from "@/hooks/use-toast";
 import { formatFrenchDate } from "@/lib/date";
 import {
@@ -540,8 +543,9 @@ export function ResourceDetail() {
                   className="h-5 w-5 p-0 rounded-full hover:bg-primary/20 transition-colors"
                   onClick={() => toast({
                     title: "Score d'impact",
-                    description: "Ce score reflète l'utilité et la popularité de cette ressource au sein de la communauté.",
+                    description: "Le Score d'Impact mesure l'utilité et la pertinence de ce contenu pour la communauté CampusSphere. Il est calculé en fonction des interactions et des retours des étudiants.",
                   })}
+
                 >
                   <Info className="h-3 w-3" />
                 </Button>

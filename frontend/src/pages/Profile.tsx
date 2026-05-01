@@ -1067,8 +1067,9 @@ export function Profile() {
                           className="h-5 w-5 p-0 rounded-full hover:bg-primary/20 transition-colors"
                           onClick={() => toast({
                             title: "Score d'impact",
-                            description: "Le score d'impact mesure l'engagement global généré par vos posts et ressources partagées sur CampusSphere.",
+                            description: "Le Score d'Impact mesure l'utilité et la pertinence de ce contenu pour la communauté CampusSphere. Il est calculé en fonction des interactions et des retours des étudiants.",
                           })}
+
                         >
                           <Info className="h-3 w-3 text-primary/60" />
                         </Button>
