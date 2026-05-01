@@ -73,7 +73,7 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
     type: z.string().min(1, { message: t('modals.uploadResource.typeRequired') }),
     file: z.custom<File>((val) => val instanceof File, { message: t('modals.uploadResource.fileRequired') })
       .refine((file) => file.size <= MAX_FILE_SIZE, { message: t('modals.uploadResource.fileTooLarge') })
-      .refine((file) => ACCEPTED_FILE_TYPES.includes(file.type), { message: t('modals.uploadResource.invalidFileType') }),
+      .refine((file) => (ACCEPTED_FILE_TYPES as string[]).includes(file.type), { message: t('modals.uploadResource.invalidFileType') }),
   });
 
 
@@ -116,7 +116,7 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
       return;
     }
 
-    if (!ACCEPTED_FILE_TYPES.includes(selectedFile.type)) {
+    if (!(ACCEPTED_FILE_TYPES as string[]).includes(selectedFile.type)) {
       toast({ 
         variant: "destructive", 
         title: "Type de fichier non supporté", 
