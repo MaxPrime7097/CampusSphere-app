@@ -449,7 +449,7 @@ export function Resources() {
             description="Aucun fichier ne correspond à vos critères. Essayez de changer de sujet ou de type."
             actionLabel="Tout voir"
             onAction={() => {
-              setSearchQuery("");
+              setSearchTerm("");
               setSelectedSubject("all");
               setSelectedType("all");
             }}

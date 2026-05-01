@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { mapPostToCard } from "@/lib/postCardMapper";
 import { PostSkeleton } from "@/components/ui/skeletons";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export function Home() {
   const isMobile = useIsMobile();
@@ -148,6 +149,14 @@ export function Home() {
               <PostSkeleton />
               <PostSkeleton />
             </>
+          ) : posts.length === 0 ? (
+            <EmptyState
+              icon={Sparkles}
+              title="Fil d'actualité vide"
+              description="Il n'y a pas encore de posts à afficher. Soyez le premier à partager quelque chose !"
+              actionLabel="Créer un post"
+              onAction={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            />
           ) : (
             posts.map((post, index) => (
               <div 

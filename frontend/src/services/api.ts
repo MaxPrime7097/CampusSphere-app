@@ -152,7 +152,15 @@ export async function completeSupabaseProfile(data: {
   return normalizeUser(response?.data ?? response);
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+
+export function getFullUrl(path: string | null | undefined): string {
+  if (!path) return "";
+  if (path.startsWith("http") || path.startsWith("data:")) return path;
+  const baseUrl = API_BASE_URL.replace(/\/$/, "");
+  const cleanPath = path.replace(/^\//, "");
+  return `${baseUrl}/${cleanPath}`;
+}
 
 function getAccessToken(): string | undefined {
   try {
@@ -365,7 +373,7 @@ function normalizePostFiles(files: any[] | null | undefined) {
       return {
         id: null,
         name: file.split("/").pop() || "",
-        url: file,
+        url: getFullUrl(file),
         type: "",
         size: 0,
       };
@@ -375,7 +383,7 @@ function normalizePostFiles(files: any[] | null | undefined) {
       ...file,
       id: file?.id ?? null,
       name: file?.name ?? file?.original_name ?? "",
-      url: file?.url ?? file?.file_url ?? file?.file ?? "",
+      url: getFullUrl(file?.url ?? file?.file_url ?? file?.file ?? ""),
       type: file?.type ?? file?.file_type ?? "",
       size: toNumber(file?.size ?? file?.file_size, 0),
     };
@@ -425,6 +433,7 @@ function normalizePost(post: any) {
   return {
     ...post,
     content: post.content ?? "",
+    image: getFullUrl(post.image ?? post.post_image ?? post.banner),
     category: post.category ?? "",
     visibility: post.visibility ?? "public",
     subject: post.subject ?? "",
@@ -1253,7 +1262,7 @@ export async function likeComment(commentId: number | string, token?: string) {
 // ============================================================================
 
 export async function listResources(params?: Record<string, string | number>, token?: string) {
-  const query = params
+  const query = params && Object.keys(params).length > 0
     ? `?${new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)]))}`
     : "";
   const response = await apiFetch<any>(`api/resources/${query}`, { token: token || getAccessToken() });
