@@ -432,8 +432,8 @@ export function SphereDetail() {
                 alt="Bannière"
                 className="w-full h-full object-cover"
                 containerClassName="w-full h-full absolute inset-0"
-                priority={true}
               />
+
             ) : (
               <div
                 className="w-full h-full flex items-center justify-center"

@@ -3,7 +3,7 @@ import { getSphereOverview } from "@/services/api";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, CheckCircle2, FileText, MessageSquare, RefreshCw, Users, Zap, Clock, Loader2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, FileText, MessageSquare, RefreshCw, Users, Zap, Clock, Loader2, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -71,15 +71,29 @@ export function SphereOverview({ sphereId, onTabChange }: Props) {
         ))}
       </div>
 
-      {/* Progress */}
-      <div className="bg-card border rounded-xl p-4 space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-semibold">Progression du projet</span>
-          <span className={cn("text-2xl font-bold", prog >= 75 ? "text-green-600" : prog >= 40 ? "text-amber-600" : "text-blue-600")}>{prog}%</span>
+      {/* Objective & Progress */}
+      <div className="bg-card border rounded-xl p-4 space-y-4">
+        {data?.objective && (
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold flex items-center gap-2 text-primary">
+              <Target className="h-4 w-4" /> Objectif de la sphère
+            </h3>
+            <p className="text-sm text-foreground/80 bg-primary/5 p-3 rounded-lg border border-primary/10 italic">
+              "{data.objective}"
+            </p>
+          </div>
+        )}
+
+        <div className="space-y-3 pt-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold">Progression du projet</span>
+            <span className={cn("text-2xl font-bold", prog >= 75 ? "text-green-600" : prog >= 40 ? "text-amber-600" : "text-blue-600")}>{prog}%</span>
+          </div>
+          <Progress value={prog} className="h-3" />
+          <p className="text-xs text-muted-foreground">{data?.done_tasks ?? 0} tâche{(data?.done_tasks ?? 0) !== 1 ? "s" : ""} terminée{(data?.done_tasks ?? 0) !== 1 ? "s" : ""} sur {data?.total_tasks ?? 0}</p>
         </div>
-        <Progress value={prog} className="h-3" />
-        <p className="text-xs text-muted-foreground">{data?.done_tasks ?? 0} tâche{(data?.done_tasks ?? 0) !== 1 ? "s" : ""} terminée{(data?.done_tasks ?? 0) !== 1 ? "s" : ""} sur {data?.total_tasks ?? 0}</p>
       </div>
+
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Overdue */}

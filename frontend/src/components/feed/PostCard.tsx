@@ -62,8 +62,8 @@ interface PostCardProps {
     isSaved?: boolean;
     canEdit?: boolean;
     canDelete?: boolean;
-    files?: Array<Record<string, unknown>>;
   };
+
   onToggleSave?: (saved: boolean) => void;
 }
 
