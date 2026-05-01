@@ -15,7 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 import { 
-  UserMinus, UserCheck, UserX, Camera, ExternalLink, Download, Info, X, Facebook, Twitter, Instagram, Linkedin, Copy, Share, ArrowLeft, Share2
+  Users, FileText, Settings, Check, MoreVertical, Loader2, Plus, Shield, Crown, UserPlus, UserMinus, UserCheck, UserX, Camera, ExternalLink, Download, Info, X, Facebook, Twitter, Instagram, Linkedin, Copy, Share, ArrowLeft, Share2
 } from "lucide-react";
 
 import { renderMentionText } from "@/lib/mentions";
