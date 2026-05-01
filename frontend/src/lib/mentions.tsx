@@ -24,7 +24,7 @@ export function findInvalidMentions(text: string): string[] {
   return getMentionedUsernames(text).filter((username) => !MENTION_SYNTAX_REGEX.test(username));
 }
 
-const URL_REGEX = /(https?:\/\/[^\s!@#$%^&*()_+={}[\]|\\:;"'<>,?~`]+)/g;
+const URL_REGEX = /(https?:\/\/[^\s!@#$%^&*()_+={}[\]|\\:;"'<>,?~`\uD800-\uDFFF]+)/g;
 
 export function renderMentionText(content: string, onMentionClick?: () => void) {
   if (!content) return null;

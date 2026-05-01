@@ -300,31 +300,28 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
     const postUrl = `${window.location.origin}/posts/${post.id}`;
     const messageContent = `📌 Post partagé par ${post.author.name} :\n${postUrl}`;
     try {
-      const conv = await createPrivateConversation(contactId);
-      // conv est déjà unwrappé par createPrivateConversation (unwrapItem)
-      // id peut être int ou string selon le serializer
-      const convId = conv?.id != null ? String(conv.id) : null;
+      // Rechercher d'abord si une conversation existe déjà
+      const { getUserConversations: getConvs } = await import("@/services/api");
+      const convs = await getConvs();
+      const existing = (convs || []).find((c: any) =>
+        (c.type === "private" || !c.type) &&
+        (c.participants_info || c.participants || []).some(
+          (p: any) => String(p.id) === String(contactId)
+        )
+      );
+
+      let convId = existing?.id != null ? String(existing.id) : null;
+
+      if (!convId) {
+        // Si elle n'existe pas, on la crée
+        const conv = await createPrivateConversation(contactId);
+        convId = conv?.id != null ? String(conv.id) : null;
+      }
+
       if (!convId) throw new Error("Conversation introuvable");
       await sendMessage(convId, messageContent);
       toast({ title: "Post partagé !", description: `Envoyé à ${contactName}`, duration: 2000 });
     } catch (e: any) {
-      // Fallback : chercher la conv existante dans la liste locale
-      const { getUserConversations: getConvs } = await import("@/services/api");
-      try {
-        const convs = await getConvs();
-        const existing = (convs || []).find((c: any) =>
-          (c.type === "private" || !c.type) &&
-          (c.participants_info || c.participants || []).some(
-            (p: any) => String(p.id) === String(contactId)
-          )
-        );
-        if (existing) {
-          const convId = String(existing.id);
-          await sendMessage(convId, messageContent);
-          toast({ title: "Post partagé !", description: `Envoyé à ${contactName}`, duration: 2000 });
-          return;
-        }
-      } catch { /* ignore */ }
       toast({ title: "Erreur", description: e?.message || "Impossible d'envoyer le message", variant: "destructive" });
     } finally {
       setSendingToUserId(null);
@@ -658,62 +655,66 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
           {/* Impact Score Rating */}
           
 
-          <div className="flex items-center justify-between pt-2 border-t">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2 border-t">
+            <div className="flex items-center gap-3 md:gap-4">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleLike}
-                className={`gap-2 transition-all active:scale-95 ${isLiked ? 'text-red-500 hover:text-red-600' : 'hover:text-red-500'}`}
+                className={`gap-2 h-9 px-2 md:px-3 transition-all active:scale-95 ${isLiked ? 'text-red-500 hover:text-red-600' : 'hover:text-red-500'}`}
               >
                 <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
-                <span className="text-xs">{likesCount}</span>
+                <span className="text-xs font-medium">{likesCount}</span>
               </Button>
               
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="gap-2 hover:text-primary transition-all active:scale-95"
+                className="gap-2 h-9 px-2 md:px-3 hover:text-primary transition-all active:scale-95"
                 onClick={() => setCommentsOpen(true)}
               >
                 <MessageCircle className="h-4 w-4" />
-                <span className="text-xs">{post.comments}</span>
+                <span className="text-xs font-medium">{post.comments}</span>
               </Button>
               
-              <Button variant="ghost" size="sm" className="gap-2 hover:text-primary transition-all active:scale-95" onClick={handleShare}>
+              <Button variant="ghost" size="sm" className="h-9 px-2 hover:text-primary transition-all active:scale-95" onClick={handleShare}>
                 <Share className="h-4 w-4" />
               </Button>
             </div>
 
-            <div className="flex items-center gap-2 rounded-md border px-2 py-1 text-primary">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-1"
-                onClick={() => handleImpactRate(Math.max((userImpactRating ?? 0) - 1, 1))}
-                disabled={userImpactRating === null}
-              >
-                <Minus className="h-3.5 w-3.5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-1"
-                onClick={() => handleImpactRate(Math.min((userImpactRating ?? 0) + 1, 5))}
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-1"
-                onClick={() => handleImpactRate(null)}
-                disabled={userImpactRating === null}
-              >
-                <X className="h-3.5 w-3.5" />
-              </Button>
-              <Zap className="h-4 w-4" />
-              <span className="text-sm font-medium">{impactScore}</span>
+            <div className="flex items-center justify-between sm:justify-end gap-2 rounded-xl bg-accent/30 p-1 border border-primary/10">
+              <div className="flex items-center">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 hover:bg-background/80"
+                  onClick={() => handleImpactRate(Math.max((userImpactRating ?? 0) - 1, 1))}
+                  disabled={userImpactRating === null}
+                >
+                  <Minus className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 hover:bg-background/80"
+                  onClick={() => handleImpactRate(Math.min((userImpactRating ?? 0) + 1, 5))}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 hover:bg-background/80"
+                  onClick={() => handleImpactRate(null)}
+                  disabled={userImpactRating === null}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-background rounded-lg shadow-sm border border-primary/5">
+                <Zap className="h-4 w-4 text-primary animate-pulse" />
+                <span className="text-sm font-bold text-primary">{impactScore}</span>
+              </div>
             </div>
           </div>
         </div>
