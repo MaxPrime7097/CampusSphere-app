@@ -483,7 +483,9 @@ export function ResourceDetail() {
   });
 
   return (
+    <>
     <div key={id} className="min-h-screen bg-gradient-to-br from-background to-accent/20">
+
       <div className="container max-w-4xl mx-auto py-4 px-4 md:py-6">
         {/* Back Button */}
         <Button 
@@ -884,6 +886,8 @@ export function ResourceDetail() {
         </div>
       </DialogContent>
     </Dialog>
+    </>
   );
 }
+
 
