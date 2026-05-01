@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { UploadResourceModal } from "@/components/modals/UploadResourceModal";
+import { ResourceCard } from "@/components/resources/ResourceCard";
 import { cn, formatFileSize } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { RESOURCE_TYPE_OPTIONS, normalizeResourceType } from "@/constants/resourceTypes";
@@ -448,76 +449,16 @@ export function Resources() {
         ) : (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {getSortedResources().map((resource) => (
-            <Card
-              key={resource.id}
-              className={cardClasses}
-              onClick={() => navigate(`/resources/${resource.id}`)}
-            >
-              <CardContent className="p-0">
-                <div className="h-24 rounded-t-lg bg-input flex items-center justify-center mb-0">
-                  <FileText className="h-12 w-12 text-muted-foreground" />
-                </div>
-                <div className="px-2 py-2">
-                  <h3 className="flex-1 font-semibold text-sm line-clamp-2 mb-2">
-                    {resource.title}
-                  </h3>
-                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-                    <p className="text-left">Par {resource.authorName || "Utilisateur"}</p>
-                  </div>
-                  <div className="mb-2 flex flex-wrap gap-1">
-                    <Badge variant="outline" className="text-xs">
-                      {getTypeLabel(resource.type)}
-                    </Badge>
-                    <Badge variant="secondary" className="text-xs">
-                      {getSubjectLabel(resource.subject)}
-                    </Badge>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground mb-2">
-                    Taille: {formatFileSize(resource.fileSize)}
-                  </p>
-                  <div className="flex gap-1">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 flex-1 text-xs gap-1"
-                      onClick={(e) => handlePreview(e, resource.id)}
-                    >
-                      <Eye className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className={`h-7 flex-1 text-xs gap-1 ${
-                        savedResources.has(resource.id)
-                          ? "text-blue-500 hover:text-blue-600"
-                          : ""
-                      }`}
-                      onClick={(e) => handleSave(e, resource.id)}
-                    >
-                      <Bookmark
-                        className={`h-3 w-3 ${
-                          savedResources.has(resource.id) ? "fill-current" : ""
-                        }`}
-                      />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="default"
-                      className="h-7 flex-1 text-xs gap-1 campus-gradient text-white"
-                      onClick={(e) => handleDownload(e, resource.id)}
-                      disabled={downloadingIds.has(resource.id)}
-                    >
-                      {downloadingIds.has(resource.id) ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <Download className="h-3 w-3" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+              <ResourceCard
+                key={resource.id}
+                resource={resource}
+                isDownloading={downloadingIds.has(resource.id)}
+                isSaved={savedResources.has(resource.id)}
+                onDownload={(e) => handleDownload(e, resource.id)}
+                onSave={(e) => handleSave(e, resource.id)}
+                onPreview={(e) => handlePreview(e, resource.id)}
+              />
+            ))}
         </div>
         )}
 

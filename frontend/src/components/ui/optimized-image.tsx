@@ -1,15 +1,14 @@
-import * as React from "react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, forwardRef, type ImgHTMLAttributes, type RefObject } from "react";
 import { cn } from "@/lib/utils";
 
-interface OptimizedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+interface OptimizedImageProps extends ImgHTMLAttributes<HTMLImageElement> {
   fallback?: string;
   placeholder?: string;
   containerClassName?: string;
   priority?: boolean;
 }
 
-export const OptimizedImage = React.forwardRef<HTMLImageElement, OptimizedImageProps>(({
+export const OptimizedImage = forwardRef<HTMLImageElement, OptimizedImageProps>(({
   src,
   alt,
   className,
@@ -25,7 +24,7 @@ export const OptimizedImage = React.forwardRef<HTMLImageElement, OptimizedImageP
   const [isInView, setIsInView] = useState(priority);
   const [hasError, setHasError] = useState(false);
   const internalRef = useRef<HTMLImageElement>(null);
-  const imgRef = (forwardedRef as React.RefObject<HTMLImageElement>) || internalRef;
+  const imgRef = (forwardedRef as RefObject<HTMLImageElement>) || internalRef;
 
   // Intersection Observer for lazy loading
   useEffect(() => {
@@ -48,22 +47,6 @@ export const OptimizedImage = React.forwardRef<HTMLImageElement, OptimizedImageP
     return () => observer.disconnect();
   }, [priority, isInView]);
 
-  // Convert to WebP if supported
-  const getOptimizedSrc = (originalSrc: string) => {
-    if (typeof window === 'undefined') return originalSrc;
-    
-    // Check if browser supports WebP
-    const canvas = document.createElement('canvas');
-    const supportsWebP = canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
-    
-    if (supportsWebP && originalSrc.includes('.')) {
-      const extension = originalSrc.split('.').pop();
-      return originalSrc.replace(`.${extension}`, '.webp');
-    }
-    
-    return originalSrc;
-  };
-
   const handleLoad = () => {
     setIsLoaded(true);
   };
@@ -81,7 +64,7 @@ export const OptimizedImage = React.forwardRef<HTMLImageElement, OptimizedImageP
       )}
       style={width || height ? { width, height } : undefined}
     >
-      {/* Placeholder */}
+      {/* Placeholder / Skeleton */}
       {!isLoaded && (
         <div 
           className="absolute inset-0 bg-gradient-to-br from-muted to-muted/50 animate-pulse"
@@ -97,7 +80,7 @@ export const OptimizedImage = React.forwardRef<HTMLImageElement, OptimizedImageP
       {isInView && (
         <img
           ref={imgRef}
-          src={hasError ? (fallback || src) : getOptimizedSrc(src!)}
+          src={hasError ? (fallback || src) : src}
           alt={alt}
           className={cn(
             "w-full h-full object-cover transition-opacity duration-300",

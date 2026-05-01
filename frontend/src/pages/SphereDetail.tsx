@@ -30,6 +30,7 @@ import { KanbanBoard, type KanbanTask } from "@/components/kanban/KanbanBoard";
 import { SphereOverview } from "@/components/sphere/SphereOverview";
 import { SphereUploadResourceModal } from "@/components/modals/SphereUploadResourceModal";
 import { OptimizedImage } from "@/components/ui/optimized-image";
+import { ResourceCard } from "@/components/resources/ResourceCard";
 
 export function SphereDetail() {
   const { id } = useParams();
@@ -588,63 +589,20 @@ export function SphereDetail() {
                                 className="w-full h-full object-contain" 
                                 containerClassName="w-full h-full max-h-48 bg-muted"
                               />
-                            </a>
-                          )}
-                          {isPdf && fileUrl && (
-                            <div className="bg-muted/30 p-2">
-                              <iframe src={`${fileUrl}#toolbar=0&view=FitH`} className="w-full h-48 rounded border" title={fileName} />
-                            </div>
-                          )}
-                          <div className="p-3 flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                <FileText className="h-4 w-4 text-primary" />
-                              </div>
-                              <div className="min-w-0">
-                                <p className="text-sm font-medium truncate">{fileName}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {uploaderName && <span>{uploaderName} · </span>}
-                                  {fileSize > 0 && <span>{(fileSize / 1024 / 1024).toFixed(1)} MB · </span>}
-                                  {createdAt && <span>{new Date(createdAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}</span>}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex gap-1 flex-shrink-0">
-                              {fileUrl && (
-                                <Button size="sm" variant="ghost" asChild className="h-8 w-8 p-0">
-                                  <a href={fileUrl} target="_blank" rel="noopener noreferrer" title="Ouvrir">
-                                    <ExternalLink className="h-4 w-4" />
-                                  </a>
-                                </Button>
-                              )}
-                              {fileUrl && (
-                                <Button size="sm" variant="ghost" asChild className="h-8 w-8 p-0">
-                                  <a href={fileUrl} download={fileName} title="Télécharger">
-                                    <Download className="h-4 w-4" />
-                                  </a>
-                                </Button>
-                              )}
-                              {canDelete && (
-                                <Button
-                                  size="sm" variant="ghost"
-                                  className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
-                                  onClick={async () => {
-                                    try {
-                                      await deleteSphereFile(String(id), res.id);
-                                      setResources((prev: any[]) => prev.filter((r: any) => r.id !== res.id));
-                                      toast({ title: "Fichier supprimé" });
-                                    } catch (e: any) {
-                                      toast({ title: "Erreur", description: e?.message, variant: "destructive" });
-                                    }
-                                  }}
-                                  title="Supprimer"
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
+                        <ResourceCard
+                          key={res.id}
+                          resource={mappedResource}
+                          onDownload={() => {
+                            const link = document.createElement("a");
+                            link.href = mappedResource.fileUrl;
+                            link.download = mappedResource.title;
+                            document.body.appendChild(link);
+                            link.click();
+                            link.remove();
+                          }}
+                          onPreview={() => window.open(mappedResource.fileUrl, "_blank")}
+                          onSave={() => toast({ title: "Bientôt disponible", description: "La sauvegarde depuis une sphère arrive bientôt." })}
+                        />
                       );
                     })}
                   </div>

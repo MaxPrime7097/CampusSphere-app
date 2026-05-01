@@ -177,6 +177,17 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
   };
 
   const handleImpactRate = async (value: number | null) => {
+    // Explication pédagogique lors du premier clic
+    const hasSeenExplanation = localStorage.getItem("impact_explanation_shown");
+    if (!hasSeenExplanation) {
+      toast({
+        title: "Qu'est-ce que l'Impact Score ? ⚡",
+        description: "C'est une mesure de l'utilité du post. Plus un post aide la communauté, plus son Impact Score grimpe. Vous pouvez voter pour augmenter (+) ou réduire (-) cette note.",
+        duration: 6000,
+      });
+      localStorage.setItem("impact_explanation_shown", "true");
+    }
+
     try {
       const response = await impactRatePost(post.id, value);
       const nextImpactScore = Number(response?.data?.impactScore ?? impactScore);
@@ -225,7 +236,27 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
     }
   };
 
-  const handleShare = () => {
+  const handleShare = async () => {
+    const postUrl = `${window.location.origin}/posts/${post.id}`;
+    
+    // Tentative de partage natif (mobile/OS)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Post de ${post.author.name} sur CampusSphere`,
+          text: post.content.length > 100 ? post.content.substring(0, 100) + "..." : post.content,
+          url: postUrl,
+        });
+        return; // Succès du partage natif
+      } catch (err) {
+        if ((err as Error).name !== "AbortError") {
+          console.error("Erreur de partage natif:", err);
+        } else {
+          return; // L'utilisateur a annulé le partage natif
+        }
+      }
+    }
+
     setShowShareDialog(true);
     setShareSearch("");
     if (shareConnections.length === 0) {

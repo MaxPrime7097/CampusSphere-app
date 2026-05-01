@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, Users, TrendingUp, Clock, Loader2, Check, RefreshCw, Plus, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { CreateSphereModal } from "@/components/modals/CreateSphereModal";
+import { SphereCard } from "@/components/sphere/SphereCard";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import {
@@ -430,40 +431,13 @@ export function Spheres() {
                   </>
                 ) : (
                   getSortedSpheres().map((sphere) => (
-                    <Card key={sphere.id} className={cardClasses} onClick={() => navigate(`/spheres/${sphere.id}`)}>
-                      <CardContent className="p-0">
-                        <div className={`aspect-video bg-gradient-to-br ${sphere.color || "from-primary/20 to-accent/20"} rounded-t-lg flex items-center justify-center text-white font-bold text-2xl`}>
-                          {sphere.name?.charAt?.(0) || ""}
-                        </div>
-                        <div className="px-4 py-2">
-                          <div className="flex flex-wrap gap-1 mb-2">
-                            <Badge variant="outline" className="text-xs">{getSphereCategoryLabel(sphere.category)}</Badge>
-                            {sphere.requireApproval && <Badge variant="destructive" className="text-xs">Approbation</Badge>}
-                          </div>
-                          <h3 className="font-semibold text-sm line-clamp-2 mb-2">{sphere.name || ""}</h3>
-                          <div className="space-y-1 text-xs text-muted-foreground mb-2">
-                            <div className="flex items-center gap-1"><Users className="h-3 w-3" /> {sphere.memberCount || 0} membres</div>
-                          </div>
-                          {(() => {
-                            const actionModel = getSphereActionModel(sphere);
-                            return (
-                          <Button 
-                            size="sm" 
-                            className={`w-full h-7 text-xs ${actionModel.className}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              actionModel.onClick();
-                            }}
-                            disabled={actionModel.disabled}
-                          >
-                            {isJoining === sphere.id
-                              ? <Loader2 className="h-3 w-3 animate-spin" />
-                              : <>{actionModel.icon}{actionModel.label}</>}
-                          </Button>
-                          )})()}
-                        </div>
-                      </CardContent>
-                    </Card>
+                    <SphereCard
+                      key={sphere.id}
+                      sphere={sphere}
+                      membership={getUnifiedMembershipState(sphere)}
+                      isJoining={isJoining === String(sphere.id)}
+                      onJoin={() => handleJoinSphere(sphere.id, sphere.name)}
+                    />
                   ))
                 )}
               </div>
@@ -498,49 +472,15 @@ export function Spheres() {
                 </div>
               ) : (
               <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-                {getSortedSpheres().map((sphere) => {
-                  const hasProgression = Number.isFinite(sphere.progression);
-                  const progressionValue = hasProgression ? Math.max(0, Math.min(100, Number(sphere.progression))) : null;
-
-                  return (
-                  <Card key={sphere.id} className={cardClasses}>
-                    <CardHeader className="pb-3">
-                      <div className={`h-16 w-16 rounded-full bg-gradient-to-br ${sphere.color || "from-primary/20 to-accent/20"} mx-auto mb-2 flex items-center justify-center text-white font-bold text-xl`}>{sphere.name?.charAt(0) || ""}</div>
-                      <CardTitle className="text-sm text-center line-clamp-1">{sphere.name}</CardTitle>
-                      <p className="text-xs text-muted-foreground text-center">{sphere.memberCount} membres</p>
-                    </CardHeader>
-                    <CardContent className="pt-0 px-3 pb-3">
-                      {progressionValue !== null && (
-                        <div className="space-y-1 mb-3">
-                          <div className="flex justify-between text-xs"><span className="text-muted-foreground">Progression</span><span className="font-semibold">{progressionValue}%</span></div>
-                          <div className="w-full bg-muted rounded-full h-1.5">
-                            <div className={`h-1.5 rounded-full bg-gradient-to-r ${sphere.color || "from-primary/20 to-accent/20"} progress-bar`} style={{ '--progress-width': `${progressionValue}%` } as React.CSSProperties} />
-                          </div>
-                        </div>
-                      )}
-                      {(() => {
-                        const membership = getUnifiedMembershipState(sphere);
-                        return membership === "active" ? (
-                          <Button size="sm" className="w-full campus-gradient text-white hover:opacity-90" onClick={() => navigate(`/spheres/${sphere.id}`)}>Accéder</Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            className={`w-full ${getSphereActionModel(sphere).className}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              getSphereActionModel(sphere).onClick();
-                            }}
-                            disabled={getSphereActionModel(sphere).disabled}
-                          >
-                            {isJoining === String(sphere.id)
-                              ? <Loader2 className="h-3 w-3 animate-spin" />
-                              : <>{getSphereActionModel(sphere).icon}{getSphereActionModel(sphere).label}</>}
-                          </Button>
-                        );
-                      })()}
-                    </CardContent>
-                  </Card>
-                )})}
+                {getSortedSpheres().map((sphere) => (
+                  <SphereCard
+                    key={sphere.id}
+                    sphere={sphere}
+                    membership={getUnifiedMembershipState(sphere)}
+                    isJoining={isJoining === String(sphere.id)}
+                    onJoin={() => handleJoinSphere(sphere.id, sphere.name)}
+                  />
+                ))}
               </div>
               )}
             </section>

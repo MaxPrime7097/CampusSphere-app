@@ -24,39 +24,63 @@ export function findInvalidMentions(text: string): string[] {
   return getMentionedUsernames(text).filter((username) => !MENTION_SYNTAX_REGEX.test(username));
 }
 
+const URL_REGEX = /(https?:\/\/[^\s]+)/g;
+
 export function renderMentionText(content: string, onMentionClick?: () => void) {
   if (!content) return null;
 
   const result: ReactNode[] = [];
   let lastIndex = 0;
+
+  // We combine mentions and URLs into a single search
+  const combinedRegex = new RegExp(`${MENTION_REGEX.source}|${URL_REGEX.source}`, "g");
   let match: RegExpExecArray | null = null;
 
-  while ((match = MENTION_REGEX.exec(content)) !== null) {
-    const [fullMatch, prefix, username] = match;
+  while ((match = combinedRegex.exec(content)) !== null) {
+    const fullMatch = match[0];
     const start = match.index;
-    const prefixLength = prefix.length;
-    const mentionStart = start + prefixLength;
 
+    // Add text before the match
     if (start > lastIndex) {
       result.push(content.slice(lastIndex, start));
     }
-    if (prefix) {
-      result.push(prefix);
-    }
 
-    result.push(
-      <Link
-        key={`${mentionStart}-${username}`}
-        to={`/profile/${username}`}
-        className="font-medium text-primary hover:underline"
-        onClick={(event) => {
-          event.stopPropagation();
-          onMentionClick?.();
-        }}
-      >
-        @{username}
-      </Link>
-    );
+    // Identify if it's a mention or a URL
+    // Group 2 is the username from MENTION_REGEX
+    // Group 4 is the URL from URL_REGEX
+    const prefix = match[1];
+    const username = match[2];
+    const url = match[3];
+
+    if (username) {
+      if (prefix) result.push(prefix);
+      result.push(
+        <Link
+          key={`mention-${start}-${username}`}
+          to={`/profile/${username}`}
+          className="font-medium text-primary hover:underline"
+          onClick={(event) => {
+            event.stopPropagation();
+            onMentionClick?.();
+          }}
+        >
+          @{username}
+        </Link>
+      );
+    } else if (url) {
+      result.push(
+        <a
+          key={`url-${start}`}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary hover:underline break-all inline-flex items-center gap-1"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {url}
+        </a>
+      );
+    }
 
     lastIndex = start + fullMatch.length;
   }
