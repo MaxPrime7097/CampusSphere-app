@@ -711,10 +711,25 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                   <X className="h-3.5 w-3.5" />
                 </Button>
               </div>
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-background rounded-lg shadow-sm border border-primary/5">
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-background rounded-lg shadow-sm border border-primary/5 group relative">
                 <Zap className="h-4 w-4 text-primary animate-pulse" />
                 <span className="text-sm font-bold text-primary">{impactScore}</span>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-5 w-5 p-0 rounded-full hover:bg-primary/20 transition-colors ml-1"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toast({
+                      title: "Score d'impact",
+                      description: "Ce score mesure l'engagement et l'influence de ce post sur la plateforme.",
+                    });
+                  }}
+                >
+                  <Info className="h-3 w-3 text-primary/60" />
+                </Button>
               </div>
+
             </div>
           </div>
         </div>

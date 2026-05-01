@@ -340,7 +340,8 @@ export function Resources() {
               ) : (
                 <RefreshCw className="h-4 w-4" />
               )}
-              Actualiser
+              <span className="hidden sm:inline">Actualiser</span>
+
             </Button>
             <UploadResourceModal onResourceUploaded={handleResourceUploaded}>
               <Button
@@ -348,7 +349,8 @@ export function Resources() {
                 className="campus-gradient text-white hover:opacity-90 gap-2 w-full sm:w-auto"
               >
                 <Upload className="h-4 w-4" />
-                <span className="inline">Uploader</span>
+                <span className="hidden sm:inline">Uploader</span>
+
               </Button>
             </UploadResourceModal>
           </div>

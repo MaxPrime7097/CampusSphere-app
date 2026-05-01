@@ -6,6 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Maximize2, MessageCircle, Minimize2, Send, Users } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatRelativeTime } from "@/lib/date";
+import { renderMentionText } from "@/lib/mentions";
+import { useToast } from "@/hooks/use-toast";
+
+
 
 interface MiniChatProps {
   sphereId: string;
@@ -16,7 +20,9 @@ interface MiniChatProps {
 }
 
 export function MiniChat({ sphereId, sphereName, isExpanded, onToggleExpanded, className = "" }: MiniChatProps) {
+  const { toast } = useToast();
   const pollingRef = useRef<number | null>(null);
+
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
 
@@ -28,6 +34,8 @@ export function MiniChat({ sphereId, sphereName, isExpanded, onToggleExpanded, c
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [transportMode, setTransportMode] = useState<"ws" | "polling" | "idle">("idle");
+  const [memberIds, setMemberIds] = useState<string[]>([]);
+
 
   const toList = (v: any): any[] => {
     if (Array.isArray(v)) return v;
@@ -119,34 +127,17 @@ export function MiniChat({ sphereId, sphereName, isExpanded, onToggleExpanded, c
         });
 
         if (!existing) {
-          // Pas de conv dédiée — n'importe quel membre peut en créer une
-          const participantIds = toList(convsRaw)
-            .filter((c: any) => false) // juste pour réutiliser la variable
-            .map(() => "");
-          // Chercher les membres de la sphère pour créer le canal
           try {
-            const { listSphereMembers, createGroupConversation } = await import("@/services/api");
+            const { listSphereMembers } = await import("@/services/api");
             const membersRaw = await listSphereMembers(sphereId);
-            const memberIds = toList(membersRaw)
+            const ids = toList(membersRaw)
               .map((m: any) => String(m.user_info?.id ?? m.user ?? ""))
               .filter((id: string) => id && id !== myId);
-            if (memberIds.length >= 2) {
-              const created = await createGroupConversation(SPHERE_CONV_PREFIX, memberIds);
-              const groupData = created?.data ?? created;
-              if (mounted && groupData?.id) {
-                const convId = String(groupData.id);
-                setConversationId(convId);
-                await fetchMessages(convId, myId);
-                if (mounted) connectWS(convId, myId);
-              } else {
-                setConversationId(null);
-              }
-            } else {
-              setConversationId(null);
-            }
+            setMemberIds(ids);
           } catch {
-            setConversationId(null);
+            setMemberIds([]);
           }
+          setConversationId(null);
           setIsBootstrapping(false);
           return;
         }
@@ -161,6 +152,7 @@ export function MiniChat({ sphereId, sphereName, isExpanded, onToggleExpanded, c
       } finally {
         if (mounted) setIsBootstrapping(false);
       }
+
     };
 
     void bootstrap();
@@ -173,20 +165,38 @@ export function MiniChat({ sphereId, sphereName, isExpanded, onToggleExpanded, c
   }, [messages]);
 
   const handleSend = async () => {
-    if (!conversationId || !newMessage.trim() || isSending) return;
+    if ((!conversationId && memberIds.length === 0 && !currentUser) || !newMessage.trim() || isSending) return;
     setIsSending(true);
     const content = newMessage.trim();
     setNewMessage("");
     try {
-      const result = await sendMessage(conversationId, content);
+      let currentConvId = conversationId;
+      
+      if (!currentConvId) {
+        const { createGroupConversation } = await import("@/services/api");
+        const SPHERE_CONV_PREFIX = `sphere-${sphereId}`;
+        const created = await createGroupConversation(SPHERE_CONV_PREFIX, memberIds);
+        const groupData = created?.data ?? created;
+        if (groupData?.id) {
+          currentConvId = String(groupData.id);
+          setConversationId(currentConvId);
+          connectWS(currentConvId, currentUser?.id ? String(currentUser.id) : undefined);
+        } else {
+          throw new Error("Impossible d'initialiser la discussion");
+        }
+      }
+
+      const result = await sendMessage(currentConvId, content);
       const mapped = toMsg(result, currentUser?.id ? String(currentUser.id) : undefined);
       setMessages((prev) => prev.some((x) => x.id === mapped.id) ? prev : [...prev, mapped].slice(-30));
-    } catch {
+    } catch (e: any) {
       setNewMessage(content);
+      toast({ title: "Erreur d'envoi", description: e?.message || "Impossible d'envoyer le message", variant: "destructive" });
     } finally {
       setIsSending(false);
     }
   };
+
 
   const statusDot = transportMode === "ws"
     ? "bg-green-500"
@@ -237,9 +247,10 @@ export function MiniChat({ sphereId, sphereName, isExpanded, onToggleExpanded, c
               <Users className="h-8 w-8 text-muted-foreground/50" />
               <p className="text-sm text-muted-foreground">
                 Aucun canal de discussion pour cette sphère.<br />
-                L'administrateur peut en créer un depuis la messagerie.
+                Écrivez le premier message pour commencer !
               </p>
             </div>
+
           ) : messages.length === 0 ? (
             <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
               Aucun message. Soyez le premier !
@@ -256,8 +267,9 @@ export function MiniChat({ sphereId, sphereName, isExpanded, onToggleExpanded, c
                     <span className="text-[10px] text-muted-foreground mb-0.5">{msg.sender}</span>
                   )}
                   <div className={`rounded-lg px-2.5 py-1.5 text-sm ${msg.isMe ? "campus-gradient text-white" : "bg-card border"}`}>
-                    {msg.content}
+                    {renderMentionText(msg.content)}
                   </div>
+
                   <span className="text-[10px] text-muted-foreground mt-0.5">
                     {formatRelativeTime(msg.timestamp)}
                   </span>
@@ -269,8 +281,9 @@ export function MiniChat({ sphereId, sphereName, isExpanded, onToggleExpanded, c
         </div>
 
         {/* Input */}
-        {conversationId && (
+        {!isBootstrapping && !loadError && (
           <div className="flex gap-2">
+
             <Input
               placeholder="Écrire un message..."
               value={newMessage}

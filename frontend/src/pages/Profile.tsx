@@ -1010,12 +1010,14 @@ export function Profile() {
                         ) : isFollowing ? (
                           <>
                             <Unlink className="h-4 w-4 mr-2" />
-                            Disconnect
+                            <span className="hidden sm:inline">Disconnect</span>
+
                           </>
                         ) : (
                           <>
                             <Link className="h-4 w-4 mr-2" />
-                            Connect
+                            <span className="hidden sm:inline">Connect</span>
+
                           </>
                         )}
                       </Button>
@@ -1033,7 +1035,8 @@ export function Profile() {
                       onClick={handleEditProfile}
                     >
                       <Settings className="h-4 w-4 mr-2" />
-                      Modifier
+                      <span className="hidden sm:inline">Modifier</span>
+
                     </Button>
                   )}
                 </div>
@@ -1049,17 +1052,31 @@ export function Profile() {
                 <p className="text-foreground leading-relaxed">{user.bio || NOT_AVAILABLE_TEXT}</p>
 
                 {/* Impact Score et Mood */}
-                <div className="flex items-center gap-4 p-3 bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg">
+                <div className="flex items-center gap-4 p-3 bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg group relative">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center">
                       <Zap className="h-4 w-4 text-white" />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold">Impact Score</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-semibold">Impact Score</p>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-5 w-5 p-0 rounded-full hover:bg-primary/20 transition-colors"
+                          onClick={() => toast({
+                            title: "Score d'impact",
+                            description: "Le score d'impact mesure l'engagement global généré par vos posts et ressources partagées sur CampusSphere.",
+                          })}
+                        >
+                          <Info className="h-3 w-3 text-primary/60" />
+                        </Button>
+                      </div>
                       <p className="text-lg font-bold text-primary">{user.impactScore ?? NOT_AVAILABLE_TEXT}</p>
                     </div>
                   </div>
                   <div className="h-8 w-px bg-border" />
+
                   <div 
                     className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded-lg p-2 -m-2 transition-colors"
                     onClick={() => isOwnProfile && setShowMoodModal(true)}

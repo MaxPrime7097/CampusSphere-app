@@ -331,11 +331,13 @@ export function Spheres() {
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading} className="gap-2">
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-              Actualiser
+              <span className="hidden sm:inline">Actualiser</span>
+
             </Button>
             <CreateSphereModal onSphereCreated={handleSphereCreated}>
               <Button size="sm" className="campus-gradient text-white hover:opacity-90 gap-2 w-full sm:w-auto">
-                <Plus className="h-4 w-4" /> <span>Créer</span>
+                <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Créer</span>
+
               </Button>
             </CreateSphereModal>
           </div>

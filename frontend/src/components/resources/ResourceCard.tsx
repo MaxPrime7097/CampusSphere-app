@@ -117,7 +117,7 @@ export const ResourceCard = React.memo(({
               ) : (
                 <>
                   <Download className="h-3.5 w-3.5" /> 
-                  <span className="text-xs font-semibold">Télécharger</span>
+                  <span className="text-xs font-semibold hidden sm:inline">Télécharger</span>
                 </>
               )}
             </Button>

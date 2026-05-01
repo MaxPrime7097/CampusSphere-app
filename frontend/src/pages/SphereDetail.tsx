@@ -15,10 +15,13 @@ import { Progress } from "@/components/ui/progress";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 import { 
-  ArrowLeft, Users, FileText, Settings, UserPlus, Share2, MoreVertical, 
-  Loader2, Plus, Check, Clock, Calendar, Zap, Crown, Shield, X, 
-  UserMinus, UserCheck, UserX, Camera, ExternalLink, Download 
+  UserMinus, UserCheck, UserX, Camera, ExternalLink, Download, Info, X, Facebook, Twitter, Instagram, Linkedin, Copy, Share
 } from "lucide-react";
+import { renderMentionText } from "@/lib/mentions";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+
 
 import { useToast } from "@/hooks/use-toast";
 import { CreateTaskModal } from "@/components/modals/CreateTaskModal";
@@ -54,6 +57,9 @@ export function SphereDetail() {
   const [isSharing, setIsSharing] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const [isChatExpanded, setIsChatExpanded] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [isCopyingLink, setIsCopyingLink] = useState(false);
+
 
   const [loading, setLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -363,11 +369,46 @@ export function SphereDetail() {
   };
 
   const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setIsSharing(true);
-    setTimeout(() => setIsSharing(false), 2000);
-    toast({ title: "Lien copié !" });
+    setShowShareModal(true);
   };
+
+  const handleSocialShare = (platform: string) => {
+    const shareUrl = encodeURIComponent(window.location.href);
+    const shareText = encodeURIComponent(`Rejoins ma sphère "${sphere?.name}" sur CampusSphere !`);
+    
+    let url = "";
+    switch (platform) {
+      case "whatsapp":
+        url = `https://api.whatsapp.com/send?text=${shareText}%20${shareUrl}`;
+        break;
+      case "linkedin":
+        url = `https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}`;
+        break;
+      case "facebook":
+        url = `https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`;
+        break;
+      case "twitter":
+        url = `https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}`;
+        break;
+      default:
+        return;
+    }
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const handleCopyLink = async () => {
+    if (isCopyingLink) return;
+    setIsCopyingLink(true);
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      toast({ title: "Lien copié !", description: "Le lien de la sphère a été copié." });
+    } catch {
+      toast({ title: "Erreur", description: "Impossible de copier le lien.", variant: "destructive" });
+    } finally {
+      setIsCopyingLink(false);
+    }
+  };
+
 
   // ==================== RENDER ====================
   return (
@@ -433,7 +474,8 @@ export function SphereDetail() {
           <div className="p-4 md:p-6 space-y-4">
             {/* Description + stats */}
               <div className="space-y-3">
-              <p className="text-sm md:text-base text-muted-foreground line-clamp-2 overflow-hidden">{sphereFallback.description}</p>
+              <p className="text-sm md:text-base text-muted-foreground whitespace-pre-wrap">{renderMentionText(sphereFallback.description)}</p>
+
               <div className="flex flex-wrap gap-3 text-sm font-medium">
                 <span className="flex items-center gap-1.5"><Users className="h-4 w-4 text-primary" /> {sphereMemberCount} membres</span>
                 <span className="flex items-center gap-1.5"><FileText className="h-4 w-4 text-primary" /> {resources.length} fichiers</span>
@@ -453,17 +495,17 @@ export function SphereDetail() {
                   <>
                     {canManageSphereSettings && (
                       <SphereSettingsModal sphereData={sphereFallback} onSettingsUpdated={loadSphereData} onSphereDeleted={() => navigate("/spheres")}>
-                        <Button variant="outline" size="sm" className="gap-2"><Settings className="h-4 w-4" /> Paramètres</Button>
+                        <Button variant="outline" size="sm" className="gap-2"><Settings className="h-4 w-4" /> <span className="hidden sm:inline">Paramètres</span></Button>
                       </SphereSettingsModal>
                     )}
                     {canModerateMembers && (
                       <ManageMembersModal sphereId={sphereFallback.id} sphereName={sphereFallback.name}>
-                        <Button variant="outline" size="sm" className="gap-2"><Users className="h-4 w-4" /> Équipe</Button>
+                        <Button variant="outline" size="sm" className="gap-2"><Users className="h-4 w-4" /> <span className="hidden sm:inline">Équipe</span></Button>
                       </ManageMembersModal>
                     )}
                     {canModerateMembers && (
                       <AddMemberModal sphereId={sphereFallback.id} sphereName={sphereFallback.name} onMemberAdded={loadSphereData}>
-                        <Button variant="outline" size="sm" className="gap-2"><UserPlus className="h-4 w-4" /> Inviter</Button>
+                        <Button variant="outline" size="sm" className="gap-2"><UserPlus className="h-4 w-4" /> <span className="hidden sm:inline">Inviter</span></Button>
                       </AddMemberModal>
                     )}
                   </>
@@ -475,12 +517,13 @@ export function SphereDetail() {
                       className="campus-gradient text-white font-bold gap-2"
                     >
                       {isJoining && <Loader2 className="h-4 w-4 animate-spin" />}
-                      {isPendingRequest ? "Demande en attente" : "Rejoindre la Sphère"}
+                      <span className="hidden sm:inline">{isPendingRequest ? "Demande en attente" : "Rejoindre la Sphère"}</span>
+
                     </Button>
                     {isPendingRequest && (
                       <Button onClick={handleCancelRequest} disabled={isCancellingRequest} variant="outline" size="sm">
                         {isCancellingRequest && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
-                        Annuler la demande
+                        <span className="hidden sm:inline">Annuler la demande</span>
                       </Button>
                     )}
                   </>
@@ -694,5 +737,83 @@ export function SphereDetail() {
         )}
       </div>
     </div>
+    
+    {/* Share Modal */}
+    <Dialog open={showShareModal} onOpenChange={setShowShareModal}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Partager la Sphère</DialogTitle>
+          <DialogDescription>
+            Invitez d'autres étudiants à rejoindre cette sphère de collaboration.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col gap-4 py-4">
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              variant="outline"
+              className="flex items-center gap-2 h-12 justify-start px-4 hover:bg-green-50 hover:text-green-600 hover:border-green-200 transition-all"
+              onClick={() => handleSocialShare("whatsapp")}
+            >
+              <div className="bg-green-500 text-white p-1.5 rounded-full">
+                <Share2 className="h-3.5 w-3.5" />
+              </div>
+              <span>WhatsApp</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="flex items-center gap-2 h-12 justify-start px-4 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all"
+              onClick={() => handleSocialShare("facebook")}
+            >
+              <Facebook className="h-5 w-5 text-blue-600" />
+              <span>Facebook</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="flex items-center gap-2 h-12 justify-start px-4 hover:bg-sky-50 hover:text-sky-600 hover:border-sky-200 transition-all"
+              onClick={() => handleSocialShare("twitter")}
+            >
+              <Twitter className="h-5 w-5 text-sky-500" />
+              <span>Twitter / X</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="flex items-center gap-2 h-12 justify-start px-4 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 transition-all"
+              onClick={() => handleSocialShare("linkedin")}
+            >
+              <Linkedin className="h-5 w-5 text-blue-700" />
+              <span>LinkedIn</span>
+            </Button>
+          </div>
+
+          <Separator />
+
+          <div className="flex items-center space-x-2">
+            <div className="grid flex-1 gap-2">
+              <label htmlFor="link" className="sr-only">Lien</label>
+              <div className="relative">
+                <Input
+                  id="link"
+                  defaultValue={window.location.href}
+                  readOnly
+                  className="pr-10 h-11 bg-muted/30"
+                />
+                <Button
+                  size="sm"
+                  className="absolute right-1 top-1 h-9 px-3"
+                  onClick={handleCopyLink}
+                  disabled={isCopyingLink}
+                >
+                  {isCopyingLink ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
