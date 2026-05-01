@@ -3,7 +3,43 @@ from django.conf import settings
 from django.utils import timezone
 
 
+VISIBILITY_CHOICES = [
+    ('public', 'Public'),
+    ('university', 'Université uniquement'),
+    ('friends', 'Amis uniquement'),
+]
+
+
+class ResourceFolder(models.Model):
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name='resource_folders',
+        on_delete=models.CASCADE,
+    )
+    name = models.CharField(max_length=100)
+    description = models.CharField(max_length=300, blank=True)
+    visibility = models.CharField(
+        max_length=20,
+        choices=VISIBILITY_CHOICES,
+        default='public',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['name']
+        unique_together = ['owner', 'name']
+
+    def __str__(self):
+        return f"{self.owner.username}/{self.name}"
+
+    @property
+    def resource_count(self):
+        return self.resources.count()
+
+
 class Resource(models.Model):
+
     CANONICAL_TYPES = [
         ('cours', 'Cours'),
         ('notes', 'Notes'),
@@ -39,6 +75,15 @@ class Resource(models.Model):
 
     # Tags
     tags = models.JSONField(default=list, blank=True)
+
+    # Folder
+    folder = models.ForeignKey(
+        'ResourceFolder',
+        null=True,
+        blank=True,
+        related_name='resources',
+        on_delete=models.SET_NULL,
+    )
 
     # Statistics
     impact_score = models.IntegerField(default=0)

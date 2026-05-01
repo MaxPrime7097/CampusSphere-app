@@ -6,6 +6,10 @@ import {
   downloadResource,
   saveResource,
   getSavedResources,
+  listFolders,
+  deleteFolder,
+  downloadFolderZip,
+  type ResourceFolder,
 } from "@/services/api";
 import {
   Search,
@@ -17,6 +21,9 @@ import {
   Loader2,
   RefreshCw,
   Filter,
+  FolderPlus,
+  Folder,
+  FolderOpen,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -32,6 +39,8 @@ import {
 } from "@/components/ui/select";
 import { UploadResourceModal } from "@/components/modals/UploadResourceModal";
 import { ResourceCard } from "@/components/resources/ResourceCard";
+import { FolderCard } from "@/components/resources/FolderCard";
+import { CreateFolderModal } from "@/components/modals/CreateFolderModal";
 import { EmptyState } from "@/components/ui/empty-state";
 import { cn, formatFileSize } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -86,6 +95,15 @@ export function Resources() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  // Folders state
+  const [showFoldersTab, setShowFoldersTab] = useState(false);
+  const [folders, setFolders] = useState<ResourceFolder[]>([]);
+  const [foldersLoading, setFoldersLoading] = useState(false);
+  const [selectedFolder, setSelectedFolder] = useState<ResourceFolder | null>(null);
+  const [folderResources, setFolderResources] = useState<any[]>([]);
+  const [showCreateFolder, setShowCreateFolder] = useState(false);
+  const [editingFolder, setEditingFolder] = useState<ResourceFolder | null>(null);
+
   const loadResources = async () => {
     try {
       setLoading(true);
@@ -121,6 +139,49 @@ export function Resources() {
   useEffect(() => {
     loadResources();
   }, []);
+
+  const loadFolders = async () => {
+    setFoldersLoading(true);
+    try {
+      const data = await listFolders();
+      setFolders(data);
+    } catch (e) {
+      // silently fail if not authenticated or no folders yet
+    } finally {
+      setFoldersLoading(false);
+    }
+  };
+
+  const handleOpenFolder = async (folder: ResourceFolder) => {
+    if (selectedFolder?.id === folder.id) {
+      setSelectedFolder(null);
+      setFolderResources([]);
+      return;
+    }
+    setSelectedFolder(folder);
+    try {
+      const { getFolderDetail } = await import('@/services/api');
+      const detail = await getFolderDetail(folder.id);
+      setFolderResources((detail.resources || []).map(mapResourceCard));
+    } catch {
+      setFolderResources([]);
+    }
+  };
+
+  const handleDeleteFolder = async (folder: ResourceFolder) => {
+    if (!confirm(`Supprimer le dossier "${folder.name}" ? Les fichiers resteront accessibles.`)) return;
+    try {
+      await deleteFolder(folder.id);
+      setFolders(prev => prev.filter(f => f.id !== folder.id));
+      if (selectedFolder?.id === folder.id) {
+        setSelectedFolder(null);
+        setFolderResources([]);
+      }
+      toast({ title: 'Dossier supprimé' });
+    } catch (e: any) {
+      toast({ title: 'Erreur', description: e?.message, variant: 'destructive' });
+    }
+  };
 
   const subjects = [
     { value: "all", label: "Toutes matières" },
@@ -422,10 +483,10 @@ export function Resources() {
           ].map((tab) => (
             <li key={tab.id}>
               <button
-                onClick={() => setActiveTab(tab.id as ResourceSortKey)}
+                onClick={() => { setActiveTab(tab.id as ResourceSortKey); setShowFoldersTab(false); }}
                 className={cn(
                   "w-full flex justify-center border-b-4 py-4 transition-all duration-200 text-sm font-medium",
-                  resolvedResourceSort === tab.id
+                  !showFoldersTab && resolvedResourceSort === tab.id
                     ? "border-primary text-primary"
                     : "border-transparent hover:text-primary hover:border-primary"
                 )}
@@ -434,11 +495,111 @@ export function Resources() {
               </button>
             </li>
           ))}
+          {currentUser && (
+            <li>
+              <button
+                onClick={() => { setShowFoldersTab(true); loadFolders(); }}
+                className={cn(
+                  "w-full flex justify-center items-center gap-1.5 border-b-4 py-4 transition-all duration-200 text-sm font-medium",
+                  showFoldersTab
+                    ? "border-primary text-primary"
+                    : "border-transparent hover:text-primary hover:border-primary"
+                )}
+              >
+                <Folder className="h-3.5 w-3.5" /> Mes dossiers
+              </button>
+            </li>
+          )}
         </ul>
         </div>
 
-        {/* ======= CONTENT ======= */}
+        {/* ======= FOLDERS TAB ======= */}
+        {showFoldersTab ? (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-bold text-lg flex items-center gap-2">
+                <FolderOpen className="h-5 w-5 text-primary" />
+                Mes dossiers ({folders.length}/3)
+              </h2>
+              <button
+                className={cn(
+                  "flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg transition-all",
+                  folders.length >= 3
+                    ? "text-muted-foreground cursor-not-allowed"
+                    : "text-primary hover:bg-primary/10"
+                )}
+                onClick={() => { setEditingFolder(null); setShowCreateFolder(true); }}
+                disabled={folders.length >= 3}
+              >
+                <FolderPlus className="h-4 w-4" />
+                Nouveau dossier
+              </button>
+            </div>
+
+            {foldersLoading ? (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="h-36 bg-muted/40 rounded-xl animate-pulse" />
+                ))}
+              </div>
+            ) : folders.length === 0 ? (
+              <EmptyState
+                icon={Folder}
+                title="Aucun dossier"
+                description="Créez jusqu'à 3 dossiers pour organiser vos ressources."
+                actionLabel="Créer un dossier"
+                onAction={() => setShowCreateFolder(true)}
+              />
+            ) : (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                {folders.map(folder => (
+                  <FolderCard
+                    key={folder.id}
+                    folder={folder}
+                    isSelected={selectedFolder?.id === folder.id}
+                    onOpen={handleOpenFolder}
+                    onDownloadZip={async (f) => {
+                      await downloadFolderZip(f.id, f.name);
+                      toast({ title: 'Téléchargement du ZIP en cours...' });
+                    }}
+                    onEdit={(f) => { setEditingFolder(f); setShowCreateFolder(true); }}
+                    onDelete={handleDeleteFolder}
+                  />
+                ))}
+              </div>
+            )}
+
+            {selectedFolder && (
+              <div className="mt-6 space-y-3">
+                <div className="flex items-center gap-2 border-b pb-2">
+                  <FolderOpen className="h-4 w-4 text-primary" />
+                  <h3 className="font-semibold">{selectedFolder.name}</h3>
+                  <span className="text-xs text-muted-foreground ml-auto">{folderResources.length} fichier{folderResources.length !== 1 ? 's' : ''}</span>
+                </div>
+                {folderResources.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-4 text-center">Ce dossier est vide.</p>
+                ) : (
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    {folderResources.map((resource) => (
+                      <ResourceCard
+                        key={resource.id}
+                        resource={resource}
+                        isDownloading={downloadingIds.has(resource.id)}
+                        isSaved={savedResources.has(resource.id)}
+                        onDownload={(e) => handleDownload(e, resource.id)}
+                        onSave={(e) => handleSave(e, resource.id)}
+                        onPreview={(e) => handlePreview(e, resource.id)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+        <>
         {loading ? (
+
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {Array.from({ length: 8 }).map((_, i) => (
               <ResourceSkeleton key={i} />
@@ -486,6 +647,24 @@ export function Resources() {
             </UploadResourceModal>
           </div>
         )}
+        </>
+        )}
+
+        <CreateFolderModal
+          open={showCreateFolder}
+          onOpenChange={setShowCreateFolder}
+          existingCount={folders.length}
+          folder={editingFolder}
+          onSuccess={(folder) => {
+            if (editingFolder) {
+              setFolders(prev => prev.map(f => f.id === folder.id ? folder : f));
+              if (selectedFolder?.id === folder.id) setSelectedFolder(folder);
+            } else {
+              setFolders(prev => [...prev, folder]);
+            }
+            setEditingFolder(null);
+          }}
+        />
       </div>
     </div>
   );

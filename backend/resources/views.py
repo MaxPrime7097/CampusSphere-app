@@ -2,16 +2,18 @@ from rest_framework import generics, status, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
-# from django_filters.rest_framework import DjangoFilterBackend  # Commented out - django_filters not installed
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django.shortcuts import get_object_or_404
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse, Http404, StreamingHttpResponse
 from django.db import models
 from django.utils import timezone
-from .models import Resource, ResourceSave, ResourceView, ResourceReport, ResourceShareEvent
+import zipfile
+import io
+from .models import Resource, ResourceFolder, ResourceSave, ResourceView, ResourceReport, ResourceShareEvent
 from .serializers import (
     ResourceSerializer, ResourceCreateSerializer, ResourceUpdateSerializer,
-    ResourceSaveSerializer
+    ResourceSaveSerializer,
+    ResourceFolderSerializer, ResourceFolderCreateSerializer, ResourceFolderUpdateSerializer,
 )
 from users.impact_policy import RESOURCE_DOWNLOADED, apply_impact_event
 
@@ -29,6 +31,140 @@ def _can_access_resource(resource, user):
             status='accepted'
         ).exists()
     return False
+
+
+def _can_access_folder(folder, user):
+    if folder.owner == user:
+        return True
+    if folder.visibility == 'public':
+        return True
+    if folder.visibility == 'university':
+        return folder.owner.university and folder.owner.university == user.university
+    if folder.visibility == 'friends':
+        from users.models import Connection
+        return Connection.objects.filter(
+            models.Q(requester=user, recipient=folder.owner) |
+            models.Q(requester=folder.owner, recipient=user),
+            status='accepted'
+        ).exists()
+    return False
+
+
+# ─────────────────────────────────────────────
+# Folder views
+# ─────────────────────────────────────────────
+
+class FolderListCreateView(generics.ListCreateAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return ResourceFolderCreateSerializer
+        return ResourceFolderSerializer
+
+    def get_queryset(self):
+        return ResourceFolder.objects.filter(owner=self.request.user)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        folder = serializer.save()
+        output = ResourceFolderSerializer(folder, context={'request': request})
+        return Response(
+            {'success': True, 'data': output.data},
+            status=status.HTTP_201_CREATED,
+        )
+
+    def list(self, request, *args, **kwargs):
+        qs = self.get_queryset()
+        serializer = ResourceFolderSerializer(qs, many=True, context={'request': request})
+        return Response({'success': True, 'data': serializer.data})
+
+
+class FolderDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.request.method in ['PUT', 'PATCH']:
+            return ResourceFolderUpdateSerializer
+        return ResourceFolderSerializer
+
+    def get_queryset(self):
+        return ResourceFolder.objects.filter(owner=self.request.user)
+
+    def retrieve(self, request, *args, **kwargs):
+        folder = self.get_object()
+        folder_data = ResourceFolderSerializer(folder, context={'request': request}).data
+        # Include the folder's resources
+        resources = folder.resources.select_related('author').all()
+        resources_data = ResourceSerializer(resources, many=True, context={'request': request}).data
+        return Response({
+            'success': True,
+            'data': {**folder_data, 'resources': resources_data},
+        })
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        folder = self.get_object()
+        serializer = self.get_serializer(folder, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        folder = serializer.save()
+        output = ResourceFolderSerializer(folder, context={'request': request})
+        return Response({'success': True, 'data': output.data})
+
+    def destroy(self, request, *args, **kwargs):
+        folder = self.get_object()
+        # Resources stay, just lose their folder reference (SET_NULL)
+        folder.delete()
+        return Response({'success': True, 'message': 'Dossier supprimé.'}, status=status.HTTP_200_OK)
+
+
+class FolderDownloadZipView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        # Allow owner AND users who can access the folder
+        folder = get_object_or_404(ResourceFolder, pk=pk)
+        if not _can_access_folder(folder, request.user):
+            return Response(
+                {'error': "Vous n'avez pas accès à ce dossier."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        resources = folder.resources.all()
+        if not resources.exists():
+            return Response(
+                {'error': 'Ce dossier est vide.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        buffer = io.BytesIO()
+        seen_names = {}
+        with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
+            for resource in resources:
+                if not resource.file:
+                    continue
+                try:
+                    filename = resource.file.name.split('/')[-1]
+                    # Deduplicate filenames
+                    if filename in seen_names:
+                        seen_names[filename] += 1
+                        base, ext = filename.rsplit('.', 1) if '.' in filename else (filename, '')
+                        filename = f"{base}_{seen_names[filename]}.{ext}" if ext else f"{base}_{seen_names[filename]}"
+                    else:
+                        seen_names[filename] = 0
+                    zf.writestr(filename, resource.file.read())
+                except Exception:
+                    continue
+
+        buffer.seek(0)
+        safe_name = folder.name.replace(' ', '_')
+        response = HttpResponse(buffer.read(), content_type='application/zip')
+        response['Content-Disposition'] = f'attachment; filename="{safe_name}.zip"'
+        return response
+
+
+
 
 
 class ResourceListView(generics.ListCreateAPIView):

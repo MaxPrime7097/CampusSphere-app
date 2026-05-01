@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Upload, FileText, X, Loader2, Check } from "lucide-react";
 import {
@@ -43,8 +43,19 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
   const [isDragOver, setIsDragOver] = useState(false);
   const [visibility, setVisibility] = useState("");
   const [audience, setAudience] = useState("");
+  const [selectedFolderId, setSelectedFolderId] = useState("");
+  const [folders, setFolders] = useState<Array<{id: number; name: string; resource_count: number}>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  // Load user's folders when modal opens
+  useEffect(() => {
+    if (open) {
+      import('@/services/api').then(({ listFolders }) => {
+        listFolders().then(setFolders).catch(() => null);
+      });
+    }
+  }, [open]);
 
 
   const subjects = [
@@ -191,6 +202,7 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
       formData.append('tags', JSON.stringify(tags));
       formData.append('visibility', visibility || 'public');
       formData.append('audience', audience || '');
+      if (selectedFolderId) formData.append('folder_id', selectedFolderId);
 
       const createdResource = await createResource(formData);
       
@@ -230,6 +242,7 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
     setTags([]);
     setVisibility("");
     setAudience("");
+    setSelectedFolderId("");
     setOpen(false);
   };
 
@@ -412,6 +425,30 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
               </Select>
             </div>
           </div>
+
+          {/* Folder */}
+          {folders.length > 0 && (
+            <div>
+              <Label>Ajouter à un dossier <span className="text-muted-foreground">(optionnel)</span></Label>
+              <Select value={selectedFolderId} onValueChange={setSelectedFolderId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Aucun dossier" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Aucun dossier</SelectItem>
+                  {folders.map((f) => (
+                    <SelectItem
+                      key={f.id}
+                      value={String(f.id)}
+                      disabled={f.resource_count >= 20}
+                    >
+                      📁 {f.name} ({f.resource_count}/20)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Tags */}
           <div>

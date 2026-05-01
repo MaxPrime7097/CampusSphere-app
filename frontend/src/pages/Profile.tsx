@@ -1036,7 +1036,7 @@ export function Profile() {
                       onClick={handleEditProfile}
                     >
                       <Pencil className="h-4 w-4 mr-2" />
-                      <span className="hidden">Modifier</span>
+                      <span className="inline">Modifier</span>
 
                     </Button>
                   )}

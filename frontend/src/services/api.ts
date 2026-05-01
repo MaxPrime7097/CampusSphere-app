@@ -1272,6 +1272,88 @@ export async function likeComment(commentId: number | string, token?: string) {
 }
 
 // ============================================================================
+// RESOURCE FOLDERS
+// ============================================================================
+
+export interface ResourceFolder {
+  id: number;
+  name: string;
+  description: string;
+  visibility: 'public' | 'university' | 'friends';
+  resource_count: number;
+  can_edit: boolean;
+  created_at: string;
+  updated_at: string;
+  resources?: any[];
+}
+
+export async function listFolders(token?: string): Promise<ResourceFolder[]> {
+  const response = await apiFetch<any>('api/resources/folders/', {
+    token: token || getAccessToken(),
+  });
+  return unwrapList<ResourceFolder>(response);
+}
+
+export async function createFolder(
+  data: { name: string; description?: string; visibility?: string },
+  token?: string
+): Promise<ResourceFolder> {
+  const response = await apiFetch<any>('api/resources/folders/', {
+    method: 'POST',
+    body: data,
+    token: token || getAccessToken(),
+  });
+  return unwrapItem<ResourceFolder>(response) as ResourceFolder;
+}
+
+export async function getFolderDetail(id: number | string, token?: string): Promise<ResourceFolder> {
+  const response = await apiFetch<any>(`api/resources/folders/${id}/`, {
+    token: token || getAccessToken(),
+  });
+  return unwrapItem<ResourceFolder>(response) as ResourceFolder;
+}
+
+export async function updateFolder(
+  id: number | string,
+  data: { name?: string; description?: string; visibility?: string },
+  token?: string
+): Promise<ResourceFolder> {
+  const response = await apiFetch<any>(`api/resources/folders/${id}/`, {
+    method: 'PUT',
+    body: data,
+    token: token || getAccessToken(),
+  });
+  return unwrapItem<ResourceFolder>(response) as ResourceFolder;
+}
+
+export async function deleteFolder(id: number | string, token?: string) {
+  return apiFetch<any>(`api/resources/folders/${id}/`, {
+    method: 'DELETE',
+    token: token || getAccessToken(),
+  });
+}
+
+export async function downloadFolderZip(id: number | string, name: string, token?: string) {
+  const effectiveToken = token || getAccessToken();
+  const url = `${API_BASE_URL.replace(/\/$/, '')}/api/resources/folders/${id}/download/`;
+  const response = await fetch(url, {
+    headers: effectiveToken ? { Authorization: `Bearer ${effectiveToken}` } : {},
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    throw new Error(`Erreur lors du téléchargement: ${response.status}`);
+  }
+  const blob = await response.blob();
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `${name}.zip`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(link.href);
+}
+
+// ============================================================================
 // RESOURCES
 // ============================================================================
 
