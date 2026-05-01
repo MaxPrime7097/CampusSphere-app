@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Plus, Image, MapPin, Users, X, Lock, Globe, Video, FileText, Smile, AtSign, Calendar, Clock, Hash, Loader2, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { findInvalidMentions, getActiveMentionQuery } from "@/lib/mentions";
+import { findInvalidMentions, getActiveMentionQuery, renderMentionText } from "@/lib/mentions";
 
 interface PostDraftData {
   content: string;
@@ -350,7 +350,17 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
         <div className="space-y-5">
           {/* Contenu principal */}
           <div>
-            <Label htmlFor="content" className="text-base">Contenu du post</Label>
+            <div className="flex justify-between items-center mb-2">
+              <Label htmlFor="content" className="text-base">Contenu du post</Label>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowPreview(!showPreview)}
+                className="text-xs gap-1 h-7"
+              >
+                {showPreview ? "Cacher l'aperçu" : "Voir l'aperçu"}
+              </Button>
+            </div>
             <Textarea
               id="content"
               placeholder="Que voulez-vous partager avec la communauté ?"
@@ -367,8 +377,16 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
                   setMentionQuery("");
                 }
               }}
-              className="min-h-[150px] mt-2 text-base"
+              className="min-h-[120px] text-base"
             />
+            {showPreview && content && (
+              <div className="mt-3 p-4 rounded-xl border bg-accent/5 overflow-hidden">
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Aperçu du rendu</p>
+                <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                  {renderMentionText(content)}
+                </div>
+              </div>
+            )}
             <div className="flex justify-between items-center mt-2">
               <span className="text-xs text-muted-foreground">
                 {content.length}/500 caractères

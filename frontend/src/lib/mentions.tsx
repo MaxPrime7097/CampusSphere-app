@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import type { ReactNode } from "react";
 
-const MENTION_REGEX = /(^|[\s(])@([A-Za-z0-9_]{2,50})/g;
+const MENTION_REGEX = /(^|[^\w])@([A-Za-z0-9_]{2,50})/g;
 const MENTION_SYNTAX_REGEX = /^[A-Za-z0-9_]{2,50}$/;
 
 export function getMentionedUsernames(text: string): string[] {
@@ -9,7 +9,7 @@ export function getMentionedUsernames(text: string): string[] {
 
   const seen = new Set<string>();
   const mentions: string[] = [];
-  for (const match of text.matchAll(/(^|[\s(])@([^\s@]+)/g)) {
+  for (const match of text.matchAll(/(^|[^\w])@([A-Za-z0-9_]{2,50})/g)) {
     const username = (match[2] || "").trim();
     if (!username) continue;
     const normalized = username.toLowerCase();
@@ -24,7 +24,7 @@ export function findInvalidMentions(text: string): string[] {
   return getMentionedUsernames(text).filter((username) => !MENTION_SYNTAX_REGEX.test(username));
 }
 
-const URL_REGEX = /(https?:\/\/[^\s]+)/g;
+const URL_REGEX = /(https?:\/\/[^\s!@#$%^&*()_+={}[\]|\\:;"'<>,?~`]+)/g;
 
 export function renderMentionText(content: string, onMentionClick?: () => void) {
   if (!content) return null;

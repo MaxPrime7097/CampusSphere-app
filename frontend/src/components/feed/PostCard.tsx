@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Heart, MessageCircle, Share, Bookmark, MoreVertical, Zap, Copy, Flag, ExternalLink, Users, Plus, Minus, X, Pencil, Trash2, Loader2, FileText, Download, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { Heart, MessageCircle, Share, Bookmark, MoreVertical, Zap, Copy, Flag, ExternalLink, Users, Plus, Minus, X, Pencil, Trash2, Loader2, FileText, Download, ChevronLeft, ChevronRight, Search, Facebook, Instagram, Twitter, Linkedin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -19,6 +19,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import { CommentsModal } from "@/components/modals/CommentsModal";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -239,24 +240,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
   const handleShare = async () => {
     const postUrl = `${window.location.origin}/posts/${post.id}`;
     
-    // Tentative de partage natif (mobile/OS)
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `Post de ${post.author.name} sur CampusSphere`,
-          text: post.content.length > 100 ? post.content.substring(0, 100) + "..." : post.content,
-          url: postUrl,
-        });
-        return; // Succès du partage natif
-      } catch (err) {
-        if ((err as Error).name !== "AbortError") {
-          console.error("Erreur de partage natif:", err);
-        } else {
-          return; // L'utilisateur a annulé le partage natif
-        }
-      }
-    }
-
+    // On utilise directement notre modal pour plus de contrôle et éviter les échecs du partage natif
     setShowShareDialog(true);
     setShareSearch("");
     if (shareConnections.length === 0) {
@@ -278,6 +262,35 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
           setShareConnections(mapped);
         });
       }).catch(() => null).finally(() => setLoadingShareConnections(false));
+    }
+  };
+
+  const handleSocialShare = (platform: string) => {
+    const postUrl = encodeURIComponent(`${window.location.origin}/posts/${post.id}`);
+    const postText = encodeURIComponent(post.content.length > 100 ? post.content.substring(0, 100) + "..." : post.content);
+    
+    let url = "";
+    switch (platform) {
+      case "whatsapp":
+        url = `https://api.whatsapp.com/send?text=${postText}%20${postUrl}`;
+        break;
+      case "linkedin":
+        url = `https://www.linkedin.com/sharing/share-offsite/?url=${postUrl}`;
+        break;
+      case "facebook":
+        url = `https://www.facebook.com/sharer/sharer.php?u=${postUrl}`;
+        break;
+      case "twitter":
+        url = `https://twitter.com/intent/tweet?text=${postText}&url=${postUrl}`;
+        break;
+      case "instagram":
+        handleCopyLink();
+        toast({ title: "Lien copié !", description: "Instagram ne permet pas le partage direct. Collez le lien dans votre application." });
+        return;
+    }
+    
+    if (url) {
+      window.open(url, "_blank", "noopener,noreferrer");
     }
   };
 
@@ -749,71 +762,144 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
       </Dialog>
     )}
 
-    {/* Modal de partage */}
     <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Partager ce post</DialogTitle>
           <DialogDescription>
-            Copiez le lien ou envoyez directement à un ami.
+            Choisissez comment vous souhaitez partager ce contenu avec votre réseau.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
-          <Button variant="outline" className="w-full" onClick={handleCopyLink} disabled={isCopyingLink}>
-            <Copy className="h-4 w-4 mr-2" />
-            {isCopyingLink ? "Copie..." : "Copier le lien"}
+        
+        <div className="grid grid-cols-3 gap-3 py-4">
+          <Button
+            variant="outline"
+            className="flex flex-col h-20 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
+            onClick={() => handleSocialShare("whatsapp")}
+          >
+            <div className="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center text-white">
+              <MessageCircle className="h-5 w-5" />
+            </div>
+            <span className="text-[10px] font-semibold uppercase tracking-wider">WhatsApp</span>
           </Button>
-          <div className="border-t pt-3 space-y-2">
-            <p className="text-sm font-medium flex items-center gap-2">
-              <Users className="h-4 w-4" /> Envoyer à un ami
+
+          <Button
+            variant="outline"
+            className="flex flex-col h-20 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
+            onClick={() => handleSocialShare("twitter")}
+          >
+            <div className="h-8 w-8 rounded-full bg-black flex items-center justify-center text-white">
+              <Twitter className="h-4 w-4" />
+            </div>
+            <span className="text-[10px] font-semibold uppercase tracking-wider">Twitter / X</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            className="flex flex-col h-20 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
+            onClick={() => handleSocialShare("facebook")}
+          >
+            <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white">
+              <Facebook className="h-5 w-5" />
+            </div>
+            <span className="text-[10px] font-semibold uppercase tracking-wider">Facebook</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            className="flex flex-col h-20 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
+            onClick={() => handleSocialShare("linkedin")}
+          >
+            <div className="h-8 w-8 rounded-full bg-blue-700 flex items-center justify-center text-white">
+              <Linkedin className="h-5 w-5" />
+            </div>
+            <span className="text-[10px] font-semibold uppercase tracking-wider">LinkedIn</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            className="flex flex-col h-20 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
+            onClick={() => handleSocialShare("instagram")}
+          >
+            <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 flex items-center justify-center text-white">
+              <Instagram className="h-5 w-5" />
+            </div>
+            <span className="text-[10px] font-semibold uppercase tracking-wider">Instagram</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            className="flex flex-col h-20 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
+            onClick={handleCopyLink}
+            disabled={isCopyingLink}
+          >
+            <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-700">
+              <Copy className="h-4 w-4" />
+            </div>
+            <span className="text-[10px] font-semibold uppercase tracking-wider">{isCopyingLink ? "Copié !" : "Lien"}</span>
+          </Button>
+        </div>
+
+        <Separator />
+        
+        <div className="space-y-4 pt-2">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-bold flex items-center gap-2">
+              <Users className="h-4 w-4 text-primary" /> Envoyer à un ami sur CampusSphere
             </p>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Rechercher..."
-                className="pl-9"
-                value={shareSearch}
-                onChange={(e) => setShareSearch(e.target.value)}
-              />
-            </div>
-            <div className="max-h-52 overflow-y-auto space-y-1">
-              {loadingShareConnections ? (
-                <p className="text-sm text-muted-foreground py-2">Chargement...</p>
-              ) : shareConnections.filter((c) => {
-                const q = shareSearch.toLowerCase();
-                return !q || c.name.toLowerCase().includes(q) || c.username.toLowerCase().includes(q);
-              }).length === 0 ? (
-                <p className="text-sm text-muted-foreground py-2">Aucune connexion trouvée.</p>
-              ) : (
-                shareConnections
-                  .filter((c) => {
-                    const q = shareSearch.toLowerCase();
-                    return !q || c.name.toLowerCase().includes(q) || c.username.toLowerCase().includes(q);
-                  })
-                  .map((contact) => (
-                    <div key={contact.id} className="flex items-center justify-between gap-2 p-1.5 rounded-md hover:bg-accent">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Avatar className="h-8 w-8 flex-shrink-0">
-                          <AvatarImage src={contact.avatar} />
-                          <AvatarFallback>{(contact.name || "U").slice(0, 1).toUpperCase()}</AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium truncate">{contact.name}</p>
-                          {contact.username && <p className="text-xs text-muted-foreground">@{contact.username}</p>}
-                        </div>
+          </div>
+          
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher un contact..."
+              className="pl-9 bg-muted/30 border-none"
+              value={shareSearch}
+              onChange={(e) => setShareSearch(e.target.value)}
+            />
+          </div>
+
+          <div className="max-h-48 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+            {loadingShareConnections ? (
+              <div className="space-y-2 py-2">
+                {[1, 2, 3].map(i => <div key={i} className="h-10 w-full bg-muted animate-pulse rounded-md" />)}
+              </div>
+            ) : shareConnections.filter((c) => {
+              const q = shareSearch.toLowerCase();
+              return !q || c.name.toLowerCase().includes(q) || c.username.toLowerCase().includes(q);
+            }).length === 0 ? (
+              <div className="text-center py-6 text-muted-foreground italic text-sm">
+                Aucun ami trouvé.
+              </div>
+            ) : (
+              shareConnections
+                .filter((c) => {
+                  const q = shareSearch.toLowerCase();
+                  return !q || c.name.toLowerCase().includes(q) || c.username.toLowerCase().includes(q);
+                })
+                .map((contact) => (
+                  <div key={contact.id} className="flex items-center justify-between gap-2 p-2 rounded-xl hover:bg-accent/50 transition-colors border border-transparent hover:border-primary/10 group">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Avatar className="h-9 w-9 flex-shrink-0 border">
+                        <AvatarImage src={contact.avatar} />
+                        <AvatarFallback className="bg-primary/5 text-primary">{(contact.name || "U").slice(0, 1).toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold truncate group-hover:text-primary transition-colors">{contact.name}</p>
+                        {contact.username && <p className="text-[10px] text-muted-foreground">@{contact.username}</p>}
                       </div>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => handleShareToFriend(contact.id, contact.name)}
-                        disabled={sendingToUserId === contact.id}
-                      >
-                        {sendingToUserId === contact.id ? <Loader2 className="h-3 w-3 animate-spin" /> : "Envoyer"}
-                      </Button>
                     </div>
-                  ))
-              )}
-            </div>
+                    <Button
+                      size="sm"
+                      className="rounded-full px-4 h-8 bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all active:scale-95 border-none"
+                      onClick={() => handleShareToFriend(contact.id, contact.name)}
+                      disabled={sendingToUserId === contact.id}
+                    >
+                      {sendingToUserId === contact.id ? <Loader2 className="h-3 w-3 animate-spin" /> : "Envoyer"}
+                    </Button>
+                  </div>
+                ))
+            )}
           </div>
         </div>
       </DialogContent>

@@ -152,7 +152,17 @@ export async function completeSupabaseProfile(data: {
   return normalizeUser(response?.data ?? response);
 }
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+const getDetectedApiUrl = () => {
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+  const { hostname } = window.location;
+  if (hostname.includes("onrender.com") && !hostname.includes("-backend")) {
+    // Try to infer backend URL for common CampusSphere naming on Render
+    return `https://campus-sphere-backend-dyfu.onrender.com`;
+  }
+  return "http://127.0.0.1:8000";
+};
+
+export const API_BASE_URL = getDetectedApiUrl();
 
 export function getFullUrl(path: string | null | undefined): string {
   if (!path) return "";
