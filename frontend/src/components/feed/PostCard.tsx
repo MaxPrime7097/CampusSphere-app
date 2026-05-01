@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Heart, MessageCircle, Share, Bookmark, MoreVertical, Zap, Copy, Flag, ExternalLink, Users, Plus, Minus, X, Pencil, Trash2, Loader2, FileText, Download, ChevronLeft, ChevronRight, Search, Facebook, Instagram, Twitter, Linkedin } from "lucide-react";
+import { Heart, MessageCircle, Share, Bookmark, MoreVertical, Zap, Copy, Flag, ExternalLink, Users, Plus, Minus, X, Pencil, Trash2, Loader2, FileText, Download, ChevronLeft, ChevronRight, Search, Facebook, Instagram, Twitter, Linkedin, Info } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
