@@ -152,13 +152,6 @@ export async function completeSupabaseProfile(data: {
   return normalizeUser(response?.data ?? response);
 }
 
-export async function checkUserAvailability(params: { username?: string; email?: string }) {
-  return apiFetch<any>("api/users/check-availability/", {
-    method: "POST",
-    body: JSON.stringify(params),
-  });
-}
-
 export async function verifyStudentStatus(matricule: string, cardImage: File) {
   const formData = new FormData();
   formData.append("student_id", matricule);
