@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/services/api";
 import { getNavigationSections, type NavigationUser } from "./navigationConfig";
 import { useUnreadCounts } from "@/hooks/useUnreadCounts";
 import { useToast } from "@/hooks/use-toast";
+import { openVerificationModal } from "@/lib/events";
 import { VerificationModal } from "@/components/modals/VerificationModal";
 
 export function MobileNavigation() {
@@ -60,9 +61,7 @@ export function MobileNavigation() {
                     description: "Vous devez certifier votre compte pour publier.",
                     variant: "destructive",
                     action: (
-                      <VerificationModal>
-                        <button className="text-xs font-bold underline">Vérifier</button>
-                      </VerificationModal>
+                      <button className="text-xs font-bold underline" onClick={() => openVerificationModal()}>Vérifier</button>
                     )
                   });
                 }}

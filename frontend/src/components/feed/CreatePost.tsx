@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getCurrentUser } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
+import { openVerificationModal } from "@/lib/events";
 import { VerificationModal } from "@/components/modals/VerificationModal";
 import { Button } from "@/components/ui/button";
 
@@ -50,9 +51,7 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
           description: "Certifiez votre compte pour publier sur le campus.",
           variant: "destructive",
           action: (
-            <VerificationModal>
-              <Button variant="outline" size="sm">Vérifier</Button>
-            </VerificationModal>
+            <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>Vérifier</Button>
           )
         });
       }

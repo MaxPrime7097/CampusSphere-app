@@ -12,6 +12,7 @@ import { UnifiedSearchFiltersBar } from "@/components/ui/unified-search-filters-
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Users, TrendingUp, Clock, Loader2, Check, RefreshCw, Plus, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { openVerificationModal } from "@/lib/events";
 import { CreateSphereModal } from "@/components/modals/CreateSphereModal";
 import { SphereCard } from "@/components/sphere/SphereCard";
 import { VerificationModal } from "@/components/modals/VerificationModal";
@@ -256,9 +257,7 @@ export function Spheres() {
         description: "Vous devez être certifié pour rejoindre une sphère.",
         variant: "destructive",
         action: (
-          <VerificationModal>
-            <Button variant="outline" size="sm">Vérifier</Button>
-          </VerificationModal>
+          <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>Vérifier</Button>
         )
       });
       return;
@@ -380,9 +379,7 @@ export function Spheres() {
                     description: "Vérifiez votre compte pour créer des sphères.",
                     variant: "destructive",
                     action: (
-                      <VerificationModal>
-                        <Button variant="outline" size="sm">Vérifier</Button>
-                      </VerificationModal>
+                      <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>Vérifier</Button>
                     )
                   });
                 }}

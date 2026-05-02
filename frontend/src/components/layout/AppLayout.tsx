@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { Button } from "@/components/ui/button";
+import { openVerificationModal } from "@/lib/events";
 import { Moon, Sun, Search, Plus, Bell } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { CreatePostModal } from "@/components/modals/CreatePostModal";
@@ -27,6 +28,13 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [darkMode, setDarkMode] = useState(false);
+  const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
+
+  useEffect(() => {
+    const handleOpen = () => setIsVerificationModalOpen(true);
+    window.addEventListener("open-verification-modal", handleOpen);
+    return () => window.removeEventListener("open-verification-modal", handleOpen);
+  }, []);
 
   useEffect(() => {
     const storedTheme = localStorage.getItem('theme');
@@ -80,11 +88,13 @@ export function AppLayout({ children }: AppLayoutProps) {
         description: "Vous devez certifier votre compte pour effectuer cette action.",
         variant: "destructive",
         action: (
-          <VerificationModal>
-            <Button variant="outline" size="sm">
-              Vérifier
-            </Button>
-          </VerificationModal>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => openVerificationModal()}
+          >
+            Vérifier
+          </Button>
         ),
       });
       return;
@@ -139,20 +149,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                         </Button>
                       </CreatePostModal>
                     ) : (
-                      <Button variant="outline" size="sm" onClick={() => {
-                        toast({
-                          title: "Action restreinte",
-                          description: "Vérifiez votre compte pour pouvoir publier.",
-                          variant: "destructive",
-                          action: (
-                            <VerificationModal>
-                              <Button variant="outline" size="sm">
-                                Vérifier
-                              </Button>
-                            </VerificationModal>
-                          ),
-                        });
-                      }}>
+                      <Button variant="outline" size="sm" onClick={(e) => handleCreateAction(e as any, () => {})}>
                         <Plus className="h-4 w-4 mr-2" />
                         Nouveau post
                       </Button>
@@ -189,6 +186,10 @@ export function AppLayout({ children }: AppLayoutProps) {
         </div>
       </div>
       <CookieBanner />
+      <VerificationModal 
+        open={isVerificationModalOpen} 
+        onOpenChange={setIsVerificationModalOpen} 
+      />
     </SidebarProvider>
   );
 }

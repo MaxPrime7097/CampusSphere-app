@@ -1,21 +1,27 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Camera, Upload, Shield, Check, Loader2, AlertCircle, Info } from "lucide-react";
-import { verifyStudentStatus } from "@/services/api";
+import { verifyStudentStatus, getCurrentUser } from "@/services/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 interface VerificationModalProps {
   children?: React.ReactNode;
   onSuccess?: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function VerificationModal({ children, onSuccess }: VerificationModalProps) {
-  const [open, setOpen] = useState(false);
+export function VerificationModal({ children, onSuccess, open: controlledOpen, onOpenChange: setControlledOpen }: VerificationModalProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = setControlledOpen !== undefined ? setControlledOpen : setInternalOpen;
+
   const [step, setStep] = useState(1);
   const [matricule, setMatricule] = useState("");
   const [image, setImage] = useState<File | null>(null);
@@ -23,6 +29,14 @@ export function VerificationModal({ children, onSuccess }: VerificationModalProp
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (open) {
+      getCurrentUser().then(user => {
+        if (user?.studentId) setMatricule(user.studentId);
+      }).catch(() => {});
+    }
+  }, [open]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

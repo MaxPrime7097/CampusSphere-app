@@ -26,6 +26,7 @@ import {
   FolderOpen,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { openVerificationModal } from "@/lib/events";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -438,9 +439,7 @@ export function Resources() {
                     description: "Vérifiez votre compte pour uploader des ressources.",
                     variant: "destructive",
                     action: (
-                      <VerificationModal>
-                        <Button variant="outline" size="sm">Vérifier</Button>
-                      </VerificationModal>
+                      <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>Vérifier</Button>
                     )
                   });
                 }}
@@ -597,9 +596,7 @@ export function Resources() {
                           description: "Vérifiez votre compte pour télécharger des dossiers.",
                           variant: "destructive",
                           action: (
-                            <VerificationModal>
-                              <Button variant="outline" size="sm">Vérifier</Button>
-                            </VerificationModal>
+                            <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>Vérifier</Button>
                           )
                         });
                         return;
@@ -700,9 +697,7 @@ export function Resources() {
                     description: "Vérifiez votre compte pour partager des ressources.",
                     variant: "destructive",
                     action: (
-                      <VerificationModal>
-                        <Button variant="outline" size="sm">Vérifier</Button>
-                      </VerificationModal>
+                      <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>Vérifier</Button>
                     )
                   });
                 }}

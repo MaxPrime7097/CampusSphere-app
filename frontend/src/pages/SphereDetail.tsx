@@ -25,6 +25,7 @@ import { Separator } from "@/components/ui/separator";
 
 
 import { useToast } from "@/hooks/use-toast";
+import { openVerificationModal } from "@/lib/events";
 import { VerificationModal } from "@/components/modals/VerificationModal";
 import { CreateTaskModal } from "@/components/modals/CreateTaskModal";
 import { AddMemberModal } from "@/components/modals/AddMemberModal";
@@ -620,9 +621,7 @@ export function SphereDetail() {
                           description: "Certifiez votre compte pour créer des tâches.",
                           variant: "destructive",
                           action: (
-                            <VerificationModal>
-                              <Button variant="outline" size="sm">Vérifier</Button>
-                            </VerificationModal>
+                            <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>Vérifier</Button>
                           )
                         });
                       }}
@@ -662,9 +661,7 @@ export function SphereDetail() {
                           description: "Certifiez votre compte pour partager des fichiers.",
                           variant: "destructive",
                           action: (
-                            <VerificationModal>
-                              <Button variant="outline" size="sm">Vérifier</Button>
-                            </VerificationModal>
+                            <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>Vérifier</Button>
                           )
                         });
                       }}
@@ -713,9 +710,7 @@ export function SphereDetail() {
                                 description: "Vérifiez votre compte pour télécharger des fichiers.",
                                 variant: "destructive",
                                 action: (
-                                  <VerificationModal>
-                                    <Button variant="outline" size="sm">Vérifier</Button>
-                                  </VerificationModal>
+                                  <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>Vérifier</Button>
                                 )
                               });
                               return;

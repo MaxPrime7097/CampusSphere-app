@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Upload, Check, Loader2, AlertCircle, Eye, EyeOff, X, ExternalLink, Plus, FileText, Mail, RefreshCw } from "lucide-react";
+import { ChevronLeft, ChevronRight, Upload, Check, Loader2, AlertCircle, Eye, EyeOff, X, ExternalLink, Plus, FileText, Mail, RefreshCw, Camera, Info } from "lucide-react";
 import { FaGoogle, FaFacebook } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
 import { Input, REGISTRATION_MAX_LENGTHS } from "@/components/ui/input";
@@ -22,11 +22,14 @@ import {
   getSupabaseRateLimitMetadata,
   supabaseResendSignupEmail,
   checkUserAvailability,
+  verifyStudentStatus,
 } from "@/services/api";
 import { supabase } from "@/lib/supabase";
 import { completeSupabaseProfilePayloadSchema, mapCompleteProfileErrors } from "@/schemas/completeProfilePayload";
 import { AddEducationModal } from "@/components/modals/AddEducationModal";
 import { AddExperienceModal } from "@/components/modals/AddExperienceModal";
+import { cn } from "@/lib/utils";
+import { openVerificationModal } from "@/lib/events";
 import { UniversityCombobox } from "@/components/forms/UniversityCombobox";
 import { FacultyCombobox } from "@/components/forms/FacultyCombobox";
 import { StudyLevelCombobox } from "@/components/forms/StudyLevelCombobox";
@@ -84,6 +87,10 @@ export function Register() {
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const signupLastSubmitAtRef = useRef(0);
   const resendLastSubmitAtRef = useRef(0);
+  const cardInputRef = useRef<HTMLInputElement>(null);
+
+  const [cardImage, setCardImage] = useState<File | null>(null);
+  const [cardPreview, setCardPreview] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     firstName: "", lastName: "", username: "", email: "",
@@ -141,6 +148,24 @@ export function Register() {
       })();
     }
   }, [searchParams, toast]);
+
+  const handleCardChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        toast({
+          title: "Fichier trop lourd",
+          description: "L'image ne doit pas dépasser 10 Mo.",
+          variant: "destructive",
+        });
+        return;
+      }
+      setCardImage(file);
+      const reader = new FileReader();
+      reader.onload = (e) => setCardPreview(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
 
   // Écouter la confirmation email Supabase
   useEffect(() => {
@@ -393,6 +418,17 @@ export function Register() {
     setIsLoading(true);
     try {
       await completeSupabaseProfile(payload);
+      
+      // Si une carte a été fournie, envoyer la demande de vérification
+      if (cardImage) {
+        try {
+          await verifyStudentStatus(formData.studentId || "Inconnu", cardImage);
+        } catch (verifyErr) {
+          console.error("Erreur certification auto:", verifyErr);
+          // On ne bloque pas la fin de l'inscription si seule la certification échoue
+        }
+      }
+
       toast({ title: "Inscription terminée !", description: "Bienvenue sur CampusSphere 🎉", duration: 4000 });
       navigate("/");
     } catch (err: any) {
@@ -599,6 +635,45 @@ export function Register() {
                 <Label>Matricule <span className="text-muted-foreground">(optionnel)</span></Label>
                 <Input maxLength={REGISTRATION_MAX_LENGTHS.studentId} value={formData.studentId} onChange={e => handleInputChange("studentId", e.target.value)} placeholder="Ex: 21T2045" />
                 {errors.studentId && <p className="text-xs text-red-500 mt-1">{errors.studentId}</p>}
+              </div>
+
+              <div>
+                <Label>Photo de la carte d'étudiant <span className="text-muted-foreground">(optionnel pour certification)</span></Label>
+                <div 
+                  onClick={() => cardInputRef.current?.click()}
+                  className={cn(
+                    "mt-2 relative h-40 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden bg-muted/30 hover:bg-muted/50",
+                    cardPreview ? "border-primary/50" : "border-muted-foreground/30"
+                  )}
+                >
+                  {cardPreview ? (
+                    <div className="relative w-full h-full">
+                      <img src={cardPreview} alt="Aperçu carte" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                        <p className="text-white text-sm font-medium">Changer la photo</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="p-2 bg-primary/10 rounded-full mb-2">
+                        <Camera className="h-5 w-5 text-primary" />
+                      </div>
+                      <p className="text-xs font-medium">Uploader votre carte pour certification</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">JPG, PNG (Max 10Mo)</p>
+                    </>
+                  )}
+                </div>
+                <input 
+                  type="file" 
+                  ref={cardInputRef} 
+                  className="hidden" 
+                  accept="image/*" 
+                  onChange={handleCardChange}
+                />
+                <div className="flex items-center gap-2 mt-2 p-2 bg-blue-500/5 text-blue-600 rounded-lg text-[10px]">
+                  <Info className="h-3 w-3 flex-shrink-0" />
+                  La certification est requise pour publier des posts ou rejoindre des sphères.
+                </div>
               </div>
               <div>
                 <Label>Campus</Label>
