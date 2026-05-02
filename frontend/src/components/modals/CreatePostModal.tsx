@@ -344,11 +344,9 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0 border-none">
         <DialogHeader className="p-6 pb-2">
-          <DialogTitle className="flex items-center gap-2 text-xl font-bold">
-            <div className="h-8 w-8 rounded-full campus-gradient flex items-center justify-center">
-              <Plus className="h-5 w-5 text-white" />
-            </div>
-            Nouveau Post
+          <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5 text-white"/>
+              Nouveau Post
           </DialogTitle>
         </DialogHeader>
         
@@ -357,7 +355,7 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
           <div className="space-y-2">
             <Textarea
               id="content"
-              placeholder="Que voulez-vous partager ?"
+              placeholder="Quoi de neuf sur le campus ?"
               value={content}
               onChange={(e) => {
                 const value = e.target.value;
@@ -435,7 +433,7 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
               variant="ghost" 
               size="sm" 
               onClick={() => setShowAdvanced(!showAdvanced)}
-              className={cn("text-[10px] font-bold uppercase tracking-wider h-8 px-3 rounded-full", showAdvanced ? "bg-accent text-accent-foreground" : "text-muted-foreground")}
+              className={cn("text-xs font-bold tracking-tight h-8 px-3 rounded-full", showAdvanced ? "bg-accent text-accent-foreground" : "text-muted-foreground")}
             >
               Options
             </Button>
@@ -446,7 +444,7 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
             <div className="space-y-4 p-4 rounded-xl border bg-muted/30 campus-animate-slide-up">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-[10px] font-bold uppercase text-muted-foreground ml-1">Catégorie</Label>
+                  <Label>Catégorie</Label>
                   <Select value={category} onValueChange={setCategory}>
                     <SelectTrigger className="h-9 bg-background border shadow-sm">
                       <SelectValue />
@@ -461,7 +459,7 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-[10px] font-bold uppercase text-muted-foreground ml-1">Visibilité</Label>
+                  <Label>Visibilité</Label>
                   <Select value={visibility} onValueChange={setVisibility}>
                     <SelectTrigger className="h-9 bg-background border shadow-sm">
                       <SelectValue />
@@ -476,7 +474,7 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase text-muted-foreground ml-1">Localisation</Label>
+                <Label>Localisation</Label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
                   <Input 
@@ -489,7 +487,7 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase text-muted-foreground ml-1">Tags</Label>
+                <Label>Tags</Label>
                 <div className="flex gap-2">
                   <Input 
                     placeholder="Ajouter un tag" 
@@ -515,7 +513,7 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
               </div>
 
               <div className="flex items-center justify-between pt-2">
-                <Label className="text-[10px] font-bold uppercase text-muted-foreground ml-1">Commentaires</Label>
+                <Label>Commentaires</Label>
                 <Switch checked={allowComments} onCheckedChange={setAllowComments} className="scale-75 origin-right" />
               </div>
             </div>
