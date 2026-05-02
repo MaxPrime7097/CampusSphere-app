@@ -15,7 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 import { 
-  Users, FileText, Settings, Check, MoreVertical, Loader2, Plus, Shield, Crown, UserPlus, UserMinus, UserCheck, UserX, Camera, ExternalLink, Download, Info, X, Facebook, Twitter, Instagram, Linkedin, Copy, Share, ArrowLeft, Share2, BadgeCheck
+  Users, FileText, Settings, Check, MoreVertical, Loader2, Plus, Shield, Crown, UserPlus, UserMinus, UserCheck, UserX, Camera, ExternalLink, Download, Info, X, Facebook, Twitter, Instagram, Linkedin, Copy, Share, ArrowLeft, Share2, BadgeCheck, AlertCircle
 } from "lucide-react";
 
 import { renderMentionText } from "@/lib/mentions";
@@ -434,6 +434,37 @@ export function SphereDetail() {
 
 
   // ==================== RENDER ====================
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            <div className="h-16 w-16 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="h-8 w-8 rounded-full campus-gradient animate-pulse" />
+            </div>
+          </div>
+          <p className="text-sm font-medium text-muted-foreground animate-pulse">Chargement de votre sphère...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 text-center">
+        <div className="h-20 w-20 rounded-full bg-red-100 flex items-center justify-center mb-4">
+          <AlertCircle className="h-10 w-10 text-red-600" />
+        </div>
+        <h2 className="text-2xl font-bold mb-2">Oups ! Une erreur est survenue</h2>
+        <p className="text-muted-foreground mb-6 max-w-md">{loadError}</p>
+        <Button onClick={() => window.location.reload()} className="campus-gradient text-white">
+          Réessayer
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <>
     <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">

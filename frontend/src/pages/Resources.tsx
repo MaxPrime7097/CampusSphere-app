@@ -96,6 +96,7 @@ export function Resources() {
   const [resources, setResources] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [userLoading, setUserLoading] = useState(true);
 
   // Folders state
   const [showFoldersTab, setShowFoldersTab] = useState(false);
@@ -127,11 +128,15 @@ export function Resources() {
 
   useEffect(() => {
     let isMounted = true;
+    setUserLoading(true);
     (async () => {
       try {
         const data = await getCurrentUser();
         if (isMounted) setCurrentUser(data);
-      } catch (e) {}
+      } catch (e) {
+      } finally {
+        if (isMounted) setUserLoading(false);
+      }
     })();
     return () => {
       isMounted = false;
@@ -419,7 +424,12 @@ export function Resources() {
               <span className="hidden sm:inline">Actualiser</span>
 
             </Button>
-            {currentUser?.isVerified ? (
+            {userLoading ? (
+              <Button size="sm" variant="outline" className="gap-2 w-full sm:w-auto opacity-70" disabled>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="hidden sm:inline">Chargement...</span>
+              </Button>
+            ) : currentUser?.isVerified ? (
               <UploadResourceModal onResourceUploaded={handleResourceUploaded}>
                 <Button
                   size="sm"
@@ -682,7 +692,12 @@ export function Resources() {
             <p className="text-muted-foreground mb-6">
               Soyez le premier a partager une ressource dans cette catégorie !
             </p>
-            {currentUser?.isVerified ? (
+            {userLoading ? (
+              <Button className="campus-gradient text-white opacity-70" disabled>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Chargement...
+              </Button>
+            ) : currentUser?.isVerified ? (
               <UploadResourceModal onResourceUploaded={handleResourceUploaded}>
                 <Button className="campus-gradient text-white hover:opacity-90">
                   Partager une ressource
