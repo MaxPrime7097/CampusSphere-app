@@ -467,9 +467,9 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="public">🌍 Public</SelectItem>
-                      <SelectItem value="university">🎓 Université</SelectItem>
-                      <SelectItem value="private">🔒 Amis</SelectItem>
+                      <SelectItem value="public">Public</SelectItem>
+                      <SelectItem value="university">Université</SelectItem>
+                      <SelectItem value="private">Amis</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
