@@ -19,6 +19,9 @@ import {
 
 export interface NavigationUser {
   username?: string | null;
+  name?: string | null;
+  avatar?: string | null;
+  isVerified?: boolean;
   role?: string | null;
   user_type?: string | null;
   is_staff?: boolean;
@@ -49,23 +52,37 @@ function isAdminUser(user?: NavigationUser | null) {
 }
 
 export function getNavigationSections(user?: NavigationUser | null): NavigationSections {
+  const isAuthenticated = Boolean(user?.username);
   const profileUrl = `/profile/${user?.username || "current"}`;
   const newPost = "#create-post";
   const adminEntry = isAdminUser(user) ? [{ title: "Admin", url: "/admin/dashboard", icon: Shield }] : [];
 
+  // Define basic navigation items
   const navigationItems: NavigationItem[] = [
     { title: "Accueil", url: "/", icon: Home },
-    { title: "Profil", url: profileUrl, icon: User },
-    { title: "Ressources", url: "/resources", icon: FolderOpen },
-    { title: "Sphères", url: "/spheres", icon: Globe },
   ];
 
-  const quickActions: NavigationItem[] = [
-    { title: "Connexions", url:"/connections", icon: Link },
-    { title: "Messages", url: "/messages", icon: MessageSquare },
-    { title: "Enregistrements", url: "/saved", icon: Bookmark },
-    { title: "Paramètres", url: "/settings", icon: Settings },
-  ];
+  // Add protected items only if authenticated
+  if (isAuthenticated) {
+    navigationItems.push({ title: "Profil", url: profileUrl, icon: User });
+  }
+  
+  // Resources is now public-read
+  navigationItems.push({ title: "Ressources", url: "/resources", icon: FolderOpen });
+  
+  if (isAuthenticated) {
+    navigationItems.push({ title: "Sphères", url: "/spheres", icon: Globe });
+  }
+
+  const quickActions: NavigationItem[] = [];
+  if (isAuthenticated) {
+    quickActions.push(
+      { title: "Connexions", url:"/connections", icon: Link },
+      { title: "Messages", url: "/messages", icon: MessageSquare },
+      { title: "Enregistrements", url: "/saved", icon: Bookmark },
+      { title: "Paramètres", url: "/settings", icon: Settings }
+    );
+  }
 
   const utilities: NavigationItem[] = [
     ...adminEntry,
@@ -77,11 +94,18 @@ export function getNavigationSections(user?: NavigationUser | null): NavigationS
   const mobileItems: NavigationItem[] = [
     { title: "Accueil", url: "/", icon: Home },
     { title: "Ressources", url: "/resources", icon: FolderOpen },
-    { title: "NouveauPost", url: newPost, icon: Plus },
-    { title: "Sphères", url: "/spheres", icon: Globe },
-    { title: "Notifications", url: "/notifications", icon: Bell },
-    // Admin retiré de la mobile navbar — disponible dans MenuDropdown
   ];
+
+  if (isAuthenticated) {
+    mobileItems.push(
+      { title: "NouveauPost", url: newPost, icon: Plus },
+      { title: "Sphères", url: "/spheres", icon: Globe },
+      { title: "Notifications", url: "/notifications", icon: Bell }
+    );
+  } else {
+    // For guests on mobile, maybe add a search or info icon
+    mobileItems.push({ title: "À propos", url: "/cs-inc/about", icon: Info });
+  }
 
   return {
     navigationItems,

@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Plus, Image, MapPin, Users, X, Lock, Globe, Video, FileText, Smile, AtSign, Calendar, Clock, Hash, Loader2, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { findInvalidMentions, getActiveMentionQuery, renderMentionText } from "@/lib/mentions";
+import { cn } from "@/lib/utils";
 
 interface PostDraftData {
   content: string;
@@ -334,36 +335,29 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
     localStorage.removeItem('postDraft');
   };
 
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Plus className="h-5 w-5" />
-            Créer un nouveau post
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0 border-none">
+        <DialogHeader className="p-6 pb-2">
+          <DialogTitle className="flex items-center gap-2 text-xl font-bold">
+            <div className="h-8 w-8 rounded-full campus-gradient flex items-center justify-center">
+              <Plus className="h-5 w-5 text-white" />
+            </div>
+            Nouveau Post
           </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-5">
+        <div className="px-6 pb-6 space-y-4">
           {/* Contenu principal */}
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <Label htmlFor="content" className="text-base">Contenu du post</Label>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setShowPreview(!showPreview)}
-                className="text-xs gap-1 h-7"
-              >
-                {showPreview ? "Cacher l'aperçu" : "Voir l'aperçu"}
-              </Button>
-            </div>
+          <div className="space-y-2">
             <Textarea
               id="content"
-              placeholder="Que voulez-vous partager avec la communauté ?"
+              placeholder="Que voulez-vous partager ?"
               value={content}
               onChange={(e) => {
                 const value = e.target.value;
@@ -377,274 +371,197 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
                   setMentionQuery("");
                 }
               }}
-              className="min-h-[120px] text-base"
+              className="min-h-[150px] text-lg border-none focus-visible:ring-0 p-0 resize-none placeholder:text-muted-foreground/50 shadow-none bg-transparent"
             />
+            
             {showPreview && content && (
-              <div className="mt-3 p-4 rounded-xl border bg-accent/5 overflow-hidden">
-                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Aperçu du rendu</p>
+              <div className="p-4 rounded-xl border bg-accent/5 overflow-hidden campus-animate-fade-in">
                 <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
                   {renderMentionText(content)}
                 </div>
               </div>
             )}
-            <div className="flex justify-between items-center mt-2">
-              <span className="text-xs text-muted-foreground">
-                {content.length}/500 caractères
+            
+            <div className="flex justify-end">
+              <span className={cn("text-[10px] font-medium", content.length > 450 ? "text-red-500" : "text-muted-foreground/40")}>
+                {content.length}/500
               </span>
             </div>
           </div>
 
-          <Separator />
-
-          {/* Catégorie et Visibilité */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="category">Catégorie</Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger className="mt-2">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="general">Général</SelectItem>
-                  <SelectItem value="academic">Académique</SelectItem>
-                  <SelectItem value="event">Événement</SelectItem>
-                  <SelectItem value="marketplace">Marketplace</SelectItem>
-                  <SelectItem value="help">Demande d'aide</SelectItem>
-                  <SelectItem value="announcement">Annonce</SelectItem>
-                </SelectContent>
-              </Select>
+          {/* Uploaded Files Preview */}
+          {uploadedFiles.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 py-2">
+              {uploadedFiles.map((file, index) => (
+                <div key={index} className="relative group rounded-xl overflow-hidden border aspect-video bg-muted">
+                  {file.type.startsWith('image/') ? (
+                    <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center p-2 text-center">
+                      <FileText className="h-6 w-6 text-primary mb-1" />
+                      <span className="text-[10px] truncate w-full px-1">{file.name}</span>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => removeFile(index)}
+                    className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
             </div>
+          )}
 
-            <div>
-              <Label htmlFor="visibility">Visibilité</Label>
-              <Select value={visibility} onValueChange={setVisibility}>
-                <SelectTrigger className="mt-2">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="public">
-                    <div className="flex items-center gap-2">
-                      <Globe className="h-4 w-4" />
-                      Public
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="university">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      Université uniquement
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="private">
-                    <div className="flex items-center gap-2">
-                      <Lock className="h-4 w-4" />
-                      Amis uniquement
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Localisation et Tags */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="location">Localisation (optionnel)</Label>
-              <div className="relative mt-2">
-                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="location"
-                  placeholder="Campus, ville..."
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+          {/* Toolbar */}
+          <div className="flex items-center justify-between py-2 border-y border-border/50">
+            <div className="flex items-center gap-1">
+              <input ref={fileInputRef} type="file" multiple accept="image/*,video/*" onChange={handleFileUpload} className="hidden" />
+              <Button variant="ghost" size="sm" onClick={() => fileInputRef.current?.click()} className="h-9 w-9 p-0 rounded-full hover:bg-primary/10 hover:text-primary">
+                <Image className="h-5 w-5" />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="h-9 w-9 p-0 rounded-full hover:bg-yellow-100/50 hover:text-yellow-600">
+                <Smile className="h-5 w-5" />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setShowMentions(!showMentions)} className="h-9 w-9 p-0 rounded-full hover:bg-blue-100/50 hover:text-blue-600">
+                <AtSign className="h-5 w-5" />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setShowPreview(!showPreview)} className={cn("h-9 w-9 p-0 rounded-full", showPreview ? "text-primary bg-primary/10" : "")}>
+                <FileText className="h-5 w-5" />
+              </Button>
             </div>
             
-            <div>
-              <Label htmlFor="tag">Tags</Label>
-              <div className="flex gap-2 mt-2">
-                <Input
-                  id="tag"
-                  placeholder="Ajouter un tag"
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                />
-                <Button onClick={addTag} size="sm" variant="outline">
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className={cn("text-[10px] font-bold uppercase tracking-wider h-8 px-3 rounded-full", showAdvanced ? "bg-accent text-accent-foreground" : "text-muted-foreground")}
+            >
+              Options
+            </Button>
           </div>
 
-          {tags.length > 0 && (
-            <div>
-              <Label>Tags ajoutés</Label>
-              <div className="flex gap-2 mt-2 flex-wrap">
-                {tags.map((tag) => (
-                  <Badge key={tag} variant="secondary" className="gap-1">
-                    #{tag}
-                    <X 
-                      className="h-3 w-3 cursor-pointer" 
-                      onClick={() => removeTag(tag)}
-                    />
-                  </Badge>
-                ))}
+          {/* Advanced Options Section */}
+          {showAdvanced && (
+            <div className="space-y-4 p-4 rounded-2xl bg-accent/30 border border-primary/5 campus-animate-slide-up">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase text-muted-foreground ml-1">Catégorie</Label>
+                  <Select value={category} onValueChange={setCategory}>
+                    <SelectTrigger className="h-9 bg-background border-none shadow-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="general">Général</SelectItem>
+                      <SelectItem value="academic">Académique</SelectItem>
+                      <SelectItem value="event">Événement</SelectItem>
+                      <SelectItem value="marketplace">Marketplace</SelectItem>
+                      <SelectItem value="help">Demande d'aide</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase text-muted-foreground ml-1">Visibilité</Label>
+                  <Select value={visibility} onValueChange={setVisibility}>
+                    <SelectTrigger className="h-9 bg-background border-none shadow-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="public">🌍 Public</SelectItem>
+                      <SelectItem value="university">🎓 Université</SelectItem>
+                      <SelectItem value="private">🔒 Amis</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-bold uppercase text-muted-foreground ml-1">Localisation</Label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                  <Input 
+                    placeholder="Campus, ville..." 
+                    value={location} 
+                    onChange={(e) => setLocation(e.target.value)} 
+                    className="h-9 pl-9 bg-background border-none shadow-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-bold uppercase text-muted-foreground ml-1">Tags</Label>
+                <div className="flex gap-2">
+                  <Input 
+                    placeholder="Ajouter un tag" 
+                    value={newTag} 
+                    onChange={(e) => setNewTag(e.target.value)} 
+                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                    className="h-9 bg-background border-none shadow-sm"
+                  />
+                  <Button onClick={addTag} size="sm" variant="secondary" className="h-9 px-3">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                {tags.length > 0 && (
+                  <div className="flex gap-1.5 mt-2 flex-wrap">
+                    {tags.map((tag) => (
+                      <Badge key={tag} variant="secondary" className="bg-background text-[10px] gap-1 px-2 h-6">
+                        #{tag}
+                        <X className="h-3 w-3 cursor-pointer" onClick={() => removeTag(tag)} />
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <Label className="text-[10px] font-bold uppercase text-muted-foreground ml-1">Commentaires</Label>
+                <Switch checked={allowComments} onCheckedChange={setAllowComments} className="scale-75 origin-right" />
               </div>
             </div>
           )}
 
-          <Separator />
-
-          {/* Médias et Options */}
-          <div>
-            <Label className="mb-3 block">Ajouter des médias</Label>
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              accept="image/*,video/*"
-              onChange={handleFileUpload}
-              className="hidden"
-              aria-label="Sélectionner des fichiers à télécharger"
-            />
-            <div className="flex flex-wrap gap-2">
-              <Button 
-                variant="outline" 
-                className="gap-2"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Image className="h-4 w-4" />
-                Photos/Vidéos
-              </Button>
-              <Button 
-                variant="outline" 
-                className="gap-2"
-                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              >
-                <Smile className="h-4 w-4" />
-                Emoji
-              </Button>
-              <Button 
-                variant="outline" 
-                className="gap-2"
-                onClick={() => setShowMentions(!showMentions)}
-              >
-                <AtSign className="h-4 w-4" />
-                Mentionner
-              </Button>
-            </div>
-
-            {/* Emoji Picker */}
-            {showEmojiPicker && (
-              <Card className="mt-2 p-3">
-                <div className="grid grid-cols-8 gap-2">
-                  {['😀', '😂', '🥰', '😎', '🤔', '👍', '🎉', '🔥', '💯', '✨', '🚀', '❤️', '👏', '🙌', '💪', '🎯'].map((emoji) => (
-                    <Button
-                      key={emoji}
-                      variant="ghost"
-                      className="text-2xl p-2 h-auto"
-                      onClick={() => insertEmoji(emoji)}
-                    >
-                      {emoji}
-                    </Button>
-                  ))}
-                </div>
-              </Card>
-            )}
-
-            {/* Mentions */}
-            {showMentions && (
-              <Card className="mt-2 p-3">
-                <div className="space-y-2">
-                  {availableUsers.map((user) => (
-                    <Button
-                      key={user.id}
-                      variant="ghost"
-                      className="w-full justify-start gap-2"
-                      onClick={() => insertMention(user.username)}
-                    >
-                      <Avatar className="h-6 w-6">
-                        <AvatarImage src={user.avatar} />
-                        <AvatarFallback>{user.name?.slice(0, 1).toUpperCase() || 'U'}</AvatarFallback>
-                      </Avatar>
-                      @{user.username}
-                    </Button>
-                  ))}
-                </div>
-              </Card>
-            )}
-
-            {/* Uploaded Files */}
-            {uploadedFiles.length > 0 && (
-              <div className="mt-3 space-y-2">
-                <Label>Fichiers joints ({uploadedFiles.length})</Label>
-                {/* Image previews grid */}
-                {uploadedFiles.some(f => f.type.startsWith('image/')) && (
-                  <div className="grid grid-cols-3 gap-2">
-                    {uploadedFiles.filter(f => f.type.startsWith('image/')).map((file, index) => (
-                      <div key={index} className="relative group rounded-lg overflow-hidden border aspect-square">
-                        <img
-                          src={URL.createObjectURL(file)}
-                          alt={file.name}
-                          className="w-full h-full object-cover"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeFile(uploadedFiles.indexOf(file))}
-                          className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {/* Non-image files */}
-                {uploadedFiles.filter(f => !f.type.startsWith('image/')).map((file, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 border rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">{file.name}</span>
-                      <span className="text-xs text-muted-foreground">({(file.size / 1024).toFixed(1)} KB)</span>
-                    </div>
-                    <Button size="sm" variant="ghost" onClick={() => removeFile(uploadedFiles.indexOf(file))}>
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
+          {/* Emoji/Mentions Popups */}
+          {showEmojiPicker && (
+            <Card className="p-3 border-primary/10 shadow-xl campus-animate-slide-up">
+              <div className="grid grid-cols-8 gap-1">
+                {['😀', '😂', '🥰', '😎', '🤔', '👍', '🎉', '🔥', '💯', '✨', '🚀', '❤️', '👏', '🙌', '💪', '🎯'].map((emoji) => (
+                  <Button key={emoji} variant="ghost" className="text-xl p-0 h-9 w-9" onClick={() => insertEmoji(emoji)}>
+                    {emoji}
+                  </Button>
                 ))}
               </div>
-            )}
-          </div>
+            </Card>
+          )}
 
-          {/* Options supplémentaires */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label>Autoriser les commentaires</Label>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Permettre aux autres d'interagir avec votre post
-                </p>
+          {showMentions && (
+            <Card className="border-primary/10 shadow-xl max-h-48 overflow-y-auto campus-animate-slide-up">
+              <div className="p-1">
+                {availableUsers.map((user) => (
+                  <Button key={user.id} variant="ghost" className="w-full justify-start gap-3 h-11 px-3" onClick={() => insertMention(user.username)}>
+                    <Avatar className="h-7 w-7 border">
+                      <AvatarImage src={user.avatar} />
+                      <AvatarFallback>{user.name?.slice(0, 1).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col items-start min-w-0">
+                      <span className="text-sm font-semibold truncate w-full">{user.name}</span>
+                      <span className="text-[10px] text-muted-foreground truncate w-full">@{user.username}</span>
+                    </div>
+                  </Button>
+                ))}
               </div>
-              <Switch 
-                checked={allowComments} 
-                onCheckedChange={setAllowComments}
-              />
-            </div>
-          </div>
+            </Card>
+          )}
 
-          <Separator />
-
-          {/* Actions */}
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => setIsOpen(false)} disabled={isSubmitting}>
+          {/* Footer Actions */}
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="ghost" onClick={() => setIsOpen(false)} disabled={isSubmitting} className="text-muted-foreground hover:text-foreground">
               Annuler
             </Button>
             <Button 
               onClick={handleSubmit}
               disabled={!content.trim() || content.length > 500 || isSubmitting}
-              className="campus-gradient text-white hover:opacity-90"
+              className="campus-gradient text-white px-8 rounded-full font-bold shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all active:scale-95 h-11"
             >
               {isSubmitting ? (
                 <>
@@ -652,7 +569,7 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
                   Publication...
                 </>
               ) : (
-                "Publier le post"
+                "Publier"
               )}
             </Button>
           </div>

@@ -340,6 +340,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     joined_spheres_count = serializers.SerializerMethodField()
     connections_count = serializers.SerializerMethodField()
     contributions_count = serializers.SerializerMethodField()
+    isVerified = serializers.BooleanField(source='is_verified', read_only=True)
 
     class Meta:
         model = User
@@ -351,7 +352,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'data_export_requested_at', 'impact_score', 'current_mood',
             'skills', 'interests', 'previous_education', 'previousEducation', 'experiences',
             'portfolio_links', 'portfolioLinks', 'joined_spheres_count', 'connections_count', 'contributions_count',
-            'date_joined', 'updated_at', 'is_staff', 'is_superuser'
+            'date_joined', 'updated_at', 'is_staff', 'is_superuser', 'is_verified', 'isVerified'
         ]
         read_only_fields = ['id', 'impact_score', 'date_joined', 'updated_at']
 

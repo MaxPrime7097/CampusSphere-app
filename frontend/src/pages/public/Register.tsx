@@ -21,6 +21,7 @@ import {
   completeSupabaseProfile,
   getSupabaseRateLimitMetadata,
   supabaseResendSignupEmail,
+  checkUserAvailability,
 } from "@/services/api";
 import { supabase } from "@/lib/supabase";
 import { completeSupabaseProfilePayloadSchema, mapCompleteProfileErrors } from "@/schemas/completeProfilePayload";
@@ -178,7 +179,10 @@ export function Register() {
     lastName: z.string().trim().min(2, "Au moins 2 caractères"),
     username: z.string().trim().min(3, "Au moins 3 caractères"),
     email: z.string().email("Email invalide"),
-    phoneNumber: z.string().optional(),
+    phoneNumber: z.string()
+      .regex(/^(?:\d{9})?$/, "Le numéro doit contenir 9 chiffres")
+      .optional()
+      .or(z.literal("")),
     dateOfBirth: z.string()
       .min(1, "Requis")
       .refine((value) => parseISODate(value) !== null, "Date de naissance invalide")
@@ -197,11 +201,7 @@ export function Register() {
         return getAgeFromDate(birthDate, todayUtc) >= MINIMUM_AGE;
       }, minimumAgeMessage),
     password: z.string()
-      .min(8, "Le mot de passe doit contenir au moins 8 caractères")
-      .regex(/[a-z]/, "Le mot de passe doit contenir au moins une lettre minuscule")
-      .regex(/[A-Z]/, "Le mot de passe doit contenir au moins une lettre majuscule")
-      .regex(/[0-9]/, "Le mot de passe doit contenir au moins un chiffre")
-      .regex(/[^A-Za-z0-9]/, "Le mot de passe doit contenir au moins un symbole"),
+      .min(8, "Le mot de passe doit contenir au moins 8 caractères"),
     confirmPassword: z.string(),
   }).refine(d => d.password === d.confirmPassword, {
     message: "Les mots de passe ne correspondent pas",
@@ -212,7 +212,7 @@ export function Register() {
     university: z.string().min(1, "Requis"),
     faculty: z.string().min(1, "Requis"),
     studyYear: z.string().min(1, "Requis"),
-    studentId: z.string().min(1, "Requis"),
+    studentId: z.string().optional(),
   });
 
   const handleInputChange = (field: string, value: string) => {
@@ -596,8 +596,8 @@ export function Register() {
                 </div>
               </div>
               <div>
-                <Label>Matricule *</Label>
-                <Input maxLength={REGISTRATION_MAX_LENGTHS.studentId} value={formData.studentId} onChange={e => handleInputChange("studentId", e.target.value)} />
+                <Label>Matricule <span className="text-muted-foreground">(optionnel)</span></Label>
+                <Input maxLength={REGISTRATION_MAX_LENGTHS.studentId} value={formData.studentId} onChange={e => handleInputChange("studentId", e.target.value)} placeholder="Ex: 21T2045" />
                 {errors.studentId && <p className="text-xs text-red-500 mt-1">{errors.studentId}</p>}
               </div>
               <div>
@@ -718,11 +718,22 @@ export function Register() {
                 ))}
               </div>
 
-              <div className="flex justify-between pt-4">
-                <Button variant="outline" onClick={() => setStep(2)}><ChevronLeft className="mr-2 h-4 w-4" />Précédent</Button>
-                <Button onClick={handleFinalSubmit} disabled={isLoading} className="campus-gradient text-white hover:opacity-90">
-                  {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Finalisation...</> : <><Check className="mr-2 h-4 w-4" />Terminer l'inscription</>}
+              <div className="flex flex-col sm:flex-row justify-between gap-3 pt-4">
+                <Button variant="outline" onClick={() => setStep(2)} className="order-2 sm:order-1">
+                  <ChevronLeft className="mr-2 h-4 w-4" />Précédent
                 </Button>
+                <div className="flex flex-col sm:flex-row gap-2 order-1 sm:order-2">
+                  <Button variant="ghost" onClick={handleFinalSubmit} disabled={isLoading} className="text-muted-foreground">
+                    Passer pour l'instant
+                  </Button>
+                  <Button onClick={handleFinalSubmit} disabled={isLoading} className="campus-gradient text-white hover:opacity-90">
+                    {isLoading ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Finalisation...</>
+                    ) : (
+                      <><Check className="mr-2 h-4 w-4" />Terminer l'inscription</>
+                    )}
+                  </Button>
+                </div>
               </div>
             </div>
           )}

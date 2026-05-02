@@ -14,6 +14,7 @@ import { Search, Users, TrendingUp, Clock, Loader2, Check, RefreshCw, Plus, Filt
 import { useToast } from "@/hooks/use-toast";
 import { CreateSphereModal } from "@/components/modals/CreateSphereModal";
 import { SphereCard } from "@/components/sphere/SphereCard";
+import { VerificationModal } from "@/components/modals/VerificationModal";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
@@ -248,6 +249,21 @@ export function Spheres() {
 
   const handleJoinSphere = async (sphereId: string, sphereName: string) => {
     if (!currentUser) return;
+    
+    if (!currentUser.isVerified) {
+      toast({
+        title: "Compte non certifié",
+        description: "Vous devez être certifié pour rejoindre une sphère.",
+        variant: "destructive",
+        action: (
+          <VerificationModal>
+            <Button variant="outline" size="sm">Vérifier</Button>
+          </VerificationModal>
+        )
+      });
+      return;
+    }
+
     const currentSphere = allSpheres.find((sphere) => String(sphere.id) === String(sphereId));
     if (currentSphere && String(currentSphere.created_by) === String(currentUser.id)) {
       return;
@@ -348,12 +364,32 @@ export function Spheres() {
               <span className="hidden sm:inline">Actualiser</span>
 
             </Button>
-            <CreateSphereModal onSphereCreated={handleSphereCreated}>
-              <Button size="sm" className="campus-gradient text-white hover:opacity-90 gap-2 w-full sm:w-auto">
+            {currentUser?.isVerified ? (
+              <CreateSphereModal onSphereCreated={handleSphereCreated}>
+                <Button size="sm" className="campus-gradient text-white hover:opacity-90 gap-2 w-full sm:w-auto">
+                  <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Créer</span>
+                </Button>
+              </CreateSphereModal>
+            ) : (
+              <Button 
+                size="sm" 
+                className="campus-gradient text-white hover:opacity-90 gap-2 w-full sm:w-auto"
+                onClick={() => {
+                  toast({
+                    title: "Compte non vérifié",
+                    description: "Vérifiez votre compte pour créer des sphères.",
+                    variant: "destructive",
+                    action: (
+                      <VerificationModal>
+                        <Button variant="outline" size="sm">Vérifier</Button>
+                      </VerificationModal>
+                    )
+                  });
+                }}
+              >
                 <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Créer</span>
-
               </Button>
-            </CreateSphereModal>
+            )}
           </div>
         </div>
 

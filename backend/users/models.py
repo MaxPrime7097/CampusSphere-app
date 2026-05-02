@@ -124,6 +124,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     phone_number = models.CharField(max_length=30, blank=True)
     date_of_birth = models.DateField(null=True, blank=True)
     is_profile_complete = models.BooleanField(default=False)
+    is_verified = models.BooleanField(default=False)
+    card_image = models.ImageField(upload_to='student_cards/', blank=True, null=True)
 
     objects = UserManager()
 

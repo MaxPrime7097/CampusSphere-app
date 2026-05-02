@@ -5,6 +5,9 @@ import { CreatePostModal } from "@/components/modals/CreatePostModal";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getCurrentUser } from "@/services/api";
+import { useToast } from "@/hooks/use-toast";
+import { VerificationModal } from "@/components/modals/VerificationModal";
+import { Button } from "@/components/ui/button";
 
 interface CreatePostProps {
   onPostCreated?: (postData: unknown) => void;
@@ -36,26 +39,50 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
       : "campus-card hover:campus-glow"
   );
 
-  return (
-    <CreatePostModal onPostCreated={onPostCreated}>
-      <Card className={cardClasses}>
-        <CardContent className="p-4">
-          <div className="flex gap-3 items-center">
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={currentUser?.avatar || "/placeholder-avatar.jpg"} />
-              <AvatarFallback className="bg-input text-muted-foreground font-semibold">
-                {currentUser?.name?.slice(0, 1).toUpperCase() || 'U'}
-              </AvatarFallback>
-            </Avatar>
-            
-            <div 
-              className="flex-1 px-4 py-3 bg-muted/50 rounded-full text-muted-foreground cursor-pointer hover:bg-muted transition-colors"
-            >
-              Quoi de neuf sur le campus ?
-            </div>
+  const { toast } = useToast();
+  const isVerified = currentUser?.isVerified ?? false;
+
+  const content = (
+    <Card className={cardClasses} onClick={() => {
+      if (!isVerified) {
+        toast({
+          title: "Compte non certifié",
+          description: "Certifiez votre compte pour publier sur le campus.",
+          variant: "destructive",
+          action: (
+            <VerificationModal>
+              <Button variant="outline" size="sm">Vérifier</Button>
+            </VerificationModal>
+          )
+        });
+      }
+    }}>
+      <CardContent className="p-4">
+        <div className="flex gap-3 items-center">
+          <Avatar className="h-10 w-10">
+            <AvatarImage src={currentUser?.avatar || "/placeholder-avatar.jpg"} />
+            <AvatarFallback className="bg-input text-muted-foreground font-semibold">
+              {currentUser?.name?.slice(0, 1).toUpperCase() || 'U'}
+            </AvatarFallback>
+          </Avatar>
+          
+          <div 
+            className="flex-1 px-4 py-3 bg-muted/50 rounded-full text-muted-foreground cursor-pointer hover:bg-muted transition-colors"
+          >
+            Quoi de neuf sur le campus ?
           </div>
-        </CardContent>
-      </Card>
-    </CreatePostModal>
+        </div>
+      </CardContent>
+    </Card>
   );
+
+  if (isVerified) {
+    return (
+      <CreatePostModal onPostCreated={onPostCreated}>
+        {content}
+      </CreatePostModal>
+    );
+  }
+
+  return content;
 }

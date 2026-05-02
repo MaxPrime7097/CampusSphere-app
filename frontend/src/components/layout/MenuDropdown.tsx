@@ -58,9 +58,10 @@ export function MenuDropdown() {
   const { quickActions, utilities, navigationItems } = getNavigationSections(user);
   const profileUrl = navigationItems.find((item) => item.title === "Profil")?.url || "/profile/current";
 
-  const displayName = user?.name || user?.username || "Utilisateur";
-  const displayUsername = user?.username ? `@${user.username}` : "@user";
-  const avatarUrl = user?.avatar || "/placeholder/.jpg";
+  const isAuthenticated = Boolean(user?.username);
+  const displayName = user?.name || user?.username || "Invité";
+  const displayUsername = user?.username ? `@${user.username}` : "@guest";
+  const avatarUrl = user?.avatar || "/placeholder-avatar.jpg";
   const appVersion = import.meta.env.VITE_APP_VERSION || "2.0.0";
   const closeMenu = () => setOpen(false);
   const handleContainerClickCapture = (event: MouseEvent<HTMLDivElement>) => {
@@ -85,78 +86,94 @@ export function MenuDropdown() {
             Menu
           </h1>
         </SheetHeader>
-        <Card
-          className="campus-card mt-5"
-          onClick={() => {
-            closeMenu();
-            navigate(profileUrl);
-          }}
-        >
-          <CardContent className="pt-4 md:pt-6 p-4 md:p-6">
-            <div 
-              className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
-            >
-              <Avatar className="h-10 w-10">
-                <AvatarImage src={avatarUrl} />
-                <AvatarFallback className="bg-input text-muted-foreground font-semibold">
-                  {displayName.charAt(0) || "U"}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h4 className="font-semibold text-sm hover:underline">{displayName}</h4>
-                  <div className="w-4 h-4 campus-gradient rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs">✓</span>
+        
+        {isAuthenticated ? (
+          <Card
+            className="campus-card mt-5"
+            onClick={() => {
+              closeMenu();
+              navigate(profileUrl);
+            }}
+          >
+            <CardContent className="pt-4 md:pt-6 p-4 md:p-6">
+              <div 
+                className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+              >
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={avatarUrl} />
+                  <AvatarFallback className="bg-input text-muted-foreground font-semibold">
+                    {displayName.charAt(0) || "U"}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-semibold text-sm hover:underline">{displayName}</h4>
+                    <div className="w-4 h-4 campus-gradient rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs">✓</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs text-muted-foreground">{displayUsername}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <p className="text-xs text-muted-foreground">{displayUsername}</p>
-                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="mt-6 flex flex-col gap-3">
+            <Button onClick={() => { closeMenu(); navigate('/login'); }} className="campus-gradient text-white w-full">
+              Se connecter
+            </Button>
+            <Button variant="outline" onClick={() => { closeMenu(); navigate('/register'); }} className="w-full">
+              Créer un compte
+            </Button>
+          </div>
+        )}
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Actions</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {quickActions.map((item) => (
-               <Card className="py-2" key={item.title}>
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink to={item.url} className={getNavClasses} onClick={closeMenu}>
-                      <item.icon className="h-5 w-5" />
-                      {!isCollapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-               </Card>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {quickActions.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Actions</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {quickActions.map((item) => (
+                <Card className="py-2" key={item.title}>
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink to={item.url} className={getNavClasses} onClick={closeMenu}>
+                        <item.icon className="h-5 w-5" />
+                        {!isCollapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </Card>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Utilitaires</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {utilities.map((item) => (
-               <Card className="py-2" key={item.title}>
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink to={item.url} end className={getNavClasses} onClick={closeMenu}>
-                      <item.icon className="h-5 w-5" />
-                      {!isCollapsed && <span className="flex-1">{item.title}</span>}
-                      {!isCollapsed && <ExternalLink className="h-3.5 w-3.5 text-muted-foreground opacity-60" />}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-               </Card>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {utilities.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Utilitaires</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {utilities.map((item) => (
+                <Card className="py-2" key={item.title}>
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink to={item.url} end className={getNavClasses} onClick={closeMenu}>
+                        <item.icon className="h-5 w-5" />
+                        {!isCollapsed && <span className="flex-1">{item.title}</span>}
+                        {!isCollapsed && <ExternalLink className="h-3.5 w-3.5 text-muted-foreground opacity-60" />}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </Card>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
         {resolveAdminRole(user) !== 'none' && (
           <SidebarGroup>
             <SidebarGroupLabel>Administration</SidebarGroupLabel>

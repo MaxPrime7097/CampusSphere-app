@@ -152,6 +152,26 @@ export async function completeSupabaseProfile(data: {
   return normalizeUser(response?.data ?? response);
 }
 
+export async function checkUserAvailability(params: { username?: string; email?: string }) {
+  return apiFetch<any>("api/users/check-availability/", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+}
+
+export async function verifyStudentStatus(matricule: string, cardImage: File) {
+  const formData = new FormData();
+  formData.append("student_id", matricule);
+  formData.append("card_image", cardImage);
+
+  const response = await apiFetch<any>("api/users/me/verify/", {
+    method: "POST",
+    body: formData,
+    // apiFetch usually handles FormData by not setting Content-Type (browser does it)
+  });
+  return response;
+}
+
 const getDetectedApiUrl = () => {
   if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
   const { hostname } = window.location;
@@ -327,6 +347,7 @@ export function normalizeUser(user: any) {
     updatedAt: user.updatedAt ?? user.updated_at ?? null,
     phoneNumber: user.phoneNumber ?? user.phone_number ?? "",
     dateOfBirth: user.dateOfBirth ?? user.date_of_birth ?? "",
+    isVerified: Boolean(user.is_verified ?? user.isVerified ?? false),
     stats: {
       posts: toNumber(user.posts_count ?? user.stats?.posts, 0),
       connections: toNumber(user.connections_count ?? user.stats?.connections, 0),

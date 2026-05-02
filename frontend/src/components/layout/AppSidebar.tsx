@@ -80,24 +80,32 @@ export function AppSidebar() {
   return (
     <Sidebar className={isCollapsed ? "w-20" : "w-60"} collapsible="icon">
       <SidebarContent className="pt-20">
-        <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>{navigationItems.map(renderItem)}</SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        <SidebarGroup>
-          <SidebarGroupLabel>Actions</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>{quickActions.map(renderItem)}</SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        <SidebarGroup>
-          <SidebarGroupLabel>Utilitaires</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>{utilities.map(renderItem)}</SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {navigationItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>{navigationItems.map(renderItem)}</SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+        
+        {quickActions.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Actions</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>{quickActions.map(renderItem)}</SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+        
+        {utilities.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Utilitaires</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>{utilities.map(renderItem)}</SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
     </Sidebar>
   );

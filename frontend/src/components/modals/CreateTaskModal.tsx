@@ -29,7 +29,19 @@ export function CreateTaskModal({ children, onTaskCreated, sphereMembers = [], s
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState("medium");
-  const [assignedTo, setAssignedTo] = useState("");
+  const [assignedTo, setAssignedTo] = useState(() => {
+    // Attempt to default to current user if they are a member
+    const currentUserStr = localStorage.getItem("user");
+    if (currentUserStr) {
+      try {
+        const currentUser = JSON.parse(currentUserStr);
+        const currentUserId = String(currentUser.id);
+        const isMember = sphereMembers.some(m => String(m.userId || m.id) === currentUserId);
+        if (isMember) return currentUserId;
+      } catch (e) { /* ignore */ }
+    }
+    return "";
+  });
   const { toast } = useToast();
 
   const reset = () => {

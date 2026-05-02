@@ -41,6 +41,7 @@ import { UploadResourceModal } from "@/components/modals/UploadResourceModal";
 import { ResourceCard } from "@/components/resources/ResourceCard";
 import { FolderCard } from "@/components/resources/FolderCard";
 import { CreateFolderModal } from "@/components/modals/CreateFolderModal";
+import { VerificationModal } from "@/components/modals/VerificationModal";
 import { EmptyState } from "@/components/ui/empty-state";
 import { cn, formatFileSize } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -283,6 +284,19 @@ export function Resources() {
 
   const handleDownload = async (e: React.MouseEvent, resourceId: string) => {
     e.stopPropagation();
+    if (!currentUser?.isVerified) {
+      toast({
+        title: "Compte non certifié",
+        description: "Vérifiez votre compte pour télécharger des ressources.",
+        variant: "destructive",
+        action: (
+          <VerificationModal>
+            <Button variant="outline" size="sm">Vérifier</Button>
+          </VerificationModal>
+        )
+      });
+      return;
+    }
     if (downloadingIds.has(resourceId)) return;
     setDownloadingIds((prev) => {
       const next = new Set(prev);
@@ -404,16 +418,37 @@ export function Resources() {
               <span className="hidden sm:inline">Actualiser</span>
 
             </Button>
-            <UploadResourceModal onResourceUploaded={handleResourceUploaded}>
+            {currentUser?.isVerified ? (
+              <UploadResourceModal onResourceUploaded={handleResourceUploaded}>
+                <Button
+                  size="sm"
+                  className="campus-gradient text-white hover:opacity-90 gap-2 w-full sm:w-auto"
+                >
+                  <Upload className="h-4 w-4" />
+                  <span className="hidden sm:inline">Uploader</span>
+                </Button>
+              </UploadResourceModal>
+            ) : (
               <Button
                 size="sm"
                 className="campus-gradient text-white hover:opacity-90 gap-2 w-full sm:w-auto"
+                onClick={() => {
+                  toast({
+                    title: "Compte non vérifié",
+                    description: "Vérifiez votre compte pour uploader des ressources.",
+                    variant: "destructive",
+                    action: (
+                      <VerificationModal>
+                        <Button variant="outline" size="sm">Vérifier</Button>
+                      </VerificationModal>
+                    )
+                  });
+                }}
               >
                 <Upload className="h-4 w-4" />
                 <span className="hidden sm:inline">Uploader</span>
-
               </Button>
-            </UploadResourceModal>
+            )}
           </div>
         </div>
 
@@ -556,6 +591,19 @@ export function Resources() {
                     isSelected={selectedFolder?.id === folder.id}
                     onOpen={handleOpenFolder}
                     onDownloadZip={async (f) => {
+                      if (!currentUser?.isVerified) {
+                        toast({
+                          title: "Compte non certifié",
+                          description: "Vérifiez votre compte pour télécharger des dossiers.",
+                          variant: "destructive",
+                          action: (
+                            <VerificationModal>
+                              <Button variant="outline" size="sm">Vérifier</Button>
+                            </VerificationModal>
+                          )
+                        });
+                        return;
+                      }
                       await downloadFolderZip(f.id, f.name);
                       toast({ title: 'Téléchargement du ZIP en cours...' });
                     }}
@@ -637,11 +685,31 @@ export function Resources() {
             <p className="text-muted-foreground mb-6">
               Soyez le premier a partager une ressource dans cette catégorie !
             </p>
-            <UploadResourceModal onResourceUploaded={handleResourceUploaded}>
-              <Button className="campus-gradient text-white hover:opacity-90">
+            {currentUser?.isVerified ? (
+              <UploadResourceModal onResourceUploaded={handleResourceUploaded}>
+                <Button className="campus-gradient text-white hover:opacity-90">
+                  Partager une ressource
+                </Button>
+              </UploadResourceModal>
+            ) : (
+              <Button 
+                className="campus-gradient text-white hover:opacity-90"
+                onClick={() => {
+                  toast({
+                    title: "Compte non vérifié",
+                    description: "Vérifiez votre compte pour partager des ressources.",
+                    variant: "destructive",
+                    action: (
+                      <VerificationModal>
+                        <Button variant="outline" size="sm">Vérifier</Button>
+                      </VerificationModal>
+                    )
+                  });
+                }}
+              >
                 Partager une ressource
               </Button>
-            </UploadResourceModal>
+            )}
           </div>
         )}
         </>

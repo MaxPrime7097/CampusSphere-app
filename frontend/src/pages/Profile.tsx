@@ -21,6 +21,7 @@ import { OptimizedImage } from "@/components/ui/optimized-image";
 import { ResourceCard } from "@/components/resources/ResourceCard";
 import { ResourceSkeleton } from "@/components/ui/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
+import { VerificationModal } from "@/components/modals/VerificationModal";
 import { normalizeResourceType, normalizeSubject } from "@/lib/resourceMetadata";
 
 const NOT_AVAILABLE_TEXT = "—";
@@ -943,7 +944,32 @@ export function Profile() {
 
   return (
     <div key={`${username || 'current'}`} className="min-h-screen bg-gradient-to-br from-background to-accent/20">
-      <div className="container max-w-4xl mx-auto py-0 px-0 sm:py-4">
+      <div className="container max-w-4xl mx-auto py-0 px-0 sm:py-4 space-y-4">
+        {isOwnProfile && !currentUser?.isVerified && (
+          <div className="mx-4 sm:mx-0 p-4 bg-amber-500/10 border border-amber-500/50 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-500/20 rounded-full">
+                <Shield className="h-5 w-5 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="font-bold text-amber-900 dark:text-amber-100">Compte non certifié</h3>
+                <p className="text-sm text-amber-800/80 dark:text-amber-200/80">
+                  Votre accès est limité au mode lecture. Certifiez votre statut d'étudiant pour publier.
+                </p>
+              </div>
+            </div>
+            <VerificationModal onSuccess={() => {
+              // On peut éventuellement recharger le profil ici si le statut changeait instantanément
+              // mais comme c'est manuel, on laisse juste le succès de la modale
+            }}>
+              <Button 
+                className="bg-amber-600 hover:bg-amber-700 text-white w-full sm:w-auto shadow-lg shadow-amber-600/20"
+              >
+                Scanner ma carte
+              </Button>
+            </VerificationModal>
+          </div>
+        )}
         {/* Profile Header */}
         <div className={cardClasses}>
           {/* Photo de couverture */}

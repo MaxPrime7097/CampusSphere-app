@@ -25,6 +25,7 @@ import { Separator } from "@/components/ui/separator";
 
 
 import { useToast } from "@/hooks/use-toast";
+import { VerificationModal } from "@/components/modals/VerificationModal";
 import { CreateTaskModal } from "@/components/modals/CreateTaskModal";
 import { AddMemberModal } from "@/components/modals/AddMemberModal";
 import { SphereSettingsModal } from "@/components/modals/SphereSettingsModal";
@@ -45,6 +46,7 @@ export function SphereDetail() {
 
   // ==================== STATE ====================
   const [sphere, setSphere] = useState<any | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [members, setMembers] = useState<any[]>([]);
   const [pendingMembers, setPendingMembers] = useState<any[]>([]);
@@ -134,11 +136,16 @@ export function SphereDetail() {
       setLoadError(null);
       setTaskState("ready");
 
-      const [sphereData, rawMembersData, currentUser] = await Promise.all([
+      const [sphereData, rawMembersData, userData] = await Promise.all([
         getSphere(String(id)),
         listSphereMembers(String(id)),
         getCurrentUser(),
       ]);
+
+      setCurrentUser(userData);
+      setCurrentUserId(userData?.id ? String(userData.id) : null);
+      setSphere(sphereData);
+
       // listSphereMembers retourne apiFetch<any[]> sans unwrap — normaliser ici
       const membersData: any[] = Array.isArray(rawMembersData)
         ? rawMembersData
@@ -273,6 +280,19 @@ export function SphereDetail() {
 
   // ==================== HANDLERS ====================
   const handleJoinSphere = async () => {
+    if (currentUser && !currentUser.isVerified) {
+      toast({
+        title: "Compte non certifié",
+        description: "Vous devez être certifié pour rejoindre une sphère.",
+        variant: "destructive",
+        action: (
+          <VerificationModal>
+            <Button variant="outline" size="sm">Vérifier</Button>
+          </VerificationModal>
+        )
+      });
+      return;
+    }
     setIsJoining(true);
     try {
       const res = await joinSphere(String(id));
@@ -585,9 +605,30 @@ export function SphereDetail() {
               <TabsContent value="tasks" className="mt-4">
                 <div className="flex justify-between items-center bg-card p-3 md:p-4 rounded-lg border mb-4">
                   <h3 className="font-bold">Tableau Kanban</h3>
-                  <CreateTaskModal onTaskCreated={loadSphereData} sphereId={String(id)} sphereMembers={members}>
-                    <Button size="sm" className="campus-gradient text-white"><Plus className="mr-1 h-4 w-4" /> Tâche</Button>
-                  </CreateTaskModal>
+                  {currentUser?.isVerified ? (
+                    <CreateTaskModal onTaskCreated={loadSphereData} sphereId={String(id)} sphereMembers={members}>
+                      <Button size="sm" className="campus-gradient text-white"><Plus className="mr-1 h-4 w-4" /> Tâche</Button>
+                    </CreateTaskModal>
+                  ) : (
+                    <Button 
+                      size="sm" 
+                      className="campus-gradient text-white"
+                      onClick={() => {
+                        toast({
+                          title: "Compte non certifié",
+                          description: "Certifiez votre compte pour créer des tâches.",
+                          variant: "destructive",
+                          action: (
+                            <VerificationModal>
+                              <Button variant="outline" size="sm">Vérifier</Button>
+                            </VerificationModal>
+                          )
+                        });
+                      }}
+                    >
+                      <Plus className="mr-1 h-4 w-4" /> Tâche
+                    </Button>
+                  )}
                 </div>
                 {taskState === "forbidden" && <p className="text-center py-10 text-muted-foreground italic">Vous devez être membre actif pour voir les tâches</p>}
                 {taskState === "server_error" && <p className="text-center py-10 text-muted-foreground italic">Impossible de charger les tâches.</p>}
@@ -603,11 +644,33 @@ export function SphereDetail() {
               <TabsContent value="files" className="mt-4 space-y-4">
                 <div className="flex justify-between items-center bg-card p-3 md:p-4 rounded-lg border">
                   <h3 className="font-bold">Fichiers partagés ({resources.length})</h3>
-                  <SphereUploadResourceModal sphereId={String(id)} onUploaded={() => getSphereFiles(String(id)).then(setResources).catch(() => null)}>
-                    <Button size="sm" className="campus-gradient text-white gap-1">
+                  {currentUser?.isVerified ? (
+                    <SphereUploadResourceModal sphereId={String(id)} onUploaded={loadSphereData}>
+                      <Button size="sm" variant="outline" className="gap-2">
+                        <Plus className="h-4 w-4" /> Partager
+                      </Button>
+                    </SphereUploadResourceModal>
+                  ) : (
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="gap-2"
+                      onClick={() => {
+                        toast({
+                          title: "Compte non certifié",
+                          description: "Certifiez votre compte pour partager des fichiers.",
+                          variant: "destructive",
+                          action: (
+                            <VerificationModal>
+                              <Button variant="outline" size="sm">Vérifier</Button>
+                            </VerificationModal>
+                          )
+                        });
+                      }}
+                    >
                       <Plus className="h-4 w-4" /> Partager
                     </Button>
-                  </SphereUploadResourceModal>
+                  )}
                 </div>
 
                 {loading ? (
@@ -643,6 +706,19 @@ export function SphereDetail() {
                           resource={mappedResource}
                           onDownload={(e) => {
                             e.stopPropagation();
+                            if (!currentUser?.isVerified) {
+                              toast({
+                                title: "Compte non certifié",
+                                description: "Vérifiez votre compte pour télécharger des fichiers.",
+                                variant: "destructive",
+                                action: (
+                                  <VerificationModal>
+                                    <Button variant="outline" size="sm">Vérifier</Button>
+                                  </VerificationModal>
+                                )
+                              });
+                              return;
+                            }
                             const link = document.createElement("a");
                             link.href = mappedResource.fileUrl;
                             link.download = mappedResource.title;

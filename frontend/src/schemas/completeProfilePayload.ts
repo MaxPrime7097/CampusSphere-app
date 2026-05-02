@@ -53,14 +53,8 @@ export const completeSupabaseProfilePayloadSchema = z.object({
   study_year: z.string().trim().max(60, "Maximum 60 caractères").optional(),
   student_id: z.preprocess(
     (value) => (typeof value === "string" ? value.trim().toUpperCase() : value),
-    z
-      .string()
-      .min(4, "Au moins 4 caractères")
-      .max(MAX.studentId, `Maximum ${MAX.studentId} caractères`)
-      .regex(studentIdRegex, "Doit commencer par une lettre et contenir uniquement lettres et chiffres (sans espaces)")
-      .refine((value) => /[A-Z]/.test(value), "Doit contenir au moins une lettre")
-      .refine((value) => /\d/.test(value), "Doit contenir au moins un chiffre")
-  ).optional(),
+    z.string().max(MAX.studentId, `Maximum ${MAX.studentId} caractères`).optional()
+  ).optional().or(z.literal("")),
   campus: z.string().trim().max(MAX.campus, `Maximum ${MAX.campus} caractères`).optional(),
   town: z.string().trim().max(MAX.town, `Maximum ${MAX.town} caractères`).optional(),
   language: z.string().trim().max(MAX.language, `Maximum ${MAX.language} caractères`).optional(),

@@ -27,6 +27,7 @@ urlpatterns = [
     path('<int:id>/', views.UserDetailView.as_view(), name='user-detail'),
     path('by-username/<str:username>/', views.get_user_by_username, name='user-by-username'),
     path('profile/', views.UserProfileView.as_view(), name='user-profile'),
+    path('me/verify/', views.UserVerificationView.as_view(), name='user-verify'),
     path('search/', views.UserSearchView.as_view(), name='user-search'),
 
     # Connections

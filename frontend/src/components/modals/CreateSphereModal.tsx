@@ -6,10 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
 import { SPHERE_CATEGORY_OPTIONS } from "@/constants/sphereCategories";
-import { Plus, Sparkles, Loader2, Check, Users, Lock, Globe, Shield, Bell, Settings } from "lucide-react";
+import { Sparkles, Loader2, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { createSphere } from "@/services/api";
@@ -39,7 +37,6 @@ interface CreateSphereModalProps {
   onSphereCreated?: (sphereData: SphereData) => void;
 }
 
-
 const typeOptions = [
   { value: "study", label: "Étude" },
   { value: "project", label: "Projet" },
@@ -61,7 +58,7 @@ const colorOptions = [
 const sphereSchema = z.object({
   name: z.string().min(3, "Le nom doit contenir au moins 3 caractères").max(50),
   description: z.string().min(10, "La description doit contenir au moins 10 caractères").max(500),
-  objective: z.string().min(10, "L'objectif doit contenir au moins 10 caractères").max(300),
+  objective: z.string().max(300).optional(),
   category: z.enum(SPHERE_CATEGORY_OPTIONS.filter((c) => c.value !== "all").map(({ value }) => value) as [string, ...string[]], {
     errorMap: () => ({ message: "Veuillez sélectionner une catégorie valide" }),
   }),
@@ -71,9 +68,6 @@ const sphereSchema = z.object({
   color: z.enum(colorOptions.map(({ value }) => value) as [string, ...string[]], {
     errorMap: () => ({ message: "Veuillez sélectionner une couleur valide" }),
   }),
-  targetAudience: z.string().min(1, "Veuillez sélectionner le public cible"),
-  expectedDuration: z.string().min(1, "Veuillez sélectionner la durée attendue"),
-  collaborationType: z.array(z.string()).min(1, "Veuillez sélectionner au moins un type de collaboration"),
 });
 
 export function CreateSphereModal({ children, onSphereCreated }: CreateSphereModalProps) {
@@ -84,13 +78,6 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
   const [category, setCategory] = useState("");
   const [type, setType] = useState("");
   const [color, setColor] = useState<(typeof colorOptions)[number]["value"]>("ocean");
-  const [requireApproval, setRequireApproval] = useState(false);
-  const [allowMemberPosts, setAllowMemberPosts] = useState(true);
-  const [allowResourceSharing, setAllowResourceSharing] = useState(true);
-  const [allowTaskCreation, setAllowTaskCreation] = useState(true);
-  const [maxMembers, setMaxMembers] = useState(100);
-  const [tags, setTags] = useState<string[]>([]);
-  const [newTag, setNewTag] = useState("");
   const [targetAudience, setTargetAudience] = useState("");
   const [expectedDuration, setExpectedDuration] = useState("");
   const [collaborationType, setCollaborationType] = useState<string[]>([]);
@@ -128,23 +115,6 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
     "Recherche collaborative"
   ];
 
-  const addTag = () => {
-    if (newTag.trim() && !tags.includes(newTag.trim()) && tags.length < 5) {
-      setTags([...tags, newTag.trim()]);
-      setNewTag("");
-    } else if (tags.length >= 5) {
-      toast({
-        title: "Limite de tags atteinte",
-        description: "Vous ne pouvez pas ajouter plus de 5 tags",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const removeTag = (tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove));
-  };
-
   const toggleCollaborationType = (type: string) => {
     if (collaborationType.includes(type)) {
       setCollaborationType(collaborationType.filter(t => t !== type));
@@ -158,13 +128,10 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
       const payload = sphereSchema.parse({
         name: name.trim(),
         description: description.trim(),
-        objective: objective.trim(),
+        objective: objective.trim() || undefined,
         category,
         type,
         color,
-        targetAudience,
-        expectedDuration,
-        collaborationType,
       });
       
       setIsCreating(true);
@@ -176,11 +143,11 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
         type: payload.type,
         color: payload.color,
         is_private: false,
-        require_approval: requireApproval,
-        objective: payload.objective,
-        target_audience: payload.targetAudience,
-        duration: payload.expectedDuration,
-        collaboration_types: payload.collaborationType,
+        require_approval: false,
+        objective: payload.objective || "Objectif non défini",
+        target_audience: targetAudience || "Tous les étudiants",
+        duration: expectedDuration || "Flexible",
+        collaboration_types: collaborationType.length > 0 ? collaborationType : ["Discussion et échanges"],
       });
 
       if (onSphereCreated) {
@@ -189,7 +156,7 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
       
       toast({
         title: "Sphère créée avec succès !",
-        description: `${name} est maintenant disponible. Vous êtes automatiquement admin.`,
+        description: `${name} est maintenant disponible.`,
         duration: 4000,
       });
 
@@ -222,13 +189,6 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
     setCategory("");
     setType("");
     setColor("ocean");
-    setRequireApproval(false);
-    setAllowMemberPosts(true);
-    setAllowResourceSharing(true);
-    setAllowTaskCreation(true);
-    setMaxMembers(100);
-    setTags([]);
-    setNewTag("");
     setTargetAudience("");
     setExpectedDuration("");
     setCollaborationType([]);
@@ -283,18 +243,15 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
 
           {/* Objectif */}
           <div>
-            <Label htmlFor="objective">Objectif de la sphère *</Label>
+            <Label htmlFor="objective">Objectif de la sphère <span className="text-muted-foreground">(optionnel)</span></Label>
             <Textarea
               id="objective"
-              placeholder="Quel est l'objectif principal de cette sphère ? Que voulez-vous accomplir ensemble ?"
+              placeholder="Quel est l'objectif principal ?"
               value={objective}
               onChange={(e) => setObjective(e.target.value)}
               maxLength={300}
-              className="mt-2 min-h-[80px]"
+              className="mt-2 min-h-[60px]"
             />
-            <p className="text-xs text-muted-foreground mt-1">
-              {objective.length}/300 caractères
-            </p>
           </div>
 
           <Separator />
@@ -330,8 +287,8 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
             </div>
 
             <div>
-              <Label htmlFor="color">Couleur du thème *</Label>
-              <Select value={color} onValueChange={setColor}>
+              <Label htmlFor="color">Thème *</Label>
+              <Select value={color} onValueChange={(val) => setColor(val as typeof color)}>
                 <SelectTrigger className="mt-2">
                   <SelectValue />
                 </SelectTrigger>
@@ -352,10 +309,10 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
           {/* Public cible et Durée */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="targetAudience">Public cible *</Label>
+              <Label htmlFor="targetAudience">Public cible <span className="text-muted-foreground">(optionnel)</span></Label>
               <Select value={targetAudience} onValueChange={setTargetAudience}>
                 <SelectTrigger className="mt-2">
-                  <SelectValue placeholder="Sélectionner le public..." />
+                  <SelectValue placeholder="Tous les étudiants" />
                 </SelectTrigger>
                 <SelectContent>
                   {targetAudienceOptions.map((audience) => (
@@ -366,10 +323,10 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
             </div>
 
             <div>
-              <Label htmlFor="expectedDuration">Durée attendue *</Label>
+              <Label htmlFor="expectedDuration">Durée attendue <span className="text-muted-foreground">(optionnel)</span></Label>
               <Select value={expectedDuration} onValueChange={setExpectedDuration}>
                 <SelectTrigger className="mt-2">
-                  <SelectValue placeholder="Sélectionner la durée..." />
+                  <SelectValue placeholder="Flexible" />
                 </SelectTrigger>
                 <SelectContent>
                   {durationOptions.map((duration) => (
@@ -382,11 +339,8 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
 
           {/* Types de collaboration */}
           <div>
-            <Label>Types de collaboration *</Label>
-            <p className="text-xs text-muted-foreground mt-1 mb-3">
-              Sélectionnez les types d'activités que vous souhaitez dans cette sphère
-            </p>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            <Label>Collaboration <span className="text-muted-foreground">(optionnel)</span></Label>
+            <div className="flex flex-wrap gap-1.5 mt-2">
               {collaborationTypes.map((type) => (
                 <Button
                   key={type}
@@ -394,113 +348,15 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
                   variant={collaborationType.includes(type) ? "default" : "outline"}
                   size="sm"
                   onClick={() => toggleCollaborationType(type)}
-                  className={`text-xs h-auto py-2 px-3 ${
+                  className={`text-[10px] h-7 py-0 px-2 ${
                     collaborationType.includes(type) 
-                      ? "campus-gradient text-white" 
-                      : "hover:bg-muted"
+                      ? "campus-gradient text-white border-none" 
+                      : "text-muted-foreground"
                   }`}
                 >
                   {type}
                 </Button>
               ))}
-            </div>
-            {collaborationType.length === 0 && (
-              <p className="text-xs text-red-500 mt-1">
-                Veuillez sélectionner au moins un type de collaboration
-              </p>
-            )}
-          </div>
-
-          {/* Preview */}
-          <div>
-            <Label>Aperçu</Label>
-            <div className="mt-2 relative h-24 rounded-lg overflow-hidden">
-              <div
-                className={`absolute inset-0 bg-gradient-to-r ${
-                  colorOptions.find((option) => option.value === color)?.gradientClass ?? colorOptions[0].gradientClass
-                }`}
-              />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-white font-bold text-xl text-center px-4">
-                  {name || "Nom de votre sphère"}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Tags */}
-          <div className="space-y-4">
-            <div>
-              <Label>Tags (optionnel)</Label>
-              <div className="flex gap-2 mt-2">
-                <Input
-                  placeholder="Ajouter un tag..."
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                  maxLength={20}
-                />
-                <Button
-                  type="button"
-                  onClick={addTag}
-                  variant="outline"
-                  disabled={tags.length >= 5}
-                >
-                  Ajouter
-                </Button>
-              </div>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {tags.map(tag => (
-                  <Badge key={tag} variant="secondary" className="cursor-pointer">
-                    {tag}
-                    <button
-                      type="button"
-                      onClick={() => removeTag(tag)}
-                      className="ml-2 text-xs"
-                    >
-                      ×
-                    </button>
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Settings */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              Paramètres de confidentialité
-            </h3>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="flex items-center gap-2">
-                  <Shield className="h-4 w-4" />
-                  Approbation requise
-                </Label>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Valider manuellement chaque demande d'adhésion
-                </p>
-              </div>
-              <Switch checked={requireApproval} onCheckedChange={setRequireApproval} />
-            </div>
-
-            <div>
-              <Label htmlFor="maxMembers">Nombre maximum de membres</Label>
-              <Input
-                id="maxMembers"
-                type="number"
-                value={maxMembers}
-                onChange={(e) => setMaxMembers(parseInt(e.target.value) || 100)}
-                min="1"
-                max="1000"
-                className="w-32 mt-2"
-              />
             </div>
           </div>
 
@@ -520,8 +376,8 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={!name || !description || !objective || !category || !type || !targetAudience || !expectedDuration || collaborationType.length === 0 || isCreating}
-              className="campus-gradient text-white hover:opacity-90"
+              disabled={!name || !description || !category || !type || isCreating}
+              className="campus-gradient text-white hover:opacity-90 px-8"
             >
               {isCreating ? (
                 <>

@@ -5,8 +5,11 @@ import { CreatePostModal } from "@/components/modals/CreatePostModal";
 import { getCurrentUser } from "@/services/api";
 import { getNavigationSections, type NavigationUser } from "./navigationConfig";
 import { useUnreadCounts } from "@/hooks/useUnreadCounts";
+import { useToast } from "@/hooks/use-toast";
+import { VerificationModal } from "@/components/modals/VerificationModal";
 
 export function MobileNavigation() {
+  const { toast } = useToast();
   const [user, setUser] = useState<NavigationUser>({});
   const { mobileItems } = getNavigationSections(user);
   const counts = useUnreadCounts();
@@ -36,13 +39,36 @@ export function MobileNavigation() {
           const baseStyles = "flex flex-col items-center gap-1 py-2 px-3 rounded-lg transition-colors";
           const inactiveStyles = "text-muted-foreground hover:text-foreground hover:bg-accent";
 
+          const isVerified = (user as any)?.isVerified;
+
           if (item.url === "#create-post") {
-            return (
+            return isVerified ? (
               <CreatePostModal key={item.title}>
                 <button type="button" className="py-2 px-3 rounded-lg text-primary bg-primary/10" aria-label={item.title}>
                   <item.icon className="h-5 w-5" />
                 </button>
               </CreatePostModal>
+            ) : (
+              <button 
+                key={item.title}
+                type="button" 
+                className="py-2 px-3 rounded-lg text-primary bg-primary/10 opacity-60" 
+                aria-label={item.title}
+                onClick={() => {
+                  toast({
+                    title: "Compte non vérifié",
+                    description: "Vous devez certifier votre compte pour publier.",
+                    variant: "destructive",
+                    action: (
+                      <VerificationModal>
+                        <button className="text-xs font-bold underline">Vérifier</button>
+                      </VerificationModal>
+                    )
+                  });
+                }}
+              >
+                <item.icon className="h-5 w-5" />
+              </button>
             );
           }
 

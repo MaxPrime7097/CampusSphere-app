@@ -126,6 +126,13 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
     }
 
     setFile(selectedFile);
+    
+    // Auto-fill title if empty
+    if (!title) {
+      const fileName = selectedFile.name.split('.').slice(0, -1).join('.');
+      setTitle(fileName);
+    }
+
     toast({
       title: "Fichier sélectionné",
       description: `${selectedFile.name} (${(selectedFile.size / 1024 / 1024).toFixed(2)} MB)`,
@@ -180,9 +187,18 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
       return;
     }
 
-    const validation = resourceSchema.safeParse({ title, description, subject, type, file });
-    if (!validation.success) {
-      toast({ variant: "destructive", title: t('modals.uploadResource.validationFailed', { defaultValue: "Validation échouée" }), description: validation.error.errors[0].message });
+    if (!title.trim()) {
+      toast({ variant: "destructive", title: "Le titre est requis" });
+      return;
+    }
+
+    if (!subject) {
+      toast({ variant: "destructive", title: "Veuillez sélectionner une matière" });
+      return;
+    }
+
+    if (!type) {
+      toast({ variant: "destructive", title: "Veuillez sélectionner un type de ressource" });
       return;
     }
 
@@ -195,13 +211,13 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
       
       const formData = new FormData();
       formData.append('title', title);
-      formData.append('description', description);
+      formData.append('description', description || "");
       formData.append('subject', subject);
       formData.append('type', type);
       formData.append('file', file);
       formData.append('tags', JSON.stringify(tags));
       formData.append('visibility', visibility || 'public');
-      formData.append('audience', audience || '');
+      formData.append('audience', audience || 'all');
       if (selectedFolderId && selectedFolderId !== 'none') formData.append('folder_id', selectedFolderId);
 
 
@@ -355,7 +371,7 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
           </div>
 
           <div>
-            <Label htmlFor="description">{t('modals.uploadResource.description')} *</Label>
+            <Label htmlFor="description">{t('modals.uploadResource.description')} <span className="text-muted-foreground">(optionnel)</span></Label>
             <Textarea id="description" placeholder={t('modals.uploadResource.descPlaceholder', { defaultValue: "Décrivez votre ressource..." })} rows={3} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} />
           </div>
 
@@ -397,11 +413,12 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label> Pour des étudiants de *</Label>
-              <Select value={audience} onValueChange={setAudience}>
+              <Select value={audience || "all"} onValueChange={setAudience}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner" />
+                  <SelectValue placeholder="Tous niveaux" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="all">Tous niveaux</SelectItem>
                   {audiences.map((audience) => (
                     <SelectItem key={audience.value} value={audience.value}>
                       {audience.label}
@@ -412,9 +429,9 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
             </div>
             <div>
               <Label>Visibilité *</Label>
-              <Select value={visibility} onValueChange={setVisibility}>
+              <Select value={visibility || "public"} onValueChange={setVisibility}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner" />
+                  <SelectValue placeholder="Public" />
                 </SelectTrigger>
                 <SelectContent>
                   {visibilities.map((visibility) => (
@@ -496,7 +513,7 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
             <Button 
               className="flex-1 campus-gradient text-white hover:opacity-90" 
               onClick={handleSubmit} 
-              disabled={!title || !description || !subject || !type || !file || !visibility || !audience || isUploading}
+              disabled={!title || !subject || !type || !file || isUploading}
             >
               {isUploading ? (
                 <>

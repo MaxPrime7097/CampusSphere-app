@@ -752,3 +752,27 @@ class CompleteSupabaseProfileView(APIView):
             'data': UserProfileSerializer(user).data,
             'message': 'Profil complété avec succès'
         })
+
+class UserVerificationView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        student_id = request.data.get('student_id')
+        card_image = request.FILES.get('card_image')
+
+        if not student_id or not card_image:
+            return Response({
+                'success': False,
+                'error': 'student_id and card_image are required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        user.student_id = student_id
+        user.card_image = card_image
+        # Note: We keep is_verified=False until manual review
+        user.save()
+
+        return Response({
+            'success': True,
+            'message': 'Verification request submitted successfully'
+        }, status=status.HTTP_200_OK)

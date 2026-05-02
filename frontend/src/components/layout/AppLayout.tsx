@@ -11,6 +11,9 @@ import { MobileTopBar } from "./MobileTopBar";
 import { ProfileBubble } from "./ProfileBubble";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CookieBanner } from "./CookieBanner";
+import { getCurrentUser } from "@/services/api";
+import { useToast } from "@/hooks/use-toast";
+import { VerificationModal } from "@/components/modals/VerificationModal";
 
 
 interface AppLayoutProps {
@@ -56,6 +59,38 @@ export function AppLayout({ children }: AppLayoutProps) {
     }
   };
 
+  const isAuthenticated = Boolean(localStorage.getItem("access"));
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      getCurrentUser().then(setUser).catch(() => {});
+    }
+  }, [isAuthenticated]);
+
+  const isVerified = user?.isVerified ?? false;
+
+  const handleCreateAction = (e: React.MouseEvent, callback: () => void) => {
+    if (!isVerified) {
+      e.preventDefault();
+      e.stopPropagation();
+      toast({
+        title: "Compte non vérifié",
+        description: "Vous devez certifier votre compte pour effectuer cette action.",
+        variant: "destructive",
+        action: (
+          <VerificationModal>
+            <Button variant="outline" size="sm">
+              Vérifier
+            </Button>
+          </VerificationModal>
+        ),
+      });
+      return;
+    }
+    callback();
+  };
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
@@ -93,16 +128,40 @@ export function AppLayout({ children }: AppLayoutProps) {
               </div>
 
               <div className="flex items-center gap-2">
-                <CreatePostModal>
-                  <Button variant="outline" size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Nouveau post
-                  </Button>
-                </CreatePostModal>
+                {isAuthenticated && (
+                  <>
+                    {isVerified ? (
+                      <CreatePostModal>
+                        <Button variant="outline" size="sm">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Nouveau post
+                        </Button>
+                      </CreatePostModal>
+                    ) : (
+                      <Button variant="outline" size="sm" onClick={() => {
+                        toast({
+                          title: "Action restreinte",
+                          description: "Vérifiez votre compte pour pouvoir publier.",
+                          variant: "destructive",
+                          action: (
+                            <VerificationModal>
+                              <Button variant="outline" size="sm">
+                                Vérifier
+                              </Button>
+                            </VerificationModal>
+                          ),
+                        });
+                      }}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Nouveau post
+                      </Button>
+                    )}
 
-                <Button variant="ghost" size="sm" onClick={() => navigate('/notifications')}>
-                <Bell className="h-4 w-4" />
-                </Button>
+                    <Button variant="ghost" size="sm" onClick={() => navigate('/notifications')}>
+                      <Bell className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
                 
                 <Button
                   variant="ghost"
