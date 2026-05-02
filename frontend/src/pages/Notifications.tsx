@@ -75,18 +75,20 @@ export function Notifications() {
               n.data?.inviter_name ||
               n.data?.assigner_name ||
               n.data?.requester_name ||
+              n.data?.author_name ||
               null;
-            const senderAvatar = n.sender?.avatar || n.data?.sender_avatar || null;
+            const senderAvatar = n.sender?.avatar || n.data?.sender_avatar || n.data?.author_avatar || null;
 
             const notificationType = toCanonicalType(n.notification_type || n.type);
             const normalizedData = normalizeNotificationData(n);
             const actionUrl = buildActionUrl(notificationType, normalizedData);
+            
+            // Log for debugging if actionUrl is missing for clickable types
             if (!actionUrl && CLICKABLE_NOTIFICATION_TYPES.has(notificationType)) {
               console.debug("[Notifications] Missing actionUrl for clickable notification", {
                 notificationId: n.id,
                 notificationType,
                 normalizedData,
-                rawData: n.data,
               });
             }
 

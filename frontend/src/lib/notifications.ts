@@ -53,10 +53,10 @@ export const normalizeNotificationData = (notification: any): NormalizedNotifica
       toNullableString(data?.requester_id) ||
       toNullableString(data?.user_id) ||
       toNullableString(notification?.sender?.id),
-    sphereId: toNullableString(data?.sphere_id) || toNullableString(data?.sphereId),
-    taskId: toNullableString(data?.task_id) || toNullableString(data?.taskId),
-    resourceId: toNullableString(data?.resource_id) || toNullableString(data?.resourceId),
-    conversationId: toNullableString(data?.conversation_id) || toNullableString(data?.conversationId),
+    sphereId: toNullableString(data?.sphere_id) || toNullableString(data?.sphereId) || toNullableString(data?.sphere),
+    taskId: toNullableString(data?.task_id) || toNullableString(data?.taskId) || toNullableString(data?.task),
+    resourceId: toNullableString(data?.resource_id) || toNullableString(data?.resourceId) || toNullableString(data?.resource),
+    conversationId: toNullableString(data?.conversation_id) || toNullableString(data?.conversationId) || toNullableString(data?.conversation),
   };
 };
 
@@ -78,7 +78,7 @@ export const buildActionUrl = (type: CanonicalNotificationType, data: Normalized
     case "connection_accepted":
       return data.profileUsername ? `/profile/${data.profileUsername}` : null;
     case "message":
-      return data.conversationId ? `/messages/${data.conversationId}` : "/messages";
+      return data.conversationId ? `/messages?id=${data.conversationId}` : "/messages";
     case "system":
     default:
       return null;

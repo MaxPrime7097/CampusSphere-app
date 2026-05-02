@@ -182,7 +182,8 @@ export function MiniChat({ sphereId, sphereName, isExpanded, onToggleExpanded, c
           setConversationId(currentConvId);
           connectWS(currentConvId, currentUser?.id ? String(currentUser.id) : undefined);
         } else {
-          throw new Error("Impossible d'initialiser la discussion");
+          const detail = groupData?.detail || groupData?.message || "Impossible d'initialiser la discussion";
+          throw new Error(detail);
         }
       }
 
