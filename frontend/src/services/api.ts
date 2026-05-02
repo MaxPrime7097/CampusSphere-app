@@ -2131,6 +2131,22 @@ export async function getAdminStats(token?: string) {
   return unwrapItem<any>(response);
 }
 
+export async function getAdminVerificationQueue(params?: { page?: number; search?: string }, token?: string) {
+  const q = new URLSearchParams();
+  if (params?.page) q.set('page', String(params.page));
+  if (params?.search) q.set('search', params.search);
+  const suffix = q.toString() ? `?${q}` : '';
+  return apiFetch<any>(`api/admin/v1/verification-queue/${suffix}`, { token: token || getAccessToken() });
+}
+
+export async function verifyAdminUser(userId: string, isVerified: boolean = true, token?: string) {
+  return apiFetch<any>('api/admin/v1/users/verify/', {
+    method: 'POST',
+    body: { userId, isVerified },
+    token: token || getAccessToken(),
+  });
+}
+
 
 export async function getAdminPermissions(token?: string): Promise<AdminPermissionsPayload> {
   const response = await apiFetch<any>("api/admin/permissions/", { token: token || getAccessToken() });

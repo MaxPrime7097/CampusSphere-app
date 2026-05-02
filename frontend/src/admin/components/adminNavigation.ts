@@ -26,6 +26,12 @@ export const ADMIN_NAVIGATION: AdminNavigationItem[] = [
     description: "Signalements",
   },
   {
+    key: "verification",
+    label: "Vérification Étudiants",
+    to: "/admin/verification",
+    description: "Cartes d'étudiant",
+  },
+  {
     key: "resources",
     label: "Ressources",
     to: "/admin/resources",

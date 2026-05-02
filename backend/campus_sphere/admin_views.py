@@ -240,6 +240,11 @@ def admin_v1_users(request):
             Q(last_name__icontains=search) |
             Q(email__icontains=search)
         )
+    if ordering == 'created_at':
+        ordering = 'date_joined'
+    elif ordering == '-created_at':
+        ordering = '-date_joined'
+    
     queryset = queryset.order_by(ordering)
 
     users, meta = _paginate_queryset(queryset, page, page_size)
@@ -251,6 +256,9 @@ def admin_v1_users(request):
             'lastName': user.last_name,
             'email': user.email,
             'isActive': user.is_active,
+            'isVerified': user.is_verified,
+            'studentId': user.student_id,
+            'cardImage': user.card_image.url if user.card_image else None,
             'dateJoined': user.date_joined,
         }
         for user in users
@@ -271,6 +279,61 @@ def admin_v1_users_bulk_ban(request):
 
     updated = User.objects.filter(id__in=ids).exclude(is_superuser=True).update(is_active=False)
     return _admin_response(True, {'updated': updated}, message='Utilisateurs bannis.')
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def admin_v1_users_verify(request):
+    allowed, denied_response, _, _ = require_admin_permission(request, 'update')
+    if not allowed:
+        return denied_response
+
+    user_id = request.data.get('userId')
+    is_verified = request.data.get('isVerified', True)
+
+    if not user_id:
+        return _admin_error('Le champ "userId" est obligatoire.')
+
+    try:
+        user = User.objects.get(id=user_id)
+        user.is_verified = is_verified
+        user.save()
+        return _admin_response(True, message='Statut de vérification mis à jour.')
+    except User.DoesNotExist:
+        return _admin_error('Utilisateur non trouvé.')
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def admin_v1_verification_queue(request):
+    allowed, denied_response, _, _ = require_admin_permission(request, 'view')
+    if not allowed:
+        return denied_response
+
+    # Users who have a student_id but are not verified yet
+    queryset = User.objects.filter(is_verified=False).exclude(student_id="").order_by('-updated_at')
+    
+    page, page_size, _, search = _parse_list_params(request)
+    if search:
+        queryset = queryset.filter(
+            Q(username__icontains=search) |
+            Q(student_id__icontains=search)
+        )
+
+    users, meta = _paginate_queryset(queryset, page, page_size)
+    payload = [
+        {
+            'id': str(user.id),
+            'username': user.username,
+            'fullName': f"{user.first_name} {user.last_name}".strip(),
+            'studentId': user.student_id,
+            'cardImage': user.card_image.url if user.card_image else None,
+            'dateJoined': user.date_joined,
+            'updatedAt': user.updated_at,
+        }
+        for user in users
+    ]
+    return _admin_response(True, payload, meta=meta)
 
 
 @api_view(['GET'])

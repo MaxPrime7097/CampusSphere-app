@@ -34,7 +34,9 @@ urlpatterns = [
 
     # Admin API v1 namespace
     path('api/admin/v1/users/', admin_views.admin_v1_users, name='admin-v1-users'),
+    path('api/admin/v1/users/verify/', admin_views.admin_v1_users_verify, name='admin-v1-users-verify'),
     path('api/admin/v1/users/bulk-ban/', admin_views.admin_v1_users_bulk_ban, name='admin-v1-users-bulk-ban'),
+    path('api/admin/v1/verification-queue/', admin_views.admin_v1_verification_queue, name='admin-v1-verification-queue'),
     path('api/admin/v1/spheres/', admin_views.admin_v1_spheres, name='admin-v1-spheres'),
     path('api/admin/v1/posts/', admin_views.admin_v1_posts, name='admin-v1-posts'),
     path('api/admin/v1/posts/bulk-delete/', admin_views.admin_v1_posts_bulk_delete, name='admin-v1-posts-bulk-delete'),

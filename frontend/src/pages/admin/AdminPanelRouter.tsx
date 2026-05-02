@@ -7,6 +7,7 @@ import { AdminSpheresPage } from "@/admin/pages/AdminSpheresPage";
 import { AdminModerationPage } from "@/admin/pages/AdminModerationPage";
 import { AdminResourcesPage } from "@/admin/pages/AdminResourcesPage";
 import { AdminLogsPage } from "@/admin/pages/AdminLogsPage";
+import { AdminVerificationPage } from "@/admin/pages/AdminVerificationPage";
 import { AdminDashboard } from "./AdminDashboard";
 
 export function AdminPanelRouter() {
@@ -33,6 +34,7 @@ export function AdminPanelRouter() {
         <Route path="users" element={<AdminUsersPage />} />
         <Route path="spheres" element={<AdminSpheresPage />} />
         <Route path="moderation" element={<AdminModerationPage />} />
+        <Route path="verification" element={<AdminVerificationPage />} />
         <Route path="resources" element={<AdminResourcesPage />} />
         <Route path="logs" element={<AdminLogsPage />} />
         <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />

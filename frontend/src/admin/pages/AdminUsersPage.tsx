@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { getAdminUsers, banAdminUsers } from "@/services/api";
+import { getAdminUsers, banAdminUsers, verifyAdminUser } from "@/services/api";
 
 export function AdminUsersPage() {
   const [users, setUsers] = useState<any[]>([]);
@@ -54,6 +54,19 @@ export function AdminUsersPage() {
       toast({ title: "Erreur", description: e?.message, variant: "destructive" });
     } finally {
       setBanning(false);
+    }
+  };
+
+  const handleVerify = async (userId: string, isVerified: boolean) => {
+    try {
+      await verifyAdminUser(userId, isVerified);
+      toast({ 
+        title: isVerified ? "Utilisateur certifié" : "Certification révoquée", 
+        description: "Les privilèges de l'utilisateur ont été mis à jour." 
+      });
+      void load(page);
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e?.message, variant: "destructive" });
     }
   };
 
@@ -108,9 +121,53 @@ export function AdminUsersPage() {
                     <p className="text-xs text-muted-foreground truncate">{u.email}</p>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    {!u.isActive && <Badge variant="destructive" className="text-xs">Banni</Badge>}
-                    {u.isStaff && <Badge variant="secondary" className="text-xs">Admin</Badge>}
-                    <span className="text-xs text-muted-foreground">{u.dateJoined ? new Date(u.dateJoined).toLocaleDateString("fr-FR") : ""}</span>
+                    {u.cardImage && (
+                      <a 
+                        href={u.cardImage} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        onClick={(e) => e.stopPropagation()}
+                        className="h-9 w-14 rounded border bg-muted overflow-hidden hover:opacity-80 transition-opacity"
+                        title="Voir la carte d'étudiant"
+                      >
+                        <img src={u.cardImage} alt="Carte" className="w-full h-full object-cover" />
+                      </a>
+                    )}
+                    <div className="flex flex-col items-end gap-1">
+                      <div className="flex items-center gap-1">
+                        {!u.isActive && <Badge variant="destructive" className="text-xs">Banni</Badge>}
+                        {u.isStaff && <Badge variant="secondary" className="text-xs">Admin</Badge>}
+                        {u.isVerified ? (
+                          <Badge className="bg-green-500 hover:bg-green-600 text-xs text-white">Certifié</Badge>
+                        ) : u.studentId ? (
+                          <Badge variant="outline" className="text-xs border-orange-500 text-orange-600">En attente</Badge>
+                        ) : null}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {u.studentId && !u.isVerified && (
+                          <Button 
+                            size="sm" 
+                            className="h-6 px-2 text-[10px] bg-green-600 hover:bg-green-700 text-white"
+                            onClick={(e) => { e.stopPropagation(); handleVerify(u.id, true); }}
+                          >
+                            Certifier
+                          </Button>
+                        )}
+                        {u.isVerified && (
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            className="h-6 px-2 text-[10px] text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={(e) => { e.stopPropagation(); handleVerify(u.id, false); }}
+                          >
+                            Révoquer
+                          </Button>
+                        )}
+                        <span className="text-[10px] text-muted-foreground ml-1">
+                          {u.dateJoined ? new Date(u.dateJoined).toLocaleDateString("fr-FR") : ""}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
