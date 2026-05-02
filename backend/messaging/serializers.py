@@ -128,24 +128,20 @@ class ConversationCreateSerializer(serializers.ModelSerializer):
 
         # For private conversations, only 2 participants allowed (including creator)
         if self.initial_data.get('type') == 'private' and len(value) != 1:
-            business_validation_error("invalid_participant", "Private conversations must have exactly 2 participants")
+            raise serializers.ValidationError("Private conversations must have exactly 2 participants")
 
-        # For group conversations, at least 2 participants (excluding creator)
+        # For group conversations, at least 2 other participants required
         if self.initial_data.get('type') == 'group' and len(value) < 2:
-            business_validation_error("invalid_participant", "Group conversations must have at least 3 participants")
+            raise serializers.ValidationError("Group conversations must have at least 3 participants (you + 2 others)")
 
         return value
 
     def validate(self, data):
-        participant_ids = data.get('participant_ids', [])
-        data['participants'] = list(User.objects.filter(id__in=participant_ids))
-
         # For private conversations, check if conversation already exists
-        if data['type'] == 'private':
-            participants = data['participants']
+        if data.get('type') == 'private':
+            participants = data.get('participants', [])
             current_user = self.context['request'].user
-            
-            # Check if private conversation already exists between these users
+
             from django.db.models import Count
             existing_conversation = Conversation.objects.filter(
                 type='private'
@@ -159,7 +155,7 @@ class ConversationCreateSerializer(serializers.ModelSerializer):
             ).first()
 
             if existing_conversation:
-                business_validation_error("conversation_exists", "Private conversation already exists between these users")
+                raise serializers.ValidationError({"non_field_errors": "Private conversation already exists between these users"})
 
         return data
 

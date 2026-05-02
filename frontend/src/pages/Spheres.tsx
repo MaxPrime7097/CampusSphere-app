@@ -531,33 +531,33 @@ export function Spheres() {
                     return (
                       <div
                         key={sphere.id}
-                        className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors group"
+                        className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors group"
                         onClick={() => navigate(`/spheres/${sphere.id}`)}
                       >
                         {/* Rank */}
-                        <span className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold ${rankColors[index] ?? rankColors[3]}`}>
+                        <span className={`flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-[11px] font-bold ${rankColors[index] ?? rankColors[3]}`}>
                           {index + 1}
                         </span>
 
                         {/* Avatar */}
-                        <div className={`flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br ${sphere.color || "from-primary/30 to-accent/30"} flex items-center justify-center text-white font-bold text-sm`}>
+                        <div className={`flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br ${sphere.color || "from-primary/30 to-accent/30"} flex items-center justify-center text-white font-bold text-xs sm:text-sm`}>
                           {sphere.name?.charAt(0) || "?"}
                         </div>
 
                         {/* Info */}
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm truncate group-hover:text-primary transition-colors">
+                          <p className="font-semibold text-xs sm:text-sm truncate group-hover:text-primary transition-colors">
                             {sphere.name}
                           </p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <div className="flex-1 h-1 sm:h-1.5 bg-muted rounded-full overflow-hidden">
                               <div
                                 className="h-full bg-primary rounded-full transition-all"
                                 style={{ width: `${progress}%` }}
                               />
                             </div>
-                            <span className="text-[10px] text-muted-foreground flex-shrink-0 flex items-center gap-1">
-                              <Users className="h-2.5 w-2.5" />{sphere.memberCount}
+                            <span className="text-[9px] sm:text-[10px] text-muted-foreground flex-shrink-0 flex items-center gap-0.5">
+                              <Users className="h-2 w-2 sm:h-2.5 sm:w-2.5" />{sphere.memberCount}
                             </span>
                           </div>
                         </div>
@@ -565,7 +565,7 @@ export function Spheres() {
                         {/* Action */}
                         <Button
                           size="sm"
-                          className={`flex-shrink-0 h-7 text-xs px-2.5 ${membership === "active" ? "campus-gradient text-white hover:opacity-90" : actionModel.className}`}
+                          className={`flex-shrink-0 h-6 sm:h-7 text-[10px] sm:text-xs px-2 sm:px-2.5 ${membership === "active" ? "campus-gradient text-white hover:opacity-90" : actionModel.className}`}
                           onClick={(e) => {
                             e.stopPropagation();
                             membership === "active" ? navigate(`/spheres/${sphere.id}`) : actionModel.onClick();

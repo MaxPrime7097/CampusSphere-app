@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { createPrivateConversation, deleteMessage, deleteConversation, getCurrentUser, getConversationMessages, getConversationParticipants, getUserConnections, getUserConversations, markConversationRead, markConversationUnread, addParticipant, removeParticipant, renameConversation, leaveConversation, sendMessage, updateMessage, uploadConversationAvatar, removeConversationAvatar } from "@/services/api";
 import { useTranslation } from "react-i18next";
-import { Search, Send, Phone, Video, EllipsisVertical, MoreVertical, MessageSquare, Loader2, Users, Plus, Camera } from "lucide-react";
+import { Search, Send, Phone, Video, EllipsisVertical, MoreVertical, MessageSquare, Loader2, Users, Plus, Camera, Smile, ArrowLeft, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -95,6 +95,11 @@ export function Messages() {
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState("");
   const [transportMode, setTransportMode] = useState<"ws" | "polling" | "idle">("idle");
+  const [reactions, setReactions] = useState<Record<string, Record<string, string[]>>>({});
+  const [showEmojiFor, setShowEmojiFor] = useState<string | null>(null);
+  const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🔥"];
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const socketRef = useRef<WebSocket | null>(null);
   const pollingRef = useRef<number | null>(null);
@@ -382,12 +387,7 @@ export function Messages() {
         )
       );
       setNewMessage("");
-      
-      toast({
-        title: "Message envoyé !",
-        description: "Votre message a été envoyé avec succès",
-        duration: 2000,
-      });
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
     } catch (e: any) {
       toast({
         variant: "destructive",
@@ -721,9 +721,27 @@ export function Messages() {
           </div>
 
           <div className="overflow-y-auto flex-1">
-            {filteredConversations.length === 0 ? (
-              <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
-                {searchQuery ? "Aucune conversation trouvée" : t('messages.noConversations')}
+            {loading ? (
+              <div className="space-y-0">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 p-4 border-b animate-pulse">
+                    <div className="w-10 h-10 rounded-full bg-muted flex-shrink-0" />
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-3.5 bg-muted rounded w-2/3" />
+                      <div className="h-3 bg-muted rounded w-1/2" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : filteredConversations.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-48 gap-3 text-center px-4">
+                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                  <MessageSquare className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">{searchQuery ? "Aucun résultat" : "Aucune conversation"}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{searchQuery ? "Essayez un autre nom" : "Démarrez une nouvelle conversation"}</p>
+                </div>
               </div>
             ) : (
               filteredConversations.map((conversation) => (
@@ -751,15 +769,22 @@ export function Messages() {
                     </div>
                     
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <h3 className="font-semibold truncate text-sm md:text-base">
-                          {conversation.name || 'Utilisateur'}
-                        </h3>
-                        <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <h3 className="font-semibold truncate text-sm">
+                            {conversation.name || 'Utilisateur'}
+                          </h3>
+                          {conversation.type === 'group' && (
+                            <span className="flex-shrink-0 text-[9px] font-medium bg-primary/10 text-primary px-1 py-0 rounded">
+                              Groupe
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-muted-foreground flex-shrink-0 ml-2">
                           {formatRelativeTime(conversation.lastMessageAt)}
                         </span>
                       </div>
-                      <p className="text-xs md:text-sm text-muted-foreground truncate max-w-[140px] sm:max-w-none">
+                      <p className="text-xs text-muted-foreground truncate">
                         {conversation.lastMessage || (conversation.type === 'group' ? 'Conversation de groupe' : 'Message privé')}
                       </p>
                     </div>
@@ -964,7 +989,7 @@ export function Messages() {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4">
+            <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-2">
               {messages.map((message) => (
                 (() => {
                   const isModerator = Boolean(
@@ -1008,110 +1033,159 @@ export function Messages() {
                        </p>
                      )}
                     
-                    <Card className={`${
-                      message.isCurrentUser 
-                        ? 'campus-gradient text-white' 
-                        : 'bg-card border'
-                    }`}>
-                      <CardContent className="p-3">
-                        <div className="flex items-start gap-2">
-                          <div className="flex-1">
-                            {editingMessageId === message.id ? (
-                              <div className="space-y-2">
-                                <Input
-                                  value={editingContent}
-                                  onChange={(e) => setEditingContent(e.target.value)}
-                                  className="bg-background text-foreground"
-                                  maxLength={1000}
-                                />
-                                <div className="flex gap-2 justify-end">
-                                  <Button size="sm" variant="secondary" onClick={handleSaveEdit}>Enregistrer</Button>
-                                  <Button size="sm" variant="ghost" onClick={() => setEditingMessageId(null)}>Annuler</Button>
-                                </div>
-                              </div>
-                            ) : (
-                              <p className="text-sm break-words">
-                                {message.content.split(/(https?:\/\/[^\s]+)/g).map((part: string, i: number) =>
-                                  /^https?:\/\//.test(part) ? (
-                                    <a key={i} href={part} target="_blank" rel="noopener noreferrer"
-                                      className="underline underline-offset-2 hover:opacity-80 break-all"
-                                      onClick={(e) => e.stopPropagation()}>{part}</a>
-                                  ) : <span key={i}>{part}</span>
-                                )}
-                              </p>
-                            )}
-                          </div>
-                          {(canEdit || canDelete) && editingMessageId !== message.id && (
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                                  <MoreVertical className="h-3 w-3" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                {canEdit && (
-                                  <DropdownMenuItem onClick={() => handleStartEdit(message)}>
-                                    Modifier
-                                  </DropdownMenuItem>
-                                )}
-                                {canDelete && (
-                                  <DropdownMenuItem onClick={() => handleDeleteMessage(message.id)} className="text-red-600">
-                                    Supprimer
-                                  </DropdownMenuItem>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
+                     {/* Bubble */}
+                     <div
+                       className={`group/bubble relative inline-block max-w-full px-3 py-2 rounded-2xl text-sm break-words shadow-sm ${
+                         message.isCurrentUser
+                           ? 'campus-gradient text-white rounded-br-sm'
+                           : 'bg-card border rounded-bl-sm'
+                       }`}
+                       onMouseLeave={() => setShowEmojiFor(null)}
+                     >
+                       {editingMessageId === message.id ? (
+                         <div className="space-y-2 min-w-[200px]">
+                           <Input
+                             value={editingContent}
+                             onChange={(e) => setEditingContent(e.target.value)}
+                             className="bg-background text-foreground h-8 text-sm"
+                             maxLength={1000}
+                             autoFocus
+                             onKeyDown={(e) => { if (e.key === 'Enter') handleSaveEdit(); if (e.key === 'Escape') setEditingMessageId(null); }}
+                           />
+                           <div className="flex gap-1.5 justify-end">
+                             <Button size="sm" className="h-6 text-xs campus-gradient text-white" onClick={handleSaveEdit}>OK</Button>
+                             <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setEditingMessageId(null)}>✕</Button>
+                           </div>
+                         </div>
+                       ) : (
+                         <p className="leading-relaxed">
+                           {message.content.split(/(https?:\/\/[^\s]+)/g).map((part: string, i: number) =>
+                             /^https?:\/\//.test(part) ? (
+                               <a key={i} href={part} target="_blank" rel="noopener noreferrer"
+                                 className="underline underline-offset-2 hover:opacity-80 break-all"
+                                 onClick={(e) => e.stopPropagation()}>{part}</a>
+                             ) : <span key={i}>{part}</span>
+                           )}
+                         </p>
+                       )}
+                       {/* Emoji picker trigger */}
+                       {editingMessageId !== message.id && (
+                         <button
+                           className="absolute -top-6 right-0 hidden group-hover/bubble:flex items-center gap-0.5 bg-card border rounded-full px-1.5 py-0.5 shadow-sm"
+                           onClick={() => setShowEmojiFor(showEmojiFor === message.id ? null : message.id)}
+                         >
+                           <Smile className="h-3 w-3 text-muted-foreground" />
+                         </button>
+                       )}
+                       {/* Emoji picker */}
+                       {showEmojiFor === message.id && (
+                         <div className="absolute -top-10 right-0 flex gap-1 bg-card border rounded-full px-2 py-1 shadow-lg z-10">
+                           {EMOJIS.map(emoji => (
+                             <button key={emoji} className="text-base hover:scale-125 transition-transform" onClick={() => {
+                               setReactions(prev => {
+                                 const msgR = { ...(prev[message.id] || {}) };
+                                 const uid = String(currentUser?.id || "me");
+                                 const existing = msgR[emoji] || [];
+                                 msgR[emoji] = existing.includes(uid) ? existing.filter(x => x !== uid) : [...existing, uid];
+                                 if (msgR[emoji].length === 0) delete msgR[emoji];
+                                 return { ...prev, [message.id]: msgR };
+                               });
+                               setShowEmojiFor(null);
+                             }}>{emoji}</button>
+                           ))}
+                         </div>
+                       )}
+                       {/* Displayed reactions */}
+                       {reactions[message.id] && Object.keys(reactions[message.id]).length > 0 && (
+                         <div className="flex flex-wrap gap-1 mt-1.5">
+                           {Object.entries(reactions[message.id]).map(([emoji, users]) =>
+                             users.length > 0 ? (
+                               <span key={emoji} className="text-xs bg-background/30 rounded-full px-1.5 py-0.5 flex items-center gap-0.5">
+                                 {emoji} <span className="text-[10px]">{users.length}</span>
+                               </span>
+                             ) : null
+                           )}
+                         </div>
+                       )}
+                       {/* Actions */}
+                       {(canEdit || canDelete) && editingMessageId !== message.id && (
+                         <DropdownMenu>
+                           <DropdownMenuTrigger asChild>
+                             <Button variant="ghost" size="sm" className={`absolute -bottom-2 ${message.isCurrentUser ? 'left-0' : 'right-0'} h-5 w-5 p-0 hidden group-hover/bubble:flex rounded-full bg-card border shadow-sm`}>
+                               <MoreVertical className="h-2.5 w-2.5" />
+                             </Button>
+                           </DropdownMenuTrigger>
+                           <DropdownMenuContent align={message.isCurrentUser ? 'start' : 'end'}>
+                             {canEdit && <DropdownMenuItem onClick={() => handleStartEdit(message)}>Modifier</DropdownMenuItem>}
+                             {canDelete && <DropdownMenuItem onClick={() => handleDeleteMessage(message.id)} className="text-red-600">Supprimer</DropdownMenuItem>}
+                           </DropdownMenuContent>
+                         </DropdownMenu>
+                       )}
+                     </div>
                     
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {formatRelativeTime(message.timestamp)}
-                    </p>
+                     <p className={`text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1 ${message.isCurrentUser ? 'justify-end' : ''}`}>
+                       {formatRelativeTime(message.timestamp)}
+                       {message.isCurrentUser && <CheckCheck className="h-2.5 w-2.5 text-primary/60" />}
+                     </p>
                   </div>
                 </div>
                   );
                 })()
               ))}
+              <div ref={messagesEndRef} />
             </div>
 
             {/* Message Input */}
-            <div className="fixed bottom-0 left-0 right-0 md:relative md:bottom-auto md:left-auto md:right-auto p-3 md:p-4 border-t bg-card/50 flex-shrink-0">
-              <div className="flex gap-2">
-                <Input
-                  placeholder={t('messages.typeMessage')}
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendMessage())}
-                  className="flex-1 text-sm md:text-base"
-                  maxLength={1000}
-                />
-                <Button 
+            <div className="p-3 border-t bg-card/50 flex-shrink-0">
+              <div className="flex gap-2 items-end">
+                <div className="flex-1 relative">
+                  <Input
+                    ref={inputRef}
+                    placeholder={t('messages.typeMessage')}
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }
+                    }}
+                    className="text-sm pr-12"
+                    maxLength={1000}
+                  />
+                  {newMessage.length > 800 && (
+                    <span className={`absolute right-3 bottom-2 text-[10px] ${
+                      newMessage.length >= 1000 ? 'text-destructive' : 'text-muted-foreground'
+                    }`}>{newMessage.length}/1000</span>
+                  )}
+                </div>
+                <Button
                   onClick={handleSendMessage}
-                  className="campus-gradient text-white hover:opacity-90 h-9 w-9 md:h-10 md:w-10 p-0 flex-shrink-0"
+                  className="campus-gradient text-white hover:opacity-90 h-9 w-9 p-0 flex-shrink-0"
                   disabled={!newMessage.trim() || isSending}
                   aria-label="Send message"
                 >
-                  {isSending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
+                  {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </Button>
               </div>
+              <p className="text-[10px] text-muted-foreground mt-1 pl-0.5">Entrée pour envoyer</p>
             </div>
           </div>
         ) : (
-          <div className="hidden md:flex flex-1 items-center justify-center text-center p-4">
-            <div>
-              <div className="w-16 h-16 campus-gradient rounded-full flex items-center justify-center mx-auto mb-4">
-                <MessageSquare className="h-8 w-8 text-white" />
+          <div className="hidden md:flex flex-1 items-center justify-center text-center p-8">
+            <div className="space-y-4">
+              <div className="w-20 h-20 campus-gradient rounded-full flex items-center justify-center mx-auto shadow-lg">
+                <MessageSquare className="h-10 w-10 text-white" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">{t('messages.selectTitle', { defaultValue: "Sélectionner une conversation" })}</h3>
-              <p className="text-sm text-muted-foreground max-w-sm">
-                {t('messages.selectConversation')}
-              </p>
+              <div>
+                <h3 className="text-xl font-bold mb-1">Vos messages</h3>
+                <p className="text-sm text-muted-foreground max-w-xs">
+                  Sélectionnez une conversation ou démarrez-en une nouvelle.
+                </p>
+              </div>
+              <Button
+                className="campus-gradient text-white hover:opacity-90"
+                onClick={() => setShowNewConversationModal(true)}
+              >
+                <Plus className="h-4 w-4 mr-2" /> Nouveau message
+              </Button>
             </div>
           </div>
         )}
