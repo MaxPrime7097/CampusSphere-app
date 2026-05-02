@@ -335,7 +335,7 @@ export function Spheres() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
-      <div className="w-full max-w-6xl mx-auto py-4 md:py-6 px-4">
+      <div className="w-full max-w-6xl mx-auto py-4 md:py-6 px-2 sm:px-4">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 campus-animate-fade-in">
           <div>

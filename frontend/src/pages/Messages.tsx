@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { createPrivateConversation, deleteMessage, deleteConversation, getCurrentUser, getConversationMessages, getConversationParticipants, getUserConnections, getUserConversations, markConversationRead, markConversationUnread, addParticipant, removeParticipant, renameConversation, leaveConversation, sendMessage, updateMessage, uploadConversationAvatar, removeConversationAvatar } from "@/services/api";
 import { useTranslation } from "react-i18next";
-import { Search, Send, Phone, Video, EllipsisVertical, MoreVertical, MessageSquare, Loader2, Users, Plus, Camera, Smile, ArrowLeft, CheckCheck } from "lucide-react";
+import { Search, Send, Phone, Video, EllipsisVertical, MoreVertical, MessageSquare, Loader2, Users, Plus, Camera, Smile, ArrowLeft, CheckCheck, Trash, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuPortal } from "@/components/ui/dropdown-menu";
@@ -785,15 +785,15 @@ export function Messages() {
                 >
                   <div className="flex items-center gap-2 md:gap-3">
                     <div className="relative flex-shrink-0">
-                      <Avatar className="h-10 w-10 md:h-12 md:w-12">
+                      <Avatar className="h-9 w-9 md:h-12 md:w-12">
                         <AvatarImage src={conversation.avatar ?? undefined} />
-                        <AvatarFallback className="bg-input text-muted-foreground font-semibold text-xs md:text-sm">
+                        <AvatarFallback className="bg-input text-muted-foreground font-semibold text-[10px] md:text-sm">
                           {conversation.type === 'group'
-                            ? <Users className="h-5 w-5" />
+                            ? <Users className="h-4 w-4 md:h-5 md:w-5" />
                             : (conversation.name || "U").slice(0, 1).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="absolute bottom-0 right-0 w-2.5 h-2.5 md:w-3 md:h-3 bg-green-500 border-2 border-background rounded-full"></div>
+                      <div className="absolute bottom-0 right-0 w-2 h-2 md:w-3 md:h-3 bg-green-500 border border-background rounded-full"></div>
                     </div>
                     
                     <div className="flex-1 min-w-0">
@@ -1017,7 +1017,7 @@ export function Messages() {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-2">
+            <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-2">
               {messages.map((message) => (
                 (() => {
                   const isModerator = Boolean(
@@ -1029,7 +1029,7 @@ export function Messages() {
                   return (
                 <div
                   key={message.id}
-                  className={`flex gap-3 ${message.isCurrentUser ? 'flex-row-reverse' : ''}`}
+                  className={`flex gap-3 group ${message.isCurrentUser ? 'flex-row-reverse' : ''}`}
                  >
                    {!message.isCurrentUser && (
                      <Avatar 
@@ -1047,7 +1047,7 @@ export function Messages() {
                      </Avatar>
                    )}
                   
-                   <div className={`max-w-[75%] sm:max-w-[65%] ${message.isCurrentUser ? 'text-right' : ''}`}>
+                    <div className={`max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] min-w-0 ${message.isCurrentUser ? 'text-right ml-auto' : 'text-left mr-auto'}`}>
                      {!message.isCurrentUser && (
                        <p 
                          className={`text-xs text-muted-foreground mb-1 ${
@@ -1063,7 +1063,7 @@ export function Messages() {
                     
                      {/* Bubble */}
                      <div
-                       className={`group/bubble relative inline-block max-w-full px-3 py-2 rounded-2xl text-sm break-words shadow-sm ${
+                       className={`group/bubble relative inline-block max-w-full px-3 py-2 rounded-2xl text-sm break-words overflow-wrap-anywhere shadow-sm ${
                          message.isCurrentUser
                            ? 'campus-gradient text-white rounded-br-sm'
                            : 'bg-card border rounded-bl-sm'
@@ -1086,7 +1086,7 @@ export function Messages() {
                            </div>
                          </div>
                        ) : (
-                         <p className="leading-relaxed">
+                         <p className="leading-relaxed break-all whitespace-pre-wrap">
                            {message.content.split(/(https?:\/\/[^\s]+)/g).map((part: string, i: number) =>
                              /^https?:\/\//.test(part) ? (
                                <a key={i} href={part} target="_blank" rel="noopener noreferrer"
@@ -1123,23 +1123,37 @@ export function Messages() {
                            ))}
                          </div>
                        )}
-                       {/* Displayed reactions */}
-                       {reactions[message.id] && Object.keys(reactions[message.id]).length > 0 && (
-                         <div className="flex flex-wrap gap-1 mt-1.5">
-                           {Object.entries(reactions[message.id]).map(([emoji, users]) =>
-                             users.length > 0 ? (
-                               <span key={emoji} className="text-xs bg-background/30 rounded-full px-1.5 py-0.5 flex items-center gap-0.5">
-                                 {emoji} <span className="text-[10px]">{users.length}</span>
-                               </span>
-                             ) : null
-                           )}
-                         </div>
-                       )}
-                     </div>{/* end bubble */}
+                      </div>{/* end bubble */}
 
-                     {/* Actions row: options + emoji — outside bubble */}
-                     {editingMessageId !== message.id && (
-                       <div className={`flex items-center gap-1 mt-1 ${message.isCurrentUser ? 'justify-end' : 'justify-start'}`}>
+                      {/* Reactions row (shown below bubble) */}
+                      {reactions[message.id] && Object.keys(reactions[message.id]).length > 0 && (
+                        <div className={`flex flex-wrap gap-1 mt-1 ${message.isCurrentUser ? 'justify-end' : 'justify-start'}`}>
+                          {Object.entries(reactions[message.id]).map(([emoji, users]) =>
+                            users.length > 0 ? (
+                              <button
+                                key={emoji}
+                                className="text-[10px] bg-card border rounded-full px-1.5 py-0.5 flex items-center gap-1 hover:bg-muted transition-colors"
+                                onClick={() => {
+                                  setReactions(prev => {
+                                    const msgR = { ...(prev[message.id] || {}) };
+                                    const uid = String(currentUser?.id || "me");
+                                    const existing = msgR[emoji] || [];
+                                    msgR[emoji] = existing.includes(uid) ? existing.filter(x => x !== uid) : [...existing, uid];
+                                    if (msgR[emoji].length === 0) delete msgR[emoji];
+                                    return { ...prev, [message.id]: msgR };
+                                  });
+                                }}
+                              >
+                                {emoji} <span className="font-medium">{users.length}</span>
+                              </button>
+                            ) : null
+                          )}
+                        </div>
+                      )}
+
+                      {/* Actions row: options + emoji — outside bubble */}
+                      {editingMessageId !== message.id && (
+                        <div className={`flex items-center gap-1.5 mt-1 opacity-0 group-hover:opacity-100 transition-opacity ${message.isCurrentUser ? 'justify-end' : 'justify-start'}`}>
                          {/* Options (on the left of emoji) */}
                          {(canEdit || canDelete) && (
                            <DropdownMenu>
@@ -1154,8 +1168,8 @@ export function Messages() {
                                  align={message.isCurrentUser ? 'end' : 'start'}
                                  className="z-50"
                                >
-                                 {canEdit && <DropdownMenuItem onClick={() => handleStartEdit(message)}>✏️ Modifier</DropdownMenuItem>}
-                                 {canDelete && <DropdownMenuItem onClick={() => handleDeleteMessage(message.id)} className="text-red-600">🗑 Supprimer</DropdownMenuItem>}
+                                 {canEdit && <DropdownMenuItem onClick={() => handleStartEdit(message)}><Pencil className="h-3.5 w-3.5" />Modifier</DropdownMenuItem>}
+                                 {canDelete && <DropdownMenuItem onClick={() => handleDeleteMessage(message.id)} className="text-red-600"><Trash className="h-3.5 w-3.5" />Supprimer</DropdownMenuItem>}
                                </DropdownMenuContent>
                              </DropdownMenuPortal>
                            </DropdownMenu>
@@ -1191,10 +1205,10 @@ export function Messages() {
                        </div>
                      )}
                     
-                     <p className={`text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1 ${message.isCurrentUser ? 'justify-end' : ''}`}>
-                       {formatRelativeTime(message.timestamp)}
-                       {message.isCurrentUser && <CheckCheck className="h-2.5 w-2.5 text-primary/60" />}
-                     </p>
+                      <p className={`text-[10px] text-muted-foreground mt-1 flex items-center gap-1 ${message.isCurrentUser ? 'justify-end' : ''}`}>
+                        {formatRelativeTime(message.timestamp)}
+                        {message.isCurrentUser && <CheckCheck className="h-2.5 w-2.5 text-primary/60" />}
+                      </p>
                   </div>
                 </div>
                   );
