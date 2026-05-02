@@ -1048,7 +1048,7 @@ export function Messages() {
                      </Avatar>
                    )}
                   
-                    <div className={`max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] min-w-0 ${message.isCurrentUser ? 'text-right ml-auto' : 'text-left mr-auto'}`}>
+                    <div className={`relative max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] min-w-0 ${message.isCurrentUser ? 'text-right ml-auto' : 'text-left mr-auto'}`}>
                      {!message.isCurrentUser && (
                        <p 
                          className={`text-xs text-muted-foreground mb-1 ${
@@ -1097,12 +1097,13 @@ export function Messages() {
                            )}
                          </p>
                        )}
-                      </div>{/* end bubble */}
+                      </div>
 
-                      {/* Reactions row (shown below bubble) */}
-                      {reactions[message.id] && Object.keys(reactions[message.id]).length > 0 && (
-                        <div className={`flex flex-wrap gap-1 mt-1 ${message.isCurrentUser ? 'justify-end' : 'justify-start'}`}>
-                          {Object.entries(reactions[message.id]).map(([emoji, users]) =>
+                      {/* Actions & Reactions row — outside bubble, always visible */}
+                      {editingMessageId !== message.id && (
+                        <div className={`flex flex-wrap items-center gap-1.5 mt-1.5 relative ${message.isCurrentUser ? 'justify-end' : 'justify-start'}`}>
+                          {/* Current Reactions badges */}
+                          {reactions[message.id] && Object.entries(reactions[message.id]).map(([emoji, users]) =>
                             users.length > 0 ? (
                               <button
                                 key={emoji}
@@ -1112,17 +1113,11 @@ export function Messages() {
                                     const msgR = { ...(prev[message.id] || {}) };
                                     const uid = String(currentUser?.id || "me");
                                     const alreadyHadThisOne = (prev[message.id]?.[emoji] || []).includes(uid);
-
-                                    // Remove all existing reactions from this user
                                     Object.keys(msgR).forEach(e => {
                                       msgR[e] = (msgR[e] || []).filter(u => u !== uid);
                                       if (msgR[e].length === 0) delete msgR[e];
                                     });
-
-                                    // If toggling a NEW one, add it. If toggling SAME one, it stays removed.
-                                    if (!alreadyHadThisOne) {
-                                      msgR[emoji] = [...(msgR[emoji] || []), uid];
-                                    }
+                                    if (!alreadyHadThisOne) msgR[emoji] = [...(msgR[emoji] || []), uid];
                                     return { ...prev, [message.id]: msgR };
                                   });
                                 }}
@@ -1131,77 +1126,65 @@ export function Messages() {
                               </button>
                             ) : null
                           )}
+
+                          {/* Quick Actions (Emoji & More) */}
+                          <div className="flex items-center gap-0.5">
+                            <button
+                              className="h-6 w-6 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground/60 hover:text-primary"
+                              title="Réagir"
+                              onClick={() => setShowEmojiFor(showEmojiFor === message.id ? null : message.id)}
+                            >
+                              <Smile className="h-3.5 w-3.5" />
+                            </button>
+
+                            {(canEdit || canDelete) && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <button className="h-6 w-6 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground/60 hover:text-primary">
+                                    <MoreVertical className="h-3.5 w-3.5" />
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuPortal>
+                                  <DropdownMenuContent side="bottom" align={message.isCurrentUser ? 'end' : 'start'} className="z-50">
+                                    {canEdit && (
+                                      <DropdownMenuItem onClick={() => handleStartEdit(message)} className="gap-2">
+                                        <Pencil className="h-3.5 w-3.5" /> Modifier
+                                      </DropdownMenuItem>
+                                    )}
+                                    {canDelete && (
+                                      <DropdownMenuItem onClick={() => handleDeleteMessage(message.id)} className="text-destructive focus:text-destructive gap-2">
+                                        <Trash className="h-3.5 w-3.5" /> Supprimer
+                                      </DropdownMenuItem>
+                                    )}
+                                  </DropdownMenuContent>
+                                </DropdownMenuPortal>
+                              </DropdownMenu>
+                            )}
+                          </div>
+
+                          {/* Emoji picker popup */}
+                          {showEmojiFor === message.id && (
+                            <div className={`absolute bottom-full mb-2 ${message.isCurrentUser ? 'right-0' : 'left-0'} flex gap-1 bg-card border rounded-full px-2 py-1 shadow-lg z-50 animate-in fade-in zoom-in-95 duration-100`}>
+                              {EMOJIS.map(emoji => (
+                                <button key={emoji} className="text-base hover:scale-125 transition-transform" onClick={() => {
+                                  setReactions(prev => {
+                                    const msgR = { ...(prev[message.id] || {}) };
+                                    const uid = String(currentUser?.id || "me");
+                                    const alreadyHadThisOne = (prev[message.id]?.[emoji] || []).includes(uid);
+                                    Object.keys(msgR).forEach(e => {
+                                      msgR[e] = (msgR[e] || []).filter(u => u !== uid);
+                                      if (msgR[e].length === 0) delete msgR[e];
+                                    });
+                                    if (!alreadyHadThisOne) msgR[emoji] = [...(msgR[emoji] || []), uid];
+                                    return { ...prev, [message.id]: msgR };
+                                  });
+                                  setShowEmojiFor(null);
+                                }}>{emoji}</button>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )}
-
-                      {/* Actions row: options + emoji — outside bubble */}
-                      {editingMessageId !== message.id && (
-                        <div className={`flex items-center gap-1.5 mt-1 opacity-0 group-hover:opacity-100 transition-opacity ${message.isCurrentUser ? 'justify-end' : 'justify-start'}`}>
-                         {/* Options (on the left of emoji) */}
-                         {(canEdit || canDelete) && (
-                           <DropdownMenu>
-                             <DropdownMenuTrigger asChild>
-                               <Button variant="ghost" size="sm" className="h-6 w-6 p-0 rounded-full hover:bg-muted">
-                                 <MoreVertical className="h-3.5 w-3.5 text-muted-foreground" />
-                               </Button>
-                             </DropdownMenuTrigger>
-                             <DropdownMenuPortal>
-                               <DropdownMenuContent
-                                 side="bottom"
-                                 align={message.isCurrentUser ? 'end' : 'start'}
-                                 className="z-50"
-                               >
-                                 {canEdit && (
-                                   <DropdownMenuItem onClick={() => handleStartEdit(message)} className="gap-2">
-                                     <Pencil className="h-3.5 w-3.5" />
-                                     Modifier
-                                   </DropdownMenuItem>
-                                 )}
-                                 {canDelete && (
-                                   <DropdownMenuItem onClick={() => handleDeleteMessage(message.id)} className="text-destructive focus:text-destructive gap-2">
-                                     <Trash className="h-3.5 w-3.5" />
-                                     Supprimer
-                                   </DropdownMenuItem>
-                                 )}
-                               </DropdownMenuContent>
-                             </DropdownMenuPortal>
-                           </DropdownMenu>
-                         )}
-
-                         {/* Emoji trigger (to the right of options) */}
-                         <button
-                           className="h-6 w-6 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground"
-                           title="Réagir"
-                           onClick={() => setShowEmojiFor(showEmojiFor === message.id ? null : message.id)}
-                         >
-                           <Smile className="h-3.5 w-3.5" />
-                         </button>
-
-                         {/* Emoji picker popup */}
-                         {showEmojiFor === message.id && (
-                           <div className={`absolute bottom-8 ${message.isCurrentUser ? 'right-0' : 'left-0'} flex gap-1 bg-card border rounded-full px-2 py-1 shadow-lg z-50 animate-in fade-in zoom-in-95 duration-100`}>
-                             {EMOJIS.map(emoji => (
-                               <button key={emoji} className="text-base hover:scale-125 transition-transform" onClick={() => {
-                                 setReactions(prev => {
-                                   const msgR = { ...(prev[message.id] || {}) };
-                                   const uid = String(currentUser?.id || "me");
-                                   const alreadyHadThisOne = (prev[message.id]?.[emoji] || []).includes(uid);
-                                   Object.keys(msgR).forEach(e => {
-                                     msgR[e] = (msgR[e] || []).filter(u => u !== uid);
-                                     if (msgR[e].length === 0) delete msgR[e];
-                                   });
-                                   if (!alreadyHadThisOne) {
-                                     msgR[emoji] = [...(msgR[emoji] || []), uid];
-                                   }
-                                   return { ...prev, [message.id]: msgR };
-                                 });
-                                 setShowEmojiFor(null);
-                               }}>{emoji}</button>
-                             ))}
-                           </div>
-                         )}
-                       </div>
-                     )}
                     
                       <p className={`text-[10px] text-muted-foreground mt-1 flex items-center gap-1 ${message.isCurrentUser ? 'justify-end' : ''}`}>
                         {formatRelativeTime(message.timestamp)}
