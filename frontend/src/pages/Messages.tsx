@@ -796,9 +796,9 @@ export function Messages() {
                       <div className="absolute bottom-0 right-0 w-2 h-2 md:w-3 md:h-3 bg-green-500 border border-background rounded-full"></div>
                     </div>
                     
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-0.5">
-                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                    <div className="flex-1 min-w-0 overflow-hidden">
+                      <div className="flex items-center justify-between gap-2 mb-0.5">
+                        <div className="flex items-center gap-1.5 min-w-0">
                           <h3 className="font-semibold truncate text-sm">
                             {conversation.name || 'Utilisateur'}
                           </h3>
@@ -808,20 +808,21 @@ export function Messages() {
                             </span>
                           )}
                         </div>
-                        <span className="text-[10px] text-muted-foreground flex-shrink-0 ml-2">
+                        <span className="text-[10px] text-muted-foreground flex-shrink-0">
                           {formatRelativeTime(conversation.lastMessageAt)}
                         </span>
                       </div>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {conversation.lastMessage || (conversation.type === 'group' ? 'Conversation de groupe' : 'Message privé')}
-                      </p>
+                      <div className="grid grid-cols-[1fr_auto] items-center gap-2">
+                        <p className="text-xs text-muted-foreground truncate min-w-0 overflow-hidden">
+                          {conversation.lastMessage || (conversation.type === 'group' ? 'Conversation de groupe' : 'Message privé')}
+                        </p>
+                        {conversation.unread > 0 && (
+                          <Badge variant="destructive" className="h-4 min-w-[16px] px-1 text-[10px] flex-shrink-0">
+                            {conversation.unread}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                    
-                    {conversation.unread > 0 && (
-                      <Badge variant="destructive" className="text-xs flex-shrink-0 ml-2">
-                        {conversation.unread}
-                      </Badge>
-                    )}
                   </div>
                 </div>
               ))
@@ -1096,33 +1097,6 @@ export function Messages() {
                            )}
                          </p>
                        )}
-                       {/* Emoji picker trigger */}
-                       {editingMessageId !== message.id && (
-                         <button
-                           className="absolute -top-6 right-0 hidden group-hover/bubble:flex items-center gap-0.5 bg-card border rounded-full px-1.5 py-0.5 shadow-sm"
-                           onClick={() => setShowEmojiFor(showEmojiFor === message.id ? null : message.id)}
-                         >
-                           <Smile className="h-3 w-3 text-muted-foreground" />
-                         </button>
-                       )}
-                       {/* Emoji picker */}
-                       {showEmojiFor === message.id && (
-                         <div className="absolute -top-10 right-0 flex gap-1 bg-card border rounded-full px-2 py-1 shadow-lg z-10">
-                           {EMOJIS.map(emoji => (
-                             <button key={emoji} className="text-base hover:scale-125 transition-transform" onClick={() => {
-                               setReactions(prev => {
-                                 const msgR = { ...(prev[message.id] || {}) };
-                                 const uid = String(currentUser?.id || "me");
-                                 const existing = msgR[emoji] || [];
-                                 msgR[emoji] = existing.includes(uid) ? existing.filter(x => x !== uid) : [...existing, uid];
-                                 if (msgR[emoji].length === 0) delete msgR[emoji];
-                                 return { ...prev, [message.id]: msgR };
-                               });
-                               setShowEmojiFor(null);
-                             }}>{emoji}</button>
-                           ))}
-                         </div>
-                       )}
                       </div>{/* end bubble */}
 
                       {/* Reactions row (shown below bubble) */}
@@ -1137,9 +1111,18 @@ export function Messages() {
                                   setReactions(prev => {
                                     const msgR = { ...(prev[message.id] || {}) };
                                     const uid = String(currentUser?.id || "me");
-                                    const existing = msgR[emoji] || [];
-                                    msgR[emoji] = existing.includes(uid) ? existing.filter(x => x !== uid) : [...existing, uid];
-                                    if (msgR[emoji].length === 0) delete msgR[emoji];
+                                    const alreadyHadThisOne = (prev[message.id]?.[emoji] || []).includes(uid);
+
+                                    // Remove all existing reactions from this user
+                                    Object.keys(msgR).forEach(e => {
+                                      msgR[e] = (msgR[e] || []).filter(u => u !== uid);
+                                      if (msgR[e].length === 0) delete msgR[e];
+                                    });
+
+                                    // If toggling a NEW one, add it. If toggling SAME one, it stays removed.
+                                    if (!alreadyHadThisOne) {
+                                      msgR[emoji] = [...(msgR[emoji] || []), uid];
+                                    }
                                     return { ...prev, [message.id]: msgR };
                                   });
                                 }}
@@ -1168,8 +1151,18 @@ export function Messages() {
                                  align={message.isCurrentUser ? 'end' : 'start'}
                                  className="z-50"
                                >
-                                 {canEdit && <DropdownMenuItem onClick={() => handleStartEdit(message)}><Pencil className="h-3.5 w-3.5" />Modifier</DropdownMenuItem>}
-                                 {canDelete && <DropdownMenuItem onClick={() => handleDeleteMessage(message.id)} className="text-red-600"><Trash className="h-3.5 w-3.5" />Supprimer</DropdownMenuItem>}
+                                 {canEdit && (
+                                   <DropdownMenuItem onClick={() => handleStartEdit(message)} className="gap-2">
+                                     <Pencil className="h-3.5 w-3.5" />
+                                     Modifier
+                                   </DropdownMenuItem>
+                                 )}
+                                 {canDelete && (
+                                   <DropdownMenuItem onClick={() => handleDeleteMessage(message.id)} className="text-destructive focus:text-destructive gap-2">
+                                     <Trash className="h-3.5 w-3.5" />
+                                     Supprimer
+                                   </DropdownMenuItem>
+                                 )}
                                </DropdownMenuContent>
                              </DropdownMenuPortal>
                            </DropdownMenu>
@@ -1192,9 +1185,14 @@ export function Messages() {
                                  setReactions(prev => {
                                    const msgR = { ...(prev[message.id] || {}) };
                                    const uid = String(currentUser?.id || "me");
-                                   const existing = msgR[emoji] || [];
-                                   msgR[emoji] = existing.includes(uid) ? existing.filter(x => x !== uid) : [...existing, uid];
-                                   if (msgR[emoji].length === 0) delete msgR[emoji];
+                                   const alreadyHadThisOne = (prev[message.id]?.[emoji] || []).includes(uid);
+                                   Object.keys(msgR).forEach(e => {
+                                     msgR[e] = (msgR[e] || []).filter(u => u !== uid);
+                                     if (msgR[e].length === 0) delete msgR[e];
+                                   });
+                                   if (!alreadyHadThisOne) {
+                                     msgR[emoji] = [...(msgR[emoji] || []), uid];
+                                   }
                                    return { ...prev, [message.id]: msgR };
                                  });
                                  setShowEmojiFor(null);
