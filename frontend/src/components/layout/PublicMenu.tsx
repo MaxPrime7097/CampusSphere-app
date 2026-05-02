@@ -45,16 +45,16 @@ export function PublicMenu() {
         </DropdownMenuItem>
         <DropdownMenuSeparator className="mb-1" />
         <DropdownMenuItem 
-          onClick={() => navigate("/cs-inc/waitlist")}
+          onClick={() => navigate("/register")}
           className="cursor-pointer "
         >
-          <span className="text-primary">Rejoindre la liste d'attente</span>
+          <span className="text-primary">Rejoindre la communauté</span>
         </DropdownMenuItem>
         <DropdownMenuItem 
           onClick={() => navigate("/login")}
           className="cursor-pointer"
         >
-          <span className="hidden text-primary">Se connecter</span>
+          <span className="text-primary">Se connecter</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

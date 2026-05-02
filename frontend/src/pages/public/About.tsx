@@ -73,7 +73,7 @@ export function About(): JSX.Element {
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 <Button
-                  onClick={() => navigate('')}
+                  onClick={() => navigate('/register')}
                   className="font-poppins campus-gradient text-white hover:opacity-90 text-lg px-8 py-8 rounded-lg transition-all duration-300 hover:scale-105"
                 >
                   Rejoindre la communauté
@@ -342,10 +342,10 @@ export function About(): JSX.Element {
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <Button
-                onClick={() => navigate('/cs-inc/waitlist')}
+                onClick={() => navigate('/register')}
                 className="campus-gradient text-white hover:opacity-90 text-lg px-8 py-8 rounded-lg transition-all duration-300 hover:scale-105"
               >
-                Rejoindre la liste d'attente
+                Rejoindre la communauté
               </Button>
               <Button
                 variant="secondary"

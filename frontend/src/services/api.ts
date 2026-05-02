@@ -165,9 +165,12 @@ export async function verifyStudentStatus(matricule: string, cardImage: File) {
   return response;
 }
 
-const getDetectedApiUrl = () => {
+const getDetectedApiUrl = (): string => {
   if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
   const { hostname } = window.location;
+  if (hostname === "www.campussphere.app" || hostname === "campussphere.app") {
+    return "https://www.api.campussphere.app";
+  }
   if (hostname.includes("onrender.com") && !hostname.includes("-backend")) {
     // Try to infer backend URL for common CampusSphere naming on Render
     return `https://campus-sphere-backend-dyfu.onrender.com`;

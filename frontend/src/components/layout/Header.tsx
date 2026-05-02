@@ -21,12 +21,12 @@ export function Header() {
             <a href="/cs-inc/contact" className="text-muted-foreground hover:text-foreground transition-colors">Contact</a>
             <a href="/cs-inc/faq" className="text-muted-foreground hover:text-foreground transition-colors">FAQ</a>
             <a href="/cs-inc/policies" className="text-muted-foreground hover:text-foreground transition-colors">Politiques</a>
-            <a href="/login" className="text-muted-foreground hover:text-foreground transition-colors hidden">Connexion</a>
+            <a href="/login" className="primary/80 text-primary hover:text-foreground transition-colors">Connexion</a>
             <button
               onClick={() => navigate('/register')}
               className="campus-gradient text-white hover:opacity-90 px-4 py-2 rounded-lg transition-all duration-300"
             >
-              Rejoins la liste d’attente
+              Rejoins la communauté
 
             </button>
           </div>  

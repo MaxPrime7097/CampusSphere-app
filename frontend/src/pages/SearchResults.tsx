@@ -332,7 +332,7 @@ export function SearchResults() {
             </p>
             {/* Desktop sort */}
             <div className="hidden sm:flex items-center gap-2">
-              <Select value={sortBy} onValueChange={setSortBy}>
+              <Select value={sortBy} onValueChange={(val) => setSortBy(ensureValidSortKey(val, SEARCH_SORT_KEYS, "relevance"))}>
                 <SelectTrigger className="w-40 h-8"><SelectValue placeholder="Trier par" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="relevance">Pertinence</SelectItem>
@@ -347,7 +347,7 @@ export function SearchResults() {
           </div>
           {showMobileFilters && (
             <div className="mt-2 sm:hidden">
-              <Select value={sortBy} onValueChange={setSortBy}>
+              <Select value={sortBy} onValueChange={(val) => setSortBy(ensureValidSortKey(val, SEARCH_SORT_KEYS, "relevance"))}>
                 <SelectTrigger><SelectValue placeholder="Trier par" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="relevance">Pertinence</SelectItem>

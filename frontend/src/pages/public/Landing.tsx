@@ -137,19 +137,21 @@ export function Landing() {
             <Button
               size="lg"
               className="px-6 py-6 md:px-12 md:py-8 campus-gradient text-white justify-center hover:opacity-90 text-xl rounded-full transition-all duration-300 hover:scale-105 hover:shadow-2xl gap-3 group relative overflow-hidden animate-pulse hover:animate-none"
-              onClick={() => navigate('/cs-inc/waitlist')}
+              onClick={() => navigate('/register')}
             >
                 <div className="absolute text-center inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                 <UserPlus className="hidden md:block h-6 w-6 group-hover:rotate-12 transition-transform duration-300" />
                 <span className="relative z-10 font-poppins">
-                  Rejoins la liste d'attente
+                  Rejoins CampusSphere
                 </span>
             </Button>
             </div>
-                          
-            <Countdown />
+
+            <div className="flex flex-col items-center justify-center text-center pt-2">
+              <h1 className="text-3xl font-bold font-raleway text-primary mb-4">🚀 CampusSphere est là !</h1>
+            </div>
               
-              <div className="text-center hidden">
+              <div className="text-center">
             <Button
               variant="ghost"
               className="font-poppins text-muted-foreground hover:text-primary transition-colors"
