@@ -166,6 +166,17 @@ export function MiniChat({ sphereId, sphereName, isExpanded, onToggleExpanded, c
 
   const handleSend = async () => {
     if ((!conversationId && memberIds.length === 0 && !currentUser) || !newMessage.trim() || isSending) return;
+    
+    // Si pas de conversation, on tente de la créer. On vérifie d'abord si on a des membres.
+    if (!conversationId && memberIds.length === 0) {
+      toast({
+        title: "Discussion impossible",
+        description: "Il n'y a aucun autre membre dans cette sphère pour discuter.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsSending(true);
     const content = newMessage.trim();
     setNewMessage("");
@@ -182,8 +193,13 @@ export function MiniChat({ sphereId, sphereName, isExpanded, onToggleExpanded, c
           setConversationId(currentConvId);
           connectWS(currentConvId, currentUser?.id ? String(currentUser.id) : undefined);
         } else {
-          const detail = groupData?.detail || groupData?.message || "Impossible d'initialiser la discussion";
-          throw new Error(detail);
+          // Extraction plus fine de l'erreur
+          const errorDetail = 
+            groupData?.detail || 
+            (groupData?.participant_ids ? `Membres : ${groupData.participant_ids.join(', ')}` : null) ||
+            groupData?.message || 
+            "Impossible d'initialiser la discussion";
+          throw new Error(errorDetail);
         }
       }
 

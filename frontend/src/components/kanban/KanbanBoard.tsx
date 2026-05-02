@@ -46,11 +46,13 @@ const PRIORITY: Record<string, { label: string; cls: string }> = {
   low:    { label: "Basse",   cls: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400" },
 };
 
-function TaskCard({ task, col, draggingId, loading, onDragStart, onDragEnd }: {
+function TaskCard({ task, col, draggingId, loading, onDragStart, onDragEnd, onMove }: {
   task: KanbanTask; col: typeof COLS[0];
   draggingId: string | null; loading: Record<string, boolean>;
   onDragStart: () => void; onDragEnd: () => void;
+  onMove?: (taskId: string, target: KanbanStatus) => void;
 }) {
+  const isMobile = useIsMobile();
   const overdue = (task.is_overdue || task.isOverdue) && col.id !== "done";
   const name = task.assigned_to_info?.name || task.assigned_to_info?.full_name || task.assignedTo || null;
   const avatar = task.assigned_to_info?.avatar || task.assignedToAvatar || null;
@@ -58,24 +60,48 @@ function TaskCard({ task, col, draggingId, loading, onDragStart, onDragEnd }: {
   const pri = PRIORITY[task.priority] || PRIORITY.medium;
   const fmt = (d?: string | null) => d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }) : null;
 
+  const colIdx = COLS.findIndex(c => c.id === col.id);
+  const nextCol = COLS[colIdx + 1]?.id;
+  const prevCol = COLS[colIdx - 1]?.id;
+
   return (
     <div
-      draggable
+      draggable={!isMobile}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       className={cn(
-        "bg-card rounded-lg border p-2.5 cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition-all group",
+        "bg-card rounded-lg border p-2.5 shadow-sm hover:shadow-md transition-all group",
+        !isMobile && "cursor-grab active:cursor-grabbing",
         draggingId === task.id && "opacity-40 scale-95",
         loading[task.id] && "opacity-60 pointer-events-none",
         overdue && "border-red-300 dark:border-red-800"
       )}
     >
-      <div className="flex items-start gap-1.5 mb-1.5">
-        <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 mt-0.5 flex-shrink-0 group-hover:text-muted-foreground/60 hidden sm:block" />
-        <p className={cn("text-sm font-medium leading-snug flex-1", col.id === "done" && "line-through text-muted-foreground")}>
-          {task.title}
-        </p>
+      <div className="flex items-start justify-between gap-1.5 mb-1.5">
+        <div className="flex items-start gap-1.5 min-w-0">
+          {!isMobile && <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 mt-0.5 flex-shrink-0 group-hover:text-muted-foreground/60" />}
+          <p className={cn("text-sm font-medium leading-snug flex-1", col.id === "done" && "line-through text-muted-foreground")}>
+            {task.title}
+          </p>
+        </div>
+        
+        {/* Boutons de déplacement mobile */}
+        {isMobile && onMove && (
+          <div className="flex gap-1 flex-shrink-0">
+            {prevCol && (
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => onMove(task.id, prevCol)}>
+                <ChevronRight className="h-3.5 w-3.5 rotate-180" />
+              </Button>
+            )}
+            {nextCol && (
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => onMove(task.id, nextCol)}>
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
+        )}
       </div>
+
       <div className="flex flex-wrap gap-1 mb-2">
         <span className={cn("text-[10px] font-medium px-1.5 py-0.5 rounded-full", pri.cls)}>{pri.label}</span>
         {overdue && (
@@ -108,11 +134,6 @@ function TaskCard({ task, col, draggingId, loading, onDragStart, onDragEnd }: {
               <Calendar className="h-2.5 w-2.5" />{fmt(task.due_date)}
             </span>
           )}
-          {pts > 0 && (
-            <span className="text-[10px] text-amber-500 flex items-center gap-0.5">
-              <Zap className="h-2.5 w-2.5" />{pts}
-            </span>
-          )}
         </div>
       </div>
     </div>
@@ -130,8 +151,8 @@ export function KanbanBoard({ tasks, onTasksChange, onCreateTask, canModerate }:
 
   const colTasks = (id: KanbanStatus) => tasks.filter((t) => (t.kanban_status || "todo") === id);
 
-  const handleDrop = async (target: KanbanStatus) => {
-    const task = dragRef.current;
+  const handleMoveTask = async (taskId: string, target: KanbanStatus) => {
+    const task = tasks.find(t => t.id === taskId);
     setDraggingId(null);
     setDragOverCol(null);
     dragRef.current = null;
@@ -191,6 +212,7 @@ export function KanbanBoard({ tasks, onTasksChange, onCreateTask, canModerate }:
                       draggingId={draggingId} loading={loading}
                       onDragStart={() => { setDraggingId(task.id); dragRef.current = task; }}
                       onDragEnd={() => { setDraggingId(null); setDragOverCol(null); }}
+                      onMove={handleMoveTask}
                     />
                   ))}
                 </div>
@@ -214,7 +236,7 @@ export function KanbanBoard({ tasks, onTasksChange, onCreateTask, canModerate }:
             className={cn("flex flex-col rounded-xl border flex-shrink-0 w-72 transition-all", col.bg, col.border, over && "ring-2 ring-primary/40 scale-[1.01]")}
             onDragOver={(e) => { e.preventDefault(); setDragOverCol(col.id); }}
             onDragLeave={() => setDragOverCol(null)}
-            onDrop={() => handleDrop(col.id)}
+            onDrop={() => dragRef.current && handleMoveTask(dragRef.current.id, col.id)}
           >
             <div className={cn("flex items-center justify-between px-3 py-2 border-b", col.border)}>
               <div className="flex items-center gap-2">
@@ -239,6 +261,7 @@ export function KanbanBoard({ tasks, onTasksChange, onCreateTask, canModerate }:
                   draggingId={draggingId} loading={loading}
                   onDragStart={() => { setDraggingId(task.id); dragRef.current = task; }}
                   onDragEnd={() => { setDraggingId(null); setDragOverCol(null); }}
+                  onMove={handleMoveTask}
                 />
               ))}
             </div>
