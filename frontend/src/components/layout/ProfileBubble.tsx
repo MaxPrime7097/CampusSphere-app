@@ -21,15 +21,19 @@ import {
 export function ProfileBubble() {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
-  const [user, setUser] = useState<any>({
-    name: "Utilisateur",
-    username: "user",
-    avatar: "/placeholder-avatar.jpg",
-    email: "user@university.cm"
-  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     let isMounted = true;
+    const token = localStorage.getItem("access");
+    
+    if (!token) {
+      setIsLoading(false);
+      setUser(null);
+      return;
+    }
+
     (async () => {
       try {
         const data = await getCurrentUser();
@@ -42,7 +46,9 @@ export function ProfileBubble() {
           });
         }
       } catch (e) {
-        // User not logged in or error
+        if (isMounted) setUser(null);
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
     })();
     return () => {
@@ -55,6 +61,23 @@ export function ProfileBubble() {
     localStorage.removeItem("refresh");
     navigate("/login");
   };
+
+  if (isLoading) {
+    return <div className="h-8 w-8 rounded-full bg-accent animate-pulse" />;
+  }
+
+  if (!user) {
+    return (
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="sm" onClick={() => navigate("/login")} className="hidden sm:inline-flex">
+          Connexion
+        </Button>
+        <Button size="sm" onClick={() => navigate("/register")} className="campus-gradient text-white">
+          S'inscrire
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>

@@ -152,118 +152,136 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
     }
   };
 
-  const handleLike = async () => {
-    try {
-      const response = await likePost(post.id);
-      const liked = Boolean(response?.data?.liked);
-      const nextLikesCount = Number(response?.data?.likesCount ?? post.likes);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const isAuthenticated = !!localStorage.getItem("access");
 
-      setIsLiked(liked);
-      setLikesCount(nextLikesCount);
-      
-      if (liked) {
-        toast({
-          title: "Post aimé !",
-          description: "Vous avez aimé ce post",
-          duration: 2000,
-        });
-      }
-    } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: error?.message || "Impossible d'aimer ce post",
-        variant: "destructive",
-        duration: 2000,
-      });
+  const requireAuth = (action: () => void) => {
+    if (isAuthenticated) {
+      action();
+    } else {
+      setShowAuthModal(true);
     }
   };
 
+  const handleLike = async () => {
+    requireAuth(async () => {
+      try {
+        const response = await likePost(post.id);
+        const liked = Boolean(response?.data?.liked);
+        const nextLikesCount = Number(response?.data?.likesCount ?? post.likes);
+
+        setIsLiked(liked);
+        setLikesCount(nextLikesCount);
+        
+        if (liked) {
+          toast({
+            title: "Post aimé !",
+            description: "Vous avez aimé ce post",
+            duration: 2000,
+          });
+        }
+      } catch (error: any) {
+        toast({
+          title: "Erreur",
+          description: error?.message || "Impossible d'aimer ce post",
+          variant: "destructive",
+          duration: 2000,
+        });
+      }
+    });
+  };
+
   const handleImpactRate = async (value: number | null) => {
-    // Explication pédagogique lors du premier clic
-    const hasSeenExplanation = localStorage.getItem("impact_explanation_shown");
-    if (!hasSeenExplanation) {
-      toast({
-        title: "Qu'est-ce que l'Impact Score ? ⚡",
-        description: "C'est une mesure de l'utilité du post. Plus un post aide la communauté, plus son Impact Score grimpe. Vous pouvez voter pour augmenter (+) ou réduire (-) cette note.",
-        duration: 6000,
-      });
-      localStorage.setItem("impact_explanation_shown", "true");
-    }
+    requireAuth(async () => {
+      // Explication pédagogique lors du premier clic
+      const hasSeenExplanation = localStorage.getItem("impact_explanation_shown");
+      if (!hasSeenExplanation) {
+        toast({
+          title: "Qu'est-ce que l'Impact Score ? ⚡",
+          description: "C'est une mesure de l'utilité du post. Plus un post aide la communauté, plus son Impact Score grimpe. Vous pouvez voter pour augmenter (+) ou réduire (-) cette note.",
+          duration: 6000,
+        });
+        localStorage.setItem("impact_explanation_shown", "true");
+      }
 
-    try {
-      const response = await impactRatePost(post.id, value);
-      const nextImpactScore = Number(response?.data?.impactScore ?? impactScore);
-      const nextUserImpactRating = response?.data?.userImpactRating ?? null;
+      try {
+        const response = await impactRatePost(post.id, value);
+        const nextImpactScore = Number(response?.data?.impactScore ?? impactScore);
+        const nextUserImpactRating = response?.data?.userImpactRating ?? null;
 
-      setImpactScore(nextImpactScore);
-      setUserImpactRating(nextUserImpactRating);
-    } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: error?.message || "Impossible de noter l'impact du post",
-        variant: "destructive",
-        duration: 2000,
-      });
-    }
+        setImpactScore(nextImpactScore);
+        setUserImpactRating(nextUserImpactRating);
+      } catch (error: any) {
+        toast({
+          title: "Erreur",
+          description: error?.message || "Impossible de noter l'impact du post",
+          variant: "destructive",
+          duration: 2000,
+        });
+      }
+    });
   };
 
   const handleSave = async () => {
     if (isSaving) return;
-    setIsSaving(true);
+    requireAuth(async () => {
+      setIsSaving(true);
+      const nextSavedState = !isSaved;
 
-    const nextSavedState = !isSaved;
+      try {
+        const response = await savePost(post.id);
+        const saved = response?.data?.saved ?? nextSavedState;
 
-    try {
-      const response = await savePost(post.id);
-      const saved = response?.data?.saved ?? nextSavedState;
+        setIsSaved(saved);
+        onToggleSave?.(saved);
 
-      setIsSaved(saved);
-      onToggleSave?.(saved);
-
-      toast({
-        title: saved ? "Post sauvegardé !" : "Post retiré des sauvegardes",
-        description: saved
-          ? "Le post a été ajouté à vos sauvegardes"
-          : "Le post a été retiré de vos sauvegardes",
-        duration: 2000,
-      });
-    } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: error?.message || "Impossible de mettre à jour l'état de sauvegarde du post",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
+        toast({
+          title: saved ? "Post sauvegardé !" : "Post retiré des sauvegardes",
+          description: saved
+            ? "Le post a été ajouté à vos sauvegardes"
+            : "Le post a été retiré de vos sauvegardes",
+          duration: 2000,
+        });
+      } catch (error: any) {
+        toast({
+          title: "Erreur",
+          description: error?.message || "Impossible de mettre à jour l'état de sauvegarde du post",
+          variant: "destructive",
+        });
+      } finally {
+        setIsSaving(false);
+      }
+    });
   };
 
   const handleShare = async () => {
-    const postUrl = `${window.location.origin}/posts/${post.id}`;
-    
-    // On utilise directement notre modal pour plus de contrôle et éviter les échecs du partage natif
-    setShowShareDialog(true);
-    setShareSearch("");
-    if (shareConnections.length === 0) {
-      setLoadingShareConnections(true);
-      getCurrentUser().then((user) => {
-        if (!user?.id) { setLoadingShareConnections(false); return; }
-        return getUserConnections(user.id).then((conns) => {
-          const mapped = (conns || []).map((conn: any) => {
-            const isRequester = String(conn.requester) === String(user.id);
-            const counterpart = isRequester ? conn.recipient_info : conn.requester_info;
-            const counterpartId = isRequester ? conn.recipient : conn.requester;
-            return {
-              id: String(counterpart?.id || counterpartId),
-              name: counterpart?.full_name || counterpart?.name || counterpart?.username || "Utilisateur",
-              username: counterpart?.username || "",
-              avatar: counterpart?.avatar || "/placeholder-avatar.jpg",
-            };
-          }).filter((c: any) => c.id);
-          setShareConnections(mapped);
-        });
-      }).catch(() => null).finally(() => setLoadingShareConnections(false));
-    }
+    requireAuth(async () => {
+      const postUrl = `${window.location.origin}/posts/${post.id}`;
+      
+      // On utilise directement notre modal pour plus de contrôle et éviter les échecs du partage natif
+      setShowShareDialog(true);
+      setShareSearch("");
+      if (shareConnections.length === 0) {
+        setLoadingShareConnections(true);
+        getCurrentUser().then((user) => {
+          if (!user?.id) { setLoadingShareConnections(false); return; }
+          return getUserConnections(user.id).then((conns) => {
+            const mapped = (conns || []).map((conn: any) => {
+              const isRequester = String(conn.requester) === String(user.id);
+              const counterpart = isRequester ? conn.recipient_info : conn.requester_info;
+              const counterpartId = isRequester ? conn.recipient : conn.requester;
+              return {
+                id: String(counterpart?.id || counterpartId),
+                name: counterpart?.full_name || counterpart?.name || counterpart?.username || "Utilisateur",
+                username: counterpart?.username || "",
+                avatar: counterpart?.avatar || "/placeholder-avatar.jpg",
+              };
+            }).filter((c: any) => c.id);
+            setShareConnections(mapped);
+          });
+        }).catch(() => null).finally(() => setLoadingShareConnections(false));
+      }
+    });
   };
 
   const handleSocialShare = (platform: string) => {
@@ -353,8 +371,10 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
   };
 
   const handleReport = () => {
-    setReportError(null);
-    setShowReportDialog(true);
+    requireAuth(() => {
+      setReportError(null);
+      setShowReportDialog(true);
+    });
   };
 
   const handleOpenPost = () => {
@@ -668,7 +688,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                 variant="ghost" 
                 size="sm" 
                 className="gap-2 h-9 px-2 md:px-3 hover:text-primary transition-all active:scale-95"
-                onClick={() => setCommentsOpen(true)}
+                onClick={() => requireAuth(() => setCommentsOpen(true))}
               >
                 <MessageCircle className="h-4 w-4" />
                 <span className="text-xs font-medium">{post.comments}</span>
@@ -997,6 +1017,28 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
           <Button variant="outline" onClick={() => setShowDeleteDialog(false)} disabled={isDeleting}>Annuler</Button>
           <Button variant="destructive" onClick={handleConfirmDelete} disabled={isDeleting}>
             {isDeleting ? "Suppression..." : "Supprimer"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+    <Dialog open={showAuthModal} onOpenChange={setShowAuthModal}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Zap className="h-5 w-5 text-primary fill-current" />
+            Rejoignez CampusSphere
+          </DialogTitle>
+          <DialogDescription>
+            Vous devez être connecté pour liker, commenter ou enregistrer des publications. 
+            Créez un compte gratuitement pour rejoindre la discussion !
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col gap-3 mt-4">
+          <Button onClick={() => navigate("/register")} className="campus-gradient text-white w-full">
+            Créer un compte gratuitement
+          </Button>
+          <Button variant="outline" onClick={() => navigate("/login")} className="w-full">
+            Se connecter
           </Button>
         </div>
       </DialogContent>

@@ -152,18 +152,14 @@ const App = () => (
             </Protected>
           } />
           <Route path="/resources/:id" element={
-            <Protected>
-              <AppLayout>
-                <ResourceDetailRoute />
-              </AppLayout>
-            </Protected>
+            <AppLayout>
+              <ResourceDetailRoute />
+            </AppLayout>
           } />
           <Route path="/posts/:id" element={
-            <Protected>
-              <AppLayout>
-                <PostDetail />
-              </AppLayout>
-            </Protected>
+            <AppLayout>
+              <PostDetail />
+            </AppLayout>
           } />
            <Route path="/spheres" element={
             <Protected>

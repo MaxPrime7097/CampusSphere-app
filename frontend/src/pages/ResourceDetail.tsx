@@ -264,89 +264,100 @@ export function ResourceDetail() {
   }, [id, isPreviewMode, isPreviewable]);
 
 
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const isAuthenticated = !!localStorage.getItem("access");
+
+  const requireAuth = (action: () => void) => {
+    if (isAuthenticated) {
+      action();
+    } else {
+      setShowAuthModal(true);
+    }
+  };
+
   const handleDownload = () => {
     if (!id) return;
+    requireAuth(() => {
+      setIsDownloading(true);
+      void (async () => {
+        try {
+          const result = await downloadResource(id);
+          const objectUrl = window.URL.createObjectURL(result.blob);
+          const link = document.createElement("a");
+          link.href = objectUrl;
+          link.download = result.filename;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          window.URL.revokeObjectURL(objectUrl);
 
-    setIsDownloading(true);
-    
-    void (async () => {
+          setResource((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  stats: {
+                    ...prev.stats,
+                    downloads: prev.stats.downloads + 1,
+                  },
+                }
+              : prev
+          );
+
+          toast({
+            title: "Téléchargement démarré !",
+            description: "Votre fichier va être téléchargé dans quelques instants",
+            duration: 3000,
+          });
+        } catch (e: any) {
+          toast({
+            title: "Erreur",
+            description: e?.message || "Impossible de télécharger la ressource",
+            variant: "destructive",
+          });
+        } finally {
+          setIsDownloading(false);
+        }
+      })();
+    });
+  };
+
+  const handleSaveResource = async () => {
+    if (!id || isSaving) return;
+    requireAuth(async () => {
+      setIsSaving(true);
       try {
-        const result = await downloadResource(id);
-        const objectUrl = window.URL.createObjectURL(result.blob);
-        const link = document.createElement("a");
-        link.href = objectUrl;
-        link.download = result.filename;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        window.URL.revokeObjectURL(objectUrl);
-
+        const response = await saveResource(id);
+        const saved = response?.data?.saved ?? !isSaved;
+        setIsSaved(saved);
         setResource((prev) =>
           prev
             ? {
                 ...prev,
+                isSaved: saved,
                 stats: {
                   ...prev.stats,
-                  downloads: prev.stats.downloads + 1,
+                  saves: saved ? (Number(prev.stats.saves) || 0) + 1 : Math.max(0, (Number(prev.stats.saves) || 1) - 1),
                 },
               }
             : prev
         );
 
         toast({
-          title: "Téléchargement démarré !",
-          description: "Votre fichier va être téléchargé dans quelques instants",
-          duration: 3000,
+          title: saved ? "Ressource sauvegardée" : "Ressource retirée des sauvegardes",
+          description: saved
+            ? "Cette ressource est maintenant enregistrée dans vos favoris"
+            : "Cette ressource a été retirée de vos favoris",
         });
       } catch (e: any) {
         toast({
           title: "Erreur",
-          description: e?.message || "Impossible de télécharger la ressource",
+          description: e?.message || "Impossible de modifier l'état de sauvegarde",
           variant: "destructive",
         });
       } finally {
-        setIsDownloading(false);
+        setIsSaving(false);
       }
-    })();
-  };
-
-  const handleSaveResource = async () => {
-    if (!id || isSaving) return;
-
-    setIsSaving(true);
-
-    try {
-      const response = await saveResource(id);
-      const saved = response?.data?.saved ?? !isSaved;
-      setIsSaved(saved);
-      setResource((prev) =>
-        prev
-          ? {
-              ...prev,
-              isSaved: saved,
-              stats: {
-                ...prev.stats,
-                saves: saved ? (Number(prev.stats.saves) || 0) + 1 : Math.max(0, (Number(prev.stats.saves) || 1) - 1),
-              },
-            }
-          : prev
-      );
-
-      toast({
-        title: saved ? "Ressource sauvegardée" : "Ressource retirée des sauvegardes",
-        description: saved
-          ? "Cette ressource est maintenant enregistrée dans vos favoris"
-          : "Cette ressource a été retirée de vos favoris",
-      });
-    } catch (e: any) {
-      toast({
-        title: "Erreur",
-        description: e?.message || "Impossible de modifier l'état de sauvegarde",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
+    });
   };
 
   const handleShare = () => {
@@ -395,30 +406,31 @@ export function ResourceDetail() {
 
   const handleReport = () => {
     if (!id) return;
-    setIsReporting(true);
+    requireAuth(() => {
+      setIsReporting(true);
+      void (async () => {
+        try {
+          await reportResource(id, {
+            reason: "inappropriate_content",
+            details: "Signalé depuis la page de détail de la ressource.",
+          });
 
-    void (async () => {
-      try {
-        await reportResource(id, {
-          reason: "inappropriate_content",
-          details: "Signalé depuis la page de détail de la ressource.",
-        });
-
-        toast({
-          title: "Signalement envoyé",
-          description: "Merci pour votre signalement. Nous examinerons cette ressource",
-          duration: 3000,
-        });
-      } catch (e: any) {
-        toast({
-          title: "Échec du signalement",
-          description: e?.message || "Impossible d'envoyer le signalement pour le moment.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsReporting(false);
-      }
-    })();
+          toast({
+            title: "Signalement envoyé",
+            description: "Merci pour votre signalement. Nous examinerons cette ressource",
+            duration: 3000,
+          });
+        } catch (e: any) {
+          toast({
+            title: "Échec du signalement",
+            description: e?.message || "Impossible d'envoyer le signalement pour le moment.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsReporting(false);
+        }
+      })();
+    });
   };
 
   const handleOpenEdit = () => {
@@ -887,6 +899,38 @@ export function ResourceDetail() {
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* Guest CTA Banner */}
+      {!isAuthenticated && (
+        <Card className="mt-8 border-primary/50 bg-primary/5 campus-animate-slide-up overflow-hidden relative">
+          <div className="absolute top-0 right-0 p-2 opacity-10">
+            <Zap className="h-24 w-24 text-primary fill-current -rotate-12 translate-x-8 -translate-y-8" />
+          </div>
+          <CardContent className="p-6 relative z-10">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="h-14 w-14 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                  <Zap className="h-7 w-7 text-primary fill-current" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">Voulez-vous aller plus loin ?</h3>
+                  <p className="text-muted-foreground text-sm max-w-md">
+                    Inscrivez-vous pour télécharger cette ressource, la sauvegarder dans vos dossiers et accéder à des milliers d'autres documents partagés par la communauté.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                <Button onClick={() => navigate("/register")} className="campus-gradient text-white px-8 h-11">
+                  S'inscrire gratuitement
+                </Button>
+                <Button variant="outline" onClick={() => navigate("/login")} className="h-11">
+                  Se connecter
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
     
     {/* Share Modal */}
@@ -966,6 +1010,28 @@ export function ResourceDetail() {
         </div>
       </DialogContent>
     </Dialog>
+      <Dialog open={showAuthModal} onOpenChange={setShowAuthModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Zap className="h-5 w-5 text-primary fill-current" />
+              Rejoignez CampusSphere
+            </DialogTitle>
+            <DialogDescription>
+              Vous devez être connecté pour télécharger ou sauvegarder des ressources. 
+              Créez un compte gratuitement pour accéder à tout le contenu.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 mt-4">
+            <Button onClick={() => navigate("/register")} className="campus-gradient text-white w-full">
+              Créer un compte gratuitement
+            </Button>
+            <Button variant="outline" onClick={() => navigate("/login")} className="w-full">
+              Se connecter
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
