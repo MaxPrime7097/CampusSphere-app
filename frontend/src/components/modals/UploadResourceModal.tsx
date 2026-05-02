@@ -276,8 +276,42 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
         </DialogHeader>
         
         <div className="space-y-4">
+          {/* Subject & Type moved to top as requested */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Type de ressource *</Label>
+              <Select value={type} onValueChange={setType}>
+                <SelectTrigger className="mt-1.5">
+                  <SelectValue placeholder="Sélectionner..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {types.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Matière *</Label>
+              <Select value={subject} onValueChange={setSubject}>
+                <SelectTrigger className="mt-1.5">
+                  <SelectValue placeholder="Sélectionner..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {subjects.map((subject) => (
+                    <SelectItem key={subject.value} value={subject.value}>
+                      {subject.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           <div>
-            <Label>{t('modals.uploadResource.file')}</Label>
+            <Label>{t('modals.uploadResource.file')} *</Label>
             <div 
               className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
                 isDragOver 
@@ -366,55 +400,21 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
           </div>
 
           <div>
-            <Label htmlFor="title">{t('modals.uploadResource.title_field')}</Label>
-            <Input id="title" placeholder={t('modals.uploadResource.titlePlaceholder', { defaultValue: "Ex : Notes complètes - Algèbre linéaire" })} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={100} />
+            <Label htmlFor="title">{t('modals.uploadResource.title_field')} *</Label>
+            <Input id="title" placeholder={t('modals.uploadResource.titlePlaceholder', { defaultValue: "Ex : Notes complètes - Algèbre linéaire" })} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={100} className="mt-1.5" />
           </div>
 
           <div>
             <Label htmlFor="description">{t('modals.uploadResource.description')}</Label>
-            <Textarea id="description" placeholder={t('modals.uploadResource.descPlaceholder', { defaultValue: "Décrivez votre ressource..." })} rows={3} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} />
-          </div>
-
-          {/* Subject & Type */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Matière</Label>
-              <Select value={subject} onValueChange={setSubject}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner" />
-                </SelectTrigger>
-                <SelectContent>
-                  {subjects.map((subject) => (
-                    <SelectItem key={subject.value} value={subject.value}>
-                      {subject.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Type</Label>
-              <Select value={type} onValueChange={setType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner" />
-                </SelectTrigger>
-                <SelectContent>
-                  {types.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Textarea id="description" placeholder={t('modals.uploadResource.descPlaceholder', { defaultValue: "Décrivez votre ressource..." })} rows={3} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} className="mt-1.5" />
           </div>
 
           {/* Visibility & Audience */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Niveau d'audience</Label>
+              <Label>Niveau d'audience *</Label>
               <Select value={audience || "all"} onValueChange={setAudience}>
-                <SelectTrigger>
+                <SelectTrigger className="mt-1.5">
                   <SelectValue placeholder="Tous niveaux" />
                 </SelectTrigger>
                 <SelectContent>
@@ -428,9 +428,9 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
               </Select>
             </div>
             <div>
-              <Label>Visibilité</Label>
+              <Label>Visibilité *</Label>
               <Select value={visibility || "public"} onValueChange={setVisibility}>
-                <SelectTrigger>
+                <SelectTrigger className="mt-1.5">
                   <SelectValue placeholder="Public" />
                 </SelectTrigger>
                 <SelectContent>

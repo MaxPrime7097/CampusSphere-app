@@ -371,7 +371,7 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
                   setMentionQuery("");
                 }
               }}
-              className="min-h-[150px] text-lg border-none focus-visible:ring-0 p-0 resize-none placeholder:text-muted-foreground/50 shadow-none bg-transparent"
+              className="min-h-[150px] border bg-background focus-visible:ring-1 p-4 resize-none placeholder:text-muted-foreground/50 shadow-sm mt-2 rounded-xl"
             />
             
             {showPreview && content && (
@@ -443,12 +443,12 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
 
           {/* Advanced Options Section */}
           {showAdvanced && (
-            <div className="space-y-4 p-4 rounded-2xl bg-accent/30 border border-primary/5 campus-animate-slide-up">
+            <div className="space-y-4 p-4 rounded-xl border bg-muted/30 campus-animate-slide-up">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label className="text-[10px] font-bold uppercase text-muted-foreground ml-1">Catégorie</Label>
                   <Select value={category} onValueChange={setCategory}>
-                    <SelectTrigger className="h-9 bg-background border-none shadow-sm">
+                    <SelectTrigger className="h-9 bg-background border shadow-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -463,7 +463,7 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
                 <div className="space-y-1.5">
                   <Label className="text-[10px] font-bold uppercase text-muted-foreground ml-1">Visibilité</Label>
                   <Select value={visibility} onValueChange={setVisibility}>
-                    <SelectTrigger className="h-9 bg-background border-none shadow-sm">
+                    <SelectTrigger className="h-9 bg-background border shadow-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -483,7 +483,7 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
                     placeholder="Campus, ville..." 
                     value={location} 
                     onChange={(e) => setLocation(e.target.value)} 
-                    className="h-9 pl-9 bg-background border-none shadow-sm"
+                    className="h-9 pl-9 bg-background border shadow-sm"
                   />
                 </div>
               </div>
@@ -496,7 +496,7 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
                     value={newTag} 
                     onChange={(e) => setNewTag(e.target.value)} 
                     onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                    className="h-9 bg-background border-none shadow-sm"
+                    className="h-9 bg-background border shadow-sm"
                   />
                   <Button onClick={addTag} size="sm" variant="secondary" className="h-9 px-3">
                     <Plus className="h-4 w-4" />
