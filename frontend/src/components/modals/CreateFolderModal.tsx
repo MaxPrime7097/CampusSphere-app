@@ -44,7 +44,7 @@ export function CreateFolderModal({
     }
   }, [folder, open]);
 
-  const atLimit = !isEditing && existingCount >= 3;
+  const atLimit = !isEditing && existingCount >= 4;
 
   const handleSubmit = async () => {
     if (!name.trim()) {
@@ -52,7 +52,7 @@ export function CreateFolderModal({
       return;
     }
     if (atLimit) {
-      toast({ title: "Limite atteinte", description: "Vous avez déjà 3 dossiers (maximum).", variant: "destructive" });
+      toast({ title: "Limite atteinte", description: "Vous avez déjà 4 dossiers (maximum).", variant: "destructive" });
       return;
     }
 
@@ -89,7 +89,7 @@ export function CreateFolderModal({
         {atLimit ? (
           <div className="py-6 text-center space-y-2">
             <p className="text-sm text-muted-foreground">
-              Vous avez atteint la limite de <strong>3 dossiers</strong>.
+              Vous avez atteint la limite de <strong>4 dossiers</strong>.
             </p>
             <p className="text-xs text-muted-foreground">Supprimez un dossier existant pour en créer un nouveau.</p>
           </div>
@@ -107,7 +107,7 @@ export function CreateFolderModal({
               />
               {!isEditing && (
                 <p className="text-[10px] text-muted-foreground mt-1">
-                  {existingCount}/3 dossiers utilisés
+                  {existingCount}/4 dossiers utilisés
                 </p>
               )}
             </div>

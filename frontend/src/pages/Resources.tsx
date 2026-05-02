@@ -479,7 +479,6 @@ export function Resources() {
           {[
             { id: "all", label: "Toutes" },
             { id: "suggestions", label: "Suggestions" },
-            { id: "recent", label: "Récentes" },
           ].map((tab) => (
             <li key={tab.id}>
               <button
@@ -500,13 +499,13 @@ export function Resources() {
               <button
                 onClick={() => { setShowFoldersTab(true); loadFolders(); }}
                 className={cn(
-                  "w-full flex justify-center items-center gap-1.5 border-b-4 py-4 transition-all duration-200 text-sm font-medium",
+                  "w-full flex justify-center border-b-4 py-4 transition-all duration-200 text-sm font-medium",
                   showFoldersTab
                     ? "border-primary text-primary"
                     : "border-transparent hover:text-primary hover:border-primary"
                 )}
               >
-                <Folder className="h-3.5 w-3.5" /> Mes dossiers
+                Dossiers
               </button>
             </li>
           )}
@@ -517,22 +516,20 @@ export function Resources() {
         {showFoldersTab ? (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="font-bold text-lg flex items-center gap-2">
-                <FolderOpen className="h-5 w-5 text-primary" />
-                Mes dossiers ({folders.length}/3)
+              <h2 className="font-bold text-lg">
+                Mes dossiers ({folders.length}/4)
               </h2>
               <button
                 className={cn(
-                  "flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg transition-all",
-                  folders.length >= 3
+                  "text-sm font-medium px-3 py-1.5 rounded-lg transition-all",
+                  folders.length >= 4
                     ? "text-muted-foreground cursor-not-allowed"
                     : "text-primary hover:bg-primary/10"
                 )}
                 onClick={() => { setEditingFolder(null); setShowCreateFolder(true); }}
-                disabled={folders.length >= 3}
+                disabled={folders.length >= 4}
               >
-                <FolderPlus className="h-4 w-4" />
-                Nouveau dossier
+                + Nouveau dossier
               </button>
             </div>
 

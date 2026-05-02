@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { deleteResource, downloadResource, getResource, getResourcePreviewUrl, reportResource, saveResource, trackResourceShare, updateResource } from "@/services/api";
-import { Download, Share2, ChevronLeft, Eye, Flag, Loader2, Zap, Bookmark, Pencil, Trash2, Info, X, Facebook, Twitter, Instagram, Linkedin, Copy, FileText } from "lucide-react";
+import { deleteResource, downloadResource, getResource, getResourcePreviewUrl, reportResource, saveResource, trackResourceShare, updateResource, listFolders, updateFolder, type ResourceFolder } from "@/services/api";
+import { Download, Share2, ChevronLeft, Eye, Flag, Loader2, Zap, Bookmark, Pencil, Trash2, Info, X, Facebook, Twitter, Instagram, Linkedin, Copy, FileText, FolderInput } from "lucide-react";
 import { renderMentionText } from "@/lib/mentions";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { useToast } from "@/hooks/use-toast";
 import { formatFrenchDate } from "@/lib/date";
@@ -62,6 +63,12 @@ export function ResourceDetail() {
   const [draftDescription, setDraftDescription] = useState("");
   const [showShareModal, setShowShareModal] = useState(false);
   const [isCopyingLink, setIsCopyingLink] = useState(false);
+
+  // Folder state (for owner)
+  const [folders, setFolders] = useState<ResourceFolder[]>([]);
+  const [currentFolderId, setCurrentFolderId] = useState<string>("none");
+  const [isMovingToFolder, setIsMovingToFolder] = useState(false);
+  const [showFolderSelect, setShowFolderSelect] = useState(false);
 
 
   const [resource, setResource] = useState<{
@@ -188,6 +195,18 @@ export function ResourceDetail() {
           setIsSaved(resourcePayload.isSaved);
           setDraftTitle(resourcePayload.title);
           setDraftDescription(resourcePayload.description || "");
+
+          // If owner, load folders and set current folder
+          if (resourcePayload.canEdit) {
+            listFolders().then((foldersData) => {
+              if (isMounted) {
+                setFolders(foldersData);
+                // Get folder_id from raw data
+                const rawFolderId = (data as any).folder_id ?? (data as any).folder ?? null;
+                setCurrentFolderId(rawFolderId ? String(rawFolderId) : "none");
+              }
+            }).catch(() => null);
+          }
         }
       } catch (e: any) {
         toast({
@@ -604,8 +623,66 @@ export function ResourceDetail() {
                     <Pencil className="h-4 w-4" />
                     <span className="hidden md:inline">Modifier</span>
                   </Button>
-
                 )}
+
+                {resource.canEdit && folders.length > 0 && !showFolderSelect && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowFolderSelect(true)}
+                    className="gap-2"
+                    aria-label="Déplacer vers un dossier"
+                  >
+                    <FolderInput className="h-4 w-4" />
+                    <span className="hidden md:inline">Dossier</span>
+                  </Button>
+                )}
+
+                {resource.canEdit && folders.length > 0 && showFolderSelect && (
+                  <div className="flex items-center gap-1">
+                    <Select
+                      value={currentFolderId}
+                      onValueChange={async (val) => {
+                        setIsMovingToFolder(true);
+                        try {
+                          const folderId = val === "none" ? null : Number(val);
+                          await updateResource(resource.id, { folder_id: folderId } as any);
+                          setCurrentFolderId(val);
+                          toast({
+                            title: val === "none" ? "Retiré du dossier" : "Déplacé dans le dossier",
+                            description: val === "none"
+                              ? "La ressource n'est plus dans un dossier."
+                              : `Ressource déplacée dans "${folders.find(f => String(f.id) === val)?.name}".`,
+                          });
+                          setShowFolderSelect(false);
+                        } catch (e: any) {
+                          toast({ title: "Erreur", description: e?.message, variant: "destructive" });
+                        } finally {
+                          setIsMovingToFolder(false);
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="h-8 text-xs w-36">
+                        {isMovingToFolder
+                          ? <Loader2 className="h-3 w-3 animate-spin" />
+                          : <SelectValue placeholder="Choisir dossier" />
+                        }
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Aucun dossier</SelectItem>
+                        {folders.map(f => (
+                          <SelectItem key={f.id} value={String(f.id)} disabled={f.resource_count >= 20 && currentFolderId !== String(f.id)}>
+                            {f.name} ({f.resource_count}/20)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowFolderSelect(false)}>
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                )}
+
                 {resource.canDelete && (
                   <Button
                     variant="destructive"

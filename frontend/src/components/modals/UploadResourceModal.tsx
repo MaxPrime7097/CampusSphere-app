@@ -202,7 +202,8 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
       formData.append('tags', JSON.stringify(tags));
       formData.append('visibility', visibility || 'public');
       formData.append('audience', audience || '');
-      if (selectedFolderId) formData.append('folder_id', selectedFolderId);
+      if (selectedFolderId && selectedFolderId !== 'none') formData.append('folder_id', selectedFolderId);
+
 
       const createdResource = await createResource(formData);
       
@@ -435,14 +436,14 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
                   <SelectValue placeholder="Aucun dossier" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Aucun dossier</SelectItem>
+                  <SelectItem value="none">Aucun dossier</SelectItem>
                   {folders.map((f) => (
                     <SelectItem
                       key={f.id}
                       value={String(f.id)}
                       disabled={f.resource_count >= 20}
                     >
-                      📁 {f.name} ({f.resource_count}/20)
+                      {f.name} ({f.resource_count}/20)
                     </SelectItem>
                   ))}
                 </SelectContent>

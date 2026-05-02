@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { Folder, FolderOpen, Download, Loader2, MoreVertical, Pencil, Trash2, Users, Globe, Lock } from "lucide-react";
+import { Folder, FolderOpen, Download, Loader2, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -17,23 +16,6 @@ interface FolderCardProps {
   onDelete?: (folder: ResourceFolder) => void;
 }
 
-const VISIBILITY_ICONS = {
-  public: <Globe className="h-3 w-3" />,
-  university: <Users className="h-3 w-3" />,
-  friends: <Lock className="h-3 w-3" />,
-};
-
-const VISIBILITY_LABELS = {
-  public: "Public",
-  university: "Université",
-  friends: "Amis",
-};
-
-const FOLDER_COLORS = [
-  "from-violet-500 to-purple-600",
-  "from-blue-500 to-cyan-600",
-  "from-amber-500 to-orange-600",
-];
 
 export function FolderCard({
   folder,
@@ -44,9 +26,6 @@ export function FolderCard({
   onDelete,
 }: FolderCardProps) {
   const [isDownloading, setIsDownloading] = useState(false);
-
-  // Deterministic color based on folder id
-  const colorClass = FOLDER_COLORS[folder.id % FOLDER_COLORS.length];
 
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -62,17 +41,17 @@ export function FolderCard({
   return (
     <div
       className={cn(
-        "group relative bg-card border rounded-xl overflow-hidden cursor-pointer transition-all duration-200",
-        "hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]",
+        "group relative bg-card border rounded-xl overflow-hidden cursor-pointer transition-shadow duration-200",
+        "hover:shadow-md",
         isSelected && "ring-2 ring-primary shadow-md"
       )}
       onClick={() => onOpen(folder)}
     >
-      {/* Header gradient */}
-      <div className={cn("h-20 flex items-center justify-center bg-gradient-to-br", colorClass)}>
+      {/* Header — flat neutral */}
+      <div className="h-16 flex items-center justify-center bg-muted/50">
         {isSelected
-          ? <FolderOpen className="h-10 w-10 text-white drop-shadow-md" />
-          : <Folder className="h-10 w-10 text-white drop-shadow-md" />
+          ? <FolderOpen className="h-8 w-8 text-primary" />
+          : <Folder className="h-8 w-8 text-primary/70 group-hover:text-primary transition-colors duration-200" />
         }
       </div>
 
@@ -113,15 +92,9 @@ export function FolderCard({
 
         {/* Meta row */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 flex items-center gap-1">
-              {VISIBILITY_ICONS[folder.visibility]}
-              {VISIBILITY_LABELS[folder.visibility]}
-            </Badge>
-            <span className="text-[10px] text-muted-foreground">
-              {folder.resource_count} fichier{folder.resource_count !== 1 ? "s" : ""}
-            </span>
-          </div>
+          <span className="text-[11px] text-muted-foreground">
+            {folder.resource_count} fichier{folder.resource_count !== 1 ? "s" : ""}
+          </span>
 
           <Button
             size="sm"

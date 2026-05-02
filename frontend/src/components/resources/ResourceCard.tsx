@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
-  FileText, Download, Eye, Bookmark, 
-  Video, FileCode, Archive, FileImage, 
-  Loader2, Zap 
+import {
+  FileText, Download, Eye, Bookmark,
+  Video, FileCode, Archive, FileImage,
+  Loader2,
 } from "lucide-react";
 import { getTypeLabel, getSubjectLabel } from "@/lib/resourceMetadata";
 import { formatFileSize, cn } from "@/lib/utils";
@@ -21,94 +21,115 @@ interface ResourceCardProps {
   className?: string;
 }
 
-export const ResourceCard = React.memo(({ 
-  resource, isDownloading, isSaved, 
-  onDownload, onSave, onPreview, className 
+const TYPE_STYLES: Record<string, { icon: string; bg: string }> = {
+  notes:          { icon: "text-blue-500",   bg: "bg-blue-50 dark:bg-blue-950/40" },
+  resumes:        { icon: "text-sky-500",    bg: "bg-sky-50 dark:bg-sky-950/40" },
+  exercises:      { icon: "text-red-500",    bg: "bg-red-50 dark:bg-red-950/40" },
+  annales:        { icon: "text-orange-500", bg: "bg-orange-50 dark:bg-orange-950/40" },
+  projects:       { icon: "text-amber-500",  bg: "bg-amber-50 dark:bg-amber-950/40" },
+  presentations:  { icon: "text-amber-500",  bg: "bg-amber-50 dark:bg-amber-950/40" },
+  cours:          { icon: "text-violet-500", bg: "bg-violet-50 dark:bg-violet-950/40" },
+  default:        { icon: "text-primary",    bg: "bg-primary/5" },
+};
+
+function getTypeStyle(type: string) {
+  const key = (type || "").toLowerCase().split("/")[0];
+  return TYPE_STYLES[key] ?? TYPE_STYLES.default;
+}
+
+function getFileIcon(type: string) {
+  const t = (type || "").toLowerCase();
+  if (t.includes("video"))   return <Video className="h-6 w-6" />;
+  if (t.includes("image"))   return <FileImage className="h-6 w-6" />;
+  if (t.includes("code") || t.includes("project")) return <FileCode className="h-6 w-6" />;
+  if (t.includes("archive") || t.includes("zip"))  return <Archive className="h-6 w-6" />;
+  return <FileText className="h-6 w-6" />;
+}
+
+export const ResourceCard = React.memo(({
+  resource, isDownloading, isSaved,
+  onDownload, onSave, onPreview, className
 }: ResourceCardProps) => {
   const navigate = useNavigate();
-
-  const getFileIcon = (type: string) => {
-    const t = (type || "").toLowerCase();
-    if (t.includes("video")) return <Video className="h-7 w-7" />;
-    if (t.includes("image")) return <FileImage className="h-7 w-7" />;
-    if (t.includes("code") || t.includes("project")) return <FileCode className="h-7 w-7" />;
-    if (t.includes("archive") || t.includes("zip")) return <Archive className="h-7 w-7" />;
-    return <FileText className="h-7 w-7" />;
-  };
-
-  const getIconColor = (type: string) => {
-    const t = (type || "").toLowerCase();
-    if (t.includes("notes") || t.includes("resumes")) return "text-blue-500 bg-blue-50/50";
-    if (t.includes("exercises") || t.includes("annales")) return "text-red-500 bg-red-50/50";
-    if (t.includes("projects") || t.includes("presentations")) return "text-amber-500 bg-amber-50/50";
-    return "text-primary bg-primary/5";
-  };
+  const style = getTypeStyle(resource.type);
 
   return (
-    <Card 
+    <Card
       className={cn(
-        "group overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 campus-card cursor-pointer border-none bg-card/50 backdrop-blur-sm active:scale-[0.98]",
+        "group overflow-hidden cursor-pointer border bg-card hover:shadow-md transition-shadow duration-200",
         className
       )}
       onClick={() => navigate(`/resources/${resource.id}`)}
     >
       <CardContent className="p-0">
-        {/* Icon Header */}
-        <div className={cn("h-24 flex flex-col items-center justify-center transition-colors duration-300", getIconColor(resource.type))}>
-          <div className="p-3 rounded-2xl bg-background/50 shadow-sm transition-transform duration-300 group-hover:scale-110">
+        {/* Header — horizontal flat */}
+        <div className={cn("flex items-center gap-3 px-4 py-3", style.bg)}>
+          <div className={cn("flex-shrink-0", style.icon)}>
             {getFileIcon(resource.type)}
           </div>
-          <span className="text-[9px] mt-2 font-bold uppercase tracking-widest opacity-60">
-            {getTypeLabel(resource.type)}
-          </span>
-        </div>
-
-        <div className="p-4 space-y-3">
-          <div className="min-h-[50px]">
-            <h3 className="font-bold text-sm line-clamp-1 group-hover:text-primary transition-colors">
+          <div className="min-w-0">
+            <h3 className="font-semibold text-sm line-clamp-1 text-foreground">
               {resource.title}
             </h3>
-            <div className="flex items-center gap-2 mt-1.5">
-              <Badge variant="secondary" className="text-[9px] py-0 h-4 px-1.5 font-semibold bg-primary/10 text-primary border-none">
+            <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+              <Badge
+                variant="secondary"
+                className="text-[9px] py-0 h-4 px-1.5 font-semibold bg-background/70 border-none"
+              >
                 {getSubjectLabel(resource.subject)}
               </Badge>
-              <span className="text-[10px] text-muted-foreground font-medium">
+              {resource.type && (
+                <span className="text-[9px] text-muted-foreground uppercase tracking-wide font-medium">
+                  {getTypeLabel(resource.type)}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="px-4 py-3 space-y-3">
+          {/* Stats row */}
+          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+            <span className="truncate max-w-[90px]">Par {resource.authorName}</span>
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-0.5">
+                <Eye className="h-3 w-3" /> {resource.viewCount || 0}
+              </span>
+              <span className="flex items-center gap-0.5">
+                <Download className="h-3 w-3" /> {resource.downloadCount || 0}
+              </span>
+              <span className="text-[9px] text-muted-foreground/60">
                 {formatFileSize(resource.fileSize)}
               </span>
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-muted/50">
-            <span className="truncate max-w-[80px]">Par {resource.authorName}</span>
-            <div className="flex items-center gap-2">
-              <span className="flex items-center gap-0.5"><Eye className="h-3 w-3" /> {resource.viewCount || 0}</span>
-              <span className="flex items-center gap-0.5"><Download className="h-3 w-3" /> {resource.downloadCount || 0}</span>
-            </div>
-          </div>
-
           {/* Action Buttons */}
-          <div className="flex gap-1.5 pt-1" onClick={(e) => e.stopPropagation()}>
-            <Button 
-              size="sm" 
-              variant="outline" 
-              className="h-8 w-8 p-0 rounded-lg hover:bg-primary/5 hover:text-primary border-muted transition-all active:scale-90" 
-              onClick={onPreview} 
+          <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 w-8 p-0 rounded-lg border-muted hover:bg-muted/60"
+              onClick={onPreview}
               title="Aperçu"
             >
               <Eye className="h-3.5 w-3.5" />
             </Button>
-            <Button 
-              size="sm" 
-              variant="outline" 
-              className={cn("h-8 w-8 p-0 rounded-lg transition-all border-muted active:scale-90", isSaved ? "text-primary bg-primary/5 border-primary/20" : "")} 
+            <Button
+              size="sm"
+              variant="outline"
+              className={cn(
+                "h-8 w-8 p-0 rounded-lg border-muted",
+                isSaved ? "text-primary bg-primary/5 border-primary/20" : "hover:bg-muted/60"
+              )}
               onClick={onSave}
               title="Sauvegarder"
             >
               <Bookmark className={cn("h-3.5 w-3.5", isSaved ? "fill-current" : "")} />
             </Button>
-            <Button 
-              size="sm" 
-              className="h-8 flex-1 gap-1 campus-gradient text-white rounded-lg shadow-sm hover:opacity-90 transition-all active:scale-95" 
+            <Button
+              size="sm"
+              className="h-8 flex-1 gap-1 campus-gradient text-white rounded-lg hover:opacity-90"
               onClick={onDownload}
               disabled={isDownloading}
             >
@@ -116,7 +137,7 @@ export const ResourceCard = React.memo(({
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
                 <>
-                  <Download className="h-3.5 w-3.5" /> 
+                  <Download className="h-3.5 w-3.5" />
                   <span className="text-xs font-semibold hidden sm:inline">Télécharger</span>
                 </>
               )}

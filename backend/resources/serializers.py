@@ -45,9 +45,9 @@ class ResourceFolderCreateSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if request:
             existing_count = ResourceFolder.objects.filter(owner=request.user).count()
-            if existing_count >= 3:
+            if existing_count >= 4:
                 raise serializers.ValidationError(
-                    "Vous avez atteint la limite de 3 dossiers."
+                    "Vous avez atteint la limite de 4 dossiers."
                 )
         return attrs
 
