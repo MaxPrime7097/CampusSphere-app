@@ -15,7 +15,8 @@ import {
   User, 
   Settings, 
   LogOut,
-  ChevronDown
+  ChevronDown,
+  BadgeCheck
 } from "lucide-react";
 
 export function ProfileBubble() {
@@ -42,7 +43,8 @@ export function ProfileBubble() {
             name: data.name || data.first_name + ' ' + data.last_name || "Utilisateur",
             username: data.username || "user",
             avatar: data.avatar || "/placeholder-avatar.jpg",
-            email: data.email || "user@university.cm"
+            email: data.email || "user@university.cm",
+            isVerified: Boolean(data.is_verified ?? data.isVerified)
           });
         }
       } catch (e) {
@@ -97,7 +99,10 @@ export function ProfileBubble() {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user.name}</p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-sm font-medium leading-none">{user.name}</p>
+              {user.isVerified && <BadgeCheck className="h-3.5 w-3.5 text-primary fill-primary/10" />}
+            </div>
             <p className="text-xs leading-none text-muted-foreground">
               @{user.username}
             </p>

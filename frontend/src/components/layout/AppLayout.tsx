@@ -24,6 +24,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [darkMode, setDarkMode] = useState(false);
 
