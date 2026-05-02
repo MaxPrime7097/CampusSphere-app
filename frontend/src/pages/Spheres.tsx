@@ -219,11 +219,25 @@ export function Spheres() {
     };
   };
 
+  /**
+   * Formule de classement Top Sphères (transparente) :
+   *   score = (membres / maxMembres) × 0.5 + (progression / 100) × 0.5
+   *
+   * Poids : 50% popularité (membres), 50% avancement (progression)
+   * Quand l'API fournira les posts récents, le poids activité sera ajouté.
+   */
   const getSortedSpheres = (): any[] => {
     const sorted = [...filteredSpheres];
     switch (resolvedSphereSort) {
-      case "top":
-        return sorted.sort((a: any, b: any) => (b.progression || 0) - (a.progression || 0));
+      case "top": {
+        const maxMembers = Math.max(1, ...sorted.map((s: any) => Number(s.memberCount) || 0));
+        const score = (s: any) => {
+          const members  = (Number(s.memberCount)  || 0) / maxMembers;        // 0–1
+          const progress = Math.min(100, Number(s.progression) || 0) / 100;   // 0–1
+          return members * 0.5 + progress * 0.5;
+        };
+        return sorted.sort((a: any, b: any) => score(b) - score(a));
+      }
       case "mySpheres":
         return sorted.filter((sphere: any) => getUnifiedMembershipState(sphere) === "active");
       case "discover":
@@ -497,62 +511,75 @@ export function Spheres() {
           <TabsContent value="top" className="mt-0">
             <section id="top" className="space-y-4">
               <Card className={cardClasses}>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><TrendingUp className="h-5 w-5 text-primary" /> Top Sphères du mois</CardTitle>
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <TrendingUp className="h-4 w-4 text-primary" /> Top Sphères du mois
+                  </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {getSortedSpheres().slice(0, 5).map((sphere, index) => (
-                        <Card key={sphere.id} className={cardClasses} onClick={() => navigate(`/spheres/${sphere.id}`)}>
-                          <CardContent className="p-4">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-8 h-8 rounded-full bg-gradient-to-r ${sphere.color || "from-primary/20 to-accent/20"} flex items-center justify-center text-white font-bold text-sm`}>#{index + 1}</div>
-                              <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${sphere.color || "from-primary/20 to-accent/20"} flex items-center justify-center text-white font-bold`}>{sphere.name?.charAt(0) || ""}</div>
-                              <div className="flex-1">
-                                <p className="font-semibold">{sphere.name}</p>
-                                <p className="text-xs text-muted-foreground flex items-center gap-1"><Users className="h-3 w-3" />{sphere.memberCount} membres</p>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-primary font-bold">{Math.max(0, Math.min(100, Number(sphere.progression || 0)))}%</div>
-                                <Badge variant="secondary" className="text-xs mt-1">{sphere.category}</Badge>
-                              </div>
+                <CardContent className="space-y-1 pt-0">
+                  {getSortedSpheres().slice(0, 5).map((sphere, index) => {
+                    const membership = getUnifiedMembershipState(sphere);
+                    const actionModel = getSphereActionModel(sphere);
+                    const progress = Math.max(0, Math.min(100, Number(sphere.progression || 0)));
+                    const rankColors = [
+                      "bg-amber-400 text-white",
+                      "bg-slate-400 text-white",
+                      "bg-orange-400 text-white",
+                      "bg-muted text-muted-foreground",
+                      "bg-muted text-muted-foreground",
+                    ];
+                    return (
+                      <div
+                        key={sphere.id}
+                        className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors group"
+                        onClick={() => navigate(`/spheres/${sphere.id}`)}
+                      >
+                        {/* Rank */}
+                        <span className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold ${rankColors[index] ?? rankColors[3]}`}>
+                          {index + 1}
+                        </span>
+
+                        {/* Avatar */}
+                        <div className={`flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br ${sphere.color || "from-primary/30 to-accent/30"} flex items-center justify-center text-white font-bold text-sm`}>
+                          {sphere.name?.charAt(0) || "?"}
+                        </div>
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm truncate group-hover:text-primary transition-colors">
+                            {sphere.name}
+                          </p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-primary rounded-full transition-all"
+                                style={{ width: `${progress}%` }}
+                              />
                             </div>
-                            <div className="mt-3">
-                              {(() => {
-                                const membership = getUnifiedMembershipState(sphere);
-                                const actionModel = getSphereActionModel(sphere);
-                                return membership === "active" ? (
-                                  <Button
-                                    size="sm"
-                                    className="w-full h-7 text-xs campus-gradient text-white hover:opacity-90"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      navigate(`/spheres/${sphere.id}`);
-                                    }}
-                                  >
-                                    Accéder
-                                  </Button>
-                                ) : (
-                                  <Button
-                                    size="sm"
-                                    className={`w-full h-7 text-xs ${actionModel.className}`}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      actionModel.onClick();
-                                    }}
-                                    disabled={actionModel.disabled}
-                                  >
-                                    {isJoining === String(sphere.id)
-                                      ? <Loader2 className="h-3 w-3 animate-spin" />
-                                      : <>{actionModel.icon}{actionModel.label}</>}
-                                  </Button>
-                                );
-                              })()}
-                            </div>
-                          </CardContent>
-                        </Card>
-                    ))}
-                  </div>
+                            <span className="text-[10px] text-muted-foreground flex-shrink-0 flex items-center gap-1">
+                              <Users className="h-2.5 w-2.5" />{sphere.memberCount}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Action */}
+                        <Button
+                          size="sm"
+                          className={`flex-shrink-0 h-7 text-xs px-2.5 ${membership === "active" ? "campus-gradient text-white hover:opacity-90" : actionModel.className}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            membership === "active" ? navigate(`/spheres/${sphere.id}`) : actionModel.onClick();
+                          }}
+                          disabled={actionModel.disabled}
+                        >
+                          {isJoining === String(sphere.id)
+                            ? <Loader2 className="h-3 w-3 animate-spin" />
+                            : membership === "active" ? "Accéder" : actionModel.label
+                          }
+                        </Button>
+                      </div>
+                    );
+                  })}
                 </CardContent>
               </Card>
             </section>

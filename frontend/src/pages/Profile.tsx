@@ -18,6 +18,10 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { cn, formatFileSize } from "@/lib/utils";
 import { ProfileSkeleton } from "@/components/ui/skeletons";
 import { OptimizedImage } from "@/components/ui/optimized-image";
+import { ResourceCard } from "@/components/resources/ResourceCard";
+import { ResourceSkeleton } from "@/components/ui/skeletons";
+import { EmptyState } from "@/components/ui/empty-state";
+import { normalizeResourceType, normalizeSubject } from "@/lib/resourceMetadata";
 
 const NOT_AVAILABLE_TEXT = "—";
 const MOOD_OPTIONS = [
@@ -1396,38 +1400,37 @@ export function Profile() {
                   <FileText className="h-5 w-5" />
                   Fichiers Partagés
                 </h3>
-                <div>
-                  <div className="space-y-3">
-                    {user.sharedFiles.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">
-                        {resourcesAvailable ? "Aucune contribution pour le moment." : NOT_AVAILABLE_TEXT}
-                      </p>
-                    ) : (
-                      user.sharedFiles.map((file: any, index: number) => (
-                        <div key={file.id || index} className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 campus-gradient rounded-lg flex items-center justify-center">
-                              <FileText className="h-5 w-5 text-white" />
-                            </div>
-                            <div>
-                              <p className="font-medium text-sm">{file.name}</p>
-                              <p className="text-xs text-muted-foreground">{file.type} • {file.size}</p>
-                            </div>
-                          </div>
-                          <Button 
-                            size="sm" 
-                            variant="ghost"
-                            onClick={() => handleDownloadFile(file.resourceId, file.filename || file.name)}
-                            className="gap-2"
-                          >
-                            <Download className="h-4 w-4" />
-                            Télécharger
-                          </Button>
-                        </div>
-                      ))
-                    )}
+                {loading ? (
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                    {Array.from({ length: 4 }).map((_, i) => <ResourceSkeleton key={i} />)}
                   </div>
-                </div>
+                ) : user.sharedFiles.length === 0 ? (
+                  <EmptyState
+                    icon={FileText}
+                    title={resourcesAvailable ? "Aucune contribution pour le moment" : "Contributions non disponibles"}
+                    description={resourcesAvailable ? "Cet utilisateur n'a pas encore partagé de ressources." : NOT_AVAILABLE_TEXT}
+                  />
+                ) : (
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                    {user.sharedFiles.map((file: any) => (
+                      <ResourceCard
+                        key={file.id}
+                        resource={{
+                          id: String(file.resourceId || file.id),
+                          title: file.name,
+                          subject: normalizeSubject(file.subject || ""),
+                          type: normalizeResourceType(file.type || ""),
+                          authorName: user.name,
+                          fileSize: file.size,
+                          viewCount: file.viewCount || 0,
+                          downloadCount: file.downloadCount || 0,
+                        }}
+                        isDownloading={false}
+                        onDownload={(e) => { e.stopPropagation(); handleDownloadFile(file.resourceId, file.filename || file.name); }}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             </section>
           )}

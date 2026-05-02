@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { searchUsers, getCurrentUser, getUserConnections, createConnection, deleteConnection, getMutualConnectionCounts } from "@/services/api";
-import { Users, Link, Search, Filter, Zap } from "lucide-react";
+import { Users, Link, Search, Filter, Zap, UserPlus, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,6 +11,8 @@ import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { ConnectionSkeleton } from "@/components/ui/skeletons";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   getFacultyLabel,
   getUniversityLabel,
@@ -313,143 +315,133 @@ export function Connections() {
           </SharedTabsList>
 
           {/* All Connections */}
-          <TabsContent value="all" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filteredConnections.map((connection) => (
-                <Card key={connection.id} className="campus-card mobile-card">
-                  <CardContent className="p-6">
-                    <div className="flex flex-col items-center text-center space-y-4">
-                      <Avatar className="h-20 w-20">
-                        <AvatarImage src={connection.avatar} />
-                        <AvatarFallback className="campus-gradient text-white text-xl font-bold">
-                          {connection.name?.slice(0, 2).toUpperCase() || 'US'}
-                        </AvatarFallback>
-                      </Avatar>
-
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-center gap-2">
-                          <h3 className="font-semibold">{connection.name}</h3>
-                          {connection.isVerified && (
-                            <div className="w-4 h-4 campus-gradient rounded-full flex items-center justify-center">
-                              <span className="text-white text-xs">✓</span>
-                            </div>
-                          )}
+          <TabsContent value="all" className="space-y-3">
+            {loading ? (
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 6 }).map((_, i) => <ConnectionSkeleton key={i} />)}
+              </div>
+            ) : filteredConnections.length === 0 ? (
+              <EmptyState
+                icon={Users}
+                title={hasActiveFilters ? "Aucune connexion pour ces critères" : "Aucune connexion"}
+                description={hasActiveFilters ? "Essayez de changer les filtres." : "Commencez à vous connecter avec d'autres étudiants !"}
+                actionLabel={hasActiveFilters ? "Réinitialiser" : undefined}
+                onAction={hasActiveFilters ? () => { setSearchQuery(""); setActiveFilter("all"); } : undefined}
+              />
+            ) : (
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {filteredConnections.map((connection) => (
+                  <Card key={connection.id} className="border bg-card hover:shadow-md transition-shadow duration-200 cursor-pointer" onClick={() => navigate(`/profile/${connection.username}`)}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-12 w-12 flex-shrink-0">
+                          <AvatarImage src={connection.avatar} />
+                          <AvatarFallback className="campus-gradient text-white font-bold">
+                            {connection.name?.slice(0, 2).toUpperCase() || 'US'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <h3 className="font-semibold text-sm truncate">{connection.name}</h3>
+                            {connection.isVerified && (
+                              <div className="w-3.5 h-3.5 campus-gradient rounded-full flex items-center justify-center flex-shrink-0">
+                                <span className="text-white text-[8px]">✓</span>
+                              </div>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground">@{connection.username}</p>
+                          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                            {connection.university && (
+                              <Badge variant="secondary" className="text-[9px] h-4 px-1.5 py-0">
+                                {getUniversityLabel(connection.university)}
+                              </Badge>
+                            )}
+                            <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                              <Zap className="h-2.5 w-2.5 text-primary" />{connection.impactScore}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              {connection.mutualFriends} communs
+                            </span>
+                          </div>
                         </div>
-                        <p className="text-sm text-muted-foreground">@{connection.username}</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-shrink-0 h-8 text-xs"
+                          onClick={(e) => { e.stopPropagation(); navigate(`/profile/${connection.username}`); }}
+                        >
+                          Profil
+                        </Button>
                       </div>
-
-                      <div className="flex gap-2 flex-wrap justify-center">
-                        <Badge variant="secondary" className="text-xs">
-                          {getUniversityLabel(connection.university)}
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">
-                          {getFacultyLabel(connection.field)}
-                        </Badge>
-                      </div>
-
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <span className="font-semibold text-primary"><Zap className="h-4 w-4" /> {connection.impactScore}</span>
-                        </div>
-                        <div>
-                          {connection.mutualFriends} amis communs
-                        </div>
-                      </div>
-
-                      <Button 
-                        variant="outline" 
-                        className="w-full" 
-                        size="sm"
-                        onClick={() => navigate(`/profile/${connection.username}`)}
-                      >
-                        Voir le profil
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-            {!loading && filteredConnections.length === 0 && (
-              <p className="text-sm text-muted-foreground">Aucune connexion trouvée pour ces critères.</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             )}
           </TabsContent>
 
           {/* Suggestions */}
-          <TabsContent value="suggestions" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filteredSuggestions.map((suggestion) => (
-                <Card key={suggestion.id} className="campus-card mobile-card">
-                  <CardContent className="p-6">
-                    <div className="flex flex-col items-center text-center space-y-4">
-                      <Avatar className="h-20 w-20">
-                        <AvatarImage src={suggestion.avatar} />
-                        <AvatarFallback className="campus-gradient text-white text-xl font-bold">
-                          {suggestion.name?.slice(0, 2).toUpperCase() || 'US'}
-                        </AvatarFallback>
-                      </Avatar>
-
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-center gap-2">
-                          <h3 className="font-semibold">{suggestion.name}</h3>
-                          {suggestion.isVerified && (
-                            <div className="w-4 h-4 campus-gradient rounded-full flex items-center justify-center">
-                              <span className="text-white text-xs">✓</span>
-                            </div>
-                          )}
+          <TabsContent value="suggestions" className="space-y-3">
+            {loading ? (
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 6 }).map((_, i) => <ConnectionSkeleton key={i} />)}
+              </div>
+            ) : filteredSuggestions.length === 0 ? (
+              <EmptyState
+                icon={UserPlus}
+                title={hasActiveFilters ? "Aucune suggestion pour ces critères" : "Aucune suggestion"}
+                description={hasActiveFilters ? "Essayez de changer les filtres." : "Revenez plus tard, de nouveaux étudiants rejoignent la plateforme."}
+                actionLabel={hasActiveFilters ? "Réinitialiser" : undefined}
+                onAction={hasActiveFilters ? () => { setSearchQuery(""); setActiveFilter("all"); } : undefined}
+              />
+            ) : (
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {filteredSuggestions.map((suggestion) => (
+                  <Card key={suggestion.id} className="border bg-card hover:shadow-md transition-shadow duration-200">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-12 w-12 flex-shrink-0">
+                          <AvatarImage src={suggestion.avatar} />
+                          <AvatarFallback className="campus-gradient text-white font-bold">
+                            {suggestion.name?.slice(0, 2).toUpperCase() || 'US'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-sm truncate">{suggestion.name}</h3>
+                          <p className="text-xs text-muted-foreground">@{suggestion.username}</p>
+                          <p className="text-[10px] text-primary/80 italic mt-0.5 truncate">{suggestion.reason}</p>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            {suggestion.university && (
+                              <Badge variant="secondary" className="text-[9px] h-4 px-1.5 py-0">
+                                {getUniversityLabel(suggestion.university)}
+                              </Badge>
+                            )}
+                            <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                              <Zap className="h-2.5 w-2.5 text-primary" />{suggestion.impactScore}
+                            </span>
+                          </div>
                         </div>
-                        <p className="text-sm text-muted-foreground">@{suggestion.username}</p>
+                        <Button
+                          size="sm"
+                          className="flex-shrink-0 h-8 text-xs campus-gradient text-white hover:opacity-90 gap-1"
+                          onClick={async () => {
+                            try {
+                              await createConnection(suggestion.id);
+                              toast({ title: "Demande envoyée", description: `Demande envoyée à ${suggestion.name}`, duration: 2000 });
+                              setConnections((prev) => [...prev, suggestion]);
+                              setSuggestions((prev) => prev.filter((s) => s.id !== suggestion.id));
+                            } catch (error: any) {
+                              toast({ title: "Erreur", description: error?.message || "Impossible d'envoyer la demande", variant: "destructive" });
+                            }
+                          }}
+                        >
+                          <Link className="h-3 w-3" /> Connect
+                        </Button>
                       </div>
-
-                      <div className="flex gap-2 flex-wrap justify-center">
-                        <Badge variant="secondary" className="text-xs">
-                          {getUniversityLabel(suggestion.university)}
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">
-                          {getFacultyLabel(suggestion.field)}
-                        </Badge>
-                      </div>
-
-                      <p className="text-xs text-muted-foreground italic">
-                        {suggestion.reason}
-                      </p>
-
-                      <div className="flex items-center gap-1">
-                        <span className="font-semibold text-primary">⚡ {suggestion.impactScore}</span>
-                      </div>
-
-                      <Button 
-                        className="w-full campus-gradient text-white" 
-                        size="sm"
-                        onClick={async () => {
-                          try {
-                            await createConnection(suggestion.id);
-                            toast({
-                              title: "Demande envoyée",
-                              description: `Demande de connexion envoyée à ${suggestion.name}`,
-                              duration: 2000,
-                            });
-                            // Move to connections list
-                            setConnections((prev) => [...prev, suggestion]);
-                            setSuggestions((prev) => prev.filter((s) => s.id !== suggestion.id));
-                          } catch (error: any) {
-                            toast({
-                              title: "Erreur",
-                              description: error?.message || "Impossible d'envoyer la demande",
-                              variant: "destructive",
-                            });
-                          }
-                        }}
-                      >
-                        <Link className="h-4 w-4 mr-2" />
-                        Connect
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-            {!loading && filteredSuggestions.length === 0 && (
-              <p className="text-sm text-muted-foreground">Aucune suggestion trouvée pour ces critères.</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             )}
           </TabsContent>
         </Tabs>

@@ -646,7 +646,8 @@ export function ResourceDetail() {
                         setIsMovingToFolder(true);
                         try {
                           const folderId = val === "none" ? null : Number(val);
-                          await updateResource(resource.id, { folder_id: folderId } as any);
+                          await updateResource(resource.id, { folder_id: folderId });
+
                           setCurrentFolderId(val);
                           toast({
                             title: val === "none" ? "Retiré du dossier" : "Déplacé dans le dossier",

@@ -1388,9 +1388,10 @@ export async function updateResource(id: number | string, data: Partial<{
   description: string;
   category: string;
   tags: string[];
+  folder_id: number | null;
 }>, token?: string) {
   const response = await apiFetch<any>(`api/resources/${id}/`, {
-    method: "PUT",
+    method: "PATCH",
     body: data,
     token: token || getAccessToken(),
   });

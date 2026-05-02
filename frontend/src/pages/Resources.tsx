@@ -535,15 +535,15 @@ export function Resources() {
 
             {foldersLoading ? (
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="h-36 bg-muted/40 rounded-xl animate-pulse" />
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="h-32 bg-muted/40 rounded-xl animate-pulse" />
                 ))}
               </div>
             ) : folders.length === 0 ? (
               <EmptyState
                 icon={Folder}
                 title="Aucun dossier"
-                description="Créez jusqu'à 3 dossiers pour organiser vos ressources."
+                description="Créez jusqu'à 4 dossiers pour organiser vos ressources."
                 actionLabel="Créer un dossier"
                 onAction={() => setShowCreateFolder(true)}
               />

@@ -2,20 +2,23 @@ import { useState, useEffect } from "react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
 import { PostCard } from "@/components/feed/PostCard";
-import { Card, CardContent } from "@/components/ui/card";
+import { ResourceCard } from "@/components/resources/ResourceCard";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Calendar, ShoppingBag, Loader2 } from "lucide-react";
+import { BookOpen, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { getSavedPosts, getSavedResources, savePost, saveResource } from "@/services/api";
-import { getSubjectLabel, getTypeLabel, normalizeResourceType, normalizeSubject } from "@/lib/resourceMetadata";
-import { formatFileSize } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
+import { getSavedPosts, getSavedResources, savePost, saveResource, downloadResource } from "@/services/api";
+import { normalizeResourceType, normalizeSubject } from "@/lib/resourceMetadata";
 import { PostSkeleton, ResourceSkeleton } from "@/components/ui/skeletons";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export function SavedItems() {
   const [savedPosts, setSavedPosts] = useState<any[]>([]);
   const [savedResources, setSavedResources] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     let isMounted = true;
@@ -46,7 +49,6 @@ export function SavedItems() {
           }));
           setSavedPosts(mappedPosts);
 
-          // Map saved resources
           const mapped = (resources || []).map((r: any) => ({
             id: String(r.id),
             title: r.title,
@@ -59,54 +61,41 @@ export function SavedItems() {
             tags: r.tags || [],
             impactScore: r.impactScore || r.impact_score || 0,
             createdAt: r.createdAt || r.created_at || null,
+            viewCount: r.viewCount || r.view_count || 0,
+            downloadCount: r.downloadCount || r.download_count || 0,
           }));
           setSavedResources(mapped);
         }
       } catch (e: any) {
-        // Error loading saved items
+        // silent
       } finally {
         if (isMounted) setLoading(false);
       }
     })();
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, []);
 
-  const handleRemoveSavedPost = async (postId: string) => {
+  const handleDownload = async (e: React.MouseEvent, resourceId: string) => {
+    e.stopPropagation();
+    if (downloadingIds.has(resourceId)) return;
+    setDownloadingIds((prev) => new Set(prev).add(resourceId));
     try {
-      await savePost(postId);
-      setSavedPosts((prev) => prev.filter((post) => post.id !== postId));
-
-      toast({
-        title: "Post retiré des sauvegardes",
-        description: "Le post a été retiré de vos éléments enregistrés",
-        duration: 2000,
-      });
-    } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: error?.message || "Impossible de retirer ce post des sauvegardes",
-        variant: "destructive",
-      });
+      await downloadResource(resourceId);
+    } catch (err: any) {
+      toast({ title: "Erreur", description: err?.message || "Téléchargement échoué", variant: "destructive" });
+    } finally {
+      setDownloadingIds((prev) => { const next = new Set(prev); next.delete(resourceId); return next; });
     }
   };
 
-  const handleRemoveSavedResource = async (resourceId: string) => {
+  const handleUnsaveResource = async (e: React.MouseEvent, resourceId: string) => {
+    e.stopPropagation();
     try {
       await saveResource(resourceId);
-      setSavedResources((prev) => prev.filter((resource) => resource.id !== resourceId));
-      toast({
-        title: "Ressource retirée des sauvegardes",
-        description: "La ressource a été retirée de vos éléments enregistrés",
-        duration: 2000,
-      });
-    } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: error?.message || "Impossible de retirer cette ressource des sauvegardes",
-        variant: "destructive",
-      });
+      setSavedResources((prev) => prev.filter((r) => r.id !== resourceId));
+      toast({ title: "Ressource retirée des sauvegardes", duration: 2000 });
+    } catch (err: any) {
+      toast({ title: "Erreur", description: err?.message, variant: "destructive" });
     }
   };
 
@@ -130,65 +119,49 @@ export function SavedItems() {
                 <PostSkeleton />
               </>
             ) : savedPosts.length === 0 ? (
-              <Card className="campus-card mobile-card">
-                <CardContent className="p-8 text-center text-muted-foreground">
-                  Aucun post enregistré
-                </CardContent>
-              </Card>
+              <EmptyState
+                icon={BookOpen}
+                title="Aucun post enregistré"
+                description="Les posts que vous enregistrez apparaîtront ici."
+              />
             ) : (
               savedPosts.map((post) => (
                 <PostCard
                   key={post.id}
                   post={post}
                   onToggleSave={(saved) => {
-                    if (!saved) {
-                      setSavedPosts((prev) => prev.filter((p) => p.id !== post.id));
-                    }
+                    if (!saved) setSavedPosts((prev) => prev.filter((p) => p.id !== post.id));
                   }}
                 />
               ))
             )}
           </TabsContent>
 
-          <TabsContent value="resources" className="space-y-4">
+          <TabsContent value="resources">
             {loading ? (
-              <>
-                <ResourceSkeleton />
-                <ResourceSkeleton />
-              </>
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                {Array.from({ length: 6 }).map((_, i) => <ResourceSkeleton key={i} />)}
+              </div>
             ) : savedResources.length === 0 ? (
-              <Card className="campus-card mobile-card">
-                <CardContent className="p-8 text-center text-muted-foreground">
-                  Aucune ressource enregistrée
-                </CardContent>
-              </Card>
+              <EmptyState
+                icon={FileText}
+                title="Aucune ressource enregistrée"
+                description="Les ressources que vous sauvegardez apparaîtront ici."
+                actionLabel="Parcourir les ressources"
+                onAction={() => navigate("/resources")}
+              />
             ) : (
-              <div className="space-y-4">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                 {savedResources.map((resource) => (
-                  <Card key={resource.id} className="campus-card mobile-card">
-                    <CardContent className="p-4">
-                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
-                        <div>
-                          <h3 className="font-semibold">{resource.title}</h3>
-                          <p className="text-sm text-muted-foreground mt-1">{resource.description}</p>
-                          <div className="text-xs text-muted-foreground mt-2 flex flex-wrap gap-2">
-                            <span>Type: {getTypeLabel(resource.type)}</span>
-                            <span>Matière: {getSubjectLabel(resource.subject)}</span>
-                            <span>Taille: {formatFileSize(resource.fileSize)}</span>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <Button variant="outline" size="sm" onClick={() => handleRemoveSavedResource(resource.id)}>
-                            Retirer
-                          </Button>
-                          <Button variant="secondary" size="sm" onClick={() => window.location.assign(`/resources/${resource.id}`)}>
-                            Voir
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <ResourceCard
+                    key={resource.id}
+                    resource={resource}
+                    isDownloading={downloadingIds.has(resource.id)}
+                    isSaved={true}
+                    onDownload={(e) => handleDownload(e, resource.id)}
+                    onSave={(e) => handleUnsaveResource(e, resource.id)}
+                    onPreview={(e) => { e.stopPropagation(); navigate(`/resources/${resource.id}?mode=preview`); }}
+                  />
                 ))}
               </div>
             )}
