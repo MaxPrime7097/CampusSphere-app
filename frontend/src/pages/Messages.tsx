@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { createPrivateConversation, deleteMessage, deleteConversation, getCurrentUser, getConversationMessages, getConversationParticipants, getUserConnections, getUserConversations, markConversationRead, markConversationUnread, addParticipant, removeParticipant, renameConversation, leaveConversation, sendMessage, updateMessage, uploadConversationAvatar, removeConversationAvatar } from "@/services/api";
+import { createPrivateConversation, deleteMessage, deleteConversation, getCurrentUser, getConversationMessages, getConversationParticipants, getUserConnections, getUserConversations, markConversationRead, markConversationUnread, addParticipant, removeParticipant, renameConversation, leaveConversation, sendMessage, updateMessage, uploadConversationAvatar, removeConversationAvatar, searchUsers } from "@/services/api";
 import { useTranslation } from "react-i18next";
 import { Search, Send, Phone, Video, EllipsisVertical, MoreVertical, MessageSquare, Loader2, Users, Plus, Camera, Smile, ArrowLeft, CheckCheck, Trash, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";

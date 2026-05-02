@@ -494,7 +494,7 @@ export function Resources() {
               </button>
             </li>
           ))}
-          {(currentUser || localStorage.getItem('accessToken')) && (
+          {(currentUser || localStorage.getItem('access')) && (
             <li>
               <button
                 onClick={() => { setShowFoldersTab(true); loadFolders(); }}
