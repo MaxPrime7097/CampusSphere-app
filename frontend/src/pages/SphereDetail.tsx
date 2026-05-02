@@ -15,7 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 import { 
-  Users, FileText, Settings, Check, MoreVertical, Loader2, Plus, Shield, Crown, UserPlus, UserMinus, UserCheck, UserX, Camera, ExternalLink, Download, Info, X, Facebook, Twitter, Instagram, Linkedin, Copy, Share, ArrowLeft, Share2
+  Users, FileText, Settings, Check, MoreVertical, Loader2, Plus, Shield, Crown, UserPlus, UserMinus, UserCheck, UserX, Camera, ExternalLink, Download, Info, X, Facebook, Twitter, Instagram, Linkedin, Copy, Share, ArrowLeft, Share2, BadgeCheck
 } from "lucide-react";
 
 import { renderMentionText } from "@/lib/mentions";
@@ -167,6 +167,7 @@ export function SphereDetail() {
         name: m.user_info?.name || `${m.user_info?.first_name || ''} ${m.user_info?.last_name || ''}`.trim() || 'Unknown',
         username: m.user_info?.username || 'unknown',
         avatar: m.user_info?.avatar || '/placeholder-avatar.jpg',
+        isVerified: Boolean(m.user_info?.is_verified ?? m.user_info?.isVerified),
         isCreator: String(sphereData?.created_by_info?.id) === String(m.user_info?.id ?? m.user ?? ""),
       }));
 
@@ -753,7 +754,9 @@ export function SphereDetail() {
                       </Avatar>
                       <div>
                         <p className="font-bold text-sm flex items-center gap-1">
-                          {m.name} {m.isCreator && <Crown className="h-3 w-3 text-yellow-500" />}
+                          {m.name} 
+                          {m.isVerified && <BadgeCheck className="h-3.5 w-3.5 text-primary fill-primary/10" />}
+                          {m.isCreator && <Crown className="h-3 w-3 text-yellow-500" />}
                         </p>
                         <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">{m.role}</p>
                       </div>

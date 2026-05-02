@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { getCurrentUser, getUserByUsername, getUserPosts, uploadAvatar, uploadCoverPhoto, updateUserProfile, getUserConnections, getUserResources, connectWithUser, disconnectFromUser, downloadResource, getUserProfile, getUserConnectionRelation, isApiRequestErrorStatus } from "@/services/api";
-import { MapPin, Camera, Calendar, Link, Users, User, BookOpen, Award, Settings, FileText, Briefcase, GraduationCap, Loader2, Check, Download, Unlink, ExternalLink, Upload, X, Zap, Smile, BriefcaseBusiness, Shield, Info, Pencil } from "lucide-react";
+import { MapPin, Camera, Calendar, Link, Users, User, BookOpen, Award, Settings, FileText, Briefcase, GraduationCap, Loader2, Check, Download, Unlink, ExternalLink, Upload, X, Zap, Smile, BriefcaseBusiness, Shield, Info, Pencil, BadgeCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -281,6 +281,7 @@ function mapProfileToViewModel({
         contributions: null as number | null,
       },
       badges: [],
+      isVerified: false,
     };
   }
 
@@ -308,6 +309,7 @@ function mapProfileToViewModel({
     studentId: profile.studentId ?? "",
     campus: profile.campus ?? "",
     currentMood: profile.current_mood ?? profile.currentMood ?? "",
+    isVerified: profile.isVerified ?? profile.is_verified ?? false,
     previousEducation: profile.previousEducation ?? profile.previous_education ?? [],
     experiences: profile.experiences ?? [],
     skills: profile.skills ?? [],
@@ -1076,7 +1078,12 @@ export function Profile() {
               {/* Profile Info */}
               <div className="flex-1 space-y-4">
                 <div>
-                  <h1 className="text-2xl font-bold">{user.name}</h1>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-2xl font-bold">{user.name}</h1>
+                    {user.isVerified && (
+                      <BadgeCheck className="h-6 w-6 text-primary fill-primary/10" />
+                    )}
+                  </div>
                   <p className="text-muted-foreground">@{user.username}</p>
                 </div>
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Heart, MessageCircle, Share, Bookmark, MoreVertical, Zap, Copy, Flag, ExternalLink, Users, Plus, Minus, X, Pencil, Trash2, Loader2, FileText, Download, ChevronLeft, ChevronRight, Search, Facebook, Instagram, Twitter, Linkedin, Info } from "lucide-react";
+import { Heart, MessageCircle, Share, Bookmark, MoreVertical, Zap, Copy, Flag, ExternalLink, Users, Plus, Minus, X, Pencil, Trash2, Loader2, FileText, Download, ChevronLeft, ChevronRight, Search, Facebook, Instagram, Twitter, Linkedin, Info, BadgeCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -510,9 +510,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                 <div className="flex items-center gap-2">
                   <h4 className="font-semibold text-sm hover:underline">{post.author.name}</h4>
                   {post.author.isVerified && (
-                    <div className="w-4 h-4 campus-gradient rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
-                    </div>
+                    <BadgeCheck className="h-4 w-4 text-primary fill-primary/10" />
                   )}
                 </div>
                 <div className="flex items-center gap-2">

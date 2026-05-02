@@ -8,7 +8,7 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Users, BookOpen, ShoppingBag, Loader2, Link, Unlink, FolderOpen, User, Filter } from "lucide-react";
+import { Search, Users, BookOpen, ShoppingBag, Loader2, Link, Unlink, FolderOpen, User, Filter, BadgeCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -116,6 +116,7 @@ export function SearchResults() {
               bio: u.bio || [u.university, u.faculty].filter(Boolean).join(" • "),
               university: u.university || '',
               faculty: u.faculty || '',
+              isVerified: Boolean(u.is_verified ?? u.isVerified),
             })),
             resources: (data.resources || []).map((r: any) => ({
               id: String(r.id),
@@ -395,10 +396,11 @@ export function SearchResults() {
                           </Avatar>
                           <div className="flex-1 min-w-0">
                             <p 
-                              className={`font-semibold text-sm truncate ${user.username ? "cursor-pointer hover:underline" : "cursor-not-allowed opacity-60"}`}
+                              className={`font-semibold text-sm truncate flex items-center gap-1 ${user.username ? "cursor-pointer hover:underline" : "cursor-not-allowed opacity-60"}`}
                               onClick={() => handleViewProfile(user.username, user.name)}
                             >
                               {user.name}
+                              {user.isVerified && <BadgeCheck className="h-4 w-4 text-primary fill-primary/10" />}
                             </p>
                             <p className="text-xs text-muted-foreground">@{user.username}</p>
                             <p className="text-xs text-muted-foreground truncate">{user.bio}</p>
@@ -535,10 +537,11 @@ export function SearchResults() {
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <p 
-                            className={`font-semibold text-sm truncate ${user.username ? "cursor-pointer hover:underline" : "cursor-not-allowed opacity-60"}`}
+                            className={`font-semibold text-sm truncate flex items-center gap-1 ${user.username ? "cursor-pointer hover:underline" : "cursor-not-allowed opacity-60"}`}
                             onClick={() => handleViewProfile(user.username, user.name)}
                           >
                             {user.name}
+                            {user.isVerified && <BadgeCheck className="h-4 w-4 text-primary fill-primary/10" />}
                           </p>
                           <p className="text-xs text-muted-foreground">@{user.username}</p>
                           <p className="text-xs text-muted-foreground truncate">{user.bio}</p>
