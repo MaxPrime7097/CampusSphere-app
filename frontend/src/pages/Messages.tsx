@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Search, Send, Phone, Video, EllipsisVertical, MoreVertical, MessageSquare, Loader2, Users, Plus, Camera, Smile, ArrowLeft, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuPortal } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
@@ -107,6 +107,8 @@ export function Messages() {
 
   const [conversations, setConversations] = useState<any[]>([]);
   const [connections, setConnections] = useState<any[]>([]);
+  const [globalUsers, setGlobalUsers] = useState<any[]>([]);
+  const [loadingGlobalUsers, setLoadingGlobalUsers] = useState(false);
   const [loadingConnections, setLoadingConnections] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -202,6 +204,32 @@ export function Messages() {
       isMounted = false;
     };
   }, [currentUser]);
+
+  // Global search for any user
+  useEffect(() => {
+    if (!connectionSearch || connectionSearch.trim().length < 2) {
+      setGlobalUsers([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        setLoadingGlobalUsers(true);
+        const results = await searchUsers(connectionSearch);
+        const mapped = (results || []).map((u: any) => ({
+          id: String(u.id),
+          name: u.full_name || u.username || "Utilisateur",
+          username: u.username || "",
+          avatar: u.avatar || "/placeholder-avatar.jpg",
+        })).filter((u: any) => String(u.id) !== String(currentUser?.id));
+        setGlobalUsers(mapped);
+      } catch {
+        setGlobalUsers([]);
+      } finally {
+        setLoadingGlobalUsers(false);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [connectionSearch, currentUser?.id]);
 
   // Load messages for selected conversation
   useEffect(() => {
@@ -770,7 +798,7 @@ export function Messages() {
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-0.5">
-                        <div className="flex items-center gap-1.5 min-w-0">
+                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
                           <h3 className="font-semibold truncate text-sm">
                             {conversation.name || 'Utilisateur'}
                           </h3>
@@ -877,7 +905,7 @@ export function Messages() {
                   </div>
                   
                   <div className="min-w-0 flex-1">
-                    <h3 className="font-semibold text-sm md:text-base truncate">
+                    <h3 className="font-semibold text-sm md:text-base truncate pr-2">
                       {selectedConv?.name || 'Utilisateur'}
                     </h3>
                     <p className="text-xs text-muted-foreground truncate">
@@ -1019,7 +1047,7 @@ export function Messages() {
                      </Avatar>
                    )}
                   
-                   <div className={`max-w-[70%] sm:max-w-xs lg:max-w-md ${message.isCurrentUser ? 'text-right' : ''}`}>
+                   <div className={`max-w-[75%] sm:max-w-[65%] ${message.isCurrentUser ? 'text-right' : ''}`}>
                      {!message.isCurrentUser && (
                        <p 
                          className={`text-xs text-muted-foreground mb-1 ${
@@ -1107,21 +1135,61 @@ export function Messages() {
                            )}
                          </div>
                        )}
-                       {/* Actions */}
-                       {(canEdit || canDelete) && editingMessageId !== message.id && (
-                         <DropdownMenu>
-                           <DropdownMenuTrigger asChild>
-                             <Button variant="ghost" size="sm" className={`absolute -bottom-2 ${message.isCurrentUser ? 'left-0' : 'right-0'} h-5 w-5 p-0 hidden group-hover/bubble:flex rounded-full bg-card border shadow-sm`}>
-                               <MoreVertical className="h-2.5 w-2.5" />
-                             </Button>
-                           </DropdownMenuTrigger>
-                           <DropdownMenuContent align={message.isCurrentUser ? 'start' : 'end'}>
-                             {canEdit && <DropdownMenuItem onClick={() => handleStartEdit(message)}>Modifier</DropdownMenuItem>}
-                             {canDelete && <DropdownMenuItem onClick={() => handleDeleteMessage(message.id)} className="text-red-600">Supprimer</DropdownMenuItem>}
-                           </DropdownMenuContent>
-                         </DropdownMenu>
-                       )}
-                     </div>
+                     </div>{/* end bubble */}
+
+                     {/* Actions row: options + emoji — outside bubble */}
+                     {editingMessageId !== message.id && (
+                       <div className={`flex items-center gap-1 mt-1 ${message.isCurrentUser ? 'justify-end' : 'justify-start'}`}>
+                         {/* Options (on the left of emoji) */}
+                         {(canEdit || canDelete) && (
+                           <DropdownMenu>
+                             <DropdownMenuTrigger asChild>
+                               <Button variant="ghost" size="sm" className="h-6 w-6 p-0 rounded-full hover:bg-muted">
+                                 <MoreVertical className="h-3.5 w-3.5 text-muted-foreground" />
+                               </Button>
+                             </DropdownMenuTrigger>
+                             <DropdownMenuPortal>
+                               <DropdownMenuContent
+                                 side="bottom"
+                                 align={message.isCurrentUser ? 'end' : 'start'}
+                                 className="z-50"
+                               >
+                                 {canEdit && <DropdownMenuItem onClick={() => handleStartEdit(message)}>✏️ Modifier</DropdownMenuItem>}
+                                 {canDelete && <DropdownMenuItem onClick={() => handleDeleteMessage(message.id)} className="text-red-600">🗑 Supprimer</DropdownMenuItem>}
+                               </DropdownMenuContent>
+                             </DropdownMenuPortal>
+                           </DropdownMenu>
+                         )}
+
+                         {/* Emoji trigger (to the right of options) */}
+                         <button
+                           className="h-6 w-6 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground"
+                           title="Réagir"
+                           onClick={() => setShowEmojiFor(showEmojiFor === message.id ? null : message.id)}
+                         >
+                           <Smile className="h-3.5 w-3.5" />
+                         </button>
+
+                         {/* Emoji picker popup */}
+                         {showEmojiFor === message.id && (
+                           <div className={`absolute bottom-8 ${message.isCurrentUser ? 'right-0' : 'left-0'} flex gap-1 bg-card border rounded-full px-2 py-1 shadow-lg z-50 animate-in fade-in zoom-in-95 duration-100`}>
+                             {EMOJIS.map(emoji => (
+                               <button key={emoji} className="text-base hover:scale-125 transition-transform" onClick={() => {
+                                 setReactions(prev => {
+                                   const msgR = { ...(prev[message.id] || {}) };
+                                   const uid = String(currentUser?.id || "me");
+                                   const existing = msgR[emoji] || [];
+                                   msgR[emoji] = existing.includes(uid) ? existing.filter(x => x !== uid) : [...existing, uid];
+                                   if (msgR[emoji].length === 0) delete msgR[emoji];
+                                   return { ...prev, [message.id]: msgR };
+                                 });
+                                 setShowEmojiFor(null);
+                               }}>{emoji}</button>
+                             ))}
+                           </div>
+                         )}
+                       </div>
+                     )}
                     
                      <p className={`text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1 ${message.isCurrentUser ? 'justify-end' : ''}`}>
                        {formatRelativeTime(message.timestamp)}
@@ -1201,34 +1269,77 @@ export function Messages() {
               value={connectionSearch}
               onChange={(e) => setConnectionSearch(e.target.value)}
             />
-            <div className="max-h-72 overflow-y-auto space-y-2">
-              {loadingConnections ? (
-                <div className="text-sm text-muted-foreground">Chargement des connexions...</div>
-              ) : filteredConnections.length === 0 ? (
-                <div className="text-sm text-muted-foreground">Aucune connexion trouvée.</div>
-              ) : (
-                filteredConnections.map((contact) => (
-                  <button
-                    key={contact.id}
-                    type="button"
-                    className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-accent text-left transition-colors"
-                    onClick={() => handleCreatePrivateConversation(contact.id)}
-                    disabled={isCreatingPrivate}
-                  >
-                    <Avatar className="h-9 w-9">
-                      <AvatarImage src={contact.avatar} />
-                      <AvatarFallback>
-                        {(contact.name || "U").slice(0, 1).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{contact.name}</p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {contact.username ? `@${contact.username}` : "Utilisateur"}
-                      </p>
-                    </div>
-                  </button>
-                ))
+            <div className="max-h-72 overflow-y-auto space-y-4 pr-1">
+              {/* Connections */}
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase px-1">Vos connexions</p>
+                {loadingConnections ? (
+                  <div className="text-sm text-muted-foreground px-1">Chargement...</div>
+                ) : filteredConnections.length === 0 ? (
+                  <div className="text-sm text-muted-foreground px-1 opacity-70">
+                    {connectionSearch ? "Aucun match" : "Aucune connexion trouvée"}
+                  </div>
+                ) : (
+                  filteredConnections.map((contact) => (
+                    <button
+                      key={contact.id}
+                      type="button"
+                      className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-accent text-left transition-colors"
+                      onClick={() => handleCreatePrivateConversation(contact.id)}
+                      disabled={isCreatingPrivate}
+                    >
+                      <Avatar className="h-9 w-9">
+                        <AvatarImage src={contact.avatar} />
+                        <AvatarFallback>
+                          {(contact.name || "U").slice(0, 1).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{contact.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {contact.username ? `@${contact.username}` : "Utilisateur"}
+                        </p>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+
+              {/* Global search results */}
+              {connectionSearch.trim().length >= 2 && (
+                <div className="space-y-2 border-t pt-3">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase px-1">Global (Tous les membres)</p>
+                  {loadingGlobalUsers ? (
+                    <div className="text-sm text-muted-foreground px-1">Recherche globale...</div>
+                  ) : globalUsers.length === 0 ? (
+                    <div className="text-sm text-muted-foreground px-1 opacity-70">Aucun membre trouvé</div>
+                  ) : (
+                    globalUsers
+                      .filter(u => !connections.some(c => String(c.id) === String(u.id)))
+                      .map((u) => (
+                        <button
+                          key={u.id}
+                          type="button"
+                          className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-accent text-left transition-colors"
+                          onClick={() => handleCreatePrivateConversation(u.id)}
+                          disabled={isCreatingPrivate}
+                        >
+                          <Avatar className="h-9 w-9">
+                            <AvatarImage src={u.avatar} />
+                            <AvatarFallback>
+                              {(u.name || "U").slice(0, 1).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{u.name}</p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              @{u.username}
+                            </p>
+                          </div>
+                        </button>
+                      ))
+                  )}
+                </div>
               )}
             </div>
           </div>
