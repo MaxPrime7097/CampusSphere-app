@@ -152,34 +152,68 @@ else:
 #
 # Redis / Cache / Channels (enabled when REDIS_URL is provided)
 #
-REDIS_URL = os.environ.get("REDIS_URL")
+REDIS_URL = env_config('REDIS_URL', default=None)
 settings_logger = logging.getLogger("campus_sphere.settings")
 
 if REDIS_URL:
+    # Handle SSL for rediss://
+    redis_options = {
+        "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        "SOCKET_CONNECT_TIMEOUT": 5,
+        "SOCKET_TIMEOUT": 5,
+        "IGNORE_EXCEPTIONS": True,
+    }
+    
+    # If using rediss://, we need to handle SSL requirements
+    if REDIS_URL.startswith('rediss://'):
+        redis_options["CONNECTION_POOL_KWARGS"] = {"ssl_cert_reqs": None}
+
     CACHES = {
         "default": {
             "BACKEND": "django_redis.cache.RedisCache",
             "LOCATION": REDIS_URL,
-            "OPTIONS": {
-                "CLIENT_CLASS": "django_redis.client.DefaultClient",
-                "SOCKET_CONNECT_TIMEOUT": 3,
-                "SOCKET_TIMEOUT": 3,
-                # Production robustness: avoid app crashes when Redis is down.
-                "IGNORE_EXCEPTIONS": True,
-            },
-            "KEY_PREFIX": os.environ.get("CACHE_KEY_PREFIX", "campussphere"),
+            "OPTIONS": redis_options,
+            "KEY_PREFIX": env_config("CACHE_KEY_PREFIX", default="campussphere"),
             "TIMEOUT": 300,
         },
     }
+    
+    # WebSocket Channel Layer
+    channel_hosts = [REDIS_URL]
+    if REDIS_URL.startswith('rediss://'):
+        # For channels_redis, we use a dict for host to pass SSL options
+        channel_hosts = [{
+            "address": REDIS_URL,
+            "ssl_cert_reqs": None,
+        }]
+
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
             "CONFIG": {
-                "hosts": [REDIS_URL],
+                "hosts": channel_hosts,
+                "symmetric_encryption_keys": [SECRET_KEY],
+                "capacity": 1000,
+                "expiry": 20,
             },
         },
     }
 
+    # Celery
+    CELERY_BROKER_URL = REDIS_URL
+    CELERY_RESULT_BACKEND = REDIS_URL
+    CELERY_ACCEPT_CONTENT = ['json']
+    CELERY_TASK_SERIALIZER = 'json'
+    CELERY_RESULT_SERIALIZER = 'json'
+    CELERY_TIMEZONE = TIME_ZONE
+
+    CELERY_BEAT_SCHEDULE = {
+        'cleanup-expired-spheres-hourly': {
+            'task': 'spheres.tasks.cleanup_expired_spheres_task',
+            'schedule': 3600.0,
+        },
+    }
+    
     # Log ignored Redis errors as warnings instead of crashing requests.
     DJANGO_REDIS_LOG_IGNORED_EXCEPTIONS = True
     DJANGO_REDIS_LOGGER = "campus_sphere.settings"
@@ -436,35 +470,6 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 WHITENOISE_MANIFEST_STRICT = False
 WHITENOISE_USE_FINDERS = True
 WHITENOISE_MAX_AGE = 31536000  # 1 year
-
-# Redis & Channels Configuration
-REDIS_URL = env_config('REDIS_URL', default=None)
-
-if REDIS_URL:
-    CHANNEL_LAYERS = {
-        'default': {
-            'BACKEND': 'channels_redis.core.RedisChannelLayer',
-            'CONFIG': {
-                "hosts": [REDIS_URL],
-                "symmetric_encryption_keys": [SECRET_KEY],
-                "capacity": 1000,  # Capacité réduite pour économiser la RAM
-                "expiry": 20,      # Expiration rapide pour libérer la RAM
-            },
-        },
-    }
-    CELERY_BROKER_URL = REDIS_URL
-    CELERY_RESULT_BACKEND = REDIS_URL
-    CELERY_ACCEPT_CONTENT = ['json']
-    CELERY_TASK_SERIALIZER = 'json'
-    CELERY_RESULT_SERIALIZER = 'json'
-    CELERY_TIMEZONE = TIME_ZONE
-
-CELERY_BEAT_SCHEDULE = {
-    'cleanup-expired-spheres-hourly': {
-        'task': 'spheres.tasks.cleanup_expired_spheres_task',
-        'schedule': 3600.0,
-    },
-}
 
 # AI API Keys for Verification
 GEMINI_API_KEY = env_config('GEMINI_API_KEY', default=None)

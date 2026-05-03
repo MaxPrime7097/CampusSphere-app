@@ -179,33 +179,33 @@ class SupabaseProfileCompletionSerializer(serializers.ModelSerializer):
         return value.strip()
     
     def validate(self, data):
-        # Vérifier que les champs obligatoires sont présents avec règles de format robustes
+        # On ne bloque plus si un champ est manquant, on nettoie juste ce qui est là
         for field in REQUIRED_PROFILE_FIELDS:
-            current_value = data.get(field, getattr(self.instance, field, None))
-            cleaned_value = self._ensure_required_text(field, current_value)
-            validator = getattr(self, f"validate_{field}", None)
-            if callable(validator):
-                cleaned_value = validator(cleaned_value)
-            data[field] = cleaned_value
+            if field in data:
+                val = data[field]
+                if isinstance(val, str):
+                    data[field] = val.strip()
         return data
     
     def update(self, instance, validated_data):
-        phone_number = validated_data.pop('phone_number', '')
-        date_of_birth = validated_data.pop('date_of_birth', None)
+        # Extraire les champs spéciaux
+        phone_number = validated_data.pop('phone_number', getattr(instance, 'phone_number', ''))
+        date_of_birth = validated_data.pop('date_of_birth', getattr(instance, 'date_of_birth', None))
         
-        # Mettre à jour tous les champs
+        # Mettre à jour tous les champs fournis
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         
-        # Gérer les champs optionnels
-        if phone_number and hasattr(instance, 'phone_number'):
+        # Réassigner les champs spéciaux si présents
+        if phone_number:
             instance.phone_number = phone_number
-        if date_of_birth and hasattr(instance, 'date_of_birth'):
+        if date_of_birth:
             instance.date_of_birth = date_of_birth
         
-        # Marquer le profil comme complet seulement si tous les champs obligatoires sont présents
-        is_complete = all(getattr(instance, field, None) for field in REQUIRED_PROFILE_FIELDS)
-        instance.is_profile_complete = is_complete
+        # Logique de complétion plus intelligente :
+        # On considère le profil complet si l'utilisateur a rempli les infos académiques de base
+        academic_fields = ['university', 'faculty', 'study_year']
+        instance.is_profile_complete = all(bool(getattr(instance, f, None)) for f in academic_fields)
         
         instance.save()
         return instance

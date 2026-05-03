@@ -821,43 +821,46 @@ class UserVerificationView(APIView):
                 'error': 'student_id and card_image are required'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        # Update user fields
+        # 1. SAUVEGARDE IMMÉDIATE (Priorité absolue)
         user.student_id = student_id
         user.card_image = card_image
         user.save()
 
-        # Automatic AI Verification
-        from .verification_service import analyze_student_card
-        
-        # We use a copy of the file for analysis because it might be closed/consumed
-        analysis_result = analyze_student_card(
-            card_image, 
-            user.full_name, 
-            user.university
-        )
-
-        if analysis_result.get("verified"):
-            user.is_verified = True
-            user.save(update_fields=['is_verified'])
+        # 2. ANALYSE IA (En mode "Best effort")
+        try:
+            from .verification_service import analyze_student_card
             
-            # Instant real-time notification
-            try:
-                from notifications.services import create_verification_notification
-                create_verification_notification(user, success=True)
-            except Exception:
-                pass
-                
-            return Response({
-                'success': True,
-                'verified': True,
-                'message': 'Votre compte a été certifié instantanément par notre IA ! 🎉'
-            }, status=status.HTTP_200_OK)
+            # On passe une copie du fichier pour ne pas perturber le stockage
+            analysis_result = analyze_student_card(
+                card_image, 
+                user.full_name, 
+                user.university
+            )
 
+            if analysis_result.get("verified"):
+                user.is_verified = True
+                user.save(update_fields=['is_verified'])
+                
+                try:
+                    from notifications.services import create_verification_notification
+                    create_verification_notification(user, success=True)
+                except Exception:
+                    pass
+                    
+                return Response({
+                    'success': True,
+                    'verified': True,
+                    'message': 'Profil mis à jour et certifié par l\'IA ! 🎉'
+                }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.error(f"Erreur pendant l'analyse IA (non bloquante): {e}")
+
+        # Si l'IA échoue ou est trop lente, on confirme quand même l'enregistrement des données
         return Response({
             'success': True,
             'verified': False,
-            'message': 'Demande soumise. Notre équipe va vérifier votre carte manuellement.',
-            'ai_reason': analysis_result.get("reason")
+            'message': 'Tes informations ont été enregistrées. La certification est en cours de traitement.'
         }, status=status.HTTP_200_OK)
 
 

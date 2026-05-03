@@ -239,22 +239,33 @@ export function CompleteProfile() {
     }
 
     setErrors({});
-    setErrors({});
     setIsLoading(true);
     try {
+      // 1. Envoi des informations textuelles
       await completeSupabaseProfile(payload);
 
-      // Si une preuve a été fournie, envoyer la demande de vérification
+      // 2. Envoi de la pièce jointe (Carte d'étudiant / Acte)
       if (cardImage) {
         try {
-          await verifyStudentStatus(formData.studentId || "Inconnu", cardImage);
-        } catch (verifyErr) {
-          console.error("Erreur certification auto:", verifyErr);
+          const verifyResult = await verifyStudentStatus(formData.studentId || "Inconnu", cardImage);
+          if (verifyResult?.success === false) {
+             console.warn("Vérification rejetée par le serveur, mais profil créé.");
+          }
+        } catch (verifyErr: any) {
+          console.error("Erreur critique lors de l'upload de la pièce jointe:", verifyErr);
+          // On informe l'utilisateur que le texte est bon mais pas l'image
+          toast({ 
+            title: "Profil créé, mais image manquante", 
+            description: "Tes infos sont enregistrées, mais nous n'avons pas pu recevoir ton acte de naissance. Tu pourras le renvoyer plus tard.", 
+            variant: "default" 
+          });
         }
       }
 
       toast({ title: "Profil complété ! 🎉", description: "Bienvenue sur CampusSphere", duration: 4000 });
-      navigate("/");
+      
+      // On attend un tout petit peu pour laisser les transactions DB se finir
+      setTimeout(() => navigate("/"), 500);
     } catch (err: any) {
       if (err?.status === 401) {
         toast({ 
