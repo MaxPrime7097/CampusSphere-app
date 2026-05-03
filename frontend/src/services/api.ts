@@ -571,8 +571,9 @@ async function apiFetch<T>(
               // retry original request once with new token
               return apiFetch<T>(path, { ...options, token: newAccess, _retry: true });
             }
-            clearTokens();
           }
+          // If no refresh token or refresh failed, clear everything
+          clearTokens();
         }
 
         throw new ApiRequestError(errMsg || `Request failed: ${res.status}`, res.status);

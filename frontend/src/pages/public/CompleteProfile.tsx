@@ -243,7 +243,7 @@ export function CompleteProfile() {
     try {
       await completeSupabaseProfile(payload);
 
-      // Si une carte a été fournie, envoyer la demande de vérification
+      // Si une preuve a été fournie, envoyer la demande de vérification
       if (cardImage) {
         try {
           await verifyStudentStatus(formData.studentId || "Inconnu", cardImage);
@@ -406,7 +406,7 @@ export function CompleteProfile() {
               </div>
 
               <div>
-                <Label>Photo de la carte d'étudiant <span className="text-muted-foreground">(optionnel pour certification)</span></Label>
+                <Label>Preuve de statut étudiant <span className="text-muted-foreground">(carte, reçu, certificat... - optionnel pour certification)</span></Label>
                 <div 
                   onClick={() => cardInputRef.current?.click()}
                   className={cn(
@@ -416,7 +416,7 @@ export function CompleteProfile() {
                 >
                   {cardPreview ? (
                     <div className="relative w-full h-full">
-                      <img src={cardPreview} alt="Aperçu carte" className="w-full h-full object-cover" />
+                      <img src={cardPreview} alt="Aperçu preuve" className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
                         <p className="text-white text-sm font-medium">Changer la photo</p>
                       </div>
@@ -426,7 +426,7 @@ export function CompleteProfile() {
                       <div className="p-2 bg-primary/10 rounded-full mb-2">
                         <Camera className="h-5 w-5 text-primary" />
                       </div>
-                      <p className="text-xs font-medium">Uploader votre carte pour certification</p>
+                      <p className="text-xs font-medium">Uploader une preuve pour certification</p>
                       <p className="text-[10px] text-muted-foreground mt-1">JPG, PNG (Max 10Mo)</p>
                     </>
                   )}

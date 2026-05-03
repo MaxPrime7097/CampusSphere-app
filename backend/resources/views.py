@@ -19,10 +19,18 @@ from users.impact_policy import RESOURCE_DOWNLOADED, apply_impact_event
 
 
 def _can_access_resource(resource, user):
-    if resource.visibility == 'public' or resource.author == user:
+    if resource.visibility == 'public':
         return True
-    if resource.visibility == 'university' and resource.author.university == user.university:
+    
+    if not user.is_authenticated:
+        return False
+
+    if resource.author == user:
         return True
+    
+    if resource.visibility == 'university':
+        return user.university and resource.author.university == user.university
+    
     if resource.visibility == 'friends':
         from users.models import Connection
         return Connection.objects.filter(
@@ -34,12 +42,18 @@ def _can_access_resource(resource, user):
 
 
 def _can_access_folder(folder, user):
-    if folder.owner == user:
-        return True
     if folder.visibility == 'public':
         return True
+    
+    if not user.is_authenticated:
+        return False
+
+    if folder.owner == user:
+        return True
+    
     if folder.visibility == 'university':
-        return folder.owner.university and folder.owner.university == user.university
+        return user.university and folder.owner.university == user.university
+    
     if folder.visibility == 'friends':
         from users.models import Connection
         return Connection.objects.filter(
@@ -168,7 +182,7 @@ class FolderDownloadZipView(APIView):
 
 
 class ResourceListView(generics.ListCreateAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     filter_backends = [SearchFilter, OrderingFilter]  # Removed DjangoFilterBackend - not installed
     # filterset_fields = ['author', 'subject', 'type', 'visibility', 'audience']  # Commented out - django_filters not installed
     search_fields = ['title', 'description', 'tags']
@@ -182,6 +196,9 @@ class ResourceListView(generics.ListCreateAPIView):
         # Filter resources based on visibility
         public_resources = queryset.filter(visibility='public')
         
+        if not user.is_authenticated:
+            return public_resources.distinct()
+
         # User's own resources
         user_resources = queryset.filter(author=user)
         
@@ -224,7 +241,7 @@ class ResourceListView(generics.ListCreateAPIView):
 
 class ResourceDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Resource.objects.all()
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get_serializer_class(self):
         if self.request.method in ['PUT', 'PATCH']:
@@ -238,7 +255,12 @@ class ResourceDetailView(generics.RetrieveUpdateDestroyAPIView):
         # Check if user can access this resource
         if resource.visibility == 'public':
             return resource
-        elif resource.author == user:
+        
+        if not user.is_authenticated:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You must be logged in to view this private resource")
+
+        if resource.author == user:
             return resource
         elif resource.visibility == 'university' and resource.author.university == user.university:
             return resource
@@ -258,8 +280,8 @@ class ResourceDetailView(generics.RetrieveUpdateDestroyAPIView):
     def retrieve(self, request, *args, **kwargs):
         resource = self.get_object()
         
-        # Track view if not the author
-        if resource.author != request.user:
+        # Track view if not the author and if authenticated
+        if request.user.is_authenticated and resource.author != request.user:
             _, created = ResourceView.objects.get_or_create(
                 resource=resource,
                 user=request.user,
@@ -285,7 +307,7 @@ class ResourceDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class ResourceDownloadView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def post(self, request, pk):
         resource = get_object_or_404(Resource, pk=pk)
@@ -316,7 +338,7 @@ class ResourceDownloadView(APIView):
 
 
 class ResourcePreviewView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def get(self, request, pk):
         resource = get_object_or_404(Resource, pk=pk)
@@ -469,7 +491,7 @@ class ResourceReportView(APIView):
 
 
 class ResourceShareTrackingView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def post(self, request, pk):
         resource = get_object_or_404(Resource, pk=pk)

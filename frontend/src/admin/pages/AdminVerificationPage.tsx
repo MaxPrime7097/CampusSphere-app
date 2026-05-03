@@ -95,7 +95,7 @@ export function AdminVerificationPage() {
                   <div className="relative aspect-video rounded-lg overflow-hidden border bg-muted group">
                     {u.cardImage ? (
                       <>
-                        <img src={u.cardImage} alt="Carte Étudiant" className="w-full h-full object-contain" />
+                        <img src={u.cardImage} alt="Preuve Étudiant" className="w-full h-full object-contain" />
                         <a 
                           href={u.cardImage} 
                           target="_blank" 

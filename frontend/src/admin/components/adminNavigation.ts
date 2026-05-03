@@ -29,7 +29,7 @@ export const ADMIN_NAVIGATION: AdminNavigationItem[] = [
     key: "verification",
     label: "Vérification Étudiants",
     to: "/admin/verification",
-    description: "Cartes d'étudiant",
+    description: "Preuves & Vérifications",
   },
   {
     key: "resources",

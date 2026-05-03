@@ -46,9 +46,14 @@ export function useUnreadCounts(): UnreadCounts {
   const [counts, setCounts] = useState<UnreadCounts>({ ...globalCounts });
 
   useEffect(() => {
+    const token = localStorage.getItem("access");
+    if (!token) return;
+    
     listeners.add(setCounts);
     startUnreadPolling();
-    return () => { listeners.delete(setCounts); };
+    return () => { 
+      listeners.delete(setCounts); 
+    };
   }, []);
 
   return counts;

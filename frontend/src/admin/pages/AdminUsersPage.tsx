@@ -128,9 +128,9 @@ export function AdminUsersPage() {
                         rel="noreferrer" 
                         onClick={(e) => e.stopPropagation()}
                         className="h-9 w-14 rounded border bg-muted overflow-hidden hover:opacity-80 transition-opacity"
-                        title="Voir la carte d'étudiant"
+                        title="Voir la preuve d'étudiant"
                       >
-                        <img src={u.cardImage} alt="Carte" className="w-full h-full object-cover" />
+                        <img src={u.cardImage} alt="Preuve" className="w-full h-full object-cover" />
                       </a>
                     )}
                     <div className="flex flex-col items-end gap-1">

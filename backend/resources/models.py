@@ -65,7 +65,7 @@ class Resource(models.Model):
     # File Information
     file = models.FileField(upload_to='resources/')
     file_size = models.IntegerField()
-    file_type = models.CharField(max_length=50)
+    file_type = models.CharField(max_length=100)
 
     # Metadata
     subject = models.CharField(max_length=100, blank=True, default='other')

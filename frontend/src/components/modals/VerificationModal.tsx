@@ -60,7 +60,7 @@ export function VerificationModal({ children, onSuccess, open: controlledOpen, o
     if (!matricule.trim() || !image) {
       toast({
         title: "Champs manquants",
-        description: "Veuillez renseigner votre matricule et fournir une photo de votre carte.",
+        description: "Veuillez renseigner votre matricule et fournir une photo de votre preuve (carte, reçu...).",
         variant: "destructive",
       });
       return;
@@ -154,7 +154,7 @@ export function VerificationModal({ children, onSuccess, open: controlledOpen, o
                 <DialogHeader>
                   <DialogTitle>Vos informations</DialogTitle>
                   <DialogDescription>
-                    Entrez votre matricule officiel et uploadez une photo de votre carte d'étudiant.
+                    Entrez votre matricule officiel et uploadez une preuve de votre statut étudiant (carte, reçu, certificat...).
                   </DialogDescription>
                 </DialogHeader>
 
@@ -171,7 +171,7 @@ export function VerificationModal({ children, onSuccess, open: controlledOpen, o
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Photo de la carte (Recto)</Label>
+                    <Label>Preuve de statut étudiant <span className="text-muted-foreground">(Carte, reçu de paiement, certificat de scolarité...)</span></Label>
                     <div 
                       onClick={() => fileInputRef.current?.click()}
                       className={cn(
@@ -181,7 +181,7 @@ export function VerificationModal({ children, onSuccess, open: controlledOpen, o
                     >
                       {preview ? (
                         <div className="relative w-full h-full">
-                          <img src={preview} alt="Aperçu carte" className="w-full h-full object-cover" />
+                          <img src={preview} alt="Aperçu preuve" className="w-full h-full object-cover" />
                           <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
                             <p className="text-white text-sm font-medium">Changer la photo</p>
                           </div>
@@ -247,7 +247,7 @@ export function VerificationModal({ children, onSuccess, open: controlledOpen, o
                 <div>
                   <h3 className="text-2xl font-bold">Demande reçue !</h3>
                   <p className="text-muted-foreground mt-2 px-4">
-                    Notre équipe vérifie manuellement chaque carte pour garantir l'authenticité de la communauté.
+                    Notre équipe vérifie manuellement chaque document pour garantir l'authenticité de la communauté.
                   </p>
                 </div>
                 <div className="p-4 bg-muted/30 rounded-xl mx-4 text-sm flex items-start gap-3 text-left">

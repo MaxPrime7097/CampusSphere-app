@@ -967,7 +967,7 @@ export function Profile() {
               <Button 
                 className="bg-amber-600 hover:bg-amber-700 text-white w-full sm:w-auto shadow-lg shadow-amber-600/20"
               >
-                Scanner ma carte
+                Certifier mon statut
               </Button>
             </VerificationModal>
           </div>
