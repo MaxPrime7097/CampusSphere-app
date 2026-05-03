@@ -52,7 +52,8 @@ export function MobileTopBar({ onMenuClick, user, isLoading }: MobileTopBarProps
               {isSearchDropdownVisible && searchQuery.trim().length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-2 z-50">
                    <SearchDropdown 
-                     searchQuery={searchQuery} 
+                     query={searchQuery}
+                     isVisible={isSearchDropdownVisible}
                      onClose={() => {
                        setIsSearchDropdownVisible(false);
                        setSearchOpen(false);

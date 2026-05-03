@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { moveTask } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, Zap, AlertTriangle, GripVertical, Plus, ChevronDown, ChevronRight } from "lucide-react";
+import { Calendar, Zap, AlertTriangle, GripVertical, Plus, ChevronDown, ChevronRight, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
@@ -153,7 +153,7 @@ function TaskCard({ task, col, draggingId, loading, onDragStart, onDragEnd, onMo
   );
 }
 
-export function KanbanBoard({ tasks, onTasksChange, onCreateTask, canModerate }: KanbanBoardProps) {
+export function KanbanBoard({ tasks, onTasksChange, onCreateTask, onDeleteTask, canModerate }: KanbanBoardProps) {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [draggingId, setDraggingId] = useState<string | null>(null);

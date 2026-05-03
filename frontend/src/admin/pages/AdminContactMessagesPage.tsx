@@ -24,7 +24,7 @@ export function AdminContactMessagesPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const res = await getContactMessages();
+      const res: any = await getContactMessages();
       setMessages(Array.isArray(res) ? res : res?.data || res?.results || []);
     } catch (e: any) {
       toast({ title: "Erreur", description: e?.message || "Impossible de charger les messages", variant: "destructive" });
