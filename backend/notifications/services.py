@@ -12,7 +12,15 @@ def create_notification(notification_type, title, message, recipient, data=None,
     if sender is not None:
         data.setdefault('sender_id', str(sender.id))
         data.setdefault('sender_name', getattr(sender, 'full_name', sender.username))
-        data.setdefault('sender_avatar', getattr(sender, 'avatar', None))
+        sender_avatar = getattr(sender, 'avatar', None)
+        # ImageFieldFile is not JSON serializable, so we store the URL string
+        if sender_avatar:
+            try:
+                data.setdefault('sender_avatar', sender_avatar.url)
+            except ValueError:
+                data.setdefault('sender_avatar', None)
+        else:
+            data.setdefault('sender_avatar', None)
 
     notification = Notification.objects.create(
         type=notification_type,

@@ -123,7 +123,11 @@ export function MiniChat({ sphereId, sphereName, isExpanded, onToggleExpanded, c
         const existing = convs.find((c: any) => {
           const name = (c?.name || "").trim().toLowerCase();
           const type = c?.type || c?.conversation_type;
-          return type === "group" && name === SPHERE_CONV_PREFIX.toLowerCase();
+          // Match exactly sphere-{id} or a name containing (sphere-{id})
+          return type === "group" && (
+            name === SPHERE_CONV_PREFIX.toLowerCase() || 
+            name.includes(`(${SPHERE_CONV_PREFIX.toLowerCase()})`)
+          );
         });
 
         if (!existing) {
@@ -186,7 +190,9 @@ export function MiniChat({ sphereId, sphereName, isExpanded, onToggleExpanded, c
       if (!currentConvId) {
         const { createGroupConversation } = await import("@/services/api");
         const SPHERE_CONV_PREFIX = `sphere-${sphereId}`;
-        const created = await createGroupConversation(SPHERE_CONV_PREFIX, memberIds);
+        // Use a more descriptive name for the conversation
+        const convName = `${sphereName} (sphere-${sphereId})`;
+        const created = await createGroupConversation(convName, memberIds);
         const groupData = created?.data ?? created;
         if (groupData?.id) {
           currentConvId = String(groupData.id);

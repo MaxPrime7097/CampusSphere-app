@@ -717,12 +717,13 @@ def sphere_overview(request, pk):
     unread_messages = 0
     try:
         from messaging.models import Conversation, ConversationReadReceipt
-        sphere_conv_name = f'sphere-{pk}'
+        sphere_conv_id = f'sphere-{pk}'
         conv = Conversation.objects.filter(
-            type='group',
-            name__iexact=sphere_conv_name,
-            participants=user
-        ).first()
+            type='group'
+        ).filter(
+            models.Q(name__iexact=sphere_conv_id) | 
+            models.Q(name__icontains=f'({sphere_conv_id})')
+        ).filter(participants=user).first()
         if conv:
             receipt = ConversationReadReceipt.objects.filter(
                 conversation=conv, user=user

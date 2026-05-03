@@ -29,12 +29,18 @@ import { Combobox } from "@/components/ui/combobox";
 
 const NOT_AVAILABLE_TEXT = "—";
 const MOOD_OPTIONS = [
-  { value: "excited", label: "🚀 En pleine révision !" },
-  { value: "focused", label: "🎯 Concentré sur mes objectifs" },
-  { value: "collaborating", label: "🤝 Prêt à collaborer" },
-  { value: "learning", label: "📚 En mode apprentissage" },
-  { value: "inspired", label: "🌟 Inspiré et créatif" },
-  { value: "determined", label: "💪 Déterminé" },
+  { value: "excited", label: "🚀🔥 En pleine révision !" },
+  { value: "focused", label: "🎯🧠 Concentré sur mes objectifs" },
+  { value: "collaborating", label: "🤝✨ Prêt à collaborer" },
+  { value: "learning", label: "📚💡 En mode apprentissage" },
+  { value: "inspired", label: "🌟🎨 Inspiré et créatif" },
+  { value: "determined", label: "💪🏆 Déterminé" },
+  { value: "stress", label: "📈🆘 Sous l'eau" },
+  { value: "bu_hermit", label: "📚🕯️😶‍🌫️ L'Ermite de la BU" },
+  { value: "caffeine_hunt", label: "☕🧟‍♂️ En quête de caféine" },
+  { value: "liberated", label: "🍻🎉🔓 Libéré / Délivré" },
+  { value: "networker", label: "🤝💼✨ Le Networker" },
+  { value: "sleep_mode", label: "💤😴🚫 Mode Sommeil" },
 ];
 
 const MOOD_VALUE_TO_LABEL = MOOD_OPTIONS.reduce<Record<string, string>>((acc, mood) => {

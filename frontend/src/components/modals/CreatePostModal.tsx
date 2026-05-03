@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Image, MapPin, Users, X, Lock, Globe, Video, FileText, Smile, AtSign, Calendar, Clock, Hash, Loader2, CheckCircle } from "lucide-react";
+import { Plus, Image, MapPin, Users, X, Lock, Globe, Video, FileText, Smile, AtSign, Calendar, Clock, Hash, Loader2, CheckCircle, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { findInvalidMentions, getActiveMentionQuery, renderMentionText } from "@/lib/mentions";
 import { cn } from "@/lib/utils";
@@ -50,6 +50,28 @@ const POST_VISIBILITY_API_MAP: Record<string, "public" | "sphere" | "friends"> =
 const mapPostVisibilityForApi = (uiVisibility: string): "public" | "sphere" | "friends" | null => {
   return POST_VISIBILITY_API_MAP[uiVisibility] ?? null;
 };
+
+const EMOJI_COMBOS = [
+  { name: "Retard", emojis: "🏃‍♂️💨⏰", label: "Le retardataire" },
+  { name: "Nuit", emojis: "🌙🔋😵‍💫", label: "Nuit blanche" },
+  { name: "Coloc", emojis: "🏠🍕🎮", label: "La coloc" },
+  { name: "Budget", emojis: "🍝💸📉", label: "Fin de mois" },
+  { name: "Stage", emojis: "💼🤝✨", label: "Stage trouvé" },
+  { name: "Révision", emojis: "📚☕🧠", label: "Révision" },
+  { name: "Sport", emojis: "🏀💪🔥", label: "Séance sport" },
+  { name: "Weekend", emojis: "🥳🍻🎉", label: "Weekend !" },
+  { name: "Hermite", emojis: "📚🕯️😶‍🌫️", label: "L'Ermite BU" },
+  { name: "Caféine", emojis: "☕🧟‍♂️🆘", label: "Besoin Café" },
+];
+
+const QUICK_PILLS = [
+  { name: "Études", emojis: "📖✍️" },
+  { name: "Alerte", emojis: "🚨👀" },
+  { name: "Chill", emojis: "🎮🍕" },
+  { name: "Fête", emojis: "🥳🍻" },
+];
+
+const QUICK_EMOJIS = ['😀', '😂', '🥰', '😎', '🤔', '👍', '🎉', '🔥', '💯', '✨', '🚀', '❤️', '👏', '🙌', '💪', '🎯'];
 
 export function CreatePostModal({ children, onPostCreated }: CreatePostModalProps) {
   const [content, setContent] = useState("");
@@ -372,6 +394,22 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
               className="min-h-[150px] border bg-background focus-visible:ring-1 p-4 resize-none placeholder:text-muted-foreground/50 shadow-sm mt-2 rounded-xl"
             />
             
+            {/* Quick Pills */}
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {QUICK_PILLS.map((pill) => (
+                <Button 
+                  key={pill.name} 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setContent(prev => prev + pill.emojis)}
+                  className="h-7 px-2.5 text-[10px] font-bold rounded-full bg-muted/30 hover:bg-primary/10 hover:text-primary transition-all border-none"
+                >
+                  <Plus className="h-3 w-3 mr-1 opacity-50" />
+                  {pill.name} <span className="ml-1 text-xs">{pill.emojis}</span>
+                </Button>
+              ))}
+            </div>
+            
             {showPreview && content && (
               <div className="p-4 rounded-xl border bg-accent/5 overflow-hidden campus-animate-fade-in">
                 <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
@@ -425,7 +463,7 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
                 <AtSign className="h-5 w-5" />
               </Button>
               <Button variant="ghost" size="sm" onClick={() => setShowPreview(!showPreview)} className={cn("h-9 w-9 p-0 rounded-full", showPreview ? "text-primary bg-primary/10" : "")}>
-                <FileText className="h-5 w-5" />
+                <Eye className="h-5 w-5" />
               </Button>
             </div>
             
@@ -521,13 +559,36 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
 
           {/* Emoji/Mentions Popups */}
           {showEmojiPicker && (
-            <Card className="p-3 border-primary/10 shadow-xl campus-animate-slide-up">
-              <div className="grid grid-cols-8 gap-1">
-                {['😀', '😂', '🥰', '😎', '🤔', '👍', '🎉', '🔥', '💯', '✨', '🚀', '❤️', '👏', '🙌', '💪', '🎯'].map((emoji) => (
-                  <Button key={emoji} variant="ghost" className="text-xl p-0 h-9 w-9" onClick={() => insertEmoji(emoji)}>
-                    {emoji}
-                  </Button>
-                ))}
+            <Card className="p-4 border-primary/10 shadow-xl campus-animate-slide-up w-full max-w-[320px]">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Combos Campus</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {EMOJI_COMBOS.map((combo) => (
+                      <Button 
+                        key={combo.name} 
+                        variant="outline" 
+                        size="sm" 
+                        className="h-auto py-2 px-3 flex flex-col items-center gap-1 hover:bg-primary/5 hover:border-primary/30 transition-all border-dashed"
+                        onClick={() => insertEmoji(combo.emojis)}
+                      >
+                        <span className="text-lg">{combo.emojis}</span>
+                        <span className="text-[9px] font-medium text-muted-foreground">{combo.label}</span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Emojis rapides</Label>
+                  <div className="grid grid-cols-8 gap-1">
+                    {QUICK_EMOJIS.map((emoji) => (
+                      <Button key={emoji} variant="ghost" className="text-xl p-0 h-9 w-9 hover:bg-accent" onClick={() => insertEmoji(emoji)}>
+                        {emoji}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </Card>
           )}
@@ -559,7 +620,7 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
             <Button 
               onClick={handleSubmit}
               disabled={!content.trim() || content.length > 500 || isSubmitting}
-              className="campus-gradient text-white px-8 rounded-full font-bold shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all active:scale-95 h-11"
+              className="campus-gradient text-white hover:opacity-90 px-8"
             >
               {isSubmitting ? (
                 <>
