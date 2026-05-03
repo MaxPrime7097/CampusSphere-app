@@ -134,9 +134,9 @@ export function CreateFolderModal({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="public">🌍 Public — visible par tous</SelectItem>
-                  <SelectItem value="university">🎓 Université — même université</SelectItem>
-                  <SelectItem value="friends">🔒 Amis uniquement</SelectItem>
+                  <SelectItem value="public">Public — visible par tous</SelectItem>
+                  <SelectItem value="university">Université — même université</SelectItem>
+                  <SelectItem value="friends">Amis uniquement</SelectItem>
                 </SelectContent>
               </Select>
             </div>
