@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { deleteResource, downloadResource, getResource, getResourcePreviewUrl, reportResource, saveResource, trackResourceShare, updateResource, listFolders, updateFolder, type ResourceFolder } from "@/services/api";
-import { Download, Share2, ChevronLeft, Eye, Flag, Loader2, Zap, Bookmark, Pencil, Trash2, Info, X, Facebook, Twitter, Instagram, Linkedin, Copy, FileText, FolderInput } from "lucide-react";
+import { Download, Share2, ChevronLeft, Eye, Flag, Loader2, Zap, Bookmark, Pencil, Trash2, Info, X, Facebook, Twitter, Instagram, Linkedin, Copy, FileText, FolderInput, BadgeCheck } from "lucide-react";
 import { renderMentionText } from "@/lib/mentions";
 import { cn } from "@/lib/utils";
 
@@ -598,7 +598,7 @@ export function ResourceDetail() {
                   <div className="flex items-center gap-2">
                     <p className="font-medium">{resource.uploader.name}</p>
                     {resource.uploader.verified && (
-                      <Badge variant="secondary" className="text-xs">✓</Badge>
+                      <BadgeCheck className="h-4 w-4 text-primary fill-primary/10" />
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground">

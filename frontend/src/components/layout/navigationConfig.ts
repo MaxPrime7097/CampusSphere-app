@@ -52,7 +52,7 @@ function isAdminUser(user?: NavigationUser | null) {
 }
 
 export function getNavigationSections(user?: NavigationUser | null): NavigationSections {
-  const isAuthenticated = Boolean(user?.username);
+  const isAuthenticated = Boolean(user?.username) || Boolean(localStorage.getItem("access"));
   const profileUrl = `/profile/${user?.username || "current"}`;
   const newPost = "#create-post";
   const adminEntry = isAdminUser(user) ? [{ title: "Admin", url: "/admin/dashboard", icon: Shield }] : [];

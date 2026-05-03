@@ -111,17 +111,30 @@ export function AppLayout({ children }: AppLayoutProps) {
     callback();
   };
 
+  if (isAuthenticated && isProfileLoading) {
+    return (
+      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-background">
+        <div className="relative">
+          <img src="/CS.svg" alt="Loading..." className="h-16 w-16 animate-pulse" />
+          <div className="absolute inset-0 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+        </div>
+        <p className="mt-4 text-sm font-medium text-muted-foreground animate-pulse">
+          Synchronisation...
+        </p>
+      </div>
+    );
+  }
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
-        {/* Desktop Sidebar */}
         <div className="hidden md:block">
-          <AppSidebar />
+          <AppSidebar user={user} />
         </div>
         
         <div className="flex-1 flex flex-col">
           {/* Mobile Top Bar*/}
-          {!hideNavOnMobile && <MobileTopBar />}
+          {!hideNavOnMobile && <MobileTopBar user={user} isLoading={isProfileLoading} />}
           
           {/* Desktop Top Navigation - Fixed */}
           <header className="hidden md:flex h-16 w-full border-b bg-card/50 backdrop-blur-sm fixed top-0 right-0 left-0 z-40">
@@ -180,7 +193,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                   <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
                 </Button>
                 
-                <ProfileBubble />
+                <ProfileBubble user={user} isLoading={isProfileLoading} />
               </div>
             </div>
           </header>
@@ -191,7 +204,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           </main>
           
           {/* Mobile Bottom Navigation - Fixed */}
-          {!hideNavOnMobile && <MobileNavigation />}
+          {!hideNavOnMobile && <MobileNavigation user={user} />}
         </div>
       </div>
       <CookieBanner />

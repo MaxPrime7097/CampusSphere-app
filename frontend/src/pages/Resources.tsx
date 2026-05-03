@@ -629,7 +629,11 @@ export function Resources() {
                   <span className="text-xs text-muted-foreground ml-auto">{folderResources.length} fichier{folderResources.length !== 1 ? 's' : ''}</span>
                 </div>
                 {folderResources.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-4 text-center">Ce dossier est vide.</p>
+                  <EmptyState
+                    icon={FolderOpen}
+                    title="Dossier vide"
+                    description="Ce dossier ne contient pas encore de ressources."
+                  />
                 ) : (
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                     {folderResources.map((resource) => (
@@ -686,41 +690,21 @@ export function Resources() {
         )}
 
         {!loading && filteredResources.length === 0 && (
-          <div className="text-center py-12">
-            <FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Aucune ressource trouvée</h3>
-            <p className="text-muted-foreground mb-6">
-              Soyez le premier a partager une ressource dans cette catégorie !
-            </p>
-            {userLoading ? (
-              <Button className="campus-gradient text-white opacity-70" disabled>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Chargement...
-              </Button>
-            ) : currentUser?.isVerified ? (
-              <UploadResourceModal onResourceUploaded={handleResourceUploaded}>
-                <Button className="campus-gradient text-white hover:opacity-90">
-                  Partager une ressource
-                </Button>
-              </UploadResourceModal>
-            ) : (
-              <Button 
-                className="campus-gradient text-white hover:opacity-90"
-                onClick={() => {
-                  toast({
-                    title: "Compte non vérifié",
-                    description: "Vérifiez votre compte pour partager des ressources.",
-                    variant: "destructive",
-                    action: (
-                      <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>Vérifier</Button>
-                    )
-                  });
-                }}
-              >
-                Partager une ressource
-              </Button>
-            )}
-          </div>
+          <EmptyState
+            icon={FileText}
+            title="Aucune ressource trouvée"
+            description="Soyez le premier à partager une ressource dans cette catégorie !"
+            actionLabel={currentUser?.isVerified ? "Partager une ressource" : "Se certifier"}
+            onAction={() => {
+              if (currentUser?.isVerified) {
+                // The upload modal is usually opened via FAB or top bar
+                // We'll just refresh or tell the user how to upload
+                window.location.reload();
+              } else {
+                openVerificationModal();
+              }
+            }}
+          />
         )}
         </>
         )}

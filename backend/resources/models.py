@@ -68,7 +68,7 @@ class Resource(models.Model):
     file_type = models.CharField(max_length=50)
 
     # Metadata
-    subject = models.CharField(max_length=100)
+    subject = models.CharField(max_length=100, blank=True, default='other')
     type = models.CharField(max_length=20, choices=TYPE_CHOICES)
     visibility = models.CharField(max_length=20, choices=VISIBILITY_CHOICES, default='public')
     audience = models.CharField(max_length=200, blank=True)

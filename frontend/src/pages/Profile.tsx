@@ -1199,11 +1199,19 @@ export function Profile() {
                 </div>
               )}
               
-              {userPostsData.map((post) => (
-                <div key={post.id} className="campus-animate-fade-in">
-                  <PostCard post={post} />
-                </div>
-              ))}
+              {userPostsData.length === 0 ? (
+                <EmptyState
+                  icon={FileText}
+                  title="Aucun post"
+                  description="Cet utilisateur n'a pas encore partagé de publications."
+                />
+              ) : (
+                userPostsData.map((post) => (
+                  <div key={post.id} className="campus-animate-fade-in">
+                    <PostCard post={post} />
+                  </div>
+                ))
+              )}
             </section>
           )}
 
@@ -1212,37 +1220,45 @@ export function Profile() {
             <section className="mt-6">
               <div className="rounded-lg border bg-card p-6">
                 <h3 className="text-lg font-semibold mb-4">Connexions ({userConnections.length})</h3>
-                <div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {userConnections.map((connection) => (
-                      <Card key={connection.id} className="campus-card mobile-card cursor-pointer hover:campus-glow transition-all">
-                        <CardContent className="p-4">
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-12 w-12">
-                              <AvatarImage src={connection.avatar} />
-                              <AvatarFallback className="bg-primary text-white font-bold">
-                                {connection.name?.slice(0, 1).toUpperCase() || 'U'}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                              <p className="font-semibold">{connection.name}</p>
-                              <p className="text-sm text-muted-foreground">@{connection.username}</p>
-                              <p className="text-xs text-muted-foreground">{connection.mutual} amis en commun</p>
+                {userConnections.length === 0 ? (
+                  <EmptyState
+                    icon={Users}
+                    title="Aucune connexion"
+                    description="Cet utilisateur n'est pas encore connecté avec d'autres étudiants."
+                  />
+                ) : (
+                  <div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {userConnections.map((connection) => (
+                        <Card key={connection.id} className="campus-card mobile-card cursor-pointer hover:campus-glow transition-all">
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-12 w-12">
+                                <AvatarImage src={connection.avatar} />
+                                <AvatarFallback className="bg-primary text-white font-bold">
+                                  {connection.name?.slice(0, 1).toUpperCase() || 'U'}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1">
+                                <p className="font-semibold">{connection.name}</p>
+                                <p className="text-sm text-muted-foreground">@{connection.username}</p>
+                                <p className="text-xs text-muted-foreground">{connection.mutual} amis en commun</p>
+                              </div>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleViewProfile(connection.username, connection.name, true)}
+                                disabled={!connection.username}
+                              >
+                                Voir
+                              </Button>
                             </div>
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => handleViewProfile(connection.username, connection.name, true)}
-                              disabled={!connection.username}
-                            >
-                              Voir
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </section>
           )}

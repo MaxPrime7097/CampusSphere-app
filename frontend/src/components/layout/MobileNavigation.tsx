@@ -9,22 +9,24 @@ import { useToast } from "@/hooks/use-toast";
 import { openVerificationModal } from "@/lib/events";
 import { VerificationModal } from "@/components/modals/VerificationModal";
 
-export function MobileNavigation() {
+export function MobileNavigation({ user: externalUser }: { user?: NavigationUser }) {
   const { toast } = useToast();
-  const [user, setUser] = useState<NavigationUser>({});
+  const [localUser, setLocalUser] = useState<NavigationUser>({});
+  const user = externalUser || localUser;
   const { mobileItems } = getNavigationSections(user);
   const counts = useUnreadCounts();
 
   useEffect(() => {
+    if (externalUser && Object.keys(externalUser).length > 0) return;
     let isMounted = true;
     (async () => {
       try {
         const data = await getCurrentUser();
-        if (isMounted && data) setUser(data);
+        if (isMounted && data) setLocalUser(data);
       } catch { /* ignore */ }
     })();
     return () => { isMounted = false; };
-  }, []);
+  }, [externalUser]);
 
   const getBadge = (url: string) => {
     if (url === "/notifications" && counts.notifications > 0) return counts.notifications;

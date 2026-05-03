@@ -156,7 +156,7 @@ export function SphereDetail() {
             ? (rawMembersData as any).results
             : [];
 
-      setCurrentUserId(currentUser?.id ? String(currentUser.id) : null);
+      setCurrentUserId(userData?.id ? String(userData.id) : null);
       setSphere(sphereData);
 
       const mappedMembers = (membersData || []).map((m: any) => ({
@@ -661,8 +661,20 @@ export function SphereDetail() {
                     </Button>
                   )}
                 </div>
-                {taskState === "forbidden" && <p className="text-center py-10 text-muted-foreground italic">Vous devez être membre actif pour voir les tâches</p>}
-                {taskState === "server_error" && <p className="text-center py-10 text-muted-foreground italic">Impossible de charger les tâches.</p>}
+                {taskState === "forbidden" && (
+                  <EmptyState 
+                    icon={Shield} 
+                    title="Accès restreint" 
+                    description="Vous devez être membre actif pour voir les tâches de cette sphère." 
+                  />
+                )}
+                {taskState === "server_error" && (
+                  <EmptyState 
+                    icon={AlertCircle} 
+                    title="Erreur" 
+                    description="Impossible de charger les tâches." 
+                  />
+                )}
                 {taskState === "ready" && (
                   <div className="-mx-4 md:mx-0 overflow-x-auto">
                     <div className="px-4 md:px-0 min-w-0">

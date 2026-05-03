@@ -19,19 +19,31 @@ import {
   BadgeCheck
 } from "lucide-react";
 
-export function ProfileBubble() {
+interface ProfileBubbleProps {
+  user?: any;
+  isLoading?: boolean;
+}
+
+export function ProfileBubble({ user: externalUser, isLoading: externalLoading }: ProfileBubbleProps) {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
+  const [localIsLoading, setLocalIsLoading] = useState(true);
+  const [localUser, setLocalUser] = useState<any>(null);
+
+  // Determine which state to use
+  const isLoading = externalLoading !== undefined ? externalLoading : localIsLoading;
+  const user = externalUser !== undefined ? externalUser : localUser;
 
   useEffect(() => {
+    // Only fetch if external data is not provided
+    if (externalUser !== undefined) return;
+
     let isMounted = true;
     const token = localStorage.getItem("access");
     
     if (!token) {
-      setIsLoading(false);
-      setUser(null);
+      setLocalIsLoading(false);
+      setLocalUser(null);
       return;
     }
 
@@ -39,7 +51,7 @@ export function ProfileBubble() {
       try {
         const data = await getCurrentUser();
         if (isMounted && data) {
-          setUser({
+          setLocalUser({
             name: data.name || data.first_name + ' ' + data.last_name || "Utilisateur",
             username: data.username || "user",
             avatar: data.avatar || "/placeholder-avatar.jpg",
@@ -48,9 +60,9 @@ export function ProfileBubble() {
           });
         }
       } catch (e) {
-        if (isMounted) setUser(null);
+        if (isMounted) setLocalUser(null);
       } finally {
-        if (isMounted) setIsLoading(false);
+        if (isMounted) setLocalIsLoading(false);
       }
     })();
     return () => {

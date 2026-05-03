@@ -26,20 +26,23 @@ import { getCurrentUser } from "@/services/api";
 import { getNavigationSections, type NavigationUser } from "./navigationConfig";
 import { resolveAdminRole } from "@/lib/adminPermissions";
 
-export function MenuDropdown() {
+export function MenuDropdown({ user: externalUser }: { user?: NavigationUser }) {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const [user, setUser] = useState<NavigationUser>({});
+  const [localUser, setLocalUser] = useState<NavigationUser>({});
+
+  const user = externalUser || localUser;
 
   useEffect(() => {
+    if (externalUser && Object.keys(externalUser).length > 0) return;
     let isMounted = true;
     (async () => {
       try {
         const data = await getCurrentUser();
         if (isMounted && data) {
-          setUser(data);
+          setLocalUser(data);
         }
       } catch {
         // User not logged in or error

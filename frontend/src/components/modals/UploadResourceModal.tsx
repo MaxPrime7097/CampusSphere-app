@@ -61,15 +61,23 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
   const subjects = [
     { value: "math", label: "Mathématiques" },
     { value: "cs", label: "Informatique" },
+    { value: "electronics", label: "Électronique" },
+    { value: "mechanics", label: "Mécanique" },
     { value: "physics", label: "Physique" },
-    { value: "economics", label: "Économie" },
-    { value: "language", label: "Langues" }
+    { value: "chemistry", label: "Chimie" },
+    { value: "biology", label: "Biologie / Santé" },
+    { value: "economics", label: "Économie / Gestion" },
+    { value: "law", label: "Droit / Sc. Politiques" },
+    { value: "language", label: "Langues / Lettres" },
+    { value: "history", label: "Histoire / Géo" },
+    { value: "arts", label: "Arts / Design" },
+    { value: "other", label: "Autre" }
   ];
 
   const resourceSchema = z.object({
     title: z.string().trim().min(3, { message: t('modals.uploadResource.titleRequired') }).max(100, { message: t('modals.uploadResource.titleTooLong') }),
     description: z.string().trim().min(10, { message: t('modals.uploadResource.descriptionRequired', { defaultValue: "La description est requise" }) }).max(500, { message: t('modals.uploadResource.descriptionTooLong') }),
-    subject: z.string().min(1, { message: t('modals.uploadResource.subjectRequired') }),
+    subject: z.string().optional(),
     type: z.string().min(1, { message: t('modals.uploadResource.typeRequired') }),
     file: z.custom<File>((val) => val instanceof File, { message: t('modals.uploadResource.fileRequired') })
       .refine((file) => file.size <= MAX_FILE_SIZE, { message: t('modals.uploadResource.fileTooLarge') })
@@ -276,39 +284,8 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
         </DialogHeader>
         
         <div className="space-y-4">
-          {/* Subject & Type moved to top as requested */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Type de ressource *</Label>
-              <Select value={type} onValueChange={setType}>
-                <SelectTrigger className="mt-1.5">
-                  <SelectValue placeholder="Sélectionner..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {types.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Matière *</Label>
-              <Select value={subject} onValueChange={setSubject}>
-                <SelectTrigger className="mt-1.5">
-                  <SelectValue placeholder="Sélectionner..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {subjects.map((subject) => (
-                    <SelectItem key={subject.value} value={subject.value}>
-                      {subject.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <div>
+            <Label>{t('modals.uploadResource.file')} *</Label>
 
           <div>
             <Label>{t('modals.uploadResource.file')} *</Label>
@@ -407,6 +384,39 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
           <div>
             <Label htmlFor="description">{t('modals.uploadResource.description')}</Label>
             <Textarea id="description" placeholder={t('modals.uploadResource.descPlaceholder', { defaultValue: "Décrivez votre ressource..." })} rows={3} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} className="mt-1.5" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Type de ressource *</Label>
+              <Select value={type} onValueChange={setType}>
+                <SelectTrigger className="mt-1.5">
+                  <SelectValue placeholder="Sélectionner..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {types.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Matière <span className="text-muted-foreground font-normal text-xs">(optionnel)</span></Label>
+              <Select value={subject} onValueChange={setSubject}>
+                <SelectTrigger className="mt-1.5">
+                  <SelectValue placeholder="Sélectionner..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {subjects.map((subject) => (
+                    <SelectItem key={subject.value} value={subject.value}>
+                      {subject.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Visibility & Audience */}

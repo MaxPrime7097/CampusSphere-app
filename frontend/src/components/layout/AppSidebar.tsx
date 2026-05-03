@@ -9,19 +9,22 @@ import { getCurrentUser } from "@/services/api";
 import { getNavigationSections, type NavigationUser, type NavigationItem } from "./navigationConfig";
 import { useUnreadCounts } from "@/hooks/useUnreadCounts";
 
-export function AppSidebar() {
+export function AppSidebar({ user: externalUser }: { user?: NavigationUser }) {
   const { state } = useSidebar();
   const location = useLocation();
   const isCollapsed = state === "collapsed";
   const counts = useUnreadCounts();
-  const [user, setUser] = useState<NavigationUser>({});
+  const [localUser, setLocalUser] = useState<NavigationUser>({});
+
+  const user = externalUser || localUser;
 
   useEffect(() => {
+    if (externalUser) return;
     let isMounted = true;
     (async () => {
       try {
         const data = await getCurrentUser();
-        if (isMounted && data) setUser(data);
+        if (isMounted && data) setLocalUser(data);
       } catch { /* ignore */ }
     })();
     return () => { isMounted = false; };

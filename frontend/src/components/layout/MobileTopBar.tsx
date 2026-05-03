@@ -10,9 +10,11 @@ import { ProfileBubble } from "./ProfileBubble";
 
 interface MobileTopBarProps {
   onMenuClick?: () => void;
+  user?: any;
+  isLoading?: boolean;
 }
 
-export function MobileTopBar({ onMenuClick }: MobileTopBarProps) {
+export function MobileTopBar({ onMenuClick, user, isLoading }: MobileTopBarProps) {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -79,8 +81,8 @@ export function MobileTopBar({ onMenuClick }: MobileTopBarProps) {
               <Search className="h-5 w-5" />
             </Button>
             
-            <ProfileBubble />
-            <MenuDropdown />
+            <ProfileBubble user={user} isLoading={isLoading} />
+            <MenuDropdown user={user} />
             
           </div>
         </div>
