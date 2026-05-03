@@ -2081,7 +2081,7 @@ export function Profile() {
                 variant="outline" 
                 onClick={() => {
                   setShowMoodModal(false);
-                  setNewMood(null);
+                  setMoodText("");
                 }}
               >
                 Annuler
