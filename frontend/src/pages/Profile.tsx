@@ -48,6 +48,34 @@ const MOOD_VALUE_TO_LABEL = MOOD_OPTIONS.reduce<Record<string, string>>((acc, mo
   return acc;
 }, {});
 
+const IMPACT_LEVELS = [
+  { min: 0, label: "Nouveau venu", color: "from-gray-400 to-gray-500", icon: "🌱" },
+  { min: 50, label: "Contributeur", color: "from-blue-400 to-blue-600", icon: "⭐" },
+  { min: 200, label: "Pilier du Campus", color: "from-orange-400 to-orange-600", icon: "🏆" },
+  { min: 500, label: "Légende du Campus", color: "from-purple-500 to-indigo-600", icon: "👑" },
+  { min: 1000, label: "Maître Campus", color: "from-yellow-400 to-red-600", icon: "🔥" },
+];
+
+function getImpactLevelInfo(score: number) {
+  let currentLevel = IMPACT_LEVELS[0];
+  let nextLevel = IMPACT_LEVELS[1] || null;
+  
+  for (let i = 0; i < IMPACT_LEVELS.length; i++) {
+    if (score >= IMPACT_LEVELS[i].min) {
+      currentLevel = IMPACT_LEVELS[i];
+      nextLevel = IMPACT_LEVELS[i + 1] || null;
+    } else {
+      break;
+    }
+  }
+  
+  const progress = nextLevel 
+    ? ((score - currentLevel.min) / (nextLevel.min - currentLevel.min)) * 100
+    : 100;
+    
+  return { currentLevel, nextLevel, progress };
+}
+
 function getMoodLabel(moodValue?: string | null) {
   if (!moodValue) {
     return NOT_AVAILABLE_TEXT;
@@ -1222,10 +1250,44 @@ export function Profile() {
                           <Info className="h-3 w-3 text-primary/60" />
                         </Button>
                       </div>
-                      <p className={cn("text-sm sm:text-lg font-bold text-primary truncate transition-all duration-300", animateScore && "animate-pop")}>
-                        {user.impactScore ?? NOT_AVAILABLE_TEXT}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className={cn("text-sm sm:text-lg font-bold text-primary truncate transition-all duration-300", animateScore && "animate-pop")}>
+                          {user.impactScore ?? 0}
+                        </p>
+                        {user.impactScore !== null && (
+                          <div className={cn(
+                            "flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold text-white bg-gradient-to-r shadow-sm",
+                            getImpactLevelInfo(user.impactScore).currentLevel.color
+                          )}>
+                            <span>{getImpactLevelInfo(user.impactScore).currentLevel.icon}</span>
+                            <span className="uppercase tracking-tighter">{getImpactLevelInfo(user.impactScore).currentLevel.label}</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {user.impactScore !== null && getImpactLevelInfo(user.impactScore).nextLevel && (
+                        <div className="w-full max-w-[120px] mt-1 space-y-1">
+                          <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-primary transition-all duration-1000 ease-out" 
+                              style={{ width: `${getImpactLevelInfo(user.impactScore).progress}%` }}
+                            />
+                          </div>
+                          <p className="text-[8px] text-muted-foreground italic">
+                            Plus que {getImpactLevelInfo(user.impactScore).nextLevel!.min - user.impactScore} pts pour le rang {getImpactLevelInfo(user.impactScore).nextLevel!.label}
+                          </p>
+                        </div>
+                      )}
                     </div>
+                  </div>
+                  
+                  <div className="h-8 w-px bg-border shrink-0" />
+
+                  {/* Streak (Mocked for engagement demo) */}
+                  <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-orange-500/10 text-orange-500 border border-orange-500/20 shrink-0">
+                    <span className="text-xs font-black">7</span>
+                    <span className="text-[10px] uppercase font-bold tracking-widest">Série</span>
+                    <span className="text-xs">🔥</span>
                   </div>
                   
                   <div className="h-8 w-px bg-border shrink-0" />
