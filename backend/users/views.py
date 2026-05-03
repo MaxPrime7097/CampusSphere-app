@@ -730,21 +730,31 @@ class SupabaseTokenExchangeView(APIView):
             
             supabase_user = user_response.user
             
-            # Chercher ou créer l'utilisateur Django
+            # Chercher l'utilisateur de manière robuste
             supabase_email = normalize_email_for_lookup(supabase_user.email)
-            default_username = normalize_username_for_lookup(
-                supabase_user.user_metadata.get('username') or (supabase_email.split('@')[0] if supabase_email else '')
-            )
-            user, created = User.objects.get_or_create(
-                supabase_uid=supabase_user.id,
-                defaults={
-                    'email': supabase_email,
-                    'username': default_username,  # Temporaire
-                    'first_name': supabase_user.user_metadata.get('first_name', ''),
-                    'last_name': supabase_user.user_metadata.get('last_name', ''),
-                    'is_profile_complete': False,
-                }
-            )
+            user = User.objects.filter(supabase_uid=supabase_user.id).first()
+            created = False
+            
+            if not user:
+                # Si pas par UID, on cherche par email (cas d'un switch email -> google)
+                user = User.objects.filter(email__iexact=supabase_email).first()
+                if user:
+                    user.supabase_uid = supabase_user.id
+                    user.save(update_fields=['supabase_uid'])
+                else:
+                    # Sinon, on crée un nouveau profil
+                    default_username = normalize_username_for_lookup(
+                        supabase_user.user_metadata.get('username') or (supabase_email.split('@')[0] if supabase_email else '')
+                    )
+                    user = User.objects.create(
+                        supabase_uid=supabase_user.id,
+                        email=supabase_email,
+                        username=default_username,
+                        first_name=supabase_user.user_metadata.get('first_name', ''),
+                        last_name=supabase_user.user_metadata.get('last_name', ''),
+                        is_profile_complete=False,
+                    )
+                    created = True
             
             # Déterminer si le profil doit être complété.
             # Important: this must be data-driven (required fields), not provider-driven,

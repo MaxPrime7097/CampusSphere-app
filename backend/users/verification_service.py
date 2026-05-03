@@ -90,7 +90,3 @@ def analyze_student_card(image_file, user_full_name, user_university):
             logger.error(f"Groq analysis also failed: {e}")
 
     return {"verified": False, "reason": "All AI providers failed or mismatch"}
-
-    except Exception as e:
-        logger.error(f"Error during AI card analysis: {e}", exc_info=True)
-        return {"verified": False, "reason": str(e)}
