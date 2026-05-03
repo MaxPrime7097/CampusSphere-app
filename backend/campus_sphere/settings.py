@@ -149,8 +149,47 @@ else:
             }
         }
 
+# Sessions stockées en cache
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # 7 jours
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_SAMESITE = "None"
+
+
+# Password validation
+# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
+
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
+    },
+]
+
+
+# Internationalization
+# https://docs.djangoproject.com/en/5.2/topics/i18n/
+
+LANGUAGE_CODE = "fr-fr"
+
+TIME_ZONE = "UTC"
+
+USE_I18N = True
+
+USE_TZ = True
+
 #
-# Redis / Cache / Channels (enabled when REDIS_URL is provided)
+# Redis / Cache / Channels / Celery (enabled when REDIS_URL is provided)
 #
 REDIS_URL = env_config('REDIS_URL', default=None)
 settings_logger = logging.getLogger("campus_sphere.settings")
@@ -199,7 +238,7 @@ if REDIS_URL:
         },
     }
 
-    # Celery
+    # Celery Configuration
     CELERY_BROKER_URL = REDIS_URL
     CELERY_RESULT_BACKEND = REDIS_URL
     CELERY_ACCEPT_CONTENT = ['json']
@@ -228,45 +267,6 @@ else:
     settings_logger.warning(
         "REDIS_URL is not set; using LocMemCache as fallback for cache and sessions."
     )
-
-# Sessions stockées en cache
-SESSION_ENGINE = "django.contrib.sessions.backends.cache"
-SESSION_CACHE_ALIAS = "default"
-SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # 7 jours
-SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SECURE = True
-SESSION_COOKIE_SAMESITE = "None"
-
-
-# Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
-
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
-]
-
-
-# Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
-
-LANGUAGE_CODE = "fr-fr"
-
-TIME_ZONE = "UTC"
-
-USE_I18N = True
-
-USE_TZ = True
 
 # CORS / CSRF Configuration
 CORS_ALLOWED_ORIGINS = env_config(
