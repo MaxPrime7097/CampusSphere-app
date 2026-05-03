@@ -87,7 +87,7 @@ export function SearchDropdown({ query, isVisible, onClose }: SearchDropdownProp
             {/* Utilisateurs */}
             {results.users.length > 0 && (
               <div>
-                <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                <div className="px-3 py-1 text-[10px] font-bold tracking-wider text-muted-foreground flex items-center gap-2">
                   <User className="h-3 w-3" /> Personnes
                 </div>
                 <div className="mt-1 space-y-1">
@@ -116,7 +116,7 @@ export function SearchDropdown({ query, isVisible, onClose }: SearchDropdownProp
             {/* Ressources */}
             {results.resources.length > 0 && (
               <div>
-                <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                <div className="px-3 py-1 text-[10px] font-bold tracking-wider text-muted-foreground flex items-center gap-2">
                   <BookOpen className="h-3 w-3" /> Ressources
                 </div>
                 <div className="mt-1 space-y-1">
@@ -144,7 +144,7 @@ export function SearchDropdown({ query, isVisible, onClose }: SearchDropdownProp
             {/* Sphères */}
             {results.spheres.length > 0 && (
               <div>
-                <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                <div className="px-3 py-1 text-[10px] font-bold tracking-wider text-muted-foreground flex items-center gap-2">
                   <Users className="h-3 w-3" /> Sphères
                 </div>
                 <div className="mt-1 space-y-1">

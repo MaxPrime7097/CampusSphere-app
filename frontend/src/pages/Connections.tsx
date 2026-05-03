@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { searchUsers, getCurrentUser, getUserConnections, createConnection, disconnectFromUser, getMutualConnectionCounts } from "@/services/api";
-import { Users, Link, Search, Filter, Zap, UserPlus, UserCheck } from "lucide-react";
+import { Users, Link, Search, Filter, Zap, UserPlus, UserCheck, Check, X, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -178,12 +178,12 @@ export function Connections() {
                 normalizeUniversity(u.university) &&
                 normalizeUniversity(currentUser.university) &&
                 normalizeUniversity(u.university) === normalizeUniversity(currentUser.university)
-                  ? `Même université - ${getUniversityLabel(u.university)}`
+                  ? "Même université"
                   : normalizeFaculty(u.faculty) &&
                       normalizeFaculty(currentUser.faculty) &&
                       normalizeFaculty(u.faculty) === normalizeFaculty(currentUser.faculty)
-                    ? `Même filière - ${getFacultyLabel(u.faculty)}`
-                    : "Suggestions pour vous",
+                    ? "Même filière"
+                    : "Suggéré pour vous",
             }));
           setSuggestions(mapped.slice(0, 20));
         }
@@ -478,7 +478,7 @@ export function Connections() {
             ) : (
               <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                 {filteredSuggestions.map((suggestion) => (
-                  <Card key={suggestion.id} className="border bg-card hover:shadow-md transition-shadow duration-200">
+                  <Card key={suggestion.id} className="border bg-card hover:shadow-md transition-shadow duration-200" onClick={() => navigate(`/profile/${suggestion.username}`)}>
                     <CardContent className="p-4">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-12 w-12 flex-shrink-0">
@@ -490,7 +490,9 @@ export function Connections() {
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold text-sm truncate">{suggestion.name}</h3>
                           <p className="text-xs text-muted-foreground">@{suggestion.username}</p>
-                          <p className="text-[10px] text-primary/80 italic mt-0.5 truncate">{suggestion.reason}</p>
+                          <p className="text-[10px] text-primary/80 italic mt-0.5 truncate w-full">
+                            {suggestion.reason}
+                          </p>
                           <div className="flex items-center gap-2 mt-1 flex-wrap">
                             {suggestion.university && (
                               <Badge variant="secondary" className="text-[9px] h-4 px-1.5 py-0 max-w-[100px] truncate">
@@ -516,7 +518,7 @@ export function Connections() {
                             }
                           }}
                         >
-                          <UserPlus className="h-4 w-4 sm:mr-1" />
+                          <Link className="h-4 w-4 sm:mr-1" />
                           <span className="hidden sm:inline">Connecter</span>
                         </Button>
                       </div>

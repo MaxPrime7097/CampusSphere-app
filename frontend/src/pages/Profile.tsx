@@ -14,7 +14,6 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { CreatePost } from "@/components/feed/CreatePost";
 import { PostCard } from "@/components/feed/PostCard";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { cn, formatFileSize } from "@/lib/utils";
 import { ProfileSkeleton } from "@/components/ui/skeletons";
 import { OptimizedImage } from "@/components/ui/optimized-image";
@@ -24,6 +23,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { VerificationModal } from "@/components/modals/VerificationModal";
 import { formatFrenchDate } from "@/lib/date";
 import { normalizeResourceType, normalizeSubject } from "@/lib/resourceMetadata";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 
 const NOT_AVAILABLE_TEXT = "—";
 const MOOD_OPTIONS = [
@@ -183,6 +184,30 @@ const FACULTY_LABELS: Record<string, string> = {
   hydraulique: "Hydraulique et Maîtrise des Eaux",
   autre: "Autre filière",
 };
+
+const UNIVERSITIES_LIST = [
+  "Université de Yaoundé I",
+  "Université de Yaoundé II",
+  "Université de Douala",
+  "Université de Buea",
+  "Université de Bamenda",
+  "Université de Dschang",
+  "Université de Ngaoundéré",
+  "Université de Maroua",
+  "Université de Bertoua",
+  "Université d'Ebolowa",
+  "Université de Garoua",
+  "Université Inter-États Congo-Cameroun",
+  "Université Catholique d'Afrique Centrale",
+  "ICT University",
+  "PKFokam Institute of Excellence",
+  "Saint Jerome Catholic University",
+  "Ndi Samba University",
+];
+
+const UNIVERSITY_OPTIONS = UNIVERSITIES_LIST.map(u => ({ value: u, label: u }));
+const FACULTY_OPTIONS = Object.entries(FACULTY_LABELS).map(([value, label]) => ({ value, label }));
+const STUDY_YEAR_OPTIONS = Object.entries(STUDY_YEAR_LABELS).map(([value, label]) => ({ value, label }));
 
 const normalizeCanonicalLabel = (value: unknown, map: Record<string, string>): string => {
   if (!value || typeof value !== "string") return "";
@@ -371,6 +396,10 @@ export function Profile() {
   const [isSavingCover, setIsSavingCover] = useState(false);
   const [isSavingAvatar, setIsSavingAvatar] = useState(false);
   const [isSavingMood, setIsSavingMood] = useState(false);
+  
+  const [editUniversity, setEditUniversity] = useState("");
+  const [editFaculty, setEditFaculty] = useState("");
+  const [editStudyYear, setEditStudyYear] = useState("");
 
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [targetUser, setTargetUser] = useState<any>(null);
@@ -771,6 +800,9 @@ export function Profile() {
     setEditExperiences(user.experiences?.length > 0 ? user.experiences : [{ title: "", company: "", duration: "", description: "" }]);
     setEditPreviousEducation(user.previousEducation?.length > 0 ? user.previousEducation : [{ degree: "", school: "", year: "" }]);
     setEditPortfolioLinks(user.portfolioLinks?.length > 0 ? user.portfolioLinks.map((e: any) => typeof e === "string" ? { name: "", url: e } : e) : [{ name: "", url: "" }]);
+    setEditUniversity(user.university || "");
+    setEditFaculty(user.faculty || "");
+    setEditStudyYear(user.studyYear || "");
     setShowEditModal(true);
   };
 
@@ -800,9 +832,11 @@ export function Profile() {
       if (phoneInput?.value) updateData.phone_number = phoneInput.value;
       if (townInput?.value) updateData.town = townInput.value;
       if (languageInput?.value) updateData.language = languageInput.value;
-      if (universityInput?.value) updateData.university = universityInput.value;
-      if (facultyInput?.value) updateData.faculty = facultyInput.value;
-      if (studyYearInput?.value) updateData.study_year = studyYearInput.value;
+      
+      updateData.university = editUniversity;
+      updateData.faculty = editFaculty;
+      updateData.study_year = editStudyYear;
+      
       if (studentIdInput?.value) updateData.student_id = studentIdInput.value;
       updateData.skills = editSkills.filter(Boolean);
       updateData.interests = editInterests.filter(Boolean);
@@ -1635,27 +1669,43 @@ export function Profile() {
                 </div>
                 <div>
                   <Label htmlFor="university">Université</Label>
-                  <Input
-                    id="university"
-                    defaultValue={user.university}
+                  <Combobox
+                    options={UNIVERSITY_OPTIONS}
+                    value={editUniversity}
+                    onValueChange={setEditUniversity}
+                    placeholder="Choisir une université..."
+                    allowCustomValue
                     className="mt-2"
                   />
                 </div>
                 <div>
                   <Label htmlFor="faculty">Faculté / Filière</Label>
-                  <Input
-                    id="faculty"
-                    defaultValue={user.faculty}
+                  <Combobox
+                    options={FACULTY_OPTIONS}
+                    value={editFaculty}
+                    onValueChange={setEditFaculty}
+                    placeholder="Choisir une filière..."
+                    allowCustomValue
                     className="mt-2"
                   />
                 </div>
                 <div>
                   <Label htmlFor="studyYear">Année d'étude</Label>
-                  <Input
-                    id="studyYear"
-                    defaultValue={user.studyYear}
-                    className="mt-2"
-                  />
+                  <Select
+                    value={editStudyYear}
+                    onValueChange={setEditStudyYear}
+                  >
+                    <SelectTrigger className="mt-2">
+                      <SelectValue placeholder="Choisir l'année..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STUDY_YEAR_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label htmlFor="studentId">Identifiant Étudiant</Label>
