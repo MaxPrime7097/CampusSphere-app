@@ -47,6 +47,7 @@ class Resource(models.Model):
         ('exercises', 'Exercices'),
         ('projects', 'Projets'),
         ('presentations', 'Présentations'),
+        ('exam_papers', 'Épreuves d\'examen'),
         ('other', 'Autre'),
     ]
     TYPE_CHOICES = CANONICAL_TYPES

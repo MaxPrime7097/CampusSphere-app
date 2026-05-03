@@ -522,7 +522,7 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
             <Button 
               className="flex-1 campus-gradient text-white hover:opacity-90" 
               onClick={handleSubmit} 
-              disabled={!title || !subject || !type || !file || isUploading}
+              disabled={!title || !type || !file || isUploading}
             >
               {isUploading ? (
                 <>

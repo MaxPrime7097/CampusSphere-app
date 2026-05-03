@@ -4,6 +4,7 @@ const FALLBACK_OTHER = "Autre";
 const FALLBACK_UNDEFINED = "Non défini";
 
 const AUDIENCE_LABELS: Record<string, string> = {
+  all: "Tous les niveaux",
   bts1: "BTS 1",
   bts2: "BTS 2",
   hnd1: "HND 1",
@@ -27,6 +28,7 @@ const AUDIENCE_LABELS: Record<string, string> = {
 };
 
 const AUDIENCE_ALIASES: Record<string, string> = {
+  all: "all",
   "bts 1": "bts1",
   "bts 2": "bts2",
   "hnd 1": "hnd1",
