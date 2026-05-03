@@ -7,6 +7,7 @@ import { CreatePostModal } from "@/components/modals/CreatePostModal";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MenuDropdown } from "./MenuDropdown";
 import { ProfileBubble } from "./ProfileBubble";
+import { SearchDropdown } from "./SearchDropdown";
 
 interface MobileTopBarProps {
   onMenuClick?: () => void;
@@ -19,6 +20,7 @@ export function MobileTopBar({ onMenuClick, user, isLoading }: MobileTopBarProps
   const isMobile = useIsMobile();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchDropdownVisible, setIsSearchDropdownVisible] = useState(false);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,16 +35,31 @@ export function MobileTopBar({ onMenuClick, user, isLoading }: MobileTopBarProps
     <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border md:hidden">
       {searchOpen ? (
         <div className="flex items-center gap-2 px-4 h-14">
-          <form onSubmit={handleSearch} className="flex-1 flex items-center gap-2">
+          <form onSubmit={handleSearch} className="flex-1 flex items-center gap-2 relative">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
               <Input
                 placeholder="Rechercher..."
                 className="pl-10"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setIsSearchDropdownVisible(true);
+                }}
+                onFocus={() => setIsSearchDropdownVisible(true)}
                 autoFocus
               />
+              {isSearchDropdownVisible && searchQuery.trim().length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-2 z-50">
+                   <SearchDropdown 
+                     searchQuery={searchQuery} 
+                     onClose={() => {
+                       setIsSearchDropdownVisible(false);
+                       setSearchOpen(false);
+                     }} 
+                   />
+                </div>
+              )}
             </div>
           </form>
           <Button

@@ -25,7 +25,7 @@ export function AdminContactMessagesPage() {
     setLoading(true);
     try {
       const res = await getContactMessages();
-      setMessages(res);
+      setMessages(Array.isArray(res) ? res : res?.data || res?.results || []);
     } catch (e: any) {
       toast({ title: "Erreur", description: e?.message || "Impossible de charger les messages", variant: "destructive" });
     } finally {
@@ -90,7 +90,7 @@ export function AdminContactMessagesPage() {
                 <div className="col-span-2 text-right">Actions</div>
               </div>
               <div className="divide-y max-h-[60vh] overflow-y-auto">
-                {messages.map((msg) => (
+                {Array.isArray(messages) && messages.map((msg) => (
                   <div key={msg.id} className={`grid grid-cols-12 gap-2 p-3 text-sm items-center hover:bg-muted/30 transition-colors ${!msg.is_read ? 'bg-primary/5 font-medium' : ''}`}>
                     <div className="col-span-2 truncate text-xs text-muted-foreground">
                       {new Date(msg.created_at).toLocaleDateString()} {new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}

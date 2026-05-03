@@ -243,7 +243,7 @@ export function SphereDetail() {
     return 0;
   }, [sphere, tasks]);
 
-  const sphereMemberCount = sphere?.memberCount ?? members.length;
+  const sphereMemberCount = Math.max(sphere?.memberCount ?? 0, members.length);
   const sphereFileCount = sphere?.resourceCount ?? sphere?.filesCount ?? 0;
   const membershipStateLabel = useMemo(() => {
     if (isMember) return "Membre";
@@ -337,6 +337,17 @@ export function SphereDetail() {
       await completeTask(taskId);
       setTasks(prev => prev.map(t => t.id === taskId ? { ...t, isCompleted: true, status: 'done' } : t));
       toast({ title: "Tâche accomplie !" });
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const handleTaskDelete = async (taskId: string) => {
+    try {
+      const { deleteTask } = await import("@/services/api");
+      await deleteTask(taskId);
+      setTasks(prev => prev.filter(t => t.id !== taskId));
+      toast({ title: "Tâche supprimée" });
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });
     }
@@ -678,7 +689,13 @@ export function SphereDetail() {
                 {taskState === "ready" && (
                   <div className="-mx-4 md:mx-0 overflow-x-auto">
                     <div className="px-4 md:px-0 min-w-0">
-                      <KanbanBoard tasks={tasks} onTasksChange={setTasks} onCreateTask={() => {}} canModerate={canModerateMembers} />
+                      <KanbanBoard 
+                        tasks={tasks} 
+                        onTasksChange={setTasks} 
+                        onCreateTask={() => {}} 
+                        onDeleteTask={handleTaskDelete}
+                        canModerate={canModerateMembers} 
+                      />
                     </div>
                   </div>
                 )}

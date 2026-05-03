@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { CreatePost } from "@/components/feed/CreatePost";
 import { PostCard } from "@/components/feed/PostCard";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn, formatFileSize } from "@/lib/utils";
 import { ProfileSkeleton } from "@/components/ui/skeletons";
 import { OptimizedImage } from "@/components/ui/optimized-image";

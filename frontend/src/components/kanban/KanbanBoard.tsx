@@ -30,6 +30,7 @@ interface KanbanBoardProps {
   tasks: KanbanTask[];
   onTasksChange: (tasks: KanbanTask[]) => void;
   onCreateTask?: (col: KanbanStatus) => void;
+  onDeleteTask?: (taskId: string) => void;
   canModerate?: boolean;
 }
 
@@ -46,11 +47,12 @@ const PRIORITY: Record<string, { label: string; cls: string }> = {
   low:    { label: "Basse",   cls: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400" },
 };
 
-function TaskCard({ task, col, draggingId, loading, onDragStart, onDragEnd, onMove }: {
+function TaskCard({ task, col, draggingId, loading, onDragStart, onDragEnd, onMove, onDelete }: {
   task: KanbanTask; col: typeof COLS[0];
   draggingId: string | null; loading: Record<string, boolean>;
   onDragStart: () => void; onDragEnd: () => void;
   onMove?: (taskId: string, target: KanbanStatus) => void;
+  onDelete?: (taskId: string) => void;
 }) {
   const isMobile = useIsMobile();
   const overdue = (task.is_overdue || task.isOverdue) && col.id !== "done";
@@ -99,6 +101,17 @@ function TaskCard({ task, col, draggingId, loading, onDragStart, onDragEnd, onMo
               </Button>
             )}
           </div>
+        )}
+        
+        {onDelete && (
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+            onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
+          >
+            <X className="h-3.5 w-3.5" />
+          </Button>
         )}
       </div>
 
@@ -213,6 +226,7 @@ export function KanbanBoard({ tasks, onTasksChange, onCreateTask, canModerate }:
                       onDragStart={() => { setDraggingId(task.id); dragRef.current = task; }}
                       onDragEnd={() => { setDraggingId(null); setDragOverCol(null); }}
                       onMove={handleMoveTask}
+                      onDelete={onDeleteTask}
                     />
                   ))}
                 </div>
@@ -262,6 +276,7 @@ export function KanbanBoard({ tasks, onTasksChange, onCreateTask, canModerate }:
                   onDragStart={() => { setDraggingId(task.id); dragRef.current = task; }}
                   onDragEnd={() => { setDraggingId(null); setDragOverCol(null); }}
                   onMove={handleMoveTask}
+                  onDelete={onDeleteTask}
                 />
               ))}
             </div>
