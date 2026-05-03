@@ -286,9 +286,6 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
         <div className="space-y-4">
           <div>
             <Label>{t('modals.uploadResource.file')} *</Label>
-
-          <div>
-            <Label>{t('modals.uploadResource.file')} *</Label>
             <div 
               className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
                 isDragOver 
@@ -388,21 +385,6 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Type de ressource *</Label>
-              <Select value={type} onValueChange={setType}>
-                <SelectTrigger className="mt-1.5">
-                  <SelectValue placeholder="Sélectionner..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {types.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
               <Label>Matière <span className="text-muted-foreground font-normal text-xs">(optionnel)</span></Label>
               <Select value={subject} onValueChange={setSubject}>
                 <SelectTrigger className="mt-1.5">
@@ -412,6 +394,21 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
                   {subjects.map((subject) => (
                     <SelectItem key={subject.value} value={subject.value}>
                       {subject.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Type de ressource *</Label>
+              <Select value={type} onValueChange={setType}>
+                <SelectTrigger className="mt-1.5">
+                  <SelectValue placeholder="Sélectionner..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {types.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
