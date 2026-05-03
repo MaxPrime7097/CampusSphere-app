@@ -428,6 +428,16 @@ DEFAULT_FROM_EMAIL = 'CampusSphere <no-reply@campussphere.app>'
 
 # Celery Configuration for Background Tasks
 # Redis Configuration for Channels and Celery
+# Static Files
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# Whitenoise optimization for memory
+WHITENOISE_MANIFEST_STRICT = False
+WHITENOISE_USE_FINDERS = True
+WHITENOISE_MAX_AGE = 31536000  # 1 year
+
+# Redis & Channels Configuration
 REDIS_URL = env_config('REDIS_URL', default=None)
 
 if REDIS_URL:
@@ -436,6 +446,9 @@ if REDIS_URL:
             'BACKEND': 'channels_redis.core.RedisChannelLayer',
             'CONFIG': {
                 "hosts": [REDIS_URL],
+                "symmetric_encryption_keys": [SECRET_KEY],
+                "capacity": 1000,  # Capacité réduite pour économiser la RAM
+                "expiry": 20,      # Expiration rapide pour libérer la RAM
             },
         },
     }
@@ -452,11 +465,6 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': 3600.0,
     },
 }
-
-# Static Files
-STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-# STATICFILES_STORAGE géré par le bloc USE_S3 ci-dessus
 
 # AI API Keys for Verification
 GEMINI_API_KEY = env_config('GEMINI_API_KEY', default=None)
