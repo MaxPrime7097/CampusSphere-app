@@ -1388,17 +1388,53 @@ export async function getResource(id: number | string, token?: string) {
   return normalizeResource(unwrapItem(response));
 }
 
-export async function createResource(data: FormData, token?: string) {
+export function createResource(data: FormData, token?: string, onProgress?: (progress: number) => void): Promise<any> {
   const rawType = data.get("type");
   if (typeof rawType === "string" && rawType) {
     data.set("type", normalizeResourceType(rawType));
   }
-  const response = await apiFetch<any>("api/resources/", {
-    method: "POST",
-    body: data,
-    token: token || getAccessToken(),
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const url = `${API_BASE_URL.replace(/\/$/, "")}/api/resources/`;
+    const effectiveToken = token || getAccessToken();
+
+    xhr.open("POST", url);
+    if (effectiveToken) {
+      xhr.setRequestHeader("Authorization", `Bearer ${effectiveToken}`);
+    }
+
+    if (onProgress && xhr.upload) {
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percentComplete = Math.round((event.loaded / event.total) * 100);
+          onProgress(percentComplete);
+        }
+      };
+    }
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const response = JSON.parse(xhr.responseText);
+          resolve(normalizeResource(unwrapItem(response)));
+        } catch (e) {
+          resolve(xhr.responseText);
+        }
+      } else {
+        try {
+          const errJson = JSON.parse(xhr.responseText);
+          const errMsg = errJson?.detail || errJson?.message || JSON.stringify(errJson);
+          reject(new ApiRequestError(errMsg || `Request failed: ${xhr.status}`, xhr.status));
+        } catch (e) {
+          reject(new ApiRequestError(xhr.responseText || `Request failed: ${xhr.status}`, xhr.status));
+        }
+      }
+    };
+
+    xhr.onerror = () => reject(new ApiRequestError("Network error", 0));
+    xhr.send(data);
   });
-  return normalizeResource(unwrapItem(response));
 }
 
 export async function updateResource(id: number | string, data: Partial<{

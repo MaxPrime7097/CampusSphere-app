@@ -149,7 +149,7 @@ class ResourceSerializer(serializers.ModelSerializer):
 
 class ResourceCreateSerializer(serializers.ModelSerializer):
     file = serializers.FileField()
-    subject = serializers.CharField(default='other', required=False)
+    subject = serializers.CharField(default='other', required=False, allow_blank=True)
     visibility = serializers.CharField(default='public', required=False)
     audience = serializers.CharField(default='', required=False, allow_blank=True)
     sphere = serializers.IntegerField(required=False, allow_null=True)

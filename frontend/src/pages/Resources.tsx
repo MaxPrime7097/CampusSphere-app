@@ -43,7 +43,6 @@ import { ResourceCard } from "@/components/resources/ResourceCard";
 import { FolderCard } from "@/components/resources/FolderCard";
 import { CreateFolderModal } from "@/components/modals/CreateFolderModal";
 import { VerificationModal } from "@/components/modals/VerificationModal";
-import { EmptyState } from "@/components/ui/empty-state";
 import { cn, formatFileSize } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { RESOURCE_TYPE_OPTIONS, normalizeResourceType } from "@/constants/resourceTypes";
@@ -55,6 +54,7 @@ import {
   ensureValidSortKey,
 } from "@/constants/defaultSort";
 import { ResourceSkeleton } from "@/components/ui/skeletons";
+import { EmptyState } from "@/components/ui/empty-state";
 
 function mapResourceCard(r: any) {
   return {
@@ -663,14 +663,16 @@ export function Resources() {
           </div>
         ) : getSortedResources().length === 0 ? (
           <EmptyState
-            icon={Search}
+            icon={FileText}
             title="Aucune ressource trouvée"
-            description="Aucun fichier ne correspond à vos critères. Essayez de changer de sujet ou de type."
-            actionLabel="Tout voir"
+            description="Soyez le premier à partager une ressource dans cette catégorie !"
+            actionLabel={currentUser?.isVerified ? "Partager une ressource" : "Se certifier"}
             onAction={() => {
-              setSearchTerm("");
-              setSelectedSubject("all");
-              setSelectedType("all");
+              if (currentUser?.isVerified) {
+                window.location.reload();
+              } else {
+                openVerificationModal();
+              }
             }}
           />
         ) : (
@@ -687,24 +689,6 @@ export function Resources() {
               />
             ))}
         </div>
-        )}
-
-        {!loading && filteredResources.length === 0 && (
-          <EmptyState
-            icon={FileText}
-            title="Aucune ressource trouvée"
-            description="Soyez le premier à partager une ressource dans cette catégorie !"
-            actionLabel={currentUser?.isVerified ? "Partager une ressource" : "Se certifier"}
-            onAction={() => {
-              if (currentUser?.isVerified) {
-                // The upload modal is usually opened via FAB or top bar
-                // We'll just refresh or tell the user how to upload
-                window.location.reload();
-              } else {
-                openVerificationModal();
-              }
-            }}
-          />
         )}
         </>
         )}

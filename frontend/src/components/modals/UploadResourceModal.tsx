@@ -204,10 +204,6 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
       return;
     }
 
-    if (!subject) {
-      toast({ variant: "destructive", title: "Veuillez sélectionner une matière" });
-      return;
-    }
 
     if (!type) {
       toast({ variant: "destructive", title: "Veuillez sélectionner un type de ressource" });
@@ -224,7 +220,7 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
       const formData = new FormData();
       formData.append('title', title);
       formData.append('description', description || "");
-      formData.append('subject', subject);
+      if (subject) formData.append('subject', subject);
       formData.append('type', type);
       formData.append('file', file);
       formData.append('tags', JSON.stringify(tags));
@@ -233,7 +229,9 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
       if (selectedFolderId && selectedFolderId !== 'none') formData.append('folder_id', selectedFolderId);
 
 
-      const createdResource = await createResource(formData);
+      const createdResource = await createResource(formData, undefined, (progress) => {
+        setUploadProgress(progress);
+      });
       
       setIsUploading(false);
       setUploadProgress(100);
@@ -351,8 +349,8 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
                   <p className="text-xs text-muted-foreground mt-2">
                     Glissez-déposez un fichier ou cliquez pour sélectionner
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    PDF, DOC, PPT, ZIP, JPG, PNG, GIF jusqu'à 50MB
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Fichiers acceptés (Images, Documents, Archives...) jusqu'à 50MB
                   </p>
                 </>
               )}
