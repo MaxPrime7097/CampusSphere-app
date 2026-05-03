@@ -813,14 +813,43 @@ class UserVerificationView(APIView):
                 'error': 'student_id and card_image are required'
             }, status=status.HTTP_400_BAD_REQUEST)
 
+        # Update user fields
         user.student_id = student_id
         user.card_image = card_image
-        # Note: We keep is_verified=False until manual review
         user.save()
+
+        # Automatic AI Verification
+        from .verification_service import analyze_student_card
+        
+        # We use a copy of the file for analysis because it might be closed/consumed
+        analysis_result = analyze_student_card(
+            card_image, 
+            user.full_name, 
+            user.university
+        )
+
+        if analysis_result.get("verified"):
+            user.is_verified = True
+            user.save(update_fields=['is_verified'])
+            
+            # Instant real-time notification
+            try:
+                from notifications.services import create_verification_notification
+                create_verification_notification(user, success=True)
+            except Exception:
+                pass
+                
+            return Response({
+                'success': True,
+                'verified': True,
+                'message': 'Votre compte a été certifié instantanément par notre IA ! 🎉'
+            }, status=status.HTTP_200_OK)
 
         return Response({
             'success': True,
-            'message': 'Verification request submitted successfully'
+            'verified': False,
+            'message': 'Demande soumise. Notre équipe va vérifier votre carte manuellement.',
+            'ai_reason': analysis_result.get("reason")
         }, status=status.HTTP_200_OK)
 
 

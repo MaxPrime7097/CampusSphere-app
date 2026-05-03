@@ -224,3 +224,22 @@ def create_message_notification(message):
                     'conversation_type': conversation.type,
                 },
             )
+def create_verification_notification(user, success=True, reason=None):
+    """Create a notification when a user's verification status changes."""
+    title = "Compte Certifié ! 🎉" if success else "Certification refusée"
+    message = (
+        "Félicitations ! Votre compte est désormais certifié." 
+        if success else 
+        f"Désolé, votre certification a été refusée. Raison : {reason or 'Image illisible'}"
+    )
+    
+    return create_notification(
+        notification_type='verification_status',
+        title=title,
+        message=message,
+        recipient=user,
+        data={
+            'is_verified': success,
+            'reason': reason,
+        },
+    )

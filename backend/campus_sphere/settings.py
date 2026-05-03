@@ -458,6 +458,10 @@ STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 # STATICFILES_STORAGE géré par le bloc USE_S3 ci-dessus
 
+# AI API Keys for Verification
+GEMINI_API_KEY = env_config('GEMINI_API_KEY', default=None)
+GROQ_API_KEY = env_config('GROQ_API_KEY', default=None)
+
 # Logging Configuration
 LOGGING = {
     'version': 1,
