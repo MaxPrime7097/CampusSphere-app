@@ -79,13 +79,12 @@ def _apply_profile_privacy(user_data, request_user, target_user):
 
 
 def _can_access_profile(request_user, target_user):
-    if target_user.is_profile_complete:
+    # Tout utilisateur authentifié peut voir le profil d'un autre utilisateur inscrit
+    if request_user and request_user.is_authenticated:
         return True
-
-    if not request_user or not request_user.is_authenticated:
-        return False
-
-    return request_user.id == target_user.id
+        
+    # Si non authentifié, on ne voit que les profils complets
+    return target_user.is_profile_complete
 
 
 def _enforce_profile_access(request_user, target_user):
@@ -343,9 +342,8 @@ class UserSearchView(generics.ListAPIView):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        return queryset.filter(
-            is_profile_complete=True
-        ).exclude(id=self.request.user.id)
+        # On montre tout le monde (complet ou non) pour faciliter les connexions au début
+        return queryset.filter(is_active=True).exclude(id=self.request.user.id)
 
 
 class ConnectionListView(generics.ListCreateAPIView):

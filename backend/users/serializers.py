@@ -151,7 +151,7 @@ class SupabaseProfileCompletionSerializer(serializers.ModelSerializer):
         return self._validate_json_list_field(
             value,
             field_name="experiences",
-            required_keys=("company", "role"),
+            required_keys=("company", "title"), # 'title' au lieu de 'role' pour correspondre au frontend
             max_items=self.MAX_EXPERIENCES_ITEMS,
             value_max_length=150,
         )
@@ -265,7 +265,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         portfolio_links = validated_data.pop('portfolio_links', [])
 
         is_complete = all(validated_data.get(field) for field in REQUIRED_PROFILE_FIELDS)
-        user = User.objects.create_user(**validated_data)
+        user = User.objects.create_user(is_profile_complete=is_complete, **validated_data)
         if phone_number and hasattr(user, 'phone_number'):
             user.phone_number = phone_number
         if date_of_birth and hasattr(user, 'date_of_birth'):

@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { completeSupabaseProfile, checkUserAvailability, verifyStudentStatus } from "@/services/api";
 import { completeSupabaseProfilePayloadSchema, mapCompleteProfileErrors } from "@/schemas/completeProfilePayload";
-import { cn } from "@/lib/utils";
+import { cn, formatSlugToLabel } from "@/lib/utils";
 import { AddEducationModal } from "@/components/modals/AddEducationModal";
 import { AddExperienceModal } from "@/components/modals/AddExperienceModal";
 import { UniversityCombobox } from "@/components/forms/UniversityCombobox";
@@ -274,13 +274,6 @@ export function CompleteProfile() {
 
   const progress = step === 1 ? 33 : step === 2 ? 66 : 100;
 
-  // Helper pour afficher les labels au lieu des slugs
-  const getSkillLabel = (value: string) => {
-    // On pourrait importer la liste, mais pour l'affichage simple, 
-    // on met la première lettre en majuscule et remplace les underscores
-    return value.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5 p-4 mx-auto grid lg:grid-cols-2 gap-12 items-center">
       <div className="px-0 sm:px-20">
@@ -490,8 +483,8 @@ export function CompleteProfile() {
                 {formData.previousEducation.map((edu, i) => (
                   <div key={i} className="flex justify-between items-center gap-2 border-l-2 border-primary/50 pl-3 py-1 mb-1 bg-muted/50 rounded-r">
                     <div className="min-w-0">
-                      <p className="text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap">{getSkillLabel(edu.degree)}</p>
-                      <p className="text-xs text-muted-foreground break-words">{getSkillLabel(edu.school)} · {edu.year}</p>
+                      <p className="text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap">{formatSlugToLabel(edu.degree)}</p>
+                      <p className="text-xs text-muted-foreground break-words">{formatSlugToLabel(edu.school)} · {edu.year}</p>
                     </div>
                     <Button variant="ghost" size="sm" onClick={() => setFormData(p => ({ ...p, previousEducation: p.previousEducation.filter((_, j) => j !== i) }))}><X className="h-4 w-4" /></Button>
                   </div>
@@ -538,7 +531,7 @@ export function CompleteProfile() {
                       className="cursor-pointer capitalize" 
                       onClick={() => setFormData(p => ({ ...p, skills: p.skills.filter((_, j) => j !== i) }))}
                     >
-                      {getSkillLabel(s)} ×
+                      {formatSlugToLabel(s)} ×
                     </Badge>
                   ))}
                 </div>
@@ -563,7 +556,7 @@ export function CompleteProfile() {
                       className="cursor-pointer capitalize" 
                       onClick={() => setFormData(p => ({ ...p, interests: p.interests.filter((_, j) => j !== i) }))}
                     >
-                      {getSkillLabel(s)} ×
+                      {formatSlugToLabel(s)} ×
                     </Badge>
                   ))}
                 </div>

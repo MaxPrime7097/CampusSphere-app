@@ -50,3 +50,30 @@ export function formatFileSize(bytesOrString: unknown): string {
   if (bytes >= MB) return `${(bytes / MB).toFixed(1)} MB`;
   return `${(bytes / KB).toFixed(1)} KB`;
 }
+export function formatSlugToLabel(slug: string | null | undefined): string {
+  if (!slug) return "";
+  
+  // Cas spéciaux connus (diplômes, etc.)
+  const specials: Record<string, string> = {
+    "gce_a": "GCE A Level",
+    "gce_o": "GCE O Level",
+    "bac": "Baccalauréat",
+    "probatoire": "Probatoire",
+    "bepc": "BEPC",
+    "bts": "BTS",
+    "hnd": "HND",
+    "licence": "Licence",
+    "master": "Master",
+    "doctorat": "Doctorat",
+  };
+
+  if (specials[slug.toLowerCase()]) {
+    return specials[slug.toLowerCase()];
+  }
+
+  // Transformation générique : python_dev -> Python Dev
+  return slug
+    .split(/[_-]/)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}

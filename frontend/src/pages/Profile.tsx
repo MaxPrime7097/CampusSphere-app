@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CreatePost } from "@/components/feed/CreatePost";
 import { PostCard } from "@/components/feed/PostCard";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { cn, formatFileSize } from "@/lib/utils";
+import { cn, formatFileSize, formatSlugToLabel } from "@/lib/utils";
 import { ProfileSkeleton } from "@/components/ui/skeletons";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import { ResourceCard } from "@/components/resources/ResourceCard";
@@ -1518,7 +1518,7 @@ export function Profile() {
                   <div className="space-y-3">
                     {user.previousEducation.map((edu: any, index: number) => (
                       <div key={`${edu?.degree || "degree"}-${index}`} className="border rounded-lg p-3">
-                        <p className="font-medium">{edu?.degree || <EmptyField />}</p>
+                        <p className="font-medium">{formatSlugToLabel(edu?.degree) || <EmptyField />}</p>
                         <p className="text-sm text-muted-foreground">{edu?.school || <EmptyField />}</p>
                         <p className="text-xs text-muted-foreground">{edu?.year || <EmptyField />}</p>
                       </div>
@@ -1560,7 +1560,7 @@ export function Profile() {
                   <div className="flex flex-wrap gap-2">
                     {user.skills.map((skill: any, index: number) => (
                       <Badge key={`${skill}-${index}`} variant="secondary">
-                        {typeof skill === "string" ? skill : skill?.name || <EmptyField />}
+                        {typeof skill === "string" ? formatSlugToLabel(skill) : formatSlugToLabel(skill?.name) || <EmptyField />}
                       </Badge>
                     ))}
                   </div>
@@ -1578,7 +1578,7 @@ export function Profile() {
                   <div className="flex flex-wrap gap-2">
                     {user.interests.map((interest: any, index: number) => (
                       <Badge key={`${interest}-${index}`} variant="outline">
-                        {typeof interest === "string" ? interest : interest?.name || <EmptyField />}
+                        {typeof interest === "string" ? formatSlugToLabel(interest) : formatSlugToLabel(interest?.name) || <EmptyField />}
                       </Badge>
                     ))}
                   </div>
