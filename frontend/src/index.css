@@ -168,6 +168,39 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    /* Empêcher le scroll horizontal global */
+    overflow-x: hidden;
+  }
+
+  /* Custom Premium Scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/20 rounded-full transition-colors;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary/40;
+  }
+
+  /* Version fine pour les zones de texte/petites listes */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  /* Pour Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.2) transparent;
   }
 }
 
@@ -276,5 +309,20 @@
 
   .animate-pop {
     animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  /* Utility to make a page feel like a fixed app */
+  .app-height-fix {
+    height: calc(100vh - 64px); /* Desktop Navbar height */
+  }
+
+  @media (max-width: 768px) {
+    .app-height-fix {
+      height: calc(100vh - 110px); /* Top (56px) + Bottom (approx 54px) bars on mobile */
+    }
+    
+    .app-height-fix-no-nav {
+      height: 100vh;
+    }
   }
 }

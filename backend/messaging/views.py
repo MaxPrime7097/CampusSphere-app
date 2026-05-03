@@ -339,15 +339,14 @@ def create_private_conversation(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    # Check if private conversation already exists
+    # Check if private conversation already exists (robust check)
     existing_conversation = Conversation.objects.filter(
-        type='private',
+        type='private'
+    ).filter(
         participants=request.user
     ).filter(
         participants=recipient
-    ).annotate(
-        participant_count=models.Count('participants')
-    ).filter(participant_count=2).first()
+    ).first()
 
     if existing_conversation:
         return Response({

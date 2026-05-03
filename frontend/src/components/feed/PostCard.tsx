@@ -319,15 +319,14 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
     const postUrl = `${window.location.origin}/posts/${post.id}`;
     const messageContent = `📌 Post partagé par ${post.author.name} :\n${postUrl}`;
     try {
-      // Rechercher d'abord si une conversation existe déjà
+      // Rechercher d'abord si une conversation existe déjà (plus robuste)
       const { getUserConversations: getConvs } = await import("@/services/api");
       const convs = await getConvs();
-      const existing = (convs || []).find((c: any) =>
-        (c.type === "private" || !c.type) &&
-        (c.participants_info || c.participants || []).some(
-          (p: any) => String(p.id) === String(contactId)
-        )
-      );
+      const existing = (convs || []).find((c: any) => {
+        const isPrivate = (c.type || c.conversation_type || "private") === "private";
+        const participants = c.participants_info || c.participants || [];
+        return isPrivate && participants.some((p: any) => String(p.id) === String(contactId));
+      });
 
       let convId = existing?.id != null ? String(existing.id) : null;
 

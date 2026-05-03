@@ -718,10 +718,10 @@ export function Messages() {
   });
 
   return (
-    <div className="h-full w-full bg-gradient-to-br from-background to-accent/20">
-      <div className="flex h-full w-full mx-0 overflow-hidden">
+    <div className={`w-full bg-gradient-to-br from-background to-accent/20 overflow-hidden ${conversationId && window.innerWidth < 768 ? 'app-height-fix-no-nav' : 'app-height-fix'}`}>
+      <div className="flex h-full w-full mx-0 overflow-hidden relative">
         {/* Conversations List */}
-        <div className={`w-full md:w-80 lg:w-96 border-r bg-card/50 flex-shrink-0 ${conversationId ? 'hidden md:flex' : 'flex'} flex-col`}>
+        <div className={`w-full md:w-80 lg:w-96 border-r bg-card/50 flex-shrink-0 ${conversationId ? 'hidden md:flex' : 'flex'} flex-col h-full`}>
           <div className="p-3 md:p-4 border-b flex-shrink-0">
             <div className="flex items-center justify-between mb-3 md:mb-4">
               <h2 className="text-3xl font-bold text-muted-foreground">
@@ -767,7 +767,7 @@ export function Messages() {
             </div>
           </div>
 
-          <div className="overflow-y-auto flex-1">
+          <div className="overflow-y-auto flex-1 scrollbar-thin">
             {loading ? (
               <div className="space-y-0">
                 {Array.from({ length: 5 }).map((_, i) => (
@@ -853,7 +853,7 @@ export function Messages() {
 
         {/* Chat Area */}
         {conversationId ? (
-          <div className="flex-1 flex flex-col min-w-0">
+          <div className="flex-1 flex flex-col min-w-0 h-full relative">
             {/* Chat Header */}
             <div className="p-3 md:p-4 border-b bg-card/50 backdrop-blur-sm flex-shrink-0">
               <div className="flex items-center justify-between gap-2">
@@ -1041,8 +1041,11 @@ export function Messages() {
               </div>
             </div>
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-2">
+            {/* Messages - THE scrollable area */}
+            <div 
+              ref={scrollRef}
+              className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-2 scrollbar-thin scroll-smooth"
+            >
               {messages.map((message) => (
                 (() => {
                   const isModerator = Boolean(
