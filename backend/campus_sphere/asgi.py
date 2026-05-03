@@ -14,13 +14,17 @@ from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
 import messaging.routing
 
+from .middleware import JwtAuthMiddleware
+
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'campus_sphere.settings')
 
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),
-    "websocket": AuthMiddlewareStack(
-        URLRouter(
-            messaging.routing.websocket_urlpatterns
+    "websocket": JwtAuthMiddleware(
+        AuthMiddlewareStack(
+            URLRouter(
+                messaging.routing.websocket_urlpatterns
+            )
         )
     ),
 })

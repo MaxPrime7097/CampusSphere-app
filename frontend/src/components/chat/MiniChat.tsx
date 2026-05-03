@@ -84,7 +84,8 @@ export function MiniChat({ sphereId, sphereName, isExpanded, onToggleExpanded, c
     const apiUrl = (import.meta.env.VITE_API_URL as string | undefined) || "";
     const host = (import.meta.env.VITE_API_WS_HOST as string | undefined) ||
       (apiUrl ? apiUrl.replace(/^https?:\/\//, "").replace(/\/$/, "") : window.location.host);
-    const ws = new WebSocket(`${proto}://${host}/ws/conversations/${convId}/`);
+    const token = localStorage.getItem("access_token") || localStorage.getItem("access");
+    const ws = new WebSocket(`${proto}://${host}/ws/conversations/${convId}/${token ? `?token=${token}` : ""}`);
     socketRef.current = ws;
 
     ws.onopen = () => {

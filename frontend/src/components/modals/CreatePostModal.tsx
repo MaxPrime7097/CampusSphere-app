@@ -634,7 +634,7 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
                   <Label className="text-[10px] tracking-wider text-muted-foreground font-bold">
                     {EMOJI_PACKS.find(p => p.id === activeEmojiPack)?.label}
                   </Label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
                     {EMOJI_PACKS.find(p => p.id === activeEmojiPack)?.combos.map((combo) => (
                       <Button 
                         key={combo.name} 
@@ -652,7 +652,7 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
 
                 <div className="space-y-2">
                   <Label className="text-[10px] tracking-wider text-muted-foreground font-bold">Emojis rapides</Label>
-                  <div className="grid grid-cols-8 gap-1 sm:grid-cols-16">
+                  <div className="grid grid-cols-8 gap-1 md:grid-cols-12">
                     {QUICK_EMOJIS.map((emoji) => (
                       <Button key={emoji} variant="ghost" className="text-xl p-0 h-9 w-9 hover:bg-accent" onClick={() => insertEmoji(emoji)}>
                         {emoji}

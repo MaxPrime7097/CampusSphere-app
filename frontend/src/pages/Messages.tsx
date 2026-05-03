@@ -295,7 +295,8 @@ export function Messages() {
     const apiUrl = (import.meta.env.VITE_API_URL as string | undefined) || "";
     const wsHost = (import.meta.env.VITE_API_WS_HOST as string | undefined) ||
       (apiUrl ? apiUrl.replace(/^https?:\/\//, "").replace(/\/$/, "") : window.location.host);
-    const wsUrl = `${wsProtocol}://${wsHost}/ws/conversations/${conversationId}/`;
+    const token = localStorage.getItem("access_token") || localStorage.getItem("access");
+    const wsUrl = `${wsProtocol}://${wsHost}/ws/conversations/${conversationId}/${token ? `?token=${token}` : ""}`;
     const ws = new WebSocket(wsUrl);
     socketRef.current = ws;
 

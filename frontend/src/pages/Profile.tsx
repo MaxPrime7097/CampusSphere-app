@@ -1254,6 +1254,7 @@ export function Profile() {
                         <p className={cn("text-sm sm:text-lg font-bold text-primary truncate transition-all duration-300", animateScore && "animate-pop")}>
                           {user.impactScore ?? 0}
                         </p>
+                        {/* Gamification deactivated for now but code kept 
                         {user.impactScore !== null && (
                           <div className={cn(
                             "flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold text-white bg-gradient-to-r shadow-sm",
@@ -1263,8 +1264,10 @@ export function Profile() {
                             <span className="uppercase tracking-tighter">{getImpactLevelInfo(user.impactScore).currentLevel.label}</span>
                           </div>
                         )}
+                        */}
                       </div>
                       
+                      {/* Gamification deactivated for now but code kept
                       {user.impactScore !== null && getImpactLevelInfo(user.impactScore).nextLevel && (
                         <div className="w-full max-w-[120px] mt-1 space-y-1">
                           <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
@@ -1278,12 +1281,13 @@ export function Profile() {
                           </p>
                         </div>
                       )}
+                      */}
                     </div>
                   </div>
                   
                   <div className="h-8 w-px bg-border shrink-0" />
 
-                  {/* Streak (Mocked for engagement demo) */}
+                  {/* Streak deactivated for now but code kept
                   <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-orange-500/10 text-orange-500 border border-orange-500/20 shrink-0">
                     <span className="text-xs font-black">7</span>
                     <span className="text-[10px] uppercase font-bold tracking-widest">Série</span>
@@ -1291,6 +1295,7 @@ export function Profile() {
                   </div>
                   
                   <div className="h-8 w-px bg-border shrink-0" />
+                  */}
 
                   <div 
                     className="flex items-center gap-2 sm:gap-3 cursor-pointer hover:bg-muted/50 rounded-lg p-1 sm:p-2 -m-1 sm:-m-2 transition-colors min-w-0"

@@ -54,7 +54,7 @@ class ConversationListView(generics.ListCreateAPIView):
     def get_queryset(self):
         return Conversation.objects.filter(
             participants=self.request.user
-        ).prefetch_related('participants', 'messages').distinct()
+        ).prefetch_related('participants').distinct()
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -293,7 +293,7 @@ def user_conversations(request):
     """Get conversations for the current user"""
     conversations = Conversation.objects.filter(
         participants=request.user
-    ).prefetch_related('participants', 'messages').distinct().order_by('-updated_at')
+    ).prefetch_related('participants').distinct().order_by('-updated_at')
 
     # Apply pagination
     from rest_framework.pagination import PageNumberPagination

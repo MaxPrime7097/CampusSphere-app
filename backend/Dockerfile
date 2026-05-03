@@ -39,5 +39,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/api/health/ || exit 1
 
-# Run the application
-CMD ["gunicorn", "campus_sphere.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "4", "--threads", "4"]
+# Run the application with Daphne for ASGI/WebSocket support
+CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "campus_sphere.asgi:application"]

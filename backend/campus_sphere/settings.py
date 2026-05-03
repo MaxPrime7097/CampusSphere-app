@@ -237,13 +237,13 @@ USE_TZ = True
 # CORS / CSRF Configuration
 CORS_ALLOWED_ORIGINS = env_config(
     "CORS_ALLOWED_ORIGINS",
-    default="http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080",
+    default="http://localhost:5173,http://localhost:3000,https://www.campussphere.app,https://campussphere.app",
     cast=Csv(),
 )
 
 CSRF_TRUSTED_ORIGINS = env_config(
     "CSRF_TRUSTED_ORIGINS",
-    default="http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080",
+    default="http://localhost:5173,http://localhost:3000,https://www.campussphere.app,https://campussphere.app",
     cast=Csv(),
 )
 
