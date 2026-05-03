@@ -29,7 +29,31 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
+        # Broadcast that user is online
+        await self.channel_layer.group_send(
+            self.conversation_group_name,
+            {
+                'type': 'user_presence',
+                'payload': {
+                    'user_id': str(user.id),
+                    'status': 'online'
+                }
+            }
+        )
+
     async def disconnect(self, close_code):
+        # Broadcast that user is offline
+        await self.channel_layer.group_send(
+            self.conversation_group_name,
+            {
+                'type': 'user_presence',
+                'payload': {
+                    'user_id': str(self.scope["user"].id),
+                    'status': 'offline'
+                }
+            }
+        )
+
         # Leave conversation group
         await self.channel_layer.group_discard(
             self.conversation_group_name,
@@ -90,6 +114,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def conversation_event(self, event):
         await self.send(text_data=json.dumps({
             'type': event.get('event_type', 'conversation_event'),
+            'payload': event.get('payload', {})
+        }))
+
+    async def user_presence(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'user_presence',
             'payload': event.get('payload', {})
         }))
 

@@ -610,7 +610,7 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
 
           {/* Emoji/Mentions Popups */}
           {showEmojiPicker && (
-            <Card className="p-0 shadow-xl campus-animate-slide-up w-full max-w-[320px] overflow-hidden">
+            <Card className="p-0 shadow-xl campus-animate-slide-up w-full max-w-[320px] md:max-w-[480px] overflow-hidden">
               {/* Pack Navigation */}
               <div className="flex items-center justify-between px-2 py-1 bg-muted/30 border-b">
                 {EMOJI_PACKS.map((pack) => (
@@ -629,7 +629,7 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
                 ))}
               </div>
 
-              <div className="p-4 space-y-4 max-h-[300px] overflow-y-auto">
+              <div className="p-4 space-y-4 max-h-[350px] overflow-y-auto">
                 <div className="space-y-2">
                   <Label className="text-[10px] tracking-wider text-muted-foreground font-bold">
                     {EMOJI_PACKS.find(p => p.id === activeEmojiPack)?.label}

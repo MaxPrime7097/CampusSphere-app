@@ -351,6 +351,24 @@ export function Messages() {
             );
           }
         }
+        if (eventType === "user_presence") {
+          const { user_id, status } = payload.payload;
+          if (user_id === String(currentUser?.id)) return;
+
+          setConversations((prev) =>
+            prev.map((conv) => {
+              if (conv.id === String(conversationId)) {
+                // In private chat, the "isOnline" refers to the other person
+                if (conv.type === "private") {
+                  return { ...conv, isOnline: status === "online" };
+                }
+                // In group chat, it's more complex, but let's just mark the group as active
+                return { ...conv, isOnline: status === "online" };
+              }
+              return conv;
+            })
+          );
+        }
       } catch {
         // ignore
       }
@@ -794,13 +812,15 @@ export function Messages() {
                             : (conversation.name || "U").slice(0, 1).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="absolute bottom-0 right-0 w-2 h-2 md:w-3 md:h-3 bg-green-500 border border-background rounded-full"></div>
+                      {conversation.isOnline && (
+                        <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-background rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse"></div>
+                      )}
                     </div>
                     
                     <div className="flex-1 min-w-0 overflow-hidden">
                       <div className="flex items-center justify-between gap-2 mb-0.5">
                         <div className="flex items-center gap-1.5 min-w-0">
-                          <h3 className="font-semibold truncate text-sm">
+                          <h3 className="font-semibold truncate text-xs md:text-sm max-w-[100px] md:max-w-none">
                             {conversation.name || 'Utilisateur'}
                           </h3>
                           {conversation.type === 'group' && (
@@ -873,6 +893,9 @@ export function Messages() {
                           : (selectedConv?.name || "U").slice(0, 1).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
+                    {selectedConv?.isOnline && (
+                      <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-background rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse"></div>
+                    )}
                     {isGroupCreator && (
                       <label
                         className="absolute -bottom-1 -right-1 h-4 w-4 bg-primary rounded-full flex items-center justify-center cursor-pointer hover:bg-primary/80"
@@ -907,7 +930,7 @@ export function Messages() {
                   </div>
                   
                   <div className="min-w-0 flex-1">
-                    <h3 className="font-semibold text-sm md:text-base truncate pr-2">
+                    <h3 className="font-semibold text-sm md:text-base truncate pr-2 max-w-[140px] md:max-w-none">
                       {selectedConv?.name || 'Utilisateur'}
                     </h3>
                     <p className="text-xs text-muted-foreground truncate">
