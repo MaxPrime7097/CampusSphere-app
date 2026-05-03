@@ -687,93 +687,98 @@ export function SphereDetail() {
               <TabsContent value="files" className="mt-4 space-y-4">
                 <div className="flex justify-between items-center bg-card p-3 md:p-4 rounded-lg border">
                   <h3 className="font-bold">Fichiers partagés ({resources.length})</h3>
-                  {currentUser?.isVerified ? (
-                    <SphereUploadResourceModal sphereId={String(id)} onUploaded={loadSphereData}>
-                      <Button size="sm" variant="outline" className="gap-2">
-                        <Plus className="h-4 w-4" /> Partager
-                      </Button>
-                    </SphereUploadResourceModal>
-                  ) : (
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className="gap-2"
-                      onClick={() => {
-                        toast({
-                          title: "Compte non certifié",
-                          description: "Certifiez votre compte pour partager des fichiers.",
-                          variant: "destructive",
-                          action: (
-                            <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>Vérifier</Button>
-                          )
-                        });
-                      }}
-                    >
+                  <SphereUploadResourceModal sphereId={String(id)} onUploaded={() => getSphereFiles(String(id)).then(setResources).catch(() => null)}>
+                    <Button size="sm" className="campus-gradient text-white gap-1">
                       <Plus className="h-4 w-4" /> Partager
                     </Button>
-                  )}
+                  </SphereUploadResourceModal>
                 </div>
 
-                {loading ? (
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
-                    {Array.from({ length: 4 }).map((_, i) => (
-                      <ResourceSkeleton key={i} />
-                    ))}
+                {resources.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <FileText className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                    <p className="text-sm">Aucun fichier partagé pour le moment.</p>
                   </div>
-                ) : resources.length === 0 ? (
-                  <EmptyState
-                    icon={FileText}
-                    title="Aucun fichier"
-                    description="Soyez le premier à partager un document dans cette sphère."
-                  />
                 ) : (
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
+                  <div className="space-y-2">
                     {resources.map((res: any) => {
-                      const mappedResource = {
-                        id: res.id,
-                        title: res.file_name || res.fileName || res.title || "Fichier",
-                        fileSize: res.file_size || res.fileSize || 0,
-                        fileUrl: res.file_url || res.fileUrl || res.file || "",
-                        authorName: res.uploader_info?.name || res.uploaderName || res.uploaded_by?.name || "Inconnu",
-                        type: res.type || "notes",
-                        subject: sphere?.category || "other",
-                        viewCount: 0,
-                        downloadCount: 0,
-                      };
+                      const fileUrl = res.file_url || res.fileUrl || "";
+                      const fileName = res.title || "Fichier";
+                      const fileType = res.file_type || res.fileType || "";
+                      const fileSize = res.file_size || res.fileSize || 0;
+                      const isImage = fileType.startsWith("image/");
+                      const isPdf = fileType === "application/pdf" || fileName.toLowerCase().endsWith(".pdf");
+                      const uploaderName = res.uploaded_by?.name || res.uploadedBy?.name || "";
+                      const createdAt = res.created_at || res.createdAt;
+                      const canDelete = canModerateMembers || String(res.uploaded_by?.id) === String(currentUserId);
 
                       return (
-                        <ResourceCard
-                          key={res.id}
-                          resource={mappedResource}
-                          onDownload={(e) => {
-                            e.stopPropagation();
-                            if (!currentUser?.isVerified) {
-                              toast({
-                                title: "Compte non certifié",
-                                description: "Vérifiez votre compte pour télécharger des fichiers.",
-                                variant: "destructive",
-                                action: (
-                                  <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>Vérifier</Button>
-                                )
-                              });
-                              return;
-                            }
-                            const link = document.createElement("a");
-                            link.href = mappedResource.fileUrl;
-                            link.download = mappedResource.title;
-                            document.body.appendChild(link);
-                            link.click();
-                            link.remove();
-                          }}
-                          onPreview={(e) => {
-                            e.stopPropagation();
-                            window.open(mappedResource.fileUrl, "_blank");
-                          }}
-                          onSave={(e) => {
-                            e.stopPropagation();
-                            toast({ title: "Bientôt disponible", description: "La sauvegarde arrive bientôt." });
-                          }}
-                        />
+                        <div key={res.id} className="border rounded-xl bg-card overflow-hidden">
+                          {isImage && fileUrl && (
+                            <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="block relative w-full h-48">
+                              <OptimizedImage 
+                                src={fileUrl} 
+                                alt={fileName} 
+                                className="w-full h-full object-contain" 
+                                containerClassName="w-full h-full max-h-48 bg-muted"
+                              />
+                            </a>
+                          )}
+                          {isPdf && fileUrl && (
+                            <div className="bg-muted/30 p-2">
+                              <iframe src={`${fileUrl}#toolbar=0&view=FitH`} className="w-full h-48 rounded border" title={fileName} />
+                            </div>
+                          )}
+                          <div className="p-3 flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                <FileText className="h-4 w-4 text-primary" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium truncate">{fileName}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {uploaderName && <span>{uploaderName} · </span>}
+                                  {fileSize > 0 && <span>{(fileSize / 1024 / 1024).toFixed(1)} MB · </span>}
+                                  {createdAt && <span>{new Date(createdAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}</span>}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex gap-1 flex-shrink-0">
+                              {fileUrl && (
+                                <Button size="sm" variant="ghost" asChild className="h-8 w-8 p-0">
+                                  <a href={fileUrl} target="_blank" rel="noopener noreferrer" title="Ouvrir">
+                                    <ExternalLink className="h-4 w-4" />
+                                  </a>
+                                </Button>
+                              )}
+                              {fileUrl && (
+                                <Button size="sm" variant="ghost" asChild className="h-8 w-8 p-0">
+                                  <a href={fileUrl} download={fileName} title="Télécharger">
+                                    <Download className="h-4 w-4" />
+                                  </a>
+                                </Button>
+                              )}
+                              {canDelete && (
+                                <Button
+                                  size="sm" variant="ghost"
+                                  className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                                  onClick={async () => {
+                                    try {
+                                      await deleteSphereFile(String(id), res.id);
+                                      setResources((prev: any[]) => prev.filter((r: any) => r.id !== res.id));
+                                      toast({ title: "Fichier supprimé" });
+                                    } catch (e: any) {
+                                      toast({ title: "Erreur", description: e?.message, variant: "destructive" });
+                                    }
+                                  }}
+                                  title="Supprimer"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       );
                     })}
                   </div>

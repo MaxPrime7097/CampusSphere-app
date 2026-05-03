@@ -76,6 +76,8 @@ export function Notifications() {
               n.data?.assigner_name ||
               n.data?.requester_name ||
               n.data?.author_name ||
+              n.data?.sender_username ||
+              n.data?.requester_username ||
               null;
             const senderAvatar = n.sender?.avatar || n.data?.sender_avatar || n.data?.author_avatar || null;
 

@@ -479,6 +479,43 @@ class ConnectionRelationView(APIView):
         existing_connection.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    def patch(self, request, *args, **kwargs):
+        target_user = self._get_target_user()
+        existing_connection = self._get_existing_connection(request.user, target_user)
+        
+        if not existing_connection:
+            return Response(
+                {'detail': 'Connection not found.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+            
+        if existing_connection.recipient != request.user:
+            return Response(
+                {'detail': 'Only the recipient can accept the connection request.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+            
+        if existing_connection.status == 'accepted':
+            return Response(
+                {'detail': 'Connection is already accepted.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        existing_connection.status = 'accepted'
+        existing_connection.save()
+        
+        try:
+            from notifications.services import create_connection_accepted_notification
+            create_connection_accepted_notification(existing_connection)
+        except ImportError:
+            pass
+
+        return Response({
+            'success': True,
+            'data': ConnectionSerializer(existing_connection).data,
+            'message': 'Connection accepted successfully.'
+        }, status=status.HTTP_200_OK)
+
 
 class ConnectionDetailView(generics.DestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]

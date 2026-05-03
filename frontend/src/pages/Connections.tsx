@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { searchUsers, getCurrentUser, getUserConnections, createConnection, deleteConnection, getMutualConnectionCounts } from "@/services/api";
+import { searchUsers, getCurrentUser, getUserConnections, createConnection, disconnectFromUser, getMutualConnectionCounts } from "@/services/api";
 import { Users, Link, Search, Filter, Zap, UserPlus, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,7 @@ export function Connections() {
   const { toast } = useToast();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [connections, setConnections] = useState<any[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<any[]>([]);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [mutualCountStatus, setMutualCountStatus] = useState<string | null>(null);
@@ -103,9 +104,12 @@ export function Connections() {
               (conn.requester === currentUser.id
                 ? conn.recipient_info?.impact_score
                 : conn.requester_info?.impact_score) || 0,
-            mutualFriends: 0
+            mutualFriends: 0,
+            status: conn.status,
+            isIncomingRequest: conn.recipient === currentUser.id && conn.status === 'pending'
           }));
-          setConnections(mapped);
+          setConnections(mapped.filter((c: any) => c.status === 'accepted'));
+          setPendingRequests(mapped.filter((c: any) => c.isIncomingRequest));
 
           try {
             setMutualCountStatus("Calcul des amis communs...");
@@ -309,6 +313,9 @@ export function Connections() {
             <SharedTabsTrigger value="all">
               Mes Connexions ({filteredConnections.length})
             </SharedTabsTrigger>
+            <SharedTabsTrigger value="requests">
+              Demandes ({pendingRequests.length})
+            </SharedTabsTrigger>
             <SharedTabsTrigger value="suggestions">
               Suggestions ({filteredSuggestions.length})
             </SharedTabsTrigger>
@@ -372,6 +379,77 @@ export function Connections() {
                         >
                           Profil
                         </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Pending Requests */}
+          <TabsContent value="requests" className="space-y-3">
+            {loading ? (
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 3 }).map((_, i) => <ConnectionSkeleton key={i} />)}
+              </div>
+            ) : pendingRequests.length === 0 ? (
+              <EmptyState
+                icon={UserPlus}
+                title="Aucune demande en attente"
+                description="Vous n'avez pas de demandes de connexion pour le moment."
+              />
+            ) : (
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {pendingRequests.map((request) => (
+                  <Card key={request.id} className="border bg-card">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-12 w-12 flex-shrink-0 cursor-pointer" onClick={() => navigate(`/profile/${request.username}`)}>
+                          <AvatarImage src={request.avatar} />
+                          <AvatarFallback className="campus-gradient text-white font-bold">
+                            {request.name?.slice(0, 2).toUpperCase() || 'US'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-sm truncate cursor-pointer hover:underline" onClick={() => navigate(`/profile/${request.username}`)}>{request.name}</h3>
+                          <p className="text-xs text-muted-foreground">@{request.username}</p>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <Button
+                            size="sm"
+                            className="h-8 text-xs campus-gradient text-white hover:opacity-90"
+                            onClick={async () => {
+                              try {
+                                const { acceptConnection } = await import("@/services/api");
+                                await acceptConnection(request.id);
+                                toast({ title: "Connexion acceptée", description: `Vous êtes maintenant connecté(e) à ${request.name}` });
+                                setConnections(prev => [...prev, { ...request, status: 'accepted' }]);
+                                setPendingRequests(prev => prev.filter(r => r.id !== request.id));
+                              } catch (error: any) {
+                                toast({ title: "Erreur", description: error?.message || "Impossible d'accepter la demande", variant: "destructive" });
+                              }
+                            }}
+                          >
+                            Accepter
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 text-xs text-destructive hover:bg-destructive/10"
+                            onClick={async () => {
+                              try {
+                                await disconnectFromUser(request.id);
+                                toast({ title: "Demande refusée", description: `Vous avez refusé la demande de ${request.name}` });
+                                setPendingRequests(prev => prev.filter(r => r.id !== request.id));
+                              } catch (error: any) {
+                                toast({ title: "Erreur", description: error?.message || "Impossible de refuser la demande", variant: "destructive" });
+                              }
+                            }}
+                          >
+                            Refuser
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>

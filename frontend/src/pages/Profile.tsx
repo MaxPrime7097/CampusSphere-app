@@ -22,6 +22,7 @@ import { ResourceCard } from "@/components/resources/ResourceCard";
 import { ResourceSkeleton } from "@/components/ui/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
 import { VerificationModal } from "@/components/modals/VerificationModal";
+import { formatFrenchDate } from "@/lib/date";
 import { normalizeResourceType, normalizeSubject } from "@/lib/resourceMetadata";
 
 const NOT_AVAILABLE_TEXT = "—";
@@ -285,9 +286,9 @@ function mapProfileToViewModel({
     };
   }
 
-  const NOT_AVAILABLE_TEXT = "N/A";
+  const NOT_AVAILABLE_TEXT = "";
   const fullName = `${profile.firstName || ""} ${profile.lastName || ""}`.trim();
-  const displayName = fullName || profile.username || NOT_AVAILABLE_TEXT;
+  const displayName = fullName || profile.username || "Utilisateur";
 
   return {
     name: profile.name ?? displayName,
@@ -341,6 +342,8 @@ export function Profile() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [isFollowing, setIsFollowing] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<string | null>(null);
+  const [isRecipient, setIsRecipient] = useState(false);
   const [currentConnectionId, setCurrentConnectionId] = useState<string | null>(null);
   const [isFollowingLoading, setIsFollowingLoading] = useState(false);
   const [relationActionUnavailable, setRelationActionUnavailable] = useState(false);
@@ -540,6 +543,8 @@ export function Profile() {
   useEffect(() => {
     if (!currentUser?.id || !targetUser?.id || isOwnProfile) {
       setIsFollowing(false);
+      setConnectionStatus(null);
+      setIsRecipient(false);
       setCurrentConnectionId(null);
       setRelationActionUnavailable(false);
       return;
@@ -553,10 +558,13 @@ export function Profile() {
 
         setRelationActionUnavailable(false);
         setIsFollowing(Boolean(relation.is_connected));
+        setConnectionStatus(relation.connection?.status ?? null);
+        setIsRecipient(relation.connection?.recipient === currentUser.id);
         setCurrentConnectionId(relation.connection?.id != null ? String(relation.connection.id) : null);
       } catch (error) {
         if (isMounted) {
           setIsFollowing(false);
+          setConnectionStatus(null);
           setCurrentConnectionId(null);
           setRelationActionUnavailable(isApiRequestErrorStatus(error, 403));
         }
@@ -621,23 +629,49 @@ export function Profile() {
           throw new Error("Connection introuvable pour la suppression.");
         }
 
-        await disconnectFromUser(targetUser.id);
-        setCurrentConnectionId(null);
+        // Si c'est en attente et qu'on est le destinataire, on peut soit accepter soit refuser
+        // Pour l'instant, handleFollow fait l'action principale.
+        // Si c'est déjà accepté, on déconnecte.
+        // Si c'est en attente et qu'on est le destinataire, on accepte.
+        if (connectionStatus === "pending" && isRecipient) {
+          const { acceptConnection } = await import("@/services/api");
+          await acceptConnection(targetUser.id);
+          setConnectionStatus("accepted");
+          setIsFollowing(true);
+          toast({
+            title: "Connexion acceptée",
+            description: `Vous êtes maintenant connecté(e) à ${user.name}`,
+            duration: 2000,
+          });
+        } else {
+          // Annuler la demande ou se déconnecter
+          await disconnectFromUser(targetUser.id);
+          setCurrentConnectionId(null);
+          setConnectionStatus(null);
+          setIsRecipient(false);
+          setIsFollowing(false);
+          toast({
+            title: previousIsFollowing && connectionStatus === "accepted" ? "Connexion supprimée" : "Demande annulée",
+            description: previousIsFollowing && connectionStatus === "accepted"
+              ? `Vous n'êtes plus connecté(e) à ${user.name}`
+              : `La demande de connexion à ${user.name} a été annulée`,
+            duration: 2000,
+          });
+        }
       } else {
         const response = await connectWithUser(targetUser.id);
         const createdConnectionId =
-          response?.id != null ? String(response.id) : previousConnectionId;
+          response?.id != null ? String(response.id) : response?.data?.id != null ? String(response.data.id) : previousConnectionId;
         setCurrentConnectionId(createdConnectionId ?? null);
+        setConnectionStatus("pending");
+        setIsRecipient(false);
+        toast({
+          title: "Connexion envoyée",
+          description: `Demande de connexion envoyée à ${user.name}`,
+          duration: 2000,
+        });
       }
       setRelationActionUnavailable(false);
-
-      toast({
-        title: previousIsFollowing ? "Connexion supprimée" : "Connexion envoyée",
-        description: previousIsFollowing
-          ? `Vous n'êtes plus connecté(e) à ${user.name}`
-          : `Vous êtes maintenant connecté(e) à ${user.name}`,
-        duration: 2000,
-      });
     } catch (error: any) {
       // Rollback optimistic state
       setIsFollowing(previousIsFollowing);
@@ -911,6 +945,8 @@ export function Profile() {
     isMobile ? "rounded-none border-x-0 border-t-0 shadow-none bg-card" : "campus-card hover:campus-glow"
   );
 
+  const EmptyField = () => <span className="italic text-muted-foreground text-xs font-normal">Aucun</span>;
+
   if (loading) {
     return (
       <div className="min-h-screen w-full bg-gradient-to-br from-background to-accent/20">
@@ -1041,16 +1077,28 @@ export function Profile() {
                         {isFollowingLoading ? (
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                         ) : isFollowing ? (
-                          <>
-                            <Unlink className="h-4 w-4 mr-2" />
-                            <span className="hidden sm:inline">Disconnect</span>
-
-                          </>
+                          connectionStatus === "pending" ? (
+                            isRecipient ? (
+                              <>
+                                <Check className="h-4 w-4 mr-2" />
+                                <span className="inline">Accepter</span>
+                              </>
+                            ) : (
+                              <>
+                                <Check className="h-4 w-4 mr-2" />
+                                <span className="inline">En attente</span>
+                              </>
+                            )
+                          ) : (
+                            <>
+                              <Unlink className="h-4 w-4 mr-2" />
+                              <span className="inline">Se déconnecter</span>
+                            </>
+                          )
                         ) : (
                           <>
                             <Link className="h-4 w-4 mr-2" />
-                            <span className="hidden sm:inline">Connect</span>
-
+                            <span className="inline">Se connecter</span>
                           </>
                         )}
                       </Button>
@@ -1090,45 +1138,45 @@ export function Profile() {
                 <p className="text-foreground leading-relaxed">{user.bio || NOT_AVAILABLE_TEXT}</p>
 
                 {/* Impact Score et Mood */}
-                <div className="flex items-center gap-4 p-3 bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg group relative">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center">
-                      <Zap className="h-4 w-4 text-white" />
+                <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-4 p-2.5 sm:p-3 bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center shrink-0">
+                      <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
                     </div>
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <p className="text-sm font-semibold">Impact Score</p>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1">
+                        <p className="text-[11px] sm:text-sm font-semibold truncate">Impact Score</p>
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="h-5 w-5 p-0 rounded-full hover:bg-primary/20 transition-colors"
+                          className="h-4 w-4 sm:h-5 sm:w-5 p-0 rounded-full hover:bg-primary/20 transition-colors shrink-0"
                           onClick={() => toast({
                             title: "Score d'impact",
                             description: "Le Score d'Impact mesure l'utilité et la pertinence de ce contenu pour la communauté CampusSphere. Il est calculé en fonction des interactions et des retours des étudiants.",
                           })}
-
                         >
                           <Info className="h-3 w-3 text-primary/60" />
                         </Button>
                       </div>
-                      <p className="text-lg font-bold text-primary">{user.impactScore ?? NOT_AVAILABLE_TEXT}</p>
+                      <p className="text-sm sm:text-lg font-bold text-primary truncate">{user.impactScore ?? NOT_AVAILABLE_TEXT}</p>
                     </div>
                   </div>
-                  <div className="h-8 w-px bg-border" />
+                  
+                  <div className="h-8 w-px bg-border shrink-0" />
 
                   <div 
-                    className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded-lg p-2 -m-2 transition-colors"
+                    className="flex items-center gap-2 sm:gap-3 cursor-pointer hover:bg-muted/50 rounded-lg p-1 sm:p-2 -m-1 sm:-m-2 transition-colors min-w-0"
                     onClick={() => isOwnProfile && setShowMoodModal(true)}
                   >
-                    <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center">
-                      <span className="text-lg"><Smile className="h-4 w-4 text-white" /></span>
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center shrink-0">
+                      <Smile className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
                     </div>
-                    <div>
-                      <p className="text-sm font-semibold">Mood du moment</p>
-                      <p className="text-sm text-muted-foreground">{getMoodLabel(user.currentMood)}</p>
+                    <div className="min-w-0">
+                      <p className="text-[11px] sm:text-sm font-semibold truncate">Mood du moment</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground truncate">{getMoodLabel(user.currentMood)}</p>
                     </div>
                     {isOwnProfile && (
-                      <Settings className="h-3 w-3 text-muted-foreground ml-auto" />
+                      <Settings className="h-3 w-3 text-muted-foreground shrink-0 hidden sm:block ml-auto" />
                     )}
                   </div>
                 </div>
@@ -1274,23 +1322,23 @@ export function Profile() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-muted-foreground">Université</p>
-                    <p className="font-medium">{user.university || NOT_AVAILABLE_TEXT}</p>
+                    <p className="font-medium">{user.university || <EmptyField />}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Filière</p>
-                    <p className="font-medium">{displayFaculty}</p>
+                    <p className="font-medium">{displayFaculty || <EmptyField />}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Niveau</p>
-                    <p className="font-medium">{displayStudyYear}</p>
+                    <p className="font-medium">{displayStudyYear || <EmptyField />}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Matricule</p>
-                    <p className="font-medium">{user.studentId || NOT_AVAILABLE_TEXT}</p>
+                    <p className="font-medium">{user.studentId || <EmptyField />}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Campus</p>
-                    <p className="font-medium">{user.campus || NOT_AVAILABLE_TEXT}</p>
+                    <p className="font-medium">{user.campus || <EmptyField />}</p>
                   </div>
                 </div>
               </div>
@@ -1304,14 +1352,14 @@ export function Profile() {
                   <div className="space-y-3">
                     {user.previousEducation.map((edu: any, index: number) => (
                       <div key={`${edu?.degree || "degree"}-${index}`} className="border rounded-lg p-3">
-                        <p className="font-medium">{edu?.degree || NOT_AVAILABLE_TEXT}</p>
-                        <p className="text-sm text-muted-foreground">{edu?.school || NOT_AVAILABLE_TEXT}</p>
-                        <p className="text-xs text-muted-foreground">{edu?.year || NOT_AVAILABLE_TEXT}</p>
+                        <p className="font-medium">{edu?.degree || <EmptyField />}</p>
+                        <p className="text-sm text-muted-foreground">{edu?.school || <EmptyField />}</p>
+                        <p className="text-xs text-muted-foreground">{edu?.year || <EmptyField />}</p>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">{NOT_AVAILABLE_TEXT}</p>
+                  <p className="text-sm text-muted-foreground"><EmptyField /></p>
                 )}
               </div>
 
@@ -1324,16 +1372,16 @@ export function Profile() {
                   <div className="space-y-3">
                     {user.experiences.map((exp: any, index: number) => (
                       <div key={`${exp?.title || "experience"}-${index}`} className="border rounded-lg p-3">
-                        <p className="font-medium">{exp?.title || NOT_AVAILABLE_TEXT}</p>
+                        <p className="font-medium">{exp?.title || <EmptyField />}</p>
                         <p className="text-sm text-muted-foreground">
-                          {[exp?.company, exp?.duration].filter(Boolean).join(" • ") || NOT_AVAILABLE_TEXT}
+                          {[exp?.company, exp?.duration].filter(Boolean).join(" • ") || <EmptyField />}
                         </p>
-                        <p className="text-sm mt-1">{exp?.description || NOT_AVAILABLE_TEXT}</p>
+                        <p className="text-sm mt-1">{exp?.description || <EmptyField />}</p>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">{NOT_AVAILABLE_TEXT}</p>
+                  <p className="text-sm text-muted-foreground"><EmptyField /></p>
                 )}
               </div>
 
@@ -1346,23 +1394,25 @@ export function Profile() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-muted-foreground">Email</p>
-                      <p className="font-medium">{user.email || NOT_AVAILABLE_TEXT}</p>
+                      <p className="font-medium">{user.email || <EmptyField />}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Téléphone</p>
-                      <p className="font-medium">{aboutProfile.phoneNumber || NOT_AVAILABLE_TEXT}</p>
+                      <p className="font-medium">{user.phoneNumber || <EmptyField />}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Date de naissance</p>
-                      <p className="font-medium">{aboutProfile.dateOfBirth || NOT_AVAILABLE_TEXT}</p>
+                      <p className="font-medium">
+                        {user.dateOfBirth ? formatFrenchDate(user.dateOfBirth) : <EmptyField />}
+                      </p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Ville</p>
-                      <p className="font-medium">{user.town || NOT_AVAILABLE_TEXT}</p>
+                      <p className="font-medium">{user.town || <EmptyField />}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Langue</p>
-                      <p className="font-medium">{user.language || NOT_AVAILABLE_TEXT}</p>
+                      <p className="font-medium">{user.language || <EmptyField />}</p>
                     </div>
                   </div>
                 </div>

@@ -113,6 +113,8 @@ export function ResourceDetail() {
   const isImage = normalizedMime.startsWith("image/") || ["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg"].includes(inferredExtension);
   const isPreviewable = isPdf || isImage;
 
+  const EmptyField = () => <span className="italic text-muted-foreground text-xs font-normal">Aucun</span>;
+
   // Load resource from API
   useEffect(() => {
     if (!id) return;
@@ -847,18 +849,22 @@ export function ResourceDetail() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Date d'upload</p>
-                <p className="font-medium">{resource.uploadDate ? formatFrenchDate(resource.uploadDate) : "N/A"}</p>
+                <p className="font-medium">{resource.uploadDate ? formatFrenchDate(resource.uploadDate) : <EmptyField />}</p>
               </div>
             </div>
 
             <div>
               <p className="text-sm text-muted-foreground mb-2">Tags</p>
               <div className="flex flex-wrap gap-2">
-                {(resource.tags || []).map((tag) => (
-                  <Badge key={tag} variant="outline" className="cursor-pointer hover:bg-accent">
-                    {tag}
-                  </Badge>
-                ))}
+                {(resource.tags || []).length > 0 ? (
+                  (resource.tags || []).map((tag) => (
+                    <Badge key={tag} variant="outline" className="cursor-pointer hover:bg-accent">
+                      {tag}
+                    </Badge>
+                  ))
+                ) : (
+                  <EmptyField />
+                )}
               </div>
             </div>
           </CardContent>

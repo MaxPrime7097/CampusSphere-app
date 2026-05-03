@@ -35,7 +35,7 @@ import { FacultyCombobox } from "@/components/forms/FacultyCombobox";
 import { StudyLevelCombobox } from "@/components/forms/StudyLevelCombobox";
 import { SkillsCombobox } from "@/components/forms/SkillsCombobox";
 import { InterestsCombobox } from "@/components/forms/InterestsCombobox";
-import Sphere3D from "@/components/layout/Sphere3D";
+import { AuthSidePanel } from "@/components/auth/AuthSidePanel";
 
 // Étapes : 1=infos perso, "verify"=attente email, 2=académique, 3=compétences
 type Step = 1 | "verify" | 2 | 3;
@@ -455,8 +455,9 @@ export function Register() {
   const progress = step === "verify" ? 33 : step === 1 ? 0 : step === 2 ? 33 : 66;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5 p-4 mx-auto grid lg:grid-cols-2 gap-12 items-center">
-      <div className="px-0 sm:px-20">
+    <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5 grid lg:grid-cols-2 overflow-hidden">
+      <div className="flex flex-col items-center justify-center p-4 sm:p-8 overflow-y-auto">
+        <div className="w-full max-w-xl">
         <div className="text-center mb-8 cursor-pointer" onClick={() => navigate("/cs-inc")}>
           <span className="text-2xl font-bold font-automata text-primary">CampusSphere</span>
           <p className="text-muted-foreground mt-2">
@@ -833,8 +834,9 @@ export function Register() {
             </div>
           )}
         </div>
+        </div>
       </div>
-      <div className="hidden lg:block"><Sphere3D /></div>
+      <AuthSidePanel />
     </div>
   );
 }

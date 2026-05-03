@@ -6,12 +6,20 @@ def create_notification(notification_type, title, message, recipient, data=None,
     if sender is not None and sender == recipient:
         return None
 
+    if data is None:
+        data = {}
+
+    if sender is not None:
+        data.setdefault('sender_id', str(sender.id))
+        data.setdefault('sender_name', getattr(sender, 'full_name', sender.username))
+        data.setdefault('sender_avatar', getattr(sender, 'avatar', None))
+
     notification = Notification.objects.create(
         type=notification_type,
         title=title,
         message=message,
         recipient=recipient,
-        data=data or {},
+        data=data,
     )
 
     try:
@@ -142,6 +150,23 @@ def create_connection_request_notification(connection):
             'requester_id': str(connection.requester.id),
             'requester_username': connection.requester.username,
             'sender_username': connection.requester.username,
+        },
+    )
+
+
+def create_connection_accepted_notification(connection):
+    """Create notification when someone accepts a connection request."""
+    return create_notification(
+        notification_type='connection_accepted',
+        title='Connexion acceptée',
+        message=f'{connection.recipient.full_name} a accepté votre demande de connexion',
+        recipient=connection.requester,
+        sender=connection.recipient,
+        data={
+            'connection_id': str(connection.id),
+            'recipient_id': str(connection.recipient.id),
+            'recipient_username': connection.recipient.username,
+            'sender_username': connection.recipient.username,
         },
     )
 

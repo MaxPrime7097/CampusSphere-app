@@ -15,6 +15,8 @@ import { CookieBanner } from "./CookieBanner";
 import { getCurrentUser } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { VerificationModal } from "@/components/modals/VerificationModal";
+import { SearchDropdown } from "./SearchDropdown";
+import { useUnreadCounts } from "@/hooks/useUnreadCounts";
 
 
 interface AppLayoutProps {
@@ -26,7 +28,9 @@ export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
   const isMobile = useIsMobile();
   const { toast } = useToast();
+  const counts = useUnreadCounts();
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchDropdownVisible, setIsSearchDropdownVisible] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
 
@@ -147,14 +151,25 @@ export function AppLayout({ children }: AppLayoutProps) {
                     CampusSphere
                   </span>
                 </button>
-                <form onSubmit={handleSearch} className="pl-10 flex items-center gap-2 flex-1 max-w-md">
+                <form onSubmit={handleSearch} className="pl-10 flex items-center gap-2 flex-1 max-w-md relative">
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input 
                       placeholder="Rechercher..." 
-                      className="pl-10 bg-background/50"
+                      className="pl-10 bg-background/50 focus-visible:ring-primary/50"
                       value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        setIsSearchDropdownVisible(e.target.value.length > 0);
+                      }}
+                      onFocus={() => {
+                        if (searchQuery.length > 0) setIsSearchDropdownVisible(true);
+                      }}
+                    />
+                    <SearchDropdown 
+                      query={searchQuery} 
+                      isVisible={isSearchDropdownVisible} 
+                      onClose={() => setIsSearchDropdownVisible(false)} 
                     />
                   </div>
                 </form>
@@ -177,8 +192,13 @@ export function AppLayout({ children }: AppLayoutProps) {
                       </Button>
                     )}
 
-                    <Button variant="ghost" size="sm" onClick={() => navigate('/notifications')}>
+                    <Button variant="ghost" size="sm" onClick={() => navigate('/notifications')} className="relative">
                       <Bell className="h-4 w-4" />
+                      {counts.notifications > 0 && (
+                        <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-0.5">
+                          {counts.notifications > 99 ? "99+" : counts.notifications}
+                        </span>
+                      )}
                     </Button>
                   </>
                 )}

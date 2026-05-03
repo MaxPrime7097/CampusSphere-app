@@ -12,7 +12,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { supabaseSignIn, supabaseSignInWithGoogle, supabaseSignInWithFacebook, exchangeSupabaseToken } from "@/services/api";
-import Sphere3D from "@/components/layout/Sphere3D";
+import { AuthSidePanel } from "@/components/auth/AuthSidePanel";
 
 export function Login() {
   const navigate = useNavigate();
@@ -85,8 +85,9 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5 flex items-center justify-center p-4 mx-auto grid lg:grid-cols-2 gap-12 items-center">
-      <div className="px-0 sm:px-20">
+    <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5 grid lg:grid-cols-2 overflow-hidden">
+      <div className="flex items-center justify-center p-4 sm:px-20 overflow-y-auto">
+        <div className="w-full max-w-md">
         <div className="text-center mb-8 mt-4 cursor-pointer" onClick={() => navigate("/cs-inc")}>
           <span className="text-2xl font-bold font-automata campus-gradient bg-clip-text text-transparent">CampusSphere</span>
           <p className="text-muted-foreground mt-2">Bon retour parmi nous !</p>
@@ -175,8 +176,9 @@ export function Login() {
             <Button variant="link" className="px-0 h-auto text-primary" onClick={() => navigate("/cs-inc/policies/privacy")}>Politique de confidentialité</Button>
           </p>
         </div>
+        </div>
       </div>
-      <div className="hidden lg:block"><Sphere3D /></div>
+      <AuthSidePanel />
     </div>
   );
 }

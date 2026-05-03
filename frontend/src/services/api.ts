@@ -847,6 +847,14 @@ export async function disconnectFromUser(targetUserId: number | string, token?: 
   });
 }
 
+export async function acceptConnection(targetUserId: number | string, token?: string) {
+  const response = await apiFetch<any>(`api/users/${targetUserId}/connection-relation/`, {
+    method: "PATCH",
+    token: token || getAccessToken(),
+  });
+  return unwrapItem(response);
+}
+
 export interface MutualConnectionCountRequest {
   currentUserId: number | string;
   connectionUserIds: Array<number | string>;

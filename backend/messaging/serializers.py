@@ -130,9 +130,9 @@ class ConversationCreateSerializer(serializers.ModelSerializer):
         if self.initial_data.get('type') == 'private' and len(value) != 1:
             raise serializers.ValidationError("Private conversations must have exactly 2 participants")
 
-        # For group conversations, at least 2 other participants required
-        if self.initial_data.get('type') == 'group' and len(value) < 2:
-            raise serializers.ValidationError("Group conversations must have at least 3 participants (you + 2 others)")
+        # For group conversations, at least 1 other participant required
+        if self.initial_data.get('type') == 'group' and len(value) < 1:
+            raise serializers.ValidationError("Group conversations must have at least 2 participants (you + 1 other)")
 
         return value
 
