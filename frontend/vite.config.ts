@@ -18,6 +18,9 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
+      workbox: {
+        maximumFileSizeToCacheInBytes: 4000000, // 4MB
+      },
       includeAssets: ["favicon.ico", "apple-touch-icon.png", "favicon.svg"],
       manifest: {
         name: "CampusSphere",
