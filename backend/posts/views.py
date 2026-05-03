@@ -63,7 +63,7 @@ def can_user_access_post(user, post):
 
 class PostListView(generics.ListCreateAPIView):
     parser_classes = [MultiPartParser, FormParser, JSONParser]
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     filter_backends = [SearchFilter, OrderingFilter]  # Removed DjangoFilterBackend - not installed
     # filterset_fields = ['sphere', 'author', 'category', 'subject', 'type', 'visibility']  # Commented out - django_filters not installed
     search_fields = ['content', 'tags']
@@ -77,6 +77,9 @@ class PostListView(generics.ListCreateAPIView):
         try:
             # Filter posts based on visibility and user permissions
             public_posts = queryset.filter(visibility='public')
+
+            if not user or not user.is_authenticated:
+                return public_posts.distinct()
 
             # User's own posts
             user_posts = queryset.filter(author=user)
@@ -137,7 +140,7 @@ class PostListView(generics.ListCreateAPIView):
 class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     queryset = Post.objects.all()
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get_serializer_class(self):
         if self.request.method in ['PUT', 'PATCH']:
@@ -146,7 +149,7 @@ class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_permissions(self):
         if self.request.method == 'GET':
-            return [permissions.IsAuthenticated()]
+            return [permissions.AllowAny()]
         return [permissions.IsAuthenticated()]
 
     def get_object(self):
@@ -156,7 +159,12 @@ class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
         # Check if user can access this post
         if post.visibility == 'public':
             return post
-        elif post.author == user:
+        
+        if not user or not user.is_authenticated:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You must be authenticated to access this private post")
+
+        if post.author == user:
             return post
         elif post.visibility == 'sphere' and post.sphere:
             from spheres.models import SphereMember

@@ -48,6 +48,7 @@ import { AdminSpheresPage } from "./admin/pages/AdminSpheresPage";
 import { AdminModerationPage } from "./admin/pages/AdminModerationPage";
 import { AdminResourcesPage } from "./admin/pages/AdminResourcesPage";
 import { AdminLogsPage } from "./admin/pages/AdminLogsPage";
+import { AdminContactMessagesPage } from "./admin/pages/AdminContactMessagesPage";
 
 
 const queryClient = new QueryClient();
@@ -204,6 +205,7 @@ const App = () => (
             <Route path="moderation" element={<AdminModerationPage />} />
             <Route path="resources" element={<AdminResourcesPage />} />
             <Route path="logs" element={<AdminLogsPage />} />
+            <Route path="contact" element={<AdminContactMessagesPage />} />
             <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
           </Route>
 

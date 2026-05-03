@@ -80,6 +80,7 @@ export function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [availability, setAvailability] = useState({
     email: { checking: false, available: true, checkedValue: "" },
     username: { checking: false, available: true, checkedValue: "" },
@@ -291,6 +292,18 @@ export function Register() {
     return () => clearTimeout(timeout);
   }, [formData.email, step]);
 
+  const handleGoogle = async () => {
+    setIsGoogleLoading(true);
+    try {
+      await supabaseSignInWithGoogle();
+      // On success, Supabase redirects to Google, so we don't strictly need to set loading to false.
+      // But we will handle errors if they happen immediately.
+    } catch (err: any) {
+      toast({ title: "Erreur Google", description: err?.message, variant: "destructive" });
+      setIsGoogleLoading(false);
+    }
+  };
+
   // Étape 1 → Supabase signUp → écran de vérification email
   const handleStep1Submit = async () => {
     const now = Date.now();
@@ -475,8 +488,8 @@ export function Register() {
 
               {/* Boutons OAuth */}
               <div className="space-y-2">
-                <Button variant="outline" className="w-full" onClick={() => supabaseSignInWithGoogle()} type="button">
-                  <FaGoogle className="mr-2 h-4 w-4 text-red-500" />
+                <Button variant="outline" className="w-full" onClick={handleGoogle} disabled={isGoogleLoading || isLoading} type="button">
+                  {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FaGoogle className="mr-2 h-4 w-4 text-red-500" />}
                   Continuer avec Google
                 </Button>
                 <Button variant="outline" className="w-full disabled" onClick={() => supabaseSignInWithFacebook()} type="button">

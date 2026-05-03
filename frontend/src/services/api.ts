@@ -2169,6 +2169,37 @@ export async function getAdminPermissions(token?: string): Promise<AdminPermissi
 }
 
 // ============================================================================
+// CONTACT MESSAGES
+// ============================================================================
+
+export async function submitContactMessage(data: { name: string; email: string; subject: string; message: string; newsletter: boolean }) {
+  return apiFetch<any>("api/users/contact/", {
+    method: "POST",
+    body: data,
+  });
+}
+
+export async function getContactMessages(token?: string) {
+  const response = await apiFetch<any>("api/users/admin/contact-messages/", { token: token || getAccessToken() });
+  return unwrapItem<any[]>(response) || [];
+}
+
+export async function markContactMessageAsRead(id: number, token?: string) {
+  return apiFetch<any>(`api/users/admin/contact-messages/${id}/`, {
+    method: "PATCH",
+    body: { is_read: true },
+    token: token || getAccessToken(),
+  });
+}
+
+export async function deleteContactMessage(id: number, token?: string) {
+  return apiFetch<any>(`api/users/admin/contact-messages/${id}/`, {
+    method: "DELETE",
+    token: token || getAccessToken(),
+  });
+}
+
+// ============================================================================
 // HEALTH & INFO
 // ============================================================================
 

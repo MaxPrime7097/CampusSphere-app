@@ -43,4 +43,11 @@ export const ADMIN_NAVIGATION: AdminNavigationItem[] = [
     to: "/admin/logs",
     description: "Historique système",
   },
+  {
+    key: "contact",
+    label: "Messages de Contact",
+    to: "/admin/contact",
+    description: "Boîte de réception",
+  },
+
 ];

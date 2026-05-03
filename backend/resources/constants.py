@@ -30,6 +30,7 @@ ACCEPTED_RESOURCE_MIME_TYPES = [
     # Archives
     "application/zip",
     "application/x-zip-compressed",
+    "application/x-zip",
     "application/vnd.rar",
     "application/x-7z-compressed",
 

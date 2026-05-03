@@ -124,11 +124,15 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
       return;
     }
 
-    if (!(ACCEPTED_FILE_TYPES as string[]).includes(selectedFile.type)) {
+    const fileExtension = "." + selectedFile.name.split('.').pop()?.toLowerCase();
+    const isMimeAccepted = (ACCEPTED_FILE_TYPES as string[]).includes(selectedFile.type);
+    const isExtAccepted = ACCEPTED_RESOURCE_FILE_EXTENSIONS.split(',').includes(fileExtension);
+
+    if (!isMimeAccepted && !isExtAccepted) {
       toast({ 
         variant: "destructive", 
         title: "Type de fichier non supporté", 
-        description: "Seuls les fichiers PDF, DOC, PPT, ZIP et images (JPG/PNG/GIF) sont acceptés" 
+        description: "Ce format de fichier n'est pas autorisé. Vérifiez que l'extension est correcte." 
       });
       return;
     }

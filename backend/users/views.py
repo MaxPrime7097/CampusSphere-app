@@ -14,14 +14,15 @@ from django.shortcuts import get_object_or_404
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from django.contrib.auth.tokens import default_token_generator
-from .models import User, Connection, UserBlock
+from .models import User, Connection, UserBlock, ContactMessage
 from .serializers import (
     UserRegistrationSerializer, UserLoginSerializer, UserProfileSerializer,
     UserUpdateSerializer, ConnectionSerializer, ConnectionCreateSerializer,
     UserSearchSerializer, ChangePasswordSerializer, ChangeEmailSerializer,
     LogoutSerializer, DeleteAccountSerializer, PrivacySettingsSerializer, PasswordResetSerializer,
     DataExportRequestSerializer, BlockListItemSerializer, BlockCreateSerializer,
-    SupabaseProfileCompletionSerializer, normalize_email_for_lookup, normalize_username_for_lookup
+    SupabaseProfileCompletionSerializer, normalize_email_for_lookup, normalize_username_for_lookup,
+    ContactMessageSerializer
 )
 from campus_sphere.cache import CacheManager, CacheKeys
 from notifications.services import create_connection_request_notification
@@ -499,8 +500,15 @@ class ConnectionDetailView(generics.DestroyAPIView):
 
 
 @api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([permissions.AllowAny])
 def current_user_profile(request):
+    if not request.user or not request.user.is_authenticated:
+        return Response({
+            'success': True,
+            'authenticated': False,
+            'data': None
+        })
+
     cache_key = CacheKeys.user_profile(request.user.id)
 
     user_data = CacheManager.get_or_set(
@@ -511,6 +519,7 @@ def current_user_profile(request):
 
     return Response({
         'success': True,
+        'authenticated': True,
         'data': user_data,
         'timestamp': request.user.updated_at.isoformat()
     })
@@ -776,3 +785,21 @@ class UserVerificationView(APIView):
             'success': True,
             'message': 'Verification request submitted successfully'
         }, status=status.HTTP_200_OK)
+
+
+class ContactMessageCreateView(generics.CreateAPIView):
+    queryset = ContactMessage.objects.all()
+    serializer_class = ContactMessageSerializer
+    permission_classes = [permissions.AllowAny]
+
+class ContactMessageListView(generics.ListAPIView):
+    queryset = ContactMessage.objects.all()
+    serializer_class = ContactMessageSerializer
+    permission_classes = [permissions.IsAdminUser]
+    filter_backends = [SearchFilter]
+    search_fields = ['name', 'email', 'subject', 'message']
+
+class ContactMessageDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = ContactMessage.objects.all()
+    serializer_class = ContactMessageSerializer
+    permission_classes = [permissions.IsAdminUser]

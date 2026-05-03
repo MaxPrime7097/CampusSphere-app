@@ -5,7 +5,8 @@ export type AdminSectionKey =
   | "moderation"
   | "resources"
   | "verification"
-  | "logs";
+  | "logs"
+  | "contact";
 
 export interface AdminNavigationItem {
   key: AdminSectionKey;

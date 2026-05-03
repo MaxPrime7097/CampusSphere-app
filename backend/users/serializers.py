@@ -6,7 +6,7 @@ from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils import timezone
 import re
-from .models import User, Connection, UserBlock
+from .models import User, Connection, UserBlock, ContactMessage
 
 REQUIRED_PROFILE_FIELDS = ['username', 'university', 'faculty', 'study_year', 'student_id']
 USERNAME_REGEX = re.compile(r'^[A-Za-z0-9][A-Za-z0-9_.-]*$')
@@ -566,3 +566,9 @@ class BlockCreateSerializer(serializers.Serializer):
             raise serializers.ValidationError('User does not exist')
 
         return value
+
+class ContactMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContactMessage
+        fields = ['id', 'name', 'email', 'subject', 'message', 'newsletter', 'is_read', 'created_at']
+        read_only_fields = ['id', 'created_at']

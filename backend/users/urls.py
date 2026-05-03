@@ -23,6 +23,11 @@ urlpatterns = [
     path('blocks/', views.BlockListView.as_view(), name='block-list'),
     path('blocks/<int:pk>/', views.BlockDetailView.as_view(), name='block-detail'),
 
+    # Contact
+    path('contact/', views.ContactMessageCreateView.as_view(), name='contact-create'),
+    path('admin/contact-messages/', views.ContactMessageListView.as_view(), name='admin-contact-list'),
+    path('admin/contact-messages/<int:pk>/', views.ContactMessageDetailView.as_view(), name='admin-contact-detail'),
+
     # User management
     path('<int:id>/', views.UserDetailView.as_view(), name='user-detail'),
     path('by-username/<str:username>/', views.get_user_by_username, name='user-by-username'),

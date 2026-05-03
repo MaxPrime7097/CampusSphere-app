@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Mail, MapPin, Clock, Send, Sparkles, Heart, CheckCircle, ChevronDown} from "lucide-react";
+import { Mail, MapPin, Clock, Send, Sparkles, Heart, CheckCircle, ChevronDown, Loader2 } from "lucide-react";
 import { FaFacebook, FaInstagram, FaLinkedin, FaTiktok } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,9 +11,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { submitContactMessage } from "@/services/api";
+import { useToast } from "@/hooks/use-toast";
 
 export function Contact(): JSX.Element {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -22,11 +26,37 @@ export function Contact(): JSX.Element {
     newsletter: false
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
-    console.log("Form submitted:", formData);
-    // You can add form submission logic here
+    if (!formData.name || !formData.email || !formData.subject || !formData.message) {
+      toast({ variant: "destructive", title: "Erreur", description: "Veuillez remplir tous les champs obligatoires." });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await submitContactMessage(formData);
+      toast({
+        title: "Message envoyé !",
+        description: "Nous avons bien reçu votre message et vous répondrons dans les plus brefs délais.",
+      });
+      setFormData({
+        name: "",
+        email: "",
+        subject: "",
+        message: "",
+        newsletter: false
+      });
+    } catch (error) {
+      console.error("Error submitting contact form:", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur d'envoi",
+        description: "Une erreur est survenue lors de l'envoi de votre message. Veuillez réessayer plus tard.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -201,10 +231,11 @@ export function Contact(): JSX.Element {
                 <Button
                   type="submit"
                   size="lg"
+                  disabled={isSubmitting}
                   className="w-full campus-gradient text-white hover:opacity-90 text-lg py-8 transition-all duration-300 hover:scale-105 gap-2"
                 >
-                  <Send className="h-5 w-5" />
-                  Envoyer le message
+                  {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+                  {isSubmitting ? "Envoi en cours..." : "Envoyer le message"}
                 </Button>
               </form>
             </div>

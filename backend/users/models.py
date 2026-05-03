@@ -188,6 +188,21 @@ class UserBlock(models.Model):
     def __str__(self):
         return f"{self.blocker.username} blocked {self.blocked.username}"
 
+class ContactMessage(models.Model):
+    name = models.CharField(max_length=255)
+    email = models.EmailField()
+    subject = models.CharField(max_length=255)
+    message = models.TextField()
+    newsletter = models.BooleanField(default=False)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.subject} - {self.email}"
+
 class AdminAuditLog(models.Model):
     actor = models.ForeignKey(
         User,

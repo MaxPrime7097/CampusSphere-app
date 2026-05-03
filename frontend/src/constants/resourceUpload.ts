@@ -26,6 +26,8 @@ export const ACCEPTED_RESOURCE_MIME_TYPES = [
 
   // Archives
   "application/zip",
+  "application/x-zip-compressed",
+  "application/x-zip",
   "application/vnd.rar",
   "application/x-7z-compressed",
 
@@ -59,7 +61,7 @@ export const ACCEPTED_RESOURCE_FILE_EXTENSIONS =
   ".cir,.asc,.sp,.spice," +
 
   // CAO
-  ".dwg,.dxf,.step,.stp,.iges,.igs,.stl,.sldprt,.sldasm" +
+  ".dwg,.dxf,.step,.stp,.iges,.igs,.stl,.sldprt,.sldasm," +
 
   // Embarqué
   ".ino,.hex,.elf,.bin," +

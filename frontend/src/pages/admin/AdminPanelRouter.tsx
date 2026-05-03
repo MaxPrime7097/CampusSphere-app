@@ -8,6 +8,7 @@ import { AdminModerationPage } from "@/admin/pages/AdminModerationPage";
 import { AdminResourcesPage } from "@/admin/pages/AdminResourcesPage";
 import { AdminLogsPage } from "@/admin/pages/AdminLogsPage";
 import { AdminVerificationPage } from "@/admin/pages/AdminVerificationPage";
+import { AdminContactMessagesPage } from "@/admin/pages/AdminContactMessagesPage";
 import { AdminDashboard } from "./AdminDashboard";
 
 export function AdminPanelRouter() {
@@ -37,6 +38,7 @@ export function AdminPanelRouter() {
         <Route path="verification" element={<AdminVerificationPage />} />
         <Route path="resources" element={<AdminResourcesPage />} />
         <Route path="logs" element={<AdminLogsPage />} />
+        <Route path="contact" element={<AdminContactMessagesPage />} />
         <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
       </Route>
     </Routes>
