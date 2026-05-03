@@ -427,12 +427,24 @@ EMAIL_HOST_PASSWORD = env_config('EMAIL_HOST_PASSWORD', default='your-app-passwo
 DEFAULT_FROM_EMAIL = 'CampusSphere <no-reply@campussphere.app>'
 
 # Celery Configuration for Background Tasks
-# CELERY_BROKER_URL = REDIS_URL  # Commented out - Redis not configured
-# CELERY_RESULT_BACKEND = REDIS_URL
-# CELERY_ACCEPT_CONTENT = ['json']
-# CELERY_TASK_SERIALIZER = 'json'
-# CELERY_RESULT_SERIALIZER = 'json'
-# CELERY_TIMEZONE = TIME_ZONE
+# Redis Configuration for Channels and Celery
+REDIS_URL = env_config('REDIS_URL', default=None)
+
+if REDIS_URL:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                "hosts": [REDIS_URL],
+            },
+        },
+    }
+    CELERY_BROKER_URL = REDIS_URL
+    CELERY_RESULT_BACKEND = REDIS_URL
+    CELERY_ACCEPT_CONTENT = ['json']
+    CELERY_TASK_SERIALIZER = 'json'
+    CELERY_RESULT_SERIALIZER = 'json'
+    CELERY_TIMEZONE = TIME_ZONE
 
 CELERY_BEAT_SCHEDULE = {
     'cleanup-expired-spheres-hourly': {
