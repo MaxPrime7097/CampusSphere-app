@@ -366,7 +366,7 @@ export function Profile() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [showMoodModal, setShowMoodModal] = useState(false);
-  const [newMood, setNewMood] = useState<{ value: string; label: string } | null>(null);
+  const [moodText, setMoodText] = useState("");
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSavingCover, setIsSavingCover] = useState(false);
   const [isSavingAvatar, setIsSavingAvatar] = useState(false);
@@ -786,6 +786,10 @@ export function Profile() {
       const phoneInput = document.getElementById('phone') as HTMLInputElement;
       const townInput = document.getElementById('town') as HTMLInputElement;
       const languageInput = document.getElementById('language') as HTMLInputElement;
+      const universityInput = document.getElementById('university') as HTMLInputElement;
+      const facultyInput = document.getElementById('faculty') as HTMLInputElement;
+      const studyYearInput = document.getElementById('studyYear') as HTMLInputElement;
+      const studentIdInput = document.getElementById('studentId') as HTMLInputElement;
       
       const updateData: any = {};
       if (firstNameInput?.value) updateData.first_name = firstNameInput.value;
@@ -796,6 +800,10 @@ export function Profile() {
       if (phoneInput?.value) updateData.phone_number = phoneInput.value;
       if (townInput?.value) updateData.town = townInput.value;
       if (languageInput?.value) updateData.language = languageInput.value;
+      if (universityInput?.value) updateData.university = universityInput.value;
+      if (facultyInput?.value) updateData.faculty = facultyInput.value;
+      if (studyYearInput?.value) updateData.study_year = studyYearInput.value;
+      if (studentIdInput?.value) updateData.student_id = studentIdInput.value;
       updateData.skills = editSkills.filter(Boolean);
       updateData.interests = editInterests.filter(Boolean);
       updateData.experiences = editExperiences.filter(e => e.title || e.company);
@@ -904,9 +912,10 @@ export function Profile() {
   };
 
   const handleMoodChange = async () => {
-    if (!newMood?.value || !currentUser?.id || isSavingMood) return;
+    const valueToSave = moodText.trim();
+    if (!valueToSave || isSavingMood) return;
     setIsSavingMood(true);
-    const selectedMoodValue = newMood.value;
+    const selectedMoodValue = valueToSave;
 
     try {
       await updateUserProfile({ current_mood: selectedMoodValue });
@@ -920,7 +929,7 @@ export function Profile() {
 
       setCurrentUser(refreshedProfile);
       if (isOwnProfile) setTargetUser(refreshedProfile);
-      setNewMood(null);
+      setMoodText("");
       setShowMoodModal(false);
 
       if (confirmedMoodValue !== selectedMoodValue) {
@@ -1171,9 +1180,9 @@ export function Profile() {
                     <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center shrink-0">
                       <Smile className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-[11px] sm:text-sm font-semibold truncate">Mood du moment</p>
-                      <p className="text-xs sm:text-sm text-muted-foreground truncate">{getMoodLabel(user.currentMood)}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] sm:text-sm font-semibold">Mood du moment</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground break-words line-clamp-3 overflow-hidden">{getMoodLabel(user.currentMood)}</p>
                     </div>
                     {isOwnProfile && (
                       <Settings className="h-3 w-3 text-muted-foreground shrink-0 hidden sm:block ml-auto" />
@@ -1345,6 +1354,39 @@ export function Profile() {
 
               <div className="rounded-lg border bg-card p-6">
                 <h3 className="flex items-center gap-2 text-lg font-semibold mb-4">
+                  <User className="h-5 w-5" />
+                  Informations Personnelles
+                </h3>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Email</p>
+                      <p className="font-medium">{user.email || <EmptyField />}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Téléphone</p>
+                      <p className="font-medium">{user.phoneNumber || <EmptyField />}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Date de naissance</p>
+                      <p className="font-medium">
+                        {user.dateOfBirth ? formatFrenchDate(user.dateOfBirth) : <EmptyField />}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Ville</p>
+                      <p className="font-medium">{user.town || <EmptyField />}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Langue</p>
+                      <p className="font-medium">{user.language || <EmptyField />}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-lg border bg-card p-6">
+                <h3 className="flex items-center gap-2 text-lg font-semibold mb-4">
                   <BookOpen className="h-5 w-5" />
                   Formations précédentes
                 </h3>
@@ -1387,39 +1429,6 @@ export function Profile() {
 
               <div className="rounded-lg border bg-card p-6">
                 <h3 className="flex items-center gap-2 text-lg font-semibold mb-4">
-                  <User className="h-5 w-5" />
-                  Informations Personnelles
-                </h3>
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Email</p>
-                      <p className="font-medium">{user.email || <EmptyField />}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Téléphone</p>
-                      <p className="font-medium">{user.phoneNumber || <EmptyField />}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Date de naissance</p>
-                      <p className="font-medium">
-                        {user.dateOfBirth ? formatFrenchDate(user.dateOfBirth) : <EmptyField />}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Ville</p>
-                      <p className="font-medium">{user.town || <EmptyField />}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Langue</p>
-                      <p className="font-medium">{user.language || <EmptyField />}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-lg border bg-card p-6">
-                <h3 className="flex items-center gap-2 text-lg font-semibold mb-4">
                   <Zap className="h-5 w-5" />
                   Compétences
                 </h3>
@@ -1427,12 +1436,12 @@ export function Profile() {
                   <div className="flex flex-wrap gap-2">
                     {user.skills.map((skill: any, index: number) => (
                       <Badge key={`${skill}-${index}`} variant="secondary">
-                        {typeof skill === "string" ? skill : skill?.name || NOT_AVAILABLE_TEXT}
+                        {typeof skill === "string" ? skill : skill?.name || <EmptyField />}
                       </Badge>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">{NOT_AVAILABLE_TEXT}</p>
+                  <p className="text-sm text-muted-foreground"><EmptyField /></p>
                 )}
               </div>
 
@@ -1445,12 +1454,12 @@ export function Profile() {
                   <div className="flex flex-wrap gap-2">
                     {user.interests.map((interest: any, index: number) => (
                       <Badge key={`${interest}-${index}`} variant="outline">
-                        {typeof interest === "string" ? interest : interest?.name || NOT_AVAILABLE_TEXT}
+                        {typeof interest === "string" ? interest : interest?.name || <EmptyField />}
                       </Badge>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">{NOT_AVAILABLE_TEXT}</p>
+                  <p className="text-sm text-muted-foreground"><EmptyField /></p>
                 )}
               </div>
 
@@ -1479,13 +1488,13 @@ export function Profile() {
                         </a>
                       ) : (
                         <p key={`invalid-link-${index}`} className="text-sm text-muted-foreground">
-                          {NOT_AVAILABLE_TEXT}
+                          <EmptyField />
                         </p>
                       );
                     })}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">{NOT_AVAILABLE_TEXT}</p>
+                  <p className="text-sm text-muted-foreground"><EmptyField /></p>
                 )}
               </div>
             </section>
@@ -1616,6 +1625,43 @@ export function Profile() {
                   <Input
                     id="language"
                     defaultValue={user.language}
+                    className="mt-2"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 border-t pt-4 mt-4">
+                <div className="col-span-2">
+                  <h4 className="text-sm font-semibold mb-2">Informations Académiques</h4>
+                </div>
+                <div>
+                  <Label htmlFor="university">Université</Label>
+                  <Input
+                    id="university"
+                    defaultValue={user.university}
+                    className="mt-2"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="faculty">Faculté / Filière</Label>
+                  <Input
+                    id="faculty"
+                    defaultValue={user.faculty}
+                    className="mt-2"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="studyYear">Année d'étude</Label>
+                  <Input
+                    id="studyYear"
+                    defaultValue={user.studyYear}
+                    className="mt-2"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="studentId">Identifiant Étudiant</Label>
+                  <Input
+                    id="studentId"
+                    defaultValue={user.studentId}
                     className="mt-2"
                   />
                 </div>
@@ -1925,7 +1971,7 @@ export function Profile() {
           onOpenChange={(open) => {
             setShowMoodModal(open);
             if (open) {
-              setNewMood(findMoodOptionByValue(user.currentMood));
+              setMoodText(user.currentMood || "");
             }
           }}
         >
@@ -1942,15 +1988,21 @@ export function Profile() {
             
             <div className="space-y-4 py-4">
               <div>
-                <Label htmlFor="mood">Mood du moment</Label>
-                <Input
-                  id="mood"
-                  value={newMood?.label ?? ""}
-                  readOnly
-                  className="mt-2"
-                />
+                <Label htmlFor="mood">Mood du moment (max 100 car.)</Label>
+                <div className="relative mt-2">
+                  <Input
+                    id="mood"
+                    value={moodText}
+                    onChange={(e) => setMoodText(e.target.value.slice(0, 100))}
+                    placeholder="Comment vous sentez-vous ?"
+                    className="pr-12"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">
+                    {moodText.length}/100
+                  </span>
+                </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Choisissez votre état d'esprit actuel
+                  Exprimez votre état d'esprit actuel librement.
                 </p>
               </div>
 
@@ -1963,7 +2015,7 @@ export function Profile() {
                       key={mood.value}
                       variant="outline"
                       size="sm"
-                      onClick={() => setNewMood(mood)}
+                      onClick={() => setMoodText(mood.label)}
                       className="text-xs h-auto py-2 px-3 justify-start"
                     >
                       {mood.label}
@@ -1985,7 +2037,7 @@ export function Profile() {
               </Button>
               <Button
                 onClick={handleMoodChange}
-                disabled={!newMood?.value || isSavingMood}
+                disabled={!moodText.trim() || isSavingMood}
                 className="campus-gradient text-white hover:opacity-90"
               >
                 {isSavingMood ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}

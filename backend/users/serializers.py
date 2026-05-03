@@ -517,6 +517,16 @@ class ConnectionCreateSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         if value == user:
             raise serializers.ValidationError("Cannot connect to yourself")
+        
+        # Check if connection already exists in any direction
+        from .models import Connection
+        from django.db import models
+        if Connection.objects.filter(
+            models.Q(requester=user, recipient=value) |
+            models.Q(requester=value, recipient=user)
+        ).exists():
+            raise serializers.ValidationError("A connection or request already exists between these users.")
+            
         return value
 
     def create(self, validated_data):

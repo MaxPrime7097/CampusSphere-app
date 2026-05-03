@@ -8,8 +8,10 @@ export function AuthSidePanel() {
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMCwgMCwgMCwgMC4wNSkiLz48L3N2Zz4=')] opacity-50 dark:opacity-30 mask-image:linear-gradient(to_bottom,white,transparent)]" />
       
       {/* La sphère au centre */}
-      <div className="absolute inset-0 flex items-center justify-center opacity-80 mix-blend-luminosity dark:mix-blend-normal">
-        <Sphere3D />
+      <div className="absolute inset-0 flex items-center justify-center opacity-80 pointer-events-none">
+        <div className="w-[100%] h-[100%] max-w-[500px] max-h-[500px]">
+          <Sphere3D />
+        </div>
       </div>
 
       {/* Cartes flottantes avec informations */}

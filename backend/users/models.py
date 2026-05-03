@@ -95,9 +95,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     # Impact and Mood
     impact_score = models.IntegerField(default=0, validators=[MinValueValidator(0)])
     current_mood = models.CharField(
-        max_length=50,
+        max_length=100,
         default=MOOD_EXCITED,
-        choices=CURRENT_MOOD_CHOICES,
+        blank=True
     )
 
     # Skills and Interests

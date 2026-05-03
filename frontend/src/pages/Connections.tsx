@@ -359,14 +359,14 @@ export function Connections() {
                           <p className="text-xs text-muted-foreground">@{connection.username}</p>
                           <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                             {connection.university && (
-                              <Badge variant="secondary" className="text-[9px] h-4 px-1.5 py-0">
+                              <Badge variant="secondary" className="text-[9px] h-4 px-1.5 py-0 max-w-[100px] truncate">
                                 {getUniversityLabel(connection.university)}
                               </Badge>
                             )}
                             <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
                               <Zap className="h-2.5 w-2.5 text-primary" />{connection.impactScore}
                             </span>
-                            <span className="text-[10px] text-muted-foreground">
+                            <span className="text-[10px] text-muted-foreground hidden sm:inline">
                               {connection.mutualFriends} communs
                             </span>
                           </div>
@@ -374,10 +374,11 @@ export function Connections() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="flex-shrink-0 h-8 text-xs"
+                          className="flex-shrink-0 h-8 w-8 sm:w-auto p-0 sm:px-3 text-xs"
                           onClick={(e) => { e.stopPropagation(); navigate(`/profile/${connection.username}`); }}
                         >
-                          Profil
+                          <User className="h-4 w-4 sm:mr-2" />
+                          <span className="hidden sm:inline">Profil</span>
                         </Button>
                       </div>
                     </CardContent>
@@ -418,7 +419,7 @@ export function Connections() {
                         <div className="flex flex-col gap-2">
                           <Button
                             size="sm"
-                            className="h-8 text-xs campus-gradient text-white hover:opacity-90"
+                            className="h-8 w-8 sm:w-auto p-0 sm:px-3 text-xs campus-gradient text-white hover:opacity-90"
                             onClick={async () => {
                               try {
                                 const { acceptConnection } = await import("@/services/api");
@@ -431,12 +432,13 @@ export function Connections() {
                               }
                             }}
                           >
-                            Accepter
+                            <Check className="h-4 w-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Accepter</span>
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-8 text-xs text-destructive hover:bg-destructive/10"
+                            className="h-8 w-8 sm:w-auto p-0 sm:px-3 text-xs text-destructive hover:bg-destructive/10"
                             onClick={async () => {
                               try {
                                 await disconnectFromUser(request.id);
@@ -447,7 +449,8 @@ export function Connections() {
                               }
                             }}
                           >
-                            Refuser
+                            <X className="h-4 w-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Refuser</span>
                           </Button>
                         </div>
                       </div>
@@ -490,7 +493,7 @@ export function Connections() {
                           <p className="text-[10px] text-primary/80 italic mt-0.5 truncate">{suggestion.reason}</p>
                           <div className="flex items-center gap-2 mt-1 flex-wrap">
                             {suggestion.university && (
-                              <Badge variant="secondary" className="text-[9px] h-4 px-1.5 py-0">
+                              <Badge variant="secondary" className="text-[9px] h-4 px-1.5 py-0 max-w-[100px] truncate">
                                 {getUniversityLabel(suggestion.university)}
                               </Badge>
                             )}
@@ -501,7 +504,7 @@ export function Connections() {
                         </div>
                         <Button
                           size="sm"
-                          className="flex-shrink-0 h-8 text-xs campus-gradient text-white hover:opacity-90 gap-1"
+                          className="flex-shrink-0 h-8 w-8 sm:w-auto p-0 sm:px-3 text-xs campus-gradient text-white hover:opacity-90"
                           onClick={async () => {
                             try {
                               await createConnection(suggestion.id);
@@ -513,7 +516,8 @@ export function Connections() {
                             }
                           }}
                         >
-                          <Link className="h-3 w-3" /> Connect
+                          <UserPlus className="h-4 w-4 sm:mr-1" />
+                          <span className="hidden sm:inline">Connecter</span>
                         </Button>
                       </div>
                     </CardContent>
