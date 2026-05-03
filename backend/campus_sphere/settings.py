@@ -66,9 +66,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
-    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -237,13 +237,13 @@ USE_TZ = True
 # CORS / CSRF Configuration
 CORS_ALLOWED_ORIGINS = env_config(
     "CORS_ALLOWED_ORIGINS",
-    default="http://localhost:5173,http://localhost:3000,https://www.campussphere.app,https://campussphere.app",
+    default="http://localhost:5173,http://localhost:3000,https://www.campussphere.app,https://campussphere.app,https://api.campussphere.app",
     cast=Csv(),
 )
 
 CSRF_TRUSTED_ORIGINS = env_config(
     "CSRF_TRUSTED_ORIGINS",
-    default="http://localhost:5173,http://localhost:3000,https://www.campussphere.app,https://campussphere.app",
+    default="http://localhost:5173,http://localhost:3000,https://www.campussphere.app,https://campussphere.app,https://api.campussphere.app",
     cast=Csv(),
 )
 
