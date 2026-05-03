@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Image, MapPin, Users, X, Lock, Globe, Video, FileText, Smile, AtSign, Calendar, Clock, Hash, Loader2, CheckCircle, Eye } from "lucide-react";
+import { Plus, Image, MapPin, Users, X, Lock, Globe, Video, FileText, Smile, AtSign, Calendar, Clock, Hash, Loader2, CheckCircle, Eye, GraduationCap, Briefcase, Heart, PartyPopper, Lightbulb } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { findInvalidMentions, getActiveMentionQuery, renderMentionText } from "@/lib/mentions";
 import { cn } from "@/lib/utils";
@@ -51,17 +51,67 @@ const mapPostVisibilityForApi = (uiVisibility: string): "public" | "sphere" | "f
   return POST_VISIBILITY_API_MAP[uiVisibility] ?? null;
 };
 
-const EMOJI_COMBOS = [
-  { name: "Retard", emojis: "🏃‍♂️💨⏰", label: "Le retardataire" },
-  { name: "Nuit", emojis: "🌙🔋😵‍💫", label: "Nuit blanche" },
-  { name: "Coloc", emojis: "🏠🍕🎮", label: "La coloc" },
-  { name: "Budget", emojis: "🍝💸📉", label: "Fin de mois" },
-  { name: "Stage", emojis: "💼🤝✨", label: "Stage trouvé" },
-  { name: "Révision", emojis: "📚☕🧠", label: "Révision" },
-  { name: "Sport", emojis: "🏀💪🔥", label: "Séance sport" },
-  { name: "Weekend", emojis: "🥳🍻🎉", label: "Weekend !" },
-  { name: "Hermite", emojis: "📚🕯️😶‍🌫️", label: "L'Ermite BU" },
-  { name: "Caféine", emojis: "☕🧟‍♂️🆘", label: "Besoin Café" },
+const EMOJI_PACKS = [
+  {
+    id: "academic",
+    icon: <GraduationCap className="h-4 w-4" />,
+    label: "Vie Académique",
+    combos: [
+      { name: "Examen", emojis: "📝🤫⌛", label: "L'Examen Final" },
+      { name: "Projet", emojis: "📤💻🔥", label: "Rendu de Projet" },
+      { name: "Amphi", emojis: "✍🏾😴💤", label: "Le Cours Magistral" },
+      { name: "Equipe", emojis: "👩🏾💻👨🏾💻🤝", label: "Travail d'équipe" },
+      { name: "Major", emojis: "🥇📈👑", label: "Major de promo" },
+    ]
+  },
+  {
+    id: "daily",
+    icon: <Clock className="h-4 w-4" />,
+    label: "Survie & Quotidien",
+    combos: [
+      { name: "Déj", emojis: "🥪🏃🏾‍♂️💨", label: "Pause Déj Rapide" },
+      { name: "Linge", emojis: "🧺🧼⏳", label: "Lavage de linge" },
+      { name: "Appart", emojis: "🏠🔍🔑", label: "Recherche d'appart" },
+      { name: "Eco", emojis: "🛒📉🥖", label: "Courses Éco" },
+      { name: "Focus", emojis: "📵🧘🏾‍♂️✨", label: "Mode Avion / Focus" },
+    ]
+  },
+  {
+    id: "social",
+    icon: <PartyPopper className="h-4 w-4" />,
+    label: "Vie Sociale",
+    combos: [
+      { name: "Départ", emojis: "🥂💼👋🏾", label: "Pot de départ" },
+      { name: "Match", emojis: "🏟️📣🙌🏾", label: "Match de l'école" },
+      { name: "Gaming", emojis: "🎮🎧🍕", label: "Soirée Gaming" },
+      { name: "Date", emojis: "☕💞📖", label: "Date Universitaire" },
+      { name: "Plan", emojis: "📲🍻🕺🏾", label: "Plan de dernière minute" },
+    ]
+  },
+  {
+    id: "moods",
+    icon: <Lightbulb className="h-4 w-4" />,
+    label: "États d'Esprit",
+    combos: [
+      { name: "Illumination", emojis: "💡🤯🌋", label: "L'Illumination" },
+      { name: "Burnout", emojis: "🏳️🏳️🏳️", label: "Burnout" },
+      { name: "Motivation", emojis: "🦁🚀🔋", label: "Motivation Lundi" },
+      { name: "Blanche", emojis: "📄👀❓", label: "Page blanche" },
+    ]
+  },
+  {
+    id: "classic",
+    icon: <Smile className="h-4 w-4" />,
+    label: "Classiques",
+    combos: [
+      { name: "Retard", emojis: "🏃‍♂️💨⏰", label: "Le retardataire" },
+      { name: "Nuit", emojis: "🌙🔋😵‍💫", label: "Nuit blanche" },
+      { name: "Coloc", emojis: "🏠🍕🎮", label: "La coloc" },
+      { name: "Budget", emojis: "🍝💸📉", label: "Fin de mois" },
+      { name: "Stage", emojis: "💼🤝✨", label: "Stage trouvé" },
+      { name: "Révision", emojis: "📚☕🧠", label: "Révision" },
+    ]
+  }
 ];
 
 const QUICK_PILLS = [
@@ -84,9 +134,10 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
   const [isOpen, setIsOpen] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [activeEmojiPack, setActiveEmojiPack] = useState("academic");
   const [showMentions, setShowMentions] = useState(false);
   const [isDraft, setIsDraft] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
+  const [showPreview, setShowPreview] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [availableUsers, setAvailableUsers] = useState<{ id: string; name: string; username: string; avatar: string }[]>([]);
   const [mentionQuery, setMentionQuery] = useState("");
@@ -559,12 +610,32 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
 
           {/* Emoji/Mentions Popups */}
           {showEmojiPicker && (
-            <Card className="p-4 border-primary/10 shadow-xl campus-animate-slide-up w-full max-w-[320px]">
-              <div className="space-y-4">
+            <Card className="p-0 shadow-xl campus-animate-slide-up w-full max-w-[320px] overflow-hidden">
+              {/* Pack Navigation */}
+              <div className="flex items-center justify-between px-2 py-1 bg-muted/30 border-b">
+                {EMOJI_PACKS.map((pack) => (
+                  <Button
+                    key={pack.id}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setActiveEmojiPack(pack.id)}
+                    className={cn(
+                      "h-9 w-9 p-0 rounded-lg transition-all",
+                      activeEmojiPack === pack.id ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-muted"
+                    )}
+                  >
+                    {pack.icon}
+                  </Button>
+                ))}
+              </div>
+
+              <div className="p-4 space-y-4 max-h-[300px] overflow-y-auto">
                 <div className="space-y-2">
-                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Combos Campus</Label>
+                  <Label className="text-[10px] tracking-wider text-muted-foreground font-bold">
+                    {EMOJI_PACKS.find(p => p.id === activeEmojiPack)?.label}
+                  </Label>
                   <div className="grid grid-cols-2 gap-2">
-                    {EMOJI_COMBOS.map((combo) => (
+                    {EMOJI_PACKS.find(p => p.id === activeEmojiPack)?.combos.map((combo) => (
                       <Button 
                         key={combo.name} 
                         variant="outline" 
@@ -580,8 +651,8 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Emojis rapides</Label>
-                  <div className="grid grid-cols-8 gap-1">
+                  <Label className="text-[10px] tracking-wider text-muted-foreground font-bold">Emojis rapides</Label>
+                  <div className="grid grid-cols-8 gap-1 sm:grid-cols-16">
                     {QUICK_EMOJIS.map((emoji) => (
                       <Button key={emoji} variant="ghost" className="text-xl p-0 h-9 w-9 hover:bg-accent" onClick={() => insertEmoji(emoji)}>
                         {emoji}

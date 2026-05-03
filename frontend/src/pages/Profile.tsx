@@ -403,6 +403,8 @@ export function Profile() {
   const [isSavingCover, setIsSavingCover] = useState(false);
   const [isSavingAvatar, setIsSavingAvatar] = useState(false);
   const [isSavingMood, setIsSavingMood] = useState(false);
+  const [animateScore, setAnimateScore] = useState(false);
+  const prevScoreRef = useRef<number | null>(null);
   
   const [editUniversity, setEditUniversity] = useState("");
   const [editFaculty, setEditFaculty] = useState("");
@@ -520,6 +522,18 @@ export function Profile() {
       loading,
     });
   }, [targetUser, userPosts, userConnections, userResources, resourcesAvailable, loading]);
+
+  useEffect(() => {
+    if (user.impactScore !== prevScoreRef.current && user.impactScore !== null && prevScoreRef.current !== null) {
+      setAnimateScore(true);
+      const timer = setTimeout(() => setAnimateScore(false), 400);
+      prevScoreRef.current = user.impactScore;
+      return () => clearTimeout(timer);
+    }
+    if (user.impactScore !== null && prevScoreRef.current === null) {
+      prevScoreRef.current = user.impactScore;
+    }
+  }, [user.impactScore]);
 
   const aboutProfile = useMemo(() => ({
     phoneNumber: user.phoneNumber ?? "",
@@ -1208,7 +1222,9 @@ export function Profile() {
                           <Info className="h-3 w-3 text-primary/60" />
                         </Button>
                       </div>
-                      <p className="text-sm sm:text-lg font-bold text-primary truncate">{user.impactScore ?? NOT_AVAILABLE_TEXT}</p>
+                      <p className={cn("text-sm sm:text-lg font-bold text-primary truncate transition-all duration-300", animateScore && "animate-pop")}>
+                        {user.impactScore ?? NOT_AVAILABLE_TEXT}
+                      </p>
                     </div>
                   </div>
                   

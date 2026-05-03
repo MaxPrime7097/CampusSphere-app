@@ -267,4 +267,14 @@
   .progress-bar {
     width: var(--progress-width, 0%);
   }
+
+  @keyframes pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.4); color: hsl(var(--primary)); }
+    100% { transform: scale(1); }
+  }
+
+  .animate-pop {
+    animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
 }
