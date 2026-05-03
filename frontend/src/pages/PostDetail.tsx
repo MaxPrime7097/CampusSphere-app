@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Helmet } from "react-helmet-async";
 import { useParams, useNavigate } from "react-router-dom";
 import { getPost } from "@/services/api";
 import { PostCard } from "@/components/feed/PostCard";
@@ -59,6 +60,15 @@ export function PostDetail() {
           </div>
         ) : post ? (
           <>
+            <Helmet>
+              <title>{post.content ? (post.content.length > 50 ? post.content.substring(0, 50) + "..." : post.content) : "Post"} - CampusSphere</title>
+              <meta name="description" content={post.content ? (post.content.length > 160 ? post.content.substring(0, 160) + "..." : post.content) : "Découvrez ce post sur CampusSphere."} />
+              <link rel="canonical" href={`https://campussphere.app/posts/${id}`} />
+              <meta property="og:title" content={`Discussion sur CampusSphere - ${post.author?.name || "Étudiant"}`} />
+              <meta property="og:description" content={post.content ? post.content.substring(0, 160) : "Rejoignez la discussion sur CampusSphere."} />
+              <meta property="og:url" content={`https://campussphere.app/posts/${id}`} />
+              <meta property="og:image" content={post.images?.[0] || "https://campussphere-storage-bucket.s3.us-east-1.amazonaws.com/CampusSphere-banner.png"} />
+            </Helmet>
             <PostCard post={post} />
             
             {/* Guest CTA Banner */}

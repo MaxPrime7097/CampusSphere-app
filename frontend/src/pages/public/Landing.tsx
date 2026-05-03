@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Helmet } from "react-helmet-async";
 import { ArrowRight, Users, Calendar, BookOpen, Shield, Star, UserPlus, LogIn, Sparkles, Zap, Heart, FolderOpen, MessageSquare, Dot, Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -80,6 +81,13 @@ export function Landing() {
 
   return (
     <div className="min-h-screen p-0 bg-gradient-to-br from-background via-accent/5 to-primary/5">
+      <Helmet>
+        <title>CampusSphere - Le réseau social qui connecte les étudiants</title>
+        <meta name="description" content="Découvrez CampusSphere, le réseau social qui révolutionne la vie étudiante. Sphères collaboratives, partage de ressources et feed intelligent." />
+        <link rel="canonical" href="https://campussphere.app/cs-inc" />
+        <meta property="og:title" content="CampusSphere - Le réseau social qui connecte les étudiants" />
+        <meta property="og:description" content="Rejoignez la sphère, partagez, collaborez et grandissez avec vos camarades sur CampusSphere." />
+      </Helmet>
       {/* Navigation */}
       <Header />
 

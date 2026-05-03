@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Helmet } from "react-helmet-async";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -61,6 +62,11 @@ const Protected = ({ children }: { children: ReactNode }) => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    <Helmet>
+      <title>CampusSphere - Le réseau social qui connecte les étudiants</title>
+      <meta name="description" content="CampusSphere est le réseau social moderne dédié aux étudiants. Connectez-vous, partagez et grandissez avec la communauté." />
+      <link rel="canonical" href="https://campussphere.app/" />
+    </Helmet>
     <TooltipProvider>
       <Toaster />
       <Sonner />

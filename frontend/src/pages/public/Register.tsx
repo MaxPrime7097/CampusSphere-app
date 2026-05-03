@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { Helmet } from "react-helmet-async";
 import { ChevronLeft, ChevronRight, Upload, Check, Loader2, AlertCircle, Eye, EyeOff, X, ExternalLink, Plus, FileText, Mail, RefreshCw, Camera, Info } from "lucide-react";
 import { FaGoogle, FaFacebook } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
@@ -456,6 +457,11 @@ export function Register() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5 grid lg:grid-cols-2 overflow-hidden">
+      <Helmet>
+        <title>Inscription - CampusSphere</title>
+        <meta name="description" content="Rejoignez CampusSphere et connectez-vous avec des milliers d'étudiants. Créez votre profil, rejoignez des sphères et partagez vos ressources." />
+        <link rel="canonical" href="https://campussphere.app/register" />
+      </Helmet>
       <div className="flex flex-col items-center justify-center p-4 sm:p-8 overflow-y-auto">
         <div className="w-full max-w-xl">
         <div className="text-center mb-8 cursor-pointer" onClick={() => navigate("/cs-inc")}>

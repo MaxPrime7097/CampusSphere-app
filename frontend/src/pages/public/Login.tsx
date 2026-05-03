@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { Eye, EyeOff, Mail, Lock, Loader2, AlertCircle } from "lucide-react";
 import { FaGoogle, FaFacebook } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
@@ -86,6 +87,11 @@ export function Login() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5 grid lg:grid-cols-2 overflow-hidden">
+      <Helmet>
+        <title>Connexion - CampusSphere</title>
+        <meta name="description" content="Connectez-vous à votre compte CampusSphere pour retrouver vos sphères, vos messages et vos ressources." />
+        <link rel="canonical" href="https://campussphere.app/login" />
+      </Helmet>
       <div className="flex items-center justify-center p-4 sm:px-20 overflow-y-auto">
         <div className="w-full max-w-md">
         <div className="text-center mb-8 mt-4 cursor-pointer" onClick={() => navigate("/cs-inc")}>

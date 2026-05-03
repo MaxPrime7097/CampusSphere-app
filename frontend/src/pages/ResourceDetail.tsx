@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Helmet } from "react-helmet-async";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { deleteResource, downloadResource, getResource, getResourcePreviewUrl, reportResource, saveResource, trackResourceShare, updateResource, listFolders, updateFolder, type ResourceFolder } from "@/services/api";
 import { Download, Share2, ChevronLeft, Eye, Flag, Loader2, Zap, Bookmark, Pencil, Trash2, Info, X, Facebook, Twitter, Instagram, Linkedin, Copy, FileText, FolderInput, BadgeCheck } from "lucide-react";
@@ -520,6 +521,14 @@ export function ResourceDetail() {
 
   return (
     <>
+      <Helmet>
+        <title>{resource.title} - CampusSphere</title>
+        <meta name="description" content={resource.description ? (resource.description.length > 160 ? resource.description.substring(0, 160) + "..." : resource.description) : "Consultez cette ressource sur CampusSphere."} />
+        <link rel="canonical" href={`https://campussphere.app/resources/${id}`} />
+        <meta property="og:title" content={`${resource.title} - Ressource CampusSphere`} />
+        <meta property="og:description" content={resource.description ? resource.description.substring(0, 160) : "Téléchargez et partagez des ressources académiques sur CampusSphere."} />
+        <meta property="og:url" content={`https://campussphere.app/resources/${id}`} />
+      </Helmet>
     <div key={id} className="min-h-screen bg-gradient-to-br from-background to-accent/20">
 
       <div className="container max-w-4xl mx-auto py-4 px-4 md:py-6">
