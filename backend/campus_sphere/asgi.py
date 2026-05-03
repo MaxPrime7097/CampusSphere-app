@@ -1,29 +1,24 @@
-"""
-ASGI config for campus_sphere project.
-
-It exposes the ASGI callable as a module-level variable named ``application``.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/5.2/howto/deployment/asgi/
-"""
-
 import os
-
+import django
 from django.core.asgi import get_asgi_application
-from channels.routing import ProtocolTypeRouter, URLRouter
-from channels.auth import AuthMiddlewareStack
-import messaging.routing
 
-from .middleware import JwtAuthMiddleware
-
+# Set settings module before any other imports
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'campus_sphere.settings')
 
+# Initialize Django ASGI application early to ensure AppRegistry is ready
+django_asgi_app = get_asgi_application()
+
+from channels.routing import ProtocolTypeRouter, URLRouter
+from channels.auth import AuthMiddlewareStack
+from campus_sphere.middleware import JwtAuthMiddleware
+import campus_sphere.routing
+
 application = ProtocolTypeRouter({
-    "http": get_asgi_application(),
+    "http": django_asgi_app,
     "websocket": JwtAuthMiddleware(
         AuthMiddlewareStack(
             URLRouter(
-                messaging.routing.websocket_urlpatterns
+                campus_sphere.routing.websocket_urlpatterns
             )
         )
     ),

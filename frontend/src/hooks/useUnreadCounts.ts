@@ -42,6 +42,10 @@ export function stopUnreadPolling() {
   if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
 }
 
+export function refreshCounts() {
+  void fetchCounts();
+}
+
 export function useUnreadCounts(): UnreadCounts {
   const [counts, setCounts] = useState<UnreadCounts>({ ...globalCounts });
 

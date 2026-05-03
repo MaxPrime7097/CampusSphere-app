@@ -30,11 +30,35 @@ def create_notification(notification_type, title, message, recipient, data=None,
         data=data,
     )
 
+    # Broadcast via Channels
+    try:
+        from asgiref.sync import async_to_sync
+        from channels.layers import get_channel_layer
+        channel_layer = get_channel_layer()
+        
+        async_to_sync(channel_layer.group_send)(
+            f'user_notifications_{recipient.id}',
+            {
+                'type': 'send_notification',
+                'payload': {
+                    'id': str(notification.id),
+                    'type': notification_type,
+                    'title': title,
+                    'message': message,
+                    'data': data,
+                    'created_at': notification.created_at.isoformat(),
+                    'is_read': False
+                }
+            }
+        )
+    except Exception:
+        # Broadcasting failures should not block notification creation
+        pass
+
     try:
         from notifications.tasks import send_notification_email_task
         send_notification_email_task.delay(str(notification.id))
     except Exception:
-        # Email dispatch failures should not block core business actions.
         pass
 
     return notification

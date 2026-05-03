@@ -90,6 +90,51 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   const isVerified = user?.isVerified ?? false;
 
+  // Real-time notifications
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const proto = window.location.protocol === "https:" ? "wss" : "ws";
+    const apiUrl = (import.meta.env.VITE_API_URL as string | undefined) || "";
+    const host = (import.meta.env.VITE_API_WS_HOST as string | undefined) ||
+      (apiUrl ? apiUrl.replace(/^https?:\/\//, "").replace(/\/$/, "") : window.location.host);
+    const token = localStorage.getItem("access_token") || localStorage.getItem("access");
+    const wsUrl = `${proto}://${host}/ws/notifications/${token ? `?token=${token}` : ""}`;
+    
+    let socket: WebSocket | null = null;
+    let retryTimeout: number | null = null;
+
+    const connect = () => {
+      socket = new WebSocket(wsUrl);
+
+      socket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          toast({
+            title: data.title || "Nouvelle notification",
+            description: data.message,
+            duration: 5000,
+          });
+          // Refresh global counts
+          import("@/hooks/useUnreadCounts").then(m => m.refreshCounts());
+        } catch (e) {
+          console.error("Notification WS Error:", e);
+        }
+      };
+
+      socket.onclose = () => {
+        retryTimeout = window.setTimeout(connect, 5000);
+      };
+    };
+
+    connect();
+
+    return () => {
+      if (socket) socket.close();
+      if (retryTimeout) window.clearTimeout(retryTimeout);
+    };
+  }, [isAuthenticated, toast]);
+
   const handleCreateAction = (e: React.MouseEvent, callback: () => void) => {
     if (isProfileLoading) return;
     
