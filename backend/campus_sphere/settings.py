@@ -149,14 +149,6 @@ else:
             }
         }
 
-# Sessions stockées en cache
-SESSION_ENGINE = "django.contrib.sessions.backends.cache"
-SESSION_CACHE_ALIAS = "default"
-SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # 7 jours
-SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SECURE = True
-SESSION_COOKIE_SAMESITE = "None"
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -267,6 +259,14 @@ else:
     settings_logger.warning(
         "REDIS_URL is not set; using LocMemCache as fallback for cache and sessions."
     )
+
+# Sessions stockées en cache
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # 7 jours
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_SAMESITE = "None"
 
 # CORS / CSRF Configuration
 CORS_ALLOWED_ORIGINS = env_config(

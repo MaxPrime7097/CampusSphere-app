@@ -91,22 +91,14 @@ class SupabaseProfileCompletionSerializer(serializers.ModelSerializer):
         return value
 
     def validate_student_id(self, value):
-        normalized_value = value.strip().upper()
-        if not (2 <= len(normalized_value) <= 50):
-            raise serializers.ValidationError("L'identifiant étudiant doit contenir entre 2 et 50 caractères")
-        if not self.STUDENT_ID_REGEX.match(normalized_value):
-            raise serializers.ValidationError(
-                "L'identifiant étudiant peut contenir uniquement des lettres, chiffres, points, tirets et slashs"
-            )
-        return normalized_value
+        if not value: return ""
+        normalized_value = value.strip()
+        # On accepte presque tout pour le matricule pour ne pas bloquer l'inscription
+        return normalized_value[:50]
 
     def validate_study_year(self, value):
-        value = value.strip()
-        if not (2 <= len(value) <= 20):
-            raise serializers.ValidationError("L'année d'étude doit contenir entre 2 et 20 caractères")
-        if not self.STUDY_YEAR_REGEX.match(value):
-            raise serializers.ValidationError("Format de l'année d'étude invalide")
-        return value
+        if not value: return ""
+        return value.strip()[:20]
 
     def _validate_json_list_field(self, value, *, field_name, required_keys, max_items, value_max_length=200):
         if not value or not isinstance(value, list):
