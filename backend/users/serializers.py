@@ -23,12 +23,9 @@ def normalize_username_for_lookup(value):
 class SupabaseProfileCompletionSerializer(serializers.ModelSerializer):
     """Serializer pour compléter le profil après inscription Supabase"""
     phone_number = serializers.CharField(required=False, allow_blank=True, default="")
-    date_of_birth = serializers.DateField(
-        required=False, 
-        allow_null=True, 
-        default=None,
-        input_formats=['%d/%m/%Y', '%Y-%m-%d', 'iso-8601']
-    )
+    first_name = serializers.CharField(required=False, allow_blank=True)
+    last_name = serializers.CharField(required=False, allow_blank=True)
+    date_of_birth = serializers.CharField(required=False, allow_blank=True, allow_null=True, default=None)
 
     MAX_PREVIOUS_EDUCATION_ITEMS = 10
     MAX_EXPERIENCES_ITEMS = 10
@@ -65,19 +62,30 @@ class SupabaseProfileCompletionSerializer(serializers.ModelSerializer):
         return str(value).strip()[:30]
 
     def validate_date_of_birth(self, value):
-        if value is None:
-            return value
-
-        today = timezone.now().date()
-        if value > today:
-            # On ne bloque pas pour une date dans le futur, on met à None
+        if not value or str(value).strip() == "":
             return None
 
-        age = today.year - value.year - ((today.month, today.day) < (value.month, value.day))
-        if age < self.MINIMUM_AGE:
-            # On ne bloque pas pour l'âge non plus, on laisse passer pour éviter les 400
-            return value
-        return value
+        # Tentative de parsing des différents formats
+        from datetime import datetime
+        formats = ['%d/%m/%Y', '%Y-%m-%d', '%Y-%m-%dT%H:%M:%S', '%Y-%m-%dT%H:%M:%S.%fZ']
+        
+        parsed_date = None
+        for fmt in formats:
+            try:
+                parsed_date = datetime.strptime(str(value).strip(), fmt).date()
+                break
+            except (ValueError, TypeError):
+                continue
+        
+        if not parsed_date:
+            # Si on n'arrive pas à lire la date, on met à None au lieu de bloquer (400)
+            return None
+
+        today = timezone.now().date()
+        if parsed_date > today:
+            return None
+
+        return parsed_date
 
     def validate_language(self, value):
         if not value: return "fr"
