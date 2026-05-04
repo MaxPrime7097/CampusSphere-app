@@ -99,6 +99,7 @@ export function Messages() {
   const [showEmojiFor, setShowEmojiFor] = useState<string | null>(null);
   const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🔥"];
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const socketRef = useRef<WebSocket | null>(null);
