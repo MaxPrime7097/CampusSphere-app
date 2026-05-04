@@ -170,30 +170,27 @@ class PasswordResetView(APIView):
 
 class CheckAvailabilityView(APIView):
     permission_classes = [permissions.AllowAny]
-    throttle_classes = [AuthScopedRateThrottle]
+    # On retire le throttle trop strict pour cette vue pour éviter les lags au clavier
+    throttle_classes = [] 
 
     def post(self, request):
         username = (request.data.get("username") or "").strip()
         email = (request.data.get("email") or "").strip().lower()
 
-        response_data = {}
-        if username:
-            response_data["username_available"] = not User.objects.filter(
-                username__iexact=username
-            ).exists()
-        if email:
-            response_data["email_available"] = not User.objects.filter(
-                email__iexact=email
-            ).exists()
+        if not username and not email:
+            return Response({
+                "success": False,
+                "error": "Provide username and/or email to check availability.",
+            }, status=status.HTTP_400_BAD_REQUEST)
 
-        if not response_data:
-            return Response(
-                {
-                    "success": False,
-                    "error": "Provide username and/or email to check availability.",
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        response_data = {}
+        
+        # Utilisation de .exists() qui est ultra rapide en SQL
+        if username:
+            response_data["username_available"] = not User.objects.filter(username__iexact=username).exists()
+            
+        if email:
+            response_data["email_available"] = not User.objects.filter(email__iexact=email).exists()
 
         return Response({"success": True, "data": response_data}, status=status.HTTP_200_OK)
 
@@ -793,12 +790,18 @@ class CompleteSupabaseProfileView(APIView):
     
     def post(self, request):
         if request.user.is_profile_complete:
-            return Response({'error': 'Profil déjà complet'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                'success': True, 
+                'message': 'Ton profil est déjà prêt ! 🎉',
+                'data': UserProfileSerializer(request.user).data
+            }, status=status.HTTP_200_OK)
         
         serializer = SupabaseProfileCompletionSerializer(request.user, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
+        if not serializer.is_valid():
+            logger.error(f"Erreur 400 Profil Complet: {serializer.errors} | Data: {request.data}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
         user = serializer.save()
-        
         CacheManager.invalidate_user_profile(user.id)
         
         return Response({

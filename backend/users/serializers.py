@@ -8,7 +8,7 @@ from django.utils import timezone
 import re
 from .models import User, Connection, UserBlock, ContactMessage
 
-REQUIRED_PROFILE_FIELDS = ['username', 'university', 'faculty', 'study_year', 'student_id']
+REQUIRED_PROFILE_FIELDS = [] # On ne force plus rien au niveau du serializer pour éviter les 400
 USERNAME_REGEX = re.compile(r'^[A-Za-z0-9][A-Za-z0-9_.-]*$')
 
 
