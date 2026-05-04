@@ -799,7 +799,11 @@ class CompleteSupabaseProfileView(APIView):
         serializer = SupabaseProfileCompletionSerializer(request.user, data=request.data, partial=True)
         if not serializer.is_valid():
             logger.error(f"Erreur 400 Profil Complet: {serializer.errors} | Data: {request.data}")
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                'success': False,
+                'error': 'Données invalides',
+                'details': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
             
         user = serializer.save()
         CacheManager.invalidate_user_profile(user.id)

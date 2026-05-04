@@ -49,21 +49,20 @@ class SupabaseProfileCompletionSerializer(serializers.ModelSerializer):
         ]
     
     def validate_username(self, value):
-        value = normalize_username_for_lookup(value)
-        if not (3 <= len(value) <= 50):
-            value = value[:50]
-            if len(value) < 3: value = f"user_{self.instance.pk}"
-        
-        # Si le nom est déjà pris, on ajoute un petit suffixe au lieu de bloquer
-        if User.objects.filter(username__iexact=value).exclude(pk=self.instance.pk).exists():
-            from django.utils.crypto import get_random_string
-            value = f"{value}_{get_random_string(3)}"
+        # On nettoie et on s'assure que c'est une chaîne
+        val = str(value).strip().lower()
+        if not val:
+            val = f"user_{getattr(self.instance, 'pk', 'new')}"
             
-        return value
+        # Si déjà pris, on ne bloque pas, on crée une variante
+        if User.objects.filter(username__iexact=val).exclude(pk=getattr(self.instance, 'pk', None)).exists():
+            from django.utils.crypto import get_random_string
+            val = f"{val}_{get_random_string(3)}"
+        return val
 
     def validate_phone_number(self, value):
         if not value: return ""
-        return value.strip()[:30]
+        return str(value).strip()[:30]
 
     def validate_date_of_birth(self, value):
         if value is None:
