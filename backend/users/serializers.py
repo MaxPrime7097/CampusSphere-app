@@ -109,67 +109,61 @@ class SupabaseProfileCompletionSerializer(serializers.ModelSerializer):
         return value
 
     def _validate_json_list_field(self, value, *, field_name, required_keys, max_items, value_max_length=200):
-        if value is None:
+        if not value or not isinstance(value, list):
             return []
-        if not isinstance(value, list):
-            raise serializers.ValidationError(f"{field_name} doit être une liste d'objets")
-        if len(value) > max_items:
-            raise serializers.ValidationError(f"{field_name} ne peut pas dépasser {max_items} éléments")
-
+        
         cleaned_items = []
-        for index, item in enumerate(value):
+        for item in value:
             if not isinstance(item, dict):
-                raise serializers.ValidationError({index: "Chaque entrée doit être un objet JSON"})
-            missing_keys = [key for key in required_keys if key not in item or item.get(key) in (None, "")]
-            if missing_keys:
-                raise serializers.ValidationError({index: f"Clés obligatoires manquantes: {', '.join(missing_keys)}"})
+                continue # On ignore ce qui n'est pas un objet au lieu de planter
+                
+            # On ne garde l'item que s'il contient au moins une info utile
+            has_data = any(bool(v) for v in item.values())
+            if not has_data:
+                continue
 
             cleaned_item = {}
             for key, raw_value in item.items():
                 if isinstance(raw_value, str):
-                    normalized_value = raw_value.strip()
-                    if len(normalized_value) > value_max_length:
-                        raise serializers.ValidationError(
-                            {index: f"La valeur '{key}' dépasse {value_max_length} caractères"}
-                        )
-                    cleaned_item[key] = normalized_value
+                    cleaned_item[key] = raw_value.strip()[:value_max_length]
                 else:
                     cleaned_item[key] = raw_value
             cleaned_items.append(cleaned_item)
+            
+            if len(cleaned_items) >= max_items:
+                break
         return cleaned_items
 
     def validate_previous_education(self, value):
         return self._validate_json_list_field(
             value,
             field_name="previous_education",
-            required_keys=("school", "year"),
-            max_items=self.MAX_PREVIOUS_EDUCATION_ITEMS,
-            value_max_length=150,
+            required_keys=(), # On ne force plus de clés spécifiques
+            max_items=self.MAX_PREVIOUS_EDUCATION_ITEMS
         )
 
     def validate_experiences(self, value):
         return self._validate_json_list_field(
             value,
             field_name="experiences",
-            required_keys=("company", "title"), # 'title' au lieu de 'role' pour correspondre au frontend
-            max_items=self.MAX_EXPERIENCES_ITEMS,
-            value_max_length=150,
+            required_keys=(),
+            max_items=self.MAX_EXPERIENCES_ITEMS
         )
 
     def validate_portfolio_links(self, value):
         validated = self._validate_json_list_field(
             value,
             field_name="portfolio_links",
-            required_keys=("url",),
-            max_items=self.MAX_PORTFOLIO_LINKS_ITEMS,
-            value_max_length=255,
+            required_keys=(),
+            max_items=self.MAX_PORTFOLIO_LINKS_ITEMS
         )
         url_validator = URLValidator()
         for index, link in enumerate(validated):
-            try:
-                url_validator(link["url"])
-            except DjangoValidationError:
-                raise serializers.ValidationError({index: "URL de portfolio invalide"})
+            if "url" in link:
+                try:
+                    url_validator(link["url"])
+                except DjangoValidationError:
+                    raise serializers.ValidationError({index: "URL de portfolio invalide"})
         return validated
 
     @staticmethod
