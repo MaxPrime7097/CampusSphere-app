@@ -23,7 +23,13 @@ def normalize_username_for_lookup(value):
 class SupabaseProfileCompletionSerializer(serializers.ModelSerializer):
     """Serializer pour compléter le profil après inscription Supabase"""
     phone_number = serializers.CharField(required=False, allow_blank=True, default="")
-    date_of_birth = serializers.DateField(required=False, allow_null=True, default=None)
+    date_of_birth = serializers.DateField(
+        required=False, 
+        allow_null=True, 
+        default=None,
+        input_formats=['%d/%m/%Y', '%Y-%m-%d', 'iso-8601']
+    )
+
     MAX_PREVIOUS_EDUCATION_ITEMS = 10
     MAX_EXPERIENCES_ITEMS = 10
     MAX_PORTFOLIO_LINKS_ITEMS = 20

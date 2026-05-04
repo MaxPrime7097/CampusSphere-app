@@ -223,7 +223,6 @@ export function CompleteProfile() {
       university: formData.university,
       faculty: formData.faculty,
       study_year: formData.studyYear,
-      student_id: formData.studentId,
       campus: formData.campus,
       skills: formData.skills,
       interests: formData.interests,
@@ -420,11 +419,6 @@ export function CompleteProfile() {
                   <StudyLevelCombobox value={formData.studyYear} onValueChange={v => handleInput("studyYear", v)} className="mt-2" />
                   {errors.studyYear && <p className="text-xs text-red-500 mt-1">{errors.studyYear}</p>}
                 </div>
-              </div>
-              <div>
-                <Label>Matricule *</Label>
-                <Input maxLength={REGISTRATION_MAX_LENGTHS.studentId} value={formData.studentId} onChange={e => handleInput("studentId", e.target.value)} className={errors.studentId ? "border-destructive" : ""} />
-                {errors.studentId && <p className="text-xs text-red-500 mt-1">{errors.studentId}</p>}
               </div>
 
               <div>
