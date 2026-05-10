@@ -416,9 +416,9 @@ export function Landing() {
             <Button
               size="lg"
               className="font-poppins campus-gradient text-white hover:opacity-90 text-lg px-8 py-8"
-              onClick={() => navigate('/cs-inc/waitlist')}
+              onClick={() => navigate('/register')}
             >
-              Rejoindre la liste d'attente
+              Rejoindre la communauté
               <ArrowRight className="hidden ml-2 h-5 w-5 md:block" />
             </Button>
             <Button

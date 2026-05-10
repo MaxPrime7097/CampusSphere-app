@@ -112,10 +112,13 @@ ASGI_APPLICATION = "campus_sphere.asgi.application"
 DATABASE_URL = env_config('DATABASE_URL', default=None)
 
 if DATABASE_URL:
-    # Utiliser DATABASE_URL si fourni (plus fiable)
     import dj_database_url
     DATABASES = {
-        "default": dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+        "default": dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=0, # Préférable pour Supabase (évite de saturer les connexions)
+            ssl_require=True
+        )
     }
 else:
     # Vérifier si les paramètres PostgreSQL sont fournis

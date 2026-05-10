@@ -17,8 +17,8 @@ services:
     # Start command for the service
     # Gunicorn will serve the Django application
     startCommand: |
-      gunicorn --pythonpath backend campus_sphere.wsgi:application --bind 0.0.0.0:10000
-
+      daphne -b 0.0.0.0 -p 10000 --access-log - --proxy-headers campus_sphere.asgi:application
+      
     # Environment variables
     envVars:
       - key: PORT

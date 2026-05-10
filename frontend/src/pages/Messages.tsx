@@ -232,6 +232,26 @@ export function Messages() {
     return () => clearTimeout(timer);
   }, [connectionSearch, currentUser?.id]);
 
+  const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior
+      });
+    } else if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior });
+    }
+  };
+
+  // Scroll on messages change or conversation change
+  useEffect(() => {
+    if (messages.length > 0) {
+      // Small timeout to ensure DOM is updated
+      const timer = setTimeout(() => scrollToBottom("smooth"), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [messages.length, conversationId]);
+
   // Load messages for selected conversation
   useEffect(() => {
     if (!conversationId) {
