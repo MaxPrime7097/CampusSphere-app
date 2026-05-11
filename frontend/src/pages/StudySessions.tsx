@@ -45,10 +45,9 @@ export const StudySessions: React.FC = () => {
   const [viewSession, setViewSession] = useState<any | null>(null);
   const [viewOpen, setViewOpen] = useState(false);
 
-  // Upload direct
-  const [uploadTools, setUploadTools] = useState<("fiche" | "quiz" | "flashcards")[]>(["fiche"]);
-  const [uploadLoading, setUploadLoading] = useState(false);
-  const [uploadOpen, setUploadOpen] = useState(false);
+  // Upload direct via StudyToolsModal
+  const [selectedUploadFile, setSelectedUploadFile] = useState<File | null>(null);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
 
   React.useEffect(() => {
     loadSessions();
@@ -86,30 +85,12 @@ export const StudySessions: React.FC = () => {
     }
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setUploadLoading(true);
-    try {
-      const res = await generateFromUpload(file, uploadTools);
-      toast({ title: "Session générée avec succès !" });
-      await loadSessions();
-      // Ouvrir directement le résultat
-      if (res?.data) {
-        setViewSession(res.data);
-        setViewOpen(true);
-      }
-    } catch (err: any) {
-      toast({
-        title: "Génération échouée",
-        description: err?.message,
-        variant: "destructive",
-      });
-    } finally {
-      setUploadLoading(false);
-      setUploadOpen(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
+    setSelectedUploadFile(file);
+    setUploadModalOpen(true);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const filteredSessions =
@@ -137,12 +118,19 @@ export const StudySessions: React.FC = () => {
             </div>
           </div>
           <Button
-            onClick={() => setUploadOpen(true)}
+            onClick={() => fileInputRef.current?.click()}
             className="gap-2 campus-gradient text-white flex-shrink-0"
           >
             <Upload className="h-4 w-4" />
             Uploader un Document
           </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,application/pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.txt,text/plain"
+            onChange={handleFileSelected}
+            className="hidden"
+          />
         </div>
 
         {/* Filtres */}
@@ -243,82 +231,18 @@ export const StudySessions: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Modal : Upload direct */}
-      <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Upload className="h-5 w-5 text-[#ff9800]" />
-              Générer depuis un fichier
-            </DialogTitle>
-          </DialogHeader>
-          {uploadLoading ? (
-            <div className="flex flex-col items-center justify-center py-10 gap-4">
-              <div className="relative">
-                <div className="h-14 w-14 rounded-full bg-[#ff9800]/10 flex items-center justify-center">
-                  <Sparkles className="h-7 w-7 text-[#ff9800]" />
-                </div>
-                <Loader2 className="h-14 w-14 text-[#ff9800] animate-spin absolute inset-0" />
-              </div>
-              <div className="text-center">
-                <p className="font-semibold text-foreground">Génération en cours…</p>
-                <p className="text-sm text-muted-foreground mt-1">L'IA analyse ton document.</p>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4 py-2">
-              <p className="text-sm text-muted-foreground">
-                Upload un fichier (PDF, DOCX, TXT) personnel (non enregistré dans la bibliothèque) pour générer un outil de révision.
-              </p>
-
-            {/* Choix du type */}
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-foreground">Type d'outil</p>
-              <div className="grid grid-cols-3 gap-2">
-                {(["fiche", "quiz", "flashcards"] as const).map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => {
-                      setUploadTools((prev) =>
-                        prev.includes(t) ? prev.filter((tool) => tool !== t) : [...prev, t]
-                      );
-                    }}
-                    className={cn(
-                      "flex flex-col items-center gap-1 border rounded-xl py-2.5 px-2 text-xs font-medium transition-all",
-                      uploadTools.includes(t)
-                        ? "border-[#ff9800] bg-[#ff9800]/10 text-[#ff9800] dark:text-[#ff9800]/80"
-                        : "border-border text-muted-foreground hover:border-[#ff9800]/50"
-                    )}
-                  >
-                    {t === "fiche" && <BookOpen className="h-4 w-4" />}
-                    {t === "quiz" && <Brain className="h-4 w-4" />}
-                    {t === "flashcards" && <Layers className="h-4 w-4" />}
-                    <span className="capitalize">{t}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf,application/pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.txt,text/plain"
-              onChange={handleFileChange}
-              className="hidden"
-            />
-
-            <Button
-              className="w-full gap-2 campus-gradient text-white"
-              disabled={uploadLoading || uploadTools.length === 0}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <FileText className="h-4 w-4" />
-              Choisir un Document
-            </Button>
-          </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Modale unifiée pour la génération via Upload */}
+      {selectedUploadFile && (
+        <StudyToolsModal
+          isOpen={uploadModalOpen}
+          onClose={() => setUploadModalOpen(false)}
+          uploadFile={selectedUploadFile}
+          onSuccess={async (data) => {
+            toast({ title: "Session générée avec succès !" });
+            await loadSessions();
+          }}
+        />
+      )}
     </>
   );
 };

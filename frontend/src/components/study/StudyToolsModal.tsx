@@ -23,6 +23,7 @@ import { QuizInteractif } from "./QuizInteractif";
 import { Flashcards } from "./Flashcards";
 import {
   generateStudyTools,
+  generateFromUpload,
   shareStudySession,
   listSpheres,
 } from "@/services/api";
@@ -43,8 +44,10 @@ type Step = "choose" | "loading" | "result" | "error";
 interface StudyToolsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  resourceId: string | number;
-  resourceTitle: string;
+  resourceId?: string | number | null;
+  resourceTitle?: string;
+  uploadFile?: File | null;
+  onSuccess?: (data: any) => void;
 }
 
 const TOOLS: { type: ToolType; icon: React.ReactNode; label: string; desc: string; color: string; bg: string }[] = [
@@ -79,6 +82,8 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
   onClose,
   resourceId,
   resourceTitle,
+  uploadFile,
+  onSuccess,
 }) => {
   const { toast } = useToast();
   const [step, setStep] = useState<Step>("choose");
@@ -106,13 +111,22 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
     setStep("loading");
     setErrorMsg("");
     try {
-      const res = await generateStudyTools(resourceId, selectedTypes);
+      let res;
+      if (uploadFile) {
+        res = await generateFromUpload(uploadFile, selectedTypes);
+      } else if (resourceId) {
+        res = await generateStudyTools(resourceId, selectedTypes);
+      } else {
+        throw new Error("Aucune source spécifiée pour la génération.");
+      }
+      
       const data = res?.data;
       if (!data) throw new Error("Réponse vide du serveur.");
       setSessionData(data.content);
       setSessionId(data.id);
       setWasCached(res.cached ?? false);
       setStep("result");
+      if (onSuccess) onSuccess(data);
     } catch (err: any) {
       const msg =
         err?.message ||
@@ -188,7 +202,7 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
                   Réviser avec l'IA
                 </DialogTitle>
                 <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-                  {resourceTitle}
+                  {uploadFile ? uploadFile.name : resourceTitle}
                 </p>
               </div>
             </div>

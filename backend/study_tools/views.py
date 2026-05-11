@@ -104,25 +104,40 @@ class GenerateFromResourceView(APIView):
                 status=status.HTTP_200_OK,
             )
 
-        # --- Vérifier que c'est un PDF ---
-        file_path = resource.file.path if resource.file else None
-        if not file_path or not os.path.exists(file_path):
+        # --- Extraire le texte (gérer S3 / local via file.open) ---
+        if not resource.file:
             return Response(
-                {"error": "Le fichier de la ressource est introuvable sur le serveur."},
+                {"error": "Cette ressource n'a pas de fichier associé."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # --- Extraire le texte ---
+        # Création d'un fichier temporaire pour l'extraction
+        ext = os.path.splitext(resource.file.name)[1].lower()
+        tmp_path = None
         try:
-            text = extract_text_from_file(file_path)
-        except ValueError as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except ImportError as e:
-            logger.error(f"[StudyTools] Dépendance manquante pour l'extraction : {e}")
-            return Response(
-                {"error": "Extraction non disponible sur ce serveur (dépendance manquante)."},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE,
-            )
+            with tempfile.NamedTemporaryFile(delete=False, suffix=ext, prefix="campussphere_resource_") as tmp:
+                with resource.file.open('rb') as f:
+                    for chunk in f.chunks():
+                        tmp.write(chunk)
+                tmp_path = tmp.name
+
+            # --- Extraire le texte ---
+            try:
+                text = extract_text_from_file(tmp_path)
+            except ValueError as e:
+                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            except ImportError as e:
+                logger.error(f"[StudyTools] Dépendance manquante pour l'extraction : {e}")
+                return Response(
+                    {"error": "Extraction non disponible sur ce serveur (dépendance manquante)."},
+                    status=status.HTTP_503_SERVICE_UNAVAILABLE,
+                )
+        finally:
+            if tmp_path and os.path.exists(tmp_path):
+                try:
+                    os.unlink(tmp_path)
+                except OSError:
+                    pass
 
         if not text or len(text) < 50:
             return Response(
