@@ -34,6 +34,7 @@ import { CompleteProfile } from "./pages/public/CompleteProfile";
 import { Privacy } from "./pages/public/Privacy";
 import { Terms } from "./pages/public/Terms";
 import { Connections } from "./pages/Connections";
+import { StudySessions } from "./pages/StudySessions";
 import { CommunityGuidelines } from "./pages/public/CommunityGuidelines";
 import { Copyright } from "./pages/public/Copyright";
 import { CookiePolicy } from "./pages/public/CookiePolicy";
@@ -186,6 +187,13 @@ const App = () => (
             <Protected>
               <AppLayout>
                 <Connections />
+              </AppLayout>
+            </Protected>
+          } />
+          <Route path="/study-sessions" element={
+            <Protected>
+              <AppLayout>
+                <StudySessions />
               </AppLayout>
             </Protected>
           } />

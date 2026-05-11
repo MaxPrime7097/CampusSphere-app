@@ -751,10 +751,9 @@ class SupabaseTokenExchangeView(APIView):
                     )
                     created = True
             
-            # Déterminer si le profil doit être complété.
-            # Important: this must be data-driven (required fields), not provider-driven,
-            # otherwise OAuth users can be redirected to home before finishing onboarding.
-            required_fields = ['username', 'university', 'faculty', 'study_year', 'student_id']
+            # Déterminer si le profil doit être complété (Onboarding).
+            # On ne demande que le strict nécessaire pour que le profil soit visible.
+            required_fields = ['university', 'faculty', 'study_year']
             is_complete = all(getattr(user, field, None) for field in required_fields)
 
             if user.is_profile_complete != is_complete:

@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { completeSupabaseProfile, checkUserAvailability, verifyStudentStatus } from "@/services/api";
+import { completeSupabaseProfile, checkUserAvailability, verifyStudentStatus, getCurrentUser } from "@/services/api";
 import { completeSupabaseProfilePayloadSchema, mapCompleteProfileErrors } from "@/schemas/completeProfilePayload";
 import { cn, formatSlugToLabel } from "@/lib/utils";
 import { AddEducationModal } from "@/components/modals/AddEducationModal";
@@ -56,6 +56,7 @@ export function CompleteProfile() {
   const [usernameCheck, setUsernameCheck] = useState({ checking: false, available: true, checkedValue: "" });
 
   const [formData, setFormData] = useState({
+    firstName: "", lastName: "",
     username: "", phoneNumber: "", dateOfBirth: "", password: "", confirmPassword: "", town: "", language: "",
     university: "", faculty: "", studyYear: "", studentId: "", campus: "",
     previousEducation: [] as Array<{degree: string; school: string; year: string}>,
@@ -89,6 +90,8 @@ export function CompleteProfile() {
 
   const minimumAgeMessage = `Vous devez avoir au moins ${MINIMUM_AGE} ans`;
   const step1Schema = z.object({
+    firstName: z.string().trim().min(1, "Prénom requis"),
+    lastName: z.string().trim().min(1, "Nom requis"),
     username: z.string().trim().min(3, "Au moins 3 caractères"),
     phoneNumber: z.string().optional(),
     dateOfBirth: z.string()
@@ -164,6 +167,28 @@ export function CompleteProfile() {
     return () => clearTimeout(timeout);
   }, [formData.username, step]);
 
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      try {
+        const data = await getCurrentUser();
+        if (isMounted) {
+          setFormData(prev => ({
+            ...prev,
+            firstName: data.first_name || data.firstName || "",
+            lastName: data.last_name || data.lastName || "",
+            username: data.username || prev.username,
+          }));
+        }
+      } catch (e) {
+        // User not logged in
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const validateAndNext = (schema: z.ZodTypeAny, nextStep: Step) => {
     const v = schema.safeParse(formData);
     if (!v.success) {
@@ -215,6 +240,8 @@ export function CompleteProfile() {
       : undefined;
 
     const payload = {
+      first_name: formData.firstName,
+      last_name: formData.lastName,
       username: formData.username,
       phone_number: normalizedPhoneNumber,
       date_of_birth: formData.dateOfBirth,
@@ -314,6 +341,28 @@ export function CompleteProfile() {
           {step === 1 && (
             <div className="space-y-4">
               <CardTitle>Informations de base</CardTitle>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="min-w-0">
+                  <Label>Prénom *</Label>
+                  <Input 
+                    value={formData.firstName} 
+                    onChange={e => handleInput("firstName", e.target.value)} 
+                    placeholder="ex: John" 
+                    className={`w-full min-w-0 ${errors.firstName ? "border-destructive" : ""}`} 
+                  />
+                  {errors.firstName && <p className="text-xs text-destructive mt-1">{errors.firstName}</p>}
+                </div>
+                <div className="min-w-0">
+                  <Label>Nom *</Label>
+                  <Input 
+                    value={formData.lastName} 
+                    onChange={e => handleInput("lastName", e.target.value)} 
+                    placeholder="ex: Doe" 
+                    className={`w-full min-w-0 ${errors.lastName ? "border-destructive" : ""}`} 
+                  />
+                  {errors.lastName && <p className="text-xs text-destructive mt-1">{errors.lastName}</p>}
+                </div>
+              </div>
               <div>
                 <Label>Nom d'utilisateur *</Label>
                 <Input maxLength={REGISTRATION_MAX_LENGTHS.username} value={formData.username} onChange={e => handleInput("username", e.target.value)} placeholder="ex: john_doe" className={`w-full min-w-0 ${errors.username ? "border-destructive" : ""}`} />

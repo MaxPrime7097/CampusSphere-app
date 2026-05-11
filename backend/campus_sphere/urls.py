@@ -26,6 +26,7 @@ urlpatterns = [
     path('api/', include('messaging.urls')),
     path('api/', include('notifications.urls')),
     path('api/', include('upload.urls')),
+    path('api/study/', include('study_tools.urls')),
 
     path('api/admin/moderation-queue/', admin_views.admin_moderation_queue, name='admin-moderation-queue'),
     path('api/admin/reported-content/', admin_views.admin_reported_content, name='admin-reported-content'),

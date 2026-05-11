@@ -2256,6 +2256,70 @@ export async function apiInfo() {
 }
 
 // ============================================================================
+// STUDY TOOLS (Assistant IA de révision)
+// ============================================================================
+
+export async function generateStudyTools(
+  resourceId: string | number,
+  toolType: "fiche" | "quiz" | "flashcards"
+) {
+  const response = await apiFetch<any>("api/study/generate/from-resource/", {
+    method: "POST",
+    body: { resource_id: resourceId, tool_type: toolType },
+  });
+  return response;
+}
+
+export async function generateFromUpload(
+  file: File,
+  toolType: "fiche" | "quiz" | "flashcards"
+) {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("tool_type", toolType);
+  const response = await apiFetch<any>("api/study/generate/from-upload/", {
+    method: "POST",
+    body: formData,
+  });
+  return response;
+}
+
+export async function getStudySessions(toolType?: "fiche" | "quiz" | "flashcards") {
+  const query = toolType ? `?tool_type=${toolType}` : "";
+  const response = await apiFetch<any>(`api/study/sessions/${query}`);
+  return response;
+}
+
+export async function getStudySession(id: string | number) {
+  const response = await apiFetch<any>(`api/study/sessions/${id}/`);
+  return response;
+}
+
+export async function deleteStudySession(id: string | number) {
+  return apiFetch<any>(`api/study/sessions/${id}/`, { method: "DELETE" });
+}
+
+export async function shareStudySession(sessionId: string | number, sphereId: string | number) {
+  const response = await apiFetch<any>(`api/study/sessions/${sessionId}/share/`, {
+    method: "POST",
+    body: { sphere_id: sphereId },
+  });
+  return response;
+}
+
+export async function unshareStudySession(sessionId: string | number) {
+  const response = await apiFetch<any>(`api/study/sessions/${sessionId}/share/`, {
+    method: "DELETE",
+  });
+  return response;
+}
+
+export async function getSphereStudySessions(sphereId: string | number) {
+  const response = await apiFetch<any>(`api/study/sphere/${sphereId}/`);
+  return response;
+}
+
+// ============================================================================
 // EXPORTS
 // ============================================================================
 

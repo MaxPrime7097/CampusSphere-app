@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     "tasks",
     "messaging",
     "notifications",
+    "study_tools",
 
     # Security apps
     "upload",
@@ -474,7 +475,8 @@ WHITENOISE_MANIFEST_STRICT = False
 WHITENOISE_USE_FINDERS = True
 WHITENOISE_MAX_AGE = 31536000  # 1 year
 
-# AI API Keys for Verification
+# AI API Keys
+ANTHROPIC_API_KEY = env_config('ANTHROPIC_API_KEY', default=None)
 GEMINI_API_KEY = env_config('GEMINI_API_KEY', default=None)
 GROQ_API_KEY = env_config('GROQ_API_KEY', default=None)
 
