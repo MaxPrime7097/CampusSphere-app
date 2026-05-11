@@ -16,6 +16,13 @@ from .serializers import StudySessionSerializer, StudySessionListSerializer
 
 logger = logging.getLogger(__name__)
 
+def log_debug_400(message):
+    try:
+        with open("debug.log", "a", encoding="utf-8") as f:
+            f.write(f"ERROR 400: {message}\n")
+    except:
+        pass
+
 VALID_TOOL_TYPES = {"fiche", "quiz", "flashcards"}
 
 
@@ -66,17 +73,20 @@ class GenerateFromResourceView(APIView):
 
         # --- Validation ---
         if not resource_id:
+            log_debug_400("resource_id est requis.")
             return Response(
                 {"error": "resource_id est requis."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         if not tool_types or not isinstance(tool_types, list):
+            log_debug_400(f"tool_types doit être une liste non vide. Reçu: {tool_types_raw}")
             return Response(
                 {"error": "tool_types doit être une liste non vide."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         for t in tool_types:
             if t not in VALID_TOOL_TYPES:
+                log_debug_400(f"Type d'outil invalide: {t}")
                 return Response(
                     {"error": f"Le type d'outil '{t}' n'est pas valide. Choisis parmi : {', '.join(VALID_TOOL_TYPES)}."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -106,6 +116,7 @@ class GenerateFromResourceView(APIView):
 
         # --- Extraire le texte (gérer S3 / local via file.open) ---
         if not resource.file:
+            log_debug_400("Cette ressource n'a pas de fichier associé.")
             return Response(
                 {"error": "Cette ressource n'a pas de fichier associé."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -141,6 +152,7 @@ class GenerateFromResourceView(APIView):
                     pass
 
         if not text or len(text) < 50:
+            log_debug_400(f"Texte trop court dans ResourceView. Longueur: {len(text) if text else 0}")
             return Response(
                 {
                     "error": (
@@ -226,20 +238,20 @@ class GenerateFromUploadView(APIView):
 
         # --- Validation ---
         if not uploaded_file:
-            print("ERROR 400: uploaded_file is None. request.FILES keys:", request.FILES.keys())
+            log_debug_400(f"uploaded_file is None. request.FILES keys: {request.FILES.keys()}")
             return Response(
                 {"error": "Un fichier est requis."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         if not tool_types or not isinstance(tool_types, list):
-            print(f"ERROR 400: tool_types invalid. tool_types_raw: {tool_types_raw}, parsed: {tool_types}")
+            log_debug_400(f"tool_types invalid. tool_types_raw: {tool_types_raw}, parsed: {tool_types}")
             return Response(
                 {"error": "tool_types doit être une liste non vide."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         for t in tool_types:
             if t not in VALID_TOOL_TYPES:
-                print(f"ERROR 400: invalid tool_type '{t}'")
+                log_debug_400(f"invalid tool_type '{t}'")
                 return Response(
                     {"error": f"Le type d'outil '{t}' n'est pas valide. Choisis parmi : {', '.join(VALID_TOOL_TYPES)}."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -250,7 +262,7 @@ class GenerateFromUploadView(APIView):
         filename = uploaded_file.name or ""
         valid_extensions = (".pdf", ".docx", ".txt")
         if not any(filename.lower().endswith(ext) for ext in valid_extensions):
-            print(f"ERROR 400: invalid extension. filename: {filename}, content_type: {content_type}")
+            log_debug_400(f"invalid extension. filename: {filename}, content_type: {content_type}")
             return Response(
                 {"error": "Seuls les fichiers PDF, DOCX et TXT sont acceptés."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -283,7 +295,7 @@ class GenerateFromUploadView(APIView):
                 )
 
             if not text or len(text) < 50:
-                print(f"ERROR 400: text too short ({len(text) if text else 0} chars)")
+                log_debug_400(f"text too short ({len(text) if text else 0} chars) in UploadView")
                 return Response(
                     {
                         "error": (

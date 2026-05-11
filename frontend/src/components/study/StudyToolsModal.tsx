@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useNavigate } from "react-router-dom";
 
 type ToolType = "fiche" | "quiz" | "flashcards";
 type Step = "choose" | "loading" | "result" | "error";
@@ -86,6 +87,7 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
   onSuccess,
 }) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [step, setStep] = useState<Step>("choose");
   const [selectedTypes, setSelectedTypes] = useState<ToolType[]>([]);
   const [sessionData, setSessionData] = useState<any>(null);
@@ -125,8 +127,10 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
       setSessionData(data.content);
       setSessionId(data.id);
       setWasCached(res.cached ?? false);
-      setStep("result");
+      
       if (onSuccess) onSuccess(data);
+      onClose();
+      navigate(`/study-sessions/${data.id}`);
     } catch (err: any) {
       const msg =
         err?.message ||
