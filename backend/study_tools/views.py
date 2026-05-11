@@ -31,6 +31,14 @@ class GenerateFromResourceView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        try:
+            return self._handle_post(request)
+        except Exception as e:
+            import traceback
+            logger.error(f"UNHANDLED EXCEPTION in GenerateFromResourceView: {traceback.format_exc()}")
+            return Response({"error": f"Erreur interne du serveur: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def _handle_post(self, request):
         resource_id = request.data.get("resource_id")
         
         # In DRF, request.data can be a QueryDict
@@ -166,6 +174,14 @@ class GenerateFromUploadView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        try:
+            return self._handle_post(request)
+        except Exception as e:
+            import traceback
+            logger.error(f"UNHANDLED EXCEPTION in GenerateFromUploadView: {traceback.format_exc()}")
+            return Response({"error": f"Erreur interne du serveur: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def _handle_post(self, request):
         uploaded_file = request.FILES.get("file")
         
         # Parse tool_types from Form-data
@@ -194,17 +210,20 @@ class GenerateFromUploadView(APIView):
 
         # --- Validation ---
         if not uploaded_file:
+            print("ERROR 400: uploaded_file is None")
             return Response(
                 {"error": "Un fichier est requis."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         if not tool_types or not isinstance(tool_types, list):
+            print(f"ERROR 400: tool_types invalid. tool_types_raw: {tool_types_raw}, parsed: {tool_types}")
             return Response(
                 {"error": "tool_types doit être une liste non vide."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         for t in tool_types:
             if t not in VALID_TOOL_TYPES:
+                print(f"ERROR 400: invalid tool_type '{t}'")
                 return Response(
                     {"error": f"Le type d'outil '{t}' n'est pas valide. Choisis parmi : {', '.join(VALID_TOOL_TYPES)}."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -215,6 +234,7 @@ class GenerateFromUploadView(APIView):
         filename = uploaded_file.name or ""
         valid_extensions = (".pdf", ".docx", ".txt")
         if not any(filename.lower().endswith(ext) for ext in valid_extensions):
+            print(f"ERROR 400: invalid extension. filename: {filename}, content_type: {content_type}")
             return Response(
                 {"error": "Seuls les fichiers PDF, DOCX et TXT sont acceptés."},
                 status=status.HTTP_400_BAD_REQUEST,
