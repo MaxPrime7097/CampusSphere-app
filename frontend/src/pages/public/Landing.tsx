@@ -329,7 +329,7 @@ export function Landing() {
                   <div className="w-12 h-12 rounded-lg flex items-center justify-center group-hover:animate-pulse-glow">
                     <img src="/icons/tuteur-ai.png" alt="Assistant" />
                   </div>
-                  <h3 className="font-semibold font-poppins text-xl">Assistant IA</h3>
+                  <h3 className="font-semibold font-poppins text-xl">Assistante Sphera</h3>
                 </div>
                 <p className="text-muted-foreground font-nunito font-semibold">Votre compagnon intelligent pour apprendre et vous organiser. Il résume vos cours, génère des quiz, vous aide à réviser et offre un espace d’écoute et de soutien émotionnel.</p>
               </div>

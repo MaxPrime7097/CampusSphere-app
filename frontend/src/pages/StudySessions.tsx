@@ -78,7 +78,7 @@ export const StudySessions: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Assistant Sphera — CampusSphere</title>
+        <title>Assistante Sphera — CampusSphere</title>
         <meta name="description" content="Retrouvez toutes vos sessions de révision générées par l'IA." />
       </Helmet>
 
@@ -88,9 +88,8 @@ export const StudySessions: React.FC = () => {
           <div className="flex flex-col px-4 sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 campus-animate-fade-in px-0">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="h-5 w-5 text-[#ff9800]" />
                 <h1 className="text-3xl font-bold bg-clip-text text-muted-foreground">
-                  Assistant Sphera
+                  Assistante Sphera
                 </h1>
               </div>
               <p className="text-sm md:text-base text-muted-foreground mt-1">

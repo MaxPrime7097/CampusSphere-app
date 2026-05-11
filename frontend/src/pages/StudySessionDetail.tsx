@@ -82,7 +82,7 @@ export const StudySessionDetail = () => {
             <div className="flex items-center gap-2 mb-2">
               <span className="bg-[#ff9800]/10 text-[#ff9800] px-2.5 py-1 rounded-full text-xs font-semibold flex items-center border border-[#ff9800]/20">
                 <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-                Assistant Sphera
+                Assistante Sphera
               </span>
             </div>
             <h1 className="text-3xl font-bold tracking-tight">
