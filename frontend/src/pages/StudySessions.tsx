@@ -141,7 +141,7 @@ export const StudySessions: React.FC = () => {
             className="gap-2 campus-gradient text-white flex-shrink-0"
           >
             <Upload className="h-4 w-4" />
-            Uploader un PDF
+            Uploader un Document
           </Button>
         </div>
 
@@ -178,7 +178,7 @@ export const StudySessions: React.FC = () => {
             <div>
               <p className="font-semibold text-foreground">Aucune session{filter !== "all" ? " de ce type" : ""}</p>
               <p className="text-sm text-muted-foreground mt-1 max-w-xs">
-                Clique sur "Réviser avec l'IA" sur une ressource, ou uploade un PDF ci-dessus.
+                Clique sur "Réviser avec l'IA" sur une ressource, ou uploade un document ci-dessus.
               </p>
             </div>
           </div>
@@ -249,13 +249,27 @@ export const StudySessions: React.FC = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Upload className="h-5 w-5 text-[#ff9800]" />
-              Générer depuis un PDF
+              Générer depuis un fichier
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <p className="text-sm text-muted-foreground">
-              Upload un PDF personnel (non enregistré dans la bibliothèque) pour générer un outil de révision.
-            </p>
+          {uploadLoading ? (
+            <div className="flex flex-col items-center justify-center py-10 gap-4">
+              <div className="relative">
+                <div className="h-14 w-14 rounded-full bg-[#ff9800]/10 flex items-center justify-center">
+                  <Sparkles className="h-7 w-7 text-[#ff9800]" />
+                </div>
+                <Loader2 className="h-14 w-14 text-[#ff9800] animate-spin absolute inset-0" />
+              </div>
+              <div className="text-center">
+                <p className="font-semibold text-foreground">Génération en cours…</p>
+                <p className="text-sm text-muted-foreground mt-1">L'IA analyse ton document.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4 py-2">
+              <p className="text-sm text-muted-foreground">
+                Upload un fichier (PDF, DOCX, TXT) personnel (non enregistré dans la bibliothèque) pour générer un outil de révision.
+              </p>
 
             {/* Choix du type */}
             <div className="space-y-2">
@@ -288,7 +302,7 @@ export const StudySessions: React.FC = () => {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".pdf,application/pdf"
+              accept=".pdf,application/pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.txt,text/plain"
               onChange={handleFileChange}
               className="hidden"
             />
@@ -298,19 +312,11 @@ export const StudySessions: React.FC = () => {
               disabled={uploadLoading || uploadTools.length === 0}
               onClick={() => fileInputRef.current?.click()}
             >
-              {uploadLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Génération en cours…
-                </>
-              ) : (
-                <>
-                  <FileText className="h-4 w-4" />
-                  Choisir un PDF
-                </>
-              )}
+              <FileText className="h-4 w-4" />
+              Choisir un Document
             </Button>
           </div>
+          )}
         </DialogContent>
       </Dialog>
     </>

@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 
 from resources.models import Resource
 from spheres.models import Sphere
-from .ai_service import extract_text_from_pdf, generate_with_fallback
+from .ai_service import extract_text_from_file, generate_with_fallback
 from .models import StudySession
 from .serializers import StudySessionSerializer, StudySessionListSerializer
 
@@ -32,7 +32,29 @@ class GenerateFromResourceView(APIView):
 
     def post(self, request):
         resource_id = request.data.get("resource_id")
-        tool_types = request.data.get("tool_types", [])
+        
+        # In DRF, request.data can be a QueryDict
+        if hasattr(request.data, "getlist"):
+            tool_types_raw = request.data.getlist("tool_types")
+            # If it's a list with one item, try parsing it as JSON
+            if len(tool_types_raw) == 1:
+                tool_types_raw = tool_types_raw[0]
+        else:
+            tool_types_raw = request.data.get("tool_types")
+
+        tool_types = []
+        if isinstance(tool_types_raw, str):
+            try:
+                import json
+                parsed = json.loads(tool_types_raw)
+                if isinstance(parsed, list):
+                    tool_types = parsed
+                else:
+                    tool_types = [parsed]
+            except Exception:
+                tool_types = [t.strip() for t in tool_types_raw.split(",") if t.strip()]
+        elif isinstance(tool_types_raw, list):
+            tool_types = tool_types_raw
 
         # --- Validation ---
         if not resource_id:
@@ -84,13 +106,13 @@ class GenerateFromResourceView(APIView):
 
         # --- Extraire le texte ---
         try:
-            text = extract_text_from_pdf(file_path)
+            text = extract_text_from_file(file_path)
         except ValueError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except ImportError as e:
-            logger.error(f"[StudyTools] PyMuPDF manquant : {e}")
+            logger.error(f"[StudyTools] Dépendance manquante pour l'extraction : {e}")
             return Response(
-                {"error": "Extraction PDF non disponible sur ce serveur."},
+                {"error": "Extraction non disponible sur ce serveur (dépendance manquante)."},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 
@@ -98,8 +120,8 @@ class GenerateFromResourceView(APIView):
             return Response(
                 {
                     "error": (
-                        "Ce PDF ne contient pas de texte extractible. "
-                        "Essaie avec un PDF numérique (non scanné)."
+                        "Ce document ne contient pas de texte extractible. "
+                        "Essaie avec un document numérique contenant du vrai texte."
                     )
                 },
                 status=status.HTTP_400_BAD_REQUEST,
@@ -135,7 +157,7 @@ class GenerateFromResourceView(APIView):
 class GenerateFromUploadView(APIView):
     """
     POST /api/study/generate/from-upload/
-    Form-data: { file (PDF), tool_types (JSON string list) }
+    Form-data: { file, tool_types (JSON string list) }
 
     Le fichier est temporaire — extrait, généré, supprimé.
     La session est quand même sauvegardée avec source_filename.
@@ -146,18 +168,34 @@ class GenerateFromUploadView(APIView):
     def post(self, request):
         uploaded_file = request.FILES.get("file")
         
-        # Parse tool_types from Form-data (usually sent as JSON string if it's an array)
-        tool_types_raw = request.data.get("tool_types", "[]")
-        try:
-            import json
-            tool_types = json.loads(tool_types_raw) if isinstance(tool_types_raw, str) else tool_types_raw
-        except:
-            tool_types = []
+        # Parse tool_types from Form-data
+        if hasattr(request.data, "getlist"):
+            tool_types_raw = request.data.getlist("tool_types")
+            if len(tool_types_raw) == 1:
+                tool_types_raw = tool_types_raw[0]
+        else:
+            tool_types_raw = request.data.get("tool_types")
+
+        tool_types = []
+        if isinstance(tool_types_raw, str):
+            try:
+                import json
+                parsed = json.loads(tool_types_raw)
+                if isinstance(parsed, list):
+                    tool_types = parsed
+                else:
+                    tool_types = [parsed]
+            except Exception:
+                tool_types = [t.strip() for t in tool_types_raw.split(",") if t.strip()]
+        elif isinstance(tool_types_raw, list):
+            tool_types = tool_types_raw
+        elif tool_types_raw:
+            tool_types = [str(tool_types_raw)]
 
         # --- Validation ---
         if not uploaded_file:
             return Response(
-                {"error": "Un fichier PDF est requis."},
+                {"error": "Un fichier est requis."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         if not tool_types or not isinstance(tool_types, list):
@@ -172,20 +210,24 @@ class GenerateFromUploadView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-        # Vérification basique du type MIME
+        # Vérification basique du type MIME et de l'extension
         content_type = uploaded_file.content_type or ""
         filename = uploaded_file.name or ""
-        if "pdf" not in content_type.lower() and not filename.lower().endswith(".pdf"):
+        valid_extensions = (".pdf", ".docx", ".txt")
+        if not any(filename.lower().endswith(ext) for ext in valid_extensions):
             return Response(
-                {"error": "Seuls les fichiers PDF sont acceptés."},
+                {"error": "Seuls les fichiers PDF, DOCX et TXT sont acceptés."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        # Extraction de l'extension pour le fichier temporaire
+        ext = os.path.splitext(filename)[1].lower()
 
         # --- Écrire dans un fichier temporaire ---
         tmp_path = None
         try:
             with tempfile.NamedTemporaryFile(
-                delete=False, suffix=".pdf", prefix="campussphere_study_"
+                delete=False, suffix=ext, prefix="campussphere_study_"
             ) as tmp:
                 for chunk in uploaded_file.chunks():
                     tmp.write(chunk)
@@ -193,13 +235,13 @@ class GenerateFromUploadView(APIView):
 
             # --- Extraire le texte ---
             try:
-                text = extract_text_from_pdf(tmp_path)
+                text = extract_text_from_file(tmp_path)
             except ValueError as e:
                 return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
             except ImportError as e:
-                logger.error(f"[StudyTools] PyMuPDF manquant : {e}")
+                logger.error(f"[StudyTools] Dépendance manquante : {e}")
                 return Response(
-                    {"error": "Extraction PDF non disponible sur ce serveur."},
+                    {"error": "Extraction non disponible sur ce serveur (dépendance manquante)."},
                     status=status.HTTP_503_SERVICE_UNAVAILABLE,
                 )
 
@@ -207,8 +249,8 @@ class GenerateFromUploadView(APIView):
                 return Response(
                     {
                         "error": (
-                            "Ce PDF ne contient pas de texte extractible. "
-                            "Essaie avec un PDF numérique (non scanné)."
+                            "Ce document ne contient pas de texte extractible. "
+                            "Essaie avec un document numérique contenant du vrai texte."
                         )
                     },
                     status=status.HTTP_400_BAD_REQUEST,

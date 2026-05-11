@@ -88,28 +88,61 @@ def get_prompt(tool_type: str, text: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Extraction PDF
+# Extraction Texte
 # ---------------------------------------------------------------------------
 
-def extract_text_from_pdf(file_path: str, max_chars: int = 12000) -> str:
-    """Extrait le texte d'un PDF via PyMuPDF. Tronque à max_chars."""
-    try:
-        import fitz  # PyMuPDF
-    except ImportError:
-        raise ImportError(
-            "PyMuPDF n'est pas installé. Exécutez : pip install pymupdf"
-        )
-
+def extract_text_from_file(file_path: str, max_chars: int = 12000) -> str:
+    """Extrait le texte d'un PDF, DOCX ou TXT. Tronque à max_chars."""
+    ext = os.path.splitext(file_path)[1].lower()
     text = ""
-    try:
-        doc = fitz.open(file_path)
-        for page in doc:
-            text += page.get_text()
-            if len(text) >= max_chars:
-                break
-        doc.close()
-    except Exception as e:
-        raise ValueError(f"Impossible de lire le PDF : {e}")
+    
+    if ext == ".pdf":
+        try:
+            import fitz  # PyMuPDF
+        except ImportError:
+            raise ImportError(
+                "PyMuPDF n'est pas installé. Exécutez : pip install pymupdf"
+            )
+        try:
+            doc = fitz.open(file_path)
+            for page in doc:
+                text += page.get_text()
+                if len(text) >= max_chars:
+                    break
+            doc.close()
+        except Exception as e:
+            raise ValueError(f"Impossible de lire le PDF : {e}")
+            
+    elif ext == ".docx":
+        try:
+            import docx
+        except ImportError:
+            raise ImportError(
+                "python-docx n'est pas installé. Exécutez : pip install python-docx"
+            )
+        try:
+            doc = docx.Document(file_path)
+            for para in doc.paragraphs:
+                text += para.text + "\n"
+                if len(text) >= max_chars:
+                    break
+        except Exception as e:
+            raise ValueError(f"Impossible de lire le DOCX : {e}")
+            
+    elif ext == ".txt":
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                text = f.read(max_chars)
+        except Exception as e:
+            raise ValueError(f"Impossible de lire le TXT : {e}")
+            
+    else:
+        # Default to raw text read attempt
+        try:
+            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                text = f.read(max_chars)
+        except Exception as e:
+            raise ValueError(f"Format non supporté ou fichier illisible : {ext}")
 
     return text[:max_chars].strip()
 
@@ -235,8 +268,8 @@ def generate_with_fallback(text: str, tool_type: str) -> dict:
     if not text or len(text) < 50:
         raise ValueError(
             "Le texte extrait est trop court. "
-            "Ce PDF ne contient pas de texte extractible. "
-            "Essaie avec un PDF numérique (non scanné)."
+            "Ce document ne contient pas de texte extractible. "
+            "Essaie avec un document numérique contenant du vrai texte."
         )
 
     last_error = None
