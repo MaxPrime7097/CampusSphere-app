@@ -87,6 +87,7 @@ export function Resources() {
   const [selectedType, setSelectedType] = useState("all");
 
   const [activeTab, setActiveTab] = useState<ResourceSortKey>(DEFAULT_SORT.resources);
+  const [viewAllCategory, setViewAllCategory] = useState<string | null>(null);
 
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -676,19 +677,100 @@ export function Resources() {
             }}
           />
         ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {getSortedResources().map((resource) => (
-              <ResourceCard
-                key={resource.id}
-                resource={resource}
-                isDownloading={downloadingIds.has(resource.id)}
-                isSaved={savedResources.has(resource.id)}
-                onDownload={(e) => handleDownload(e, resource.id)}
-                onSave={(e) => handleSave(e, resource.id)}
-                onPreview={(e) => handlePreview(e, resource.id)}
-              />
-            ))}
-        </div>
+          (() => {
+            const isSearchOrFilterActive = searchTerm !== "" || selectedSubject !== "all" || selectedType !== "all";
+
+            // Mode Recherche ou Filtres : On affiche la grille standard
+            if (isSearchOrFilterActive) {
+              return (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  {getSortedResources().map((resource) => (
+                    <ResourceCard
+                      key={resource.id}
+                      resource={resource}
+                      isDownloading={downloadingIds.has(resource.id)}
+                      isSaved={savedResources.has(resource.id)}
+                      onDownload={(e) => handleDownload(e, resource.id)}
+                      onSave={(e) => handleSave(e, resource.id)}
+                      onPreview={(e) => handlePreview(e, resource.id)}
+                    />
+                  ))}
+                </div>
+              );
+            }
+
+            // Mode "Voir Tout" pour une catégorie spécifique
+            if (viewAllCategory) {
+              const categoryLabel = RESOURCE_TYPE_OPTIONS.find(opt => opt.value === viewAllCategory)?.label || "Catégorie";
+              const categoryResources = getSortedResources().filter(r => r.type === viewAllCategory);
+              
+              return (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4 mb-4">
+                    <Button variant="outline" size="sm" onClick={() => setViewAllCategory(null)}>
+                      ← Retour aux catégories
+                    </Button>
+                    <h2 className="text-xl font-bold">{categoryLabel}</h2>
+                  </div>
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    {categoryResources.map((resource) => (
+                      <ResourceCard
+                        key={resource.id}
+                        resource={resource}
+                        isDownloading={downloadingIds.has(resource.id)}
+                        isSaved={savedResources.has(resource.id)}
+                        onDownload={(e) => handleDownload(e, resource.id)}
+                        onSave={(e) => handleSave(e, resource.id)}
+                        onPreview={(e) => handlePreview(e, resource.id)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            }
+
+            // Mode "Netflix" : Affichage horizontal par catégories
+            return (
+              <div className="space-y-8">
+                {RESOURCE_TYPE_OPTIONS.map((opt) => {
+                  const categoryResources = getSortedResources().filter(r => r.type === opt.value);
+                  if (categoryResources.length === 0) return null;
+
+                  return (
+                    <div key={opt.value} className="flex flex-col">
+                      <div className="flex justify-between items-center mb-3">
+                        <h2 className="text-xl font-bold text-foreground">{opt.label}</h2>
+                        {categoryResources.length > 4 && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-primary hover:bg-primary/10"
+                            onClick={() => setViewAllCategory(opt.value)}
+                          >
+                            Voir tout ({categoryResources.length})
+                          </Button>
+                        )}
+                      </div>
+                      <div className="flex overflow-x-auto gap-4 pb-4 scrollbar-hide snap-x">
+                        {categoryResources.map((resource) => (
+                          <div key={resource.id} className="w-[280px] shrink-0 snap-start">
+                            <ResourceCard
+                              resource={resource}
+                              isDownloading={downloadingIds.has(resource.id)}
+                              isSaved={savedResources.has(resource.id)}
+                              onDownload={(e) => handleDownload(e, resource.id)}
+                              onSave={(e) => handleSave(e, resource.id)}
+                              onPreview={(e) => handlePreview(e, resource.id)}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()
         )}
         </>
         )}
