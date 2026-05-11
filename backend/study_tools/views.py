@@ -322,10 +322,7 @@ class GenerateFromUploadView(APIView):
             tool_types=tool_types,
             content=content,
         )
-            source_filename=uploaded_file.name,
-            tool_types=tool_types,
-            content=content,
-        )
+
 
         serializer = StudySessionSerializer(session)
         return Response(
