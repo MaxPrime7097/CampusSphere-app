@@ -69,7 +69,9 @@ export function ResourceSkeleton() {
           <div className="flex gap-1.5">
             <Skeleton className="h-8 w-8 rounded-lg" />
             <Skeleton className="h-8 w-8 rounded-lg" />
-            <Skeleton className="h-8 flex-1 rounded-lg" />
+          </div>
+          <div className="pt-2">
+            <Skeleton className="h-10 w-full rounded-md" />
           </div>
         </div>
       </CardContent>

@@ -125,6 +125,7 @@ class GenerateFromResourceView(APIView):
             try:
                 text = extract_text_from_file(tmp_path)
             except ValueError as e:
+                print(f"ERROR 400: ValueError in extract_text_from_file: {e}")
                 return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
             except ImportError as e:
                 logger.error(f"[StudyTools] Dépendance manquante pour l'extraction : {e}")
@@ -225,7 +226,7 @@ class GenerateFromUploadView(APIView):
 
         # --- Validation ---
         if not uploaded_file:
-            print("ERROR 400: uploaded_file is None")
+            print("ERROR 400: uploaded_file is None. request.FILES keys:", request.FILES.keys())
             return Response(
                 {"error": "Un fichier est requis."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -272,6 +273,7 @@ class GenerateFromUploadView(APIView):
             try:
                 text = extract_text_from_file(tmp_path)
             except ValueError as e:
+                print(f"ERROR 400: ValueError in extract_text_from_file: {e}")
                 return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
             except ImportError as e:
                 logger.error(f"[StudyTools] Dépendance manquante : {e}")
@@ -281,6 +283,7 @@ class GenerateFromUploadView(APIView):
                 )
 
             if not text or len(text) < 50:
+                print(f"ERROR 400: text too short ({len(text) if text else 0} chars)")
                 return Response(
                     {
                         "error": (
@@ -315,6 +318,10 @@ class GenerateFromUploadView(APIView):
         session = StudySession.objects.create(
             owner=request.user,
             resource=None,
+            source_filename=uploaded_file.name,
+            tool_types=tool_types,
+            content=content,
+        )
             source_filename=uploaded_file.name,
             tool_types=tool_types,
             content=content,
