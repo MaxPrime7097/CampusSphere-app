@@ -6,7 +6,6 @@ class StudySessionSerializer(serializers.ModelSerializer):
     owner_username = serializers.CharField(source="owner.username", read_only=True)
     resource_title = serializers.SerializerMethodField()
     sphere_name = serializers.SerializerMethodField()
-    tool_type_display = serializers.CharField(source="get_tool_type_display", read_only=True)
 
     class Meta:
         model = StudySession
@@ -17,8 +16,7 @@ class StudySessionSerializer(serializers.ModelSerializer):
             "resource",
             "resource_title",
             "source_filename",
-            "tool_type",
-            "tool_type_display",
+            "tool_types",
             "content",
             "is_shared",
             "shared_in_sphere",
@@ -43,7 +41,6 @@ class StudySessionListSerializer(serializers.ModelSerializer):
     """Sérialiseur allégé pour la liste (sans le contenu JSON complet)."""
 
     resource_title = serializers.SerializerMethodField()
-    tool_type_display = serializers.CharField(source="get_tool_type_display", read_only=True)
     sphere_name = serializers.SerializerMethodField()
     content_preview = serializers.SerializerMethodField()
 
@@ -54,8 +51,7 @@ class StudySessionListSerializer(serializers.ModelSerializer):
             "resource",
             "resource_title",
             "source_filename",
-            "tool_type",
-            "tool_type_display",
+            "tool_types",
             "content_preview",
             "is_shared",
             "shared_in_sphere",
@@ -74,7 +70,11 @@ class StudySessionListSerializer(serializers.ModelSerializer):
         return None
 
     def get_content_preview(self, obj):
-        """Retourne juste le titre du contenu généré pour l'aperçu."""
+        """Retourne juste le titre du contenu généré pour l'aperçu, en prenant le premier outil disponible."""
         if isinstance(obj.content, dict):
-            return obj.content.get("titre", "")
+            # Prendre le titre du premier outil disponible
+            for key in obj.content:
+                tool_content = obj.content[key]
+                if isinstance(tool_content, dict) and "titre" in tool_content:
+                    return tool_content.get("titre", "")
         return ""

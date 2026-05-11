@@ -35,6 +35,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type ToolType = "fiche" | "quiz" | "flashcards";
 type Step = "choose" | "loading" | "result" | "error";
@@ -60,8 +61,8 @@ const TOOLS: { type: ToolType; icon: React.ReactNode; label: string; desc: strin
     icon: <Brain className="h-6 w-6" />,
     label: "Quiz interactif",
     desc: "10 questions QCM avec timer et score",
-    color: "text-orange-500",
-    bg: "bg-orange-500/10 border-orange-500/30 hover:border-orange-500",
+    color: "text-[#ff9800]",
+    bg: "bg-[#ff9800]/10 border-[#ff9800]/30 hover:border-[#ff9800]",
   },
   {
     type: "flashcards",
@@ -81,7 +82,7 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
 }) => {
   const { toast } = useToast();
   const [step, setStep] = useState<Step>("choose");
-  const [selectedType, setSelectedType] = useState<ToolType | null>(null);
+  const [selectedTypes, setSelectedTypes] = useState<ToolType[]>([]);
   const [sessionData, setSessionData] = useState<any>(null);
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
@@ -95,15 +96,17 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
   const [shared, setShared] = useState(false);
 
   const handleSelectTool = (type: ToolType) => {
-    setSelectedType(type);
+    setSelectedTypes((prev) =>
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
+    );
   };
 
   const handleGenerate = async () => {
-    if (!selectedType) return;
+    if (selectedTypes.length === 0) return;
     setStep("loading");
     setErrorMsg("");
     try {
-      const res = await generateStudyTools(resourceId, selectedType);
+      const res = await generateStudyTools(resourceId, selectedTypes);
       const data = res?.data;
       if (!data) throw new Error("Réponse vide du serveur.");
       setSessionData(data.content);
@@ -121,7 +124,7 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
 
   const handleBack = () => {
     setStep("choose");
-    setSelectedType(null);
+    setSelectedTypes([]);
     setSessionData(null);
     setSessionId(null);
     setErrorMsg("");
@@ -164,8 +167,6 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
     onClose();
   };
 
-  const currentTool = TOOLS.find((t) => t.type === selectedType);
-
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="max-w-xl max-h-[85vh] overflow-hidden flex flex-col p-0">
@@ -181,7 +182,7 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
               </button>
             )}
             <div className="flex items-center gap-2 min-w-0">
-              <Sparkles className="h-5 w-5 text-orange-500 flex-shrink-0" />
+              <Sparkles className="h-5 w-5 text-[#ff9800] flex-shrink-0" />
               <div className="min-w-0">
                 <DialogTitle className="text-base font-bold">
                   Réviser avec l'IA
@@ -200,7 +201,7 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
           {step === "choose" && (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Choisis le type d'outil que tu veux générer depuis ce document.
+                Choisis un ou plusieurs outils à générer depuis ce document.
               </p>
               <div className="grid gap-3">
                 {TOOLS.map((tool) => (
@@ -210,8 +211,8 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
                     className={cn(
                       "w-full flex items-center gap-4 border-2 rounded-2xl p-4 text-left transition-all duration-200",
                       tool.bg,
-                      selectedType === tool.type
-                        ? "ring-2 ring-orange-500 ring-offset-2 ring-offset-background"
+                      selectedTypes.includes(tool.type)
+                        ? "ring-2 ring-[#ff9800] ring-offset-2 ring-offset-background"
                         : ""
                     )}
                   >
@@ -220,8 +221,8 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
                       <p className="font-semibold text-foreground text-sm">{tool.label}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">{tool.desc}</p>
                     </div>
-                    {selectedType === tool.type && (
-                      <div className="ml-auto flex-shrink-0 h-5 w-5 rounded-full bg-orange-500 flex items-center justify-center">
+                    {selectedTypes.includes(tool.type) && (
+                      <div className="ml-auto flex-shrink-0 h-5 w-5 rounded-full bg-[#ff9800] flex items-center justify-center">
                         <Check className="h-3 w-3 text-white" />
                       </div>
                     )}
@@ -230,12 +231,12 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
               </div>
 
               <Button
-                disabled={!selectedType}
+                disabled={selectedTypes.length === 0}
                 onClick={handleGenerate}
                 className="w-full campus-gradient text-white gap-2 mt-2"
               >
                 <Sparkles className="h-4 w-4" />
-                Générer{selectedType ? ` — ${currentTool?.label}` : ""}
+                Générer{selectedTypes.length > 0 ? ` (${selectedTypes.length} outil${selectedTypes.length > 1 ? 's' : ''})` : ""}
               </Button>
             </div>
           )}
@@ -244,10 +245,10 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
           {step === "loading" && (
             <div className="flex flex-col items-center justify-center py-16 gap-4">
               <div className="relative">
-                <div className="h-14 w-14 rounded-full bg-orange-500/10 flex items-center justify-center">
-                  <Sparkles className="h-7 w-7 text-orange-500" />
+                <div className="h-14 w-14 rounded-full bg-[#ff9800]/10 flex items-center justify-center">
+                  <Sparkles className="h-7 w-7 text-[#ff9800]" />
                 </div>
-                <Loader2 className="h-14 w-14 text-orange-500 animate-spin absolute inset-0" />
+                <Loader2 className="h-14 w-14 text-[#ff9800] animate-spin absolute inset-0" />
               </div>
               <div className="text-center">
                 <p className="font-semibold text-foreground">
@@ -273,10 +274,33 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
                 </Badge>
               )}
 
-              {/* Composant résultat */}
-              {selectedType === "fiche" && <FicheRevision data={sessionData} />}
-              {selectedType === "quiz" && <QuizInteractif data={sessionData} />}
-              {selectedType === "flashcards" && <Flashcards data={sessionData} />}
+              {/* Composants résultat avec Tabs si multiple */}
+              {Object.keys(sessionData).length > 1 ? (
+                <Tabs defaultValue={Object.keys(sessionData)[0]} className="w-full">
+                  <TabsList className="w-full grid grid-cols-3 mb-4">
+                    {Object.keys(sessionData).map((type) => (
+                      <TabsTrigger key={type} value={type} className="capitalize">
+                        {type}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                  {Object.keys(sessionData).map((type) => (
+                    <TabsContent key={type} value={type} className="mt-0 focus-visible:outline-none focus-visible:ring-0">
+                      {type === "fiche" && <FicheRevision data={sessionData[type]} />}
+                      {type === "quiz" && <QuizInteractif data={sessionData[type]} />}
+                      {type === "flashcards" && <Flashcards data={sessionData[type]} />}
+                    </TabsContent>
+                  ))}
+                </Tabs>
+              ) : (
+                Object.keys(sessionData).map((type) => (
+                  <div key={type}>
+                    {type === "fiche" && <FicheRevision data={sessionData[type]} />}
+                    {type === "quiz" && <QuizInteractif data={sessionData[type]} />}
+                    {type === "flashcards" && <Flashcards data={sessionData[type]} />}
+                  </div>
+                ))
+              )}
 
               {/* Section partage */}
               <div className="border-t border-border pt-4">

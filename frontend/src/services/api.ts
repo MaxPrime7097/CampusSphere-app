@@ -2261,22 +2261,22 @@ export async function apiInfo() {
 
 export async function generateStudyTools(
   resourceId: string | number,
-  toolType: "fiche" | "quiz" | "flashcards"
+  toolTypes: ("fiche" | "quiz" | "flashcards")[]
 ) {
   const response = await apiFetch<any>("api/study/generate/from-resource/", {
     method: "POST",
-    body: { resource_id: resourceId, tool_type: toolType },
+    body: { resource_id: resourceId, tool_types: toolTypes },
   });
   return response;
 }
 
 export async function generateFromUpload(
   file: File,
-  toolType: "fiche" | "quiz" | "flashcards"
+  toolTypes: ("fiche" | "quiz" | "flashcards")[]
 ) {
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("tool_type", toolType);
+  formData.append("tool_types", JSON.stringify(toolTypes));
   const response = await apiFetch<any>("api/study/generate/from-upload/", {
     method: "POST",
     body: formData,

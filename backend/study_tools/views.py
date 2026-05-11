@@ -22,9 +22,9 @@ VALID_TOOL_TYPES = {"fiche", "quiz", "flashcards"}
 class GenerateFromResourceView(APIView):
     """
     POST /api/study/generate/from-resource/
-    Body: { resource_id, tool_type }
+    Body: { resource_id, tool_types: ["fiche", "quiz", ...] }
 
-    Si une session existe déjà pour ce (owner, resource, tool_type), la retourne
+    Si une session existe déjà pour ce (owner, resource, tool_types), la retourne
     directement sans rappeler l'IA.
     """
 
@@ -32,7 +32,7 @@ class GenerateFromResourceView(APIView):
 
     def post(self, request):
         resource_id = request.data.get("resource_id")
-        tool_type = request.data.get("tool_type", "").strip()
+        tool_types = request.data.get("tool_types", [])
 
         # --- Validation ---
         if not resource_id:
@@ -40,11 +40,17 @@ class GenerateFromResourceView(APIView):
                 {"error": "resource_id est requis."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        if tool_type not in VALID_TOOL_TYPES:
+        if not tool_types or not isinstance(tool_types, list):
             return Response(
-                {"error": f"tool_type doit être parmi : {', '.join(VALID_TOOL_TYPES)}."},
+                {"error": "tool_types doit être une liste non vide."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        for t in tool_types:
+            if t not in VALID_TOOL_TYPES:
+                return Response(
+                    {"error": f"Le type d'outil '{t}' n'est pas valide. Choisis parmi : {', '.join(VALID_TOOL_TYPES)}."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
         # --- Récupérer la ressource ---
         try:
@@ -59,7 +65,7 @@ class GenerateFromResourceView(APIView):
         existing = StudySession.objects.filter(
             owner=request.user,
             resource=resource,
-            tool_type=tool_type,
+            tool_types=tool_types,
         ).first()
         if existing:
             serializer = StudySessionSerializer(existing)
@@ -100,8 +106,10 @@ class GenerateFromResourceView(APIView):
             )
 
         # --- Générer avec l'IA ---
+        content = {}
         try:
-            content = generate_with_fallback(text, tool_type)
+            for t in tool_types:
+                content[t] = generate_with_fallback(text, t)
         except Exception as e:
             logger.error(f"[StudyTools] Génération IA échouée : {e}")
             return Response(
@@ -113,7 +121,7 @@ class GenerateFromResourceView(APIView):
         session = StudySession.objects.create(
             owner=request.user,
             resource=resource,
-            tool_type=tool_type,
+            tool_types=tool_types,
             content=content,
         )
 
@@ -127,7 +135,7 @@ class GenerateFromResourceView(APIView):
 class GenerateFromUploadView(APIView):
     """
     POST /api/study/generate/from-upload/
-    Form-data: { file (PDF), tool_type }
+    Form-data: { file (PDF), tool_types (JSON string list) }
 
     Le fichier est temporaire — extrait, généré, supprimé.
     La session est quand même sauvegardée avec source_filename.
@@ -137,7 +145,14 @@ class GenerateFromUploadView(APIView):
 
     def post(self, request):
         uploaded_file = request.FILES.get("file")
-        tool_type = request.data.get("tool_type", "").strip()
+        
+        # Parse tool_types from Form-data (usually sent as JSON string if it's an array)
+        tool_types_raw = request.data.get("tool_types", "[]")
+        try:
+            import json
+            tool_types = json.loads(tool_types_raw) if isinstance(tool_types_raw, str) else tool_types_raw
+        except:
+            tool_types = []
 
         # --- Validation ---
         if not uploaded_file:
@@ -145,11 +160,17 @@ class GenerateFromUploadView(APIView):
                 {"error": "Un fichier PDF est requis."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        if tool_type not in VALID_TOOL_TYPES:
+        if not tool_types or not isinstance(tool_types, list):
             return Response(
-                {"error": f"tool_type doit être parmi : {', '.join(VALID_TOOL_TYPES)}."},
+                {"error": "tool_types doit être une liste non vide."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        for t in tool_types:
+            if t not in VALID_TOOL_TYPES:
+                return Response(
+                    {"error": f"Le type d'outil '{t}' n'est pas valide. Choisis parmi : {', '.join(VALID_TOOL_TYPES)}."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
         # Vérification basique du type MIME
         content_type = uploaded_file.content_type or ""
@@ -194,8 +215,10 @@ class GenerateFromUploadView(APIView):
                 )
 
             # --- Générer avec l'IA ---
+            content = {}
             try:
-                content = generate_with_fallback(text, tool_type)
+                for t in tool_types:
+                    content[t] = generate_with_fallback(text, t)
             except Exception as e:
                 logger.error(f"[StudyTools] Génération IA échouée : {e}")
                 return Response(
@@ -216,7 +239,7 @@ class GenerateFromUploadView(APIView):
             owner=request.user,
             resource=None,
             source_filename=uploaded_file.name,
-            tool_type=tool_type,
+            tool_types=tool_types,
             content=content,
         )
 
@@ -239,7 +262,8 @@ class StudySessionListView(APIView):
         tool_type = request.query_params.get("tool_type")
         sessions = StudySession.objects.filter(owner=request.user)
         if tool_type and tool_type in VALID_TOOL_TYPES:
-            sessions = sessions.filter(tool_type=tool_type)
+            # Recherche si le type demandé est dans le JSON array tool_types
+            sessions = sessions.filter(tool_types__contains=[tool_type])
         serializer = StudySessionListSerializer(sessions, many=True)
         return Response({"success": True, "data": serializer.data})
 

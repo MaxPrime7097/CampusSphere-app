@@ -25,8 +25,8 @@ class StudySession(models.Model):
     )
     source_filename = models.CharField(max_length=255, blank=True)  # Pour upload direct
 
-    tool_type = models.CharField(max_length=20, choices=TOOL_TYPES)
-    content = models.JSONField()  # Le contenu généré par l'IA
+    tool_types = models.JSONField(default=list)  # Liste de strings : ["fiche", "quiz", "flashcards"]
+    content = models.JSONField(default=dict)  # Dictionnaire avec les contenus par outil
 
     # Partage
     is_shared = models.BooleanField(default=False)
@@ -48,4 +48,5 @@ class StudySession(models.Model):
 
     def __str__(self):
         resource_name = self.resource.title if self.resource else self.source_filename
-        return f"{self.owner.username} — {self.tool_type} — {resource_name}"
+        tools = ", ".join(self.tool_types)
+        return f"{self.owner.username} — [{tools}] — {resource_name}"

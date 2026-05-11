@@ -1037,7 +1037,7 @@ export function Profile() {
     isMobile ? "rounded-none border-x-0 border-t-0 shadow-none bg-card" : "campus-card hover:campus-glow"
   );
 
-  const EmptyField = () => <span className="italic text-muted-foreground text-xs font-normal">Aucun</span>;
+  const EmptyField = () => <span className="italic text-muted-foreground text-xs font-normal">Aucun pour l'instant</span>;
 
   if (loading) {
     return (

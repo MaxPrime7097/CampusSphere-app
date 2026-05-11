@@ -27,18 +27,8 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 ("source_filename", models.CharField(blank=True, max_length=255)),
-                (
-                    "tool_type",
-                    models.CharField(
-                        choices=[
-                            ("fiche", "Fiche de révision"),
-                            ("quiz", "Quiz interactif"),
-                            ("flashcards", "Flashcards"),
-                        ],
-                        max_length=20,
-                    ),
-                ),
-                ("content", models.JSONField()),
+                ("tool_types", models.JSONField(default=list)),
+                ("content", models.JSONField(default=dict)),
                 ("is_shared", models.BooleanField(default=False)),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 ("updated_at", models.DateTimeField(auto_now=True)),

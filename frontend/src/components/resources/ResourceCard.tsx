@@ -27,7 +27,7 @@ const TYPE_STYLES: Record<string, { icon: string; bg: string }> = {
   resumes:        { icon: "text-sky-500",    bg: "bg-sky-50 dark:bg-sky-950/40" },
   exercises:      { icon: "text-red-500",    bg: "bg-red-50 dark:bg-red-950/40" },
   exam_papers:    { icon: "text-green-500", bg: "bg-green-50 dark:bg-green-950/40" },
-  annales:        { icon: "text-orange-500", bg: "bg-orange-50 dark:bg-orange-950/40" },
+  annales:        { icon: "text-[#ff9800]", bg: "bg-orange-50 dark:bg-orange-950/40" },
   projects:       { icon: "text-yellow-500",  bg: "bg-yellow-50 dark:bg-yellow-950/40" },
   presentations:  { icon: "text-amber-500",  bg: "bg-amber-50 dark:bg-amber-950/40" },
   cours:          { icon: "text-violet-500", bg: "bg-violet-50 dark:bg-violet-950/40" },
@@ -135,7 +135,7 @@ export const ResourceCard = React.memo(({
               <Button
                 size="sm"
                 variant="outline"
-                className="h-8 w-8 p-0 rounded-lg border-orange-500/30 text-orange-500 hover:bg-orange-500/10 hover:border-orange-500"
+                className="h-8 w-8 p-0 rounded-lg border-[#ff9800]/30 text-[#ff9800] hover:bg-[#ff9800]/10 hover:border-[#ff9800]"
                 onClick={(e) => { e.stopPropagation(); setStudyOpen(true); }}
                 title="Réviser avec l'IA"
               >

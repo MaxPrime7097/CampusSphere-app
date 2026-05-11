@@ -91,7 +91,7 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ data }) => {
         {reviewCards.length > 0 && (
           <div className="space-y-2">
             <h3 className="font-semibold text-sm text-foreground flex items-center gap-2">
-              <RefreshCcw className="h-4 w-4 text-orange-500" />
+              <RefreshCcw className="h-4 w-4 text-[#ff9800]" />
               Cartes à revoir
             </h3>
             {reviewCards.map((card, i) => (
@@ -136,7 +136,7 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ data }) => {
             </Badge>
           )}
           {review.size > 0 && (
-            <Badge variant="secondary" className="bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20 text-xs">
+            <Badge variant="secondary" className="bg-[#ff9800]/10 text-[#ff9800] dark:text-[#ff9800]/80 border-[#ff9800]/20 text-xs">
               ↩ {review.size} à revoir
             </Badge>
           )}
@@ -160,12 +160,12 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ data }) => {
           {/* Recto */}
           <div
             className={cn(
-              "absolute inset-0 rounded-2xl border-2 border-orange-500/30 bg-gradient-to-br from-orange-500/5 to-orange-600/10",
+              "absolute inset-0 rounded-2xl border-2 border-[#ff9800]/30 bg-gradient-to-br from-orange-500/5 to-orange-600/10",
               "flex flex-col items-center justify-center p-6 text-center",
               "[backface-visibility:hidden]"
             )}
           >
-            <Badge variant="outline" className="mb-3 text-[10px] border-orange-500/30 text-orange-600 dark:text-orange-400">
+            <Badge variant="outline" className="mb-3 text-[10px] border-[#ff9800]/30 text-[#ff9800] dark:text-[#ff9800]/80">
               QUESTION / TERME
             </Badge>
             <p className="font-semibold text-foreground text-base leading-snug">

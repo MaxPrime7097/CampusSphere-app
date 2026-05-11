@@ -93,7 +93,7 @@ export const QuizInteractif: React.FC<QuizInteractifProps> = ({ data }) => {
 
   const getOptionStyle = (letter: string) => {
     if (selectedOption === null) {
-      return "border-border hover:border-orange-400 hover:bg-orange-500/5 cursor-pointer";
+      return "border-border hover:border-orange-400 hover:bg-[#ff9800]/5 cursor-pointer";
     }
     const correct = letter === currentQuestion.bonne_reponse;
     const chosen = letter === selectedOption;
@@ -104,7 +104,7 @@ export const QuizInteractif: React.FC<QuizInteractifProps> = ({ data }) => {
 
   const timerPercent = (timeLeft / TIMER_SECONDS) * 100;
   const timerColor =
-    timeLeft > 15 ? "bg-orange-500" : timeLeft > 7 ? "bg-yellow-500" : "bg-red-500";
+    timeLeft > 15 ? "bg-[#ff9800]" : timeLeft > 7 ? "bg-yellow-500" : "bg-red-500";
 
   // ---- ÉCRAN RÉSULTAT FINAL ----
   if (finished) {
@@ -171,7 +171,7 @@ export const QuizInteractif: React.FC<QuizInteractifProps> = ({ data }) => {
           Question <span className="text-foreground">{currentIndex + 1}</span> / {total}
         </span>
         <Badge variant="secondary" className="gap-1">
-          <Trophy className="h-3 w-3 text-orange-500" />
+          <Trophy className="h-3 w-3 text-[#ff9800]" />
           {score} point{score > 1 ? "s" : ""}
         </Badge>
       </div>

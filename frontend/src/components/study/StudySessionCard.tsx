@@ -10,8 +10,7 @@ import { cn } from "@/lib/utils";
 interface StudySessionCardProps {
   session: {
     id: number;
-    tool_type: "fiche" | "quiz" | "flashcards";
-    tool_type_display: string;
+    tool_types: ("fiche" | "quiz" | "flashcards")[];
     resource_title: string;
     source_filename?: string;
     content_preview?: string; // titre du contenu généré
@@ -27,23 +26,14 @@ interface StudySessionCardProps {
 const TOOL_CONFIG = {
   fiche: {
     icon: BookOpen,
-    color: "text-blue-500",
-    bg: "bg-blue-500/10",
-    border: "border-blue-500/20",
     label: "Fiche",
   },
   quiz: {
     icon: Brain,
-    color: "text-orange-500",
-    bg: "bg-orange-500/10",
-    border: "border-orange-500/20",
     label: "Quiz",
   },
   flashcards: {
     icon: Layers,
-    color: "text-purple-500",
-    bg: "bg-purple-500/10",
-    border: "border-purple-500/20",
     label: "Flashcards",
   },
 };
@@ -54,7 +44,9 @@ export const StudySessionCard: React.FC<StudySessionCardProps> = ({
   onDelete,
   className,
 }) => {
-  const config = TOOL_CONFIG[session.tool_type] || TOOL_CONFIG.fiche;
+  const tools = session.tool_types || [];
+  const primaryTool = tools[0] || "fiche";
+  const config = TOOL_CONFIG[primaryTool] || TOOL_CONFIG.fiche;
   const Icon = config.icon;
   const resourceName = session.resource_title || session.source_filename || "Document";
   const timeAgo = formatDistanceToNow(new Date(session.created_at), {
@@ -71,13 +63,13 @@ export const StudySessionCard: React.FC<StudySessionCardProps> = ({
     >
       <CardContent className="p-0">
         {/* Barre colorée en haut */}
-        <div className={cn("h-1 w-full", config.bg.replace("/10", ""))} />
+        <div className={cn("h-1 w-full bg-[#ff9800]")} />
 
         <div className="p-4 space-y-3">
           {/* Header */}
           <div className="flex items-start gap-3">
-            <div className={cn("p-2 rounded-xl flex-shrink-0", config.bg, config.border, "border")}>
-              <Icon className={cn("h-4 w-4", config.color)} />
+            <div className={cn("p-2 rounded-xl flex-shrink-0 bg-[#ff9800]/10 border border-[#ff9800]/20")}>
+              <Icon className={cn("h-4 w-4 text-[#ff9800]")} />
             </div>
             <div className="min-w-0 flex-1">
               <p className="font-semibold text-sm text-foreground line-clamp-1">
@@ -91,12 +83,15 @@ export const StudySessionCard: React.FC<StudySessionCardProps> = ({
 
           {/* Badges */}
           <div className="flex items-center gap-2 flex-wrap">
-            <Badge
-              variant="secondary"
-              className={cn("text-[10px] px-2 py-0 h-5", config.bg, config.border, "border", config.color)}
-            >
-              {config.label}
-            </Badge>
+            {tools.map((t) => (
+              <Badge
+                key={t}
+                variant="secondary"
+                className="text-[10px] px-2 py-0 h-5 bg-[#ff9800]/10 border-[#ff9800]/20 border text-[#ff9800]"
+              >
+                {TOOL_CONFIG[t]?.label || t}
+              </Badge>
+            ))}
             {session.is_shared && (
               <Badge
                 variant="secondary"

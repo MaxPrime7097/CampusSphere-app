@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type ToolFilter = "all" | "fiche" | "quiz" | "flashcards";
 
@@ -45,7 +46,7 @@ export const StudySessions: React.FC = () => {
   const [viewOpen, setViewOpen] = useState(false);
 
   // Upload direct
-  const [uploadTool, setUploadTool] = useState<"fiche" | "quiz" | "flashcards">("fiche");
+  const [uploadTools, setUploadTools] = useState<("fiche" | "quiz" | "flashcards")[]>(["fiche"]);
   const [uploadLoading, setUploadLoading] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
 
@@ -90,7 +91,7 @@ export const StudySessions: React.FC = () => {
     if (!file) return;
     setUploadLoading(true);
     try {
-      const res = await generateFromUpload(file, uploadTool);
+      const res = await generateFromUpload(file, uploadTools);
       toast({ title: "Session générée avec succès !" });
       await loadSessions();
       // Ouvrir directement le résultat
@@ -112,7 +113,7 @@ export const StudySessions: React.FC = () => {
   };
 
   const filteredSessions =
-    filter === "all" ? sessions : sessions.filter((s) => s.tool_type === filter);
+    filter === "all" ? sessions : sessions.filter((s) => s.tool_types?.includes(filter));
 
   return (
     <>
@@ -125,8 +126,8 @@ export const StudySessions: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className="p-2.5 rounded-2xl bg-orange-500/10 border border-orange-500/20">
-              <Sparkles className="h-6 w-6 text-orange-500" />
+            <div className="p-2.5 rounded-2xl bg-[#ff9800]/10 border border-[#ff9800]/20">
+              <Sparkles className="h-6 w-6 text-[#ff9800]" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground">Mes révisions IA</h1>
@@ -153,8 +154,8 @@ export const StudySessions: React.FC = () => {
               className={cn(
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all",
                 filter === opt.value
-                  ? "bg-orange-500 border-orange-500 text-white"
-                  : "border-border text-muted-foreground hover:border-orange-500/50 hover:text-foreground"
+                  ? "bg-[#ff9800] border-[#ff9800] text-white"
+                  : "border-border text-muted-foreground hover:border-[#ff9800]/50 hover:text-foreground"
               )}
             >
               {opt.icon}
@@ -166,7 +167,7 @@ export const StudySessions: React.FC = () => {
         {/* Liste */}
         {loading ? (
           <div className="flex flex-col items-center py-20 gap-3">
-            <Loader2 className="h-8 w-8 text-orange-500 animate-spin" />
+            <Loader2 className="h-8 w-8 text-[#ff9800] animate-spin" />
             <p className="text-sm text-muted-foreground">Chargement des sessions…</p>
           </div>
         ) : filteredSessions.length === 0 ? (
@@ -200,7 +201,7 @@ export const StudySessions: React.FC = () => {
         <DialogContent className="max-w-xl max-h-[85vh] overflow-hidden flex flex-col p-0">
           <DialogHeader className="px-6 pt-5 pb-4 border-b border-border flex-shrink-0">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-orange-500" />
+              <Sparkles className="h-5 w-5 text-[#ff9800]" />
               <div>
                 <DialogTitle className="text-base font-bold">
                   {viewSession?.content?.titre || "Session de révision"}
@@ -212,14 +213,31 @@ export const StudySessions: React.FC = () => {
             </div>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto px-6 py-5">
-            {viewSession?.tool_type === "fiche" && (
-              <FicheRevision data={viewSession.content} />
-            )}
-            {viewSession?.tool_type === "quiz" && (
-              <QuizInteractif data={viewSession.content} />
-            )}
-            {viewSession?.tool_type === "flashcards" && (
-              <Flashcards data={viewSession.content} />
+            {viewSession?.content && Object.keys(viewSession.content).length > 1 ? (
+              <Tabs defaultValue={Object.keys(viewSession.content)[0]} className="w-full">
+                <TabsList className="w-full grid grid-cols-3 mb-4">
+                  {Object.keys(viewSession.content).map((type) => (
+                    <TabsTrigger key={type} value={type} className="capitalize">
+                      {type}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+                {Object.keys(viewSession.content).map((type) => (
+                  <TabsContent key={type} value={type} className="mt-0 focus-visible:outline-none focus-visible:ring-0">
+                    {type === "fiche" && <FicheRevision data={viewSession.content[type]} />}
+                    {type === "quiz" && <QuizInteractif data={viewSession.content[type]} />}
+                    {type === "flashcards" && <Flashcards data={viewSession.content[type]} />}
+                  </TabsContent>
+                ))}
+              </Tabs>
+            ) : (
+              viewSession?.content && Object.keys(viewSession.content).map((type) => (
+                <div key={type}>
+                  {type === "fiche" && <FicheRevision data={viewSession.content[type]} />}
+                  {type === "quiz" && <QuizInteractif data={viewSession.content[type]} />}
+                  {type === "flashcards" && <Flashcards data={viewSession.content[type]} />}
+                </div>
+              ))
             )}
           </div>
         </DialogContent>
@@ -230,7 +248,7 @@ export const StudySessions: React.FC = () => {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Upload className="h-5 w-5 text-orange-500" />
+              <Upload className="h-5 w-5 text-[#ff9800]" />
               Générer depuis un PDF
             </DialogTitle>
           </DialogHeader>
@@ -246,12 +264,16 @@ export const StudySessions: React.FC = () => {
                 {(["fiche", "quiz", "flashcards"] as const).map((t) => (
                   <button
                     key={t}
-                    onClick={() => setUploadTool(t)}
+                    onClick={() => {
+                      setUploadTools((prev) =>
+                        prev.includes(t) ? prev.filter((tool) => tool !== t) : [...prev, t]
+                      );
+                    }}
                     className={cn(
                       "flex flex-col items-center gap-1 border rounded-xl py-2.5 px-2 text-xs font-medium transition-all",
-                      uploadTool === t
-                        ? "border-orange-500 bg-orange-500/10 text-orange-600 dark:text-orange-400"
-                        : "border-border text-muted-foreground hover:border-orange-500/50"
+                      uploadTools.includes(t)
+                        ? "border-[#ff9800] bg-[#ff9800]/10 text-[#ff9800] dark:text-[#ff9800]/80"
+                        : "border-border text-muted-foreground hover:border-[#ff9800]/50"
                     )}
                   >
                     {t === "fiche" && <BookOpen className="h-4 w-4" />}
@@ -273,7 +295,7 @@ export const StudySessions: React.FC = () => {
 
             <Button
               className="w-full gap-2 campus-gradient text-white"
-              disabled={uploadLoading}
+              disabled={uploadLoading || uploadTools.length === 0}
               onClick={() => fileInputRef.current?.click()}
             >
               {uploadLoading ? (
