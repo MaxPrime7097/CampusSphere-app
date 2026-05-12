@@ -97,6 +97,13 @@ const App = () => (
               </AppLayout>
             </Protected>
           } />
+          <Route path="/profile/edit" element={
+            <Protected>
+              <AppLayout>
+                <EditProfile />
+              </AppLayout>
+            </Protected>
+          } />
           <Route path="/profile/:username" element={
             <Protected>
               <AppLayout>
@@ -136,13 +143,6 @@ const App = () => (
             <Protected>
               <AppLayout>
                 <SearchResults />
-              </AppLayout>
-            </Protected>
-          } />
-          <Route path="/profile/edit" element={
-            <Protected>
-              <AppLayout>
-                <EditProfile />
               </AppLayout>
             </Protected>
           } />
