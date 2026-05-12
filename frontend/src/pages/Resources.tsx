@@ -483,7 +483,7 @@ export function Resources() {
             {showMobileFilters && (
               <div className="flex flex-col gap-2 mt-2 sm:hidden">
                 <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                  <SelectTrigger><SelectValue placeholder="MatiÃ¨re" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Matière" /></SelectTrigger>
                   <SelectContent>
                     {subjects.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
                   </SelectContent>
@@ -710,7 +710,7 @@ export function Resources() {
                     <Button variant="outline" size="sm" onClick={() => setViewAllCategory(null)}>
                       ← Retour aux catégories
                     </Button>
-                    <h2 className="text-xl font-bold">{categoryLabel}</h2>
+                    <h2 className="text-xl font-medium">{categoryLabel}</h2>
                   </div>
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                     {categoryResources.map((resource) => (
@@ -738,8 +738,8 @@ export function Resources() {
 
                   return (
                     <div key={opt.value} className="flex flex-col">
-                      <div className="flex justify-between items-center mb-3">
-                        <h2 className="text-xl font-bold text-foreground">{opt.label}</h2>
+                      <div className="flex justify-between items-center mb-2">
+                        <h2 className="text-xl font-medium text-foreground">{opt.label}</h2>
                         {categoryResources.length > 4 && (
                           <Button 
                             variant="ghost" 
@@ -751,7 +751,7 @@ export function Resources() {
                           </Button>
                         )}
                       </div>
-                      <div className="flex overflow-x-auto gap-4 pb-4 scrollbar-hide snap-x">
+                      <div className="flex overflow-x-auto gap-4 pb-3 scrollbar-hide snap-x">
                         {categoryResources.map((resource) => (
                           <div key={resource.id} className="w-[280px] shrink-0 snap-start">
                             <ResourceCard

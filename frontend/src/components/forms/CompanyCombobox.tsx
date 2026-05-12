@@ -9,8 +9,9 @@ interface CompanyComboboxProps {
 }
 
 const companies = [
-  // CampusSphere en premier 😄
-  { value: "CampusSphere", label: "CampusSphere 🚀" },
+  // CampusSphere et AgriGuard en premier 😄
+  { value: "campussphere", label: "CampusSphere" },
+  { value: "agriguard", label: "AgriGuard" },
   
   // Grandes entreprises camerounaises
   { value: "mtn_cameroon", label: "MTN Cameroon" },

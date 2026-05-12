@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { getCurrentUser, getUserByUsername, getUserPosts, uploadAvatar, uploadCoverPhoto, updateUserProfile, getUserConnections, getUserResources, connectWithUser, disconnectFromUser, downloadResource, getUserProfile, getUserConnectionRelation, isApiRequestErrorStatus } from "@/services/api";
-import { MapPin, Camera, Calendar, Link, Users, User, BookOpen, Award, Settings, FileText, Briefcase, GraduationCap, Loader2, Check, Download, Unlink, ExternalLink, Upload, X, Zap, Smile, BriefcaseBusiness, Shield, Info, Pencil, BadgeCheck } from "lucide-react";
+import { MapPin, Camera, Calendar, Link, Users, User, BookOpen, Award, Settings, FileText, Briefcase, GraduationCap, Loader2, Check, Download, Unlink, ExternalLink, Upload, X, Zap, Smile, BriefcaseBusiness, Shield, Info, Pencil, BadgeCheck, Plus, Languages } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +26,13 @@ import { formatFrenchDate } from "@/lib/date";
 import { normalizeResourceType, normalizeSubject } from "@/lib/resourceMetadata";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Combobox } from "@/components/ui/combobox";
+import { UniversityCombobox } from "@/components/forms/UniversityCombobox";
+import { FacultyCombobox } from "@/components/forms/FacultyCombobox";
+import { StudyLevelCombobox } from "@/components/forms/StudyLevelCombobox";
+import { SkillsCombobox } from "@/components/forms/SkillsCombobox";
+import { InterestsCombobox } from "@/components/forms/InterestsCombobox";
+import { CityCombobox } from "@/components/forms/CityCombobox";
+import { LanguageCombobox } from "@/components/forms/LanguageCombobox";
 
 const NOT_AVAILABLE_TEXT = "—";
 const MOOD_OPTIONS = [
@@ -437,6 +444,21 @@ export function Profile() {
   const [editUniversity, setEditUniversity] = useState("");
   const [editFaculty, setEditFaculty] = useState("");
   const [editStudyYear, setEditStudyYear] = useState("");
+  const [editFirstName, setEditFirstName] = useState("");
+  const [editLastName, setEditLastName] = useState("");
+  const [editUsername, setEditUsername] = useState("");
+  const [editBio, setEditBio] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editTown, setEditTown] = useState("");
+  const [editLanguage, setEditLanguage] = useState("");
+  const [editLanguages, setEditLanguages] = useState<string[]>([]);
+  const [editDateOfBirth, setEditDateOfBirth] = useState("");
+  const [editStudentId, setEditStudentId] = useState("");
+  const [editCampus, setEditCampus] = useState("");
+  
+  const [editStudentCardFile, setEditStudentCardFile] = useState<File | null>(null);
+  const studentCardInputRef = useRef<HTMLInputElement>(null);
 
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [targetUser, setTargetUser] = useState<any>(null);
@@ -852,6 +874,23 @@ export function Profile() {
     setEditUniversity(user.university || "");
     setEditFaculty(user.faculty || "");
     setEditStudyYear(user.studyYear || "");
+    setEditFirstName(user.firstName || "");
+    setEditLastName(user.lastName || "");
+    setEditUsername(user.username || "");
+    setEditBio(user.bio || "");
+    setEditEmail(user.email || "");
+    setEditPhone(user.phoneNumber || "");
+    setEditTown(user.town || "");
+    setEditDateOfBirth(user.dateOfBirth || "");
+    
+    // Convert language string to array if needed for the new multi-badge system
+    const languagesArray = user.language 
+      ? (typeof user.language === "string" ? user.language.split(",").map((l: string) => l.trim()).filter(Boolean) : user.language)
+      : [];
+    setEditLanguages(languagesArray);
+    
+    setEditStudentId(user.studentId || "");
+    setEditCampus(user.campus || "");
     setShowEditModal(true);
   };
 
@@ -859,40 +898,38 @@ export function Profile() {
     if (!currentUser?.id || isSavingProfile) return;
     setIsSavingProfile(true);
     try {
-      const firstNameInput = document.getElementById('firstName') as HTMLInputElement;
-      const lastNameInput = document.getElementById('lastName') as HTMLInputElement;
-      const usernameInput = document.getElementById('username') as HTMLInputElement;
-      const bioInput = document.getElementById('bio') as HTMLTextAreaElement;
-      const emailInput = document.getElementById('email') as HTMLInputElement;
-      const phoneInput = document.getElementById('phone') as HTMLInputElement;
-      const townInput = document.getElementById('town') as HTMLInputElement;
-      const languageInput = document.getElementById('language') as HTMLInputElement;
-      const universityInput = document.getElementById('university') as HTMLInputElement;
-      const facultyInput = document.getElementById('faculty') as HTMLInputElement;
-      const studyYearInput = document.getElementById('studyYear') as HTMLInputElement;
-      const studentIdInput = document.getElementById('studentId') as HTMLInputElement;
+      const updateData: any = {
+        first_name: editFirstName,
+        last_name: editLastName,
+        username: editUsername,
+        bio: editBio,
+        email: editEmail,
+        phone_number: editPhone,
+        town: editTown,
+        date_of_birth: editDateOfBirth,
+        language: editLanguages.join(", "), // Store as comma-separated string for backend compatibility
+        university: editUniversity,
+        faculty: editFaculty,
+        study_year: editStudyYear,
+        student_id: editStudentId,
+        campus: editCampus,
+        skills: editSkills.filter(Boolean),
+        interests: editInterests.filter(Boolean),
+        experiences: editExperiences.filter(e => e.title || e.company),
+        previous_education: editPreviousEducation.filter(e => e.degree || e.school),
+        portfolio_links: editPortfolioLinks.filter(e => e.url),
+      };
       
-      const updateData: any = {};
-      if (firstNameInput?.value) updateData.first_name = firstNameInput.value;
-      if (lastNameInput?.value) updateData.last_name = lastNameInput.value;
-      if (usernameInput?.value) updateData.username = usernameInput.value;
-      if (bioInput?.value) updateData.bio = bioInput.value;
-      if (emailInput?.value) updateData.email = emailInput.value;
-      if (phoneInput?.value) updateData.phone_number = phoneInput.value;
-      if (townInput?.value) updateData.town = townInput.value;
-      if (languageInput?.value) updateData.language = languageInput.value;
-      
-      updateData.university = editUniversity;
-      updateData.faculty = editFaculty;
-      updateData.study_year = editStudyYear;
-      
-      if (studentIdInput?.value) updateData.student_id = studentIdInput.value;
-      updateData.skills = editSkills.filter(Boolean);
-      updateData.interests = editInterests.filter(Boolean);
-      updateData.experiences = editExperiences.filter(e => e.title || e.company);
-      updateData.previous_education = editPreviousEducation.filter(e => e.degree || e.school);
-      updateData.portfolio_links = editPortfolioLinks.filter(e => e.url);
-      
+      // Verification logic if a new card image was selected
+      if (editStudentCardFile) {
+        try {
+          const { verifyStudentStatus } = await import("@/services/api");
+          await verifyStudentStatus(editStudentId || "Inconnu", editStudentCardFile);
+        } catch (e) {
+          console.error("Erreur lors de l'envoi de la carte étudiante:", e);
+        }
+      }
+
       await updateUserProfile(updateData);
       
       toast({
@@ -1667,245 +1704,465 @@ export function Profile() {
             </section>
           )}
         </div>
-{/* Modal d'édition du profil */}
         <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Modifier le profil</DialogTitle>
-              <DialogDescription>
-                Mettez à jour vos informations personnelles et académiques.
-              </DialogDescription>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 rounded-xl campus-gradient text-white">
+                  <Settings className="h-5 w-5" />
+                </div>
+                <div>
+                  <DialogTitle className="text-xl">Modifier le profil</DialogTitle>
+                  <DialogDescription>
+                    Mettez à jour vos informations personnelles et académiques.
+                  </DialogDescription>
+                </div>
+              </div>
             </DialogHeader>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="firstName">Prénom</Label>
-                  <Input
-                    id="firstName"
-                    defaultValue={user.firstName}
-                    className="mt-2"
-                  />
+            
+            <div className="space-y-8 py-4">
+              {/* SECTION 1: IDENTITÉ */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 border-b pb-2">
+                  <User className="h-4 w-4 text-primary" />
+                  <h4 className="font-semibold text-sm uppercase tracking-wider">Identité</h4>
                 </div>
-                <div>
-                  <Label htmlFor="lastName">Nom</Label>
-                  <Input
-                    id="lastName"
-                    defaultValue={user.lastName}
-                    className="mt-2"
-                  />
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName">Prénom</Label>
+                    <Input
+                      id="firstName"
+                      value={editFirstName}
+                      onChange={(e) => setEditFirstName(e.target.value)}
+                      placeholder="Ex: Nathan"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Nom</Label>
+                    <Input
+                      id="lastName"
+                      value={editLastName}
+                      onChange={(e) => setEditLastName(e.target.value)}
+                      placeholder="Ex: Ngninkeu"
+                    />
+                  </div>
+                  <div className="col-span-2 space-y-2">
+                    <Label htmlFor="dob">Date de naissance</Label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="dob"
+                        type="date"
+                        value={editDateOfBirth}
+                        onChange={(e) => setEditDateOfBirth(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-              
-              <div>
-                <Label htmlFor="username">Nom d'utilisateur</Label>
-                <Input
-                  id="username"
-                  defaultValue={user.username}
-                  className="mt-2"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="bio">Biographie</Label>
-                <Textarea
-                  id="bio"
-                  defaultValue={user.bio}
-                  className="mt-2"
-                  rows={3}
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    defaultValue={user.email}
-                    className="mt-2"
-                  />
+                
+                <div className="space-y-2">
+                  <Label htmlFor="username">Nom d'utilisateur</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">@</span>
+                    <Input
+                      id="username"
+                      value={editUsername}
+                      onChange={(e) => setEditUsername(e.target.value)}
+                      className="pl-7"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="phone">Téléphone</Label>
-                  <Input
-                    id="phone"
-                    defaultValue={user.phoneNumber}
-                    className="mt-2"
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="town">Ville</Label>
-                  <Input
-                    id="town"
-                    defaultValue={user.town}
-                    className="mt-2"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="language">Langues</Label>
-                  <Input
-                    id="language"
-                    defaultValue={user.language}
-                    className="mt-2"
+                
+                <div className="space-y-2">
+                  <Label htmlFor="bio">Biographie</Label>
+                  <Textarea
+                    id="bio"
+                    value={editBio}
+                    onChange={(e) => setEditBio(e.target.value)}
+                    placeholder="Parlez-nous de vous..."
+                    className="resize-none min-h-[100px]"
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4 border-t pt-4 mt-4">
-                <div className="col-span-2">
-                  <h4 className="text-sm font-semibold mb-2">Informations Académiques</h4>
+
+              {/* SECTION 2: CONTACT & LOCALISATION */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 border-b pb-2">
+                  <MapPin className="h-4 w-4 text-primary" />
+                  <h4 className="font-semibold text-sm uppercase tracking-wider">Contact & Localisation</h4>
                 </div>
-                <div>
-                  <Label htmlFor="university">Université</Label>
-                  <Combobox
-                    options={UNIVERSITY_OPTIONS}
-                    value={editUniversity}
-                    onValueChange={setEditUniversity}
-                    placeholder="Choisir une université..."
-                    allowCustomValue
-                    className="mt-2"
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email professionnel / académique</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={editEmail}
+                      onChange={(e) => setEditEmail(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Numéro de téléphone</Label>
+                    <div className="flex">
+                      <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-sm text-muted-foreground">+237</span>
+                      <Input
+                        id="phone"
+                        value={editPhone}
+                        onChange={(e) => setEditPhone(e.target.value)}
+                        className="rounded-l-none"
+                      />
+                    </div>
+                  </div>
+                  <div className="md:col-span-2 space-y-3 p-4 rounded-xl border bg-muted/10">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-base font-medium">Localisation actuelle</Label>
+                      <Badge variant="outline" className="font-normal text-xs">Style LinkedIn</Badge>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <div className="flex-1">
+                        <CityCombobox
+                          value={editTown}
+                          onValueChange={setEditTown}
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background border text-sm text-muted-foreground min-w-[150px]">
+                        <MapPin className="h-4 w-4 text-primary" />
+                        {editTown || "Ville non définie"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 3: ACADÉMIQUE */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 border-b pb-2">
+                  <GraduationCap className="h-4 w-4 text-primary" />
+                  <h4 className="font-semibold text-sm uppercase tracking-wider">Cursus Académique</h4>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Université / Établissement</Label>
+                    <UniversityCombobox
+                      value={editUniversity}
+                      onValueChange={setEditUniversity}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Filière / Faculté</Label>
+                    <FacultyCombobox
+                      value={editFaculty}
+                      onValueChange={setEditFaculty}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Niveau d'étude</Label>
+                    <StudyLevelCombobox
+                      value={editStudyYear}
+                      onValueChange={setEditStudyYear}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="studentId">Matricule / ID Étudiant</Label>
+                    <Input
+                      id="studentId"
+                      value={editStudentId}
+                      onChange={(e) => setEditStudentId(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-xl border-2 border-dashed bg-primary/5 space-y-3 mt-4">
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-primary" />
+                    <Label className="font-semibold">Certification du statut étudiant</Label>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Fournissez une photo lisible de votre carte d'étudiant ou certificat de scolarité.</p>
+                  <div className="flex items-center gap-4">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      className="gap-2 bg-background shadow-sm"
+                      onClick={() => studentCardInputRef.current?.click()}
+                    >
+                      <Upload className="h-4 w-4" />
+                      {editStudentCardFile ? "Remplacer le document" : "Uploader le document"}
+                    </Button>
+                    {editStudentCardFile && <span className="text-xs font-medium text-primary truncate max-w-[200px] bg-primary/10 px-2 py-1 rounded">{editStudentCardFile.name}</span>}
+                    <input 
+                      type="file" 
+                      className="hidden" 
+                      ref={studentCardInputRef} 
+                      accept="image/*"
+                      onChange={(e) => setEditStudentCardFile(e.target.files?.[0] || null)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 4: COMPÉTENCES, LANGUES & INTÉRÊTS */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-2 border-b pb-2">
+                  <Zap className="h-4 w-4 text-primary" />
+                  <h4 className="font-semibold text-sm uppercase tracking-wider">Compétences & Langues</h4>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label className="font-medium">Compétences techniques</Label>
+                      <Badge variant="secondary" className="text-[10px] uppercase">{editSkills.length} sélectionnées</Badge>
+                    </div>
+                    <SkillsCombobox
+                      onSkillAdd={(skill) => {
+                        if (!editSkills.includes(skill)) {
+                          setEditSkills([...editSkills, skill]);
+                        }
+                      }}
+                    />
+                    <div className="flex flex-wrap gap-2 min-h-[40px] p-2 rounded-lg bg-muted/30">
+                      {editSkills.length > 0 ? editSkills.map((skill, index) => (
+                        <Badge key={index} variant="secondary" className="gap-1 pr-1 py-1 animate-in fade-in zoom-in duration-200">
+                          {skill}
+                          <button 
+                            type="button"
+                            onClick={() => setEditSkills(editSkills.filter(s => s !== skill))}
+                            className="ml-1 hover:bg-muted-foreground/20 rounded-full p-0.5 transition-colors"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      )) : <span className="text-xs text-muted-foreground italic px-2">Aucune compétence ajoutée</span>}
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label className="font-medium">Langues parlées</Label>
+                      <Languages className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <LanguageCombobox
+                      onLanguageAdd={(lang) => {
+                        if (!editLanguages.includes(lang)) {
+                          setEditLanguages([...editLanguages, lang]);
+                        }
+                      }}
+                    />
+                    <div className="flex flex-wrap gap-2 min-h-[40px] p-2 rounded-lg bg-muted/30">
+                      {editLanguages.length > 0 ? editLanguages.map((lang, index) => (
+                        <Badge key={index} variant="outline" className="gap-1 pr-1 py-1 border-primary/30 bg-primary/5 animate-in fade-in zoom-in duration-200">
+                          {lang}
+                          <button 
+                            type="button"
+                            onClick={() => setEditLanguages(editLanguages.filter(l => l !== lang))}
+                            className="ml-1 hover:bg-primary/20 rounded-full p-0.5 transition-colors"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      )) : <span className="text-xs text-muted-foreground italic px-2">Ajoutez vos langues (ex: Français, Anglais)</span>}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4 mt-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Smile className="h-4 w-4 text-primary" />
+                      <Label className="font-medium uppercase tracking-tighter text-xs">Centres d'intérêt</Label>
+                    </div>
+                  </div>
+                  <InterestsCombobox
+                    onInterestAdd={(interest) => {
+                      if (!editInterests.includes(interest)) {
+                        setEditInterests([...editInterests, interest]);
+                      }
+                    }}
                   />
+                  <div className="flex flex-wrap gap-2 p-2 rounded-lg bg-muted/20 border border-dashed">
+                    {editInterests.map((interest, index) => (
+                      <Badge key={index} variant="outline" className="gap-1 pr-1 border bg-background hover:bg-muted transition-colors">
+                        {interest}
+                        <button 
+                          type="button"
+                          onClick={() => setEditInterests(editInterests.filter(i => i !== interest))}
+                          className="ml-1 hover:bg-muted-foreground/20 rounded-full p-0.5"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="faculty">Faculté / Filière</Label>
-                  <Combobox
-                    options={FACULTY_OPTIONS}
-                    value={editFaculty}
-                    onValueChange={setEditFaculty}
-                    placeholder="Choisir une filière..."
-                    allowCustomValue
-                    className="mt-2"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="studyYear">Année d'étude</Label>
-                  <Select
-                    value={editStudyYear}
-                    onValueChange={setEditStudyYear}
+              </div>
+
+              {/* SECTION 5: EXPERIENCES */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between border-b pb-2">
+                  <div className="flex items-center gap-2">
+                    <Briefcase className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold text-sm uppercase tracking-wider">Expériences</h4>
+                  </div>
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-primary hover:bg-primary/10 h-8 gap-1 font-medium"
+                    onClick={() => setEditExperiences([{ title: "", company: "", duration: "", description: "" }, ...editExperiences])}
                   >
-                    <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Choisir l'année..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STUDY_YEAR_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    <Plus className="h-4 w-4" /> Ajouter une expérience
+                  </Button>
                 </div>
-                <div>
-                  <Label htmlFor="studentId">Identifiant Étudiant</Label>
-                  <Input
-                    id="studentId"
-                    defaultValue={user.studentId}
-                    className="mt-2"
-                  />
-                </div>
-              </div>
-              
-              {/* Compétences */}
-              <div>
-                <Label>Compétences</Label>
-                <div className="flex gap-2 mt-2">
-                  <Input placeholder="Ajouter une compétence..." value={newSkill} onChange={(e) => setNewSkill(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (newSkill.trim() && !editSkills.includes(newSkill.trim())) { setEditSkills([...editSkills, newSkill.trim()]); setNewSkill(""); } } }} />
-                  <Button type="button" variant="outline" onClick={() => { if (newSkill.trim() && !editSkills.includes(newSkill.trim())) { setEditSkills([...editSkills, newSkill.trim()]); setNewSkill(""); } }}>+</Button>
-                </div>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {editSkills.map((s, i) => (
-                    <Badge key={i} variant="secondary" className="cursor-pointer" onClick={() => setEditSkills(editSkills.filter((_, j) => j !== i))}>{s} ×</Badge>
+                <div className="grid gap-4">
+                  {editExperiences.map((exp, i) => (
+                    <div key={i} className="relative p-5 rounded-2xl border bg-card/40 hover:bg-card/60 transition-all duration-300 space-y-4 group">
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="icon" 
+                        className="absolute right-3 top-3 h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all transform hover:scale-110"
+                        onClick={() => setEditExperiences(editExperiences.filter((_, j) => j !== i))}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <Label className="text-[10px] uppercase text-muted-foreground">Poste</Label>
+                          <Input placeholder="Ex: Développeur Fullstack" value={exp.title} onChange={(e) => { const n = [...editExperiences]; n[i] = {...n[i], title: e.target.value}; setEditExperiences(n); }} className="bg-background/50" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] uppercase text-muted-foreground">Entreprise</Label>
+                          <Input placeholder="Ex: CampusSphere Inc." value={exp.company} onChange={(e) => { const n = [...editExperiences]; n[i] = {...n[i], company: e.target.value}; setEditExperiences(n); }} className="bg-background/50" />
+                        </div>
+                        <div className="sm:col-span-2 space-y-1">
+                          <Label className="text-[10px] uppercase text-muted-foreground">Période</Label>
+                          <Input placeholder="Ex: Janvier 2023 - Présent" value={exp.duration} onChange={(e) => { const n = [...editExperiences]; n[i] = {...n[i], duration: e.target.value}; setEditExperiences(n); }} className="bg-background/50" />
+                        </div>
+                        <div className="sm:col-span-2 space-y-1">
+                          <Label className="text-[10px] uppercase text-muted-foreground">Description des réalisations</Label>
+                          <Textarea placeholder="Décrivez vos missions et accomplissements..." value={exp.description} onChange={(e) => { const n = [...editExperiences]; n[i] = {...n[i], description: e.target.value}; setEditExperiences(n); }} rows={3} className="resize-none bg-background/50" />
+                        </div>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
 
-              {/* Centres d'intérêt */}
-              <div>
-                <Label>Centres d'intérêt</Label>
-                <div className="flex gap-2 mt-2">
-                  <Input placeholder="Ajouter un intérêt..." value={newInterest} onChange={(e) => setNewInterest(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (newInterest.trim() && !editInterests.includes(newInterest.trim())) { setEditInterests([...editInterests, newInterest.trim()]); setNewInterest(""); } } }} />
-                  <Button type="button" variant="outline" onClick={() => { if (newInterest.trim() && !editInterests.includes(newInterest.trim())) { setEditInterests([...editInterests, newInterest.trim()]); setNewInterest(""); } }}>+</Button>
+              {/* SECTION 6: FORMATIONS PRÉCÉDENTES */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between border-b pb-2">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold text-sm uppercase tracking-wider">Cursus Scolaire Antérieur</h4>
+                  </div>
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-primary hover:bg-primary/10 h-8 gap-1 font-medium"
+                    onClick={() => setEditPreviousEducation([{ degree: "", school: "", year: "" }, ...editPreviousEducation])}
+                  >
+                    <Plus className="h-4 w-4" /> Ajouter un diplôme
+                  </Button>
                 </div>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {editInterests.map((s, i) => (
-                    <Badge key={i} variant="outline" className="cursor-pointer" onClick={() => setEditInterests(editInterests.filter((_, j) => j !== i))}>{s} ×</Badge>
+                <div className="grid gap-4">
+                  {editPreviousEducation.map((edu, i) => (
+                    <div key={i} className="relative p-5 rounded-2xl border bg-card/40 hover:bg-card/60 transition-all duration-300 space-y-4 group">
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="icon" 
+                        className="absolute right-3 top-3 h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all transform hover:scale-110"
+                        onClick={() => setEditPreviousEducation(editPreviousEducation.filter((_, j) => j !== i))}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="sm:col-span-2 space-y-1">
+                          <Label className="text-[10px] uppercase text-muted-foreground">Diplôme obtenu</Label>
+                          <Input placeholder="Ex: Baccalauréat Scientifique" value={edu.degree} onChange={(e) => { const n = [...editPreviousEducation]; n[i] = {...n[i], degree: e.target.value}; setEditPreviousEducation(n); }} className="bg-background/50" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] uppercase text-muted-foreground">Établissement</Label>
+                          <Input placeholder="Ex: Lycée Classique" value={edu.school} onChange={(e) => { const n = [...editPreviousEducation]; n[i] = {...n[i], school: e.target.value}; setEditPreviousEducation(n); }} className="bg-background/50" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] uppercase text-muted-foreground">Année</Label>
+                          <Input placeholder="Ex: 2020" value={edu.year} onChange={(e) => { const n = [...editPreviousEducation]; n[i] = {...n[i], year: e.target.value}; setEditPreviousEducation(n); }} className="bg-background/50" />
+                        </div>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
 
-              {/* Expériences */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label>Expériences</Label>
-                  <Button type="button" variant="outline" size="sm" onClick={() => setEditExperiences([...editExperiences, { title: "", company: "", duration: "", description: "" }])}>+ Ajouter</Button>
+              {/* SECTION 7: PORTFOLIO & LIENS */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between border-b pb-2">
+                  <div className="flex items-center gap-2">
+                    <Link className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold text-sm uppercase tracking-wider">Liens externes & Portfolio</h4>
+                  </div>
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-primary hover:bg-primary/10 h-8 gap-1 font-medium"
+                    onClick={() => setEditPortfolioLinks([...editPortfolioLinks, { name: "", url: "" }])}
+                  >
+                    <Plus className="h-4 w-4" /> Ajouter un lien
+                  </Button>
                 </div>
-                {editExperiences.map((exp, i) => (
-                  <div key={i} className="border rounded-lg p-3 mb-2 space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-muted-foreground">Expérience {i + 1}</span>
-                      <Button type="button" variant="ghost" size="sm" onClick={() => setEditExperiences(editExperiences.filter((_, j) => j !== i))}>Supprimer</Button>
+                <div className="grid gap-3">
+                  {editPortfolioLinks.map((link, i) => (
+                    <div key={i} className="flex gap-3 items-center animate-in slide-in-from-right duration-200">
+                      <div className="flex-1">
+                        <Input placeholder="Titre (ex: GitHub)" value={link.name} onChange={(e) => { const n = [...editPortfolioLinks]; n[i] = {...n[i], name: e.target.value}; setEditPortfolioLinks(n); }} className="bg-card/50" />
+                      </div>
+                      <div className="flex-[2]">
+                        <Input placeholder="https://..." value={link.url} onChange={(e) => { const n = [...editPortfolioLinks]; n[i] = {...n[i], url: e.target.value}; setEditPortfolioLinks(n); }} className="bg-card/50" />
+                      </div>
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="icon" 
+                        className="text-muted-foreground hover:text-destructive h-10 w-10 flex-shrink-0"
+                        onClick={() => setEditPortfolioLinks(editPortfolioLinks.filter((_, j) => j !== i))}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <Input placeholder="Titre du poste" value={exp.title} onChange={(e) => { const n = [...editExperiences]; n[i] = {...n[i], title: e.target.value}; setEditExperiences(n); }} />
-                    <Input placeholder="Entreprise" value={exp.company} onChange={(e) => { const n = [...editExperiences]; n[i] = {...n[i], company: e.target.value}; setEditExperiences(n); }} />
-                    <Input placeholder="Durée (ex: 2022-2023)" value={exp.duration} onChange={(e) => { const n = [...editExperiences]; n[i] = {...n[i], duration: e.target.value}; setEditExperiences(n); }} />
-                    <Textarea placeholder="Description" value={exp.description} onChange={(e) => { const n = [...editExperiences]; n[i] = {...n[i], description: e.target.value}; setEditExperiences(n); }} rows={2} />
-                  </div>
-                ))}
-              </div>
-
-              {/* Formations précédentes */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label>Formations précédentes</Label>
-                  <Button type="button" variant="outline" size="sm" onClick={() => setEditPreviousEducation([...editPreviousEducation, { degree: "", school: "", year: "" }])}>+ Ajouter</Button>
+                  ))}
                 </div>
-                {editPreviousEducation.map((edu, i) => (
-                  <div key={i} className="border rounded-lg p-3 mb-2 space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-muted-foreground">Formation {i + 1}</span>
-                      <Button type="button" variant="ghost" size="sm" onClick={() => setEditPreviousEducation(editPreviousEducation.filter((_, j) => j !== i))}>Supprimer</Button>
-                    </div>
-                    <Input placeholder="Diplôme" value={edu.degree} onChange={(e) => { const n = [...editPreviousEducation]; n[i] = {...n[i], degree: e.target.value}; setEditPreviousEducation(n); }} />
-                    <Input placeholder="Établissement" value={edu.school} onChange={(e) => { const n = [...editPreviousEducation]; n[i] = {...n[i], school: e.target.value}; setEditPreviousEducation(n); }} />
-                    <Input placeholder="Année" value={edu.year} onChange={(e) => { const n = [...editPreviousEducation]; n[i] = {...n[i], year: e.target.value}; setEditPreviousEducation(n); }} />
-                  </div>
-                ))}
               </div>
+            </div>
 
-              {/* Portfolio */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label>Portfolio / Liens</Label>
-                  <Button type="button" variant="outline" size="sm" onClick={() => setEditPortfolioLinks([...editPortfolioLinks, { name: "", url: "" }])}>+ Ajouter</Button>
-                </div>
-                {editPortfolioLinks.map((link, i) => (
-                  <div key={i} className="flex gap-2 mb-2">
-                    <Input placeholder="Nom (ex: GitHub)" value={link.name} onChange={(e) => { const n = [...editPortfolioLinks]; n[i] = {...n[i], name: e.target.value}; setEditPortfolioLinks(n); }} />
-                    <Input placeholder="URL" value={link.url} onChange={(e) => { const n = [...editPortfolioLinks]; n[i] = {...n[i], url: e.target.value}; setEditPortfolioLinks(n); }} />
-                    <Button type="button" variant="ghost" size="sm" onClick={() => setEditPortfolioLinks(editPortfolioLinks.filter((_, j) => j !== i))}>×</Button>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex gap-2 pt-4">
-                <Button 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={() => setShowEditModal(false)}
-                >
-                  Annuler
-                </Button>
-                <Button 
-                  className="flex-1 gap-2"
-                  onClick={handleSaveProfile}
-                  disabled={isSavingProfile}
-                >
-                  {isSavingProfile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                  {isSavingProfile ? "Sauvegarde..." : "Sauvegarder"}
-                </Button>
-              </div>
+            <div className="flex justify-end gap-3 pt-6 border-t mt-4 sticky bottom-0 bg-background/95 backdrop-blur-sm pb-2">
+              <Button variant="outline" className="flex-1 sm:flex-none" onClick={() => setShowEditModal(false)}>
+                Annuler
+              </Button>
+              <Button 
+                onClick={handleSaveProfile} 
+                className="campus-gradient text-white hover:opacity-90 min-w-[140px] flex-1 sm:flex-none"
+                disabled={isSavingProfile}
+              >
+                {isSavingProfile ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Sauvegarde...
+                  </>
+                ) : (
+                  <>
+                    <Check className="mr-2 h-4 w-4" />
+                    Enregistrer
+                  </>
+                )}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
