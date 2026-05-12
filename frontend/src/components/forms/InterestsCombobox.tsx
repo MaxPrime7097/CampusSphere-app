@@ -3,6 +3,8 @@ import { Combobox } from "@/components/ui/combobox";
 
 interface InterestsComboboxProps {
   onInterestAdd?: (interest: string) => void;
+  value?: string;
+  onValueChange?: (value: string) => void;
   placeholder?: string;
   className?: string;
   disabled?: boolean;
@@ -104,16 +106,23 @@ const interests = [
 
 export function InterestsCombobox({
   onInterestAdd,
+  value: externalValue,
+  onValueChange,
   placeholder = "Ajouter un centre d'intérêt",
   className,
   disabled = false,
 }: InterestsComboboxProps) {
-  const [value, setValue] = useState("");
+  const [internalValue, setInternalValue] = useState("");
+
+  const value = externalValue !== undefined ? externalValue : internalValue;
+  const setValue = onValueChange !== undefined ? onValueChange : setInternalValue;
 
   const handleValueChange = (newValue: string) => {
-    if (newValue && onInterestAdd) {
+    setValue(newValue);
+    // If it's a selection from the list, we can add it immediately
+    if (newValue && onInterestAdd && interests.some(i => i.value === newValue || i.label === newValue)) {
       onInterestAdd(newValue);
-      setValue(""); // Reset après ajout
+      setValue(""); 
     }
   };
 

@@ -3,6 +3,8 @@ import { Combobox } from "@/components/ui/combobox";
 
 interface SkillsComboboxProps {
   onSkillAdd?: (skill: string) => void;
+  value?: string;
+  onValueChange?: (value: string) => void;
   placeholder?: string;
   className?: string;
   disabled?: boolean;
@@ -91,16 +93,23 @@ const skills = [
 
 export function SkillsCombobox({
   onSkillAdd,
+  value: externalValue,
+  onValueChange,
   placeholder = "Ajouter une compétence",
   className,
   disabled = false,
 }: SkillsComboboxProps) {
-  const [value, setValue] = useState("");
+  const [internalValue, setInternalValue] = useState("");
+
+  const value = externalValue !== undefined ? externalValue : internalValue;
+  const setValue = onValueChange !== undefined ? onValueChange : setInternalValue;
 
   const handleValueChange = (newValue: string) => {
-    if (newValue && onSkillAdd) {
+    setValue(newValue);
+    // If it's a selection from the list, we can add it immediately
+    if (newValue && onSkillAdd && skills.some(s => s.value === newValue || s.label === newValue)) {
       onSkillAdd(newValue);
-      setValue(""); // Reset après ajout
+      setValue(""); 
     }
   };
 

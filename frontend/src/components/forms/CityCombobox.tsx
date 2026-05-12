@@ -10,6 +10,20 @@ interface CityComboboxProps {
 
 const cities = [
   { value: "douala", label: "Douala" },
+  { value: "yaounde", label: "Yaoundé" },
+  { value: "garoua", label: "Garoua" },
+  { value: "bamenda", label: "Bamenda" },
+  { value: "maroua", label: "Maroua" },
+  { value: "bafoussam", label: "Bafoussam" },
+  { value: "ngaoundere", label: "Ngaoundéré" },
+  { value: "bertoua", label: "Bertoua" },
+  { value: "ebolowa", label: "Ebolowa" },
+  { value: "buea", label: "Buea" },
+  { value: "dschang", label: "Dschang" },
+  { value: "kribi", label: "Kribi" },
+  { value: "limbe", label: "Limbe" },
+  { value: "foumban", label: "Foumban" },
+  { value: "nkongsamba", label: "Nkongsamba" },
 ]
 
 export function CityCombobox({

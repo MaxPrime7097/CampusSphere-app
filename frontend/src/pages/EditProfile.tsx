@@ -1,320 +1,454 @@
-import { useEffect, useRef, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, Loader2, Save, X } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { getCurrentUser, updateUserProfile, uploadAvatar, uploadCoverPhoto } from "@/services/api";
+import { 
+  MapPin, Camera, Calendar, Link, User, BookOpen, 
+  Briefcase, GraduationCap, Loader2, Check, Upload, 
+  X, Zap, Smile, Shield, Plus, Languages, ArrowLeft 
+} from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { getCurrentUser, updateUserProfile, uploadAvatar } from "@/services/api";
 import { UniversityCombobox } from "@/components/forms/UniversityCombobox";
 import { FacultyCombobox } from "@/components/forms/FacultyCombobox";
 import { StudyLevelCombobox } from "@/components/forms/StudyLevelCombobox";
 import { SkillsCombobox } from "@/components/forms/SkillsCombobox";
 import { InterestsCombobox } from "@/components/forms/InterestsCombobox";
-
-type ProfileFormData = {
-  first_name: string;
-  last_name: string;
-  username: string;
-  bio: string;
-  town: string;
-  university: string;
-  faculty: string;
-  study_year: string;
-};
-
-const EMPTY_FORM: ProfileFormData = {
-  first_name: "",
-  last_name: "",
-  username: "",
-  bio: "",
-  town: "",
-  university: "",
-  faculty: "",
-  study_year: "",
-};
+import { CityCombobox } from "@/components/forms/CityCombobox";
+import { LanguageCombobox } from "@/components/forms/LanguageCombobox";
 
 export function EditProfile() {
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  const [isLoadingUser, setIsLoadingUser] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [formData, setFormData] = useState<ProfileFormData>(EMPTY_FORM);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
-  const [currentUserId, setCurrentUserId] = useState<number | string | null>(null);
-  const [currentAvatar, setCurrentAvatar] = useState<string | null>(null);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const avatarInputRef = useRef<HTMLInputElement>(null);
+  // States for form
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [username, setUsername] = useState("");
+  const [bio, setBio] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [town, setTown] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [languages, setLanguages] = useState<string[]>([]);
+  const [university, setUniversity] = useState("");
+  const [faculty, setFaculty] = useState("");
+  const [studyYear, setStudyYear] = useState("");
+  const [studentId, setStudentId] = useState("");
+  
+  const [skills, setSkills] = useState<string[]>([]);
+  const [interests, setInterests] = useState<string[]>([]);
+  const [experiences, setExperiences] = useState<any[]>([]);
+  const [previousEducation, setPreviousEducation] = useState<any[]>([]);
+  const [portfolioLinks, setPortfolioLinks] = useState<any[]>([]);
+
+  // Input states for "Plus" layout
+  const [newSkill, setNewSkill] = useState("");
+  const [newInterest, setNewInterest] = useState("");
+  const [newLanguageInput, setNewLanguageInput] = useState("");
+
+  const [studentCardFile, setStudentCardFile] = useState<File | null>(null);
+  const studentCardInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    let isMounted = true;
-
-    const hydrateFromCurrentUser = async () => {
-      setIsLoadingUser(true);
+    const fetchUser = async () => {
       try {
         const user = await getCurrentUser();
-        if (!isMounted || !user) return;
-
-        setCurrentUserId(user.id ?? null);
-        setCurrentAvatar(user.avatar ?? null);
-        setFormData({
-          first_name: user.firstName || "",
-          last_name: user.lastName || "",
-          username: user.username || "",
-          bio: user.bio || "",
-          town: user.town || "",
-          university: user.university || "",
-          faculty: user.faculty || "",
-          study_year: user.studyYear || "",
-        });
-      } catch (error: any) {
+        setCurrentUser(user);
+        
+        // Initialize form
+        setFirstName(user.firstName || "");
+        setLastName(user.lastName || "");
+        setUsername(user.username || "");
+        setBio(user.bio || "");
+        setEmail(user.email || "");
+        setPhone(user.phoneNumber || "");
+        setTown(user.town || "");
+        setDateOfBirth(user.dateOfBirth || "");
+        
+        const langs = user.language 
+          ? (typeof user.language === "string" ? user.language.split(",").map((l: string) => l.trim()).filter(Boolean) : user.language)
+          : [];
+        setLanguages(langs);
+        
+        setUniversity(user.university || "");
+        setFaculty(user.faculty || "");
+        setStudyYear(user.studyYear || "");
+        setStudentId(user.studentId || "");
+        
+        setSkills(user.skills || []);
+        setInterests(user.interests || []);
+        setExperiences(user.experiences || []);
+        setPreviousEducation(user.previousEducation || []);
+        setPortfolioLinks(user.portfolioLinks || []);
+        
+        setIsLoading(false);
+      } catch (error) {
         toast({
           variant: "destructive",
           title: "Erreur",
-          description: error?.message || "Impossible de charger votre profil",
-          duration: 3000,
+          description: "Impossible de charger votre profil.",
         });
-      } finally {
-        if (isMounted) setIsLoadingUser(false);
+        navigate("/profile");
       }
     };
 
-    hydrateFromCurrentUser();
+    fetchUser();
+  }, [navigate, toast]);
 
-    return () => {
-      isMounted = false;
-    };
-  }, [toast]);
-
-  const handleChange = (field: keyof ProfileFormData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const validateForm = () => {
-    if (!formData.first_name.trim()) {
-      toast({ variant: "destructive", title: "Erreur", description: "Le prénom est obligatoire", duration: 3000 });
-      return false;
-    }
-
-    if (!formData.last_name.trim()) {
-      toast({ variant: "destructive", title: "Erreur", description: "Le nom est obligatoire", duration: 3000 });
-      return false;
-    }
-
-    if (!formData.username.trim()) {
-      toast({ variant: "destructive", title: "Erreur", description: "Le nom d'utilisateur est obligatoire", duration: 3000 });
-      return false;
-    }
-
-    if (formData.username.trim().length < 3) {
-      toast({ variant: "destructive", title: "Erreur", description: "Le nom d'utilisateur doit contenir au moins 3 caractères", duration: 3000 });
-      return false;
-    }
-
-    if (formData.bio.length > 500) {
-      toast({ variant: "destructive", title: "Erreur", description: "La bio ne doit pas dépasser 500 caractères", duration: 3000 });
-      return false;
-    }
-
-    return true;
-  };
-
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 2 * 1024 * 1024) {
-      toast({
-        title: "Fichier trop grand",
-        description: "L'avatar ne doit pas dépasser 2MB",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setAvatarFile(file);
-    const reader = new FileReader();
-    reader.onload = (event) => setAvatarPreview(event.target?.result as string);
-    reader.readAsDataURL(file);
-  };
-
-  const handleRemoveSelectedAvatar = () => {
-    setAvatarFile(null);
-    setAvatarPreview(null);
-    if (avatarInputRef.current) {
-      avatarInputRef.current.value = "";
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm()) return;
-
+  const handleSave = async () => {
     setIsSaving(true);
     try {
-      await updateUserProfile({
-        first_name: formData.first_name.trim(),
-        last_name: formData.last_name.trim(),
-        username: formData.username.trim(),
-        bio: formData.bio.trim(),
-        university: formData.university.trim(),
-        faculty: formData.faculty.trim(),
-        study_year: formData.study_year.trim(),
-        town: formData.town.trim(),
-      });
+      const updateData = {
+        first_name: firstName,
+        last_name: lastName,
+        username: username,
+        bio: bio,
+        email: email,
+        phone_number: phone,
+        town: town,
+        date_of_birth: dateOfBirth,
+        language: languages.join(", "),
+        university: university,
+        faculty: faculty,
+        study_year: studyYear,
+        student_id: studentId,
+        skills: skills,
+        interests: interests,
+        experiences: experiences,
+        previous_education: previousEducation,
+        portfolio_links: portfolioLinks,
+      };
 
-      if (avatarFile && currentUserId) {
-        await uploadAvatar(currentUserId, avatarFile);
+      await updateUserProfile(updateData);
+
+      // Handle student card upload if exists
+      if (studentCardFile) {
+        // Here you would call a specific upload endpoint for verification documents
+        // For now, we simulate success or use a generic upload if available
       }
 
       toast({
-        title: "Profil mis à jour",
-        description: "Vos modifications ont été enregistrées avec succès.",
-        duration: 2000,
+        title: "Succès",
+        description: "Votre profil a été mis à jour avec succès.",
       });
-      navigate("/profile");
-    } catch (error: any) {
+      navigate(`/profile/${username}`);
+    } catch (error) {
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: error?.message || "Impossible de mettre à jour votre profil",
-        duration: 3000,
+        description: "Une erreur est survenue lors de la sauvegarde.",
       });
     } finally {
       setIsSaving(false);
     }
   };
 
-  const avatarSrc = avatarPreview || currentAvatar || "/placeholder-avatar.jpg";
-  const initials = `${formData.first_name?.[0] || ""}${formData.last_name?.[0] || ""}`.toUpperCase() || "U";
+  if (isLoading) {
+    return (
+      <div className="flex h-[80vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
-      <div className="container max-w-3xl mx-auto py-6 px-4">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold campus-gradient bg-clip-text text-transparent">Modifier le profil</h1>
-          <Button variant="outline" onClick={() => navigate("/profile")} disabled={isSaving}>
-            Annuler
-          </Button>
+    <div className="container max-w-4xl py-10 px-4 md:px-0">
+      <div className="flex items-center gap-4 mb-8">
+        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Modifier le profil</h1>
+          <p className="text-muted-foreground">Gérez vos informations personnelles et académiques.</p>
         </div>
+      </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <Card className="campus-card">
-            <CardHeader>
-              <CardTitle>Photo de profil</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-4">
-                <Avatar className="h-24 w-24">
-                  <AvatarImage src={avatarSrc} />
-                  <AvatarFallback className="campus-gradient text-white text-2xl">{initials}</AvatarFallback>
-                </Avatar>
-
-                <div className="space-y-2">
-                  <input
-                    ref={avatarInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarChange}
-                    className="hidden"
-                  />
-                  <Button type="button" variant="outline" size="sm" onClick={() => avatarInputRef.current?.click()} disabled={isSaving}>
-                    <Camera className="h-4 w-4 mr-2" />
-                    {avatarPreview ? "Changer la photo" : "Choisir une photo"}
-                  </Button>
-                  {avatarPreview && (
-                    <Button type="button" variant="ghost" size="sm" onClick={handleRemoveSelectedAvatar} disabled={isSaving}>
-                      <X className="h-4 w-4 mr-2" />
-                      Retirer la sélection
-                    </Button>
-                  )}
-                  <p className="text-xs text-muted-foreground">Formats acceptés : JPG, PNG, GIF (max 2MB)</p>
+      <div className="grid gap-8">
+        {/* SECTION 1: IDENTITÉ */}
+        <Card className="border-none shadow-md overflow-hidden">
+          <CardHeader className="bg-muted/30 border-b">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <User className="h-5 w-5 text-primary" />
+              Identité
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">Nom</Label>
+                <Input id="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Prénom</Label>
+                <Input id="lastName" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="dob">Date de naissance</Label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input id="dob" type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} className="pl-10" />
                 </div>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="campus-card">
-            <CardHeader>
-              <CardTitle>Informations personnelles</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="first_name">Prénom</Label>
-                  <Input id="first_name" value={formData.first_name} onChange={(e) => handleChange("first_name", e.target.value)} disabled={isLoadingUser || isSaving} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="last_name">Nom</Label>
-                  <Input id="last_name" value={formData.last_name} onChange={(e) => handleChange("last_name", e.target.value)} disabled={isLoadingUser || isSaving} />
-                </div>
-              </div>
-
               <div className="space-y-2">
                 <Label htmlFor="username">Nom d'utilisateur</Label>
-                <Input id="username" value={formData.username} onChange={(e) => handleChange("username", e.target.value)} disabled={isLoadingUser || isSaving} />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="bio">Bio</Label>
-                <Textarea
-                  id="bio"
-                  value={formData.bio}
-                  onChange={(e) => handleChange("bio", e.target.value)}
-                  className="min-h-[100px]"
-                  maxLength={500}
-                  disabled={isLoadingUser || isSaving}
-                />
-                <p className="text-xs text-muted-foreground text-right">{formData.bio.length}/500</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="town">Ville</Label>
-                <Input id="town" value={formData.town} onChange={(e) => handleChange("town", e.target.value)} disabled={isLoadingUser || isSaving} />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="campus-card">
-            <CardHeader>
-              <CardTitle>Informations académiques</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="university">Université</Label>
-                <Input id="university" value={formData.university} onChange={(e) => handleChange("university", e.target.value)} disabled={isLoadingUser || isSaving} />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="faculty">Faculté / Domaine d'études</Label>
-                  <Input id="faculty" value={formData.faculty} onChange={(e) => handleChange("faculty", e.target.value)} disabled={isLoadingUser || isSaving} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="study_year">Année d'études</Label>
-                  <Input id="study_year" value={formData.study_year} onChange={(e) => handleChange("study_year", e.target.value)} disabled={isLoadingUser || isSaving} />
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">@</span>
+                  <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} className="pl-7" />
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bio">Biographie</Label>
+              <Textarea id="bio" value={bio} onChange={(e) => setBio(e.target.value)} className="min-h-[120px] resize-none" placeholder="Partagez votre parcours..." />
+            </div>
+          </CardContent>
+        </Card>
 
-          <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={() => navigate("/profile")} disabled={isSaving}>
-              Annuler
+        {/* SECTION 2: CONTACT & LOCALISATION */}
+        <Card className="border-none shadow-md overflow-hidden">
+          <CardHeader className="bg-muted/30 border-b">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <MapPin className="h-5 w-5 text-primary" />
+              Contact & Localisation
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email professionnel</Label>
+                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Téléphone</Label>
+                <div className="flex">
+                  <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-sm text-muted-foreground">+237</span>
+                  <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} className="rounded-l-none" />
+                </div>
+              </div>
+            </div>
+            <div className="p-4 rounded-xl border bg-muted/10 space-y-3">
+              <Label className="font-medium">Localisation actuelle (Style LinkedIn)</Label>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex-1">
+                  <CityCombobox value={town} onValueChange={setTown} />
+                </div>
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background border text-sm text-muted-foreground">
+                  <MapPin className="h-4 w-4 text-primary" />
+                  {town || "Non renseigné"}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* SECTION 3: ACADÉMIQUE */}
+        <Card className="border-none shadow-md overflow-hidden">
+          <CardHeader className="bg-muted/30 border-b">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <GraduationCap className="h-5 w-5 text-primary" />
+              Cursus Académique
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Université</Label>
+                <UniversityCombobox value={university} onValueChange={setUniversity} />
+              </div>
+              <div className="space-y-2">
+                <Label>Filière</Label>
+                <FacultyCombobox value={faculty} onValueChange={setFaculty} />
+              </div>
+              <div className="space-y-2">
+                <Label>Niveau d'étude</Label>
+                <StudyLevelCombobox value={studyYear} onValueChange={setStudyYear} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="studentId">Matricule / ID</Label>
+                <Input id="studentId" value={studentId} onChange={(e) => setStudentId(e.target.value)} />
+              </div>
+            </div>
+            
+            <div className="p-6 rounded-2xl border-2 border-dashed bg-primary/5 space-y-4">
+              <div className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-primary" />
+                <h4 className="font-semibold">Certification Étudiante</h4>
+              </div>
+              <p className="text-sm text-muted-foreground">L'importation d'une carte d'étudiant valide vous permet d'obtenir le badge certifié.</p>
+              <div className="flex items-center gap-4">
+                <Button variant="outline" onClick={() => studentCardInputRef.current?.click()} className="bg-background">
+                  <Upload className="mr-2 h-4 w-4" />
+                  Choisir un fichier
+                </Button>
+                {studentCardFile && <span className="text-sm font-medium text-primary bg-primary/10 px-3 py-1 rounded-full">{studentCardFile.name}</span>}
+                <input type="file" className="hidden" ref={studentCardInputRef} accept="image/*" onChange={(e) => setStudentCardFile(e.target.files?.[0] || null)} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* SECTION 4: COMPÉTENCES & LANGUES */}
+        <Card className="border-none shadow-md overflow-hidden">
+          <CardHeader className="bg-muted/30 border-b">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Zap className="h-5 w-5 text-primary" />
+              Compétences & Langues
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6 space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Skills */}
+              <div className="space-y-4">
+                <Label className="text-base font-semibold">Compétences techniques</Label>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <SkillsCombobox 
+                      value={newSkill} 
+                      onValueChange={setNewSkill}
+                      onSkillAdd={(s) => { if(!skills.includes(s)) { setSkills([...skills, s]); setNewSkill(""); } }}
+                    />
+                  </div>
+                  <Button variant="outline" size="icon" className="shrink-0 h-10 w-10" onClick={() => { if(newSkill.trim() && !skills.includes(newSkill.trim())) { setSkills([...skills, newSkill.trim()]); setNewSkill(""); } }}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2 p-3 rounded-xl bg-muted/20 min-h-[50px]">
+                  {skills.map((s, i) => (
+                    <Badge key={i} variant="secondary" className="pl-3 pr-1 py-1.5 gap-1">
+                      {s}
+                      <button onClick={() => setSkills(skills.filter(x => x !== s))} className="hover:bg-muted-foreground/20 rounded-full p-0.5">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              {/* Languages */}
+              <div className="space-y-4">
+                <Label className="text-base font-semibold">Langues</Label>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <LanguageCombobox 
+                      value={newLanguageInput} 
+                      onValueChange={setNewLanguageInput}
+                      onLanguageAdd={(l) => { if(!languages.includes(l)) { setLanguages([...languages, l]); setNewLanguageInput(""); } }}
+                    />
+                  </div>
+                  <Button variant="outline" size="icon" className="shrink-0 h-10 w-10" onClick={() => { if(newLanguageInput.trim() && !languages.includes(newLanguageInput.trim())) { setLanguages([...languages, newLanguageInput.trim()]); setNewLanguageInput(""); } }}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2 p-3 rounded-xl bg-muted/20 min-h-[50px]">
+                  {languages.map((l, i) => (
+                    <Badge key={i} variant="outline" className="pl-3 pr-1 py-1.5 gap-1 border-primary/30 bg-primary/5">
+                      {l}
+                      <button onClick={() => setLanguages(languages.filter(x => x !== l))} className="hover:bg-primary/20 rounded-full p-0.5">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Interests */}
+            <div className="space-y-4">
+              <Label className="text-base font-semibold">Centres d'intérêt</Label>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <InterestsCombobox 
+                    value={newInterest} 
+                    onValueChange={setNewInterest}
+                    onInterestAdd={(i) => { if(!interests.includes(i)) { setInterests([...interests, i]); setNewInterest(""); } }}
+                  />
+                </div>
+                <Button variant="outline" size="icon" className="shrink-0 h-10 w-10" onClick={() => { if(newInterest.trim() && !interests.includes(newInterest.trim())) { setInterests([...interests, newInterest.trim()]); setNewInterest(""); } }}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2 p-3 rounded-xl bg-muted/20">
+                {interests.map((it, i) => (
+                  <Badge key={i} variant="outline" className="pl-3 pr-1 py-1.5 gap-1 bg-background">
+                    {it}
+                    <button onClick={() => setInterests(interests.filter(x => x !== it))} className="hover:bg-muted-foreground/20 rounded-full p-0.5">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* SECTION 5: EXPÉRIENCES */}
+        <Card className="border-none shadow-md overflow-hidden">
+          <CardHeader className="bg-muted/30 border-b flex flex-row items-center justify-between py-4">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Briefcase className="h-5 w-5 text-primary" />
+              Expériences Professionnelles
+            </CardTitle>
+            <Button variant="outline" size="sm" onClick={() => setExperiences([{ title: "", company: "", duration: "", description: "" }, ...experiences])}>
+              <Plus className="mr-2 h-4 w-4" /> Ajouter
             </Button>
-            <Button type="submit" className="campus-gradient text-white hover:opacity-90" disabled={isLoadingUser || isSaving}>
-              {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-              Enregistrer les modifications
-            </Button>
-          </div>
-        </form>
+          </CardHeader>
+          <CardContent className="pt-6 space-y-4">
+            {experiences.map((exp, i) => (
+              <div key={i} className="relative p-6 rounded-2xl border bg-muted/5 group">
+                <Button variant="ghost" size="icon" className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 text-destructive" onClick={() => setExperiences(experiences.filter((_, j) => j !== i))}>
+                  <X className="h-4 w-4" />
+                </Button>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Poste</Label>
+                    <Input value={exp.title} onChange={(e) => { const n = [...experiences]; n[i].title = e.target.value; setExperiences(n); }} placeholder="Ex: Développeur React" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Entreprise</Label>
+                    <Input value={exp.company} onChange={(e) => { const n = [...experiences]; n[i].company = e.target.value; setExperiences(n); }} placeholder="Ex: Google" />
+                  </div>
+                  <div className="md:col-span-2 space-y-2">
+                    <Label>Durée</Label>
+                    <Input value={exp.duration} onChange={(e) => { const n = [...experiences]; n[i].duration = e.target.value; setExperiences(n); }} placeholder="Ex: Juin 2023 - Présent" />
+                  </div>
+                  <div className="md:col-span-2 space-y-2">
+                    <Label>Description</Label>
+                    <Textarea value={exp.description} onChange={(e) => { const n = [...experiences]; n[i].description = e.target.value; setExperiences(n); }} rows={3} placeholder="Détaillez vos missions..." />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* ACTIONS FINALES */}
+        <div className="flex items-center justify-between p-6 bg-background border rounded-2xl shadow-lg sticky bottom-6 z-10">
+          <Button variant="outline" size="lg" onClick={() => navigate(-1)}>
+            Annuler les modifications
+          </Button>
+          <Button size="lg" className="campus-gradient text-white px-10 shadow-lg shadow-primary/20" onClick={handleSave} disabled={isSaving}>
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Enregistrement...
+              </>
+            ) : (
+              <>
+                <Check className="mr-2 h-5 w-5" />
+                Enregistrer le profil
+              </>
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { ChevronLeft, ChevronRight, Check, Loader2, Plus, X, AlertCircle, Eye, EyeOff, Camera, Upload, Info } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, Loader2, Plus, X, AlertCircle, Eye, EyeOff, Camera, Upload, Info, Briefcase, Languages, Smile, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, REGISTRATION_MAX_LENGTHS } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +20,8 @@ import { FacultyCombobox } from "@/components/forms/FacultyCombobox";
 import { StudyLevelCombobox } from "@/components/forms/StudyLevelCombobox";
 import { SkillsCombobox } from "@/components/forms/SkillsCombobox";
 import { InterestsCombobox } from "@/components/forms/InterestsCombobox";
+import { LanguageCombobox } from "@/components/forms/LanguageCombobox";
+import { CityCombobox } from "@/components/forms/CityCombobox";
 import Sphere3D from "@/components/layout/Sphere3D";
 
 type Step = 1 | 2 | 3;
@@ -57,13 +59,15 @@ export function CompleteProfile() {
 
   const [formData, setFormData] = useState({
     firstName: "", lastName: "",
-    username: "", phoneNumber: "", dateOfBirth: "", password: "", confirmPassword: "", town: "", language: "",
+    username: "", phoneNumber: "", dateOfBirth: "", password: "", confirmPassword: "", town: "", languages: [] as string[],
     university: "", faculty: "", studyYear: "", studentId: "", campus: "",
     previousEducation: [] as Array<{degree: string; school: string; year: string}>,
     experiences: [] as Array<{title: string; company: string; duration: string; description: string}>,
     skills: [] as string[], interests: [] as string[],
     portfolioLinks: [] as Array<{name: string; url: string}>,
   });
+
+  const [newLanguageInput, setNewLanguageInput] = useState("");
 
   const [newLink, setNewLink] = useState({ name: "", url: "" });
   const cardInputRef = useRef<HTMLInputElement>(null);
@@ -246,7 +250,7 @@ export function CompleteProfile() {
       phone_number: normalizedPhoneNumber,
       date_of_birth: formData.dateOfBirth,
       town: formData.town,
-      language: formData.language || "Français",
+      language: formData.languages.join(", ") || "Français",
       university: formData.university,
       faculty: formData.faculty,
       study_year: formData.studyYear,
@@ -387,11 +391,16 @@ export function CompleteProfile() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="min-w-0">
                   <Label>Ville</Label>
-                  <Input maxLength={REGISTRATION_MAX_LENGTHS.town} value={formData.town} onChange={e => handleInput("town", e.target.value)} className="w-full min-w-0" />
+                  <CityCombobox 
+                    value={formData.town} 
+                    onValueChange={v => handleInput("town", v)} 
+                    className="mt-1"
+                  />
                 </div>
-                <div className="min-w-0">
-                  <Label>Langue</Label>
-                  <Input maxLength={REGISTRATION_MAX_LENGTHS.language} value={formData.language} onChange={e => handleInput("language", e.target.value)} placeholder="Français" className="w-full min-w-0" />
+                <div className="min-w-0 flex items-end">
+                  <p className="text-[10px] text-muted-foreground italic pb-2">
+                    La ville aide à vous connecter aux étudiants proches de vous.
+                  </p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -527,124 +536,211 @@ export function CompleteProfile() {
             </div>
           )}
 
-          {/* ── ÉTAPE 3 : Compétences ── */}
+          {/* ── ÉTAPE 3 : Expérience & Compétences ── */}
           {step === 3 && (
-            <div className="space-y-5">
-              <CardTitle>Expérience & Compétences</CardTitle>
+            <div className="space-y-6">
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5 text-primary" />
+                Compétences & Expériences
+              </CardTitle>
 
-              {/* Formations */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label>Formations précédentes</Label>
-                  <AddEducationModal existingEducations={formData.previousEducation} onEducationAdded={edu => setFormData(p => ({ ...p, previousEducation: [...p.previousEducation, edu] }))}>
-                    <Button size="sm" variant="outline"><Plus className="h-4 w-4 mr-1" />Ajouter</Button>
-                  </AddEducationModal>
+              {/* SECTION: PROFESSIONNEL */}
+              <div className="space-y-6 p-4 rounded-2xl bg-primary/5 border border-primary/10">
+                <div className="flex items-center gap-2 mb-2">
+                  <Briefcase className="h-4 w-4 text-primary" />
+                  <h3 className="text-sm font-semibold tracking-wider">Professionnel</h3>
                 </div>
-                {formData.previousEducation.map((edu, i) => (
-                  <div key={i} className="flex justify-between items-center gap-2 border-l-2 border-primary/50 pl-3 py-1 mb-1 bg-muted/50 rounded-r">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap">{formatSlugToLabel(edu.degree)}</p>
-                      <p className="text-xs text-muted-foreground break-words">{formatSlugToLabel(edu.school)} · {edu.year}</p>
-                    </div>
-                    <Button variant="ghost" size="sm" onClick={() => setFormData(p => ({ ...p, previousEducation: p.previousEducation.filter((_, j) => j !== i) }))}><X className="h-4 w-4" /></Button>
+
+                {/* Expériences */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-medium">Parcours Professionnel</Label>
+                    <AddExperienceModal existingExperiences={formData.experiences} onExperienceAdded={exp => setFormData(p => ({ ...p, experiences: [...p.experiences, exp] }))}>
+                      <Button size="sm" variant="ghost" className="h-7 text-xs text-primary hover:bg-primary/10"><Plus className="h-3 w-3 mr-1" /> Ajouter</Button>
+                    </AddExperienceModal>
                   </div>
-                ))}
-                {errors.previousEducation && <p className="text-xs text-red-500 mt-1">{errors.previousEducation}</p>}
-              </div>
-
-              {/* Expériences */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label>Expériences</Label>
-                  <AddExperienceModal existingExperiences={formData.experiences} onExperienceAdded={exp => setFormData(p => ({ ...p, experiences: [...p.experiences, exp] }))}>
-                    <Button size="sm" variant="outline"><Plus className="h-4 w-4 mr-1" />Ajouter</Button>
-                  </AddExperienceModal>
-                </div>
-                {formData.experiences.map((exp, i) => (
-                  <div key={i} className="flex justify-between items-center gap-2 border-l-2 border-primary/50 pl-3 py-1 mb-1 bg-muted/50 rounded-r">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap">{exp.title}</p>
-                      <p className="text-xs text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap">{exp.company} · {exp.duration}</p>
-                    </div>
-                    <Button variant="ghost" size="sm" onClick={() => setFormData(p => ({ ...p, experiences: p.experiences.filter((_, j) => j !== i) }))}><X className="h-4 w-4" /></Button>
+                  <div className="grid gap-2">
+                    {formData.experiences.map((exp, i) => (
+                      <div key={i} className="flex justify-between items-center gap-2 p-3 bg-background border rounded-xl shadow-sm animate-in fade-in slide-in-from-right-2 duration-300">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold">{exp.title}</p>
+                          <p className="text-xs text-muted-foreground">{exp.company} · {exp.duration}</p>
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => setFormData(p => ({ ...p, experiences: p.experiences.filter((_, j) => j !== i) }))}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
                   </div>
-                ))}
-                {errors.experiences && <p className="text-xs text-red-500 mt-1">{errors.experiences}</p>}
-              </div>
+                </div>
 
-              {/* Compétences */}
-              <div>
-                <Label>Compétences</Label>
-                <SkillsCombobox
-                  onSkillAdd={(skill) => {
-                    if (!formData.skills.includes(skill)) {
-                      setFormData(p => ({ ...p, skills: [...p.skills, skill] }));
-                    }
-                  }}
-                  className="mt-1"
-                />
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {formData.skills.map((s, i) => (
-                    <Badge 
-                      key={i} 
-                      variant="secondary" 
-                      className="cursor-pointer capitalize" 
-                      onClick={() => setFormData(p => ({ ...p, skills: p.skills.filter((_, j) => j !== i) }))}
-                    >
-                      {formatSlugToLabel(s)} ×
-                    </Badge>
-                  ))}
+                {/* Compétences */}
+                <div className="space-y-3">
+                  <Label className="text-xs font-medium">Compétences Techniques</Label>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <SkillsCombobox
+                        onSkillAdd={(skill) => {
+                          if (!formData.skills.includes(skill)) {
+                            setFormData(p => ({ ...p, skills: [...p.skills, skill] }));
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {formData.skills.map((s, i) => (
+                      <Badge 
+                        key={i} 
+                        variant="secondary" 
+                        className="gap-1 pl-2 pr-1 py-1 capitalize animate-in zoom-in duration-200"
+                      >
+                        {formatSlugToLabel(s)}
+                        <button onClick={() => setFormData(p => ({ ...p, skills: p.skills.filter((_, j) => j !== i) }))} className="ml-1 hover:bg-muted-foreground/20 rounded-full p-0.5">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              {/* Intérêts */}
-              <div>
-                <Label>Centres d'intérêt</Label>
-                <InterestsCombobox
-                  onInterestAdd={(interest) => {
-                    if (!formData.interests.includes(interest)) {
-                      setFormData(p => ({ ...p, interests: [...p.interests, interest] }));
-                    }
-                  }}
-                  className="mt-1"
-                />
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {formData.interests.map((s, i) => (
-                    <Badge 
-                      key={i} 
+              {/* SECTION: PERSONNEL & LANGUES */}
+              <div className="space-y-6 p-4 rounded-2xl bg-accent/5 border border-accent/10">
+                <div className="flex items-center gap-2 mb-2">
+                  <Smile className="h-4 w-4 text-accent-foreground" />
+                  <h3 className="text-sm font-semibold tracking-wider">Personnel & Langues</h3>
+                </div>
+
+                {/* Langues */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-medium">Langues parlées</Label>
+                    <Languages className="h-4 w-4 text-muted-foreground opacity-50" />
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <LanguageCombobox
+                        value={newLanguageInput}
+                        onValueChange={setNewLanguageInput}
+                        onLanguageAdd={(lang) => {
+                          if (!formData.languages.includes(lang)) {
+                            setFormData(p => ({ ...p, languages: [...p.languages, lang] }));
+                            setNewLanguageInput("");
+                          }
+                        }}
+                      />
+                    </div>
+                    <Button 
                       variant="outline" 
-                      className="cursor-pointer capitalize" 
-                      onClick={() => setFormData(p => ({ ...p, interests: p.interests.filter((_, j) => j !== i) }))}
+                      size="icon" 
+                      className="shrink-0"
+                      onClick={() => {
+                        if (newLanguageInput.trim() && !formData.languages.includes(newLanguageInput.trim())) {
+                          setFormData(p => ({ ...p, languages: [...p.languages, newLanguageInput.trim()] }));
+                          setNewLanguageInput("");
+                        }
+                      }}
                     >
-                      {formatSlugToLabel(s)} ×
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-
-              {/* Portfolio */}
-              <div>
-                <Label>Portfolio / Liens</Label>
-                <div className="flex gap-2 mt-1 min-w-0 w-full">
-                  <Input maxLength={REGISTRATION_MAX_LENGTHS.portfolioName} placeholder="Nom" value={newLink.name} onChange={e => setNewLink(p => ({ ...p, name: e.target.value }))} className="w-1/3 min-w-0" />
-                  <Input maxLength={REGISTRATION_MAX_LENGTHS.portfolioUrl} placeholder="URL" value={newLink.url} onChange={e => setNewLink(p => ({ ...p, url: e.target.value }))} className="w-full min-w-0" />
-                  <Button type="button" variant="outline" onClick={() => { if (newLink.name && newLink.url) { setFormData(p => ({ ...p, portfolioLinks: [...p.portfolioLinks, newLink] })); setNewLink({ name: "", url: "" }); } }}>+</Button>
-                </div>
-                {errors.portfolioLinks && <p className="text-xs text-red-500 mt-1">{errors.portfolioLinks}</p>}
-                {formData.portfolioLinks.map((l, i) => (
-                  <div key={i} className="flex justify-between items-center gap-2 p-2 border rounded mt-1 bg-muted/50">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap">{l.name}</p>
-                      <p className="text-xs text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap" title={l.url}>{l.url}</p>
-                    </div>
-                    <Button variant="ghost" size="sm" onClick={() => setFormData(p => ({ ...p, portfolioLinks: p.portfolioLinks.filter((_, j) => j !== i) }))}><X className="h-4 w-4" /></Button>
+                      <Plus className="h-4 w-4" />
+                    </Button>
                   </div>
-                ))}
+                  <div className="flex flex-wrap gap-2">
+                    {formData.languages.map((l, i) => (
+                      <Badge 
+                        key={i} 
+                        variant="outline" 
+                        className="gap-1 pl-2 pr-1 py-1 border-primary/30 bg-primary/5 animate-in zoom-in duration-200"
+                      >
+                        {l}
+                        <button onClick={() => setFormData(p => ({ ...p, languages: p.languages.filter((_, j) => j !== i) }))} className="ml-1 hover:bg-primary/20 rounded-full p-0.5">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Intérêts */}
+                <div className="space-y-3">
+                  <Label className="text-xs font-medium">Centres d'intérêt</Label>
+                  <InterestsCombobox
+                    onInterestAdd={(interest) => {
+                      if (!formData.interests.includes(interest)) {
+                        setFormData(p => ({ ...p, interests: [...p.interests, interest] }));
+                      }
+                    }}
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    {formData.interests.map((s, i) => (
+                      <Badge 
+                        key={i} 
+                        variant="outline" 
+                        className="gap-1 pl-2 pr-1 py-1 border-accent-foreground/20 animate-in zoom-in duration-200 capitalize"
+                      >
+                        {formatSlugToLabel(s)}
+                        <button onClick={() => setFormData(p => ({ ...p, interests: p.interests.filter((_, j) => j !== i) }))} className="ml-1 hover:bg-accent-foreground/10 rounded-full p-0.5">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
               </div>
 
-              <div className="flex justify-between pt-2">
+              {/* SECTION: ACADÉMIQUE PRÉCÉDENT & PORTFOLIO */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Formations */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-medium">Cursus Antérieur</Label>
+                    <AddEducationModal existingEducations={formData.previousEducation} onEducationAdded={edu => setFormData(p => ({ ...p, previousEducation: [...p.previousEducation, edu] }))}>
+                      <Button size="sm" variant="ghost" className="h-7 p-0 text-primary hover:bg-transparent"><Plus className="h-3 w-3 mr-1" /> Ajouter</Button>
+                    </AddEducationModal>
+                  </div>
+                  <div className="grid gap-2">
+                    {formData.previousEducation.map((edu, i) => (
+                      <div key={i} className="flex justify-between items-center gap-2 p-2 bg-muted/30 border rounded-lg text-[10px]">
+                        <div className="min-w-0">
+                          <p className="font-semibold truncate">{formatSlugToLabel(edu.degree)}</p>
+                          <p className="text-muted-foreground truncate">{formatSlugToLabel(edu.school)} · {edu.year}</p>
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setFormData(p => ({ ...p, previousEducation: p.previousEducation.filter((_, j) => j !== i) }))}>
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Portfolio */}
+                <div className="space-y-3">
+                  <Label className="text-xs font-medium">Portfolio / Liens</Label>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex gap-2">
+                      <Input placeholder="Nom" value={newLink.name} onChange={e => setNewLink(p => ({ ...p, name: e.target.value }))} className="text-xs h-8" />
+                      <Input placeholder="URL" value={newLink.url} onChange={e => setNewLink(p => ({ ...p, url: e.target.value }))} className="text-xs h-8" />
+                      <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => { if (newLink.name && newLink.url) { setFormData(p => ({ ...p, portfolioLinks: [...p.portfolioLinks, newLink] })); setNewLink({ name: "", url: "" }); } }}>
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <div className="grid gap-2">
+                      {formData.portfolioLinks.map((l, i) => (
+                        <div key={i} className="flex justify-between items-center gap-2 p-2 bg-muted/30 border rounded-lg text-[10px]">
+                          <p className="font-medium truncate">{l.name}</p>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setFormData(p => ({ ...p, portfolioLinks: p.portfolioLinks.filter((_, j) => j !== i) }))}>
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-between pt-4 border-t">
                 <Button variant="outline" onClick={() => setStep(2)}><ChevronLeft className="mr-2 h-4 w-4" />Précédent</Button>
-                <Button onClick={handleSubmit} disabled={isLoading} className="campus-gradient text-white">
+                <Button onClick={handleSubmit} disabled={isLoading} className="campus-gradient text-white min-w-[140px]">
                   {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Finalisation...</> : <><Check className="mr-2 h-4 w-4" />Terminer</>}
                 </Button>
               </div>

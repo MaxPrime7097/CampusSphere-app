@@ -3,6 +3,8 @@ import { Combobox } from "@/components/ui/combobox";
 
 interface LanguageComboboxProps {
   onLanguageAdd?: (language: string) => void;
+  value?: string;
+  onValueChange?: (value: string) => void;
   placeholder?: string;
   className?: string;
   disabled?: boolean;
@@ -35,16 +37,23 @@ const languages = [
 
 export function LanguageCombobox({
   onLanguageAdd,
+  value: externalValue,
+  onValueChange,
   placeholder = "Ajouter une langue",
   className,
   disabled = false,
 }: LanguageComboboxProps) {
-  const [value, setValue] = useState("");
+  const [internalValue, setInternalValue] = useState("");
+
+  const value = externalValue !== undefined ? externalValue : internalValue;
+  const setValue = onValueChange !== undefined ? onValueChange : setInternalValue;
 
   const handleValueChange = (newValue: string) => {
-    if (newValue && onLanguageAdd) {
+    setValue(newValue);
+    // If it's a selection from the list, we can add it immediately
+    if (newValue && onLanguageAdd && languages.some(l => l.value === newValue || l.label === newValue)) {
       onLanguageAdd(newValue);
-      setValue(""); // Reset after selection
+      setValue(""); 
     }
   };
 
