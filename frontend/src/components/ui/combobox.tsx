@@ -27,6 +27,7 @@ interface ComboboxProps {
   className?: string
   disabled?: boolean
   allowCustomValue?: boolean
+  onSearchValueChange?: (value: string) => void
 }
 
 export function Combobox({
@@ -39,6 +40,7 @@ export function Combobox({
   className,
   disabled = false,
   allowCustomValue = false,
+  onSearchValueChange,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
   const [searchValue, setSearchValue] = React.useState("")
@@ -80,7 +82,10 @@ export function Combobox({
           <CommandInput 
             placeholder={searchPlaceholder} 
             value={searchValue}
-            onValueChange={setSearchValue}
+            onValueChange={(v) => {
+              setSearchValue(v);
+              onSearchValueChange?.(v);
+            }}
             onKeyDown={handleKeyDown}
           />
           <CommandList>

@@ -8,6 +8,7 @@ interface SkillsComboboxProps {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  onSearchValueChange?: (value: string) => void;
 }
 
 const skills = [
@@ -98,6 +99,7 @@ export function SkillsCombobox({
   placeholder = "Ajouter une compétence",
   className,
   disabled = false,
+  onSearchValueChange,
 }: SkillsComboboxProps) {
   const [internalValue, setInternalValue] = useState("");
 
@@ -124,6 +126,7 @@ export function SkillsCombobox({
       className={className}
       disabled={disabled}
       allowCustomValue={true}
+      onSearchValueChange={onSearchValueChange}
     />
   );
 }

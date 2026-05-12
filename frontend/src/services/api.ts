@@ -693,6 +693,9 @@ export async function updateUserProfile(data: Partial<{
   skills: string[];
   interests: string[];
   current_mood: string;
+  experiences: any[];
+  previous_education: any[];
+  portfolio_links: any[];
 }>, token?: string) {
   const response = await apiFetch<any>("api/users/profile/", {
     method: "PATCH",

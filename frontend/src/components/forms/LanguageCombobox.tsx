@@ -8,6 +8,7 @@ interface LanguageComboboxProps {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  onSearchValueChange?: (value: string) => void;
 }
 
 const languages = [
@@ -42,6 +43,7 @@ export function LanguageCombobox({
   placeholder = "Ajouter une langue",
   className,
   disabled = false,
+  onSearchValueChange,
 }: LanguageComboboxProps) {
   const [internalValue, setInternalValue] = useState("");
 
@@ -68,6 +70,7 @@ export function LanguageCombobox({
       className={className}
       disabled={disabled}
       allowCustomValue={true}
+      onSearchValueChange={onSearchValueChange}
     />
   );
 }

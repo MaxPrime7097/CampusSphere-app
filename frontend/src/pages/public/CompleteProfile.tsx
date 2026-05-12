@@ -580,6 +580,10 @@ export function CompleteProfile() {
                   <div className="flex gap-2">
                     <div className="flex-1">
                       <SkillsCombobox
+                        onSearchValueChange={(v) => {
+                          // Allow the combobox to update internal state or we can track it here if needed
+                          // In this case, SkillsCombobox handles its own internal value, but we could sync it
+                        }}
                         onSkillAdd={(skill) => {
                           if (!formData.skills.includes(skill)) {
                             setFormData(p => ({ ...p, skills: [...p.skills, skill] }));
@@ -623,6 +627,7 @@ export function CompleteProfile() {
                       <LanguageCombobox
                         value={newLanguageInput}
                         onValueChange={setNewLanguageInput}
+                        onSearchValueChange={setNewLanguageInput}
                         onLanguageAdd={(lang) => {
                           if (!formData.languages.includes(lang)) {
                             setFormData(p => ({ ...p, languages: [...p.languages, lang] }));
@@ -652,7 +657,7 @@ export function CompleteProfile() {
                         variant="outline" 
                         className="gap-1 pl-2 pr-1 py-1 border-primary/30 bg-primary/5 animate-in zoom-in duration-200"
                       >
-                        {l}
+                        {formatSlugToLabel(l)}
                         <button onClick={() => setFormData(p => ({ ...p, languages: p.languages.filter((_, j) => j !== i) }))} className="ml-1 hover:bg-primary/20 rounded-full p-0.5">
                           <X className="h-3 w-3" />
                         </button>
@@ -665,6 +670,9 @@ export function CompleteProfile() {
                 <div className="space-y-3">
                   <Label className="text-xs font-medium">Centres d'intérêt</Label>
                   <InterestsCombobox
+                    onSearchValueChange={(v) => {
+                      // Internal tracking if needed
+                    }}
                     onInterestAdd={(interest) => {
                       if (!formData.interests.includes(interest)) {
                         setFormData(p => ({ ...p, interests: [...p.interests, interest] }));

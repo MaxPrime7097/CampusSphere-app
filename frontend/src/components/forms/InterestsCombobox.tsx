@@ -8,6 +8,7 @@ interface InterestsComboboxProps {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  onSearchValueChange?: (value: string) => void;
 }
 
 const interests = [
@@ -111,6 +112,7 @@ export function InterestsCombobox({
   placeholder = "Ajouter un centre d'intérêt",
   className,
   disabled = false,
+  onSearchValueChange,
 }: InterestsComboboxProps) {
   const [internalValue, setInternalValue] = useState("");
 
@@ -137,6 +139,7 @@ export function InterestsCombobox({
       className={className}
       disabled={disabled}
       allowCustomValue={true}
+      onSearchValueChange={onSearchValueChange}
     />
   );
 }

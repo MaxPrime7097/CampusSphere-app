@@ -21,6 +21,7 @@ import { SkillsCombobox } from "@/components/forms/SkillsCombobox";
 import { InterestsCombobox } from "@/components/forms/InterestsCombobox";
 import { CityCombobox } from "@/components/forms/CityCombobox";
 import { LanguageCombobox } from "@/components/forms/LanguageCombobox";
+import { formatSlugToLabel } from "@/lib/utils";
 
 export function EditProfile() {
   const navigate = useNavigate();
@@ -107,25 +108,21 @@ export function EditProfile() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const updateData = {
+      const updateData: any = {
         first_name: firstName,
         last_name: lastName,
         username: username,
         bio: bio,
-        email: email,
-        phone_number: phone,
         town: town,
-        date_of_birth: dateOfBirth,
         language: languages.join(", "),
         university: university,
         faculty: faculty,
         study_year: studyYear,
-        student_id: studentId,
         skills: skills,
         interests: interests,
-        experiences: experiences,
-        previous_education: previousEducation,
-        portfolio_links: portfolioLinks,
+        experiences: experiences.filter(exp => exp.title || exp.company),
+        previous_education: previousEducation.filter(edu => edu.degree || edu.school),
+        portfolio_links: portfolioLinks.filter(link => link.name || link.url),
       };
 
       await updateUserProfile(updateData);
@@ -314,6 +311,7 @@ export function EditProfile() {
                     <SkillsCombobox 
                       value={newSkill} 
                       onValueChange={setNewSkill}
+                      onSearchValueChange={setNewSkill}
                       onSkillAdd={(s) => { if(!skills.includes(s)) { setSkills([...skills, s]); setNewSkill(""); } }}
                     />
                   </div>
@@ -324,7 +322,7 @@ export function EditProfile() {
                 <div className="flex flex-wrap gap-2 p-3 rounded-xl bg-muted/20 min-h-[50px]">
                   {skills.map((s, i) => (
                     <Badge key={i} variant="secondary" className="pl-3 pr-1 py-1.5 gap-1">
-                      {s}
+                      {formatSlugToLabel(s)}
                       <button onClick={() => setSkills(skills.filter(x => x !== s))} className="hover:bg-muted-foreground/20 rounded-full p-0.5">
                         <X className="h-3 w-3" />
                       </button>
@@ -341,6 +339,7 @@ export function EditProfile() {
                     <LanguageCombobox 
                       value={newLanguageInput} 
                       onValueChange={setNewLanguageInput}
+                      onSearchValueChange={setNewLanguageInput}
                       onLanguageAdd={(l) => { if(!languages.includes(l)) { setLanguages([...languages, l]); setNewLanguageInput(""); } }}
                     />
                   </div>
@@ -351,7 +350,7 @@ export function EditProfile() {
                 <div className="flex flex-wrap gap-2 p-3 rounded-xl bg-muted/20 min-h-[50px]">
                   {languages.map((l, i) => (
                     <Badge key={i} variant="outline" className="pl-3 pr-1 py-1.5 gap-1 border-primary/30 bg-primary/5">
-                      {l}
+                      {formatSlugToLabel(l)}
                       <button onClick={() => setLanguages(languages.filter(x => x !== l))} className="hover:bg-primary/20 rounded-full p-0.5">
                         <X className="h-3 w-3" />
                       </button>
@@ -369,6 +368,7 @@ export function EditProfile() {
                   <InterestsCombobox 
                     value={newInterest} 
                     onValueChange={setNewInterest}
+                    onSearchValueChange={setNewInterest}
                     onInterestAdd={(i) => { if(!interests.includes(i)) { setInterests([...interests, i]); setNewInterest(""); } }}
                   />
                 </div>
@@ -379,7 +379,7 @@ export function EditProfile() {
               <div className="flex flex-wrap gap-2 p-3 rounded-xl bg-muted/20">
                 {interests.map((it, i) => (
                   <Badge key={i} variant="outline" className="pl-3 pr-1 py-1.5 gap-1 bg-background">
-                    {it}
+                    {formatSlugToLabel(it)}
                     <button onClick={() => setInterests(interests.filter(x => x !== it))} className="hover:bg-muted-foreground/20 rounded-full p-0.5">
                       <X className="h-3 w-3" />
                     </button>

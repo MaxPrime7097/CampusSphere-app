@@ -254,7 +254,7 @@ const STUDY_YEAR_OPTIONS = Object.entries(STUDY_YEAR_LABELS).map(([value, label]
 const normalizeCanonicalLabel = (value: unknown, map: Record<string, string>): string => {
   if (!value || typeof value !== "string") return "";
   const key = value.trim().toLowerCase();
-  return map[key] || value;
+  return map[key] || formatSlugToLabel(value);
 };
 
 const normalizeId = (value: unknown): string | null => {
@@ -1383,11 +1383,11 @@ export function Profile() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-muted-foreground">Université</p>
-                    <p className="font-medium">{user.university || <EmptyField />}</p>
+                    <p className="font-medium">{formatSlugToLabel(user.university) || <EmptyField />}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Filière</p>
-                    <p className="font-medium">{displayFaculty || <EmptyField />}</p>
+                    <p className="font-medium">{formatSlugToLabel(user.faculty) || <EmptyField />}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Niveau</p>
@@ -1431,7 +1431,12 @@ export function Profile() {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Langue</p>
-                      <p className="font-medium">{user.language || <EmptyField />}</p>
+                      <p className="font-medium">
+                        {user.language 
+                          ? user.language.split(", ").map(formatSlugToLabel).join(", ") 
+                          : <EmptyField />
+                        }
+                      </p>
                     </div>
                   </div>
                 </div>
