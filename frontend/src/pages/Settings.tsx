@@ -75,7 +75,8 @@ export function Settings() {
   const [emailForm, setEmailForm] = useState({
     currentEmail: "",
     newEmail: "",
-    confirmEmail: ""
+    confirmEmail: "",
+    phoneNumber: ""
   });
   const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
   const [privacySettings, setPrivacySettings] = useState({
@@ -114,6 +115,7 @@ export function Settings() {
         setEmailForm((prev) => ({
           ...prev,
           currentEmail: user.email || "",
+          phoneNumber: user.phoneNumber || "",
         }));
         if (privacy) {
           setPrivacySettings({
@@ -289,38 +291,50 @@ export function Settings() {
   };
 
   const handleChangeEmail = async () => {
-    if (emailForm.newEmail !== emailForm.confirmEmail) {
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Les emails ne correspondent pas",
-        duration: 3000,
-      });
-      return;
-    }
-    
     setIsLoading(true);
     try {
-      const updatedUser = await changeUserEmail({
-        current_email: emailForm.currentEmail,
-        new_email: emailForm.newEmail,
+      // Email update
+      if (emailForm.newEmail) {
+        if (emailForm.newEmail !== emailForm.confirmEmail) {
+          toast({
+            variant: "destructive",
+            title: "Erreur",
+            description: "Les emails ne correspondent pas",
+            duration: 3000,
+          });
+          setIsLoading(false);
+          return;
+        }
+        
+        await changeUserEmail({
+          current_email: emailForm.currentEmail,
+          new_email: emailForm.newEmail,
+        });
+      }
+
+      // Phone update
+      await updateUserProfile({
+        phone_number: emailForm.phoneNumber,
       });
+
       toast({
-        title: "Email modifié",
-        description: "Votre email a été mis à jour avec succès",
+        title: "Informations mises à jour",
+        description: "Vos informations d'authentification ont été mises à jour",
         duration: 2000,
       });
-      setEmailForm({
-        currentEmail: updatedUser?.email || emailForm.newEmail,
+      
+      setEmailForm((prev) => ({
+        ...prev,
+        currentEmail: emailForm.newEmail || prev.currentEmail,
         newEmail: "",
         confirmEmail: "",
-      });
+      }));
       setShowEmailModal(false);
     } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: error?.message || "Impossible de modifier votre email",
+        description: error?.message || "Impossible de modifier vos informations",
         duration: 3000,
       });
     } finally {
@@ -719,10 +733,20 @@ export function Settings() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Mail className="h-5 w-5" />
-                Changer l'Email
+                Email et authentification
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
+              <div>
+                <Label htmlFor="phoneNumber">Numéro de téléphone</Label>
+                <Input
+                  id="phoneNumber"
+                  placeholder="6XXXXXXXX"
+                  value={emailForm.phoneNumber}
+                  onChange={(e) => setEmailForm(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                />
+              </div>
+              <Separator className="my-2" />
               <div>
                 <Label htmlFor="currentEmail">Email actuel</Label>
                 <Input
@@ -758,10 +782,10 @@ export function Settings() {
                   {isLoading ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Modification...
+                      Mise à jour...
                     </>
                   ) : (
-                    "Modifier"
+                    "Enregistrer"
                   )}
                 </Button>
               </div>

@@ -33,6 +33,13 @@ import { SkillsCombobox } from "@/components/forms/SkillsCombobox";
 import { InterestsCombobox } from "@/components/forms/InterestsCombobox";
 import { CityCombobox } from "@/components/forms/CityCombobox";
 import { LanguageCombobox } from "@/components/forms/LanguageCombobox";
+import { EditAcademicModal } from "@/components/modals/EditAcademicModal";
+import { EditPersonalModal } from "@/components/modals/EditPersonalModal";
+import { EditEducationModal } from "@/components/modals/EditEducationModal";
+import { EditExperiencesModal } from "@/components/modals/EditExperiencesModal";
+import { EditSkillsModal } from "@/components/modals/EditSkillsModal";
+import { EditInterestsModal } from "@/components/modals/EditInterestsModal";
+import { EditPortfolioModal } from "@/components/modals/EditPortfolioModal";
 
 const NOT_AVAILABLE_TEXT = "—";
 const MOOD_OPTIONS = [
@@ -1376,9 +1383,28 @@ export function Profile() {
           {activeTab === "about" && (
             <section className="mt-6 space-y-4">
               <div className="rounded-lg border bg-card p-6">
-                <h3 className="flex items-center gap-2 text-lg font-semibold mb-4">
-                  <GraduationCap className="h-5 w-5" />
-                  Informations académiques
+                <h3 className="flex items-center justify-between text-lg font-semibold mb-4">
+                  <div className="flex items-center gap-2">
+                    <GraduationCap className="h-5 w-5 text-primary" />
+                    Informations académiques
+                  </div>
+                  {isOwnProfile && (
+                    <EditAcademicModal 
+                      initialData={{
+                        university: user.university || "",
+                        faculty: user.faculty || "",
+                        studyYear: user.studyYear || "",
+                        studentId: user.studentId || "",
+                        campus: user.campus || "",
+                      }}
+                      onSuccess={() => window.location.reload()}
+                    >
+                      <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-primary hover:text-primary hover:bg-primary/10">
+                        <Pencil className="h-3.5 w-3.5" />
+                        Modifier
+                      </Button>
+                    </EditAcademicModal>
+                  )}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -1393,10 +1419,12 @@ export function Profile() {
                     <p className="text-sm text-muted-foreground">Niveau</p>
                     <p className="font-medium">{displayStudyYear || <EmptyField />}</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Matricule</p>
-                    <p className="font-medium">{user.studentId || <EmptyField />}</p>
-                  </div>
+                  {isOwnProfile && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Matricule</p>
+                      <p className="font-medium">{user.studentId || <EmptyField />}</p>
+                    </div>
+                  )}
                   <div>
                     <p className="text-sm text-muted-foreground">Campus</p>
                     <p className="font-medium">{user.campus || <EmptyField />}</p>
@@ -1405,26 +1433,52 @@ export function Profile() {
               </div>
 
               <div className="rounded-lg border bg-card p-6">
-                <h3 className="flex items-center gap-2 text-lg font-semibold mb-4">
-                  <User className="h-5 w-5" />
-                  Informations Personnelles
+                <h3 className="flex items-center justify-between text-lg font-semibold mb-4">
+                  <div className="flex items-center gap-2">
+                    <User className="h-5 w-5 text-primary" />
+                    Informations Personnelles
+                  </div>
+                  {isOwnProfile && (
+                    <EditPersonalModal 
+                      initialData={{
+                        bio: user.bio || "",
+                        email: user.email || "",
+                        phoneNumber: user.phoneNumber || "",
+                        dateOfBirth: user.dateOfBirth || "",
+                        town: user.town || "",
+                        languages: user.language ? user.language.split(", ") : [],
+                      }}
+                      onSuccess={() => window.location.reload()}
+                    >
+                      <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-primary hover:text-primary hover:bg-primary/10">
+                        <Pencil className="h-3.5 w-3.5" />
+                        Modifier
+                      </Button>
+                    </EditPersonalModal>
+                  )}
                 </h3>
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Email</p>
-                      <p className="font-medium">{user.email || <EmptyField />}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Téléphone</p>
-                      <p className="font-medium">{user.phoneNumber || <EmptyField />}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Date de naissance</p>
-                      <p className="font-medium">
-                        {user.dateOfBirth ? formatFrenchDate(user.dateOfBirth) : <EmptyField />}
-                      </p>
-                    </div>
+                    {isOwnProfile && (
+                      <>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Email</p>
+                          <p className="font-medium">{user.email || <EmptyField />}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Téléphone</p>
+                          <p className="font-medium">{user.phoneNumber || <EmptyField />}</p>
+                        </div>
+                      </>
+                    )}
+                    {isOwnProfile && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Date de naissance</p>
+                        <p className="font-medium">
+                          {user.dateOfBirth ? formatFrenchDate(user.dateOfBirth) : <EmptyField />}
+                        </p>
+                      </div>
+                    )}
                     <div>
                       <p className="text-sm text-muted-foreground">Ville</p>
                       <p className="font-medium">{user.town || <EmptyField />}</p>
@@ -1443,9 +1497,22 @@ export function Profile() {
               </div>
 
               <div className="rounded-lg border bg-card p-6">
-                <h3 className="flex items-center gap-2 text-lg font-semibold mb-4">
-                  <BookOpen className="h-5 w-5" />
-                  Formations précédentes
+                <h3 className="flex items-center justify-between text-lg font-semibold mb-4">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="h-5 w-5 text-primary" />
+                    Formations précédentes
+                  </div>
+                  {isOwnProfile && (
+                    <EditEducationModal 
+                      initialEducation={user.previousEducation || []}
+                      onSuccess={() => window.location.reload()}
+                    >
+                      <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-primary hover:text-primary hover:bg-primary/10">
+                        <Pencil className="h-3.5 w-3.5" />
+                        Modifier
+                      </Button>
+                    </EditEducationModal>
+                  )}
                 </h3>
                 {user.previousEducation?.length > 0 ? (
                   <div className="space-y-3">
@@ -1463,9 +1530,22 @@ export function Profile() {
               </div>
 
               <div className="rounded-lg border bg-card p-6">
-                <h3 className="flex items-center gap-2 text-lg font-semibold mb-4">
-                  <Briefcase className="h-5 w-5" />
-                  Expériences
+                <h3 className="flex items-center justify-between text-lg font-semibold mb-4">
+                  <div className="flex items-center gap-2">
+                    <Briefcase className="h-5 w-5 text-primary" />
+                    Expériences
+                  </div>
+                  {isOwnProfile && (
+                    <EditExperiencesModal 
+                      initialExperiences={user.experiences || []}
+                      onSuccess={() => window.location.reload()}
+                    >
+                      <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-primary hover:text-primary hover:bg-primary/10">
+                        <Pencil className="h-3.5 w-3.5" />
+                        Modifier
+                      </Button>
+                    </EditExperiencesModal>
+                  )}
                 </h3>
                 {user.experiences?.length > 0 ? (
                   <div className="space-y-3">
@@ -1485,9 +1565,22 @@ export function Profile() {
               </div>
 
               <div className="rounded-lg border bg-card p-6">
-                <h3 className="flex items-center gap-2 text-lg font-semibold mb-4">
-                  <Zap className="h-5 w-5" />
-                  Compétences
+                <h3 className="flex items-center justify-between text-lg font-semibold mb-4">
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-5 w-5 text-primary" />
+                    Compétences
+                  </div>
+                  {isOwnProfile && (
+                    <EditSkillsModal 
+                      initialSkills={user.skills || []}
+                      onSuccess={() => window.location.reload()}
+                    >
+                      <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-primary hover:text-primary hover:bg-primary/10">
+                        <Pencil className="h-3.5 w-3.5" />
+                        Modifier
+                      </Button>
+                    </EditSkillsModal>
+                  )}
                 </h3>
                 {user.skills?.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
@@ -1503,9 +1596,22 @@ export function Profile() {
               </div>
 
               <div className="rounded-lg border bg-card p-6">
-                <h3 className="flex items-center gap-2 text-lg font-semibold mb-4">
-                  <Smile className="h-5 w-5" />
-                  Centres d'intérêt
+                <h3 className="flex items-center justify-between text-lg font-semibold mb-4">
+                  <div className="flex items-center gap-2">
+                    <Smile className="h-5 w-5 text-primary" />
+                    Centres d'intérêt
+                  </div>
+                  {isOwnProfile && (
+                    <EditInterestsModal 
+                      initialInterests={user.interests || []}
+                      onSuccess={() => window.location.reload()}
+                    >
+                      <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-primary hover:text-primary hover:bg-primary/10">
+                        <Pencil className="h-3.5 w-3.5" />
+                        Modifier
+                      </Button>
+                    </EditInterestsModal>
+                  )}
                 </h3>
                 {user.interests?.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
@@ -1521,9 +1627,22 @@ export function Profile() {
               </div>
 
               <div className="rounded-lg border bg-card p-6">
-                <h3 className="flex items-center gap-2 text-lg font-semibold mb-4">
-                  <BriefcaseBusiness className="h-5 w-5" />
-                  Portfolio
+                <h3 className="flex items-center justify-between text-lg font-semibold mb-4">
+                  <div className="flex items-center gap-2">
+                    <BriefcaseBusiness className="h-5 w-5 text-primary" />
+                    Portfolio
+                  </div>
+                  {isOwnProfile && (
+                    <EditPortfolioModal 
+                      initialLinks={user.portfolioLinks || []}
+                      onSuccess={() => window.location.reload()}
+                    >
+                      <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-primary hover:text-primary hover:bg-primary/10">
+                        <Pencil className="h-3.5 w-3.5" />
+                        Modifier
+                      </Button>
+                    </EditPortfolioModal>
+                  )}
                 </h3>
                 {user.portfolioLinks?.length > 0 ? (
                   <div className="space-y-2">

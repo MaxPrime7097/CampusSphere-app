@@ -696,6 +696,10 @@ export async function updateUserProfile(data: Partial<{
   experiences: any[];
   previous_education: any[];
   portfolio_links: any[];
+  student_id: string;
+  campus: string;
+  phone_number: string;
+  date_of_birth: string;
 }>, token?: string) {
   const response = await apiFetch<any>("api/users/profile/", {
     method: "PATCH",
