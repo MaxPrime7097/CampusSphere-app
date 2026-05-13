@@ -65,6 +65,40 @@ export function formatSlugToLabel(slug: string | null | undefined): string {
     "licence": "Licence",
     "master": "Master",
     "doctorat": "Doctorat",
+    "iuc": "Institut Universitaire de la Côte",
+    "bts1": "BTS 1 / HND 1",
+    "bts2": "BTS 2 / HND 2",
+    "l1": "Licence 1 / Bachelor 1",
+    "l2": "Licence 2 / Bachelor 2",
+    "l3": "Licence 3 / Bachelor 3",
+    "l4": "Licence 4 / Bachelor 4",
+    "m1": "Master 1",
+    "m2": "Master 2",
+    "d1": "Doctorat 1",
+    "d2": "Doctorat 2",
+    "d3": "Doctorat 3",
+    "douala": "Douala",
+    "yaounde": "Yaoundé",
+    "garoua": "Garoua",
+    "bamenda": "Bamenda",
+    "maroua": "Maroua",
+    "bafoussam": "Bafoussam",
+    "ngaoundere": "Ngaoundéré",
+    "bertoua": "Bertoua",
+    "ebolowa": "Ebolowa",
+    "buea": "Buea",
+    "dschang": "Dschang",
+    "kribi": "Kribi",
+    "limbe": "Limbe",
+    "foumban": "Foumban",
+    "nkongsamba": "Nkongsamba",
+    "genie_logiciel": "Génie logiciel",
+    "genie_informatique": "Génie informatique",
+    "genie_civil": "Génie civil",
+    "genie_electrique": "Génie électrique",
+    "medecine": "Médecine",
+    "pharmacie": "Pharmacie",
+    "droit": "Droit",
   };
 
   if (specials[slug.toLowerCase()]) {
@@ -76,4 +110,10 @@ export function formatSlugToLabel(slug: string | null | undefined): string {
     .split(/[_-]/)
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ');
+}
+
+export function truncate(str: string | null | undefined, length: number): string {
+  if (!str) return "";
+  if (str.length <= length) return str;
+  return str.slice(0, length) + "...";
 }

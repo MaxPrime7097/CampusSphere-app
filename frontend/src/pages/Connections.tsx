@@ -15,10 +15,10 @@ import { ConnectionSkeleton } from "@/components/ui/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   getFacultyLabel,
-  getUniversityLabel,
   normalizeFaculty,
   normalizeUniversity,
 } from "@/lib/profileMetadata";
+import { formatSlugToLabel, truncate } from "@/lib/utils";
 
 type ConnectionFilter = "all" | "university" | "faculty" | "mutual" | "impact";
 
@@ -359,8 +359,8 @@ export function Connections() {
                           <p className="text-xs text-muted-foreground">@{connection.username}</p>
                           <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                             {connection.university && (
-                              <Badge variant="secondary" className="text-[9px] h-4 px-1.5 py-0 max-w-[100px] truncate">
-                                {getUniversityLabel(connection.university)}
+                              <Badge variant="secondary" className="text-[9px] h-4 px-1.5 py-0 max-w-[100px] truncate" title={formatSlugToLabel(connection.university)}>
+                                {truncate(formatSlugToLabel(connection.university), 15)}
                               </Badge>
                             )}
                             <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
@@ -495,8 +495,8 @@ export function Connections() {
                           </p>
                           <div className="flex items-center gap-2 mt-1 flex-wrap">
                             {suggestion.university && (
-                              <Badge variant="secondary" className="text-[9px] h-4 px-1.5 py-0 max-w-[100px] truncate">
-                                {getUniversityLabel(suggestion.university)}
+                              <Badge variant="secondary" className="text-[9px] h-4 px-1.5 py-0 max-w-[100px] truncate" title={formatSlugToLabel(suggestion.university)}>
+                                {truncate(formatSlugToLabel(suggestion.university), 15)}
                               </Badge>
                             )}
                             <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">

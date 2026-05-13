@@ -57,7 +57,7 @@ export const completeSupabaseProfilePayloadSchema = z.object({
   ).optional().or(z.literal("")),
   campus: z.string().trim().max(MAX.campus, `Maximum ${MAX.campus} caractères`).optional(),
   town: z.string().trim().max(MAX.town, `Maximum ${MAX.town} caractères`).optional(),
-  language: z.string().trim().max(MAX.language, `Maximum ${MAX.language} caractères`).optional(),
+  language: z.array(z.string().trim().max(50, "Langue trop longue")).optional(),
   bio: z.string().trim().max(MAX.bio, `Maximum ${MAX.bio} caractères`).optional(),
   skills: z.array(z.string().trim().max(50, "Compétence trop longue")).optional(),
   interests: z.array(z.string().trim().max(50, "Centre d'intérêt trop long")).optional(),

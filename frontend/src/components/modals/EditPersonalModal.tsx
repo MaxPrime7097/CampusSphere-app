@@ -17,6 +17,7 @@ interface EditPersonalModalProps {
   initialData: {
     bio: string;
     email: string;
+    phoneNumber: string;
     dateOfBirth: string;
     town: string;
     languages: string[];
@@ -27,6 +28,7 @@ interface EditPersonalModalProps {
 export function EditPersonalModal({ children, initialData, onSuccess }: EditPersonalModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [bio, setBio] = useState(initialData.bio);
+  const [phoneNumber, setPhoneNumber] = useState(initialData.phoneNumber);
   const [dateOfBirth, setDateOfBirth] = useState(initialData.dateOfBirth);
   const [town, setTown] = useState(initialData.town);
   const [languages, setLanguages] = useState<string[]>(initialData.languages);
@@ -39,9 +41,10 @@ export function EditPersonalModal({ children, initialData, onSuccess }: EditPers
     try {
       await updateUserProfile({
         bio,
+        phone_number: phoneNumber,
         date_of_birth: dateOfBirth,
         town,
-        language: languages.join(", "),
+        language: languages,
       });
 
       toast({
@@ -97,13 +100,21 @@ export function EditPersonalModal({ children, initialData, onSuccess }: EditPers
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Date de naissance</Label>
               <Input 
                 type="date"
                 value={dateOfBirth} 
                 onChange={(e) => setDateOfBirth(e.target.value)} 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Téléphone</Label>
+              <Input 
+                value={phoneNumber} 
+                onChange={(e) => setPhoneNumber(e.target.value)} 
+                placeholder="6xx xxx xxx"
               />
             </div>
           </div>

@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CreatePost } from "@/components/feed/CreatePost";
 import { PostCard } from "@/components/feed/PostCard";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { cn, formatFileSize, formatSlugToLabel } from "@/lib/utils";
+import { cn, formatFileSize, formatSlugToLabel, truncate } from "@/lib/utils";
 import { ProfileSkeleton } from "@/components/ui/skeletons";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import { ResourceCard } from "@/components/resources/ResourceCard";
@@ -1401,7 +1401,6 @@ export function Profile() {
                     >
                       <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-primary hover:text-primary hover:bg-primary/10">
                         <Pencil className="h-3.5 w-3.5" />
-                        Modifier
                       </Button>
                     </EditAcademicModal>
                   )}
@@ -1409,7 +1408,9 @@ export function Profile() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-muted-foreground">Université</p>
-                    <p className="font-medium">{formatSlugToLabel(user.university) || <EmptyField />}</p>
+                    <p className="font-medium" title={formatSlugToLabel(user.university)}>
+                      {truncate(formatSlugToLabel(user.university), 35) || <EmptyField />}
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Filière</p>
@@ -1446,13 +1447,12 @@ export function Profile() {
                         phoneNumber: user.phoneNumber || "",
                         dateOfBirth: user.dateOfBirth || "",
                         town: user.town || "",
-                        languages: user.language ? user.language.split(", ") : [],
+                        languages: Array.isArray(user.language) ? user.language : [],
                       }}
                       onSuccess={() => window.location.reload()}
                     >
                       <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-primary hover:text-primary hover:bg-primary/10">
                         <Pencil className="h-3.5 w-3.5" />
-                        Modifier
                       </Button>
                     </EditPersonalModal>
                   )}
@@ -1484,10 +1484,10 @@ export function Profile() {
                       <p className="font-medium">{user.town || <EmptyField />}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Langue</p>
+                      <p className="text-sm text-muted-foreground">Langues</p>
                       <p className="font-medium">
-                        {user.language 
-                          ? user.language.split(", ").map(formatSlugToLabel).join(", ") 
+                        {Array.isArray(user.language) && user.language.length > 0
+                          ? user.language.map(formatSlugToLabel).join(", ") 
                           : <EmptyField />
                         }
                       </p>
@@ -1509,7 +1509,6 @@ export function Profile() {
                     >
                       <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-primary hover:text-primary hover:bg-primary/10">
                         <Pencil className="h-3.5 w-3.5" />
-                        Modifier
                       </Button>
                     </EditEducationModal>
                   )}
@@ -1542,7 +1541,6 @@ export function Profile() {
                     >
                       <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-primary hover:text-primary hover:bg-primary/10">
                         <Pencil className="h-3.5 w-3.5" />
-                        Modifier
                       </Button>
                     </EditExperiencesModal>
                   )}
@@ -1577,7 +1575,6 @@ export function Profile() {
                     >
                       <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-primary hover:text-primary hover:bg-primary/10">
                         <Pencil className="h-3.5 w-3.5" />
-                        Modifier
                       </Button>
                     </EditSkillsModal>
                   )}
@@ -1608,7 +1605,6 @@ export function Profile() {
                     >
                       <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-primary hover:text-primary hover:bg-primary/10">
                         <Pencil className="h-3.5 w-3.5" />
-                        Modifier
                       </Button>
                     </EditInterestsModal>
                   )}
@@ -1639,7 +1635,6 @@ export function Profile() {
                     >
                       <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-primary hover:text-primary hover:bg-primary/10">
                         <Pencil className="h-3.5 w-3.5" />
-                        Modifier
                       </Button>
                     </EditPortfolioModal>
                   )}

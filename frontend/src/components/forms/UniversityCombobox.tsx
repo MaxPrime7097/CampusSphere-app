@@ -9,7 +9,7 @@ interface UniversityComboboxProps {
 }
 
 const universities = [
-  { value: "IUC", label: "Institut Universitaire de la Côte" },
+  { value: "iuc", label: "Institut Universitaire de la Côte" },
 ]
 
 export function UniversityCombobox({

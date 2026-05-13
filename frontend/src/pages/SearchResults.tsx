@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, Users, BookOpen, ShoppingBag, Loader2, Link, Unlink, FolderOpen, User, Filter, BadgeCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { cn, formatFileSize, formatSlugToLabel, truncate } from "@/lib/utils";
 import {
   DEFAULT_SORT,
   SEARCH_SORT_KEYS,
@@ -113,9 +114,9 @@ export function SearchResults() {
               name: u.name || u.first_name + ' ' + u.last_name,
               username: u.username,
               avatar: u.avatar || '/placeholder-avatar.jpg',
-              bio: u.bio || [u.university, u.faculty].filter(Boolean).join(" • "),
-              university: u.university || '',
-              faculty: u.faculty || '',
+              bio: u.bio || [formatSlugToLabel(u.university), formatSlugToLabel(u.faculty)].filter(Boolean).join(" • "),
+              university: formatSlugToLabel(u.university),
+              faculty: formatSlugToLabel(u.faculty),
               isVerified: Boolean(u.is_verified ?? u.isVerified),
             })),
             resources: (data.resources || []).map((r: any) => ({

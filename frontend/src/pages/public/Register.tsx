@@ -36,6 +36,7 @@ import { FacultyCombobox } from "@/components/forms/FacultyCombobox";
 import { StudyLevelCombobox } from "@/components/forms/StudyLevelCombobox";
 import { SkillsCombobox } from "@/components/forms/SkillsCombobox";
 import { InterestsCombobox } from "@/components/forms/InterestsCombobox";
+import { LanguageCombobox } from "@/components/forms/LanguageCombobox";
 import { AuthSidePanel } from "@/components/auth/AuthSidePanel";
 
 // Étapes : 1=infos perso, "verify"=attente email, 2=académique, 3=compétences
@@ -97,7 +98,7 @@ export function Register() {
   const [formData, setFormData] = useState({
     firstName: "", lastName: "", username: "", email: "",
     phoneNumber: "", dateOfBirth: "", password: "", confirmPassword: "",
-    avatar: null as File | null, bio: "", town: "", language: "",
+    avatar: null as File | null, bio: "", town: "", languages: [] as string[],
     university: "", faculty: "", studyYear: "", studentId: "", campus: "",
     previousEducation: [] as Array<{degree: string; school: string; year: string}>,
     experiences: [] as Array<{title: string; company: string; duration: string; description: string}>,
@@ -105,6 +106,9 @@ export function Register() {
     portfolioLinks: [] as Array<{name: string; url: string}>,
   });
 
+  const [newLanguageInput, setNewLanguageInput] = useState("");
+  const [newSkillInput, setNewSkillInput] = useState("");
+  const [newInterestInput, setNewInterestInput] = useState("");
   const [newLink, setNewLink] = useState({ name: "", url: "" });
 
   const getPasswordStrength = (password: string) => {
@@ -413,7 +417,7 @@ export function Register() {
       student_id: formData.studentId,
       campus: formData.campus,
       town: formData.town,
-      language: formData.language || "fr",
+      language: formData.languages.length > 0 ? formData.languages : ["Français"],
       bio: formData.bio,
       skills: formData.skills,
       interests: formData.interests,
@@ -768,12 +772,34 @@ export function Register() {
               {/* Compétences */}
               <div>
                 <Label>Compétences</Label>
-                <SkillsCombobox
-                  onSkillAdd={(skill) => {
-                    if (!formData.skills.includes(skill)) setFormData(p => ({ ...p, skills: [...p.skills, skill] }));
-                  }}
-                  className="mt-2"
-                />
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <SkillsCombobox
+                      value={newSkillInput}
+                      onValueChange={setNewSkillInput}
+                      onSearchValueChange={setNewSkillInput}
+                      onSkillAdd={(skill) => {
+                        if (!formData.skills.includes(skill)) {
+                          setFormData(p => ({ ...p, skills: [...p.skills, skill] }));
+                          setNewSkillInput("");
+                        }
+                      }}
+                    />
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="shrink-0"
+                    onClick={() => {
+                      if (newSkillInput.trim() && !formData.skills.includes(newSkillInput.trim())) {
+                        setFormData(p => ({ ...p, skills: [...p.skills, newSkillInput.trim()] }));
+                        setNewSkillInput("");
+                      }
+                    }}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
                 <div className="flex flex-wrap gap-2 mt-2">
                   {formData.skills.map(s => <Badge key={s} variant="secondary" className="cursor-pointer" onClick={() => setFormData(p => ({ ...p, skills: p.skills.filter(x => x !== s) }))}>{s} ×</Badge>)}
                 </div>
@@ -782,14 +808,76 @@ export function Register() {
               {/* Intérêts */}
               <div>
                 <Label>Centres d'intérêt</Label>
-                <InterestsCombobox
-                  onInterestAdd={(interest) => {
-                    if (!formData.interests.includes(interest)) setFormData(p => ({ ...p, interests: [...p.interests, interest] }));
-                  }}
-                  className="mt-2"
-                />
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <InterestsCombobox
+                      value={newInterestInput}
+                      onValueChange={setNewInterestInput}
+                      onSearchValueChange={setNewInterestInput}
+                      onInterestAdd={(interest) => {
+                        if (!formData.interests.includes(interest)) {
+                          setFormData(p => ({ ...p, interests: [...p.interests, interest] }));
+                          setNewInterestInput("");
+                        }
+                      }}
+                    />
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="shrink-0"
+                    onClick={() => {
+                      if (newInterestInput.trim() && !formData.interests.includes(newInterestInput.trim())) {
+                        setFormData(p => ({ ...p, interests: [...p.interests, newInterestInput.trim()] }));
+                        setNewInterestInput("");
+                      }
+                    }}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
                 <div className="flex flex-wrap gap-2 mt-2">
                   {formData.interests.map(s => <Badge key={s} variant="outline" className="cursor-pointer" onClick={() => setFormData(p => ({ ...p, interests: p.interests.filter(x => x !== s) }))}>{s} ×</Badge>)}
+                </div>
+              </div>
+
+              {/* Langues */}
+              <div>
+                <Label>Langues parlées</Label>
+                <div className="flex gap-2 mt-2">
+                  <div className="flex-1">
+                    <LanguageCombobox
+                      value={newLanguageInput}
+                      onValueChange={setNewLanguageInput}
+                      onSearchValueChange={setNewLanguageInput}
+                      onLanguageAdd={(lang) => {
+                        if (!formData.languages.includes(lang)) {
+                          setFormData(p => ({ ...p, languages: [...p.languages, lang] }));
+                          setNewLanguageInput("");
+                        }
+                      }}
+                    />
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="shrink-0"
+                    onClick={() => {
+                      if (newLanguageInput.trim() && !formData.languages.includes(newLanguageInput.trim())) {
+                        setFormData(p => ({ ...p, languages: [...p.languages, newLanguageInput.trim()] }));
+                        setNewLanguageInput("");
+                      }
+                    }}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {formData.languages.map(l => (
+                    <Badge key={l} variant="outline" className="cursor-pointer border-primary/30 bg-primary/5" onClick={() => setFormData(p => ({ ...p, languages: p.languages.filter(x => x !== l) }))}>
+                      {l} ×
+                    </Badge>
+                  ))}
                 </div>
               </div>
 

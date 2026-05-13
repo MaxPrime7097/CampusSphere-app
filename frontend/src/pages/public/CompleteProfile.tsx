@@ -68,6 +68,8 @@ export function CompleteProfile() {
   });
 
   const [newLanguageInput, setNewLanguageInput] = useState("");
+  const [newSkillInput, setNewSkillInput] = useState("");
+  const [newInterestInput, setNewInterestInput] = useState("");
 
   const [newLink, setNewLink] = useState({ name: "", url: "" });
   const cardInputRef = useRef<HTMLInputElement>(null);
@@ -250,7 +252,7 @@ export function CompleteProfile() {
       phone_number: normalizedPhoneNumber,
       date_of_birth: formData.dateOfBirth,
       town: formData.town,
-      language: formData.languages.join(", ") || "Français",
+      language: formData.languages.length > 0 ? formData.languages : ["Français"],
       university: formData.university,
       faculty: formData.faculty,
       study_year: formData.studyYear,
@@ -580,17 +582,30 @@ export function CompleteProfile() {
                   <div className="flex gap-2">
                     <div className="flex-1">
                       <SkillsCombobox
-                        onSearchValueChange={(v) => {
-                          // Allow the combobox to update internal state or we can track it here if needed
-                          // In this case, SkillsCombobox handles its own internal value, but we could sync it
-                        }}
+                        value={newSkillInput}
+                        onValueChange={setNewSkillInput}
+                        onSearchValueChange={setNewSkillInput}
                         onSkillAdd={(skill) => {
                           if (!formData.skills.includes(skill)) {
                             setFormData(p => ({ ...p, skills: [...p.skills, skill] }));
+                            setNewSkillInput("");
                           }
                         }}
                       />
                     </div>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="shrink-0"
+                      onClick={() => {
+                        if (newSkillInput.trim() && !formData.skills.includes(newSkillInput.trim())) {
+                          setFormData(p => ({ ...p, skills: [...p.skills, newSkillInput.trim()] }));
+                          setNewSkillInput("");
+                        }
+                      }}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {formData.skills.map((s, i) => (
@@ -669,16 +684,34 @@ export function CompleteProfile() {
                 {/* Intérêts */}
                 <div className="space-y-3">
                   <Label className="text-xs font-medium">Centres d'intérêt</Label>
-                  <InterestsCombobox
-                    onSearchValueChange={(v) => {
-                      // Internal tracking if needed
-                    }}
-                    onInterestAdd={(interest) => {
-                      if (!formData.interests.includes(interest)) {
-                        setFormData(p => ({ ...p, interests: [...p.interests, interest] }));
-                      }
-                    }}
-                  />
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <InterestsCombobox
+                        value={newInterestInput}
+                        onValueChange={setNewInterestInput}
+                        onSearchValueChange={setNewInterestInput}
+                        onInterestAdd={(interest) => {
+                          if (!formData.interests.includes(interest)) {
+                            setFormData(p => ({ ...p, interests: [...p.interests, interest] }));
+                            setNewInterestInput("");
+                          }
+                        }}
+                      />
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="shrink-0"
+                      onClick={() => {
+                        if (newInterestInput.trim() && !formData.interests.includes(newInterestInput.trim())) {
+                          setFormData(p => ({ ...p, interests: [...p.interests, newInterestInput.trim()] }));
+                          setNewInterestInput("");
+                        }
+                      }}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {formData.interests.map((s, i) => (
                       <Badge 

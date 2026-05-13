@@ -41,11 +41,11 @@ function getTypeStyle(type: string) {
 
 function getFileIcon(type: string) {
   const t = (type || "").toLowerCase();
-  if (t.includes("video"))   return <Video className="h-6 w-6" />;
-  if (t.includes("image"))   return <FileImage className="h-6 w-6" />;
-  if (t.includes("code") || t.includes("project")) return <FileCode className="h-6 w-6" />;
-  if (t.includes("archive") || t.includes("zip"))  return <Archive className="h-6 w-6" />;
-  return <FileText className="h-6 w-6" />;
+  if (t.includes("video"))   return <Video className="h-5 w-5 sm:h-6 sm:w-6" />;
+  if (t.includes("image"))   return <FileImage className="h-5 w-5 sm:h-6 sm:w-6" />;
+  if (t.includes("code") || t.includes("project")) return <FileCode className="h-5 w-5 sm:h-6 sm:w-6" />;
+  if (t.includes("archive") || t.includes("zip"))  return <Archive className="h-5 w-5 sm:h-6 sm:w-6" />;
+  return <FileText className="h-5 w-5 sm:h-6 sm:w-6" />;
 }
 
 export const ResourceCard = React.memo(({
@@ -67,7 +67,7 @@ export const ResourceCard = React.memo(({
       >
         <CardContent className="p-0">
           {/* Header — horizontal flat */}
-          <div className={cn("flex items-center gap-3 px-4 py-3", style.bg)}>
+          <div className={cn("flex items-center gap-2 sm:gap-3 px-3 py-2 sm:px-4 sm:py-3", style.bg)}>
             <div className={cn("flex-shrink-0", style.icon)}>
               {getFileIcon(resource.type)}
             </div>
@@ -91,18 +91,18 @@ export const ResourceCard = React.memo(({
             </div>
           </div>
 
-          <div className="px-4 py-3 space-y-3">
+          <div className="px-3 py-2.5 sm:px-4 sm:py-3 space-y-2.5 sm:space-y-3">
             {/* Stats row */}
-            <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-              <span className="truncate max-w-[90px]">Par {resource.authorName}</span>
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between text-[9px] sm:text-[10px] text-muted-foreground">
+              <span className="truncate max-w-[80px] sm:max-w-[90px]">Par {resource.authorName}</span>
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <span className="flex items-center gap-0.5">
-                  <Eye className="h-3 w-3" /> {resource.viewCount || 0}
+                  <Eye className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> {resource.viewCount || 0}
                 </span>
                 <span className="flex items-center gap-0.5">
-                  <Download className="h-3 w-3" /> {resource.downloadCount || 0}
+                  <Download className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> {resource.downloadCount || 0}
                 </span>
-                <span className="text-[9px] text-muted-foreground/60">
+                <span className="text-[8px] sm:text-[9px] text-muted-foreground/60">
                   {formatFileSize(resource.fileSize)}
                 </span>
               </div>
@@ -113,46 +113,46 @@ export const ResourceCard = React.memo(({
               <Button
                 size="sm"
                 variant="outline"
-                className="h-8 w-8 p-0 rounded-lg border-muted hover:bg-muted/60"
+                className="h-7 w-7 sm:h-8 sm:w-8 p-0 rounded-lg border-muted hover:bg-muted/60"
                 onClick={onPreview}
                 title="Aperçu"
               >
-                <Eye className="h-3.5 w-3.5" />
+                <Eye className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
               </Button>
               <Button
                 size="sm"
                 variant="outline"
                 className={cn(
-                  "h-8 w-8 p-0 rounded-lg border-muted",
+                  "h-7 w-7 sm:h-8 sm:w-8 p-0 rounded-lg border-muted",
                   isSaved ? "text-primary bg-primary/5 border-primary/20" : "hover:bg-muted/60"
                 )}
                 onClick={onSave}
                 title="Sauvegarder"
               >
-                <Bookmark className={cn("h-3.5 w-3.5", isSaved ? "fill-current" : "")} />
+                <Bookmark className={cn("h-3 w-3 sm:h-3.5 sm:w-3.5", isSaved ? "fill-current" : "")} />
               </Button>
               {/* Bouton Réviser avec l'IA */}
               <Button
                 size="sm"
                 variant="outline"
-                className="h-8 w-8 p-0 rounded-lg border-[#ff9800]/30 text-[#ff9800] hover:bg-[#ff9800]/10 hover:border-[#ff9800]"
+                className="h-7 w-7 sm:h-8 sm:w-8 p-0 rounded-lg border-[#ff9800]/30 text-[#ff9800] hover:bg-[#ff9800]/10 hover:border-[#ff9800]"
                 onClick={(e) => { e.stopPropagation(); setStudyOpen(true); }}
                 title="Réviser avec l'IA"
               >
-                <Sparkles className="h-3.5 w-3.5" />
+                <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
               </Button>
               <Button
                 size="sm"
-                className="h-8 flex-1 gap-1 campus-gradient text-white rounded-lg hover:opacity-90"
+                className="h-7 sm:h-8 flex-1 gap-1 campus-gradient text-white rounded-lg hover:opacity-90"
                 onClick={onDownload}
                 disabled={isDownloading}
               >
                 {isDownloading ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-spin" />
                 ) : (
                   <>
-                    <Download className="h-3.5 w-3.5" />
-                    <span className="text-xs font-semibold hidden sm:inline">Télécharger</span>
+                    <Download className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                    <span className="text-[10px] sm:text-xs font-semibold hidden sm:inline">Télécharger</span>
                   </>
                 )}
               </Button>

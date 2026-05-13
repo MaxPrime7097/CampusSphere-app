@@ -44,55 +44,37 @@ export function CommentSkeleton() {
 
 export function ResourceSkeleton() {
   return (
-    <Card className="overflow-hidden border bg-card/50 backdrop-blur-sm campus-card transition-all duration-300">
+    <Card className="overflow-hidden border bg-card/50 backdrop-blur-sm transition-all duration-300">
       <CardContent className="p-0">
-        {/* Header skeleton with gradient-like feel */}
-        <div className="h-24 bg-muted/40 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5" />
-          <div className="absolute inset-0 flex items-center gap-4 px-4 border-b">
-            <Skeleton className="h-12 w-12 rounded-xl flex-shrink-0 bg-muted/50" />
-            <div className="flex-1 space-y-2">
-              <Skeleton className="h-5 w-4/5 bg-muted/50" />
-              <div className="flex items-center gap-2">
-                <Skeleton className="h-3.5 w-20 rounded-full bg-muted/50" />
-                <Skeleton className="h-3.5 w-12 rounded-full bg-muted/50" />
-              </div>
+        {/* Header skeleton */}
+        <div className="flex items-center gap-3 px-3 py-2.5 sm:px-4 sm:py-3 bg-muted/20 border-b">
+          <Skeleton className="h-6 w-6 rounded flex-shrink-0 bg-muted/40" />
+          <div className="flex-1 min-w-0 space-y-1.5">
+            <Skeleton className="h-4 w-4/5 bg-muted/40" />
+            <div className="flex items-center gap-1.5">
+              <Skeleton className="h-3 w-16 rounded-full bg-muted/30" />
+              <Skeleton className="h-3 w-10 rounded-full bg-muted/30" />
             </div>
           </div>
         </div>
         
-        <div className="p-4 space-y-6">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Skeleton className="h-8 w-8 rounded-full bg-muted/50" />
-                <Skeleton className="h-4 w-28 bg-muted/50" />
-              </div>
-              <Skeleton className="h-4 w-16 bg-muted/50" />
-            </div>
-            
-            <div className="flex flex-wrap gap-2">
-              <Skeleton className="h-5 w-16 rounded-full bg-muted/30" />
-              <Skeleton className="h-5 w-20 rounded-full bg-muted/30" />
-              <Skeleton className="h-5 w-14 rounded-full bg-muted/30" />
-            </div>
-            
-            <div className="flex gap-6 items-center pt-1">
-              <div className="flex items-center gap-1.5">
-                <Skeleton className="h-3.5 w-3.5 rounded bg-muted/50" />
-                <Skeleton className="h-3 w-10 bg-muted/50" />
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Skeleton className="h-3.5 w-3.5 rounded bg-muted/50" />
-                <Skeleton className="h-3 w-8 bg-muted/50" />
-              </div>
+        <div className="px-3 py-2.5 sm:px-4 sm:py-3 space-y-3">
+          {/* Stats row */}
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-3 w-20 bg-muted/30" />
+            <div className="flex gap-2">
+              <Skeleton className="h-3 w-8 bg-muted/30" />
+              <Skeleton className="h-3 w-8 bg-muted/30" />
+              <Skeleton className="h-3 w-10 bg-muted/30" />
             </div>
           </div>
 
-          <div className="flex gap-2 pt-2">
-            <Skeleton className="h-10 flex-1 rounded-xl bg-primary/10" />
-            <Skeleton className="h-10 w-10 rounded-xl bg-muted/50" />
-            <Skeleton className="h-10 w-10 rounded-xl bg-muted/50" />
+          {/* Action Buttons */}
+          <div className="flex gap-1.5 pt-1">
+            <Skeleton className="h-8 w-8 rounded-lg bg-muted/30" />
+            <Skeleton className="h-8 w-8 rounded-lg bg-muted/30" />
+            <Skeleton className="h-8 w-8 rounded-lg bg-muted/30" />
+            <Skeleton className="h-8 flex-1 rounded-lg bg-primary/10" />
           </div>
         </div>
       </CardContent>

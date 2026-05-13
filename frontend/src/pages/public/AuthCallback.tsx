@@ -60,34 +60,48 @@ export function AuthCallback() {
 
         // Échanger le token Supabase contre un JWT Django
         const response = await exchangeSupabaseToken(session.access_token);
-
+        
         if (!isMounted) return;
 
-        const needsProfileCompletion = response?.data?.needs_profile_completion;
-        let shouldCompleteProfile: boolean;
+        const data = response?.data;
+        const needsProfileCompletion = data?.needs_profile_completion ?? data?.needsProfileCompletion;
+        const isNewUser = data?.is_new_user ?? data?.isNewUser;
 
-        if (typeof needsProfileCompletion === "boolean") {
+        console.debug("[AuthCallback] Exchange response:", { needsProfileCompletion, isNewUser, fullData: data });
+
+        let shouldCompleteProfile = false;
+
+        if (isNewUser === true) {
+          shouldCompleteProfile = true;
+          debugRoutingDecision({
+            source: "is_new_user",
+            isNewUser: true,
+            destination: "/complete-profile",
+          });
+        } else if (typeof needsProfileCompletion === "boolean") {
           shouldCompleteProfile = needsProfileCompletion;
           debugRoutingDecision({
             source: "needs_profile_completion",
-            needs_profile_completion: needsProfileCompletion,
+            needsProfileCompletion,
             destination: shouldCompleteProfile ? "/complete-profile" : "/",
           });
         } else {
+          // Fallback: check profile data manually
           const profile = await getCurrentUser();
           shouldCompleteProfile = !hasCompleteProfile(profile as Record<string, unknown>);
           debugRoutingDecision({
             source: "fallback_profile_check",
-            needs_profile_completion: needsProfileCompletion,
             profile_completion_required: shouldCompleteProfile,
-            required_fields: REQUIRED_PROFILE_FIELDS,
+            profile_data: profile,
             destination: shouldCompleteProfile ? "/complete-profile" : "/",
           });
         }
 
         if (shouldCompleteProfile) {
+          console.info("[AuthCallback] Redirecting to profile completion");
           navigate("/complete-profile", { replace: true });
         } else {
+          console.info("[AuthCallback] Login successful, redirecting to home");
           toast({ title: "Connexion réussie !", duration: 2000 });
           navigate("/", { replace: true });
         }

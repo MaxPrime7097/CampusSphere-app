@@ -137,7 +137,8 @@ export async function completeSupabaseProfile(data: {
   student_id?: string;
   campus?: string;
   town?: string;
-  language?: string;
+  language?: string[];
+
   bio?: string;
   skills?: string[];
   interests?: string[];
@@ -325,7 +326,8 @@ export function normalizeUser(user: any) {
     studentId: user.studentId ?? user.student_id ?? "",
     campus: user.campus ?? "",
     town: user.town ?? "",
-    language: user.language ?? "",
+    language: Array.isArray(user.language) ? user.language : (user.language ? [user.language] : []),
+    languages: Array.isArray(user.language) ? user.language : (user.language ? [user.language] : []),
     profileVisibility: user.profileVisibility ?? user.profile_visibility ?? "public",
     postVisibility: user.postVisibility ?? user.post_visibility ?? "public",
     dataExportRequestedAt: user.dataExportRequestedAt ?? user.data_export_requested_at ?? null,
@@ -611,7 +613,8 @@ export async function register(payload: {
   student_id?: string;
   campus?: string;
   town?: string;
-  language?: string;
+  language?: string[];
+
   bio?: string;
   skills?: string[];
   interests?: string[];
@@ -689,7 +692,7 @@ export async function updateUserProfile(data: Partial<{
   faculty: string;
   study_year: string;
   town: string;
-  language: string;
+  language: string[];
   skills: string[];
   interests: string[];
   current_mood: string;
