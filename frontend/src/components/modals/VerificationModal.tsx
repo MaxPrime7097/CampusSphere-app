@@ -27,6 +27,7 @@ export function VerificationModal({ children, onSuccess, open: controlledOpen, o
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isVerifiedImmediately, setIsVerifiedImmediately] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -68,12 +69,23 @@ export function VerificationModal({ children, onSuccess, open: controlledOpen, o
 
     setIsSubmitting(true);
     try {
-      await verifyStudentStatus(matricule, image);
+      const response = await verifyStudentStatus(matricule, image);
+      const isVerified = response?.verified === true;
+      setIsVerifiedImmediately(isVerified);
       setStep(3);
-      toast({
-        title: "Demande envoyée !",
-        description: "Votre statut sera vérifié par nos administrateurs très prochainement.",
-      });
+      
+      if (isVerified) {
+        toast({
+          title: "Félicitations ! 🎉",
+          description: "L'IA a certifié ton statut instantanément. Tu es désormais un étudiant certifié !",
+        });
+      } else {
+        toast({
+          title: "Demande envoyée !",
+          description: "Votre statut sera vérifié par nos administrateurs très prochainement.",
+        });
+      }
+      
       if (onSuccess) onSuccess();
     } catch (error: any) {
       toast({
@@ -92,6 +104,7 @@ export function VerificationModal({ children, onSuccess, open: controlledOpen, o
     setImage(null);
     setPreview(null);
     setIsSubmitting(false);
+    setIsVerifiedImmediately(false);
   };
 
   return (
@@ -245,15 +258,27 @@ export function VerificationModal({ children, onSuccess, open: controlledOpen, o
                   <Check className="h-10 w-10 text-green-500" />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold">Demande reçue !</h3>
+                  <h3 className="text-2xl font-bold">
+                    {isVerifiedImmediately ? "Certification réussie !" : "Demande reçue !"}
+                  </h3>
                   <p className="text-muted-foreground mt-2 px-4">
-                    Notre équipe vérifie manuellement chaque document pour garantir l'authenticité de la communauté.
+                    {isVerifiedImmediately 
+                      ? "L'intelligence artificielle a validé ton document. Ton badge de certification est maintenant actif !" 
+                      : "Notre équipe vérifie manuellement chaque document pour garantir l'authenticité de la communauté."}
                   </p>
                 </div>
-                <div className="p-4 bg-muted/30 rounded-xl mx-4 text-sm flex items-start gap-3 text-left">
-                  <AlertCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                  <p>Le délai moyen de traitement est de <strong>24h à 48h</strong>. Vous recevrez une notification une fois validé.</p>
-                </div>
+                {!isVerifiedImmediately && (
+                  <div className="p-4 bg-muted/30 rounded-xl mx-4 text-sm flex items-start gap-3 text-left">
+                    <AlertCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                    <p>Le délai moyen de traitement est de <strong>24h à 48h</strong>. Vous recevrez une notification une fois validé.</p>
+                  </div>
+                )}
+                {isVerifiedImmediately && (
+                  <div className="p-4 bg-primary/10 rounded-xl mx-4 text-sm flex items-start gap-3 text-left border border-primary/20">
+                    <Shield className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                    <p>Tu peux désormais publier des ressources et accéder à toutes les fonctionnalités premium !</p>
+                  </div>
+                )}
                 <Button className="w-full max-w-[200px]" onClick={() => setOpen(false)}>
                   Fermer
                 </Button>

@@ -661,6 +661,18 @@ export function Profile() {
       isMounted = false;
     };
   }, [currentUser?.id, targetUser?.id, isOwnProfile]);
+  
+  const refreshUser = async () => {
+    try {
+      const data = await getCurrentUser();
+      if (isProfilePayloadValid(data)) {
+        setCurrentUser(data);
+        if (isOwnProfile) setTargetUser(data);
+      }
+    } catch (e) {
+      console.error("Failed to refresh user", e);
+    }
+  };
 
   const userPostsData = useMemo(() => {
     if (!userPosts || userPosts.length === 0) return [];
@@ -1025,8 +1037,7 @@ export function Profile() {
               </div>
             </div>
             <VerificationModal onSuccess={() => {
-              // On peut éventuellement recharger le profil ici si le statut changeait instantanément
-              // mais comme c'est manuel, on laisse juste le succès de la modale
+              void refreshUser();
             }}>
               <Button 
                 className="bg-amber-600 hover:bg-amber-700 text-white w-full sm:w-auto shadow-lg shadow-amber-600/20"
@@ -1189,7 +1200,6 @@ export function Profile() {
                         <p className={cn("text-sm sm:text-lg font-bold text-primary truncate transition-all duration-300", animateScore && "animate-pop")}>
                           {user.impactScore ?? 0}
                         </p>
-                        {/* Gamification deactivated for now but code kept 
                         {user.impactScore !== null && (
                           <div className={cn(
                             "flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold text-white bg-gradient-to-r shadow-sm",
@@ -1199,7 +1209,6 @@ export function Profile() {
                             <span className="uppercase tracking-tighter">{getImpactLevelInfo(user.impactScore).currentLevel.label}</span>
                           </div>
                         )}
-                        */}
                       </div>
                       
                       {/* Gamification deactivated for now but code kept
@@ -1481,7 +1490,7 @@ export function Profile() {
                     )}
                     <div>
                       <p className="text-sm text-muted-foreground">Ville</p>
-                      <p className="font-medium">{user.town || <EmptyField />}</p>
+                      <p className="font-medium">{formatSlugToLabel(user.town) || <EmptyField />}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Langues</p>
