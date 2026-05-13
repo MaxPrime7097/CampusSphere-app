@@ -273,7 +273,7 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
                   Génération en cours…
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  L'IA analyse ton document. Cela peut prendre 10–20 secondes.
+                  L'IA analyse ton document. Cela peut prendre quelques secondes.
                 </p>
               </div>
             </div>

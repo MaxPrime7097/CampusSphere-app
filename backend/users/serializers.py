@@ -88,14 +88,12 @@ class SupabaseProfileCompletionSerializer(serializers.ModelSerializer):
         return parsed_date
 
     def validate_language(self, value):
-        if not value: return "fr"
-        val = value.lower().strip()
-        if "fr" in val or "fran" in val: return "fr"
-        if "en" in val or "angl" in val: return "en"
-        return val[:10]
-        if not self.ISO_LANGUAGE_REGEX.match(value):
-            raise serializers.ValidationError("La langue doit suivre le format ISO (ex: fr, en, fr-CA)")
-        return value
+        if not value: return []
+        if isinstance(value, str):
+            return [value.strip()]
+        if not isinstance(value, list):
+            return []
+        return [str(lang).strip() for lang in value if lang]
 
     def validate_student_id(self, value):
         if not value: return ""
@@ -393,6 +391,14 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         if User.objects.exclude(id=user.id).filter(username__iexact=value).exists():
             raise serializers.ValidationError("This username is already in use")
         return value
+
+    def validate_language(self, value):
+        if not value: return []
+        if isinstance(value, str):
+            return [value.strip()]
+        if not isinstance(value, list):
+            return []
+        return [str(lang).strip() for lang in value if lang]
 
 
 

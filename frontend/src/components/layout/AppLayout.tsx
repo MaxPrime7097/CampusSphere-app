@@ -168,7 +168,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           <div className="absolute inset-0 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
         </div>
         <p className="mt-4 text-sm font-medium text-muted-foreground animate-pulse">
-          Synchronisation...
+          Chargement...
         </p>
       </div>
     );

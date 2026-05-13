@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Check, ChevronsUpDown } from "lucide-react"
+import { Check, ChevronsUpDown, Plus } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -106,6 +106,16 @@ export function Combobox({
               )}
             </CommandEmpty>
             <CommandGroup>
+              {allowCustomValue && searchValue.trim() && !options.some(o => o.label.toLowerCase() === searchValue.trim().toLowerCase()) && (
+                <CommandItem
+                  value={searchValue.trim()}
+                  onSelect={() => handleSelect(searchValue.trim())}
+                  className="text-primary font-medium border-b border-border/50 mb-1"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Ajouter "{searchValue.trim()}"
+                </CommandItem>
+              )}
               {options.map((option) => (
                 <CommandItem
                   key={option.value}

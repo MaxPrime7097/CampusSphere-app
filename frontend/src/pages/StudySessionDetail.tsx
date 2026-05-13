@@ -1,8 +1,24 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { ArrowLeft, Share2, Sparkles, AlertCircle } from "lucide-react";
-import { getStudySession } from "@/services/api";
+import { getStudySession, listSpheres, shareStudySession } from "@/services/api";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { ArrowLeft, Share2, Sparkles, AlertCircle, Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -17,6 +33,14 @@ export const StudySessionDetail = () => {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  // Partage
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [spheres, setSpheres] = useState<any[]>([]);
+  const [selectedSphere, setSelectedSphere] = useState<string>("");
+  const [sharing, setSharing] = useState(false);
+  const [shared, setShared] = useState(false);
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -37,6 +61,37 @@ export const StudySessionDetail = () => {
     };
     fetchSession();
   }, [id]);
+
+  const handleOpenShare = async () => {
+    setIsShareModalOpen(true);
+    if (spheres.length === 0) {
+      try {
+        const mySpheres = await listSpheres({ my_spheres: "true" });
+        setSpheres(mySpheres || []);
+      } catch {
+        toast({ title: "Impossible de charger les sphères", variant: "destructive" });
+      }
+    }
+  };
+
+  const handleShare = async () => {
+    if (!id || !selectedSphere) return;
+    setSharing(true);
+    try {
+      await shareStudySession(id, selectedSphere);
+      setShared(true);
+      toast({ title: "Session partagée avec succès !" });
+      setTimeout(() => setIsShareModalOpen(false), 1500);
+    } catch (err: any) {
+      toast({
+        title: "Erreur de partage",
+        description: err?.message,
+        variant: "destructive",
+      });
+    } finally {
+      setSharing(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -93,9 +148,14 @@ export const StudySessionDetail = () => {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" className="gap-2">
-              <Share2 className="w-4 h-4" />
-              Partager
+            <Button 
+              variant="outline" 
+              className="gap-2"
+              onClick={handleOpenShare}
+              disabled={shared}
+            >
+              {shared ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
+              {shared ? "Partagé" : "Partager"}
             </Button>
           </div>
         </div>
@@ -148,6 +208,59 @@ export const StudySessionDetail = () => {
           )}
         </div>
       </Tabs>
+
+      {/* Modal de partage */}
+      <Dialog open={isShareModalOpen} onOpenChange={setIsShareModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Share2 className="h-5 w-5 text-primary" />
+              Partager la session
+            </DialogTitle>
+            <DialogDescription>
+              Choisis une sphère pour partager tes fiches, quiz ou flashcards avec tes camarades.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Sélectionner une sphère</label>
+              <Select value={selectedSphere} onValueChange={setSelectedSphere}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choisir une sphère..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {spheres.length === 0 ? (
+                    <SelectItem value="__none__" disabled>
+                      Aucune sphère disponible
+                    </SelectItem>
+                  ) : (
+                    spheres.map((s) => (
+                      <SelectItem key={s.id} value={String(s.id)}>
+                        {s.name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsShareModalOpen(false)}>
+              Annuler
+            </Button>
+            <Button 
+              onClick={handleShare} 
+              disabled={!selectedSphere || sharing || shared}
+              className="campus-gradient text-white gap-2"
+            >
+              {sharing ? <Loader2 className="h-4 w-4 animate-spin" /> : shared ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
+              {shared ? "Partagé" : "Partager"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -87,7 +87,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     bio = models.TextField(blank=True)
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
     cover_photo = models.ImageField(upload_to='covers/', blank=True, null=True)
-    language = models.CharField(max_length=10, default='fr')
+    language = models.JSONField(default=list, blank=True)
     profile_visibility = models.CharField(max_length=20, choices=PROFILE_VISIBILITY_CHOICES, default='public')
     post_visibility = models.CharField(max_length=20, choices=POST_VISIBILITY_CHOICES, default='public')
     data_export_requested_at = models.DateTimeField(blank=True, null=True)
