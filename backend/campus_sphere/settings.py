@@ -209,7 +209,7 @@ if REDIS_URL:
             "LOCATION": REDIS_URL,
             "OPTIONS": redis_options,
             "KEY_PREFIX": env_config("CACHE_KEY_PREFIX", default="campussphere"),
-            "TIMEOUT": 300,
+            "TIMEOUT": 86400,
         },
     }
     
@@ -257,17 +257,18 @@ else:
         "default": {
             "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
             "LOCATION": "campus-sphere-local-cache",
-            "TIMEOUT": 300,
+            "TIMEOUT": 86400,
         },
     }
     settings_logger.warning(
         "REDIS_URL is not set; using LocMemCache as fallback for cache and sessions."
     )
 
-# Sessions stockées en cache
-SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+# Sessions stockées en base (survivent aux redémarrages) + cache (vitesse)
+SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
 SESSION_CACHE_ALIAS = "default"
-SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # 7 jours
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 14  # 14 jours
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SECURE = True
 SESSION_COOKIE_SAMESITE = "None"
@@ -318,8 +319,8 @@ REST_FRAMEWORK = {
 from datetime import timedelta
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=7),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=90),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': False,
