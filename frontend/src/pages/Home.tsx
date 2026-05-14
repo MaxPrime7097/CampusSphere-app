@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { RefreshCw, Loader2, Users, MessageCircle, BookOpen, ArrowRight, Sparkles } from "lucide-react";
+import { HomeIcon, RefreshCw, Loader2, Users, MessageCircle, BookOpen, ArrowRight, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { mapPostToCard } from "@/lib/postCardMapper";
@@ -151,7 +151,7 @@ export function Home() {
             </>
           ) : posts.length === 0 ? (
             <EmptyState
-              icon={Sparkles}
+              icon={HomeIcon}
               title="Fil d'actualité vide"
               description="Il n'y a pas encore de posts à afficher. Soyez le premier à partager quelque chose !"
               actionLabel="Créer un post"

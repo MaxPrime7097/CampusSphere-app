@@ -22,6 +22,9 @@ import { renderMentionText } from "@/lib/mentions";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { getSphereFeatures, SPHERE_TYPE_LABELS, SPHERE_TYPE_COLORS, type SphereType } from "@/config/sphereFeatures";
+import { SphereSpheraTab } from "@/components/sphere/SphereSpheraTab";
+import { AnnouncementsTab } from "@/components/sphere/AnnouncementsTab";
 
 
 import { useToast } from "@/hooks/use-toast";
@@ -242,6 +245,12 @@ export function SphereDetail() {
     }
     return 0;
   }, [sphere, tasks]);
+
+  // Features dynamiques selon le type de la sphère
+  const sphereFeatures = useMemo(
+    () => getSphereFeatures(sphere?.sphere_type),
+    [sphere?.sphere_type]
+  );
 
   const sphereMemberCount = Math.max(sphere?.memberCount ?? 0, members.length);
   const sphereFileCount = sphere?.resourceCount ?? sphere?.filesCount ?? 0;
@@ -554,9 +563,17 @@ export function SphereDetail() {
 
             {/* Actions */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-              <Badge variant={isMember ? "default" : isPendingRequest ? "secondary" : "outline"} className="w-fit">
-                {membershipStateLabel}
-              </Badge>
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Badge de type */}
+                {sphere?.sphere_type && (
+                  <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full border ${SPHERE_TYPE_COLORS[sphere.sphere_type as SphereType] ?? 'bg-muted text-muted-foreground border-border'}`}>
+                    {SPHERE_TYPE_LABELS[sphere.sphere_type as SphereType] ?? sphere.sphere_type}
+                  </span>
+                )}
+                <Badge variant={isMember ? "default" : isPendingRequest ? "secondary" : "outline"} className="w-fit">
+                  {membershipStateLabel}
+                </Badge>
+              </div>
               <div className="flex flex-wrap gap-2">
                 {isMember ? (
                   <>
@@ -629,8 +646,16 @@ export function SphereDetail() {
               <SharedTabsList>
                 <SharedTabsTrigger value="overview">Vue d'ensemble</SharedTabsTrigger>
                 <SharedTabsTrigger value="chat">Discussion</SharedTabsTrigger>
-                <SharedTabsTrigger value="tasks">Tâches ({tasks.length})</SharedTabsTrigger>
+                {sphereFeatures.has_kanban && (
+                  <SharedTabsTrigger value="tasks">Tâches ({tasks.length})</SharedTabsTrigger>
+                )}
                 <SharedTabsTrigger value="files">Fichiers ({resources.length})</SharedTabsTrigger>
+                {sphereFeatures.has_sphera && (
+                  <SharedTabsTrigger value="sphera">✨ Sphera</SharedTabsTrigger>
+                )}
+                {sphereFeatures.has_announcements && (
+                  <SharedTabsTrigger value="annonces">Annonces</SharedTabsTrigger>
+                )}
                 <SharedTabsTrigger value="members" className="hidden md:flex">Membres</SharedTabsTrigger>
                 {canModerateMembers && <SharedTabsTrigger value="pending" className="hidden md:flex">Demandes ({pendingMembers.length})</SharedTabsTrigger>}
               </SharedTabsList>
@@ -647,6 +672,11 @@ export function SphereDetail() {
               </TabsContent>
 
               <TabsContent value="tasks" className="mt-4">
+                {!sphereFeatures.has_kanban ? (
+                  <div className="text-center py-12 text-muted-foreground text-sm">
+                    Le Kanban n'est pas disponible pour ce type de sphère.
+                  </div>
+                ) : (
                 <div className="flex justify-between items-center bg-card p-3 md:p-4 rounded-lg border mb-4">
                   <h3 className="font-bold">Tableau Kanban</h3>
                   {currentUser?.isVerified ? (
@@ -671,22 +701,22 @@ export function SphereDetail() {
                       <Plus className="mr-1 h-4 w-4" /> Tâche
                     </Button>
                   )}
-                </div>
-                {taskState === "forbidden" && (
+                </div>)}
+                {sphereFeatures.has_kanban && taskState === "forbidden" && (
                   <EmptyState 
                     icon={Shield} 
                     title="Accès restreint" 
                     description="Vous devez être membre actif pour voir les tâches de cette sphère." 
                   />
                 )}
-                {taskState === "server_error" && (
+                {sphereFeatures.has_kanban && taskState === "server_error" && (
                   <EmptyState 
                     icon={AlertCircle} 
                     title="Erreur" 
                     description="Impossible de charger les tâches." 
                   />
                 )}
-                {taskState === "ready" && (
+                {sphereFeatures.has_kanban && taskState === "ready" && (
                   <div className="-mx-4 md:mx-0 overflow-x-auto">
                     <div className="px-4 md:px-0 min-w-0">
                       <KanbanBoard 
@@ -868,6 +898,21 @@ export function SphereDetail() {
                 ))
               )}
             </TabsContent>
+
+            {/* Onglet Sphera */}
+            {sphereFeatures.has_sphera && (
+              <TabsContent value="sphera" className="mt-4">
+                <SphereSpheraTab sphereId={String(id)} />
+              </TabsContent>
+            )}
+
+            {/* Onglet Annonces */}
+            {sphereFeatures.has_announcements && (
+              <TabsContent value="annonces" className="mt-4">
+                <AnnouncementsTab sphereId={String(id)} canModerate={canModerateMembers} />
+              </TabsContent>
+            )}
+
             </div>
           </Tabs>
         ) : (

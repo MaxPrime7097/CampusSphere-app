@@ -32,7 +32,7 @@ class SphereSerializer(serializers.ModelSerializer):
     class Meta:
         model = Sphere
         fields = [
-            'id', 'name', 'description', 'category', 'type', 'color', 'icon',
+            'id', 'name', 'description', 'category', 'sphere_type', 'color', 'icon',
             'banner_image', 'banner_image_url',
             'is_private', 'require_approval', 'objective', 'target_audience',
             'duration', 'expires_at', 'auto_delete_on_expiry', 'collaboration_types', 'member_count', 'impact_score',
@@ -96,7 +96,7 @@ class SphereCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Sphere
         fields = [
-            'name', 'description', 'category', 'type', 'color', 'icon',
+            'name', 'description', 'category', 'sphere_type', 'color', 'icon',
             'is_private', 'require_approval', 'objective', 'target_audience',
             'duration', 'auto_delete_on_expiry', 'collaboration_types'
         ]
@@ -111,7 +111,7 @@ class SphereUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Sphere
         fields = [
-            'name', 'description', 'category', 'type', 'color', 'icon',
+            'name', 'description', 'category', 'sphere_type', 'color', 'icon',
             'is_private', 'require_approval', 'objective', 'target_audience',
             'duration', 'auto_delete_on_expiry', 'collaboration_types'
         ]

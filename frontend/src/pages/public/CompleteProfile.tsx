@@ -295,7 +295,7 @@ export function CompleteProfile() {
         }
       }
 
-      toast({ title: "Profil complété ! 🎉", description: "Bienvenue sur CampusSphere", duration: 4000 });
+      toast({ title: "Inscription terminée ! 🎉", description: "Bienvenue sur CampusSphere! Connect. Share. Grow. 🚀", duration: 4000 });
       
       // On attend un tout petit peu pour laisser les transactions DB se finir
       setTimeout(() => navigate("/"), 500);

@@ -4,7 +4,7 @@ import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
 import { PostCard } from "@/components/feed/PostCard";
 import { ResourceCard } from "@/components/resources/ResourceCard";
 import { Button } from "@/components/ui/button";
-import { BookOpen, FileText } from "lucide-react";
+import { Bookmark, BookOpen } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { getSavedPosts, getSavedResources, savePost, saveResource, downloadResource } from "@/services/api";
@@ -144,7 +144,7 @@ export function SavedItems() {
               </div>
             ) : savedResources.length === 0 ? (
               <EmptyState
-                icon={FileText}
+                icon={Bookmark}
                 title="Aucune ressource enregistrée"
                 description="Les ressources que vous sauvegardez apparaîtront ici."
                 actionLabel="Parcourir les ressources"

@@ -10,7 +10,7 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
 import { UnifiedSearchFiltersBar } from "@/components/ui/unified-search-filters-bar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Users, TrendingUp, Clock, Loader2, Check, RefreshCw, Plus, Filter } from "lucide-react";
+import { Globe, Search, Users, TrendingUp, Clock, Loader2, Check, RefreshCw, Plus, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { openVerificationModal } from "@/lib/events";
 import { CreateSphereModal } from "@/components/modals/CreateSphereModal";
@@ -467,7 +467,7 @@ export function Spheres() {
                 </Card>
               ) : !loadingSpheres && getSortedSpheres().length === 0 ? (
                 <EmptyState
-                  icon={Search}
+                  icon={Globe}
                   title="Aucune sphère trouvée"
                   description="Essayez d'ajuster vos filtres pour trouver ce que vous cherchez."
                   actionLabel="Tout réinitialiser"

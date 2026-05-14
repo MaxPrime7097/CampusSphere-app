@@ -447,7 +447,7 @@ export function Register() {
         }
       }
 
-      toast({ title: "Inscription terminée !", description: "Bienvenue sur CampusSphere 🎉", duration: 4000 });
+      toast({ title: "Inscription terminée ! 🎉", description: "Bienvenue sur CampusSphere! Connect. Share. Grow. 🚀", duration: 4000 });
       navigate("/");
     } catch (err: any) {
       toast({ title: "Erreur", description: err?.message, variant: "destructive" });

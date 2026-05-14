@@ -16,20 +16,23 @@ class Sphere(models.Model):
         ('other', 'Autre'),
     ]
 
-    TYPE_CHOICES = [
-        ('study', 'Étude'),
-        ('project', 'Projet'),
-        ('club', 'Club'),
-        ('event', 'Événement'),
-        ('networking', 'Réseautage'),
-        ('other', 'Autre'),
+    SPHERE_TYPES = [
+        ('cours',       'Sphère de Cours'),
+        ('projet',      'Sphère de Projet'),
+        ('club',        'Club / Association'),
+        ('revision',    'Sphère de Révision'),
+        ('communaute',  'Communauté'),
     ]
 
     # Basic Information
     name = models.CharField(max_length=100)
     description = models.TextField()
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
-    type = models.CharField(max_length=20, choices=TYPE_CHOICES)
+    sphere_type = models.CharField(
+        max_length=20,
+        choices=SPHERE_TYPES,
+        default='communaute'
+    )
     color = models.CharField(max_length=20, default='#10b981')
     icon = models.CharField(max_length=50, default='users')
     banner_image = models.ImageField(upload_to='spheres/banners/', null=True, blank=True)

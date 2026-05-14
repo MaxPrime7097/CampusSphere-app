@@ -17,6 +17,7 @@ from .serializers import (
     SphereMemberUpdateSerializer
 )
 from .permissions import IsSphereModerator, IsSphereMember
+from .sphere_config import get_sphere_features
 from campus_sphere.cache import CacheManager, CacheKeys
 from campus_sphere.admin_audit import log_admin_action
 
@@ -221,7 +222,7 @@ class SphereDetailView(generics.RetrieveUpdateDestroyAPIView):
             'name': sphere.name,
             'description': sphere.description,
             'category': sphere.category,
-            'type': sphere.type,
+            'sphere_type': sphere.sphere_type,
             'is_private': sphere.is_private,
             'require_approval': sphere.require_approval,
         }
@@ -230,7 +231,7 @@ class SphereDetailView(generics.RetrieveUpdateDestroyAPIView):
             'name': updated.name,
             'description': updated.description,
             'category': updated.category,
-            'type': updated.type,
+            'sphere_type': updated.sphere_type,
             'is_private': updated.is_private,
             'require_approval': updated.require_approval,
         }
@@ -478,7 +479,7 @@ class SphereMemberDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
             'name': sphere.name,
             'description': sphere.description,
             'category': sphere.category,
-            'type': sphere.type,
+            'sphere_type': sphere.sphere_type,
             'is_private': sphere.is_private,
             'require_approval': sphere.require_approval,
         }
@@ -487,7 +488,7 @@ class SphereMemberDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
             'name': updated.name,
             'description': updated.description,
             'category': updated.category,
-            'type': updated.type,
+            'sphere_type': updated.sphere_type,
             'is_private': updated.is_private,
             'require_approval': updated.require_approval,
         }
@@ -773,3 +774,13 @@ def user_spheres(request):
         'data': serializer.data,
         'timestamp': timezone.now().isoformat()
     })
+
+
+class SphereFeaturesView(APIView):
+    """Retourne la configuration des features pour une sphère donnée."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        sphere = get_object_or_404(Sphere, pk=pk)
+        features = get_sphere_features(sphere.sphere_type)
+        return Response(features)
