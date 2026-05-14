@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Heart, MessageCircle, Share, Bookmark, MoreVertical, Zap, Copy, Flag, ExternalLink, Users, Plus, Minus, X, Pencil, Trash2, Loader2, FileText, Download, ChevronLeft, ChevronRight, Search, Facebook, Instagram, Twitter, Linkedin, Info, BadgeCheck } from "lucide-react";
+import { FaFacebook, FaTwitter, FaInstagram, FaWhatsapp, FaLinkedIn } from 'react-icons/fa';
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -317,7 +318,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
     if (sendingToUserId) return;
     setSendingToUserId(contactId);
     const postUrl = `${window.location.origin}/posts/${post.id}`;
-    const messageContent = `📌 Post partagé par ${post.author.name} :\n${postUrl}`;
+    const messageContent = `Post partagé par ${post.author.name} :\n${postUrl}`;
     try {
       // Rechercher d'abord si une conversation existe déjà (plus robuste)
       const { getUserConversations: getConvs } = await import("@/services/api");
@@ -809,7 +810,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
             onClick={() => handleSocialShare("whatsapp")}
           >
             <div className="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center text-white">
-              <MessageCircle className="h-5 w-5" />
+              <FaWhatsapp className="h-5 w-5" />
             </div>
             <span className="text-[10px] font-semibold uppercase tracking-wider">WhatsApp</span>
           </Button>
@@ -820,7 +821,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
             onClick={() => handleSocialShare("twitter")}
           >
             <div className="h-8 w-8 rounded-full bg-black flex items-center justify-center text-white">
-              <Twitter className="h-4 w-4" />
+              <FaTwitter className="h-4 w-4" />
             </div>
             <span className="text-[10px] font-semibold uppercase tracking-wider">Twitter / X</span>
           </Button>
@@ -831,7 +832,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
             onClick={() => handleSocialShare("facebook")}
           >
             <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white">
-              <Facebook className="h-5 w-5" />
+              <FaFacebook className="h-5 w-5" />
             </div>
             <span className="text-[10px] font-semibold uppercase tracking-wider">Facebook</span>
           </Button>
@@ -842,7 +843,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
             onClick={() => handleSocialShare("linkedin")}
           >
             <div className="h-8 w-8 rounded-full bg-blue-700 flex items-center justify-center text-white">
-              <Linkedin className="h-5 w-5" />
+              <FaLinkedIn className="h-5 w-5" />
             </div>
             <span className="text-[10px] font-semibold uppercase tracking-wider">LinkedIn</span>
           </Button>
@@ -853,7 +854,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
             onClick={() => handleSocialShare("instagram")}
           >
             <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 flex items-center justify-center text-white">
-              <Instagram className="h-5 w-5" />
+              <FaInstagram className="h-5 w-5" />
             </div>
             <span className="text-[10px] font-semibold uppercase tracking-wider">Instagram</span>
           </Button>

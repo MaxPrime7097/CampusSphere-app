@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { deleteResource, downloadResource, getResource, getResourcePreviewUrl, reportResource, saveResource, trackResourceShare, updateResource, listFolders, updateFolder, type ResourceFolder } from "@/services/api";
-import { Download, Share2, ChevronLeft, Eye, Flag, Loader2, Zap, Bookmark, Pencil, Trash2, Info, X, Facebook, Twitter, Instagram, Linkedin, Copy, FileText, FolderInput, BadgeCheck } from "lucide-react";
+import { Download, Share2, ChevronLeft, Eye, Flag, Loader2, Zap, Bookmark, Pencil, Trash2, Info, X, Copy, FileText, FolderInput, BadgeCheck } from "lucide-react";
+import { FaFacebook, FaTwitter, FaWhatsapp, FaLinkedIn } from 'react-icons/fa';
+
 import { renderMentionText } from "@/lib/mentions";
 import { cn } from "@/lib/utils";
 
@@ -965,7 +967,7 @@ export function ResourceDetail() {
               onClick={() => handleSocialShare("whatsapp")}
             >
               <div className="bg-green-500 text-white p-1.5 rounded-full">
-                <Share2 className="h-3.5 w-3.5" />
+                <FaWhatsapp className="h-3.5 w-3.5" />
               </div>
               <span>WhatsApp</span>
             </Button>
@@ -974,7 +976,7 @@ export function ResourceDetail() {
               className="flex items-center gap-2 h-12 justify-start px-4 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all"
               onClick={() => handleSocialShare("facebook")}
             >
-              <Facebook className="h-5 w-5 text-blue-600" />
+              <FaFacebook className="h-5 w-5 text-blue-600" />
               <span>Facebook</span>
             </Button>
             <Button
@@ -982,7 +984,7 @@ export function ResourceDetail() {
               className="flex items-center gap-2 h-12 justify-start px-4 hover:bg-sky-50 hover:text-sky-600 hover:border-sky-200 transition-all"
               onClick={() => handleSocialShare("twitter")}
             >
-              <Twitter className="h-5 w-5 text-sky-500" />
+              <FaTwitter className="h-5 w-5 text-sky-500" />
               <span>Twitter / X</span>
             </Button>
             <Button
@@ -990,7 +992,7 @@ export function ResourceDetail() {
               className="flex items-center gap-2 h-12 justify-start px-4 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 transition-all"
               onClick={() => handleSocialShare("linkedin")}
             >
-              <Linkedin className="h-5 w-5 text-blue-700" />
+              <FaLinkedIn className="h-5 w-5 text-blue-700" />
               <span>LinkedIn</span>
             </Button>
           </div>

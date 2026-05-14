@@ -6,7 +6,8 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCallback, useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { getConnectionRecommendations } from "@/services/api";
+import { searchUsers, getCurrentUser, getUserConnections } from "@/services/api";
+import { normalizeUniversity, normalizeFaculty } from "@/lib/profileMetadata";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
@@ -18,6 +19,7 @@ type FriendSuggestion = {
   faculty: string;
   university: string;
   mutualFriends: number | null;
+  reason: string;
 };
 
 export function FriendSuggestions() {
@@ -33,23 +35,41 @@ export function FriendSuggestions() {
     setIsRefreshing(true);
 
     try {
-      const recommendations = await getConnectionRecommendations();
-      const mapped = (recommendations || []).map((user: any) => ({
-        id: String(user.id),
-        name: user.name || "Utilisateur",
-        username: user.username || "user",
-        avatar: user.avatar,
-        faculty: user.faculty || "",
-        university: user.university || "",
-        mutualFriends:
-          typeof user.mutualFriends === "number"
-            ? user.mutualFriends
-            : typeof user.mutual_friends === "number"
-              ? user.mutual_friends
-              : typeof user.mutual_connections_count === "number"
-                ? user.mutual_connections_count
-                : null,
-      }));
+      // 1. Get current user
+      const currentUser = await getCurrentUser();
+      if (!currentUser) throw new Error("Non authentifié");
+
+      // 2. Get connections to filter them out
+      const userConnections = await getUserConnections(currentUser.id);
+      const connectionIds = new Set((userConnections || []).map((c: any) => 
+        String(c.requester === currentUser.id ? c.recipient : c.requester)
+      ));
+
+      // 3. Get users using search as fallback for recommendations
+      const users = await searchUsers("");
+      
+      const mapped = (users || [])
+        .filter((u: any) => u.id !== currentUser.id && !connectionIds.has(String(u.id)))
+        .slice(0, 10)
+        .map((user: any) => ({
+          id: String(user.id),
+          name: user.name || "Utilisateur",
+          username: user.username || "user",
+          avatar: user.avatar,
+          faculty: user.faculty || "",
+          university: user.university || "",
+          mutualFriends: user.mutualFriends ?? user.mutual_friends ?? 0,
+          reason:
+            normalizeUniversity(user.university) &&
+            normalizeUniversity(currentUser.university) &&
+            normalizeUniversity(user.university) === normalizeUniversity(currentUser.university)
+              ? "Même université"
+              : normalizeFaculty(user.faculty) &&
+                  normalizeFaculty(currentUser.faculty) &&
+                  normalizeFaculty(user.faculty) === normalizeFaculty(currentUser.faculty)
+                ? "Même filière"
+                : "Suggéré pour vous",
+        }));
 
       setFriends(mapped);
 
@@ -60,7 +80,8 @@ export function FriendSuggestions() {
           duration: 2000,
         });
       }
-    } catch {
+    } catch (err: any) {
+      console.error("Error loading suggestions:", err);
       setError("Impossible de charger les suggestions.");
     } finally {
       setIsLoading(false);
@@ -87,7 +108,7 @@ export function FriendSuggestions() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="h-8 w-1 bg-primary rounded-full" />
-            <CardTitle className="text-lg font-bold tracking-tight">Suggestions d'étudiants</CardTitle>
+            <CardTitle className="text-lg font-medium tracking-tight">Suggestions de connexions</CardTitle>
           </div>
           <Button 
             variant="ghost" 
@@ -115,7 +136,7 @@ export function FriendSuggestions() {
               ))
             ) : friends.length === 0 ? (
               <div className="flex flex-col items-center justify-center w-full py-8 text-center text-muted-foreground">
-                <Sparkles className="h-8 w-8 mb-2 opacity-20" />
+                <UserPlus className="h-8 w-8 mb-2 opacity-20" />
                 <p className="text-sm italic">Plus de suggestions pour le moment</p>
               </div>
             ) : (
@@ -144,6 +165,10 @@ export function FriendSuggestions() {
                     <div className="space-y-1 w-full mb-4">
                       <p className="font-bold text-sm truncate group-hover:text-primary transition-colors">{friend.name}</p>
                       
+                      <p className="text-[10px] text-primary/80 italic truncate w-full">
+                        {friend.reason}
+                      </p>
+
                       {/* Localisation / Faculté */}
                       <div className="flex flex-col gap-0.5">
                         <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground italic truncate">

@@ -15,8 +15,10 @@ import { Progress } from "@/components/ui/progress";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 import { 
-  Users, FileText, Settings, Check, MoreVertical, Loader2, Plus, Shield, Crown, UserPlus, UserMinus, UserCheck, UserX, Camera, ExternalLink, Download, Info, X, Facebook, Twitter, Instagram, Linkedin, Copy, Share, ArrowLeft, Share2, BadgeCheck, AlertCircle
+  Users, FileText, Settings, Check, MoreVertical, Loader2, Plus, Shield, Crown, UserPlus, UserMinus, UserCheck, UserX, Camera, ExternalLink, Download, Info, X, Copy, Share, ArrowLeft, Share2, BadgeCheck, AlertCircle
 } from "lucide-react";
+import { FaFacebook, FaTwitter, FaWhatsapp, FaLinkedIn } from 'react-icons/fa';
+
 
 import { renderMentionText } from "@/lib/mentions";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -952,7 +954,7 @@ export function SphereDetail() {
               onClick={() => handleSocialShare("whatsapp")}
             >
               <div className="bg-green-500 text-white p-1.5 rounded-full">
-                <Share2 className="h-3.5 w-3.5" />
+                <FaWhatsapp className="h-3.5 w-3.5" />
               </div>
               <span>WhatsApp</span>
             </Button>
@@ -961,7 +963,7 @@ export function SphereDetail() {
               className="flex items-center gap-2 h-12 justify-start px-4 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all"
               onClick={() => handleSocialShare("facebook")}
             >
-              <Facebook className="h-5 w-5 text-blue-600" />
+              <FaFacebook className="h-5 w-5 text-blue-600" />
               <span>Facebook</span>
             </Button>
             <Button
@@ -969,7 +971,7 @@ export function SphereDetail() {
               className="flex items-center gap-2 h-12 justify-start px-4 hover:bg-sky-50 hover:text-sky-600 hover:border-sky-200 transition-all"
               onClick={() => handleSocialShare("twitter")}
             >
-              <Twitter className="h-5 w-5 text-sky-500" />
+              <FaTwitter className="h-5 w-5 text-sky-500" />
               <span>Twitter / X</span>
             </Button>
             <Button
@@ -977,7 +979,7 @@ export function SphereDetail() {
               className="flex items-center gap-2 h-12 justify-start px-4 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 transition-all"
               onClick={() => handleSocialShare("linkedin")}
             >
-              <Linkedin className="h-5 w-5 text-blue-700" />
+              <FaLinkedIn className="h-5 w-5 text-blue-700" />
               <span>LinkedIn</span>
             </Button>
           </div>

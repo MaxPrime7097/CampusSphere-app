@@ -141,7 +141,7 @@ export function CompleteProfile() {
     university: z.string().min(1, "Requis"),
     faculty: z.string().min(1, "Requis"),
     studyYear: z.string().min(1, "Requis"),
-    studentId: z.string().min(1, "Requis"),
+    studentId: z.string().optional(),
   });
 
   const handleInput = (field: string, value: string) => {
@@ -482,7 +482,7 @@ export function CompleteProfile() {
                 </div>
               </div>
               <div>
-                <Label>Matricule *</Label>
+                <Label>Matricule <span className="text-muted-foreground">(optionnel)</span></Label>
                 <Input maxLength={REGISTRATION_MAX_LENGTHS.studentId} value={formData.studentId} onChange={e => handleInput("studentId", e.target.value)} className={errors.studentId ? "border-destructive" : ""} />
                 {errors.studentId && <p className="text-xs text-red-500 mt-1">{errors.studentId}</p>}
               </div>

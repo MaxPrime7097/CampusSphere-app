@@ -33,7 +33,7 @@ export function EditAcademicModal({ children, initialData, onSuccess }: EditAcad
   const { toast } = useToast();
 
   const handleSave = async () => {
-    if (!university || !faculty || !studyYear || !studentId) {
+    if (!university || !faculty || !studyYear) {
       toast({
         title: "Champs requis",
         description: "Veuillez remplir tous les champs obligatoires (*)",
@@ -101,7 +101,7 @@ export function EditAcademicModal({ children, initialData, onSuccess }: EditAcad
           </div>
 
           <div className="space-y-2">
-            <Label>Matricule *</Label>
+            <Label>Matricule <span className="text-muted-foreground">(optionnel)</span></Label>
             <Input 
               value={studentId} 
               onChange={(e) => setStudentId(e.target.value)} 

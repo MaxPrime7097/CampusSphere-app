@@ -3,7 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { UserCheck, Loader2, Check } from "lucide-react";
+import { UserCheck, Loader2, Check, FileText } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { updateUserProfile } from "@/services/api";
 
@@ -13,6 +14,7 @@ interface EditAccountModalProps {
     firstName: string;
     lastName: string;
     username: string;
+    bio: string;
   };
   onSuccess?: () => void;
 }
@@ -22,6 +24,7 @@ export function EditAccountModal({ children, initialData, onSuccess }: EditAccou
   const [firstName, setFirstName] = useState(initialData.firstName);
   const [lastName, setLastName] = useState(initialData.lastName);
   const [username, setUsername] = useState(initialData.username);
+  const [bio, setBio] = useState(initialData.bio);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
@@ -32,6 +35,7 @@ export function EditAccountModal({ children, initialData, onSuccess }: EditAccou
         first_name: firstName,
         last_name: lastName,
         username: username,
+        bio: bio,
       });
 
       toast({
@@ -94,6 +98,18 @@ export function EditAccountModal({ children, initialData, onSuccess }: EditAccou
               value={username} 
               onChange={(e) => setUsername(e.target.value)} 
               placeholder="username"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="bio">Bio</Label>
+            <Textarea 
+              id="bio"
+              value={bio} 
+              onChange={(e) => setBio(e.target.value)} 
+              placeholder="Parlez-nous de vous..."
+              className="resize-none"
+              rows={4}
             />
           </div>
         </div>

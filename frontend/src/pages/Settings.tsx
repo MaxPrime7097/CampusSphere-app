@@ -66,6 +66,7 @@ export function Settings() {
     firstName: "",
     lastName: "",
     username: "",
+    bio: "",
   });
   
   const [passwordForm, setPasswordForm] = useState({
@@ -101,6 +102,7 @@ export function Settings() {
         firstName: currentUser.firstName || "",
         lastName: currentUser.lastName || "",
         username: currentUser.username || "",
+        bio: currentUser.bio || "",
       });
       setEmailForm((prev) => ({
         ...prev,

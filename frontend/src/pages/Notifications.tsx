@@ -3,13 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { getUser, listNotifications, markNotificationRead, markAllNotificationsRead, deleteNotification as deleteNotificationApi } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { 
-  CheckCheck, 
+import {
+  CheckCheck,
   Bell,
-  X, 
-  Users, 
-  MessageSquare, 
-  FileText, 
+  X,
+  Users,
+  MessageSquare,
+  FileText,
   Calendar,
   Settings,
   Loader2
@@ -84,7 +84,7 @@ export function Notifications() {
             const notificationType = toCanonicalType(n.notification_type || n.type);
             const normalizedData = normalizeNotificationData(n);
             const actionUrl = buildActionUrl(notificationType, normalizedData);
-            
+
             // Log for debugging if actionUrl is missing for clickable types
             if (!actionUrl && CLICKABLE_NOTIFICATION_TYPES.has(notificationType)) {
               console.debug("[Notifications] Missing actionUrl for clickable notification", {
@@ -308,9 +308,8 @@ export function Notifications() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') handleNotificationClick(notification);
                 }}
-                className={`rounded-none md:rounded-lg border-y md:border bg-card transition-all duration-200 hover:bg-accent/30 cursor-pointer ${
-                  !notification.read ? 'border-primary/30 bg-primary/5' : ''
-                }`}
+                className={`rounded-none md:rounded-lg border-y md:border bg-card transition-all duration-200 hover:bg-accent/30 cursor-pointer ${!notification.read ? 'border-primary/30 bg-primary/5' : ''
+                  }`}
               >
                 <div className="flex items-stretch">
                   {/* Bande colorée non-lu */}
@@ -322,9 +321,8 @@ export function Notifications() {
                     {/* Ligne 1 : icône + titre + dot + heure */}
                     <div className="flex items-center gap-2 mb-1">
                       <span className="flex-shrink-0">{getNotificationIcon(notification.type)}</span>
-                      <span className={`font-semibold text-sm truncate flex-1 ${
-                        !notification.read ? 'text-foreground' : 'text-muted-foreground'
-                      }`}>
+                      <span className={`font-semibold text-sm truncate flex-1 ${!notification.read ? 'text-foreground' : 'text-muted-foreground'
+                        }`}>
                         {notification.title}
                       </span>
                       <span className="text-xs text-muted-foreground flex-shrink-0">

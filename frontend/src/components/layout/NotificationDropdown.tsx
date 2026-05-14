@@ -136,9 +136,8 @@ export function NotificationDropdown() {
           {notifications.slice(0, 5).map((notif) => (
             <div
               key={notif.id}
-              className={`p-3 rounded-lg hover:bg-accent cursor-pointer transition-colors ${
-                !notif.read ? "bg-primary/5" : ""
-              }`}
+              className={`p-3 rounded-lg hover:bg-accent cursor-pointer transition-colors ${!notif.read ? "bg-primary/5" : ""
+                }`}
               onClick={() => void handleNotificationClick(notif)}
             >
               <div className="flex gap-3">

@@ -43,7 +43,7 @@ import { EditInterestsModal } from "@/components/modals/EditInterestsModal";
 import { EditPortfolioModal } from "@/components/modals/EditPortfolioModal";
 import { useAuth } from "@/contexts/AuthContext";
 
-const NOT_AVAILABLE_TEXT = "—";
+const NOT_AVAILABLE_TEXT = "...";
 const MOOD_OPTIONS = [
   { value: "excited", label: "🚀🔥 En pleine révision !" },
   { value: "focused", label: "🎯🧠 Concentré sur mes objectifs" },
@@ -1110,6 +1110,7 @@ export function Profile() {
                         firstName: user.firstName || "",
                         lastName: user.lastName || "",
                         username: user.username || "",
+                        bio: user.bio || "",
                       }}
                       onSuccess={() => window.location.reload()}
                     >
@@ -1137,7 +1138,7 @@ export function Profile() {
                   <p className="text-muted-foreground">@{user.username}</p>
                 </div>
 
-                <p className="text-foreground leading-relaxed">{user.bio || NOT_AVAILABLE_TEXT}</p>
+                <p className="text-foreground leading-relaxed">{user.bio || "Pas de bio pour l'instant"}</p>
 
                 {/* Impact Score et Mood */}
                 <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-4 p-2.5 sm:p-3 bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg">
@@ -1232,7 +1233,7 @@ export function Profile() {
                     <span className="text-muted-foreground ml-1">Connections</span>
                   </div>
                   <div>
-                    <span className="font-semibold">{user.stats.contributions ?? NOT_AVAILABLE_TEXT}</span>
+                    <span className="font-semibold">{user.stats.contributions}</span>
                     <span className="text-muted-foreground ml-1">Contributions</span>
                   </div>
                 </div>
