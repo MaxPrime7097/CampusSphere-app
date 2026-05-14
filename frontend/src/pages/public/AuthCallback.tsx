@@ -129,13 +129,13 @@ export function AuthCallback() {
         <div className="relative">
           {/* Pulsating glow effect */}
           <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full animate-pulse" />
-          <img 
-            src="/CS.svg" 
-            alt="CampusSphere" 
-            className="w-16 h-16 md:w-20 md:h-20 relative animate-bounce duration-[2000ms]" 
+          <img
+            src="/CS.svg"
+            alt="CampusSphere"
+            className="w-16 h-16 md:w-20 md:h-20 relative animate-bounce duration-[2000ms]"
           />
         </div>
-        
+
         <div className="flex flex-col items-center gap-2">
           <span className="text-2xl md:text-3xl font-bold font-automata campus-gradient bg-clip-text text-transparent">
             CampusSphere

@@ -60,20 +60,20 @@ const queryClient = new QueryClient();
 
 const Protected = ({ children }: { children: ReactNode }) => {
   const { isAuthenticated, isLoading } = useAuth();
-  
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-background to-accent/20">
         <div className="relative flex flex-col items-center gap-6 animate-in fade-in duration-700">
           <div className="relative">
             <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full animate-pulse" />
-            <img 
-              src="/CS.svg" 
-              alt="CampusSphere" 
-              className="w-16 h-16 md:w-20 md:h-20 relative animate-bounce duration-[2000ms]" 
+            <img
+              src="/CS.svg"
+              alt="CampusSphere"
+              className="w-16 h-16 md:w-20 md:h-20 relative animate-bounce duration-[2000ms]"
             />
           </div>
-          
+
           <div className="flex flex-col items-center gap-2">
             <span className="text-2xl md:text-3xl font-bold font-automata campus-gradient bg-clip-text text-transparent">
               CampusSphere
@@ -112,7 +112,7 @@ const App = () => (
             <Route path="/register/complete" element={<CompleteProfile />} />
             <Route path="/complete-profile" element={<CompleteProfile />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
-            
+
             {/* Protected routes with layout */}
             <Route path="/" element={
               <Protected>
@@ -201,7 +201,7 @@ const App = () => (
                 <PostDetail />
               </AppLayout>
             } />
-             <Route path="/spheres" element={
+            <Route path="/spheres" element={
               <Protected>
                 <AppLayout>
                   <Spheres />
@@ -270,7 +270,7 @@ const App = () => (
                 </RequireAdminRole>
               </Protected>
             } />
-          
+
             {/* Public pages */}
             <Route path="/cs-inc" element={<Landing />} />
             <Route path="/cs-inc/about" element={<About />} />

@@ -809,7 +809,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
               className="flex flex-col h-20 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
               onClick={() => handleSocialShare("whatsapp")}
             >
-              <div className="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center text-white">
+              <div className="h-8 w-8 rounded-full bg-black flex items-center justify-center text-white">
                 <FaWhatsapp className="h-5 w-5" />
               </div>
               <span className="text-[10px] font-semibold uppercase tracking-wider">WhatsApp</span>
@@ -821,7 +821,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
               onClick={() => handleSocialShare("twitter")}
             >
               <div className="h-8 w-8 rounded-full bg-black flex items-center justify-center text-white">
-                <FaTwitter className="h-4 w-4" />
+                <FaTwitter className="h-5 w-5" />
               </div>
               <span className="text-[10px] font-semibold uppercase tracking-wider">Twitter / X</span>
             </Button>
@@ -866,7 +866,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
               disabled={isCopyingLink}
             >
               <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-700">
-                <Copy className="h-4 w-4" />
+                <Copy className="h-5 w-5" />
               </div>
               <span className="text-[10px] font-semibold uppercase tracking-wider">{isCopyingLink ? "Copié !" : "Lien"}</span>
             </Button>
@@ -877,7 +877,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
           <div className="space-y-4 pt-2">
             <div className="flex items-center justify-between">
               <p className="text-sm font-bold flex items-center gap-2">
-                <Users className="h-4 w-4 text-primary" /> Envoyer à un ami sur CampusSphere
+                <Users className="h-5 w-5 text-primary" /> Envoyer à un ami sur CampusSphere
               </p>
             </div>
 

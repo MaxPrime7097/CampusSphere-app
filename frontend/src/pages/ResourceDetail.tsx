@@ -966,9 +966,7 @@ export function ResourceDetail() {
                 className="flex items-center gap-2 h-12 justify-start px-4 hover:bg-green-50 hover:text-green-600 hover:border-green-200 transition-all"
                 onClick={() => handleSocialShare("whatsapp")}
               >
-                <div className="bg-green-500 text-white p-1.5 rounded-full">
-                  <FaWhatsapp className="h-3.5 w-3.5" />
-                </div>
+                <FaWhatsapp className="h-5 w-5 text-green-500" />
                 <span>WhatsApp</span>
               </Button>
               <Button
