@@ -41,6 +41,7 @@ import { EditExperiencesModal } from "@/components/modals/EditExperiencesModal";
 import { EditSkillsModal } from "@/components/modals/EditSkillsModal";
 import { EditInterestsModal } from "@/components/modals/EditInterestsModal";
 import { EditPortfolioModal } from "@/components/modals/EditPortfolioModal";
+import { useAuth } from "@/contexts/AuthContext";
 
 const NOT_AVAILABLE_TEXT = "—";
 const MOOD_OPTIONS = [
@@ -447,7 +448,7 @@ export function Profile() {
   const [isSavingCover, setIsSavingCover] = useState(false);
   const [isSavingAvatar, setIsSavingAvatar] = useState(false);
   const [isSavingMood, setIsSavingMood] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const { user: currentUser, isAuthenticated, isLoading: isAuthLoading, refreshUser } = useAuth();
   const [targetUser, setTargetUser] = useState<any>(null);
   const [userPosts, setUserPosts] = useState<any[]>([]);
   const [userConnections, setUserConnections] = useState<any[]>([]);
@@ -460,32 +461,12 @@ export function Profile() {
   // Tab State - NEW (same as Spheres)
   const [activeTab, setActiveTab] = useState("posts");
 
-  // Load current user
+  // Set target user to auth user if no username provided
   useEffect(() => {
-    let isMounted = true;
-    (async () => {
-      try {
-        const data = await getCurrentUser();
-        if (isMounted && isProfilePayloadValid(data)) {
-          setCurrentUser(data);
-          if (!username) {
-            setTargetUser(data);
-          }
-          setProfileLoadError(false);
-        } else if (isMounted && !username) {
-          setProfileLoadError(true);
-        }
-      } catch (e) {
-        // User not logged in
-        if (isMounted && !username) {
-          setProfileLoadError(true);
-        }
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    if (!username && currentUser) {
+      setTargetUser(currentUser);
+    }
+  }, [username, currentUser]);
 
   // Load target user by username
   useEffect(() => {
@@ -546,7 +527,7 @@ export function Profile() {
   }, [currentUser?.id, targetUser?.id]);
   
   // Vérifier si c'est le profil de l'utilisateur actuel
-  const isOwnProfile = !username || username === currentUser?.username;
+  const isOwnProfile = !username || (currentUser && username === currentUser.username);
   
   // Données utilisateur avec fallback
   const user = useMemo(() => {
@@ -663,17 +644,12 @@ export function Profile() {
     };
   }, [currentUser?.id, targetUser?.id, isOwnProfile]);
   
-  const refreshUser = async () => {
-    try {
-      const data = await getCurrentUser();
-      if (isProfilePayloadValid(data)) {
-        setCurrentUser(data);
-        if (isOwnProfile) setTargetUser(data);
-      }
-    } catch (e) {
-      console.error("Failed to refresh user", e);
+  // Sync targetUser with currentUser if it's our own profile
+  useEffect(() => {
+    if (isOwnProfile && currentUser) {
+      setTargetUser(currentUser);
     }
-  };
+  }, [currentUser, isOwnProfile]);
 
   const userPostsData = useMemo(() => {
     if (!userPosts || userPosts.length === 0) return [];
@@ -888,9 +864,7 @@ export function Profile() {
       setShowCoverPhotoModal(false);
       setCoverPhotoFile(null);
       setCoverPhotoPreview(null);
-      const userData = await getCurrentUser();
-      setCurrentUser(userData);
-      if (isOwnProfile) setTargetUser(userData);
+      await refreshUser();
     } catch (error: any) {
       toast({ title: "Erreur", description: error?.message || "Impossible de mettre à jour la photo de couverture", variant: "destructive" });
     } finally {
@@ -927,9 +901,7 @@ export function Profile() {
       setShowAvatarModal(false);
       setAvatarFile(null);
       setAvatarPreview(null);
-      const userData = await getCurrentUser();
-      setCurrentUser(userData);
-      if (isOwnProfile) setTargetUser(userData);
+      await refreshUser();
     } catch (error: any) {
       toast({ title: "Erreur", description: error?.message || "Impossible de mettre à jour l'avatar", variant: "destructive" });
     } finally {
@@ -952,26 +924,9 @@ export function Profile() {
     try {
       await updateUserProfile({ current_mood: selectedMoodValue });
 
-      let refreshedProfile = await getUserProfile();
-      if (!refreshedProfile) {
-        refreshedProfile = await getCurrentUser();
-      }
-
-      const confirmedMoodValue = refreshedProfile?.currentMood ?? refreshedProfile?.current_mood ?? "";
-
-      setCurrentUser(refreshedProfile);
-      if (isOwnProfile) setTargetUser(refreshedProfile);
+      await refreshUser();
       setMoodText("");
       setShowMoodModal(false);
-
-      if (confirmedMoodValue !== selectedMoodValue) {
-        toast({
-          title: "mise à jour non confirmée",
-          description: "La valeur enregistrée diffère de votre sélection.",
-          variant: "destructive",
-        });
-        return;
-      }
 
       toast({ title: "Mood mis à jour !", description: "Votre mood du moment a été changé", duration: 2000 });
     } catch (error: any) {

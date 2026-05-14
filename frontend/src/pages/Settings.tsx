@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { EditAccountModal } from "@/components/modals/EditAccountModal";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   blockUser,
   changeUserEmail,
@@ -32,6 +33,7 @@ import {
 export function Settings() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user: currentUser, refreshUser } = useAuth();
   const [darkMode, setDarkMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [language, setLanguage] = useState("fr");
@@ -50,7 +52,7 @@ export function Settings() {
       setDarkMode(prefersDark);
     }
   }, [setDarkMode]);
-  const [showPersonalInfoModal, setShowPersonalInfoModal] = useState(false);
+
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
@@ -94,28 +96,31 @@ export function Settings() {
   const [marketingNotifications, setMarketingNotifications] = useState(false);
 
   useEffect(() => {
+    if (currentUser) {
+      setPersonalInfo({
+        firstName: currentUser.firstName || "",
+        lastName: currentUser.lastName || "",
+        username: currentUser.username || "",
+      });
+      setEmailForm((prev) => ({
+        ...prev,
+        currentEmail: currentUser.email || "",
+        phoneNumber: currentUser.phoneNumber || "",
+      }));
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
     let isMounted = true;
 
     const hydrateSettingsFromUser = async () => {
       try {
-        const [user, privacy, blocks] = await Promise.all([
-          getCurrentUser(),
+        const [privacy, blocks] = await Promise.all([
           getPrivacySettings(),
           getBlockedUsers(),
         ]);
-        if (!isMounted || !user) return;
+        if (!isMounted) return;
 
-        setPersonalInfo({
-          firstName: user.firstName || "",
-          lastName: user.lastName || "",
-          username: user.username || "",
-        });
-
-        setEmailForm((prev) => ({
-          ...prev,
-          currentEmail: user.email || "",
-          phoneNumber: user.phoneNumber || "",
-        }));
         if (privacy) {
           setPrivacySettings({
             profile_visibility: privacy.profile_visibility || "public",
@@ -226,32 +231,7 @@ export function Settings() {
     }
   };
 
-  const handleSavePersonalInfo = async () => {
-    setIsLoading(true);
-    try {
-      await updateUserProfile({
-        first_name: personalInfo.firstName,
-        last_name: personalInfo.lastName,
-        username: personalInfo.username,
-        bio: personalInfo.bio,
-      });
-      toast({
-        title: "Informations mises à jour",
-        description: "Vos informations personnelles ont été sauvegardées",
-        duration: 2000,
-      });
-      setShowPersonalInfoModal(false);
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: error?.message || "Impossible de mettre à jour vos informations",
-        duration: 3000,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+
 
   const handleChangePassword = async () => {
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
@@ -441,7 +421,7 @@ export function Settings() {
       title: "Compte",
       icon: User,
       items: [
-        { label: "Informations personnelles", action: () => setShowPersonalInfoModal(true) },
+        { label: "Informations personnelles", action: () => {} },
         { label: "Mot de passe", action: () => setShowPasswordModal(true) },
         { label: "Email et authentification", action: () => setShowEmailModal(true) },
       ]
@@ -548,7 +528,10 @@ export function Settings() {
                     {item.label === "Informations personnelles" ? (
                       <EditAccountModal
                         initialData={personalInfo}
-                        onSuccess={() => window.location.reload()}
+                        onSuccess={async () => {
+                          await refreshUser();
+                          toast({ title: "Informations mises à jour" });
+                        }}
                       >
                         <Button
                           variant="ghost"

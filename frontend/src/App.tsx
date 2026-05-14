@@ -51,7 +51,7 @@ import { AdminSpheresPage } from "./admin/pages/AdminSpheresPage";
 import { AdminModerationPage } from "./admin/pages/AdminModerationPage";
 import { AdminResourcesPage } from "./admin/pages/AdminResourcesPage";
 import { AdminLogsPage } from "./admin/pages/AdminLogsPage";
-import { AdminContactMessagesPage } from "./contact/pages/AdminContactMessagesPage";
+import { AdminContactMessagesPage } from "./admin/pages/AdminContactMessagesPage";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 

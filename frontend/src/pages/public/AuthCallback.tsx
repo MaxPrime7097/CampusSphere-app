@@ -61,7 +61,7 @@ export function AuthCallback() {
         setStatus("Un instant...");
 
         // Échanger le token Supabase contre un JWT Django
-        await exchangeSupabaseToken(session.access_token);
+        const response = await exchangeSupabaseToken(session.access_token);
         await refreshUser();
 
         if (!isMounted) return;
