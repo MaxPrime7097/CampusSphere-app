@@ -948,7 +948,7 @@ export async function createSphere(data: {
   name: string;
   description?: string;
   category?: string;
-  type?: string;
+  sphere_type?: string;
   is_private?: boolean;
   require_approval?: boolean;
   color?: string;
@@ -970,7 +970,7 @@ export async function updateSphere(id: number | string, data: Partial<{
   name: string;
   description: string;
   category: string;
-  type: string;
+  sphere_type: string;
   is_private: boolean;
   require_approval: boolean;
   duration: string;
