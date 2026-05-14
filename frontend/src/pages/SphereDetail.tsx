@@ -651,7 +651,7 @@ export function SphereDetail() {
                 )}
                 <SharedTabsTrigger value="files">Fichiers ({resources.length})</SharedTabsTrigger>
                 {sphereFeatures.has_sphera && (
-                  <SharedTabsTrigger value="sphera">✨ Sphera</SharedTabsTrigger>
+                  <SharedTabsTrigger value="sphera">Sphera</SharedTabsTrigger>
                 )}
                 {sphereFeatures.has_announcements && (
                   <SharedTabsTrigger value="annonces">Annonces</SharedTabsTrigger>
@@ -663,7 +663,12 @@ export function SphereDetail() {
 
             <div className="px-4 md:px-0">
               <TabsContent value="overview" className="mt-4">
-                <SphereOverview sphereId={String(id)} objective={sphere?.objective} onTabChange={setActiveTab} />
+                <SphereOverview 
+                  sphereId={String(id)} 
+                  sphereType={sphere?.sphere_type}
+                  objective={sphere?.objective || sphereFallback.objective} 
+                  onTabChange={setActiveTab}
+                />
               </TabsContent>
 
 

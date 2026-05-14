@@ -131,7 +131,7 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
         name: name.trim(),
         description: description.trim(),
         objective: objective.trim() || undefined,
-        category,
+        category: sphereType === 'cours' ? 'academic' : category,
         sphere_type: sphereType,
         color,
       });
@@ -147,9 +147,9 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
         is_private: false,
         require_approval: false,
         objective: payload.objective || "Objectif non défini",
-        target_audience: targetAudience || "Tous les étudiants",
-        duration: expectedDuration || "Flexible",
-        collaboration_types: collaborationType.length > 0 ? collaborationType : ["Discussion et échanges"],
+        target_audience: sphereType === 'cours' ? "Étudiants" : (targetAudience || "Tous les étudiants"),
+        duration: sphereType === 'cours' ? "Permanent" : (expectedDuration || "Flexible"),
+        collaboration_types: sphereType === 'cours' ? ["Partage de ressources"] : (collaborationType.length > 0 ? collaborationType : ["Discussion et échanges"]),
       });
 
       if (onSphereCreated) {
@@ -351,24 +351,26 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
           {/* ─── ÉTAPE 2 : Options avancées + création ─── */}
           {step === 2 && (
             <div className="space-y-4">
-              {/* Catégorie & Couleur */}
+              {/* Catégorie & Couleur (Catégorie masquée si cours) */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="category">Catégorie *</Label>
-                  <Select value={category} onValueChange={setCategory}>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Sélectionner..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SPHERE_CATEGORY_OPTIONS.filter((cat) => cat.value !== "all").map((cat) => (
-                        <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {sphereType !== 'cours' && (
+                  <div>
+                    <Label htmlFor="category">Catégorie *</Label>
+                    <Select value={category} onValueChange={setCategory}>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue placeholder="Sélectionner..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SPHERE_CATEGORY_OPTIONS.filter((cat) => cat.value !== "all").map((cat) => (
+                          <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
-                <div>
-                  <Label htmlFor="color">Thème *</Label>
+                <div className={cn(sphereType === 'cours' ? "col-span-2" : "")}>
+                  <Label htmlFor="color">Thème visuel *</Label>
                   <Select value={color} onValueChange={(val) => setColor(val as typeof color)}>
                     <SelectTrigger className="mt-2">
                       <SelectValue />
@@ -387,66 +389,70 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
                 </div>
               </div>
 
-              {/* Public cible et Durée */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="targetAudience">
-                    Public cible <span className="text-muted-foreground">(optionnel)</span>
-                  </Label>
-                  <Select value={targetAudience} onValueChange={setTargetAudience}>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Tous les étudiants" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {targetAudienceOptions.map((audience) => (
-                        <SelectItem key={audience} value={audience}>{audience}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              {sphereType !== 'cours' && (
+                <>
+                  {/* Public cible et Durée */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="targetAudience">
+                        Public cible <span className="text-muted-foreground">(optionnel)</span>
+                      </Label>
+                      <Select value={targetAudience} onValueChange={setTargetAudience}>
+                        <SelectTrigger className="mt-2">
+                          <SelectValue placeholder="Tous les étudiants" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {targetAudienceOptions.map((audience) => (
+                            <SelectItem key={audience} value={audience}>{audience}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                <div>
-                  <Label htmlFor="expectedDuration">
-                    Durée attendue <span className="text-muted-foreground">(optionnel)</span>
-                  </Label>
-                  <Select value={expectedDuration} onValueChange={setExpectedDuration}>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Flexible" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {durationOptions.map((duration) => (
-                        <SelectItem key={duration} value={duration}>{duration}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+                    <div>
+                      <Label htmlFor="expectedDuration">
+                        Durée attendue <span className="text-muted-foreground">(optionnel)</span>
+                      </Label>
+                      <Select value={expectedDuration} onValueChange={setExpectedDuration}>
+                        <SelectTrigger className="mt-2">
+                          <SelectValue placeholder="Flexible" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {durationOptions.map((duration) => (
+                            <SelectItem key={duration} value={duration}>{duration}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
 
-              {/* Types de collaboration */}
-              <div>
-                <Label>
-                  Collaboration <span className="text-muted-foreground">(optionnel)</span>
-                </Label>
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {collaborationTypes.map((type) => (
-                    <Button
-                      key={type}
-                      type="button"
-                      variant={collaborationType.includes(type) ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => toggleCollaborationType(type)}
-                      className={cn(
-                        "text-[10px] h-7 py-0 px-2",
-                        collaborationType.includes(type)
-                          ? "campus-gradient text-white border-none"
-                          : "text-muted-foreground"
-                      )}
-                    >
-                      {type}
-                    </Button>
-                  ))}
-                </div>
-              </div>
+                  {/* Types de collaboration */}
+                  <div>
+                    <Label>
+                      Collaboration <span className="text-muted-foreground">(optionnel)</span>
+                    </Label>
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {collaborationTypes.map((type) => (
+                        <Button
+                          key={type}
+                          type="button"
+                          variant={collaborationType.includes(type) ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => toggleCollaborationType(type)}
+                          className={cn(
+                            "text-[10px] h-7 py-0 px-2",
+                            collaborationType.includes(type)
+                              ? "campus-gradient text-white border-none"
+                              : "text-muted-foreground"
+                          )}
+                        >
+                          {type}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
 
               <Separator />
 
@@ -461,7 +467,7 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
                 </Button>
                 <Button
                   onClick={handleSubmit}
-                  disabled={!category || isCreating}
+                  disabled={(sphereType !== 'cours' && !category) || isCreating}
                   className="campus-gradient text-white hover:opacity-90 px-8"
                 >
                   {isCreating ? (

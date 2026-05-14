@@ -234,7 +234,7 @@ def admin_user_management_summary(request):
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
-def health_check(request):
+async def health_check(request):
     """Health check endpoint"""
     return Response({
         'status': 'healthy',
@@ -246,7 +246,7 @@ def health_check(request):
 @cache_page(60 * 15)
 @api_view(['GET'])
 @permission_classes([AllowAny])
-def api_info(request):
+async def api_info(request):
     """API information endpoint"""
     return Response({
         'name': 'CampusSphere API',

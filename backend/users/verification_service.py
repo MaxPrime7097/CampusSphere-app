@@ -64,7 +64,7 @@ def analyze_student_card(image_file, user_full_name, user_university):
             prompt = f"Is this a student card for {user_full_name} at {user_university}? Return JSON: {{\"is_student_card\": bool, \"name_matches\": bool, \"confidence\": float}}"
             
             completion = client.chat.completions.create(
-                model="llama-3.2-11b-vision-preview",
+                model="meta-llama/llama-4-scout-17b-16e-instruct",
                 messages=[
                     {
                         "role": "user",

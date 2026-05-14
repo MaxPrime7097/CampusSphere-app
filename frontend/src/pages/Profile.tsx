@@ -1360,7 +1360,7 @@ export function Profile() {
                             <div className="flex items-center gap-3">
                               <Avatar className="h-12 w-12">
                                 <AvatarImage src={connection.avatar} />
-                                <AvatarFallback className="bg-primary text-white font-bold">
+                                <AvatarFallback className="bg-input text-muted-foreground font-bold text-lg">
                                   {connection.name?.slice(0, 1).toUpperCase() || 'U'}
                                 </AvatarFallback>
                               </Avatar>
