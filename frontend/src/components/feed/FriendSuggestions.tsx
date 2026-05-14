@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { UserPlus, RefreshCw, Check, GraduationCap, MapPin, Sparkles } from "lucide-react";
+import { UserPlus, RefreshCw, Check, GraduationCap, MapPin, Link } from "lucide-react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCallback, useEffect, useState } from "react";
@@ -35,17 +35,14 @@ export function FriendSuggestions() {
     setIsRefreshing(true);
 
     try {
-      // 1. Get current user
       const currentUser = await getCurrentUser();
       if (!currentUser) throw new Error("Non authentifié");
 
-      // 2. Get connections to filter them out
       const userConnections = await getUserConnections(currentUser.id);
       const connectionIds = new Set((userConnections || []).map((c: any) => 
         String(c.requester === currentUser.id ? c.recipient : c.requester)
       ));
 
-      // 3. Get users using search as fallback for recommendations
       const users = await searchUsers("");
       
       const mapped = (users || [])
@@ -123,96 +120,93 @@ export function FriendSuggestions() {
       </CardHeader>
       
       <CardContent className="px-0">
-        <ScrollArea className="w-full">
+        <ScrollArea className="w-full whitespace-nowrap">
           <div className="flex gap-4 pb-4">
             {isLoading ? (
-              Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="w-[180px] h-[220px] rounded-2xl border bg-card/50 p-4 flex flex-col items-center justify-center space-y-3">
-                   <Skeleton className="h-16 w-16 rounded-full" />
-                   <Skeleton className="h-4 w-24" />
-                   <Skeleton className="h-3 w-20" />
-                   <Skeleton className="h-8 w-full rounded-xl" />
-                </div>
+              Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="w-[180px] flex-shrink-0 animate-pulse bg-muted/50 rounded-2xl h-[240px]" />
               ))
             ) : friends.length === 0 ? (
-              <div className="flex flex-col items-center justify-center w-full py-8 text-center text-muted-foreground">
-                <UserPlus className="h-8 w-8 mb-2 opacity-20" />
-                <p className="text-sm italic">Plus de suggestions pour le moment</p>
+              <div className="w-full flex flex-col items-center justify-center py-12 text-center text-muted-foreground bg-card/50 rounded-2xl border border-dashed">
+                <UserPlus className="h-8 w-8 mb-3 opacity-20" />
+                <p className="text-xs">Plus aucune suggestion pour le moment.</p>
               </div>
             ) : (
               friends.map((friend) => (
-                <Card 
-                  key={friend.id} 
-                  className="w-[190px] flex-shrink-0 border-border/40 bg-card hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 group overflow-hidden rounded-2xl"
+                <div
+                  key={friend.id}
+                  className="group relative w-[170px] md:w-[190px] flex-shrink-0 bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm hover:bg-white/60 dark:hover:bg-slate-900/60 border border-white/20 dark:border-slate-800/20 hover:border-primary/30 rounded-3xl p-5 transition-all duration-500 hover:shadow-xl hover:shadow-primary/10 flex flex-col items-center text-center overflow-hidden"
                 >
-                  <CardContent className="p-4 flex flex-col items-center text-center">
-                    {/* Badge de Faculté au hover */}
-                    <div className="relative mb-3">
-                      <Avatar className="h-16 w-16 border-2 border-background ring-2 ring-primary/10 group-hover:ring-primary/30 transition-all shadow-sm">
-                        <AvatarImage src={friend.avatar || undefined} className="object-cover" />
-                        <AvatarFallback className="campus-gradient text-white text-lg font-bold">
-                          {friend.name.split(" ").map((n) => n[0]).join("").toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      
-                      {friend.mutualFriends && friend.mutualFriends > 0 && (
-                        <div className="absolute -bottom-1 -right-1 bg-white dark:bg-slate-900 rounded-full px-1.5 py-0.5 shadow-sm border border-border flex items-center gap-1">
-                          <span className="text-[10px] font-bold text-primary">{friend.mutualFriends}</span>
-                        </div>
-                      )}
-                    </div>
+                  {/* Floating Reason Badge */}
+                  <div className="absolute top-3 right-3 z-10">
+                    <Badge variant="secondary" className="text-[7px] px-1.5 py-0.5 bg-primary/10 text-primary border-none font-black uppercase tracking-widest rounded-full">
+                      {friend.reason}
+                    </Badge>
+                  </div>
 
-                    <div className="space-y-1 w-full mb-4">
-                      <p className="font-bold text-sm truncate group-hover:text-primary transition-colors">{friend.name}</p>
-                      
-                      <p className="text-[10px] text-primary/80 italic truncate w-full">
-                        {friend.reason}
-                      </p>
-
-                      {/* Localisation / Faculté */}
-                      <div className="flex flex-col gap-0.5">
-                        <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground italic truncate">
-                          <GraduationCap className="h-3 w-3 flex-shrink-0" />
-                          <span className="truncate">{friend.faculty || "Étudiant"}</span>
-                        </div>
-                        {friend.university && (
-                          <div className="flex items-center justify-center gap-1 text-[9px] text-muted-foreground/70 truncate uppercase tracking-tighter">
-                            <MapPin className="h-2.5 w-2.5 flex-shrink-0" />
-                            <span className="truncate">{friend.university}</span>
-                          </div>
-                        )}
+                  <div className="relative mb-4">
+                    <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    <Avatar className="h-20 w-20 border-4 border-background ring-1 ring-primary/5 group-hover:scale-105 transition-transform duration-500 shadow-md relative z-10">
+                      <AvatarImage src={friend.avatar || undefined} className="object-cover" />
+                        <AvatarFallback className="bg-input text-muted-foreground font-bold text-lg">
+                        {friend.name.slice(0, 1).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    
+                    {friend.mutualFriends && friend.mutualFriends > 0 && (
+                      <div className="absolute -bottom-1 -right-1 bg-primary text-white rounded-full h-6 w-6 flex items-center justify-center text-[10px] font-black border-2 border-background shadow-lg z-20 scale-90 group-hover:scale-100 transition-transform">
+                        {friend.mutualFriends} connexions communes
                       </div>
-                    </div>
+                    )}
+                  </div>
 
-                    <Button
-                      size="sm"
-                      onClick={() => handleAddFriend(friend.id, friend.name)}
-                      disabled={addedFriends.includes(friend.id)}
-                      className={cn(
-                        "w-full h-8 rounded-xl text-xs font-bold transition-all duration-300",
-                        addedFriends.includes(friend.id)
-                          ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 hover:bg-emerald-500/20"
-                          : "campus-gradient text-white hover:shadow-md hover:shadow-primary/20"
+                  <div className="space-y-1 w-full mb-5 relative z-10">
+                    <p className="font-black text-sm truncate group-hover:text-primary transition-colors tracking-tight">
+                      {friend.name}
+                    </p>
+                    
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground font-medium truncate">
+                        <GraduationCap className="h-3 w-3 text-primary/60" />
+                        <span className="truncate">{friend.faculty || "Étudiant"}</span>
+                      </div>
+                      {friend.university && (
+                        <div className="flex items-center justify-center gap-1 text-[9px] text-muted-foreground/60 truncate uppercase tracking-widest font-bold">
+                          <MapPin className="h-2.5 w-2.5" />
+                          <span className="truncate">{friend.university}</span>
+                        </div>
                       )}
-                    >
-                      {addedFriends.includes(friend.id) ? (
-                        <>
-                          <Check className="h-3.5 w-3.5 mr-1" />
-                          Envoyé
-                        </>
-                      ) : (
-                        <>
-                          <UserPlus className="h-3.5 w-3.5 mr-1" />
-                          Se connecter
-                        </>
-                      )}
-                    </Button>
-                  </CardContent>
-                </Card>
+                    </div>
+                  </div>
+
+                  <Button
+                    size="sm"
+                    onClick={() => handleAddFriend(friend.id, friend.name)}
+                    disabled={addedFriends.includes(friend.id)}
+                    className={cn(
+                      "w-full h-10 rounded-2xl text-[11px] font-black transition-all duration-500 relative z-10",
+                      addedFriends.includes(friend.id)
+                        ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
+                        : "campus-gradient text-white hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 active:scale-95"
+                    )}
+                  >
+                    {addedFriends.includes(friend.id) ? (
+                      <div className="flex items-center gap-1.5">
+                        <Check className="h-3.5 w-3.5 stroke-[3]" />
+                        <span>AJOUTÉ</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5">
+                        <Link className="h-3.5 w-3.5 stroke-[3]" />
+                        <span>SE CONNECTER</span>
+                      </div>
+                    )}
+                  </Button>
+                </div>
               ))
             )}
           </div>
-          <ScrollBar orientation="horizontal" className="h-1.5" />
+          <ScrollBar orientation="horizontal" className="hidden" />
         </ScrollArea>
       </CardContent>
     </Card>

@@ -76,6 +76,14 @@ export function SphereDetail() {
   const [taskState, setTaskState] = useState<"ready" | "forbidden" | "server_error">("ready");
   const [processingMemberIds, setProcessingMemberIds] = useState<Record<string, boolean>>({});
 
+  const filteredResources = useMemo(() => {
+    if (!fileSearchQuery.trim()) return resources;
+    const query = fileSearchQuery.toLowerCase();
+    return resources.filter(res => 
+      (res.title || "Fichier").toLowerCase().includes(query)
+    );
+  }, [resources, fileSearchQuery]);
+
   const resolveJoinConflict = (error: unknown): "already_active" | "already_pending" | null => {
     const rawMessage =
       (error as any)?.response?.data?.detail ??
@@ -487,14 +495,6 @@ export function SphereDetail() {
       </div>
     );
   }
-
-  const filteredResources = useMemo(() => {
-    if (!fileSearchQuery.trim()) return resources;
-    const query = fileSearchQuery.toLowerCase();
-    return resources.filter(res => 
-      (res.title || "Fichier").toLowerCase().includes(query)
-    );
-  }, [resources, fileSearchQuery]);
 
   return (
     <>
