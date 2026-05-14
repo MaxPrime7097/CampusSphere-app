@@ -124,10 +124,27 @@ export function AuthCallback() {
   }, [navigate, toast]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center space-y-4">
-        <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
-        <p className="text-muted-foreground">{status}</p>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-background to-accent/20">
+      <div className="relative flex flex-col items-center gap-6 animate-in fade-in duration-700">
+        <div className="relative">
+          {/* Pulsating glow effect */}
+          <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full animate-pulse" />
+          <img 
+            src="/CS.svg" 
+            alt="CampusSphere" 
+            className="w-16 h-16 md:w-20 md:h-20 relative animate-bounce duration-[2000ms]" 
+          />
+        </div>
+        
+        <div className="flex flex-col items-center gap-2">
+          <span className="text-2xl md:text-3xl font-bold font-automata campus-gradient bg-clip-text text-transparent">
+            CampusSphere
+          </span>
+          <div className="flex items-center gap-2 text-muted-foreground text-sm font-medium">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            <span>{status}</span>
+          </div>
+        </div>
       </div>
     </div>
   );

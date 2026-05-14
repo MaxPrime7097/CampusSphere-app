@@ -3,7 +3,7 @@ import { Helmet } from "react-helmet-async";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { deleteResource, downloadResource, getResource, getResourcePreviewUrl, reportResource, saveResource, trackResourceShare, updateResource, listFolders, updateFolder, type ResourceFolder } from "@/services/api";
 import { Download, Share2, ChevronLeft, Eye, Flag, Loader2, Zap, Bookmark, Pencil, Trash2, Info, X, Copy, FileText, FolderInput, BadgeCheck } from "lucide-react";
-import { FaFacebook, FaTwitter, FaWhatsapp, FaLinkedIn } from 'react-icons/fa';
+import { FaFacebook, FaTwitter, FaWhatsapp, FaLinkedin } from 'react-icons/fa';
 
 import { renderMentionText } from "@/lib/mentions";
 import { cn } from "@/lib/utils";
@@ -121,7 +121,7 @@ export function ResourceDetail() {
   // Load resource from API
   useEffect(() => {
     if (!id) return;
-    
+
     let isMounted = true;
     (async () => {
       try {
@@ -299,12 +299,12 @@ export function ResourceDetail() {
           setResource((prev) =>
             prev
               ? {
-                  ...prev,
-                  stats: {
-                    ...prev.stats,
-                    downloads: prev.stats.downloads + 1,
-                  },
-                }
+                ...prev,
+                stats: {
+                  ...prev.stats,
+                  downloads: prev.stats.downloads + 1,
+                },
+              }
               : prev
           );
 
@@ -337,13 +337,13 @@ export function ResourceDetail() {
         setResource((prev) =>
           prev
             ? {
-                ...prev,
-                isSaved: saved,
-                stats: {
-                  ...prev.stats,
-                  saves: saved ? (Number(prev.stats.saves) || 0) + 1 : Math.max(0, (Number(prev.stats.saves) || 1) - 1),
-                },
-              }
+              ...prev,
+              isSaved: saved,
+              stats: {
+                ...prev.stats,
+                saves: saved ? (Number(prev.stats.saves) || 0) + 1 : Math.max(0, (Number(prev.stats.saves) || 1) - 1),
+              },
+            }
             : prev
         );
 
@@ -372,7 +372,7 @@ export function ResourceDetail() {
   const handleSocialShare = (platform: string) => {
     const shareUrl = encodeURIComponent(window.location.href);
     const shareText = encodeURIComponent(`Découvre cette ressource sur CampusSphere : ${resource?.title}`);
-    
+
     let url = "";
     switch (platform) {
       case "whatsapp":
@@ -391,7 +391,7 @@ export function ResourceDetail() {
         return;
     }
     window.open(url, "_blank", "noopener,noreferrer");
-    trackResourceShare(id!, { channel: platform }).catch(() => {});
+    trackResourceShare(id!, { channel: platform }).catch(() => { });
   };
 
   const handleCopyLink = async () => {
@@ -400,7 +400,7 @@ export function ResourceDetail() {
     try {
       await navigator.clipboard.writeText(window.location.href);
       toast({ title: "Lien copié !", description: "Le lien a été copié dans votre presse-papiers." });
-      trackResourceShare(id!, { channel: "copy_link" }).catch(() => {});
+      trackResourceShare(id!, { channel: "copy_link" }).catch(() => { });
     } catch {
       toast({ title: "Erreur", description: "Impossible de copier le lien.", variant: "destructive" });
     } finally {
@@ -460,10 +460,10 @@ export function ResourceDetail() {
       setResource((prev) =>
         prev
           ? {
-              ...prev,
-              title: updated?.title ?? title,
-              description: updated?.description ?? draftDescription.trim(),
-            }
+            ...prev,
+            title: updated?.title ?? title,
+            description: updated?.description ?? draftDescription.trim(),
+          }
           : prev
       );
       setShowEditDialog(false);
@@ -531,502 +531,502 @@ export function ResourceDetail() {
         <meta property="og:description" content={resource.description ? resource.description.substring(0, 160) : "Téléchargez et partagez des ressources académiques sur CampusSphere."} />
         <meta property="og:url" content={`https://campussphere.app/resources/${id}`} />
       </Helmet>
-    <div key={id} className="min-h-screen bg-gradient-to-br from-background to-accent/20">
+      <div key={id} className="min-h-screen bg-gradient-to-br from-background to-accent/20">
 
-      <div className="container max-w-4xl mx-auto py-4 px-4 md:py-6">
-        {/* Back Button */}
-        <Button 
-          variant="ghost" 
-          className="mb-4 gap-2"
-          onClick={() => navigate("/resources")}
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Retour aux ressources
-        </Button>
-        
-        {/* Resource Header */}
-        <Card className="campus-card mb-4">
-          <CardContent className="p-4 md:p-6">
-            {/* Title & Type */}
-            <div className="mb-4">
-              <div className="flex flex-wrap items-center gap-2 mb-3">
-                <Badge className="campus-gradient text-white">
-                  {getTypeLabel(resource.type)}
-                </Badge>
-                <Badge variant="secondary">{getSubjectLabel(resource.subject)}</Badge>
-                {resource.category && (
-                  <Badge variant="outline">{getCategoryLabel(resource.category)}</Badge>
-                )}
-                <Badge variant="outline">{resource.format ? resource.format.toUpperCase() : "Non défini"}</Badge>
+        <div className="container max-w-4xl mx-auto py-4 px-4 md:py-6">
+          {/* Back Button */}
+          <Button
+            variant="ghost"
+            className="mb-4 gap-2"
+            onClick={() => navigate("/resources")}
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Retour aux ressources
+          </Button>
+
+          {/* Resource Header */}
+          <Card className="campus-card mb-4">
+            <CardContent className="p-4 md:p-6">
+              {/* Title & Type */}
+              <div className="mb-4">
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  <Badge className="campus-gradient text-white">
+                    {getTypeLabel(resource.type)}
+                  </Badge>
+                  <Badge variant="secondary">{getSubjectLabel(resource.subject)}</Badge>
+                  {resource.category && (
+                    <Badge variant="outline">{getCategoryLabel(resource.category)}</Badge>
+                  )}
+                  <Badge variant="outline">{resource.format ? resource.format.toUpperCase() : "Non défini"}</Badge>
+                </div>
+                <h1 className="text-2xl md:text-3xl font-bold mb-2">{resource.title}</h1>
+                <p className="text-muted-foreground whitespace-pre-wrap">{renderMentionText(resource.description)}</p>
               </div>
-              <h1 className="text-2xl md:text-3xl font-bold mb-2">{resource.title}</h1>
-              <p className="text-muted-foreground whitespace-pre-wrap">{renderMentionText(resource.description)}</p>
-            </div>
 
 
-            {/* Stats Row */}
-            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-4">
-              <span className="flex items-center gap-1">
-                <Download className="h-4 w-4" />
-                {resource.stats.downloads}
-              </span>
-              <span className="flex items-center gap-1">
-                <Eye className="h-4 w-4" />
-                {resource.stats.views}
-              </span>
-              <span className="flex items-center gap-1">
-                <Bookmark className="h-4 w-4" />
-                {resource.stats.saves}
-              </span>
-              <div className="flex items-center gap-2 px-2 py-1 bg-primary/10 text-primary rounded-full ml-auto group relative">
-                <Zap className="h-3 w-3 fill-current" />
-                <span className="text-xs font-bold">{resource.impactScore || 0}</span>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-5 w-5 p-0 rounded-full hover:bg-primary/20 transition-colors"
-                  onClick={() => toast({
-                    title: "Score d'impact",
-                    description: "Le Score d'Impact mesure l'utilité et la pertinence de ce contenu pour la communauté CampusSphere. Il est calculé en fonction des interactions et des retours des étudiants.",
-                  })}
+              {/* Stats Row */}
+              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-4">
+                <span className="flex items-center gap-1">
+                  <Download className="h-4 w-4" />
+                  {resource.stats.downloads}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Eye className="h-4 w-4" />
+                  {resource.stats.views}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Bookmark className="h-4 w-4" />
+                  {resource.stats.saves}
+                </span>
+                <div className="flex items-center gap-2 px-2 py-1 bg-primary/10 text-primary rounded-full ml-auto group relative">
+                  <Zap className="h-3 w-3 fill-current" />
+                  <span className="text-xs font-bold">{resource.impactScore || 0}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-5 w-5 p-0 rounded-full hover:bg-primary/20 transition-colors"
+                    onClick={() => toast({
+                      title: "Score d'impact",
+                      description: "Le Score d'Impact mesure l'utilité et la pertinence de ce contenu pour la communauté CampusSphere. Il est calculé en fonction des interactions et des retours des étudiants.",
+                    })}
 
-                >
-                  <Info className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-
-
-            {/* Uploader Info */}
-            <div className="flex flex-col gap-3 p-3 bg-accent/50 rounded-lg mb-4 md:flex-row md:items-center md:justify-between">
-              <div 
-                className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={() => resource.uploader.username && navigate(`/profile/${resource.uploader.username}`)}
-              >
-                <Avatar className="h-12 w-12">
-                  <AvatarImage src={resource.uploader.avatar} />
-                  <AvatarFallback>{resource.uploader.name.slice(0, 1)}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium">{resource.uploader.name}</p>
-                    {resource.uploader.verified && (
-                      <BadgeCheck className="h-4 w-4 text-primary fill-primary/10" />
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {resource.uploader.contributions} contributions
-                  </p>
+                  >
+                    <Info className="h-3 w-3" />
+                  </Button>
                 </div>
               </div>
-              <div className="flex flex-wrap items-center gap-2 md:justify-end">
 
 
-
-                <Button
-                  variant={isSaved ? "secondary" : "outline"}
-                  size="sm"
-                  onClick={handleSaveResource}
-                  disabled={isSaving}
-                  className="gap-2"
-                  aria-label={isSaved ? "Retirer des enregistrements" : "Enregistrer la ressource"}
+              {/* Uploader Info */}
+              <div className="flex flex-col gap-3 p-3 bg-accent/50 rounded-lg mb-4 md:flex-row md:items-center md:justify-between">
+                <div
+                  className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => resource.uploader.username && navigate(`/profile/${resource.uploader.username}`)}
                 >
-                  <Bookmark className={cn("h-4 w-4", isSaved && "fill-current")} />
-                  <span className="hidden md:inline">{isSaved ? "Enregistré" : "Enregistrer"}</span>
-                </Button>
-
-
-                {resource.canEdit && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleOpenEdit}
-                    disabled={isUpdatingResource}
-                    className="gap-2"
-                    aria-label="Modifier la ressource"
-                  >
-                    <Pencil className="h-4 w-4" />
-                    <span className="hidden md:inline">Modifier</span>
-                  </Button>
-                )}
-
-                {resource.canEdit && folders.length > 0 && !showFolderSelect && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowFolderSelect(true)}
-                    className="gap-2"
-                    aria-label="Déplacer vers un dossier"
-                  >
-                    <FolderInput className="h-4 w-4" />
-                    <span className="hidden md:inline">Dossier</span>
-                  </Button>
-                )}
-
-                {resource.canEdit && folders.length > 0 && showFolderSelect && (
-                  <div className="flex items-center gap-1">
-                    <Select
-                      value={currentFolderId}
-                      onValueChange={async (val) => {
-                        setIsMovingToFolder(true);
-                        try {
-                          const folderId = val === "none" ? null : Number(val);
-                          await updateResource(resource.id, { folder_id: folderId });
-
-                          setCurrentFolderId(val);
-                          toast({
-                            title: val === "none" ? "Retiré du dossier" : "Déplacé dans le dossier",
-                            description: val === "none"
-                              ? "La ressource n'est plus dans un dossier."
-                              : `Ressource déplacée dans "${folders.find(f => String(f.id) === val)?.name}".`,
-                          });
-                          setShowFolderSelect(false);
-                        } catch (e: any) {
-                          toast({ title: "Erreur", description: e?.message, variant: "destructive" });
-                        } finally {
-                          setIsMovingToFolder(false);
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="h-8 text-xs w-36">
-                        {isMovingToFolder
-                          ? <Loader2 className="h-3 w-3 animate-spin" />
-                          : <SelectValue placeholder="Choisir dossier" />
-                        }
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Aucun dossier</SelectItem>
-                        {folders.map(f => (
-                          <SelectItem key={f.id} value={String(f.id)} disabled={f.resource_count >= 20 && currentFolderId !== String(f.id)}>
-                            {f.name} ({f.resource_count}/20)
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowFolderSelect(false)}>
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={resource.uploader.avatar} />
+                    <AvatarFallback>{resource.uploader.name.slice(0, 1)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium">{resource.uploader.name}</p>
+                      {resource.uploader.verified && (
+                        <BadgeCheck className="h-4 w-4 text-primary fill-primary/10" />
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {resource.uploader.contributions} contributions
+                    </p>
                   </div>
-                )}
+                </div>
+                <div className="flex flex-wrap items-center gap-2 md:justify-end">
 
-                {resource.canDelete && (
+
+
                   <Button
-                    variant="destructive"
+                    variant={isSaved ? "secondary" : "outline"}
                     size="sm"
-                    onClick={() => setShowDeleteDialog(true)}
-                    disabled={isDeletingResource}
+                    onClick={handleSaveResource}
+                    disabled={isSaving}
                     className="gap-2"
-                    aria-label="Supprimer la ressource"
+                    aria-label={isSaved ? "Retirer des enregistrements" : "Enregistrer la ressource"}
                   >
-                    {isDeletingResource ? (
+                    <Bookmark className={cn("h-4 w-4", isSaved && "fill-current")} />
+                    <span className="hidden md:inline">{isSaved ? "Enregistré" : "Enregistrer"}</span>
+                  </Button>
+
+
+                  {resource.canEdit && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleOpenEdit}
+                      disabled={isUpdatingResource}
+                      className="gap-2"
+                      aria-label="Modifier la ressource"
+                    >
+                      <Pencil className="h-4 w-4" />
+                      <span className="hidden md:inline">Modifier</span>
+                    </Button>
+                  )}
+
+                  {resource.canEdit && folders.length > 0 && !showFolderSelect && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowFolderSelect(true)}
+                      className="gap-2"
+                      aria-label="Déplacer vers un dossier"
+                    >
+                      <FolderInput className="h-4 w-4" />
+                      <span className="hidden md:inline">Dossier</span>
+                    </Button>
+                  )}
+
+                  {resource.canEdit && folders.length > 0 && showFolderSelect && (
+                    <div className="flex items-center gap-1">
+                      <Select
+                        value={currentFolderId}
+                        onValueChange={async (val) => {
+                          setIsMovingToFolder(true);
+                          try {
+                            const folderId = val === "none" ? null : Number(val);
+                            await updateResource(resource.id, { folder_id: folderId });
+
+                            setCurrentFolderId(val);
+                            toast({
+                              title: val === "none" ? "Retiré du dossier" : "Déplacé dans le dossier",
+                              description: val === "none"
+                                ? "La ressource n'est plus dans un dossier."
+                                : `Ressource déplacée dans "${folders.find(f => String(f.id) === val)?.name}".`,
+                            });
+                            setShowFolderSelect(false);
+                          } catch (e: any) {
+                            toast({ title: "Erreur", description: e?.message, variant: "destructive" });
+                          } finally {
+                            setIsMovingToFolder(false);
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="h-8 text-xs w-36">
+                          {isMovingToFolder
+                            ? <Loader2 className="h-3 w-3 animate-spin" />
+                            : <SelectValue placeholder="Choisir dossier" />
+                          }
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Aucun dossier</SelectItem>
+                          {folders.map(f => (
+                            <SelectItem key={f.id} value={String(f.id)} disabled={f.resource_count >= 20 && currentFolderId !== String(f.id)}>
+                              {f.name} ({f.resource_count}/20)
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowFolderSelect(false)}>
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  )}
+
+                  {resource.canDelete && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setShowDeleteDialog(true)}
+                      disabled={isDeletingResource}
+                      className="gap-2"
+                      aria-label="Supprimer la ressource"
+                    >
+                      {isDeletingResource ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                      <span className="hidden md:inline">Supprimer</span>
+                    </Button>
+
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleShare}
+                    disabled={isSharing}
+                    className="gap-2"
+                    aria-label="Partager la ressource"
+                  >
+                    {isSharing ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <Trash2 className="h-4 w-4" />
+                      <Share2 className="h-4 w-4" />
                     )}
-                    <span className="hidden md:inline">Supprimer</span>
+                    <span className="hidden md:inline">Partager</span>
                   </Button>
 
-                )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleShare}
-                  disabled={isSharing}
-                  className="gap-2"
-                  aria-label="Partager la ressource"
-                >
-                  {isSharing ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Share2 className="h-4 w-4" />
-                  )}
-                  <span className="hidden md:inline">Partager</span>
-                </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleReport}
+                    disabled={isReporting}
+                    className="gap-2"
+                    aria-label="Signaler la ressource"
+                  >
+                    {isReporting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Flag className="h-4 w-4" />
+                    )}
+                    <span className="hidden md:inline">Signaler</span>
+                  </Button>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleReport}
-                  disabled={isReporting}
-                  className="gap-2"
-                  aria-label="Signaler la ressource"
-                >
-                  {isReporting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Flag className="h-4 w-4" />
-                  )}
-                  <span className="hidden md:inline">Signaler</span>
-                </Button>
-
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="campus-card mb-4">
-          <CardContent className="p-4 md:p-6 space-y-4">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h3 className="font-semibold text-lg">Aperçu</h3>
-                <p className="text-sm text-muted-foreground">
-                  {isPreviewMode
-                    ? "Mode aperçu actif (ouvert depuis l'icône œil)."
-                    : "Ouvrez cette page avec ?mode=preview pour charger l'aperçu du fichier."}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge variant={isPreviewMode ? "secondary" : "outline"}>
-                  {isPreviewMode ? "Aperçu actif" : "Aperçu inactif"}
-                </Badge>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDownload}
-                  disabled={isDownloading}
-                  className="gap-2"
-                  aria-label="Télécharger la ressource"
-                >
-                  {isDownloading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Download className="h-4 w-4" />
-                  )}
-                  <span className="hidden md:inline">Télécharger</span>
-                </Button>
-
-              </div>
-            </div>
-
-            {isPreviewMode ? (
-              isPreviewLoading ? (
-                <div className="flex items-center justify-center rounded-lg border border-dashed h-[420px]">
-                  <Loader2 className="h-6 w-6 animate-spin" />
                 </div>
-              ) : previewError ? (
-                <div className="rounded-lg border border-dashed p-6 text-sm text-destructive">
-                  {previewError}
-                </div>
-              ) : !isPreviewable ? (
-                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-                  Ce format n’est pas prévisualisable dans l’application. Utilisez le bouton Télécharger.
-                </div>
-              ) : previewSrc ? (
-                <div className="rounded-lg border overflow-hidden bg-background">
-                  {isPdf ? (
-                    <iframe
-                      title={`Aperçu de ${resource.title}`}
-                      src={previewSrc}
-                      className="w-full h-[70vh] min-h-[420px]"
-                    />
-                  ) : (
-                    <img
-                      src={previewSrc}
-                      alt={`Aperçu de ${resource.title}`}
-                      className="w-full max-h-[70vh] object-contain bg-muted/20"
-                    />
-                  )}
-                </div>
-              ) : (
-                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-                  Impossible de charger l’aperçu pour le moment.
-                </div>
-              )
-            ) : (
-              <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-                Cliquez sur l’icône œil depuis la liste des ressources pour ouvrir directement cette vue en mode aperçu.
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* Details */}
-        <Card className="campus-card mb-4">
-          <CardContent className="p-4 md:p-6">
-            <h3 className="font-semibold text-lg mb-4">Détails</h3>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Matière associée</p>
-                <p className="font-medium">{getSubjectLabel(resource.subject)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Public cible</p>
-                <p className="font-medium">{getAudienceLabel(resource.level)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Taille du fichier</p>
-                <p className="font-medium">{formatFileSize(resource.size)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Date d'upload</p>
-                <p className="font-medium">{resource.uploadDate ? formatFrenchDate(resource.uploadDate) : <EmptyField />}</p>
-              </div>
-            </div>
-
-            <div>
-              <p className="text-sm text-muted-foreground mb-2">Tags</p>
-              <div className="flex flex-wrap gap-2">
-                {(resource.tags || []).length > 0 ? (
-                  (resource.tags || []).map((tag) => (
-                    <Badge key={tag} variant="outline" className="cursor-pointer hover:bg-accent">
-                      {tag}
-                    </Badge>
-                  ))
-                ) : (
-                  <EmptyField />
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-      </div>
-
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Modifier la ressource</DialogTitle>
-            <DialogDescription>Mettre à jour le titre et la description.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <Textarea value={draftTitle} onChange={(e) => setDraftTitle(e.target.value)} className="min-h-[60px]" />
-            <Textarea value={draftDescription} onChange={(e) => setDraftDescription(e.target.value)} className="min-h-[120px]" />
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowEditDialog(false)} disabled={isUpdatingResource}>Annuler</Button>
-              <Button onClick={handleUpdateResource} disabled={isUpdatingResource}>
-                {isUpdatingResource ? "Enregistrement..." : "Enregistrer"}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Supprimer cette ressource ?</DialogTitle>
-            <DialogDescription>Cette action est destructive et ne peut pas être annulée.</DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)} disabled={isDeletingResource}>Annuler</Button>
-            <Button variant="destructive" onClick={handleDeleteResource} disabled={isDeletingResource}>
-              {isDeletingResource ? "Suppression..." : "Supprimer"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Guest CTA Banner */}
-      {!isAuthenticated && (
-        <Card className="mt-8 border-primary/50 bg-primary/5 campus-animate-slide-up overflow-hidden relative">
-          <div className="absolute top-0 right-0 p-2 opacity-10">
-            <Zap className="h-24 w-24 text-primary fill-current -rotate-12 translate-x-8 -translate-y-8" />
-          </div>
-          <CardContent className="p-6 relative z-10">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="flex items-center gap-4">
-                <div className="h-14 w-14 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                  <Zap className="h-7 w-7 text-primary fill-current" />
-                </div>
+          <Card className="campus-card mb-4">
+            <CardContent className="p-4 md:p-6 space-y-4">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <h3 className="text-xl font-bold">Voulez-vous aller plus loin ?</h3>
-                  <p className="text-muted-foreground text-sm max-w-md">
-                    Inscrivez-vous pour télécharger cette ressource, la sauvegarder dans vos dossiers et accéder à des milliers d'autres documents partagés par la communauté.
+                  <h3 className="font-semibold text-lg">Aperçu</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {isPreviewMode
+                      ? "Mode aperçu actif (ouvert depuis l'icône œil)."
+                      : "Ouvrez cette page avec ?mode=preview pour charger l'aperçu du fichier."}
                   </p>
                 </div>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                <Button onClick={() => navigate("/register")} className="campus-gradient text-white px-8 h-11">
-                  S'inscrire gratuitement
-                </Button>
-                <Button variant="outline" onClick={() => navigate("/login")} className="h-11">
-                  Se connecter
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-    </div>
-    
-    {/* Share Modal */}
-    <Dialog open={showShareModal} onOpenChange={setShowShareModal}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Partager la ressource</DialogTitle>
-          <DialogDescription>
-            Partagez cette ressource avec votre réseau ou copiez le lien.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="flex flex-col gap-4 py-4">
-          <div className="grid grid-cols-2 gap-3">
-            <Button
-              variant="outline"
-              className="flex items-center gap-2 h-12 justify-start px-4 hover:bg-green-50 hover:text-green-600 hover:border-green-200 transition-all"
-              onClick={() => handleSocialShare("whatsapp")}
-            >
-              <div className="bg-green-500 text-white p-1.5 rounded-full">
-                <FaWhatsapp className="h-3.5 w-3.5" />
-              </div>
-              <span>WhatsApp</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="flex items-center gap-2 h-12 justify-start px-4 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all"
-              onClick={() => handleSocialShare("facebook")}
-            >
-              <FaFacebook className="h-5 w-5 text-blue-600" />
-              <span>Facebook</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="flex items-center gap-2 h-12 justify-start px-4 hover:bg-sky-50 hover:text-sky-600 hover:border-sky-200 transition-all"
-              onClick={() => handleSocialShare("twitter")}
-            >
-              <FaTwitter className="h-5 w-5 text-sky-500" />
-              <span>Twitter / X</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="flex items-center gap-2 h-12 justify-start px-4 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 transition-all"
-              onClick={() => handleSocialShare("linkedin")}
-            >
-              <FaLinkedIn className="h-5 w-5 text-blue-700" />
-              <span>LinkedIn</span>
-            </Button>
-          </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant={isPreviewMode ? "secondary" : "outline"}>
+                    {isPreviewMode ? "Aperçu actif" : "Aperçu inactif"}
+                  </Badge>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDownload}
+                    disabled={isDownloading}
+                    className="gap-2"
+                    aria-label="Télécharger la ressource"
+                  >
+                    {isDownloading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4" />
+                    )}
+                    <span className="hidden md:inline">Télécharger</span>
+                  </Button>
 
-          <Separator />
+                </div>
+              </div>
 
-          <div className="flex items-center space-x-2">
-            <div className="grid flex-1 gap-2">
-              <label htmlFor="link" className="sr-only">Lien</label>
-              <div className="relative">
-                <Input
-                  id="link"
-                  defaultValue={window.location.href}
-                  readOnly
-                  className="pr-10 h-11 bg-muted/30"
-                />
-                <Button
-                  size="sm"
-                  className="absolute right-1 top-1 h-9 px-3"
-                  onClick={handleCopyLink}
-                  disabled={isCopyingLink}
-                >
-                  {isCopyingLink ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+              {isPreviewMode ? (
+                isPreviewLoading ? (
+                  <div className="flex items-center justify-center rounded-lg border border-dashed h-[420px]">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                ) : previewError ? (
+                  <div className="rounded-lg border border-dashed p-6 text-sm text-destructive">
+                    {previewError}
+                  </div>
+                ) : !isPreviewable ? (
+                  <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                    Ce format n’est pas prévisualisable dans l’application. Utilisez le bouton Télécharger.
+                  </div>
+                ) : previewSrc ? (
+                  <div className="rounded-lg border overflow-hidden bg-background">
+                    {isPdf ? (
+                      <iframe
+                        title={`Aperçu de ${resource.title}`}
+                        src={previewSrc}
+                        className="w-full h-[70vh] min-h-[420px]"
+                      />
+                    ) : (
+                      <img
+                        src={previewSrc}
+                        alt={`Aperçu de ${resource.title}`}
+                        className="w-full max-h-[70vh] object-contain bg-muted/20"
+                      />
+                    )}
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                    Impossible de charger l’aperçu pour le moment.
+                  </div>
+                )
+              ) : (
+                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                  Cliquez sur l’icône œil depuis la liste des ressources pour ouvrir directement cette vue en mode aperçu.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Details */}
+          <Card className="campus-card mb-4">
+            <CardContent className="p-4 md:p-6">
+              <h3 className="font-semibold text-lg mb-4">Détails</h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Matière associée</p>
+                  <p className="font-medium">{getSubjectLabel(resource.subject)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Public cible</p>
+                  <p className="font-medium">{getAudienceLabel(resource.level)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Taille du fichier</p>
+                  <p className="font-medium">{formatFileSize(resource.size)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Date d'upload</p>
+                  <p className="font-medium">{resource.uploadDate ? formatFrenchDate(resource.uploadDate) : <EmptyField />}</p>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">Tags</p>
+                <div className="flex flex-wrap gap-2">
+                  {(resource.tags || []).length > 0 ? (
+                    (resource.tags || []).map((tag) => (
+                      <Badge key={tag} variant="outline" className="cursor-pointer hover:bg-accent">
+                        {tag}
+                      </Badge>
+                    ))
                   ) : (
-                    <Copy className="h-4 w-4" />
+                    <EmptyField />
                   )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+        </div>
+
+        <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Modifier la ressource</DialogTitle>
+              <DialogDescription>Mettre à jour le titre et la description.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <Textarea value={draftTitle} onChange={(e) => setDraftTitle(e.target.value)} className="min-h-[60px]" />
+              <Textarea value={draftDescription} onChange={(e) => setDraftDescription(e.target.value)} className="min-h-[120px]" />
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowEditDialog(false)} disabled={isUpdatingResource}>Annuler</Button>
+                <Button onClick={handleUpdateResource} disabled={isUpdatingResource}>
+                  {isUpdatingResource ? "Enregistrement..." : "Enregistrer"}
                 </Button>
               </div>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Supprimer cette ressource ?</DialogTitle>
+              <DialogDescription>Cette action est destructive et ne peut pas être annulée.</DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowDeleteDialog(false)} disabled={isDeletingResource}>Annuler</Button>
+              <Button variant="destructive" onClick={handleDeleteResource} disabled={isDeletingResource}>
+                {isDeletingResource ? "Suppression..." : "Supprimer"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Guest CTA Banner */}
+        {!isAuthenticated && (
+          <Card className="mt-8 border-primary/50 bg-primary/5 campus-animate-slide-up overflow-hidden relative">
+            <div className="absolute top-0 right-0 p-2 opacity-10">
+              <Zap className="h-24 w-24 text-primary fill-current -rotate-12 translate-x-8 -translate-y-8" />
+            </div>
+            <CardContent className="p-6 relative z-10">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="flex items-center gap-4">
+                  <div className="h-14 w-14 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                    <Zap className="h-7 w-7 text-primary fill-current" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold">Voulez-vous aller plus loin ?</h3>
+                    <p className="text-muted-foreground text-sm max-w-md">
+                      Inscrivez-vous pour télécharger cette ressource, la sauvegarder dans vos dossiers et accéder à des milliers d'autres documents partagés par la communauté.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                  <Button onClick={() => navigate("/register")} className="campus-gradient text-white px-8 h-11">
+                    S'inscrire gratuitement
+                  </Button>
+                  <Button variant="outline" onClick={() => navigate("/login")} className="h-11">
+                    Se connecter
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Share Modal */}
+      <Dialog open={showShareModal} onOpenChange={setShowShareModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Partager la ressource</DialogTitle>
+            <DialogDescription>
+              Partagez cette ressource avec votre réseau ou copiez le lien.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 py-4">
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                variant="outline"
+                className="flex items-center gap-2 h-12 justify-start px-4 hover:bg-green-50 hover:text-green-600 hover:border-green-200 transition-all"
+                onClick={() => handleSocialShare("whatsapp")}
+              >
+                <div className="bg-green-500 text-white p-1.5 rounded-full">
+                  <FaWhatsapp className="h-3.5 w-3.5" />
+                </div>
+                <span>WhatsApp</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="flex items-center gap-2 h-12 justify-start px-4 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all"
+                onClick={() => handleSocialShare("facebook")}
+              >
+                <FaFacebook className="h-5 w-5 text-blue-600" />
+                <span>Facebook</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="flex items-center gap-2 h-12 justify-start px-4 hover:bg-sky-50 hover:text-sky-600 hover:border-sky-200 transition-all"
+                onClick={() => handleSocialShare("twitter")}
+              >
+                <FaTwitter className="h-5 w-5 text-sky-500" />
+                <span>Twitter / X</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="flex items-center gap-2 h-12 justify-start px-4 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 transition-all"
+                onClick={() => handleSocialShare("linkedin")}
+              >
+                <FaLinkedin className="h-5 w-5 text-blue-700" />
+                <span>LinkedIn</span>
+              </Button>
+            </div>
+
+            <Separator />
+
+            <div className="flex items-center space-x-2">
+              <div className="grid flex-1 gap-2">
+                <label htmlFor="link" className="sr-only">Lien</label>
+                <div className="relative">
+                  <Input
+                    id="link"
+                    defaultValue={window.location.href}
+                    readOnly
+                    className="pr-10 h-11 bg-muted/30"
+                  />
+                  <Button
+                    size="sm"
+                    className="absolute right-1 top-1 h-9 px-3"
+                    onClick={handleCopyLink}
+                    disabled={isCopyingLink}
+                  >
+                    {isCopyingLink ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
       <Dialog open={showAuthModal} onOpenChange={setShowAuthModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -1035,7 +1035,7 @@ export function ResourceDetail() {
               Rejoignez CampusSphere
             </DialogTitle>
             <DialogDescription>
-              Vous devez être connecté pour télécharger ou sauvegarder des ressources. 
+              Vous devez être connecté pour télécharger ou sauvegarder des ressources.
               Créez un compte gratuitement pour accéder à tout le contenu.
             </DialogDescription>
           </DialogHeader>

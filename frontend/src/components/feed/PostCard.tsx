@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Heart, MessageCircle, Share, Bookmark, MoreVertical, Zap, Copy, Flag, ExternalLink, Users, Plus, Minus, X, Pencil, Trash2, Loader2, FileText, Download, ChevronLeft, ChevronRight, Search, Facebook, Instagram, Twitter, Linkedin, Info, BadgeCheck } from "lucide-react";
-import { FaFacebook, FaTwitter, FaInstagram, FaWhatsapp, FaLinkedIn } from 'react-icons/fa';
+import { FaFacebook, FaTwitter, FaInstagram, FaWhatsapp, FaLinkedin } from 'react-icons/fa';
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -173,7 +173,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
 
         setIsLiked(liked);
         setLikesCount(nextLikesCount);
-        
+
         if (liked) {
           toast({
             title: "Post aimé !",
@@ -258,7 +258,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
   const handleShare = async () => {
     requireAuth(async () => {
       const postUrl = `${window.location.origin}/posts/${post.id}`;
-      
+
       // On utilise directement notre modal pour plus de contrôle et éviter les échecs du partage natif
       setShowShareDialog(true);
       setShareSearch("");
@@ -288,7 +288,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
   const handleSocialShare = (platform: string) => {
     const postUrl = encodeURIComponent(`${window.location.origin}/posts/${post.id}`);
     const postText = encodeURIComponent(post.content.length > 100 ? post.content.substring(0, 100) + "..." : post.content);
-    
+
     let url = "";
     switch (platform) {
       case "whatsapp":
@@ -308,7 +308,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
         toast({ title: "Lien copié !", description: "Instagram ne permet pas le partage direct. Collez le lien dans votre application." });
         return;
     }
-    
+
     if (url) {
       window.open(url, "_blank", "noopener,noreferrer");
     }
@@ -466,12 +466,12 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
     ? normalizedFiles
     : post.image
       ? [{
-          id: "legacy-image",
-          name: "Image",
-          url: post.image,
-          type: "image",
-          size: 0,
-        }]
+        id: "legacy-image",
+        name: "Image",
+        url: post.image,
+        type: "image",
+        size: 0,
+      }]
       : [];
 
   const imageAttachments = attachments.filter((file) => resolveAttachmentType(file) === "image");
@@ -482,8 +482,8 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
   const categoryLabel = getCategoryLabel(post.category);
   const cardClasses = cn(
     "transition-all duration-300",
-    isMobile 
-      ? "rounded-none border-x-0 border-t-0 shadow-none bg-card" 
+    isMobile
+      ? "rounded-none border-x-0 border-t-0 shadow-none bg-card"
       : "campus-card hover:campus-glow"
   );
 
@@ -496,7 +496,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
       <Card className={cardClasses}>
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
-            <div 
+            <div
               className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
               onClick={handleProfileClick}
             >
@@ -566,481 +566,481 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
           </div>
         </CardHeader>
 
-      <CardContent className="pt-0">
-        <div className="space-y-3">
-          <div  onClick={handleOpenPost} className="cursor-pointer">
-          <div className="flex items-center justify-between mb-2">
-            <Badge variant="secondary" className="text-xs">
-              {categoryLabel}
-            </Badge>
-          </div>
+        <CardContent className="pt-0">
+          <div className="space-y-3">
+            <div onClick={handleOpenPost} className="cursor-pointer">
+              <div className="flex items-center justify-between mb-2">
+                <Badge variant="secondary" className="text-xs">
+                  {categoryLabel}
+                </Badge>
+              </div>
 
-          <p className="text-sm leading-relaxed whitespace-pre-wrap">{renderMentionText(content)}</p>
-          
-          {attachments.length > 0 && (
-            <div className="space-y-0">
-              {imageAttachments.length > 0 && (() => {
-                const visible = imageAttachments.slice(0, 4);
-                const extra = imageAttachments.length - 4;
-                const count = visible.length;
-                const gridClass =
-                  count === 1 ? "grid-cols-1" :
-                  count === 2 ? "grid-cols-2" :
-                  count === 3 ? "grid-cols-2" :
-                  "grid-cols-2";
-                return (
-                  <div className={cn(isMobile ? "-mx-4" : "", "grid gap-0.5", gridClass)}>
-                    {visible.map((file, i) => {
-                      const isLast = i === 3 && extra > 0;
-                      const spanFull = count === 3 && i === 0;
-                      return (
-                        <div
-                          key={file.id ?? file.url}
-                          className={cn(
-                            "relative overflow-hidden cursor-pointer",
-                            !isMobile && i === 0 && "rounded-tl-lg",
-                            !isMobile && i === 1 && count <= 2 && "rounded-tr-lg",
-                            !isMobile && i === count - 1 && count <= 2 && "rounded-br-lg",
-                            !isMobile && i === count - 2 && count <= 2 && "rounded-bl-lg",
-                            spanFull && "col-span-2",
-                            count === 1 ? "max-h-[500px]" : (spanFull ? "aspect-video" : "aspect-square")
-                          )}
-                          onClick={() => setLightboxIndex(i)}
-                        >
-                          <OptimizedImage
-                            src={file.url}
-                            alt={file.name || "media"}
-                            className={cn(
-                              "w-full h-full hover:scale-105 transition-transform duration-300",
-                              count === 1 ? "object-contain bg-muted" : "object-cover"
-                            )}
-                            containerClassName="w-full h-full"
-                            onDoubleClick={handleImageDoubleClick}
-                          />
-                          {isLast && (
-                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                              <span className="text-white text-2xl font-bold">+{extra + 1}</span>
+              <p className="text-sm leading-relaxed whitespace-pre-wrap">{renderMentionText(content)}</p>
+
+              {attachments.length > 0 && (
+                <div className="space-y-0">
+                  {imageAttachments.length > 0 && (() => {
+                    const visible = imageAttachments.slice(0, 4);
+                    const extra = imageAttachments.length - 4;
+                    const count = visible.length;
+                    const gridClass =
+                      count === 1 ? "grid-cols-1" :
+                        count === 2 ? "grid-cols-2" :
+                          count === 3 ? "grid-cols-2" :
+                            "grid-cols-2";
+                    return (
+                      <div className={cn(isMobile ? "-mx-4" : "", "grid gap-0.5", gridClass)}>
+                        {visible.map((file, i) => {
+                          const isLast = i === 3 && extra > 0;
+                          const spanFull = count === 3 && i === 0;
+                          return (
+                            <div
+                              key={file.id ?? file.url}
+                              className={cn(
+                                "relative overflow-hidden cursor-pointer",
+                                !isMobile && i === 0 && "rounded-tl-lg",
+                                !isMobile && i === 1 && count <= 2 && "rounded-tr-lg",
+                                !isMobile && i === count - 1 && count <= 2 && "rounded-br-lg",
+                                !isMobile && i === count - 2 && count <= 2 && "rounded-bl-lg",
+                                spanFull && "col-span-2",
+                                count === 1 ? "max-h-[500px]" : (spanFull ? "aspect-video" : "aspect-square")
+                              )}
+                              onClick={() => setLightboxIndex(i)}
+                            >
+                              <OptimizedImage
+                                src={file.url}
+                                alt={file.name || "media"}
+                                className={cn(
+                                  "w-full h-full hover:scale-105 transition-transform duration-300",
+                                  count === 1 ? "object-contain bg-muted" : "object-cover"
+                                )}
+                                containerClassName="w-full h-full"
+                                onDoubleClick={handleImageDoubleClick}
+                              />
+                              {isLast && (
+                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                  <span className="text-white text-2xl font-bold">+{extra + 1}</span>
+                                </div>
+                              )}
+
                             </div>
-                          )}
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
 
+                  {videoAttachments.length > 0 && (
+                    <div className="space-y-2">
+                      {videoAttachments.map((file) => (
+                        <div key={file.id ?? file.url} className={cn("overflow-hidden bg-muted", isMobile ? "-mx-4" : "rounded-lg")}>
+                          <video src={file.url} controls preload="metadata" className="w-full" onClick={(e) => e.stopPropagation()} />
                         </div>
-                      );
-                    })}
+                      ))}
+                    </div>
+                  )}
+
+                  {documentAttachments.length > 0 && (
+                    <div className="space-y-2">
+                      {documentAttachments.map((file) => (
+                        <div key={file.id ?? file.url} className="flex items-center justify-between gap-3 rounded-lg border bg-muted/40 px-3 py-2">
+                          <div className="min-w-0 flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium">{file.name}</p>
+                              {file.size > 0 && <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" size="sm" asChild>
+                              <a href={file.url} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4 mr-1" />Ouvrir</a>
+                            </Button>
+                            <Button variant="ghost" size="sm" asChild>
+                              <a href={file.url} download={file.name}><Download className="h-4 w-4 mr-1" />Télécharger</a>
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Impact Score Rating */}
+
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2 border-t">
+              <div className="flex items-center gap-3 md:gap-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLike}
+                  className={`gap-2 h-9 px-2 md:px-3 transition-all active:scale-95 ${isLiked ? 'text-red-500 hover:text-red-600' : 'hover:text-red-500'}`}
+                >
+                  <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
+                  <span className="text-xs font-medium">{likesCount}</span>
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-2 h-9 px-2 md:px-3 hover:text-primary transition-all active:scale-95"
+                  onClick={() => requireAuth(() => setCommentsOpen(true))}
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  <span className="text-xs font-medium">{post.comments}</span>
+                </Button>
+
+                <Button variant="ghost" size="sm" className="h-9 px-2 hover:text-primary transition-all active:scale-95" onClick={handleShare}>
+                  <Share className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="flex items-center justify-between sm:justify-end gap-2 rounded-xl bg-accent/30 p-1 border border-primary/10">
+                <div className="flex items-center">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 hover:bg-background/80"
+                    onClick={() => handleImpactRate(Math.max((userImpactRating ?? 0) - 1, 1))}
+                    disabled={userImpactRating === null}
+                  >
+                    <Minus className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 hover:bg-background/80"
+                    onClick={() => handleImpactRate(Math.min((userImpactRating ?? 0) + 1, 5))}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 hover:bg-background/80"
+                    onClick={() => handleImpactRate(null)}
+                    disabled={userImpactRating === null}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                <div className="flex items-center gap-1.5 px-3 py-1 bg-background rounded-lg shadow-sm border border-primary/5 group relative">
+                  <Zap className="h-4 w-4 text-primary animate-pulse" />
+                  <span className="text-sm font-bold text-primary">{impactScore}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-5 w-5 p-0 rounded-full hover:bg-primary/20 transition-colors ml-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toast({
+                        title: "Score d'impact",
+                        description: "Le Score d'Impact mesure l'utilité et la pertinence de ce contenu pour la communauté CampusSphere. Il est calculé en fonction des interactions et des retours des étudiants.",
+                      });
+
+                    }}
+                  >
+                    <Info className="h-3 w-3 text-primary/60" />
+                  </Button>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <CommentsModal
+        open={commentsOpen}
+        onOpenChange={setCommentsOpen}
+        postId={post.id}
+      />
+
+      {/* Lightbox */}
+      {lightboxIndex !== null && (
+        <Dialog open onOpenChange={() => setLightboxIndex(null)}>
+          <DialogContent className="max-w-screen-lg w-full p-0 bg-black border-0">
+            <div className="relative flex items-center justify-center min-h-[60vh]">
+              <img
+                src={imageAttachments[lightboxIndex]?.url}
+                alt={imageAttachments[lightboxIndex]?.name || "media"}
+                className="max-h-[85vh] max-w-full object-contain"
+              />
+              {imageAttachments.length > 1 && (
+                <>
+                  <button
+                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/80 text-white rounded-full p-2"
+                    onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex - 1 + imageAttachments.length) % imageAttachments.length); }}
+                  >
+                    <ChevronLeft className="h-6 w-6" />
+                  </button>
+                  <button
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/80 text-white rounded-full p-2"
+                    onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex + 1) % imageAttachments.length); }}
+                  >
+                    <ChevronRight className="h-6 w-6" />
+                  </button>
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                    {imageAttachments.map((_, i) => (
+                      <button key={i} onClick={() => setLightboxIndex(i)} className={cn("w-2 h-2 rounded-full", i === lightboxIndex ? "bg-white" : "bg-white/40")} />
+                    ))}
                   </div>
-                );
-              })()}
-
-              {videoAttachments.length > 0 && (
-                <div className="space-y-2">
-                  {videoAttachments.map((file) => (
-                    <div key={file.id ?? file.url} className={cn("overflow-hidden bg-muted", isMobile ? "-mx-4" : "rounded-lg")}>
-                      <video src={file.url} controls preload="metadata" className="w-full" onClick={(e) => e.stopPropagation()} />
-                    </div>
-                  ))}
-                </div>
+                </>
               )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
-              {documentAttachments.length > 0 && (
-                <div className="space-y-2">
-                  {documentAttachments.map((file) => (
-                    <div key={file.id ?? file.url} className="flex items-center justify-between gap-3 rounded-lg border bg-muted/40 px-3 py-2">
-                      <div className="min-w-0 flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Partager ce post</DialogTitle>
+            <DialogDescription>
+              Choisissez comment vous souhaitez partager ce contenu avec votre réseau.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-3 gap-3 py-4">
+            <Button
+              variant="outline"
+              className="flex flex-col h-20 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
+              onClick={() => handleSocialShare("whatsapp")}
+            >
+              <div className="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center text-white">
+                <FaWhatsapp className="h-5 w-5" />
+              </div>
+              <span className="text-[10px] font-semibold uppercase tracking-wider">WhatsApp</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              className="flex flex-col h-20 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
+              onClick={() => handleSocialShare("twitter")}
+            >
+              <div className="h-8 w-8 rounded-full bg-black flex items-center justify-center text-white">
+                <FaTwitter className="h-4 w-4" />
+              </div>
+              <span className="text-[10px] font-semibold uppercase tracking-wider">Twitter / X</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              className="flex flex-col h-20 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
+              onClick={() => handleSocialShare("facebook")}
+            >
+              <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white">
+                <FaFacebook className="h-5 w-5" />
+              </div>
+              <span className="text-[10px] font-semibold uppercase tracking-wider">Facebook</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              className="flex flex-col h-20 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
+              onClick={() => handleSocialShare("linkedin")}
+            >
+              <div className="h-8 w-8 rounded-full bg-blue-700 flex items-center justify-center text-white">
+                <FaLinkedin className="h-5 w-5" />
+              </div>
+              <span className="text-[10px] font-semibold uppercase tracking-wider">LinkedIn</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              className="flex flex-col h-20 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
+              onClick={() => handleSocialShare("instagram")}
+            >
+              <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 flex items-center justify-center text-white">
+                <FaInstagram className="h-5 w-5" />
+              </div>
+              <span className="text-[10px] font-semibold uppercase tracking-wider">Instagram</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              className="flex flex-col h-20 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
+              onClick={handleCopyLink}
+              disabled={isCopyingLink}
+            >
+              <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-700">
+                <Copy className="h-4 w-4" />
+              </div>
+              <span className="text-[10px] font-semibold uppercase tracking-wider">{isCopyingLink ? "Copié !" : "Lien"}</span>
+            </Button>
+          </div>
+
+          <Separator />
+
+          <div className="space-y-4 pt-2">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-bold flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" /> Envoyer à un ami sur CampusSphere
+              </p>
+            </div>
+
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher un contact..."
+                className="pl-9 bg-muted/30 border-none"
+                value={shareSearch}
+                onChange={(e) => setShareSearch(e.target.value)}
+              />
+            </div>
+
+            <div className="max-h-48 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+              {loadingShareConnections ? (
+                <div className="space-y-2 py-2">
+                  {[1, 2, 3].map(i => <div key={i} className="h-10 w-full bg-muted animate-pulse rounded-md" />)}
+                </div>
+              ) : shareConnections.filter((c) => {
+                const q = shareSearch.toLowerCase();
+                return !q || c.name.toLowerCase().includes(q) || c.username.toLowerCase().includes(q);
+              }).length === 0 ? (
+                <div className="text-center py-6 text-muted-foreground italic text-sm">
+                  Aucun ami trouvé.
+                </div>
+              ) : (
+                shareConnections
+                  .filter((c) => {
+                    const q = shareSearch.toLowerCase();
+                    return !q || c.name.toLowerCase().includes(q) || c.username.toLowerCase().includes(q);
+                  })
+                  .map((contact) => (
+                    <div key={contact.id} className="flex items-center justify-between gap-2 p-2 rounded-xl hover:bg-accent/50 transition-colors border border-transparent hover:border-primary/10 group">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Avatar className="h-9 w-9 flex-shrink-0 border">
+                          <AvatarImage src={contact.avatar} />
+                          <AvatarFallback className="bg-primary/5 text-primary">{(contact.name || "U").slice(0, 1).toUpperCase()}</AvatarFallback>
+                        </Avatar>
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-medium">{file.name}</p>
-                          {file.size > 0 && <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>}
+                          <p className="text-sm font-semibold truncate group-hover:text-primary transition-colors">{contact.name}</p>
+                          {contact.username && <p className="text-[10px] text-muted-foreground">@{contact.username}</p>}
                         </div>
                       </div>
-                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                        <Button variant="ghost" size="sm" asChild>
-                          <a href={file.url} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4 mr-1" />Ouvrir</a>
-                        </Button>
-                        <Button variant="ghost" size="sm" asChild>
-                          <a href={file.url} download={file.name}><Download className="h-4 w-4 mr-1" />Télécharger</a>
-                        </Button>
-                      </div>
+                      <Button
+                        size="sm"
+                        className="rounded-full px-4 h-8 bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all active:scale-95 border-none"
+                        onClick={() => handleShareToFriend(contact.id, contact.name)}
+                        disabled={sendingToUserId === contact.id}
+                      >
+                        {sendingToUserId === contact.id ? <Loader2 className="h-3 w-3 animate-spin" /> : "Envoyer"}
+                      </Button>
                     </div>
-                  ))}
-                </div>
+                  ))
               )}
             </div>
-          )}
-          </div>
-          
-          {/* Impact Score Rating */}
-          
-
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2 border-t">
-            <div className="flex items-center gap-3 md:gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLike}
-                className={`gap-2 h-9 px-2 md:px-3 transition-all active:scale-95 ${isLiked ? 'text-red-500 hover:text-red-600' : 'hover:text-red-500'}`}
-              >
-                <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
-                <span className="text-xs font-medium">{likesCount}</span>
-              </Button>
-              
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="gap-2 h-9 px-2 md:px-3 hover:text-primary transition-all active:scale-95"
-                onClick={() => requireAuth(() => setCommentsOpen(true))}
-              >
-                <MessageCircle className="h-4 w-4" />
-                <span className="text-xs font-medium">{post.comments}</span>
-              </Button>
-              
-              <Button variant="ghost" size="sm" className="h-9 px-2 hover:text-primary transition-all active:scale-95" onClick={handleShare}>
-                <Share className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <div className="flex items-center justify-between sm:justify-end gap-2 rounded-xl bg-accent/30 p-1 border border-primary/10">
-              <div className="flex items-center">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 hover:bg-background/80"
-                  onClick={() => handleImpactRate(Math.max((userImpactRating ?? 0) - 1, 1))}
-                  disabled={userImpactRating === null}
-                >
-                  <Minus className="h-3.5 w-3.5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 hover:bg-background/80"
-                  onClick={() => handleImpactRate(Math.min((userImpactRating ?? 0) + 1, 5))}
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 hover:bg-background/80"
-                  onClick={() => handleImpactRate(null)}
-                  disabled={userImpactRating === null}
-                >
-                  <X className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-background rounded-lg shadow-sm border border-primary/5 group relative">
-                <Zap className="h-4 w-4 text-primary animate-pulse" />
-                <span className="text-sm font-bold text-primary">{impactScore}</span>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-5 w-5 p-0 rounded-full hover:bg-primary/20 transition-colors ml-1"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toast({
-                      title: "Score d'impact",
-                      description: "Le Score d'Impact mesure l'utilité et la pertinence de ce contenu pour la communauté CampusSphere. Il est calculé en fonction des interactions et des retours des étudiants.",
-                    });
-
-                  }}
-                >
-                  <Info className="h-3 w-3 text-primary/60" />
-                </Button>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-    
-    <CommentsModal 
-      open={commentsOpen} 
-      onOpenChange={setCommentsOpen}
-      postId={post.id}
-    />
-
-    {/* Lightbox */}
-    {lightboxIndex !== null && (
-      <Dialog open onOpenChange={() => setLightboxIndex(null)}>
-        <DialogContent className="max-w-screen-lg w-full p-0 bg-black border-0">
-          <div className="relative flex items-center justify-center min-h-[60vh]">
-            <img
-              src={imageAttachments[lightboxIndex]?.url}
-              alt={imageAttachments[lightboxIndex]?.name || "media"}
-              className="max-h-[85vh] max-w-full object-contain"
-            />
-            {imageAttachments.length > 1 && (
-              <>
-                <button
-                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/80 text-white rounded-full p-2"
-                  onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex - 1 + imageAttachments.length) % imageAttachments.length); }}
-                >
-                  <ChevronLeft className="h-6 w-6" />
-                </button>
-                <button
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/80 text-white rounded-full p-2"
-                  onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex + 1) % imageAttachments.length); }}
-                >
-                  <ChevronRight className="h-6 w-6" />
-                </button>
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-                  {imageAttachments.map((_, i) => (
-                    <button key={i} onClick={() => setLightboxIndex(i)} className={cn("w-2 h-2 rounded-full", i === lightboxIndex ? "bg-white" : "bg-white/40")} />
-                  ))}
-                </div>
-              </>
-            )}
           </div>
         </DialogContent>
       </Dialog>
-    )}
 
-    <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Partager ce post</DialogTitle>
-          <DialogDescription>
-            Choisissez comment vous souhaitez partager ce contenu avec votre réseau.
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="grid grid-cols-3 gap-3 py-4">
-          <Button
-            variant="outline"
-            className="flex flex-col h-20 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
-            onClick={() => handleSocialShare("whatsapp")}
-          >
-            <div className="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center text-white">
-              <FaWhatsapp className="h-5 w-5" />
-            </div>
-            <span className="text-[10px] font-semibold uppercase tracking-wider">WhatsApp</span>
-          </Button>
-
-          <Button
-            variant="outline"
-            className="flex flex-col h-20 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
-            onClick={() => handleSocialShare("twitter")}
-          >
-            <div className="h-8 w-8 rounded-full bg-black flex items-center justify-center text-white">
-              <FaTwitter className="h-4 w-4" />
-            </div>
-            <span className="text-[10px] font-semibold uppercase tracking-wider">Twitter / X</span>
-          </Button>
-
-          <Button
-            variant="outline"
-            className="flex flex-col h-20 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
-            onClick={() => handleSocialShare("facebook")}
-          >
-            <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white">
-              <FaFacebook className="h-5 w-5" />
-            </div>
-            <span className="text-[10px] font-semibold uppercase tracking-wider">Facebook</span>
-          </Button>
-
-          <Button
-            variant="outline"
-            className="flex flex-col h-20 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
-            onClick={() => handleSocialShare("linkedin")}
-          >
-            <div className="h-8 w-8 rounded-full bg-blue-700 flex items-center justify-center text-white">
-              <FaLinkedIn className="h-5 w-5" />
-            </div>
-            <span className="text-[10px] font-semibold uppercase tracking-wider">LinkedIn</span>
-          </Button>
-
-          <Button
-            variant="outline"
-            className="flex flex-col h-20 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
-            onClick={() => handleSocialShare("instagram")}
-          >
-            <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 flex items-center justify-center text-white">
-              <FaInstagram className="h-5 w-5" />
-            </div>
-            <span className="text-[10px] font-semibold uppercase tracking-wider">Instagram</span>
-          </Button>
-
-          <Button
-            variant="outline"
-            className="flex flex-col h-20 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
-            onClick={handleCopyLink}
-            disabled={isCopyingLink}
-          >
-            <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-700">
-              <Copy className="h-4 w-4" />
-            </div>
-            <span className="text-[10px] font-semibold uppercase tracking-wider">{isCopyingLink ? "Copié !" : "Lien"}</span>
-          </Button>
-        </div>
-
-        <Separator />
-        
-        <div className="space-y-4 pt-2">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-bold flex items-center gap-2">
-              <Users className="h-4 w-4 text-primary" /> Envoyer à un ami sur CampusSphere
-            </p>
-          </div>
-          
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Rechercher un contact..."
-              className="pl-9 bg-muted/30 border-none"
-              value={shareSearch}
-              onChange={(e) => setShareSearch(e.target.value)}
-            />
-          </div>
-
-          <div className="max-h-48 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
-            {loadingShareConnections ? (
-              <div className="space-y-2 py-2">
-                {[1, 2, 3].map(i => <div key={i} className="h-10 w-full bg-muted animate-pulse rounded-md" />)}
-              </div>
-            ) : shareConnections.filter((c) => {
-              const q = shareSearch.toLowerCase();
-              return !q || c.name.toLowerCase().includes(q) || c.username.toLowerCase().includes(q);
-            }).length === 0 ? (
-              <div className="text-center py-6 text-muted-foreground italic text-sm">
-                Aucun ami trouvé.
-              </div>
-            ) : (
-              shareConnections
-                .filter((c) => {
-                  const q = shareSearch.toLowerCase();
-                  return !q || c.name.toLowerCase().includes(q) || c.username.toLowerCase().includes(q);
-                })
-                .map((contact) => (
-                  <div key={contact.id} className="flex items-center justify-between gap-2 p-2 rounded-xl hover:bg-accent/50 transition-colors border border-transparent hover:border-primary/10 group">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <Avatar className="h-9 w-9 flex-shrink-0 border">
-                        <AvatarImage src={contact.avatar} />
-                        <AvatarFallback className="bg-primary/5 text-primary">{(contact.name || "U").slice(0, 1).toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold truncate group-hover:text-primary transition-colors">{contact.name}</p>
-                        {contact.username && <p className="text-[10px] text-muted-foreground">@{contact.username}</p>}
-                      </div>
-                    </div>
-                    <Button
-                      size="sm"
-                      className="rounded-full px-4 h-8 bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all active:scale-95 border-none"
-                      onClick={() => handleShareToFriend(contact.id, contact.name)}
-                      disabled={sendingToUserId === contact.id}
-                    >
-                      {sendingToUserId === contact.id ? <Loader2 className="h-3 w-3 animate-spin" /> : "Envoyer"}
-                    </Button>
-                  </div>
-                ))
+      {/* Modal de signalement */}
+      <Dialog open={showReportDialog} onOpenChange={setShowReportDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Signaler ce post</DialogTitle>
+            <DialogDescription>
+              Aidez-nous à maintenir une communauté respectueuse en signalant ce contenu.
+              Les signalements sont persistés côté serveur.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {reportedReason && (
+              <p className="text-sm rounded-md border border-primary/30 bg-primary/5 p-2">
+                Signalement déjà envoyé pour : <strong>{reportedReason}</strong>
+              </p>
             )}
+            {reportError && (
+              <p className="text-sm rounded-md border border-destructive/30 bg-destructive/5 p-2 text-destructive">
+                {reportError}
+              </p>
+            )}
+            <p className="text-sm text-muted-foreground">
+              Pourquoi signalez-vous ce post ?
+            </p>
+            <div className="space-y-2">
+              {[
+                "Contenu inapproprié",
+                "Spam ou publicité",
+                "Harcèlement",
+                "Fausses informations",
+                "Violence",
+                "Autre"
+              ].map((reason) => (
+                <Button
+                  key={reason}
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => handleSubmitReport(reason)}
+                  disabled={isReporting}
+                >
+                  {isReporting ? "Envoi..." : reason}
+                </Button>
+              ))}
+            </div>
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
 
-    {/* Modal de signalement */}
-    <Dialog open={showReportDialog} onOpenChange={setShowReportDialog}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Signaler ce post</DialogTitle>
-          <DialogDescription>
-            Aidez-nous à maintenir une communauté respectueuse en signalant ce contenu.
-            Les signalements sont persistés côté serveur.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4">
-          {reportedReason && (
-            <p className="text-sm rounded-md border border-primary/30 bg-primary/5 p-2">
-              Signalement déjà envoyé pour : <strong>{reportedReason}</strong>
-            </p>
-          )}
-          {reportError && (
-            <p className="text-sm rounded-md border border-destructive/30 bg-destructive/5 p-2 text-destructive">
-              {reportError}
-            </p>
-          )}
-          <p className="text-sm text-muted-foreground">
-            Pourquoi signalez-vous ce post ?
-          </p>
-          <div className="space-y-2">
-            {[
-              "Contenu inapproprié",
-              "Spam ou publicité",
-              "Harcèlement",
-              "Fausses informations",
-              "Violence",
-              "Autre"
-            ].map((reason) => (
-              <Button
-                key={reason}
-                variant="outline"
-                className="w-full justify-start"
-                onClick={() => handleSubmitReport(reason)}
-                disabled={isReporting}
-              >
-                {isReporting ? "Envoi..." : reason}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Modifier le post</DialogTitle>
+            <DialogDescription>Mettez à jour votre contenu puis validez.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Textarea value={editingContent} onChange={(e) => setEditingContent(e.target.value)} className="min-h-[120px]" maxLength={2000} />
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowEditDialog(false)} disabled={isUpdating}>Annuler</Button>
+              <Button onClick={handleConfirmEdit} disabled={isUpdating}>
+                {isUpdating ? "Enregistrement..." : "Enregistrer"}
               </Button>
-            ))}
+            </div>
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
 
-    <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Modifier le post</DialogTitle>
-          <DialogDescription>Mettez à jour votre contenu puis validez.</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-3">
-          <Textarea value={editingContent} onChange={(e) => setEditingContent(e.target.value)} className="min-h-[120px]" maxLength={2000} />
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Supprimer ce post ?</DialogTitle>
+            <DialogDescription>
+              Cette action est destructive et irréversible.
+            </DialogDescription>
+          </DialogHeader>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setShowEditDialog(false)} disabled={isUpdating}>Annuler</Button>
-            <Button onClick={handleConfirmEdit} disabled={isUpdating}>
-              {isUpdating ? "Enregistrement..." : "Enregistrer"}
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)} disabled={isDeleting}>Annuler</Button>
+            <Button variant="destructive" onClick={handleConfirmDelete} disabled={isDeleting}>
+              {isDeleting ? "Suppression..." : "Supprimer"}
             </Button>
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-
-    <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Supprimer ce post ?</DialogTitle>
-          <DialogDescription>
-            Cette action est destructive et irréversible.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => setShowDeleteDialog(false)} disabled={isDeleting}>Annuler</Button>
-          <Button variant="destructive" onClick={handleConfirmDelete} disabled={isDeleting}>
-            {isDeleting ? "Suppression..." : "Supprimer"}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-    <Dialog open={showAuthModal} onOpenChange={setShowAuthModal}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-primary fill-current" />
-            Rejoignez CampusSphere
-          </DialogTitle>
-          <DialogDescription>
-            Vous devez être connecté pour liker, commenter ou enregistrer des publications. 
-            Créez un compte gratuitement pour rejoindre la discussion !
-          </DialogDescription>
-        </DialogHeader>
-        <div className="flex flex-col gap-3 mt-4">
-          <Button onClick={() => navigate("/register")} className="campus-gradient text-white w-full">
-            Créer un compte gratuitement
-          </Button>
-          <Button variant="outline" onClick={() => navigate("/login")} className="w-full">
-            Se connecter
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={showAuthModal} onOpenChange={setShowAuthModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Zap className="h-5 w-5 text-primary fill-current" />
+              Rejoignez CampusSphere
+            </DialogTitle>
+            <DialogDescription>
+              Vous devez être connecté pour liker, commenter ou enregistrer des publications.
+              Créez un compte gratuitement pour rejoindre la discussion !
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 mt-4">
+            <Button onClick={() => navigate("/register")} className="campus-gradient text-white w-full">
+              Créer un compte gratuitement
+            </Button>
+            <Button variant="outline" onClick={() => navigate("/login")} className="w-full">
+              Se connecter
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
