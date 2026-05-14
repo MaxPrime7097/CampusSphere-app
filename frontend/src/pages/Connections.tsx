@@ -344,7 +344,7 @@ export function Connections() {
                         <Avatar className="h-12 w-12 flex-shrink-0">
                           <AvatarImage src={connection.avatar} />
                           <AvatarFallback className="bg-input text-muted-foreground font-bold text-lg">
-                            {connection.name?.slice(0, 1).toUpperCase() || 'US'}
+                            {connection.name?.slice(0, 1).toUpperCase() || '...'}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
@@ -409,7 +409,7 @@ export function Connections() {
                         <Avatar className="h-12 w-12 flex-shrink-0 cursor-pointer" onClick={() => navigate(`/profile/${request.username}`)}>
                           <AvatarImage src={request.avatar} />
                           <AvatarFallback className="bg-input text-muted-foreground font-bold text-lg">
-                            {request.name?.slice(0, 1).toUpperCase() || 'U'}
+                            {request.name?.slice(0, 1).toUpperCase() || '...'}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
@@ -484,7 +484,7 @@ export function Connections() {
                         <Avatar className="h-12 w-12 flex-shrink-0">
                           <AvatarImage src={suggestion.avatar} />
                           <AvatarFallback className="bg-input text-muted-foreground font-bold text-lg">
-                            {suggestion.name?.slice(0, 1).toUpperCase() || 'U'}
+                            {suggestion.name?.slice(0, 1).toUpperCase() || '...'}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">

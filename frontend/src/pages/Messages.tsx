@@ -830,7 +830,7 @@ export function Messages() {
                         <AvatarFallback className="bg-input text-muted-foreground font-semibold text-[10px] md:text-sm">
                           {conversation.type === 'group'
                             ? <Users className="h-4 w-4 md:h-5 md:w-5" />
-                            : (conversation.name || "U").slice(0, 1).toUpperCase()}
+                            : (conversation.name || "...").slice(0, 1).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       {conversation.isOnline && (
@@ -911,7 +911,7 @@ export function Messages() {
                       <AvatarFallback className="bg-input text-muted-foreground font-semibold text-xs md:text-sm">
                         {selectedConv?.type === 'group'
                           ? <Users className="h-4 w-4" />
-                          : (selectedConv?.name || "U").slice(0, 1).toUpperCase()}
+                          : (selectedConv?.name || "...").slice(0, 1).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     {selectedConv?.isOnline && (
@@ -1091,7 +1091,7 @@ export function Messages() {
                      >
                        <AvatarImage src={message.avatar} />
                        <AvatarFallback className="bg-input text-muted-foreground font-semibold text-xs md:text-sm">
-                         {message.sender?.slice(0, 1).toUpperCase() || 'U'}
+                         {message.sender?.slice(0, 1).toUpperCase() || '...'}
                        </AvatarFallback>
                      </Avatar>
                    )}
@@ -1334,7 +1334,7 @@ export function Messages() {
                       <Avatar className="h-9 w-9">
                         <AvatarImage src={contact.avatar} />
                         <AvatarFallback>
-                          {(contact.name || "U").slice(0, 1).toUpperCase()}
+                          {(contact.name || "...").slice(0, 1).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div className="min-w-0">
@@ -1370,7 +1370,7 @@ export function Messages() {
                           <Avatar className="h-9 w-9">
                             <AvatarImage src={u.avatar} />
                             <AvatarFallback>
-                              {(u.name || "U").slice(0, 1).toUpperCase()}
+                              {(u.name || "...").slice(0, 1).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
                           <div className="min-w-0">

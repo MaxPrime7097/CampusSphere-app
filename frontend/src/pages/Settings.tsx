@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { NotificationSettings } from "@/components/NotificationSettings";
+import { EditAccountModal } from "@/components/modals/EditAccountModal";
 import {
   blockUser,
   changeUserEmail,
@@ -63,7 +64,6 @@ export function Settings() {
     firstName: "",
     lastName: "",
     username: "",
-    bio: ""
   });
   
   const [passwordForm, setPasswordForm] = useState({
@@ -109,7 +109,6 @@ export function Settings() {
           firstName: user.firstName || "",
           lastName: user.lastName || "",
           username: user.username || "",
-          bio: user.bio || "",
         });
 
         setEmailForm((prev) => ({
@@ -546,14 +545,29 @@ export function Settings() {
               <CardContent className="space-y-1 p-4 md:p-6 pt-0">
                 {section.items.map((item, itemIndex) => (
                   <div key={itemIndex}>
-                    <Button
-                      variant="ghost"
-                      className={"w-full justify-between h-auto p-3 md:p-4 text-sm md:text-base"}
-                      onClick={item.action}
-                    >
-                      <span>{item.label}</span>
-                      <ChevronRight className="h-3 w-3 md:h-4 md:w-4" />
-                    </Button>
+                    {item.label === "Informations personnelles" ? (
+                      <EditAccountModal
+                        initialData={personalInfo}
+                        onSuccess={() => window.location.reload()}
+                      >
+                        <Button
+                          variant="ghost"
+                          className={"w-full justify-between h-auto p-3 md:p-4 text-sm md:text-base"}
+                        >
+                          <span>{item.label}</span>
+                          <ChevronRight className="h-3 w-3 md:h-4 md:w-4" />
+                        </Button>
+                      </EditAccountModal>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        className={"w-full justify-between h-auto p-3 md:p-4 text-sm md:text-base"}
+                        onClick={item.action}
+                      >
+                        <span>{item.label}</span>
+                        <ChevronRight className="h-3 w-3 md:h-4 md:w-4" />
+                      </Button>
+                    )}
                     {itemIndex < section.items.length - 1 && <Separator />}
                   </div>
                 ))}
@@ -607,69 +621,7 @@ export function Settings() {
           </Card>
         </div>
 
-        {/* Modals */}
-        
-        {/* Modal Informations Personnelles */}
-        <Dialog open={showPersonalInfoModal} onOpenChange={setShowPersonalInfoModal}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <UserCheck className="h-5 w-5" />
-                Informations Personnelles
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="firstName">Prénom</Label>
-                <Input
-                  id="firstName"
-                  value={personalInfo.firstName}
-                  onChange={(e) => setPersonalInfo(prev => ({ ...prev, firstName: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label htmlFor="lastName">Nom</Label>
-                <Input
-                  id="lastName"
-                  value={personalInfo.lastName}
-                  onChange={(e) => setPersonalInfo(prev => ({ ...prev, lastName: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label htmlFor="username">Nom d'utilisateur</Label>
-                <Input
-                  id="username"
-                  value={personalInfo.username}
-                  onChange={(e) => setPersonalInfo(prev => ({ ...prev, username: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label htmlFor="bio">Bio</Label>
-                <Textarea
-                  id="bio"
-                  value={personalInfo.bio}
-                  onChange={(e) => setPersonalInfo(prev => ({ ...prev, bio: e.target.value }))}
-                  rows={3}
-                />
-              </div>
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setShowPersonalInfoModal(false)}>
-                  Annuler
-                </Button>
-                <Button onClick={handleSavePersonalInfo} disabled={isLoading}>
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Sauvegarde...
-                    </>
-                  ) : (
-                    "Sauvegarder"
-                  )}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+        {/* Other Modals */}
 
         {/* Modal Mot de Passe */}
         <Dialog open={showPasswordModal} onOpenChange={setShowPasswordModal}>

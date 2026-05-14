@@ -144,7 +144,9 @@ export function NotificationDropdown() {
               <div className="flex gap-3">
                 <Avatar className="h-10 w-10 flex-shrink-0">
                   <AvatarImage src={notif.user.avatar || undefined} />
-                  <AvatarFallback>{notif.user.name[0]}</AvatarFallback>
+                  <AvatarFallback className="font-bold">
+                    {(notif.user.name || "...").slice(0, 1).toUpperCase()}
+                  </AvatarFallback>
                 </Avatar>
 
                 <div className="flex-1 min-w-0">

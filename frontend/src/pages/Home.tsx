@@ -136,6 +136,11 @@ export function Home() {
           <CreatePost onPostCreated={handlePostCreated} />
         </div>
 
+        {/* Friend Suggestions Carousel */}
+        <div className="campus-animate-fade-in py-2">
+          <FriendSuggestions />
+        </div>
+
         {/* Posts Feed */}
         <div className={isMobile ? "space-y-0" : "space-y-4"}>
           {loadError && (

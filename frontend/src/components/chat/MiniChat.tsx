@@ -284,7 +284,7 @@ export function MiniChat({ sphereId, sphereName, isExpanded, onToggleExpanded, c
               <div key={msg.id} className={`flex gap-2 ${msg.isMe ? "flex-row-reverse" : ""}`}>
                 <Avatar className="h-6 w-6 flex-shrink-0">
                   <AvatarImage src={msg.avatar ?? undefined} />
-                  <AvatarFallback className="text-[10px]">{(msg.sender || "U").slice(0, 1).toUpperCase()}</AvatarFallback>
+                  <AvatarFallback className="text-[10px]">{(msg.sender || "...").slice(0, 1).toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div className={`max-w-[75%] ${msg.isMe ? "items-end" : "items-start"} flex flex-col`}>
                   {!msg.isMe && (

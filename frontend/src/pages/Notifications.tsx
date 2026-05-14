@@ -342,7 +342,9 @@ export function Notifications() {
                       <div className="flex items-center gap-1.5 min-w-0">
                         <Avatar className="h-5 w-5 flex-shrink-0">
                           <AvatarImage src={notification.sender?.avatar ?? undefined} />
-                          <AvatarFallback className="text-[9px]">?</AvatarFallback>
+                          <AvatarFallback className="text-[9px] font-bold">
+                            {(notification.sender?.name || notification.sender?.id || "...").slice(0, 1).toUpperCase()}
+                          </AvatarFallback>
                         </Avatar>
                         <span className="text-xs text-muted-foreground truncate">
                           {notification.sender?.name || (notification.type === 'system' ? 'Système' : 'Membre')}

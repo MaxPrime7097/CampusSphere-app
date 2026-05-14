@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { VerificationModal } from "@/components/modals/VerificationModal";
 import { SearchDropdown } from "./SearchDropdown";
 import { useUnreadCounts } from "@/hooks/useUnreadCounts";
+import { useAuth } from "@/contexts/AuthContext";
 
 
 interface AppLayoutProps {
@@ -72,22 +73,8 @@ export function AppLayout({ children }: AppLayoutProps) {
     }
   };
 
-  const isAuthenticated = Boolean(localStorage.getItem("access"));
-  const [user, setUser] = useState<any>(null);
-  const [isProfileLoading, setIsProfileLoading] = useState(true);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      setIsProfileLoading(true);
-      getCurrentUser()
-        .then(setUser)
-        .catch(() => {})
-        .finally(() => setIsProfileLoading(false));
-    } else {
-      setIsProfileLoading(false);
-    }
-  }, [isAuthenticated]);
-
+  const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
+  const isProfileLoading = isAuthLoading;
   const isVerified = user?.isVerified ?? false;
 
   // Real-time notifications

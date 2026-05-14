@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { exchangeSupabaseToken, getCurrentUser } from "@/services/api";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const REQUIRED_PROFILE_FIELDS = [
   "username",
@@ -41,7 +42,8 @@ const debugRoutingDecision = (details: Record<string, unknown>) => {
 export function AuthCallback() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [status, setStatus] = useState("Finalisation de la connexion...");
+  const { refreshUser } = useAuth();
+  const [status, setStatus] = useState("Finalisation...");
 
   useEffect(() => {
     let isMounted = true;
@@ -56,16 +58,17 @@ export function AuthCallback() {
         }
 
         if (!isMounted) return;
-        setStatus("Connexion à CampusSphere...");
+        setStatus("Un instant...");
 
         // Échanger le token Supabase contre un JWT Django
-        const response = await exchangeSupabaseToken(session.access_token);
-        
+        await exchangeSupabaseToken(session.access_token);
+        await refreshUser();
+
         if (!isMounted) return;
 
         const data = response?.data;
-        const needsProfileCompletion = data?.needs_profile_completion ?? data?.needsProfileCompletion;
-        const isNewUser = data?.is_new_user ?? data?.isNewUser;
+        const needsProfileCompletion = data?.needs_profile_completion;
+        const isNewUser = data?.is_new_user;
 
         console.debug("[AuthCallback] Exchange response:", { needsProfileCompletion, isNewUser, fullData: data });
 

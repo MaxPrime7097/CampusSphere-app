@@ -35,6 +35,7 @@ import { CityCombobox } from "@/components/forms/CityCombobox";
 import { LanguageCombobox } from "@/components/forms/LanguageCombobox";
 import { EditAcademicModal } from "@/components/modals/EditAcademicModal";
 import { EditPersonalModal } from "@/components/modals/EditPersonalModal";
+import { EditAccountModal } from "@/components/modals/EditAccountModal";
 import { EditEducationModal } from "@/components/modals/EditEducationModal";
 import { EditExperiencesModal } from "@/components/modals/EditExperiencesModal";
 import { EditSkillsModal } from "@/components/modals/EditSkillsModal";
@@ -1089,7 +1090,7 @@ export function Profile() {
                   <Avatar className="h-32 w-32 ring-4 ring-background">
                     <AvatarImage src={user.avatar} />
                     <AvatarFallback className="bg-input text-muted-foreground font-bold text-2xl">
-                      {user.name?.slice(0, 1).toUpperCase() || 'U'}
+                      {user.name?.slice(0, 1).toUpperCase() || '...'}
                     </AvatarFallback>
                   </Avatar>
                   {isOwnProfile && (
@@ -1149,14 +1150,22 @@ export function Profile() {
                     </div>
                   )}
                   {isOwnProfile && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => navigate("/profile/edit")}
+                    <EditAccountModal
+                      initialData={{
+                        firstName: user.firstName || "",
+                        lastName: user.lastName || "",
+                        username: user.username || "",
+                      }}
+                      onSuccess={() => window.location.reload()}
                     >
-                      <Pencil className="h-4 w-4 mr-2" />
-                      <span className="inline">Modifier</span>
-                    </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                      >
+                        <Pencil className="h-4 w-4 mr-2" />
+                        <span className="inline">Modifier</span>
+                      </Button>
+                    </EditAccountModal>
                   )}
                 </div>
               </div>
@@ -1361,7 +1370,7 @@ export function Profile() {
                               <Avatar className="h-12 w-12">
                                 <AvatarImage src={connection.avatar} />
                                 <AvatarFallback className="bg-input text-muted-foreground font-bold text-lg">
-                                  {connection.name?.slice(0, 1).toUpperCase() || 'U'}
+                                  {connection.name?.slice(0, 1).toUpperCase() || '...'}
                                 </AvatarFallback>
                               </Avatar>
                               <div className="flex-1">
@@ -1451,7 +1460,6 @@ export function Profile() {
                   {isOwnProfile && (
                     <EditPersonalModal 
                       initialData={{
-                        bio: user.bio || "",
                         email: user.email || "",
                         phoneNumber: user.phoneNumber || "",
                         dateOfBirth: user.dateOfBirth || "",

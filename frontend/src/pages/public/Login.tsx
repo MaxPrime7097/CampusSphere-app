@@ -14,10 +14,12 @@ import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { supabaseSignIn, supabaseSignInWithGoogle, supabaseSignInWithFacebook, exchangeSupabaseToken } from "@/services/api";
 import { AuthSidePanel } from "@/components/auth/AuthSidePanel";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function Login() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { refreshUser } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -48,6 +50,7 @@ export function Login() {
       if (!data.session) throw new Error("Session introuvable après connexion");
 
       await exchangeSupabaseToken(data.session.access_token);
+      await refreshUser();
 
       if (formData.rememberMe) {
         localStorage.setItem("rememberMe", "true");

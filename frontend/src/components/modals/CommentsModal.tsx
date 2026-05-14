@@ -593,7 +593,7 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={currentUser?.avatar || "/placeholder-avatar.jpg"} />
                     <AvatarFallback className="bg-input text-muted-foreground font-semibold">
-                    {currentUser?.name?.slice(0, 1).toUpperCase() || 'U'}
+                    {currentUser?.name?.slice(0, 1).toUpperCase() || '...'}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 space-y-2">

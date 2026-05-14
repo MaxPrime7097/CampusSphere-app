@@ -15,7 +15,6 @@ import { formatSlugToLabel } from "@/lib/utils";
 interface EditPersonalModalProps {
   children: React.ReactNode;
   initialData: {
-    bio: string;
     email: string;
     phoneNumber: string;
     dateOfBirth: string;
@@ -27,7 +26,6 @@ interface EditPersonalModalProps {
 
 export function EditPersonalModal({ children, initialData, onSuccess }: EditPersonalModalProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [bio, setBio] = useState(initialData.bio);
   const [phoneNumber, setPhoneNumber] = useState(initialData.phoneNumber);
   const [dateOfBirth, setDateOfBirth] = useState(initialData.dateOfBirth);
   const [town, setTown] = useState(initialData.town);
@@ -40,7 +38,6 @@ export function EditPersonalModal({ children, initialData, onSuccess }: EditPers
     setIsSubmitting(true);
     try {
       await updateUserProfile({
-        bio,
         phone_number: phoneNumber,
         date_of_birth: dateOfBirth,
         town,
@@ -90,15 +87,6 @@ export function EditPersonalModal({ children, initialData, onSuccess }: EditPers
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label>Bio</Label>
-            <Textarea 
-              value={bio} 
-              onChange={(e) => setBio(e.target.value)} 
-              placeholder="Parlez-nous de vous..."
-              rows={3}
-            />
-          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
