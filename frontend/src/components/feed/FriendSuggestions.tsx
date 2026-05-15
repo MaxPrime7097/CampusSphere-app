@@ -100,81 +100,84 @@ export function FriendSuggestions() {
   };
 
   return (
-    <Card className="border-none shadow-none bg-transparent">
-      <CardHeader className="px-0 pb-4 pt-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-1 bg-primary rounded-full" />
-            <CardTitle className="text-lg font-medium tracking-tight">Suggestions de connexions</CardTitle>
-          </div>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => loadSuggestions(true)} 
-            disabled={isRefreshing}
-            className="h-8 w-8 rounded-full hover:bg-primary/10 text-primary transition-all active:rotate-180"
-          >
-            <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
-          </Button>
+    <div className="w-full min-w-0 overflow-hidden campus-animate-fade-in">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className="h-5 w-1 campus-gradient rounded-full" />
+          <h2 className="text-sm font-bold tracking-tight text-foreground/80 uppercase">Suggestions pour vous</h2>
         </div>
-      </CardHeader>
-      
-      <CardContent className="px-0">
-        <div className="flex gap-3 pb-4 overflow-x-auto scrollbar-hide px-4 md:px-0 -mx-4 md:mx-0">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => loadSuggestions(true)} 
+          disabled={isRefreshing}
+          className="h-7 w-7 rounded-full hover:bg-primary/10 text-primary transition-colors"
+        >
+          <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
+        </Button>
+      </div>
+
+      <ScrollArea className="w-full whitespace-nowrap">
+        <div className="flex gap-4 pb-4">
           {isLoading ? (
             Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="w-[140px] md:w-[160px] flex-shrink-0 animate-pulse bg-muted rounded-xl h-[200px]" />
+              <div key={i} className="w-[160px] flex-shrink-0 animate-pulse bg-muted/40 rounded-2xl h-[210px] border border-border/50" />
             ))
           ) : friends.length === 0 ? (
-            <div className="w-full flex flex-col items-center justify-center py-8 text-center text-muted-foreground bg-accent/20 rounded-xl border border-dashed mx-4 md:mx-0">
-              <UserPlus className="h-6 w-6 mb-2 opacity-20" />
-              <p className="text-[10px]">Plus aucune suggestion pour le moment.</p>
+            <div className="w-full flex flex-col items-center justify-center py-10 text-center text-muted-foreground bg-accent/5 rounded-2xl border border-dashed">
+              <UserPlus className="h-7 w-7 mb-2 opacity-20" />
+              <p className="text-[10px] font-medium">Aucune suggestion disponible</p>
             </div>
           ) : (
             friends.map((friend) => (
               <div
                 key={friend.id}
-                className="group relative w-[140px] md:w-[160px] flex-shrink-0 bg-card border border-border/50 hover:border-primary/30 rounded-xl p-3 transition-all duration-200 flex flex-col items-center text-center shadow-sm"
+                className="group relative w-[160px] flex-shrink-0 bg-card/40 hover:bg-card border border-border/60 hover:border-primary/30 rounded-2xl p-4 transition-all duration-300 flex flex-col items-center text-center"
               >
-                {/* Small Reason Badge */}
-                <div className="absolute top-1.5 right-1.5 z-10">
-                  <Badge variant="secondary" className="text-[6px] px-1 py-0 bg-primary/5 text-primary border-none font-bold uppercase tracking-wider rounded-sm">
+                {/* Connection Reason */}
+                <div className="absolute top-2 left-0 right-0 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Badge variant="outline" className="text-[7px] px-1.5 py-0 bg-background/80 backdrop-blur-sm border-primary/20 text-primary font-bold uppercase tracking-tighter">
                     {friend.reason}
                   </Badge>
                 </div>
 
-                <div className="relative mb-2">
-                  <Avatar className="h-14 w-14 border shadow-sm relative z-10">
+                <div className="relative mb-3">
+                  <Avatar className="h-16 w-16 border-2 border-background ring-1 ring-border/50 shadow-sm relative z-10 transition-transform group-hover:scale-105">
                     <AvatarImage src={friend.avatar || undefined} className="object-cover" />
                     <AvatarFallback className="bg-muted text-muted-foreground font-bold text-base">
                       {friend.name.slice(0, 1).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  
-                  {friend.mutualFriends && friend.mutualFriends > 0 && (
-                    <div className="absolute -bottom-1 -right-1 bg-primary text-white rounded-full h-4 w-4 flex items-center justify-center text-[8px] font-bold border border-background shadow-sm z-20">
-                      {friend.mutualFriends}
-                    </div>
-                  )}
                 </div>
 
-                <div className="space-y-0.5 w-full mb-3 relative z-10">
-                  <p className="font-bold text-[11px] truncate group-hover:text-primary transition-colors">
+                <div className="space-y-1 w-full mb-4 relative z-10">
+                  <p className="font-bold text-[12px] truncate group-hover:text-primary transition-colors leading-tight">
                     {friend.name}
                   </p>
                   
-                  <div className="flex flex-col gap-0">
-                    <div className="flex items-center justify-center gap-1 text-[8px] text-muted-foreground truncate">
-                      <GraduationCap className="h-2.5 w-2.5 opacity-60" />
-                      <span className="truncate">{friend.faculty || "Étudiant"}</span>
-                    </div>
+                  <div className="flex flex-col gap-0.5 min-h-[32px] justify-center">
+                    <p className="text-[9px] text-muted-foreground/80 truncate font-medium">
+                      {friend.faculty || "Étudiant"}
+                    </p>
                     {friend.university && (
-                      <div className="flex items-center justify-center gap-0.5 text-[7px] text-muted-foreground/40 truncate uppercase tracking-tighter">
-                        <MapPin className="h-2 w-2" />
-                        <span className="truncate">{friend.university}</span>
-                      </div>
+                      <p className="text-[8px] text-muted-foreground/50 truncate uppercase tracking-tight">
+                        {friend.university}
+                      </p>
                     )}
                   </div>
+
+                  {friend.mutualFriends !== null && friend.mutualFriends > 0 && (
+                    <div className="flex items-center justify-center gap-1 mt-1">
+                      <div className="flex -space-x-1.5 overflow-hidden">
+                        {[1, 2].map((i) => (
+                          <div key={i} className="inline-block h-3 w-3 rounded-full ring-1 ring-background bg-muted-foreground/20" />
+                        ))}
+                      </div>
+                      <span className="text-[8px] text-primary/70 font-bold">
+                        {friend.mutualFriends} en commun
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <Button
@@ -182,20 +185,20 @@ export function FriendSuggestions() {
                   onClick={() => handleAddFriend(friend.id, friend.name)}
                   disabled={addedFriends.includes(friend.id)}
                   className={cn(
-                    "w-full h-7 rounded-lg text-[9px] font-bold transition-all duration-200 relative z-10",
+                    "w-full h-8 rounded-xl text-[10px] font-bold transition-all border-none",
                     addedFriends.includes(friend.id)
-                      ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
-                      : "campus-gradient text-white"
+                      ? "bg-emerald-50 text-emerald-600"
+                      : "campus-gradient text-white shadow-sm hover:shadow-primary/20"
                   )}
                 >
                   {addedFriends.includes(friend.id) ? (
                     <div className="flex items-center gap-1">
-                      <Check className="h-2.5 w-2.5 stroke-[3]" />
+                      <Check className="h-3 w-3 stroke-[3]" />
                       <span>Ajouté</span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-1">
-                      <UserPlus className="h-2.5 w-2.5 stroke-[3]" />
+                      <UserPlus className="h-3 w-3 stroke-[3]" />
                       <span>Connecter</span>
                     </div>
                   )}
@@ -204,7 +207,8 @@ export function FriendSuggestions() {
             ))
           )}
         </div>
-      </CardContent>
-    </Card>
+        <ScrollBar orientation="horizontal" className="hidden" />
+      </ScrollArea>
+    </div>
   );
 }

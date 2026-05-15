@@ -134,6 +134,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         variant: "destructive",
         action: (
           <Button 
+            className="text-primary hover:text-primary/80 transition-colors cursor-pointer"
             variant="outline" 
             size="sm" 
             onClick={() => openVerificationModal()}
