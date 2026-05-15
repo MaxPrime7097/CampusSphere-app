@@ -41,6 +41,7 @@ export const StudySessionDetail = () => {
   const [selectedSphere, setSelectedSphere] = useState<string>("");
   const [sharing, setSharing] = useState(false);
   const [shared, setShared] = useState(false);
+  const [loadingSpheres, setLoadingSpheres] = useState(false);
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -66,10 +67,13 @@ export const StudySessionDetail = () => {
     setIsShareModalOpen(true);
     if (spheres.length === 0) {
       try {
+        setLoadingSpheres(true);
         const mySpheres = await listSpheres({ my_spheres: "true" });
         setSpheres(mySpheres || []);
       } catch {
         toast({ title: "Impossible de charger les sphères", variant: "destructive" });
+      } finally {
+        setLoadingSpheres(false);
       }
     }
   };
@@ -225,12 +229,23 @@ export const StudySessionDetail = () => {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Sélectionner une sphère</label>
-              <Select value={selectedSphere} onValueChange={setSelectedSphere}>
+              <Select value={selectedSphere} onValueChange={setSelectedSphere} disabled={loadingSpheres}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Choisir une sphère..." />
+                  {loadingSpheres ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Chargement des sphères...</span>
+                    </div>
+                  ) : (
+                    <SelectValue placeholder="Choisir une sphère..." />
+                  )}
                 </SelectTrigger>
                 <SelectContent>
-                  {spheres.length === 0 ? (
+                  {loadingSpheres ? (
+                    <div className="flex items-center justify-center py-6">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : spheres.length === 0 ? (
                     <SelectItem value="__none__" disabled>
                       Aucune sphère disponible
                     </SelectItem>

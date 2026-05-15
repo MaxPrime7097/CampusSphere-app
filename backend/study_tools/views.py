@@ -403,43 +403,48 @@ class ShareStudySessionView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, pk):
-        sphere_id = request.data.get("sphere_id")
-        if not sphere_id:
-            return Response(
-                {"error": "sphere_id est requis."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
         try:
-            session = StudySession.objects.get(pk=pk, owner=request.user)
-        except StudySession.DoesNotExist:
-            return Response(
-                {"error": "Session introuvable."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            sphere_id = request.data.get("sphere_id")
+            if not sphere_id:
+                return Response(
+                    {"error": "sphere_id est requis."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
-        try:
-            sphere = Sphere.objects.get(pk=sphere_id)
-        except Sphere.DoesNotExist:
-            return Response(
-                {"error": "Sphère introuvable."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            try:
+                session = StudySession.objects.get(pk=pk, owner=request.user)
+            except StudySession.DoesNotExist:
+                return Response(
+                    {"error": "Session introuvable."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
 
-        # Vérifier que l'utilisateur est membre de la sphère
-        is_member = sphere.memberships.filter(user=request.user, status="active").exists()
-        if not is_member and sphere.created_by != request.user:
-            return Response(
-                {"error": "Tu dois être membre de cette sphère pour y partager une session."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+            try:
+                sphere = Sphere.objects.get(pk=sphere_id)
+            except Sphere.DoesNotExist:
+                return Response(
+                    {"error": "Sphère introuvable."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
 
-        session.is_shared = True
-        session.shared_in_sphere = sphere
-        session.save(update_fields=["is_shared", "shared_in_sphere"])
+            # Vérifier que l'utilisateur est membre de la sphère
+            is_member = sphere.memberships.filter(user=request.user, status="active").exists()
+            if not is_member and sphere.created_by != request.user:
+                return Response(
+                    {"error": "Tu dois être membre de cette sphère pour y partager une session."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
 
-        serializer = StudySessionSerializer(session)
-        return Response({"success": True, "data": serializer.data})
+            session.is_shared = True
+            session.shared_in_sphere = sphere
+            session.save(update_fields=["is_shared", "shared_in_sphere"])
+
+            serializer = StudySessionSerializer(session)
+            return Response({"success": True, "data": serializer.data})
+        except Exception as e:
+            import traceback
+            logger.error(f"Error in ShareStudySessionView: {traceback.format_exc()}")
+            return Response({"error": f"Erreur interne: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def delete(self, request, pk):
         """Annuler le partage."""

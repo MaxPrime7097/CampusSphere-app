@@ -62,7 +62,7 @@ export function Home() {
       isMounted = false;
     };
   }, []);
-  
+
   const [posts, setPosts] = useState<any[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -98,11 +98,11 @@ export function Home() {
 
   const handleRefresh = async () => {
     setIsLoading(true);
-    
+
     try {
       await fetchPosts();
       setLastRefresh(new Date());
-      
+
       toast({
         title: "Feed actualisé",
         description: "Les posts ont été mis à jour",
@@ -123,7 +123,7 @@ export function Home() {
     const mappedPost = mapPostToCard(createdPost as Record<string, unknown>);
     setPosts((prev) => [mappedPost, ...prev.filter((post) => post.id !== mappedPost.id)]);
   };
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
       <div className={isMobile ? "" : "container max-w-7xl mx-auto"}>
@@ -131,62 +131,62 @@ export function Home() {
           {/* Main Feed - Center */}
           <div className={isMobile ? "w-full" : "lg:col-span-8 xl:col-span-7 space-y-4 md:space-y-6"}>
 
-        {/* Create Post */}
-        <div className="campus-animate-slide-up">
-          <CreatePost onPostCreated={handlePostCreated} />
-        </div>
+            {/* Create Post */}
+            <div className="campus-animate-slide-up">
+              <CreatePost onPostCreated={handlePostCreated} />
+            </div>
 
-        {/* Posts Feed */}
-        <div className={isMobile ? "space-y-0" : "space-y-4"}>
-          {loadError && (
-            <Card className="border-destructive/30">
-              <CardContent className="py-4 text-sm text-destructive">{loadError}</CardContent>
-            </Card>
-          )}
-          {isInitialLoading ? (
-            <>
-              <PostSkeleton />
-              <PostSkeleton />
-              <PostSkeleton />
-            </>
-          ) : posts.length === 0 ? (
-            <EmptyState
-              icon={HomeIcon}
-              title="Fil d'actualité vide"
-              description="Il n'y a pas encore de posts à afficher. Soyez le premier à partager quelque chose !"
-              actionLabel="Créer un post"
-              onAction={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            />
-          ) : (
-            posts.map((post, index) => (
-              <div 
-                key={post.id} 
-                className="campus-animate-fade-in"
+            {/* Posts Feed */}
+            <div className={isMobile ? "space-y-0" : "space-y-4"}>
+              {loadError && (
+                <Card className="border-destructive/30">
+                  <CardContent className="py-4 text-sm text-destructive">{loadError}</CardContent>
+                </Card>
+              )}
+              {isInitialLoading ? (
+                <>
+                  <PostSkeleton />
+                  <PostSkeleton />
+                  <PostSkeleton />
+                </>
+              ) : posts.length === 0 ? (
+                <EmptyState
+                  icon={HomeIcon}
+                  title="Fil d'actualité vide"
+                  description="Il n'y a pas encore de posts à afficher. Soyez le premier à partager quelque chose !"
+                  actionLabel="Créer un post"
+                  onAction={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                />
+              ) : (
+                posts.map((post, index) => (
+                  <div
+                    key={post.id}
+                    className="campus-animate-fade-in"
+                  >
+                    <PostCard post={post} />
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Load More */}
+            <div className="text-center py-6">
+              <Button
+                variant="outline"
+                onClick={handleLoadMore}
+                disabled={isLoading}
+                className="text-primary hover:text-primary-light font-medium"
               >
-                <PostCard post={post} />
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Load More */}
-        <div className="text-center py-6">
-          <Button 
-            variant="outline" 
-            onClick={handleLoadMore}
-            disabled={isLoading}
-            className="text-primary hover:text-primary-light font-medium"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Chargement...
-              </>
-            ) : (
-              "Charger plus de posts..."
-            )}
-          </Button>
-        </div>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Chargement...
+                  </>
+                ) : (
+                  "Charger plus de posts..."
+                )}
+              </Button>
+            </div>
           </div>
 
           {/* Right Sidebar - Desktop Only */}
