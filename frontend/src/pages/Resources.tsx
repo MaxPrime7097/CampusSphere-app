@@ -753,7 +753,7 @@ export function Resources() {
                       </div>
                       <div className="flex overflow-x-auto gap-4 pb-3 scrollbar-hide snap-x">
                         {categoryResources.map((resource) => (
-                          <div key={resource.id} className="w-[280px] shrink-0 snap-start">
+                          <div key={resource.id} className="w-[250px] shrink-0 snap-start">
                             <ResourceCard
                               resource={resource}
                               isDownloading={downloadingIds.has(resource.id)}

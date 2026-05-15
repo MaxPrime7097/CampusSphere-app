@@ -812,7 +812,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
               <div className="h-8 w-8 rounded-full bg-black flex items-center justify-center text-white">
                 <FaWhatsapp className="h-5 w-5" />
               </div>
-              <span className="text-[10px] font-semibold uppercase tracking-wider">WhatsApp</span>
+              <span className="text-[10px] font-semibold tracking-wider">WhatsApp</span>
             </Button>
 
             <Button
@@ -823,7 +823,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
               <div className="h-8 w-8 rounded-full bg-black flex items-center justify-center text-white">
                 <FaTwitter className="h-5 w-5" />
               </div>
-              <span className="text-[10px] font-semibold uppercase tracking-wider">Twitter / X</span>
+              <span className="text-[10px] font-semibold tracking-wider">Twitter / X</span>
             </Button>
 
             <Button
@@ -834,7 +834,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
               <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white">
                 <FaFacebook className="h-5 w-5" />
               </div>
-              <span className="text-[10px] font-semibold uppercase tracking-wider">Facebook</span>
+              <span className="text-[10px] font-semibold tracking-wider">Facebook</span>
             </Button>
 
             <Button
@@ -845,7 +845,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
               <div className="h-8 w-8 rounded-full bg-blue-700 flex items-center justify-center text-white">
                 <FaLinkedin className="h-5 w-5" />
               </div>
-              <span className="text-[10px] font-semibold uppercase tracking-wider">LinkedIn</span>
+              <span className="text-[10px] font-semibold tracking-wider">LinkedIn</span>
             </Button>
 
             <Button
@@ -856,7 +856,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
               <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 flex items-center justify-center text-white">
                 <FaInstagram className="h-5 w-5" />
               </div>
-              <span className="text-[10px] font-semibold uppercase tracking-wider">Instagram</span>
+              <span className="text-[10px] font-semibold tracking-wider">Instagram</span>
             </Button>
 
             <Button
@@ -868,7 +868,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
               <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-700">
                 <Copy className="h-5 w-5" />
               </div>
-              <span className="text-[10px] font-semibold uppercase tracking-wider">{isCopyingLink ? "Copié !" : "Lien"}</span>
+              <span className="text-[10px] font-semibold tracking-wider">{isCopyingLink ? "Copié !" : "Lien"}</span>
             </Button>
           </div>
 

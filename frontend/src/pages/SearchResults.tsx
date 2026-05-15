@@ -393,7 +393,7 @@ export function SearchResults() {
                             onClick={() => handleViewProfile(user.username, user.name)}
                           >
                             <AvatarImage src={user.avatar} />
-                            <AvatarFallback>{user.name?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
+                            <AvatarFallback>{user.name?.[0]?.toUpperCase() || '...'}</AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0">
                             <p 
@@ -534,7 +534,7 @@ export function SearchResults() {
                           onClick={() => handleViewProfile(user.username, user.name)}
                         >
                           <AvatarImage src={user.avatar} />
-                          <AvatarFallback>{user.name?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
+                          <AvatarFallback>{user.name?.[0]?.toUpperCase() || '...'}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <p 

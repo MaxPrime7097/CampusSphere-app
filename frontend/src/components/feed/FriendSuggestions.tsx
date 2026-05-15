@@ -19,7 +19,6 @@ type FriendSuggestion = {
   faculty: string;
   university: string;
   mutualFriends: number | null;
-  reason: string;
 };
 
 export function FriendSuggestions() {
@@ -56,16 +55,6 @@ export function FriendSuggestions() {
           faculty: user.faculty || "",
           university: user.university || "",
           mutualFriends: user.mutualFriends ?? user.mutual_friends ?? 0,
-          reason:
-            normalizeUniversity(user.university) &&
-            normalizeUniversity(currentUser.university) &&
-            normalizeUniversity(user.university) === normalizeUniversity(currentUser.university)
-              ? "Même université"
-              : normalizeFaculty(user.faculty) &&
-                  normalizeFaculty(currentUser.faculty) &&
-                  normalizeFaculty(user.faculty) === normalizeFaculty(currentUser.faculty)
-                ? "Même filière"
-                : "Suggéré pour vous",
         }));
 
       setFriends(mapped);
@@ -100,106 +89,88 @@ export function FriendSuggestions() {
   };
 
   return (
-    <div className="w-full min-w-0 overflow-hidden campus-animate-fade-in">
-      <div className="flex items-center justify-between mb-4">
+    <div className="w-full max-w-full overflow-hidden py-4 border-b border-border/40">
+      <div className="flex items-center justify-between mb-3 px-4">
         <div className="flex items-center gap-2">
-          <div className="h-5 w-1 campus-gradient rounded-full" />
-          <h2 className="text-sm font-bold tracking-tight text-foreground/80 uppercase">Suggestions pour vous</h2>
+          <div className="h-4 w-1 campus-gradient rounded-full" />
+          <h2 className="text-[12px] font-bold tracking-tight text-foreground/80">Suggestions de connexion</h2>
         </div>
         <Button 
           variant="ghost" 
           size="icon" 
           onClick={() => loadSuggestions(true)} 
           disabled={isRefreshing}
-          className="h-7 w-7 rounded-full hover:bg-primary/10 text-primary transition-colors"
+          className="h-7 w-7 rounded-full hover:bg-muted"
         >
-          <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
+          <RefreshCw className={cn("h-3.5 w-3.5 text-muted-foreground", isRefreshing && "animate-spin")} />
         </Button>
       </div>
 
-      <ScrollArea className="w-full whitespace-nowrap">
-        <div className="flex gap-4 pb-4">
+      <div className="w-full overflow-x-auto scrollbar-hide px-4">
+        <div className="flex gap-3 pb-2 min-w-max">
           {isLoading ? (
-            Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="w-[160px] flex-shrink-0 animate-pulse bg-muted/40 rounded-2xl h-[210px] border border-border/50" />
+            Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="w-[130px] flex-shrink-0 animate-pulse bg-muted/30 rounded-2xl h-[160px] border border-border/50" />
             ))
           ) : friends.length === 0 ? (
-            <div className="w-full flex flex-col items-center justify-center py-10 text-center text-muted-foreground bg-accent/5 rounded-2xl border border-dashed">
-              <UserPlus className="h-7 w-7 mb-2 opacity-20" />
-              <p className="text-[10px] font-medium">Aucune suggestion disponible</p>
+            <div className="w-full flex flex-col items-center justify-center py-8 text-center text-muted-foreground bg-accent/5 rounded-2xl border border-dashed min-w-[300px]">
+              <UserPlus className="h-6 w-6 mb-2 opacity-20" />
+              <p className="text-[10px]">Aucune suggestion pour le moment</p>
             </div>
           ) : (
             friends.map((friend) => (
               <div
                 key={friend.id}
-                className="group relative w-[160px] flex-shrink-0 bg-card/40 hover:bg-card border border-border/60 hover:border-primary/30 rounded-2xl p-4 transition-all duration-300 flex flex-col items-center text-center"
+                className="group relative w-[130px] flex-shrink-0 bg-card/50 border border-border/40 hover:border-primary/30 rounded-2xl p-3 transition-all duration-300 flex flex-col items-center text-center shadow-sm"
               >
-                {/* Connection Reason */}
-                <div className="absolute top-2 left-0 right-0 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Badge variant="outline" className="text-[7px] px-1.5 py-0 bg-background/80 backdrop-blur-sm border-primary/20 text-primary font-bold uppercase tracking-tighter">
-                    {friend.reason}
-                  </Badge>
-                </div>
-
-                <div className="relative mb-3">
-                  <Avatar className="h-16 w-16 border-2 border-background ring-1 ring-border/50 shadow-sm relative z-10 transition-transform group-hover:scale-105">
+                <div className="relative mb-2 mt-1">
+                  <Avatar className="h-16 w-16 border-2 border-background shadow-md">
                     <AvatarImage src={friend.avatar || undefined} className="object-cover" />
-                    <AvatarFallback className="bg-muted text-muted-foreground font-bold text-base">
+                    <AvatarFallback className="bg-muted text-muted-foreground font-semibold text-lg">
                       {friend.name.slice(0, 1).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
+                  
+                  {friend.mutualFriends && friend.mutualFriends > 0 && (
+                    <div className="absolute -bottom-0.5 -right-0.5 bg-primary text-white rounded-full h-4.5 w-4.5 flex items-center justify-center text-[8px] font-bold border-2 border-background shadow-sm">
+                      {friend.mutualFriends}
+                    </div>
+                  )}
                 </div>
 
-                <div className="space-y-1 w-full mb-4 relative z-10">
-                  <p className="font-bold text-[12px] truncate group-hover:text-primary transition-colors leading-tight">
+                <div className="w-full mb-3">
+                  <p className="font-bold text-[13px] truncate text-foreground/90">
                     {friend.name}
                   </p>
                   
-                  <div className="flex flex-col gap-0.5 min-h-[32px] justify-center">
-                    <p className="text-[9px] text-muted-foreground/80 truncate font-medium">
+                  <div className="mt-0.5">
+                    <p className="text-[10px] text-muted-foreground truncate leading-tight">
                       {friend.faculty || "Étudiant"}
                     </p>
-                    {friend.university && (
-                      <p className="text-[8px] text-muted-foreground/50 truncate uppercase tracking-tight">
-                        {friend.university}
-                      </p>
-                    )}
                   </div>
-
-                  {friend.mutualFriends !== null && friend.mutualFriends > 0 && (
-                    <div className="flex items-center justify-center gap-1 mt-1">
-                      <div className="flex -space-x-1.5 overflow-hidden">
-                        {[1, 2].map((i) => (
-                          <div key={i} className="inline-block h-3 w-3 rounded-full ring-1 ring-background bg-muted-foreground/20" />
-                        ))}
-                      </div>
-                      <span className="text-[8px] text-primary/70 font-bold">
-                        {friend.mutualFriends} en commun
-                      </span>
-                    </div>
-                  )}
                 </div>
 
                 <Button
                   size="sm"
+                  variant={addedFriends.includes(friend.id) ? "secondary" : "default"}
                   onClick={() => handleAddFriend(friend.id, friend.name)}
                   disabled={addedFriends.includes(friend.id)}
                   className={cn(
-                    "w-full h-8 rounded-xl text-[10px] font-bold transition-all border-none",
+                    "w-full h-8 rounded-xl text-[11px] font-bold transition-all border-none shadow-none",
                     addedFriends.includes(friend.id)
-                      ? "bg-emerald-50 text-emerald-600"
-                      : "campus-gradient text-white shadow-sm hover:shadow-primary/20"
+                      ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100"
+                      : "campus-gradient text-white hover:opacity-90"
                   )}
                 >
                   {addedFriends.includes(friend.id) ? (
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5">
                       <Check className="h-3 w-3 stroke-[3]" />
                       <span>Ajouté</span>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5">
                       <UserPlus className="h-3 w-3 stroke-[3]" />
-                      <span>Connecter</span>
+                      <span>Suivre</span>
                     </div>
                   )}
                 </Button>
@@ -207,8 +178,7 @@ export function FriendSuggestions() {
             ))
           )}
         </div>
-        <ScrollBar orientation="horizontal" className="hidden" />
-      </ScrollArea>
+      </div>
     </div>
   );
 }

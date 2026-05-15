@@ -92,7 +92,7 @@ export function AnnouncementsTab({ sphereId: _sphereId, canModerate }: Announcem
       {/* Formulaire de création */}
       {showForm && canModerate && (
         <div className="border rounded-xl bg-card p-4 space-y-3 shadow-sm">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          <p className="text-xs font-semibold text-muted-foreground tracking-wider">
             Nouvelle annonce
           </p>
           <div className="space-y-2">

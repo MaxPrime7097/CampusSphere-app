@@ -1315,7 +1315,7 @@ export function Messages() {
             <div className="max-h-72 overflow-y-auto space-y-4 pr-1">
               {/* Connections */}
               <div className="space-y-2">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase px-1">Vos connexions</p>
+                <p className="text-[10px] font-bold text-muted-foreground px-1">Vos connexions</p>
                 {loadingConnections ? (
                   <div className="text-sm text-muted-foreground px-1">Chargement...</div>
                 ) : filteredConnections.length === 0 ? (
@@ -1351,7 +1351,7 @@ export function Messages() {
               {/* Global search results */}
               {connectionSearch.trim().length >= 2 && (
                 <div className="space-y-2 border-t pt-3">
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase px-1">Global (Tous les membres)</p>
+                  <p className="text-[10px] font-bold text-muted-foreground px-1">Global (Tous les membres)</p>
                   {loadingGlobalUsers ? (
                     <div className="text-sm text-muted-foreground px-1">Recherche globale...</div>
                   ) : globalUsers.length === 0 ? (
