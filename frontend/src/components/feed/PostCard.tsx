@@ -803,13 +803,13 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid grid-cols-3 gap-3 py-4">
+          <div className="grid grid-cols-3 gap-3 py-2">
             <Button
               variant="outline"
               className="flex flex-col h-20 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
               onClick={() => handleSocialShare("whatsapp")}
             >
-              <div className="h-8 w-8 rounded-full bg-black flex items-center justify-center text-white">
+              <div className="h-7 w-7 rounded-full bg-green-500 flex items-center justify-center text-white">
                 <FaWhatsapp className="h-5 w-5" />
               </div>
               <span className="text-[10px] font-semibold tracking-wider">WhatsApp</span>
@@ -820,7 +820,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
               className="flex flex-col h-20 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
               onClick={() => handleSocialShare("twitter")}
             >
-              <div className="h-8 w-8 rounded-full bg-black flex items-center justify-center text-white">
+              <div className="h-7 w-7 rounded-full bg-sky-500 flex items-center justify-center text-white">
                 <FaTwitter className="h-5 w-5" />
               </div>
               <span className="text-[10px] font-semibold tracking-wider">Twitter / X</span>
@@ -831,7 +831,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
               className="flex flex-col h-20 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
               onClick={() => handleSocialShare("facebook")}
             >
-              <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white">
+              <div className="h-7 w-7 rounded-full bg-blue-600 flex items-center justify-center text-white">
                 <FaFacebook className="h-5 w-5" />
               </div>
               <span className="text-[10px] font-semibold tracking-wider">Facebook</span>
@@ -842,7 +842,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
               className="flex flex-col h-20 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
               onClick={() => handleSocialShare("linkedin")}
             >
-              <div className="h-8 w-8 rounded-full bg-blue-700 flex items-center justify-center text-white">
+              <div className="h-7 w-7 rounded-full bg-blue-700 flex items-center justify-center text-white">
                 <FaLinkedin className="h-5 w-5" />
               </div>
               <span className="text-[10px] font-semibold tracking-wider">LinkedIn</span>
@@ -853,7 +853,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
               className="flex flex-col h-20 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
               onClick={() => handleSocialShare("instagram")}
             >
-              <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 flex items-center justify-center text-white">
+              <div className="h-7 w-7 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 flex items-center justify-center text-white">
                 <FaInstagram className="h-5 w-5" />
               </div>
               <span className="text-[10px] font-semibold tracking-wider">Instagram</span>
@@ -865,7 +865,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
               onClick={handleCopyLink}
               disabled={isCopyingLink}
             >
-              <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-700">
+              <div className="h-7 w-7 rounded-full bg-gray-200 flex items-center justify-center text-gray-700">
                 <Copy className="h-5 w-5" />
               </div>
               <span className="text-[10px] font-semibold tracking-wider">{isCopyingLink ? "Copié !" : "Lien"}</span>
