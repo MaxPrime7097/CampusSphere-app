@@ -142,7 +142,7 @@ export function SphereSpheraTab({ sphereId }: SphereSpheraTabProps) {
               <div
                 key={session.id}
                 className="group border rounded-xl bg-card p-4 hover:border-[#ff9800]/40 transition-all cursor-pointer shadow-sm hover:shadow-md"
-                onClick={() => navigate(`/study-sessions/${session.id}`)}
+                onClick={() => navigate(`/sphera/sessions/${session.id}`)}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="h-10 w-10 rounded-lg bg-[#ff9800]/10 flex items-center justify-center group-hover:scale-110 transition-transform">

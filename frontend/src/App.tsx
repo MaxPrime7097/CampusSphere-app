@@ -34,8 +34,10 @@ import { CompleteProfile } from "./pages/public/CompleteProfile";
 import { Privacy } from "./pages/public/Privacy";
 import { Terms } from "./pages/public/Terms";
 import { Connections } from "./pages/Connections";
-import { StudySessions } from "./pages/StudySessions";
-import { StudySessionDetail } from "./pages/StudySessionDetail";
+// Sphera V2 — module isolé
+import { SpheraHome } from "./sphera/pages/SpheraHome";
+import { StudySessionDetail } from "./sphera/pages/StudySessionDetail";
+import { AnnaleDetail } from "./sphera/pages/AnnaleDetail";
 import { CommunityGuidelines } from "./pages/public/CommunityGuidelines";
 import { Copyright } from "./pages/public/Copyright";
 import { CookiePolicy } from "./pages/public/CookiePolicy";
@@ -222,20 +224,32 @@ const App = () => (
                 </AppLayout>
               </Protected>
             } />
-            <Route path="/study-sessions" element={
+            {/* ─── Sphera V2 ─── */}
+            <Route path="/sphera" element={
               <Protected>
                 <AppLayout>
-                  <StudySessions />
+                  <SpheraHome />
                 </AppLayout>
               </Protected>
             } />
-            <Route path="/study-sessions/:id" element={
+            <Route path="/sphera/sessions/:id" element={
               <Protected>
                 <AppLayout>
                   <StudySessionDetail />
                 </AppLayout>
               </Protected>
             } />
+            <Route path="/sphera/annales/:id" element={
+              <Protected>
+                <AppLayout>
+                  <AnnaleDetail />
+                </AppLayout>
+              </Protected>
+            } />
+
+            {/* Rétrocompatibilité : anciennes URLs → nouvelles */}
+            <Route path="/study-sessions" element={<Navigate to="/sphera" replace />} />
+            <Route path="/study-sessions/:id" element={<Navigate to="/sphera/sessions/:id" replace />} />
 
             {/* Admin routes - v2 panel */}
             <Route path="/admin" element={

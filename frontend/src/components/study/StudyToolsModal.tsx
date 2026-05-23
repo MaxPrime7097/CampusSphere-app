@@ -130,7 +130,7 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
       
       if (onSuccess) onSuccess(data);
       onClose();
-      navigate(`/study-sessions/${data.id}`);
+      navigate(`/sphera/sessions/${data.id}`);
     } catch (err: any) {
       const msg =
         err?.message ||

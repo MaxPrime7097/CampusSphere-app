@@ -60,7 +60,7 @@ INSTALLED_APPS = [
     "tasks",
     "messaging",
     "notifications",
-    "study_tools",
+    "sphera",
 
     # Security apps
     "upload",
@@ -513,6 +513,11 @@ LOGGING = {
             'propagate': False,
         },
         'campus_sphere': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'sphera': {
             'handlers': ['console'],
             'level': 'INFO',
             'propagate': False,

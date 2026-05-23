@@ -75,7 +75,7 @@ const IMPACT_LEVELS = [
 function getImpactLevelInfo(score: number) {
   let currentLevel = IMPACT_LEVELS[0];
   let nextLevel = IMPACT_LEVELS[1] || null;
-  
+
   for (let i = 0; i < IMPACT_LEVELS.length; i++) {
     if (score >= IMPACT_LEVELS[i].min) {
       currentLevel = IMPACT_LEVELS[i];
@@ -84,11 +84,11 @@ function getImpactLevelInfo(score: number) {
       break;
     }
   }
-  
-  const progress = nextLevel 
+
+  const progress = nextLevel
     ? ((score - currentLevel.min) / (nextLevel.min - currentLevel.min)) * 100
     : 100;
-    
+
   return { currentLevel, nextLevel, progress };
 }
 
@@ -429,9 +429,9 @@ export function Profile() {
   // Edit form state
   const [editSkills, setEditSkills] = useState<string[]>([]);
   const [editInterests, setEditInterests] = useState<string[]>([]);
-  const [editExperiences, setEditExperiences] = useState<{title: string; company: string; duration: string; description: string}[]>([]);
-  const [editPreviousEducation, setEditPreviousEducation] = useState<{degree: string; school: string; year: string}[]>([]);
-  const [editPortfolioLinks, setEditPortfolioLinks] = useState<{name: string; url: string}[]>([]);
+  const [editExperiences, setEditExperiences] = useState<{ title: string; company: string; duration: string; description: string }[]>([]);
+  const [editPreviousEducation, setEditPreviousEducation] = useState<{ degree: string; school: string; year: string }[]>([]);
+  const [editPortfolioLinks, setEditPortfolioLinks] = useState<{ name: string; url: string }[]>([]);
   const [newSkill, setNewSkill] = useState("");
   const [newInterest, setNewInterest] = useState("");
   const [coverPhotoFile, setCoverPhotoFile] = useState<File | null>(null);
@@ -471,7 +471,7 @@ export function Profile() {
   // Load target user by username
   useEffect(() => {
     if (!username) return;
-    
+
     let isMounted = true;
     (async () => {
       try {
@@ -509,7 +509,7 @@ export function Profile() {
   // Load user posts
   useEffect(() => {
     if (!targetUser?.id) return;
-    
+
     let isMounted = true;
     (async () => {
       try {
@@ -525,10 +525,10 @@ export function Profile() {
       isMounted = false;
     };
   }, [currentUser?.id, targetUser?.id]);
-  
+
   // Vérifier si c'est le profil de l'utilisateur actuel
   const isOwnProfile = !username || (currentUser && username === currentUser.username);
-  
+
   // Données utilisateur avec fallback
   const user = useMemo(() => {
     return mapProfileToViewModel({
@@ -561,7 +561,7 @@ export function Profile() {
   // Load connections
   useEffect(() => {
     if (!targetUser?.id) return;
-    
+
     let isMounted = true;
     (async () => {
       try {
@@ -643,7 +643,7 @@ export function Profile() {
       isMounted = false;
     };
   }, [currentUser?.id, targetUser?.id, isOwnProfile]);
-  
+
   // Sync targetUser with currentUser if it's our own profile
   useEffect(() => {
     if (isOwnProfile && currentUser) {
@@ -653,7 +653,7 @@ export function Profile() {
 
   const userPostsData = useMemo(() => {
     if (!userPosts || userPosts.length === 0) return [];
-    
+
     return userPosts.map((post: any) => ({
       id: post.id,
       author: {
@@ -995,7 +995,7 @@ export function Profile() {
             <VerificationModal onSuccess={() => {
               void refreshUser();
             }}>
-              <Button 
+              <Button
                 className="bg-amber-600 hover:bg-amber-700 text-white w-full sm:w-auto shadow-lg shadow-amber-600/20"
               >
                 Certifier mon statut
@@ -1008,9 +1008,9 @@ export function Profile() {
           {/* Photo de couverture */}
           <div className="relative rounded-t-null sm:rounded-t-lg h-48 bg-gradient-to-br from-primary/20 via-accent/20 to-primary/30 overflow-hidden">
             {user.coverPhoto ? (
-              <OptimizedImage 
-                src={user.coverPhoto} 
-                alt="Photo de couverture" 
+              <OptimizedImage
+                src={user.coverPhoto}
+                alt="Photo de couverture"
                 className="w-full h-full object-cover"
                 containerClassName="w-full h-full absolute inset-0"
               />
@@ -1023,7 +1023,7 @@ export function Profile() {
                 </div>
               </div>
             )}
-            
+
             {isOwnProfile && (
               <Button
                 size="sm"
@@ -1036,7 +1036,7 @@ export function Profile() {
               </Button>
             )}
           </div>
-          
+
           <div className="p-6 relative">
             <div className="flex flex-col md:flex-row gap-6">
               {/* Avatar superposé */}
@@ -1062,7 +1062,7 @@ export function Profile() {
                 <div className="flex gap-2">
                   {!isOwnProfile && (
                     <div className="space-y-1">
-                      <Button 
+                      <Button
                         variant={isFollowing ? "outline" : "default"}
                         onClick={handleFollow}
                         disabled={isFollowingLoading || relationActionUnavailable}
@@ -1149,9 +1149,9 @@ export function Profile() {
                     <div className="min-w-0">
                       <div className="flex items-center gap-1">
                         <p className="text-[11px] sm:text-sm font-semibold truncate">Impact Score</p>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           className="h-4 w-4 sm:h-5 sm:w-5 p-0 rounded-full hover:bg-primary/20 transition-colors shrink-0"
                           onClick={() => toast({
                             title: "Score d'impact",
@@ -1171,11 +1171,11 @@ export function Profile() {
                             getImpactLevelInfo(user.impactScore).currentLevel.color
                           )}>
                             <span>{getImpactLevelInfo(user.impactScore).currentLevel.icon}</span>
-                            <span className="uppercase tracking-tighter">{getImpactLevelInfo(user.impactScore).currentLevel.label}</span>
+                            {/* <span className="uppercase tracking-tighter">{getImpactLevelInfo(user.impactScore).currentLevel.label}</span> */}
                           </div>
                         )}
                       </div>
-                      
+
                       {/* Gamification deactivated for now but code kept
                       {user.impactScore !== null && getImpactLevelInfo(user.impactScore).nextLevel && (
                         <div className="w-full max-w-[120px] mt-1 space-y-1">
@@ -1193,7 +1193,7 @@ export function Profile() {
                       */}
                     </div>
                   </div>
-                  
+
                   <div className="h-8 w-px bg-border shrink-0" />
 
                   {/* Streak deactivated for now but code kept
@@ -1206,7 +1206,7 @@ export function Profile() {
                   <div className="h-8 w-px bg-border shrink-0" />
                   */}
 
-                  <div 
+                  <div
                     className="flex items-center gap-2 sm:gap-3 cursor-pointer hover:bg-muted/50 rounded-lg p-1 sm:p-2 -m-1 sm:-m-2 transition-colors min-w-0"
                     onClick={() => isOwnProfile && setShowMoodModal(true)}
                   >
@@ -1288,7 +1288,7 @@ export function Profile() {
                   <CreatePost />
                 </div>
               )}
-              
+
               {userPostsData.length === 0 ? (
                 <EmptyState
                   icon={FileText}
@@ -1334,8 +1334,8 @@ export function Profile() {
                                 <p className="text-sm text-muted-foreground">@{connection.username}</p>
                                 <p className="text-xs text-muted-foreground">{connection.mutual} amis en commun</p>
                               </div>
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 variant="outline"
                                 onClick={() => handleViewProfile(connection.username, connection.name, true)}
                                 disabled={!connection.username}
@@ -1363,7 +1363,7 @@ export function Profile() {
                     Informations académiques
                   </div>
                   {isOwnProfile && (
-                    <EditAcademicModal 
+                    <EditAcademicModal
                       initialData={{
                         university: user.university || "",
                         faculty: user.faculty || "",
@@ -1414,7 +1414,7 @@ export function Profile() {
                     Informations Personnelles
                   </div>
                   {isOwnProfile && (
-                    <EditPersonalModal 
+                    <EditPersonalModal
                       initialData={{
                         email: user.email || "",
                         phoneNumber: user.phoneNumber || "",
@@ -1460,7 +1460,7 @@ export function Profile() {
                       <p className="text-sm text-muted-foreground">Langues</p>
                       <p className="font-medium">
                         {Array.isArray(user.language) && user.language.length > 0
-                          ? user.language.map(formatSlugToLabel).join(", ") 
+                          ? user.language.map(formatSlugToLabel).join(", ")
                           : <EmptyField />
                         }
                       </p>
@@ -1476,7 +1476,7 @@ export function Profile() {
                     Formations précédentes
                   </div>
                   {isOwnProfile && (
-                    <EditEducationModal 
+                    <EditEducationModal
                       initialEducation={user.previousEducation || []}
                       onSuccess={() => window.location.reload()}
                     >
@@ -1508,7 +1508,7 @@ export function Profile() {
                     Expériences
                   </div>
                   {isOwnProfile && (
-                    <EditExperiencesModal 
+                    <EditExperiencesModal
                       initialExperiences={user.experiences || []}
                       onSuccess={() => window.location.reload()}
                     >
@@ -1542,7 +1542,7 @@ export function Profile() {
                     Compétences
                   </div>
                   {isOwnProfile && (
-                    <EditSkillsModal 
+                    <EditSkillsModal
                       initialSkills={user.skills || []}
                       onSuccess={() => window.location.reload()}
                     >
@@ -1572,7 +1572,7 @@ export function Profile() {
                     Centres d'intérêt
                   </div>
                   {isOwnProfile && (
-                    <EditInterestsModal 
+                    <EditInterestsModal
                       initialInterests={user.interests || []}
                       onSuccess={() => window.location.reload()}
                     >
@@ -1602,7 +1602,7 @@ export function Profile() {
                     Portfolio
                   </div>
                   {isOwnProfile && (
-                    <EditPortfolioModal 
+                    <EditPortfolioModal
                       initialLinks={user.portfolioLinks || []}
                       onSuccess={() => window.location.reload()}
                     >
@@ -1700,15 +1700,15 @@ export function Profile() {
                 Téléchargez une nouvelle photo de couverture pour votre profil.
               </DialogDescription>
             </DialogHeader>
-            
+
             <div className="space-y-4 py-4">
               {/* Aperçu de la photo */}
               <div className="relative">
                 <div className="w-full h-32 bg-gradient-to-br from-primary/20 to-accent/20 rounded-lg overflow-hidden">
                   {coverPhotoPreview ? (
-                    <img 
-                      src={coverPhotoPreview} 
-                      alt="Aperçu" 
+                    <img
+                      src={coverPhotoPreview}
+                      alt="Aperçu"
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -1720,7 +1720,7 @@ export function Profile() {
                     </div>
                   )}
                 </div>
-                
+
                 {/* Bouton pour supprimer */}
                 {coverPhotoPreview && (
                   <Button
@@ -1756,7 +1756,7 @@ export function Profile() {
                   <Upload className="h-4 w-4 mr-2" />
                   {coverPhotoPreview ? "Changer la photo" : "Sélectionner une photo"}
                 </Button>
-                
+
                 <p className="text-xs text-muted-foreground text-center">
                   Formats acceptés : JPG, PNG, GIF (max 5MB)
                 </p>
@@ -1764,8 +1764,8 @@ export function Profile() {
             </div>
 
             <div className="flex justify-end gap-2 pt-4 border-t">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => {
                   setShowCoverPhotoModal(false);
                   setCoverPhotoFile(null);
@@ -1798,16 +1798,16 @@ export function Profile() {
                 Téléchargez une nouvelle photo de profil pour votre compte.
               </DialogDescription>
             </DialogHeader>
-            
+
             <div className="space-y-4 py-4">
               {/* Aperçu de l'avatar */}
               <div className="flex justify-center">
                 <div className="relative">
                   <div className="w-24 h-24 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full overflow-hidden ring-4 ring-background shadow-lg">
                     {avatarPreview ? (
-                      <img 
-                        src={avatarPreview} 
-                        alt="Aperçu avatar" 
+                      <img
+                        src={avatarPreview}
+                        alt="Aperçu avatar"
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -1816,7 +1816,7 @@ export function Profile() {
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Bouton pour supprimer */}
                   {avatarPreview && (
                     <Button
@@ -1853,7 +1853,7 @@ export function Profile() {
                   <Upload className="h-4 w-4 mr-2" />
                   {avatarPreview ? "Changer la photo" : "Sélectionner une photo"}
                 </Button>
-                
+
                 <p className="text-xs text-muted-foreground text-center">
                   Formats acceptés : JPG, PNG, GIF (max 2MB)
                 </p>
@@ -1861,8 +1861,8 @@ export function Profile() {
             </div>
 
             <div className="flex justify-end gap-2 pt-4 border-t">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => {
                   setShowAvatarModal(false);
                   setAvatarFile(null);
@@ -1903,7 +1903,7 @@ export function Profile() {
                 Partagez votre état d'esprit actuel avec votre communauté.
               </DialogDescription>
             </DialogHeader>
-            
+
             <div className="space-y-4 py-4">
               <div>
                 <Label htmlFor="mood">Mood du moment (max 100 car.)</Label>
@@ -1944,8 +1944,8 @@ export function Profile() {
             </div>
 
             <div className="flex justify-end gap-2 pt-4 border-t">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => {
                   setShowMoodModal(false);
                   setMoodText("");
