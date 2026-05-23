@@ -10,7 +10,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Share2, Sparkles, AlertCircle, Loader2, Check, MessageCircle } from "lucide-react";
+import { ArrowLeft, Share2, Sparkles, AlertCircle, Loader2, Check, MessageCircleQuestion, BookOpen, Brain, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -144,7 +144,7 @@ export const StudySessionDetail: React.FC = () => {
               </span>
               {hasQA && (
                 <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-full text-xs font-semibold flex items-center border border-emerald-500/20">
-                  <MessageCircle className="w-3.5 h-3.5 mr-1.5" />
+                  <MessageCircleQuestion className="w-3.5 h-3.5 mr-1.5" />
                   Q&A disponible
                 </span>
               )}
@@ -176,22 +176,26 @@ export const StudySessionDetail: React.FC = () => {
         <TabsList className="w-full justify-start overflow-x-auto bg-transparent border-b rounded-none h-auto p-0 space-x-6">
           {toolTypes.includes("fiche") && (
             <TabsTrigger value="fiche" className={TAB_STYLE}>
-              📄 Fiche de révision
+              <BookOpen className="h-3.5 w-3.5" />
+               Fiche de révision
             </TabsTrigger>
           )}
           {toolTypes.includes("quiz") && (
             <TabsTrigger value="quiz" className={TAB_STYLE}>
-              🧠 Quiz interactif
+              <Brain className="h-3.5 w-3.5" />
+              Quiz interactif
             </TabsTrigger>
           )}
           {toolTypes.includes("flashcards") && (
             <TabsTrigger value="flashcards" className={TAB_STYLE}>
-              🃏 Flashcards
+              <Layers className="h-3.5 w-3.5" />
+              Flashcards
             </TabsTrigger>
           )}
           {hasQA && (
             <TabsTrigger value="qa" className={TAB_STYLE}>
-              ❓ Q&A
+              <MessageCircleQuestion className="h-3.5 w-3.5" />
+              Q&A
             </TabsTrigger>
           )}
         </TabsList>

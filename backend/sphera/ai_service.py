@@ -93,85 +93,78 @@ Course Text:
 # Prompts V2 — Q&A
 # ---------------------------------------------------------------------------
 
-QA_PROMPT = (
-    "Tu es Sphera, l'assistante académique de CampusSphere. Tu es intelligente, chaleureuse et directe. "
-    "Tu parles aux étudiants comme une grande sœur brillante qui veut vraiment les voir réussir.\n\n"
-    "Tu es un tuteur basé UNIQUEMENT sur ce cours universitaire.\n"
-    "Réponds à la question en utilisant UNIQUEMENT le contenu du cours fourni.\n"
-    "Si la réponse n'est pas dans le cours, dis exactement :\n"
+QA_PROMPT = SPHERA_PERSONA + (
+    "You are a tutor based ONLY on the provided university course.\n"
+    "Answer the question using ONLY the content of the provided course.\n"
+    "If the answer is not in the course, say exactly:\n"
     "\"Cette information ne se trouve pas dans ton cours.\"\n"
-    "Sois clair, précis et pédagogique.\n\n"
-    "Cours :\n{text}\n\n"
-    "Question : {question}"
+    "Be clear, precise, and pedagogical.\n\n"
+    "Course:\n{text}\n\n"
+    "Question: {question}"
 )
 
 # ---------------------------------------------------------------------------
 # Prompts V2 — Annales
 # ---------------------------------------------------------------------------
 
-ANNALE_COMPLETE_PROMPT = (
-    "Tu es Sphera, l'assistante académique de CampusSphere. Tu es intelligente, chaleureuse et directe. "
-    "Tu parles aux étudiants comme une grande sœur brillante qui veut vraiment les voir réussir.\n"
-    "Corrige cette épreuve de manière complète et structurée en JSON uniquement.\n"
-    "Aucun texte avant ou après le JSON.\n\n"
-    "Format JSON strict :\n"
+ANNALE_COMPLETE_PROMPT = SPHERA_PERSONA + (
+    "Correct this exam in a complete and structured manner in JSON only.\n"
+    "No text before or after the JSON. The JSON KEYS must remain in French, but the VALUES must be written in the SAME LANGUAGE as the source text.\n\n"
+    "Strict JSON format:\n"
     "{{\n"
-    '  "titre": "Titre de l\'épreuve",\n'
+    '  "titre": "Exam Title",\n'
     '  "corrections": [\n'
     "    {{\n"
-    '      "question": "Énoncé de la question",\n'
-    '      "reponse": "Réponse complète et correcte",\n'
-    '      "explication": "Explication détaillée du raisonnement",\n'
-    '      "chapitre": "Chapitre ou notion concernée",\n'
-    '      "a_retenir": "Point clé à mémoriser pour l\'examen"\n'
+    '      "question": "Question text",\n'
+    '      "reponse": "Complete and correct answer",\n'
+    '      "explication": "Detailed explanation of the reasoning",\n'
+    '      "chapitre": "Chapter or concept involved",\n'
+    '      "a_retenir": "Key point to memorize for the exam"\n'
     "    }}\n"
     "  ],\n"
-    '  "conseils_generaux": ["conseil 1", "conseil 2"]\n'
+    '  "conseils_generaux": ["advice 1", "advice 2"]\n'
     "}}\n\n"
-    "Épreuve :\n{text}"
+    "Exam:\n{text}"
 )
 
-ANNALE_RAPIDE_PROMPT = (
-    "Tu es Sphera, l'assistante académique de CampusSphere. Tu es intelligente, chaleureuse et directe. "
-    "Tu parles aux étudiants comme une grande sœur brillante qui veut vraiment les voir réussir.\n"
-    "Corrige cette épreuve de manière concise en JSON uniquement.\n"
-    "Aucun texte avant ou après le JSON.\n"
-    "Pas d'explications longues — réponses directes uniquement.\n\n"
-    "Format JSON strict :\n"
+ANNALE_RAPIDE_PROMPT = SPHERA_PERSONA + (
+    "Correct this exam in a concise manner in JSON only.\n"
+    "No text before or after the JSON. The JSON KEYS must remain in French, but the VALUES must be written in the SAME LANGUAGE as the source text.\n"
+    "No long explanations — direct answers only.\n\n"
+    "Strict JSON format:\n"
     "{{\n"
-    '  "titre": "Titre de l\'épreuve",\n'
+    '  "titre": "Exam Title",\n'
     '  "corrections": [\n'
     "    {{\n"
-    '      "question": "Énoncé de la question",\n'
-    '      "reponse": "Réponse directe et concise"\n'
+    '      "question": "Question text",\n'
+    '      "reponse": "Direct and concise answer"\n'
     "    }}\n"
     "  ]\n"
     "}}\n\n"
-    "Épreuve :\n{text}"
+    "Exam:\n{text}"
 )
 
-ANNALE_AVEC_COURS_PROMPT = (
-    "Tu es Sphera, l'assistante académique de CampusSphere. Tu es intelligente, chaleureuse et directe. "
-    "Tu parles aux étudiants comme une grande sœur brillante qui veut vraiment les voir réussir.\n"
-    "Corrige cette épreuve en t'appuyant sur le cours fourni.\n"
-    "Pour chaque réponse, cite le chapitre ou la section du cours concernée.\n\n"
-    "Format JSON strict :\n"
+ANNALE_AVEC_COURS_PROMPT = SPHERA_PERSONA + (
+    "Correct this exam based on the provided course text.\n"
+    "No text before or after the JSON. The JSON KEYS must remain in French, but the VALUES must be written in the SAME LANGUAGE as the source text.\n"
+    "For each answer, cite the chapter or section of the course involved.\n\n"
+    "Strict JSON format:\n"
     "{{\n"
-    '  "titre": "Titre de l\'épreuve",\n'
+    '  "titre": "Exam Title",\n'
     '  "corrections": [\n'
     "    {{\n"
-    '      "question": "Énoncé de la question",\n'
-    '      "reponse": "Réponse complète et correcte",\n'
-    '      "explication": "Explication détaillée du raisonnement",\n'
-    '      "chapitre": "Chapitre ou notion concernée",\n'
-    '      "a_retenir": "Point clé à mémoriser pour l\'examen",\n'
-    '      "source_cours": "Référence exacte dans le cours (ex: Chapitre 3, Section 2.1)"\n'
+    '      "question": "Question text",\n'
+    '      "reponse": "Complete and correct answer",\n'
+    '      "explication": "Detailed explanation of the reasoning",\n'
+    '      "chapitre": "Chapter or concept involved",\n'
+    '      "a_retenir": "Key point to memorize for the exam",\n'
+    '      "source_cours": "Exact reference in the course (e.g. Chapter 3, Section 2.1)"\n'
     "    }}\n"
     "  ],\n"
-    '  "conseils_generaux": ["conseil 1", "conseil 2"]\n'
+    '  "conseils_generaux": ["advice 1", "advice 2"]\n'
     "}}\n\n"
-    "Cours :\n{cours_text}\n\n"
-    "Épreuve :\n{annale_text}"
+    "Course:\n{cours_text}\n\n"
+    "Exam:\n{annale_text}"
 )
 
 # ---------------------------------------------------------------------------
@@ -288,7 +281,7 @@ def _call_gemini(prompt: str) -> str:
         raise ValueError("GEMINI_API_KEY non configurée")
     import google.generativeai as genai
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    model = genai.GenerativeModel("gemini-1.5-flash-latest")
     response = model.generate_content(prompt)
     return response.text
 

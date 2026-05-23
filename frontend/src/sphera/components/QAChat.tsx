@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import { Send, Sparkles, MessageCircle, AlertCircle, Loader2 } from "lucide-react";
+import { Send, Sparkles, MessageCircleQuestion, AlertCircle, Loader2 } from "lucide-react";
 import { useQAChat } from "../hooks/useQAChat";
 import type { QAMessage } from "../types/sphera.types";
 
@@ -32,7 +32,7 @@ export function QAChat({ sessionId, initialHistory = [] }: QAChatProps) {
       {/* Header */}
       <div className="flex items-center gap-3 px-5 py-4 border-b border-border/40 bg-gradient-to-r from-[#ff9800]/10 to-transparent">
         <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#ff9800]/20 ring-1 ring-[#ff9800]/30">
-          <MessageCircle className="w-4 h-4 text-[#ff9800]" />
+          <MessageCircleQuestion className="w-4 h-4 text-[#ff9800]" />
         </div>
         <div>
           <p className="text-sm font-semibold text-foreground">Q&A — Assistante Sphera</p>
@@ -49,7 +49,7 @@ export function QAChat({ sessionId, initialHistory = [] }: QAChatProps) {
         {messages.length === 0 && !isLoading && (
           <div className="flex flex-col items-center justify-center h-full text-center gap-3 py-8">
             <div className="w-14 h-14 rounded-full bg-[#ff9800]/10 ring-1 ring-[#ff9800]/20 flex items-center justify-center">
-              <MessageCircle className="w-6 h-6 text-[#ff9800]/70" />
+              <MessageCircleQuestion className="w-6 h-6 text-[#ff9800]/70" />
             </div>
             <div>
               <p className="text-sm font-medium text-foreground">Pose ta première question</p>
