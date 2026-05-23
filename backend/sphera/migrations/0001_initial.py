@@ -19,58 +19,89 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.CreateModel(
-            name="StudySession",
-            fields=[
-                (
-                    "id",
-                    models.BigAutoField(
-                        auto_created=True,
-                        primary_key=True,
-                        serialize=False,
-                        verbose_name="ID",
-                    ),
-                ),
-                ("source_filename", models.CharField(blank=True, max_length=255)),
-                ("tool_types", models.JSONField(default=list)),
-                ("content", models.JSONField(default=dict)),
-                ("is_shared", models.BooleanField(default=False)),
-                ("created_at", models.DateTimeField(auto_now_add=True)),
-                ("updated_at", models.DateTimeField(auto_now=True)),
-                (
-                    "owner",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE,
-                        related_name="study_sessions",
-                        to=settings.AUTH_USER_MODEL,
-                    ),
-                ),
-                (
-                    "resource",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="study_sessions",
-                        to="resources.resource",
-                    ),
-                ),
-                (
-                    "shared_in_sphere",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="shared_study_sessions",
-                        to="spheres.sphere",
-                    ),
+        migrations.SeparateDatabaseAndState(
+            state_operations=[
+                migrations.CreateModel(
+                    name="StudySession",
+                    fields=[
+                        (
+                            "id",
+                            models.BigAutoField(
+                                auto_created=True,
+                                primary_key=True,
+                                serialize=False,
+                                verbose_name="ID",
+                            ),
+                        ),
+                        ("source_filename", models.CharField(blank=True, max_length=255)),
+                        ("tool_types", models.JSONField(default=list)),
+                        ("content", models.JSONField(default=dict)),
+                        ("is_shared", models.BooleanField(default=False)),
+                        ("created_at", models.DateTimeField(auto_now_add=True)),
+                        ("updated_at", models.DateTimeField(auto_now=True)),
+                        (
+                            "owner",
+                            models.ForeignKey(
+                                on_delete=django.db.models.deletion.CASCADE,
+                                related_name="study_sessions",
+                                to=settings.AUTH_USER_MODEL,
+                            ),
+                        ),
+                        (
+                            "resource",
+                            models.ForeignKey(
+                                blank=True,
+                                null=True,
+                                on_delete=django.db.models.deletion.SET_NULL,
+                                related_name="study_sessions",
+                                to="resources.resource",
+                            ),
+                        ),
+                        (
+                            "shared_in_sphere",
+                            models.ForeignKey(
+                                blank=True,
+                                null=True,
+                                on_delete=django.db.models.deletion.SET_NULL,
+                                related_name="shared_study_sessions",
+                                to="spheres.sphere",
+                            ),
+                        ),
+                    ],
+                    options={
+                        "verbose_name": "Session de révision",
+                        "verbose_name_plural": "Sessions de révision",
+                        "ordering": ["-created_at"],
+                        "db_table": "study_tools_studysession",
+                    },
                 ),
             ],
-            options={
-                "verbose_name": "Session de révision",
-                "verbose_name_plural": "Sessions de révision",
-                "ordering": ["-created_at"],
-                "db_table": "study_tools_studysession",  # Pointe vers l'ancienne table
-            },
+            database_operations=[
+                migrations.RunSQL(
+                    sql="""
+                    DO $$
+                    BEGIN
+                        IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'study_tools_studysession' OR table_name = 'sphera_studysession') THEN
+                            CREATE TABLE study_tools_studysession (
+                                id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+                                source_filename varchar(255) NOT NULL,
+                                tool_types jsonb NOT NULL,
+                                content jsonb NOT NULL,
+                                is_shared boolean NOT NULL,
+                                created_at timestamp with time zone NOT NULL,
+                                updated_at timestamp with time zone NOT NULL,
+                                owner_id bigint NOT NULL REFERENCES users_user(id) DEFERRABLE INITIALLY DEFERRED,
+                                resource_id bigint REFERENCES resources_resource(id) DEFERRABLE INITIALLY DEFERRED,
+                                shared_in_sphere_id bigint REFERENCES spheres_sphere(id) DEFERRABLE INITIALLY DEFERRED
+                            );
+                            CREATE INDEX study_tools_studysession_owner_id_idx ON study_tools_studysession (owner_id);
+                            CREATE INDEX study_tools_studysession_resource_id_idx ON study_tools_studysession (resource_id);
+                            CREATE INDEX study_tools_studysession_shared_in_sphere_id_idx ON study_tools_studysession (shared_in_sphere_id);
+                        END IF;
+                    END $$;
+                    """,
+                    reverse_sql="DROP TABLE IF EXISTS study_tools_studysession;"
+                )
+            ]
         ),
     ]

@@ -23,8 +23,15 @@ class Migration(migrations.Migration):
         migrations.SeparateDatabaseAndState(
             database_operations=[
                 migrations.RunSQL(
-                    sql="ALTER TABLE study_tools_studysession RENAME TO sphera_studysession;",
-                    reverse_sql="ALTER TABLE sphera_studysession RENAME TO study_tools_studysession;",
+                    sql="""
+                    DO $$ 
+                    BEGIN
+                        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'study_tools_studysession') THEN
+                            ALTER TABLE study_tools_studysession RENAME TO sphera_studysession;
+                        END IF;
+                    END $$;
+                    """,
+                    reverse_sql="ALTER TABLE IF EXISTS sphera_studysession RENAME TO study_tools_studysession;",
                 ),
             ],
             state_operations=[
