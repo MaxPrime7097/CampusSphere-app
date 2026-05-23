@@ -35,6 +35,10 @@ class Migration(migrations.Migration):
                 ),
             ],
             state_operations=[
+                migrations.AlterModelTable(
+                    name="studysession",
+                    table=None,
+                ),
                 migrations.AlterModelOptions(
                     name="studysession",
                     options={
