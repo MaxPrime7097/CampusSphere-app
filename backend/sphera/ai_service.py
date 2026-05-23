@@ -275,13 +275,13 @@ def _call_claude(prompt: str) -> str:
     return response.content[0].text
 
 
-def _call_gemini(prompt: str) -> str:
+def _call_gemini(prompt: str, model_name: str) -> str:
     api_key = getattr(settings, "GEMINI_API_KEY", None)
     if not api_key:
         raise ValueError("GEMINI_API_KEY non configurée")
     import google.generativeai as genai
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-1.5-flash-latest")
+    model = genai.GenerativeModel("gemini-2.5-flash")
     response = model.generate_content(prompt)
     return response.text
 
@@ -302,7 +302,8 @@ def _call_groq(prompt: str) -> str:
 
 PROVIDERS = [
     ("claude", _call_claude),
-    ("gemini", _call_gemini),
+    ("gemini-1.5-flash", lambda p: _call_gemini(p, "gemini-1.5-flash")),
+    ("gemini-pro", lambda p: _call_gemini(p, "gemini-pro")),
     ("groq", _call_groq),
 ]
 
