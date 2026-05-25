@@ -737,7 +737,7 @@ export function Resources() {
                   if (categoryResources.length === 0) return null;
 
                   return (
-                    <div key={opt.value} className="flex flex-col">
+                    <div key={opt.value} className="flex flex-col w-full max-w-full overflow-hidden">
                       <div className="flex justify-between items-center mb-2">
                         <h2 className="text-xl font-medium text-foreground">{opt.label}</h2>
                         {categoryResources.length > 4 && (
