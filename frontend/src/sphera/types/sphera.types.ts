@@ -97,6 +97,9 @@ export interface StudySessionListItem {
 
 export type AnnaleMode = "complete" | "rapide";
 
+export type QuestionType = "qcm" | "ouvert" | "code" | "preuve";
+
+// ——— Ancien format (rétrocompatibilité) ———
 export interface AnnaleCorrection {
   question: string;
   reponse: string;
@@ -106,9 +109,27 @@ export interface AnnaleCorrection {
   source_cours?: string;
 }
 
+// ——— Nouveau format Smart (sections + questions typées) ———
+export interface AnnaleQuestion {
+  numero: string;
+  enonce: string;
+  reponse: string;
+  explication?: string;
+  source_cours?: string;
+  type: QuestionType;
+}
+
+export interface AnnaleSection {
+  nom: string;
+  questions: AnnaleQuestion[];
+}
+
 export interface AnnaleContent {
   titre: string;
-  corrections: AnnaleCorrection[];
+  /** Nouveau format structuré (prompt smart) */
+  sections?: AnnaleSection[];
+  /** Ancien format plat (rétrocompatibilité sessions existantes) */
+  corrections?: AnnaleCorrection[];
   conseils_generaux?: string[];
 }
 
