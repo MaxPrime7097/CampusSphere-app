@@ -16,7 +16,7 @@ def analyze_student_card(image_file, user_full_name, user_university):
     if gemini_key:
         try:
             genai.configure(api_key=gemini_key)
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            model = genai.GenerativeModel('gemini-2.5-flash')
             img = Image.open(image_file)
             
             prompt = f"""

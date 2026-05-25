@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Sparkles, FileText, BookOpen, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { StudyToolsModal } from "@/components/study/StudyToolsModal";
+import { StudyToolsModal } from "@/sphera/components/study/StudyToolsModal";
 import { getSphereFiles, getSphereStudySessions } from "@/services/api";
 import { useNavigate } from "react-router-dom";
 

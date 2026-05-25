@@ -15,9 +15,9 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FicheRevision } from "@/components/study/FicheRevision";
-import { QuizInteractif } from "@/components/study/QuizInteractif";
-import { Flashcards } from "@/components/study/Flashcards";
+import { FicheRevision } from "@/sphera/components/study/FicheRevision";
+import { QuizInteractif } from "@/sphera/components/study/QuizInteractif";
+import { Flashcards } from "@/sphera/components/study/Flashcards";
 
 // V2 : Q&A
 import { QAChat } from "../components/QAChat";
@@ -176,25 +176,25 @@ export const StudySessionDetail: React.FC = () => {
         <TabsList className="w-full justify-start overflow-x-auto bg-transparent border-b rounded-none h-auto p-0 space-x-6">
           {toolTypes.includes("fiche") && (
             <TabsTrigger value="fiche" className={TAB_STYLE}>
-              <BookOpen className="h-3.5 w-3.5" />
-               Fiche de révision
+              <BookOpen className="h-5 w-5 mr-2" />
+              Fiche de révision
             </TabsTrigger>
           )}
           {toolTypes.includes("quiz") && (
             <TabsTrigger value="quiz" className={TAB_STYLE}>
-              <Brain className="h-3.5 w-3.5" />
+              <Brain className="h-5 w-5 mr-2" />
               Quiz interactif
             </TabsTrigger>
           )}
           {toolTypes.includes("flashcards") && (
             <TabsTrigger value="flashcards" className={TAB_STYLE}>
-              <Layers className="h-3.5 w-3.5" />
+              <Layers className="h-5 w-5 mr-2" />
               Flashcards
             </TabsTrigger>
           )}
           {hasQA && (
             <TabsTrigger value="qa" className={TAB_STYLE}>
-              <MessageCircleQuestion className="h-3.5 w-3.5" />
+              <MessageCircleQuestion className="h-5 w-5 mr-2" />
               Q&A
             </TabsTrigger>
           )}

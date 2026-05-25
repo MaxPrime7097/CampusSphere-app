@@ -751,19 +751,21 @@ export function Resources() {
                           </Button>
                         )}
                       </div>
-                      <div className="flex overflow-x-auto gap-4 pb-3 scrollbar-hide snap-x">
-                        {categoryResources.map((resource) => (
-                          <div key={resource.id} className="w-[250px] shrink-0 snap-start">
-                            <ResourceCard
-                              resource={resource}
-                              isDownloading={downloadingIds.has(resource.id)}
-                              isSaved={savedResources.has(resource.id)}
-                              onDownload={(e) => handleDownload(e, resource.id)}
-                              onSave={(e) => handleSave(e, resource.id)}
-                              onPreview={(e) => handlePreview(e, resource.id)}
-                            />
-                          </div>
-                        ))}
+                      <div className="w-full overflow-x-auto scrollbar-hide">
+                        <div className="flex gap-3 pb-3 min-w-max">
+                          {categoryResources.map((resource) => (
+                            <div key={resource.id} className="w-[165px] sm:w-[250px] shrink-0">
+                              <ResourceCard
+                                resource={resource}
+                                isDownloading={downloadingIds.has(resource.id)}
+                                isSaved={savedResources.has(resource.id)}
+                                onDownload={(e) => handleDownload(e, resource.id)}
+                                onSave={(e) => handleSave(e, resource.id)}
+                                onPreview={(e) => handlePreview(e, resource.id)}
+                              />
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   );

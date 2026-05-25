@@ -302,7 +302,7 @@ def _call_groq(prompt: str) -> str:
 
 PROVIDERS = [
     ("claude", _call_claude),
-    ("gemini-1.5-flash", lambda p: _call_gemini(p, "gemini-1.5-flash")),
+    ("gemini-2.5-flash", lambda p: _call_gemini(p, "gemini-2.5-flash")),
     ("gemini-pro", lambda p: _call_gemini(p, "gemini-pro")),
     ("groq", _call_groq),
 ]

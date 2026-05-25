@@ -10,8 +10,8 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
 // Composants migrés depuis components/study/
-import { StudySessionCard } from "@/components/study/StudySessionCard";
-import { StudyToolsModal } from "@/components/study/StudyToolsModal";
+import { StudySessionCard } from "@/sphera/components/study/StudySessionCard";
+import { StudyToolsModal } from "@/sphera/components/study/StudyToolsModal";
 
 // Nouveaux composants Sphera V2
 import { AnnaleUploadModal } from "../components/AnnaleUploadModal";

@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { getTypeLabel, getSubjectLabel } from "@/lib/resourceMetadata";
 import { formatFileSize, cn } from "@/lib/utils";
-import { StudyToolsModal } from "@/components/study/StudyToolsModal";
+import { StudyToolsModal } from "@/sphera/components/study/StudyToolsModal";
 
 interface ResourceCardProps {
   resource: any;
