@@ -285,7 +285,7 @@ def clean_json(raw: str) -> dict:
 # Providers IA
 # ---------------------------------------------------------------------------
 
-def _call_claude(prompt: str) -> str:
+def _call_claude(prompt: str, max_tokens: int = 3000) -> str:
     api_key = getattr(settings, "ANTHROPIC_API_KEY", None)
     if not api_key:
         raise ValueError("ANTHROPIC_API_KEY non configurée")
@@ -293,13 +293,13 @@ def _call_claude(prompt: str) -> str:
     client = anthropic.Anthropic(api_key=api_key)
     response = client.messages.create(
         model="claude-haiku-4-5",
-        max_tokens=3000,
+        max_tokens=max_tokens,
         messages=[{"role": "user", "content": prompt}],
     )
     return response.content[0].text
 
 
-def _call_gemini(prompt: str, model_name: str) -> str:
+def _call_gemini(prompt: str, model_name: str = "gemini-2.5-flash") -> str:
     api_key = getattr(settings, "GEMINI_API_KEY", None)
     if not api_key:
         raise ValueError("GEMINI_API_KEY non configurée")
@@ -310,7 +310,7 @@ def _call_gemini(prompt: str, model_name: str) -> str:
     return response.text
 
 
-def _call_groq(prompt: str) -> str:
+def _call_groq(prompt: str, max_tokens: int = 3000) -> str:
     api_key = getattr(settings, "GROQ_API_KEY", None)
     if not api_key:
         raise ValueError("GROQ_API_KEY non configurée")
@@ -318,24 +318,35 @@ def _call_groq(prompt: str) -> str:
     client = Groq(api_key=api_key)
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
-        max_tokens=3000,
+        max_tokens=max_tokens,
         messages=[{"role": "user", "content": prompt}],
     )
     return response.choices[0].message.content
 
 
+# Providers par défaut (V1 — fiches/quiz/flashcards)
 PROVIDERS = [
-    ("claude", _call_claude),
+    ("claude", lambda p: _call_claude(p, max_tokens=3000)),
     ("gemini-2.5-flash", lambda p: _call_gemini(p, "gemini-2.5-flash")),
     ("gemini-pro", lambda p: _call_gemini(p, "gemini-pro")),
-    ("groq", _call_groq),
+    ("groq", lambda p: _call_groq(p, max_tokens=3000)),
+]
+
+# Providers pour les annales (JSON beaucoup plus volumineux)
+PROVIDERS_ANNALE = [
+    ("claude", lambda p: _call_claude(p, max_tokens=8000)),
+    ("gemini-2.5-flash", lambda p: _call_gemini(p, "gemini-2.5-flash")),
+    ("gemini-pro", lambda p: _call_gemini(p, "gemini-pro")),
+    ("groq", lambda p: _call_groq(p, max_tokens=6000)),
 ]
 
 
-def _call_with_fallback(prompt: str) -> str:
+def _call_with_fallback(prompt: str, providers=None) -> str:
     """Appelle les providers dans l'ordre, retourne le texte brut du premier qui réussit."""
+    if providers is None:
+        providers = PROVIDERS
     last_error = None
-    for name, fn in PROVIDERS:
+    for name, fn in providers:
         try:
             logger.info(f"[Sphera AI] Tentative avec : {name}")
             result = fn(prompt)
@@ -347,17 +358,61 @@ def _call_with_fallback(prompt: str) -> str:
     raise Exception(f"Tous les providers IA ont échoué. Dernière erreur : {last_error}")
 
 
+def _repair_truncated_json(raw: str) -> str:
+    """
+    Tente de réparer un JSON tronqué en complétant les accolades/crochets manquants.
+    Stratégie : trouver le dernier objet complet avant la troncature.
+    """
+    # Trouver le dernier } ou ] complet
+    # On cherche la dernière position valide en remontant
+    for end in range(len(raw), 0, -1):
+        candidate = raw[:end].rstrip()
+        if candidate and candidate[-1] in ('}', ']', '"'):
+            # Compter les ouvertures/fermetures
+            opens = candidate.count('{') - candidate.count('}')
+            opens_arr = candidate.count('[') - candidate.count(']')
+            if opens >= 0 and opens_arr >= 0:
+                # Fermer proprement
+                repaired = candidate
+                # Fermer les tableaux/objets ouverts
+                repaired += ']' * opens_arr + '}' * opens
+                try:
+                    json.loads(repaired)
+                    return repaired
+                except json.JSONDecodeError:
+                    pass
+    return raw
+
+
 def _parse_json_with_fallback(raw: str) -> dict:
-    """Parse JSON, avec fallback pour trouver le bloc entre { }."""
+    """Parse JSON avec plusieurs stratégies de récupération."""
+    # Tentative 1 : parsing direct
     try:
         return clean_json(raw)
     except json.JSONDecodeError:
-        logger.warning("[Sphera AI] JSON mal formé, tentative de re-parsing...")
-        start = raw.find("{")
-        end = raw.rfind("}") + 1
-        if start != -1 and end > start:
+        pass
+
+    logger.warning("[Sphera AI] JSON mal formé, tentative de re-parsing...")
+
+    # Tentative 2 : extraire le bloc { ... } principal
+    start = raw.find("{")
+    end = raw.rfind("}") + 1
+    if start != -1 and end > start:
+        try:
             return json.loads(raw[start:end])
-        raise
+        except json.JSONDecodeError:
+            pass
+
+    # Tentative 3 : réparer le JSON tronqué
+    logger.warning("[Sphera AI] Tentative de réparation du JSON tronqué...")
+    if start != -1:
+        try:
+            repaired = _repair_truncated_json(raw[start:])
+            return json.loads(repaired)
+        except json.JSONDecodeError as e:
+            logger.error(f"[Sphera AI] Impossible de réparer le JSON : {e}")
+
+    raise json.JSONDecodeError("JSON irrécupérable", raw, 0)
 
 
 # ---------------------------------------------------------------------------
@@ -429,5 +484,5 @@ def generate_annale(annale_text: str, mode: str, cours_text: str = None) -> dict
             text=annale_text,
         )
 
-    raw = _call_with_fallback(prompt)
+    raw = _call_with_fallback(prompt, providers=PROVIDERS_ANNALE)
     return _parse_json_with_fallback(raw)
