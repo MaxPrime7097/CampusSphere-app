@@ -19,7 +19,7 @@ services:
     startCommand: |
       daphne -b 0.0.0.0 -p 10000 --access-log - --proxy-headers -t 120 campus_sphere.asgi:application
       
-    # Environment variables
+    # Environment variable
     envVars:
       - key: PORT
         value: "10000"
