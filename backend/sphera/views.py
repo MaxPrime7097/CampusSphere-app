@@ -343,15 +343,21 @@ class AddToolToSessionView(APIView):
             return Response({"error": "Aucun texte extractible disponible dans cette session pour générer de nouveaux outils."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            new_content = generate_with_fallback(text, tool_type)
+            generated_tool_content = generate_with_fallback(text, tool_type)
         except Exception as e:
             logger.error(f"[Sphera] Génération additionnelle IA échouée : {e}")
             return Response({"error": f"La génération IA a échoué : {e}"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
-        # Update session
-        session.content[tool_type] = new_content
+        # Update session (re-assignment required for Django JSONField modification detection)
+        new_content_dict = dict(session.content)
+        new_content_dict[tool_type] = generated_tool_content
+        session.content = new_content_dict
+        
         if tool_type not in session.tool_types:
-            session.tool_types.append(tool_type)
+            new_types = list(session.tool_types)
+            new_types.append(tool_type)
+            session.tool_types = new_types
+            
         session.save()
 
         return Response({"success": True, "data": StudySessionSerializer(session).data}, status=status.HTTP_200_OK)
