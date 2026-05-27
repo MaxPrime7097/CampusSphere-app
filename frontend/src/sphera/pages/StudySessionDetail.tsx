@@ -24,7 +24,7 @@ import { QAChat } from "../components/QAChat";
 
 // Sphera service
 import { getStudySession, shareStudySession, addToolToSession } from "../services/spheraService";
-import type { StudySession } from "../types/sphera.types";
+import type { StudySession, ToolType } from "../types/sphera.types";
 
 const TAB_STYLE =
   "rounded-none border-b-2 border-transparent data-[state=active]:border-[#ff9800] data-[state=active]:bg-transparent data-[state=active]:shadow-none py-3 px-1 data-[state=active]:text-[#ff9800] text-muted-foreground transition-colors";
@@ -196,7 +196,7 @@ export const StudySessionDetail: React.FC = () => {
       {/* ─── Tabs ─── */}
       <Tabs defaultValue={defaultTab} className="w-full">
         <TabsList className="w-full justify-start overflow-x-auto bg-transparent border-b rounded-none h-auto p-0 space-x-6">
-          {["fiche", "quiz", "flashcards"].map((t) => {
+          {(["fiche", "quiz", "flashcards"] as ToolType[]).map((t) => {
             const isGenerated = toolTypes.includes(t);
             return (
               <TabsTrigger 
@@ -221,7 +221,7 @@ export const StudySessionDetail: React.FC = () => {
         </TabsList>
 
         <div className="mt-8">
-          {["fiche", "quiz", "flashcards"].map((t) => {
+          {(["fiche", "quiz", "flashcards"] as ToolType[]).map((t) => {
             const isGenerated = toolTypes.includes(t);
             return (
               <TabsContent key={t} value={t} className="mt-0 focus-visible:outline-none focus-visible:ring-0">

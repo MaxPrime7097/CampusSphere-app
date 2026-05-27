@@ -97,81 +97,81 @@ export function Landing() {
           <div className="absolute top-20 left-10 w-72 h-72 campus-gradient opacity-20 blur-3xl rounded-full"></div>
           <div className="absolute bottom-20 right-10 w-96 h-96 campus-gradient opacity-20 blur-3xl rounded-full"></div>
         </div>
-  
+
         <div className="container max-w-9xl justify-center">
-        {/* Particules de fond */}
-        <div className="particles absolute inset-0 -z-10" id="particles"></div>
-        <div className="lg:grid grid-cols-2 gap-12 items-center">
-          {/* Contenu texte */}
-          <div className="space-y-4 md:space-y-8">
-            {/* Logo et titre */}
-            <div className="campus-animate-fade-in text-center">
-              <h1
-                className="text-4xl md:text-5xl text-foreground mb-6 font-automata text-spacing-1"
-            >
-              Le réseau social qui connecte les étudiants
-              </h1>
-              <div className="flex gap-6 mt-4 justify-center">
-              <span
-                className="text-xl font-semibold text-muted-foreground uppercase tracking-wider font-automata text-spacing-1"
-              >
-                Connect.
-              </span>
-              <span
-                className="text-xl font-semibold text-muted-foreground uppercase tracking-wider font-automata text-spacing-1"
-              >
-                Share.
-              </span>
-              <span
-                className="text-xl font-semibold text-muted-foreground uppercase tracking-wider font-automata text-spacing-1"
-              >
-                Grow.
-              </span>
-            </div>
-            </div>
+          {/* Particules de fond */}
+          <div className="particles absolute inset-0 -z-10" id="particles"></div>
+          <div className="lg:grid grid-cols-2 gap-12 items-center">
+            {/* Contenu texte */}
+            <div className="space-y-4 md:space-y-8">
+              {/* Logo et titre */}
+              <div className="campus-animate-fade-in text-center">
+                <h1
+                  className="text-4xl md:text-5xl text-foreground mb-6 font-automata text-spacing-1"
+                >
+                  Le réseau social qui connecte les étudiants
+                </h1>
+                <div className="flex gap-6 mt-4 justify-center">
+                  <span
+                    className="text-xl font-semibold text-muted-foreground uppercase tracking-wider font-automata text-spacing-1"
+                  >
+                    Connect.
+                  </span>
+                  <span
+                    className="text-xl font-semibold text-muted-foreground uppercase tracking-wider font-automata text-spacing-1"
+                  >
+                    Share.
+                  </span>
+                  <span
+                    className="text-xl font-semibold text-muted-foreground uppercase tracking-wider font-automata text-spacing-1"
+                  >
+                    Grow.
+                  </span>
+                </div>
+              </div>
 
-            {/* Message principal dynamique */}
-            <div className="campus-animate-slide-up animation-delay-2s text-center">
-              <h2 className="text-3xl font-nunito md:text-4xl font-bold text-foreground mb-4 leading-tight">
-                Rejoins la sphère,<br />
-                <span className="text-primary">partage, collabore</span><br />
-                et grandis avec tes camarades
-              </h2>
-            </div>
+              {/* Message principal dynamique */}
+              <div className="campus-animate-slide-up animation-delay-2s text-center">
+                <h2 className="text-3xl font-nunito md:text-4xl font-bold text-foreground mb-4 leading-tight">
+                  Rejoins la sphère,<br />
+                  <span className="text-primary">partage, collabore</span><br />
+                  et grandis avec tes camarades
+                </h2>
+              </div>
 
-            {/* Boutons CTA avec animation */}
-            <div className="campus-animate-slide-up space-y-4 animation-delay-4s">
-              <div className="text-center">
-            <Button
-              size="lg"
-              className="px-6 py-6 md:px-12 md:py-8 campus-gradient text-white justify-center hover:opacity-90 text-xl rounded-full transition-all duration-300 hover:scale-105 hover:shadow-2xl gap-3 group relative overflow-hidden animate-pulse hover:animate-none"
-              onClick={() => navigate('/register')}
-            >
-                <div className="absolute text-center inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                <UserPlus className="hidden md:block h-6 w-6 group-hover:rotate-12 transition-transform duration-300" />
-                <span className="relative z-10 font-poppins">
-                  Rejoins CampusSphere
-                </span>
-            </Button>
-            </div>
+              {/* Boutons CTA avec animation */}
+              <div className="campus-animate-slide-up space-y-4 animation-delay-4s">
+                <div className="text-center">
+                  <Button
+                    size="lg"
+                    className="px-6 py-6 md:px-12 md:py-8 campus-gradient text-white justify-center hover:opacity-90 text-xl rounded-full transition-all duration-300 hover:scale-105 hover:shadow-2xl gap-3 group relative overflow-hidden animate-pulse hover:animate-none"
+                    onClick={() => navigate('/register')}
+                  >
+                    <div className="absolute text-center inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                    <UserPlus className="hidden md:block h-6 w-6 group-hover:rotate-12 transition-transform duration-300" />
+                    <span className="relative z-10 font-poppins">
+                      Rejoins CampusSphere
+                    </span>
+                  </Button>
+                </div>
 
-            <div className="flex flex-col items-center justify-center text-center pt-2">
-              <h1 className="text-3xl font-bold font-raleway text-primary mb-4">🚀 CampusSphere est là !</h1>
-            </div>
-              
-              <div className="text-center">
-            <Button
-              variant="ghost"
-              className="font-poppins text-muted-foreground hover:text-primary transition-colors"
-              onClick={() => navigate('/login')}
-            >
-                  Déjà un compte ? Se connecter
-            </Button>
+                <div className="flex flex-col items-center justify-center text-center pt-2">
+                  <h1 className="text-3xl font-bold font-raleway text-primary mb-4">🚀 CampusSphere est là !</h1>
+                </div>
+
+                <div className="text-center">
+                  <Button
+                    variant="ghost"
+                    className="font-poppins text-muted-foreground hover:text-primary transition-colors"
+                    onClick={() => navigate('/login')}
+                  >
+                    Déjà un compte ? Se connecter
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
-          {/* Image de campus */}
-          <div className="relative hidden lg:block campus-animate-slide-up pb-5">
+            {/* Image de campus */}
+            <div className="relative hidden lg:block campus-animate-slide-up pb-5">
               <div className="absolute inset-0 campus-gradient opacity-30 blur-3xl"></div>
               <div className="relative campus-glass rounded-3xl p-8 campus-glow">
                 <img
@@ -185,10 +185,10 @@ export function Landing() {
                 <div className="absolute bottom-4 left-4 text-2xl animate-bounce animation-delay-5s">💡</div>
                 <div className="absolute top-1/2 right-4 text-2xl animate-bounce animation-delay-1s">🎯</div>
               </div>
+            </div>
           </div>
         </div>
-        </div>
-      </section>      
+      </section>
 
       {/* Fonctionnalités MVP Section */}
       <section className="mt-0 py-10 md:py-20 px-0 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/5">
@@ -206,7 +206,7 @@ export function Landing() {
             {/* Sphères Collaboratives */}
             <div className="space-y-6">
               <div className="flex items-center gap-4">
-                  <img src="/icons/equipe.png" alt="Sphères Collaboratives" className="w-16 h-16" />
+                <img src="/icons/equipe.png" alt="Sphères Collaboratives" className="w-16 h-16" />
                 <div>
                   <h3 className="text-2xl font-poppins font-semibold">Sphères Collaboratives</h3>
                   <p className="text-muted-foreground font-nunito font-semibold">Crée et rejoins des espaces de travail thématiques</p>
@@ -227,18 +227,18 @@ export function Landing() {
                 </div>
               </div>
             </div>
-            
+
             {/* Illustration Sphères */}
             <div className="relative items-center justify-center">
-              <ScrollTriggered cardData={sectionOneCard}/>
+              <ScrollTriggered cardData={sectionOneCard} />
             </div>
           </div>
 
           {/* Ressources Section */}
           <div className="flex grid lg:grid-cols-2 gap-12 items-center mb-20">
-          {/* Illustration Ressources */}
+            {/* Illustration Ressources */}
             <div className="order-2 lg:relative items-center justify-center">
-              <ScrollTriggered cardData={sectionTwoCard}/>
+              <ScrollTriggered cardData={sectionTwoCard} />
             </div>
 
             {/* Partage de ressources */}
@@ -277,7 +277,7 @@ export function Landing() {
               </div>
               <div className="space-y-4 font-nunito text-lg">
                 <div className="flex items-start gap-3">
-                  <p><strong>Le concept : “Impact Score”</strong> : Un système de notation unique! Chaque post a un bouton <Zap className="inline-block w-4 h-4 text-primary fill-primary"/>, que les utilisateurs peuvent évaluer.  Ce score mesure la valeur perçue d’une publication : “À quel point ce post m’a été utile, m’a inspiré, m’a aidé, ou m’a marqué ?”. Plus un post a d'impact, plus il remonte dans le feed</p>
+                  <p><strong>Le concept : “Impact Score”</strong> : Un système de notation unique! Chaque post a un bouton <Zap className="inline-block w-4 h-4 text-primary fill-primary" />, que les utilisateurs peuvent évaluer.  Ce score mesure la valeur perçue d’une publication : “À quel point ce post m’a été utile, m’a inspiré, m’a aidé, ou m’a marqué ?”. Plus un post a d'impact, plus il remonte dans le feed</p>
                 </div>
                 <div className="flex items-start gap-3">
                   <p><strong>Feed personnalisé</strong> : <br />Ton fil d'actualité s'adapte à tes centres d'intérêt, tes sphères et les contenus avec lesquels tu interagis, fini le bruit, place au contenu qui compte vraiment</p>
@@ -287,9 +287,9 @@ export function Landing() {
 
             {/* Illustration Feed */}
             <div className="relative items-center justify-center">
-              <ScrollTriggered cardData={sectionThreeCard}/>
+              <ScrollTriggered cardData={sectionThreeCard} />
             </div>
-          </div>           
+          </div>
 
           {/* Fonctionnalités à venir */}
           <div className="text-center">

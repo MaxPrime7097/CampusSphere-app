@@ -2,137 +2,141 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { SpheraHeader } from '../components/layout/SpheraHeader'
 import { SpheraFooter } from '../components/layout/SpheraFooter'
-import { Check, X, Sparkles } from 'lucide-react'
+import { Sparkles, Check, BrainCircuit, FileText, Layers, MessageSquare, Zap, Bell } from 'lucide-react'
 
-const pricingPlans = [
-  {
-    name: "Gratuit",
-    price: "0€",
-    period: "pour toujours",
-    description: "Idéal pour tester l'assistant et réviser occasionnellement.",
-    features: [
-      { name: "5 générations par mois", included: true },
-      { name: "Fiches de révision simples", included: true },
-      { name: "Quiz (jusqu'à 10 questions)", included: true },
-      { name: "Q&A basique avec l'IA", included: true },
-      { name: "Support pour les Annales complexes", included: false },
-      { name: "Croisement de plusieurs cours", included: false },
-      { name: "Partage par lien public", included: false },
-    ],
-    buttonText: "Commencer gratuitement",
-    buttonLink: "/register",
-    popular: false
-  },
-  {
-    name: "Premium",
-    price: "4,99€",
-    period: "par mois",
-    description: "Pour les étudiants qui veulent exceller et gagner du temps.",
-    features: [
-      { name: "Générations illimitées", included: true },
-      { name: "Fiches de révision structurées avancées", included: true },
-      { name: "Quiz illimités et Flashcards", included: true },
-      { name: "Q&A avancé (explications détaillées)", included: true },
-      { name: "Support pour les Annales complexes", included: true },
-      { name: "Croisement de plusieurs cours", included: true },
-      { name: "Partage par lien public", included: true },
-    ],
-    buttonText: "Devenir Premium",
-    buttonLink: "/register",
-    popular: true
-  },
-  {
-    name: "Campus",
-    price: "Sur devis",
-    period: "facturation annuelle",
-    description: "Pour les BDE, associations et établissements scolaires.",
-    features: [
-      { name: "Toutes les fonctionnalités Premium", included: true },
-      { name: "Sphères académiques illimitées", included: true },
-      { name: "Statistiques d'apprentissage", included: true },
-      { name: "Marque blanche (logo de l'école)", included: true },
-      { name: "Gestionnaire de comptes", included: true },
-      { name: "Accès API Sphera", included: true },
-      { name: "Support prioritaire 24/7", included: true },
-    ],
-    buttonText: "Nous contacter",
-    buttonLink: "mailto:contact@campussphere.app",
-    popular: false
-  }
-];
+const features = [
+  { icon: FileText, label: "Fiches de révision", desc: "Résumé structuré + points clés + définitions générés automatiquement." },
+  { icon: BrainCircuit, label: "Quiz interactif", desc: "20 QCM avec explications pour te tester avant l'examen." },
+  { icon: Layers, label: "Flashcards", desc: "Cartes recto/verso pour mémoriser en mode actif." },
+  { icon: MessageSquare, label: "Q&A avec l'IA", desc: "Pose n'importe quelle question sur ton cours, Sphera répond depuis le document." },
+  { icon: Zap, label: "Correction d'annales", desc: "Upload ton épreuve, Sphera la corrige section par section avec explications." },
+  { icon: Sparkles, label: "OCR pour scans", desc: "Sphera lit même les PDFs scannés et photos de cours." },
+]
 
 export default function Pricing() {
   return (
     <div className="flex flex-col min-h-screen bg-sphera-bg font-sans selection:bg-sphera-green/30">
       <SpheraHeader />
-      
+
       <main className="flex-1 pt-32 pb-24 relative overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-sphera-green/5 blur-[120px] rounded-full pointer-events-none" />
-        
-        <div className="container mx-auto px-4 max-w-7xl relative z-10">
+        {/* Background glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[600px] bg-sphera-green/5 blur-[150px] rounded-full pointer-events-none" />
+
+        <div className="container mx-auto px-4 max-w-5xl relative z-10">
+
+          {/* Hero */}
           <div className="text-center mb-16">
-            <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-6">
-              Investis dans ta réussite
+            <div className="inline-flex items-center gap-2 bg-sphera-green/10 border border-sphera-green/20 text-sphera-green text-sm font-semibold px-4 py-2 rounded-full mb-6">
+              <Sparkles className="w-4 h-4" />
+              Bêta ouverte — accès 100% gratuit
+            </div>
+            <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-6 leading-tight">
+              Gratuit pendant<br />
+              <span className="text-sphera-green">toute la bêta</span>
             </h1>
-            <p className="text-xl text-sphera-text-muted max-w-2xl mx-auto">
-              Des tarifs simples et transparents. Commence gratuitement, passe à la vitesse supérieure quand tu en as besoin.
+            <p className="text-xl text-sphera-text-muted max-w-2xl mx-auto leading-relaxed">
+              Sphera est en bêta ouverte. Toutes les fonctionnalités sont disponibles sans limite, sans carte bancaire, sans conditions.
+              Le premium viendra plus tard — et tu seras le premier prévenu.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto items-start">
-            {pricingPlans.map((plan, index) => (
-              <div 
-                key={index} 
-                className={`relative flex flex-col bg-sphera-surface rounded-2xl border ${plan.popular ? 'border-sphera-green shadow-[0_0_30px_rgba(34,197,94,0.1)]' : 'border-sphera-border'} p-8 transition-transform hover:-translate-y-1`}
-              >
-                {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-sphera-green text-black text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1">
-                    <Sparkles className="w-3 h-3" />
-                    Le plus choisi
-                  </div>
-                )}
-                
-                <div className="mb-8">
-                  <h3 className="text-xl font-bold text-white mb-2">{plan.name}</h3>
-                  <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-4xl font-black text-white">{plan.price}</span>
-                    <span className="text-sphera-text-muted text-sm">{plan.period}</span>
-                  </div>
-                  <p className="text-sm text-sphera-text-muted">{plan.description}</p>
-                </div>
-
-                <ul className="flex-1 space-y-4 mb-8">
-                  {plan.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-start gap-3">
-                      {feature.included ? (
-                        <div className="w-5 h-5 rounded-full bg-sphera-green/10 flex items-center justify-center shrink-0 mt-0.5">
-                          <Check className="w-3 h-3 text-sphera-green" />
-                        </div>
-                      ) : (
-                        <div className="w-5 h-5 rounded-full bg-red-500/10 flex items-center justify-center shrink-0 mt-0.5">
-                          <X className="w-3 h-3 text-red-500/70" />
-                        </div>
-                      )}
-                      <span className={`text-sm ${feature.included ? 'text-white' : 'text-sphera-text-muted'}`}>
-                        {feature.name}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-
-                <Link
-                  to={plan.buttonLink}
-                  className={`w-full py-3 px-4 rounded-xl font-semibold text-center transition-all ${
-                    plan.popular 
-                      ? 'bg-sphera-green text-black hover:bg-green-400' 
-                      : 'bg-sphera-surface-2 text-white border border-sphera-border hover:bg-sphera-border'
-                  }`}
-                >
-                  {plan.buttonText}
-                </Link>
+          {/* Big free card */}
+          <div className="max-w-lg mx-auto mb-20">
+            <div className="relative bg-sphera-surface rounded-3xl border border-sphera-green shadow-[0_0_60px_rgba(34,197,94,0.08)] p-10 text-center">
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-sphera-green text-black text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider">
+                Actuellement disponible
               </div>
-            ))}
+
+              <div className="mb-6">
+                <span className="text-7xl font-black text-white">0 XAF</span>
+                <span className="block text-sphera-text-muted mt-1 text-sm">pendant toute la durée de la bêta</span>
+              </div>
+
+              <ul className="text-left space-y-3 mb-8">
+                {[
+                  "Générations illimitées",
+                  "Tous les outils — Fiche, Quiz, Flashcards, Annales",
+                  "Q&A illimité avec l'IA sur tes cours",
+                  "Partage de sessions",
+                  "Support pour PDFs scannés (OCR)",
+                  "Aucune carte bancaire requise",
+                ].map((f, i) => (
+                  <li key={i} className="flex items-center gap-3">
+                    <div className="w-5 h-5 rounded-full bg-sphera-green/15 flex items-center justify-center shrink-0">
+                      <Check className="w-3 h-3 text-sphera-green" />
+                    </div>
+                    <span className="text-white text-sm">{f}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <Link
+                to="/register"
+                className="block w-full py-3.5 rounded-xl font-bold text-black bg-sphera-green hover:bg-green-400 transition-all text-sm shadow-[0_0_20px_rgba(34,197,94,0.25)]"
+              >
+                Commencer gratuitement →
+              </Link>
+            </div>
           </div>
+
+          {/* Features grid */}
+          <div className="mb-20">
+            <h2 className="text-2xl font-display font-bold text-white text-center mb-10">
+              Tout ce qui est inclus gratuitement
+            </h2>
+            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {features.map((f, i) => {
+                const Icon = f.icon
+                return (
+                  <div key={i} className="bg-sphera-surface rounded-2xl border border-sphera-border p-6 hover:border-sphera-green/30 transition-colors">
+                    <div className="w-10 h-10 rounded-xl bg-sphera-green/10 flex items-center justify-center mb-4">
+                      <Icon className="w-5 h-5 text-sphera-green" />
+                    </div>
+                    <h3 className="text-white font-semibold text-sm mb-1">{f.label}</h3>
+                    <p className="text-sphera-text-muted text-xs leading-relaxed">{f.desc}</p>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Tally waitlist embed */}
+          <div className="bg-sphera-surface rounded-3xl border border-sphera-border p-10 text-center">
+            <div className="w-12 h-12 rounded-2xl bg-sphera-green/10 flex items-center justify-center mx-auto mb-5">
+              <Bell className="w-6 h-6 text-sphera-green" />
+            </div>
+            <h2 className="text-2xl font-display font-bold text-white mb-3">
+              Sois notifié à l'arrivée du Premium
+            </h2>
+            <p className="text-sphera-text-muted text-sm max-w-md mx-auto mb-8 leading-relaxed">
+              Laisse ton email. Quand le plan premium sortira, tu seras dans les premiers — avec une offre de lancement réservée aux bêta-testeurs.
+            </p>
+
+            {/* 
+              ════════════════════════════════════════
+              TALLY FORM — Remplace ce bloc par ton
+              embed Tally une fois le formulaire créé.
+              
+              Exemple d'intégration :
+              <iframe
+                data-tally-src="https://tally.so/embed/XXXX?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1"
+                loading="lazy"
+                width="100%"
+                height="300"
+                frameBorder="0"
+                title="Sphera Premium Waitlist"
+              />
+              ════════════════════════════════════════
+            */}
+            <div className="w-full min-h-[140px] rounded-xl border border-dashed border-sphera-border flex items-center justify-center text-sphera-text-muted text-sm">
+              📋 Formulaire Tally à insérer ici
+            </div>
+
+            <p className="text-xs text-sphera-text-muted/50 mt-6">
+              Aucun spam. Désabonnement en un clic.
+            </p>
+          </div>
+
         </div>
       </main>
 

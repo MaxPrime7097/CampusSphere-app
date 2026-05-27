@@ -5,19 +5,19 @@ import { ChevronDown } from 'lucide-react';
 const faqs = [
   {
     question: "Qu'est-ce que Sphera ?",
-    answer: "Sphera est un assistant d'apprentissage intelligent basé sur l'intelligence artificielle. Il analyse tes cours et documents pour générer automatiquement des fiches de révision structurées, des quiz interactifs et des flashcards, le tout conçu pour maximiser ta rétention d'information."
+    answer: "Sphera est une assistante d'apprentissage intelligente basé sur l'intelligence artificielle. Elle analyse tes cours et documents pour générer automatiquement des fiches de révision structurées, des quiz interactifs et des flashcards, le tout conçu pour maximiser ta rétention d'information."
   },
   {
     question: "Comment fonctionne la génération de fiches ?",
-    answer: "Il suffit de téléverser ton document (PDF, DOCX) ou de coller ton texte. Sphera va l'analyser, extraire les concepts clés, formater les définitions et te proposer une fiche de révision claire et prête à être étudiée, ainsi qu'un quiz sur mesure pour te tester."
+    answer: "Il suffit de téléverser ton document (PDF, DOCX) ou de coller ton texte. Sphera va l'analyser, extraire les concepts clés, formater les définitions et te proposer une fiche de révision claire et prête à être étudiée, ainsi qu'un quiz sur mesure pour te tester accompagné de flashcards."
   },
   {
     question: "Est-ce que je peux partager mes fiches de révision ?",
-    answer: "Oui, absolument ! Sphera te permet de créer des espaces collaboratifs avec tes camarades de classe. Tu peux également générer un lien public pour partager une session de révision spécifique avec n'importe qui."
+    answer: "Oui, absolument ! Sphera te permet de créer des espaces de revision avec tout les outils necessaires. Tu peux également générer un lien public pour partager une session de révision spécifique avec n'importe qui."
   },
   {
     question: "Combien coûte l'utilisation de Sphera ?",
-    answer: "Sphera propose une version gratuite qui te permet d'explorer les fonctionnalités de base. Pour ceux qui veulent aller plus loin (génération illimitée, intégration avancée d'annales, modèles d'IA plus puissants), nous proposons un plan Premium très accessible. Plus d'informations sur notre page Tarifs."
+    answer: "Sphera propose une version gratuite qui te permet d'explorer les fonctionnalités de base. Pour ceux qui veulent aller plus loin (génération illimitée, intégration avancée d'annales, modèles d'IA plus puissants), nous proposerons bientôt un plan Premium très accessible. Plus d'informations sur notre page Tarifs."
   },
   {
     question: "Mes documents sont-ils en sécurité ?",

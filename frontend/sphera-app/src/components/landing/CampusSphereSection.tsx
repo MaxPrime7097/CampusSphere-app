@@ -43,15 +43,30 @@ export function CampusSphereSection() {
             <div className="relative min-h-[250px] md:min-h-full bg-sphera-bg border-l border-sphera-border/50 flex flex-col items-center justify-center p-8 overflow-hidden">
               <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none"></div>
 
-              {/* Fake UI cards drifting */}
-              <div className="relative z-10 w-full max-w-[200px] aspect-[4/5] bg-sphera-surface rounded-xl border border-sphera-border shadow-2xl -rotate-6 translate-x-4 flex flex-col p-4">
-                <div className="w-8 h-8 rounded-full bg-cs-orange/20 mb-4" />
-                <div className="h-3 bg-sphera-text-muted/20 rounded-full w-3/4 mb-2" />
-                <div className="h-2 bg-sphera-text-muted/10 rounded-full w-full mb-4" />
-                <div className="mt-auto h-8 bg-sphera-surface-2 rounded-md border border-sphera-border" />
+              {/* CampusSphere Logo Card */}
+              <div className="relative z-10 w-full max-w-[220px] aspect-square bg-sphera-surface/80 backdrop-blur-md rounded-2xl border border-cs-orange/30 shadow-[0_0_50px_rgba(255,152,0,0.15)] flex flex-col items-center justify-center p-6 group hover:border-cs-orange/60 transition-colors duration-500">
+                <div className="absolute inset-0 bg-cs-orange/5 rounded-2xl animate-pulse" style={{ animationDuration: '3s' }} />
+                
+                <img 
+                  src="https://campussphere.app/CS.svg" 
+                  alt="CampusSphere Logo" 
+                  className="w-24 h-24 object-contain drop-shadow-[0_0_15px_rgba(255,152,0,0.5)] group-hover:scale-110 transition-transform duration-500 z-10"
+                  onError={(e) => {
+                    // Fallback if the logo fails to load remotely
+                    (e.target as HTMLImageElement).style.display = 'none';
+                    (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                  }}
+                />
+                <div className="hidden z-10 w-24 h-24 rounded-full bg-cs-orange/20 border border-cs-orange/50 flex items-center justify-center">
+                  <GraduationCap className="w-10 h-10 text-cs-orange" />
+                </div>
+                
+                <h3 className="font-display font-bold text-white mt-6 text-xl tracking-tight z-10">CampusSphere</h3>
               </div>
 
-              <div className="absolute z-0 w-full max-w-[200px] aspect-[4/5] bg-sphera-surface/50 backdrop-blur-sm rounded-xl border border-sphera-border shadow-xl rotate-12 -translate-x-12 translate-y-8" />
+              {/* Decorative background elements */}
+              <div className="absolute z-0 w-32 h-32 rounded-full border border-cs-orange/20 -translate-x-20 translate-y-20 animate-[spin_10s_linear_infinite]" />
+              <div className="absolute z-0 w-48 h-48 rounded-full border border-dashed border-cs-orange/20 translate-x-20 -translate-y-20 animate-[spin_15s_linear_infinite_reverse]" />
             </div>
 
           </div>

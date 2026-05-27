@@ -21,8 +21,8 @@ export default function Dashboard() {
 
   React.useEffect(() => {
     Promise.all([
-      getSessions().then(res => setSessions(res.data || res)).catch(err => console.error("Erreur chargement sessions:", err)),
-      getAnnales().then(res => setAnnales(res.data || res)).catch(err => console.error("Erreur chargement annales:", err))
+      getSessions().then(res => { const d = (res as any)?.data; setSessions(Array.isArray(d) ? d : []) }).catch(err => console.error("Erreur chargement sessions:", err)),
+      getAnnales().then(res => { const d = (res as any)?.data; setAnnales(Array.isArray(d) ? d : []) }).catch(err => console.error("Erreur chargement annales:", err))
     ]).finally(() => setLoadingSessions(false))
   }, [])
 

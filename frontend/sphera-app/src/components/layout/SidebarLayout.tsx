@@ -35,7 +35,7 @@ export function SidebarLayout() {
         
         {/* Logo */}
         <div className="h-20 flex items-center px-6 border-b border-sphera-border">
-          <Link to="/" className="flex items-center gap-3">
+          <Link to="/dashboard" className="flex items-center gap-3">
             <img src="/sphera-logo-dark.png" alt="Sphera logo" className="h-8 w-auto" />
             <div className="flex flex-col">
               <span className="font-display font-bold text-xl text-white tracking-tight leading-none">Sphera</span>

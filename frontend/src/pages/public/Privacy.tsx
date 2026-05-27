@@ -6,7 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
-import { PoliciesButton }  from "@/components/layout/PoliciesButton"
+import { PoliciesButton } from "@/components/layout/PoliciesButton"
 
 export function Privacy(): JSX.Element {
   const navigate = useNavigate();
@@ -26,7 +26,7 @@ export function Privacy(): JSX.Element {
         <div className="container mx-auto max-w-9xl">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="text-center lg:text-left space-y-8 campus-animate-fade-in">
-             
+
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-automata leading-tight">
                 <span className="campus-gradient bg-clip-text text-transparent">
                   Politique de
@@ -41,8 +41,8 @@ export function Privacy(): JSX.Element {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                
-              <PoliciesButton />
+
+                <PoliciesButton />
 
                 <Button
                   variant="secondary"
@@ -57,7 +57,7 @@ export function Privacy(): JSX.Element {
             <div className="relative hidden lg:block campus-animate-slide-up">
               <div className="absolute inset-0 campus-gradient opacity-30 blur-3xl"></div>
               <div className="relative campus-glass flex justify-center align-items-center h-96 rounded-3xl p-8 campus-glow">
-              <img
+                <img
                   src="/icons/politique-de-confidentialite.png"
                   alt="CampusSphere illustration"
                   loading="lazy"
@@ -74,7 +74,7 @@ export function Privacy(): JSX.Element {
         <div className="container mx-auto max-w-5xl">
           <div className="text-center mb-12">
             <p className="font-nunito font-semibold text-muted-foreground">
-              Dernière mise à jour : 05/04/2026
+              Dernière mise à jour : 27/05/2026
             </p>
           </div>
 
@@ -174,7 +174,7 @@ export function Privacy(): JSX.Element {
             </div>
 
             <div className="campus-animate-slide-up">
-                <div className="p-0">
+              <div className="p-0">
                 <CardTitle className="font-poppins flex items-center gap-3 p-0">
                   Contact
                 </CardTitle>
@@ -185,11 +185,11 @@ export function Privacy(): JSX.Element {
                 </p>
                 <ul className="mt-4 space-y-2">
                   <li><p className="mt-4">
-                  Pour exercer ces droits, contactez-nous à{" "}
-                  <a href="mailto:policies@campussphere.app" className="text-primary hover:underline">
-                    policies@campussphere.app
-                  </a>
-                </p></li>
+                    Pour exercer ces droits, contactez-nous à{" "}
+                    <a href="mailto:policies@campussphere.app" className="text-primary hover:underline">
+                      policies@campussphere.app
+                    </a>
+                  </p></li>
                   <li>Adresse: Douala, Cameroun</li>
                 </ul>
               </div>

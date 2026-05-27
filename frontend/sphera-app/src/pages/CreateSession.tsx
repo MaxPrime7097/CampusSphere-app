@@ -63,7 +63,7 @@ export default function CreateSession() {
       let result;
       if (generationMode === 'study') {
         const types = selectedTools.length > 0 ? selectedTools : ['fiche'];
-        result = await generateFromUpload({ file, tool_types: types as ToolType[] });
+        result = await generateFromUpload({ file, tool_types: types as ('fiche' | 'quiz' | 'flashcards')[] });
       } else {
         result = await generateAnnale({ file, mode: annaleMode });
       }
@@ -123,7 +123,7 @@ export default function CreateSession() {
     try {
       // Import this from spheraApi.ts at the top if needed (we'll assume it's imported or we'll add it)
       const { addToolToSession } = await import('../services/spheraApi');
-      const res = await addToolToSession(sessionId, tool);
+      const res = await addToolToSession(sessionId, tool as 'fiche' | 'quiz' | 'flashcards');
       
       const payload = res.data;
       setGeneratedContent(payload.content);

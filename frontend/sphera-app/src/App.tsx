@@ -25,9 +25,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-6">
         <div className="flex items-center justify-center relative overflow-hidden">
-          <img 
-            src="/sphera-logo-dark.png" 
-            alt="Sphera" 
+          <img
+            src="/sphera-logo-dark.png"
+            alt="Sphera"
             className="w-24 h-auto animate-[spin_3s_linear_infinite] relative z-10"
           />
         </div>

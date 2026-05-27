@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { FileText, BrainCircuit, List, CheckCircle2, HelpCircle, CircleSmall, Lightbulb, ChevronDown, ChevronRight, Timer, Trophy, XCircle, RotateCcw, RefreshCcw, Code2, Calculator, AlignLeft, Target, BookOpen, BookMarked, Award, Layers, Zap } from 'lucide-react'
+import DownloadPDFButton from '../shared/DownloadPDFButton'
+import { useDownloadPDF } from '../../hooks/useDownloadPDF'
 
 const formatText = (text: any) => {
   if (!text || typeof text !== 'string') return text;
@@ -64,87 +66,114 @@ const formatText = (text: any) => {
   return result;
 };
 
-export function FicheView({ content }: { content: any }) {
+export function FicheView({ content, sourceName }: { content: any; sourceName?: string }) {
   const f = content?.fiche || content || {}
   const [openDef, setOpenDef] = useState<number | null>(null)
+  const { isDownloading, generateFiche } = useDownloadPDF()
 
   return (
     <div className="flex flex-col gap-6">
-      {f?.resume && (
-        <div className="sphera-card p-6">
-          <h3 className="text-blue-400 text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
-            <FileText className="w-4 h-4" /> Résumé
-          </h3>
-          <div className="text-sphera-text-muted leading-relaxed">{formatText(f.resume)}</div>
-        </div>
-      )}
-      {Array.isArray(f?.points_cles) && f.points_cles.length > 0 && (
-        <div className="sphera-card p-6">
-          <h3 className="text-sphera-green text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4" /> Points clés
-          </h3>
-          <ul className="flex flex-col gap-2">
-            {f.points_cles.map((p: string, i: number) => (
-              <li key={i} className="flex gap-3 text-sphera-text-muted leading-relaxed">
-                <span className="text-sphera-green font-bold">{i + 1}.</span> <div>{formatText(p)}</div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-      {Array.isArray(f?.definitions) && f.definitions.length > 0 && (
-        <div className="sphera-card p-6">
-          <h3 className="text-purple-400 text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
-            <List className="w-4 h-4" /> Définitions
-          </h3>
-          <div className="flex flex-col gap-3">
-            {f.definitions.map((d: any, i: number) => (
-              <div key={i} className="border border-sphera-border rounded-xl overflow-hidden bg-sphera-bg/50">
-                <button
-                  onClick={() => setOpenDef(openDef === i ? null : i)}
-                  className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-sphera-surface transition-colors"
-                >
-                  <span className="font-semibold text-white">{formatText(d.terme)}</span>
-                  <ChevronDown className={`w-4 h-4 text-sphera-text-muted transition-transform ${openDef === i ? 'rotate-180' : ''}`} />
-                </button>
-                {openDef === i && (
-                  <div className="px-4 pb-4 pt-1 text-sm text-sphera-text-muted leading-relaxed border-t border-sphera-border bg-sphera-surface/30">
-                    {formatText(d.definition)}
-                  </div>
-                )}
-              </div>
-            ))}
+      {/* Download button */}
+      <div className="flex justify-end">
+        <DownloadPDFButton
+          onDownload={() => generateFiche(content, sourceName)}
+          isDownloading={isDownloading}
+          label="Télécharger la fiche"
+        />
+      </div>
+
+      {/* Captured zone */}
+      <div className="flex flex-col gap-6 p-4 rounded-2xl bg-sphera-bg">
+        {/* PDF Header */}
+        <div className="flex items-center justify-between pb-4 border-b border-sphera-border">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full border-2 border-sphera-green flex items-center justify-center text-xs font-bold text-sphera-green">S</div>
+            <div>
+              <p className="text-xs text-sphera-green font-semibold">Sphera — Fiche de révision</p>
+              <p className="text-xs text-sphera-text-muted">Généré le {new Date().toLocaleDateString('fr-FR')}</p>
+            </div>
           </div>
+          <span className="text-xs text-sphera-text-muted/60">sphera.campussphere.app</span>
         </div>
-      )}
-      {Array.isArray(f?.formules) && f.formules.length > 0 && (
-        <div className="sphera-card p-6">
-          <h3 className="text-pink-400 text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
-            <Calculator className="w-4 h-4" /> Formules & Concepts Abstraits
-          </h3>
-          <ul className="flex flex-col gap-3">
-            {f.formules.map((p: string, i: number) => (
-              <li key={i} className="flex gap-3 text-sphera-text-muted leading-relaxed bg-pink-400/5 p-4 rounded-xl border border-pink-400/10">
-                <span className="text-pink-400 font-bold mt-0.5"><CircleSmall className="w-4 h-4" /></span> <div>{formatText(p)}</div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-      {Array.isArray(f?.a_retenir) && f.a_retenir.length > 0 && (
-        <div className="sphera-card p-6">
-          <h3 className="text-yellow-400 text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
-            <Lightbulb className="w-4 h-4" /> À retenir
-          </h3>
-          <ul className="flex flex-wrap gap-2">
-            {f.a_retenir.map((p: string, i: number) => (
-              <li key={i} className="bg-yellow-400/10 text-yellow-400 text-sm px-4 py-2 rounded-xl border border-yellow-400/20 leading-relaxed">
-                <span className="mr-2">💡</span> {formatText(p)}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+
+        {f.titre && <h2 className="text-xl font-bold text-white">{f.titre}</h2>}
+
+        {f?.resume && (
+          <div className="sphera-card p-6">
+            <h3 className="text-blue-400 text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
+              <FileText className="w-4 h-4" /> Résumé
+            </h3>
+            <div className="text-sphera-text-muted leading-relaxed">{formatText(f.resume)}</div>
+          </div>
+        )}
+        {Array.isArray(f?.points_cles) && f.points_cles.length > 0 && (
+          <div className="sphera-card p-6">
+            <h3 className="text-sphera-green text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4" /> Points clés
+            </h3>
+            <ul className="flex flex-col gap-2">
+              {f.points_cles.map((p: string, i: number) => (
+                <li key={i} className="flex gap-3 text-sphera-text-muted leading-relaxed">
+                  <span className="text-sphera-green font-bold">{i + 1}.</span> <div>{formatText(p)}</div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {Array.isArray(f?.definitions) && f.definitions.length > 0 && (
+          <div className="sphera-card p-6">
+            <h3 className="text-purple-400 text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
+              <List className="w-4 h-4" /> Définitions
+            </h3>
+            <div className="flex flex-col gap-3">
+              {f.definitions.map((d: any, i: number) => (
+                <div key={i} className="border border-sphera-border rounded-xl overflow-hidden bg-sphera-bg/50">
+                  <button
+                    onClick={() => setOpenDef(openDef === i ? null : i)}
+                    className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-sphera-surface transition-colors"
+                  >
+                    <span className="font-semibold text-white">{formatText(d.terme)}</span>
+                    <ChevronDown className={`w-4 h-4 text-sphera-text-muted transition-transform ${openDef === i ? 'rotate-180' : ''}`} />
+                  </button>
+                  {openDef === i && (
+                    <div className="px-4 pb-4 pt-1 text-sm text-sphera-text-muted leading-relaxed border-t border-sphera-border bg-sphera-surface/30">
+                      {formatText(d.definition)}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {Array.isArray(f?.formules) && f.formules.length > 0 && (
+          <div className="sphera-card p-6">
+            <h3 className="text-pink-400 text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
+              <Calculator className="w-4 h-4" /> Formules &amp; Concepts Abstraits
+            </h3>
+            <ul className="flex flex-col gap-3">
+              {f.formules.map((p: string, i: number) => (
+                <li key={i} className="flex gap-3 text-sphera-text-muted leading-relaxed bg-pink-400/5 p-4 rounded-xl border border-pink-400/10">
+                  <span className="text-pink-400 font-bold mt-0.5"><CircleSmall className="w-4 h-4" /></span> <div>{formatText(p)}</div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {Array.isArray(f?.a_retenir) && f.a_retenir.length > 0 && (
+          <div className="sphera-card p-6">
+            <h3 className="text-yellow-400 text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
+              <Lightbulb className="w-4 h-4" /> À retenir
+            </h3>
+            <ul className="flex flex-wrap gap-2">
+              {f.a_retenir.map((p: string, i: number) => (
+                <li key={i} className="bg-yellow-400/10 text-yellow-400 text-sm px-4 py-2 rounded-xl border border-yellow-400/20 leading-relaxed">
+                  <span className="mr-2">💡</span> {formatText(p)}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -715,12 +744,13 @@ function QuestionCard({ question, mode }: { question: any, mode?: 'complete' | '
   );
 }
 
-export function AnnaleView({ annale }: { annale: any }) {
+export function AnnaleView({ annale, sourceName }: { annale: any; sourceName?: string }) {
   const { content, mode } = annale;
   const isRawArray = Array.isArray(content);
   const hasSections = !isRawArray && Array.isArray(content?.sections) && content.sections.length > 0;
   const hasLegacy = !isRawArray && Array.isArray(content?.corrections) && content.corrections.length > 0;
   const conseils = content?.conseils_generaux || [];
+  const { isDownloading, generateAnnale } = useDownloadPDF()
 
   const totalQuestions = isRawArray 
     ? content.length
@@ -730,7 +760,7 @@ export function AnnaleView({ annale }: { annale: any }) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header with download */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-sphera-surface-2 p-6 rounded-2xl border border-sphera-border">
         <div>
           <h2 className="text-xl font-bold text-white mb-1">{content?.titre || "Correction d'annale"}</h2>
@@ -738,7 +768,7 @@ export function AnnaleView({ annale }: { annale: any }) {
             {totalQuestions} question{totalQuestions > 1 ? "s" : ""} corrigée{totalQuestions > 1 ? "s" : ""}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 flex-wrap">
           {hasSections && (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20">
               <Layers className="w-3 h-3" /> Structurée
@@ -747,6 +777,11 @@ export function AnnaleView({ annale }: { annale: any }) {
           <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ring-1 ${mode === 'complete' ? 'bg-blue-500/10 text-blue-400 ring-blue-500/20' : 'bg-[#ff9800]/10 text-[#ff9800] ring-[#ff9800]/20'}`}>
             {mode === 'complete' ? <><BookOpen className="w-3 h-3" /> Complète</> : <><Zap className="w-3 h-3" /> Rapide</>}
           </span>
+          <DownloadPDFButton
+            onDownload={() => generateAnnale(annale, sourceName)}
+            isDownloading={isDownloading}
+            label="Télécharger la correction"
+          />
         </div>
       </div>
 

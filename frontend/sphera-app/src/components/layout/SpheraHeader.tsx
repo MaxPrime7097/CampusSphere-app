@@ -21,7 +21,7 @@ export function SpheraHeader() {
           {isAuthenticated && user ? (
             <div className="flex items-center gap-4">
               <Link to="/dashboard" className="text-sm font-medium text-sphera-text-muted hover:text-white transition-colors">
-                Sessions
+                Dashboard
               </Link>
               <div className="flex items-center gap-3 pl-4 border-l border-sphera-border">
                 <div className="w-8 h-8 rounded-full bg-sphera-surface-2 flex items-center justify-center text-sm font-bold border border-sphera-border text-white">
