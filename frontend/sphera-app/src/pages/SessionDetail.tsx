@@ -1,0 +1,303 @@
+import React, { useEffect, useState } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { getSession, getAnnale, askQuestion, deleteSession, deleteAnnale, shareSession, shareAnnale, API_BASE } from '../services/spheraApi'
+import { FileText, ArrowLeft, Maximize2, Minimize2, Send, MessageSquare, Bot, User, BrainCircuit, Columns, PenTool, Share2, Trash2, Check } from 'lucide-react'
+import { FicheView, QuizView, FlashcardsView, AnnaleView } from '../components/app/ResultViews'
+import { ShareModal } from '../components/app/ShareModal'
+import { DeleteConfirmModal } from '../components/app/DeleteConfirmModal'
+
+export default function SessionDetail({ type = 'session' }: { type?: 'session' | 'annale' }) {
+  const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const [session, setSession] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<string>('')
+
+  // Workspace State
+  const [isPdfExpanded, setIsPdfExpanded] = useState(true)
+  const [chatMessage, setChatMessage] = useState('')
+  const [chatHistory, setChatHistory] = useState<any[]>([])
+  const [isChatting, setIsChatting] = useState(false)
+  
+  const [showCopied, setShowCopied] = useState(false)
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+
+  const handleDelete = async () => {
+    try {
+      if (type === 'annale') await deleteAnnale(id as string);
+      else await deleteSession(id as string);
+      navigate('/dashboard');
+    } catch (e) {
+      alert("Erreur lors de la suppression.");
+    }
+  }
+
+  const handleOpenShare = async () => {
+    try {
+      if (!session.is_shared) {
+        const shareFn = type === 'annale' ? shareAnnale : shareSession;
+        await shareFn(id as string);
+        setSession({ ...session, is_shared: true });
+      }
+      setIsShareModalOpen(true);
+    } catch (e) {
+      alert("Impossible d'ouvrir le partage.");
+    }
+  }
+
+  useEffect(() => {
+    if (!id) return
+    const fetchFn = type === 'annale' ? getAnnale : getSession;
+    fetchFn(id)
+      .then(r => {
+        setSession(r?.data ?? r)
+        const payload = r?.data ?? r;
+        const types = payload.tool_types || (type === 'annale' ? ['annale'] : [])
+        if (types.length) setActiveTab(types[0])
+        if (payload.qa_history) setChatHistory(payload.qa_history)
+      })
+      .catch(() => navigate('/dashboard'))
+      .finally(() => setLoading(false))
+  }, [id, type])
+
+  if (loading) return (
+    <div className="p-8 max-w-4xl mx-auto flex flex-col gap-4">
+      <div className="h-24 bg-sphera-surface rounded-xl animate-pulse" />
+      <div className="h-40 bg-sphera-surface rounded-xl animate-pulse" />
+      <div className="h-40 bg-sphera-surface rounded-xl animate-pulse" />
+    </div>
+  )
+
+  if (!session) return null
+
+  const toolTypes: string[] = session.tool_types || (type === 'annale' ? ['annale'] : [])
+  const content = session.content || {}
+
+  const handleSendChat = async () => {
+    if (!chatMessage.trim() || !id) return;
+
+    const msg = chatMessage;
+    setChatMessage('');
+    setIsChatting(true);
+    setActiveTab('chat');
+
+    setChatHistory(prev => [...prev, { question: msg, answer: '...' }]);
+
+    try {
+      const res = await askQuestion(id, msg, type);
+      setChatHistory(prev => {
+        const newHist = [...prev];
+        newHist[newHist.length - 1].answer = res.data.answer;
+        return newHist;
+      });
+    } catch (e) {
+      setChatHistory(prev => {
+        const newHist = [...prev];
+        newHist[newHist.length - 1].answer = "Erreur de connexion avec l'assistant.";
+        return newHist;
+      });
+    } finally {
+      setIsChatting(false);
+    }
+  }
+
+  return (
+    <div className="flex h-full overflow-hidden flex-col md:flex-row bg-sphera-bg">
+
+      {/* Left Column: Source Document */}
+      <div className={`${isPdfExpanded ? 'w-full md:w-1/2 flex' : 'hidden'} border-r border-sphera-border flex-col bg-sphera-surface-2 overflow-hidden transition-all duration-300`}>
+        <div className="h-14 border-b border-sphera-border flex items-center px-4 gap-4 bg-sphera-bg">
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="p-1.5 text-sphera-text-muted hover:bg-sphera-surface hover:text-white rounded-md transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div className="flex flex-col min-w-0">
+            <span className="text-sm font-semibold text-white truncate">
+              {session.resource_title || session.source_filename || `Session #${session.id}`}
+            </span>
+          </div>
+        </div>
+
+        {/* Document Viewer */}
+        <div className="flex-1 overflow-hidden relative bg-[#1E1E1E]">
+          {session.resource_file_url ? (
+            <iframe 
+              src={session.resource_file_url.startsWith('/') ? `${API_BASE.replace(/\/$/, '')}${session.resource_file_url}#toolbar=0&navpanes=0&scrollbar=0` : `${session.resource_file_url}#toolbar=0&navpanes=0&scrollbar=0`} 
+              className="w-full h-full border-none custom-scrollbar" 
+              title="Aperçu du document"
+            />
+          ) : (
+            <div className="flex-1 p-8 flex flex-col items-center justify-center text-center opacity-60 h-full">
+              <FileText className="w-16 h-16 text-sphera-text-muted mb-4" />
+              <p className="text-white font-medium mb-1">Aperçu non disponible</p>
+              <p className="text-sm text-sphera-text-muted max-w-sm">
+                Le document original n'a pas été trouvé.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Right Column: Generated Tools & Workspace */}
+      <div className={`${isPdfExpanded ? 'w-full md:w-1/2' : 'w-full'} flex flex-col h-full bg-sphera-bg relative shadow-[-10px_0_30px_rgba(0,0,0,0.5)] transition-all duration-300`}>
+
+        {/* Workspace Toolbar */}
+        <div className="h-14 border-b border-sphera-border flex items-center justify-between px-4 bg-sphera-surface-2/80 backdrop-blur-md sticky top-0 z-20">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsPdfExpanded(!isPdfExpanded)}
+              className="p-1.5 rounded-md text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors"
+              title={isPdfExpanded ? "Plein écran" : "Afficher l'aperçu"}
+            >
+              {isPdfExpanded ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+            </button>
+            {!isPdfExpanded && (
+              <span className="text-sm font-semibold text-white truncate max-w-[200px] border-l border-sphera-border pl-3">
+                {session.resource_title || session.source_filename}
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="flex gap-1 bg-sphera-bg p-1 rounded-md">
+              {toolTypes.map(t => (
+                <button
+                  key={t}
+                  onClick={() => setActiveTab(t)}
+                  className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors ${activeTab === t
+                      ? 'bg-sphera-surface text-white'
+                      : 'text-sphera-text-muted hover:text-white'
+                    }`}
+                >
+                  {t.charAt(0).toUpperCase() + t.slice(1)}
+                </button>
+              ))}
+              <button
+                onClick={() => setActiveTab('chat')}
+                className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors flex items-center gap-1.5 ${activeTab === 'chat' ? 'bg-sphera-surface text-white' : 'text-sphera-text-muted hover:text-white'
+                  }`}
+              >
+                <MessageSquare className="w-3.5 h-3.5" /> Q&A
+              </button>
+            </div>
+            
+            <div className="flex items-center gap-2 border-l border-sphera-border pl-4">
+              <button
+                onClick={handleOpenShare}
+                className={`p-1.5 rounded transition-colors text-sphera-text-muted hover:text-white hover:bg-sphera-surface`}
+                title="Partager le lien public"
+              >
+                <Share2 className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setIsDeleteModalOpen(true)}
+                className="p-1.5 rounded text-red-500/60 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                title="Supprimer la session"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Generated Content Area */}
+        <div className="flex-1 overflow-y-auto relative pb-24">
+          <div className="p-6 md:p-8 max-w-3xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {activeTab === 'fiche' ? (
+              <FicheView content={content.fiche} />
+            ) : activeTab === 'quiz' ? (
+              <QuizView content={content.quiz} />
+            ) : activeTab === 'flashcards' ? (
+              <FlashcardsView content={content.flashcards} />
+            ) : activeTab === 'annale' ? (
+              <AnnaleView annale={session} />
+            ) : null}
+            {activeTab === 'chat' && (
+              <div className="flex flex-col gap-6 pb-8">
+                {chatHistory.length === 0 ? (
+                  <div className="text-center p-12 bg-sphera-surface-2 rounded-2xl border border-sphera-border">
+                    <MessageSquare className="w-10 h-10 text-sphera-text-muted mx-auto mb-4 opacity-50" />
+                    <p className="text-white font-medium mb-1">Posez vos questions</p>
+                    <p className="text-sm text-sphera-text-muted">Demandez des éclaircissements sur ce document.</p>
+                  </div>
+                ) : (
+                  chatHistory.map((msg, i) => (
+                    <div key={i} className="flex flex-col gap-4">
+                      {/* User Message */}
+                      <div className="flex items-start justify-end gap-3">
+                        <div className="bg-sphera-green/10 border border-sphera-green/20 text-white p-4 rounded-2xl rounded-tr-sm max-w-[85%]">
+                          <p className="text-sm leading-relaxed">{msg.question}</p>
+                        </div>
+                        <div className="w-8 h-8 rounded-full bg-sphera-surface-2 border border-sphera-border flex items-center justify-center shrink-0">
+                          <User className="w-4 h-4 text-sphera-text-muted" />
+                        </div>
+                      </div>
+                      {/* AI Response */}
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-full bg-sphera-surface-2 border border-sphera-border flex items-center justify-center shrink-0">
+                          <Bot className="w-4 h-4 text-sphera-green" />
+                        </div>
+                        <div className="bg-sphera-surface-2 border border-sphera-border text-sphera-text-muted p-4 rounded-2xl rounded-tl-sm max-w-[85%]">
+                          {msg.answer === '...' ? (
+                            <div className="flex gap-1 py-1">
+                              <div className="w-1.5 h-1.5 rounded-full bg-sphera-text-muted animate-bounce" />
+                              <div className="w-1.5 h-1.5 rounded-full bg-sphera-text-muted animate-bounce [animation-delay:0.2s]" />
+                              <div className="w-1.5 h-1.5 rounded-full bg-sphera-text-muted animate-bounce [animation-delay:0.4s]" />
+                            </div>
+                          ) : (
+                            <p className="text-sm leading-relaxed text-white whitespace-pre-wrap">{msg.answer}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Q&A Chat Input (Fixed Bottom) */}
+        <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-sphera-bg via-sphera-bg/90 to-transparent p-4 pt-12 z-30">
+          <div className="max-w-3xl mx-auto flex items-center gap-3 bg-sphera-surface-2 border border-sphera-border rounded-full p-2 pl-5 shadow-[0_0_30px_rgba(0,0,0,0.5)] focus-within:border-sphera-green/50 transition-colors">
+            <MessageSquare className="w-4 h-4 text-sphera-text-muted hidden sm:block" />
+            <input
+              type="text"
+              placeholder="Demandez n'importe quoi sur ce cours..."
+              value={chatMessage}
+              onChange={e => setChatMessage(e.target.value)}
+              className="flex-1 bg-transparent border-none text-sm text-white placeholder-sphera-text-muted outline-none focus:ring-0"
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  handleSendChat()
+                }
+              }}
+            />
+            <button
+              onClick={handleSendChat}
+              disabled={!chatMessage.trim() || isChatting || !id}
+              className="w-9 h-9 rounded-full bg-sphera-green text-black flex items-center justify-center hover:bg-green-400 disabled:opacity-50 disabled:hover:bg-sphera-green transition-colors flex-shrink-0 shadow-[0_0_15px_rgba(34,197,94,0.3)]"
+            >
+              <Send className="w-4 h-4 ml-0.5" />
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <ShareModal 
+        isOpen={isShareModalOpen} 
+        setIsOpen={setIsShareModalOpen} 
+        url={window.location.href}
+      />
+      
+      <DeleteConfirmModal 
+        isOpen={isDeleteModalOpen}
+        setIsOpen={setIsDeleteModalOpen}
+        onConfirm={handleDelete}
+      />
+    </div>
+  )
+}

@@ -1,0 +1,132 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 96%;
+
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 96%;
+
+    --popover: 0 0% 4%;
+    --popover-foreground: 0 0% 96%;
+
+    --primary: 142 71% 45%;
+    --primary-foreground: 0 0% 4%;
+
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 96%;
+
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 53%;
+
+    --accent: 142 71% 45%;
+    --accent-foreground: 0 0% 4%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 96%;
+
+    --border: 0 0% 13%;
+    --input: 0 0% 13%;
+    --ring: 142 71% 45%;
+
+    --radius: 0.75rem;
+
+    /* Custom Sphera variables */
+    --sphera-green: #22C55E;
+    --sphera-green-dim: #16A34A;
+    --sphera-green-glow: rgba(34,197,94,0.15);
+    --sphera-bg: #0D0E10;
+    --sphera-surface: #111111;
+    --sphera-surface-2: #1A1A1A;
+    --sphera-border: #222222;
+    --sphera-text: #F5F5F5;
+    --sphera-text-muted: #888888;
+    --cs-orange: #ff9800;
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Custom Sphera Utility Classes */
+.sphera-glow {
+  box-shadow: 0 0 20px rgba(34,197,94,0.3);
+}
+
+.sphera-card {
+  background-color: var(--sphera-surface);
+  border: 1px solid var(--sphera-border);
+  border-radius: 12px;
+  transition: border-color 0.2s;
+}
+
+.sphera-upload-zone {
+  border: 2px dashed #333333;
+  border-radius: 16px;
+  background-color: #0F0F0F;
+  transition: all 0.2s;
+}
+
+.sphera-primary-btn {
+  background-color: var(--sphera-green);
+  color: #0A0A0A;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 12px 24px;
+  transition: all 0.2s;
+  box-shadow: 0 0 20px rgba(34,197,94,0.3);
+}
+
+.sphera-primary-btn:hover:not(:disabled) {
+  background-color: var(--sphera-green-dim);
+  box-shadow: 0 0 25px rgba(34,197,94,0.4);
+}
+
+.sphera-primary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--sphera-bg); 
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--sphera-border); 
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #333333; 
+}
+
+/* 3D Flip Utilities */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}

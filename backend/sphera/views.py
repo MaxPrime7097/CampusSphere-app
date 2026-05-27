@@ -7,6 +7,7 @@ from django.conf import settings
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 
 from resources.models import Resource
@@ -228,6 +229,18 @@ class GenerateFromUploadView(APIView):
         if not any(filename.lower().endswith(ext) for ext in (".pdf", ".docx", ".txt")):
             return Response({"error": "Seuls les fichiers PDF, DOCX et TXT sont acceptés."}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Création d'une ressource implicite pour conserver le fichier et son aperçu
+        from resources.models import Resource
+        resource = Resource.objects.create(
+            title=filename,
+            author=request.user,
+            file=uploaded_file,
+            file_size=uploaded_file.size,
+            file_type=uploaded_file.content_type or "application/octet-stream",
+            type="cours",  # Type par défaut
+            visibility="friends"
+        )
+
         tmp_path = None
         text = ""
         try:
@@ -255,6 +268,7 @@ class GenerateFromUploadView(APIView):
 
         session = StudySession.objects.create(
             owner=request.user,
+            resource=resource, # Liaison avec la ressource créée
             source_filename=filename,
             tool_types=tool_types,
             content=content,
@@ -287,7 +301,9 @@ class StudySessionDetailView(APIView):
 
     def get(self, request, pk):
         try:
-            session = StudySession.objects.get(pk=pk, owner=request.user)
+            session = StudySession.objects.get(pk=pk)
+            if session.owner != request.user and not session.is_shared:
+                return Response({"error": "Non autorisé."}, status=status.HTTP_403_FORBIDDEN)
         except StudySession.DoesNotExist:
             return Response({"error": "Session introuvable."}, status=status.HTTP_404_NOT_FOUND)
         return Response({"success": True, "data": StudySessionSerializer(session).data})
@@ -301,6 +317,46 @@ class StudySessionDetailView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+class AddToolToSessionView(APIView):
+    """
+    PATCH /api/sphera/sessions/<pk>/add-tool/
+    Body: { "tool_type": "quiz" }
+    """
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk):
+        tool_type = request.data.get("tool_type")
+
+        if not tool_type or tool_type not in VALID_TOOL_TYPES:
+            return Response({"error": f"Type d'outil invalide. Choisis parmi : {', '.join(VALID_TOOL_TYPES)}."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            session = StudySession.objects.get(pk=pk, owner=request.user)
+        except StudySession.DoesNotExist:
+            return Response({"error": "Session introuvable."}, status=status.HTTP_404_NOT_FOUND)
+
+        if tool_type in session.tool_types and tool_type in session.content:
+            return Response({"error": f"L'outil '{tool_type}' a déjà été généré pour cette session."}, status=status.HTTP_400_BAD_REQUEST)
+
+        text = session.extracted_text
+        if not text:
+            return Response({"error": "Aucun texte extractible disponible dans cette session pour générer de nouveaux outils."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            new_content = generate_with_fallback(text, tool_type)
+        except Exception as e:
+            logger.error(f"[Sphera] Génération additionnelle IA échouée : {e}")
+            return Response({"error": f"La génération IA a échoué : {e}"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        # Update session
+        session.content[tool_type] = new_content
+        if tool_type not in session.tool_types:
+            session.tool_types.append(tool_type)
+        session.save()
+
+        return Response({"success": True, "data": StudySessionSerializer(session).data}, status=status.HTTP_200_OK)
+
+
 class ShareStudySessionView(APIView):
     """POST / DELETE /api/sphera/sessions/<pk>/share/"""
 
@@ -308,11 +364,15 @@ class ShareStudySessionView(APIView):
 
     def post(self, request, pk):
         try:
+            session = StudySession.objects.get(pk=pk, owner=request.user)
+            
             sphere_id = request.data.get("sphere_id")
             if not sphere_id:
-                return Response({"error": "sphere_id est requis."}, status=status.HTTP_400_BAD_REQUEST)
+                # Partage global par lien
+                session.is_shared = True
+                session.save(update_fields=["is_shared"])
+                return Response({"success": True, "message": "Partage par lien activé.", "data": StudySessionSerializer(session).data})
 
-            session = StudySession.objects.get(pk=pk, owner=request.user)
             sphere = Sphere.objects.get(pk=sphere_id)
 
             is_member = sphere.memberships.filter(user=request.user, status="active").exists()
@@ -419,6 +479,48 @@ class AskQuestionView(APIView):
 # ===========================================================================
 # V2 — Annales
 # ===========================================================================
+
+class AskAnnaleQuestionView(APIView):
+    """
+    POST /api/sphera/annales/<pk>/ask/
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            session = AnnaleSession.objects.get(pk=pk)
+            if session.owner != request.user and not session.is_shared:
+                return Response({"error": "Non autorisé."}, status=status.HTTP_403_FORBIDDEN)
+        except AnnaleSession.DoesNotExist:
+            return Response({"error": "Annale introuvable."}, status=status.HTTP_404_NOT_FOUND)
+
+        question = (request.data.get("question") or "").strip()
+        if not question:
+            return Response({"error": "La question ne peut pas être vide."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not session.extracted_text:
+            return Response(
+                {"error": "Le texte de ce document n'est pas disponible pour le Q&A."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            answer = generate_qa_answer(session.extracted_text, question)
+        except Exception as e:
+            logger.error(f"[Sphera Q&A Annale] Erreur génération : {e}")
+            return Response({"error": f"La génération IA a échoué : {e}"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        entry = {
+            "question": question,
+            "answer": answer,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+        qa_history = list(session.qa_history or [])
+        qa_history.append(entry)
+        session.qa_history = qa_history
+        session.save(update_fields=["qa_history"])
+
+        return Response({"success": True, "data": entry}, status=status.HTTP_200_OK)
 
 class GenerateAnnaleView(APIView):
     """
@@ -547,7 +649,9 @@ class AnnaleSessionDetailView(APIView):
 
     def get(self, request, pk):
         try:
-            annale = AnnaleSession.objects.get(pk=pk, owner=request.user)
+            annale = AnnaleSession.objects.get(pk=pk)
+            if annale.owner != request.user and not annale.is_shared:
+                return Response({"error": "Non autorisé."}, status=status.HTTP_403_FORBIDDEN)
         except AnnaleSession.DoesNotExist:
             return Response({"error": "Annale introuvable."}, status=status.HTTP_404_NOT_FOUND)
         return Response({"success": True, "data": AnnaleSessionSerializer(annale).data})
@@ -568,11 +672,15 @@ class ShareAnnaleSessionView(APIView):
 
     def post(self, request, pk):
         try:
+            annale = AnnaleSession.objects.get(pk=pk, owner=request.user)
+            
             sphere_id = request.data.get("sphere_id")
             if not sphere_id:
-                return Response({"error": "sphere_id est requis."}, status=status.HTTP_400_BAD_REQUEST)
-
-            annale = AnnaleSession.objects.get(pk=pk, owner=request.user)
+                # Partage global par lien
+                annale.is_shared = True
+                annale.save(update_fields=["is_shared"])
+                return Response({"success": True, "message": "Partage par lien activé.", "data": AnnaleSessionSerializer(annale).data})
+                
             sphere = Sphere.objects.get(pk=sphere_id)
 
             is_member = sphere.memberships.filter(user=request.user, status="active").exists()
@@ -617,3 +725,96 @@ class SphereAnnaleSessionsView(APIView):
 
         annales = AnnaleSession.objects.filter(shared_in_sphere=sphere, is_shared=True).select_related("owner", "resource")
         return Response({"success": True, "data": AnnaleSessionListSerializer(annales, many=True).data})
+
+
+# ===========================================================================
+# Guest — Génération sans auth (mode invité)
+# ===========================================================================
+
+class GuestRateThrottle(AnonRateThrottle):
+    """
+    Limite les invités à 5 générations par heure par IP.
+    Utilise le cache Django (Redis en prod, LocMemCache en dev).
+    """
+    scope = "guest_generate"
+    rate = "5/hour"
+
+
+class GuestGenerateView(APIView):
+    """
+    POST /api/sphera/guest/generate/
+    Accessible sans authentification. Génère un outil Sphera sans sauvegarder en base.
+    Rate limité à 5 requêtes/heure par IP.
+
+    Form-data:
+      file          — PDF, DOCX ou TXT
+      tool_type     — "fiche" | "quiz" | "flashcards" | "annale"
+      mode          — "complete" | "rapide"  (pour annale uniquement, optionnel)
+    """
+    permission_classes = []
+    throttle_classes = [GuestRateThrottle]
+
+    def post(self, request):
+        try:
+            return self._handle(request)
+        except Exception as e:
+            import traceback
+            logger.error(f"[Sphera Guest] Erreur : {traceback.format_exc()}")
+            return Response({"error": f"Erreur interne : {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def _handle(self, request):
+        uploaded_file = request.FILES.get("file")
+        tool_type = (request.data.get("tool_type") or "").strip().lower()
+        mode = (request.data.get("mode") or "complete").strip().lower()
+
+        # Validation
+        if not uploaded_file:
+            return Response({"error": "Un fichier est requis."}, status=status.HTTP_400_BAD_REQUEST)
+
+        VALID_GUEST_TOOLS = {"fiche", "quiz", "flashcards", "annale"}
+        if tool_type not in VALID_GUEST_TOOLS:
+            return Response(
+                {"error": f"tool_type invalide. Choisis parmi : {', '.join(VALID_GUEST_TOOLS)}."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if mode not in ("complete", "rapide"):
+            mode = "complete"
+
+        filename = uploaded_file.name or ""
+        if not any(filename.lower().endswith(ext) for ext in (".pdf", ".docx", ".txt")):
+            return Response({"error": "Seuls les fichiers PDF, DOCX et TXT sont acceptés."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Extraction du texte
+        tmp_path = None
+        try:
+            tmp_path, _ = _extract_uploaded_file(uploaded_file, prefix="sphera_guest_")
+            try:
+                text = extract_text_from_file(tmp_path)
+            except (ValueError, ImportError) as e:
+                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        finally:
+            _cleanup(tmp_path)
+
+        if not text or len(text) < 50:
+            return Response({"error": "Ce document ne contient pas de texte extractible."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Génération IA (sans sauvegarde)
+        try:
+            if tool_type == "annale":
+                content = generate_annale(text, mode)
+                return Response({
+                    "success": True,
+                    "tool_type": "annale",
+                    "mode": mode,
+                    "content": content,
+                })
+            else:
+                content = generate_with_fallback(text, tool_type)
+                return Response({
+                    "success": True,
+                    "tool_type": tool_type,
+                    "content": content,
+                })
+        except Exception as e:
+            logger.error(f"[Sphera Guest] Génération échouée : {e}")
+            return Response({"error": f"La génération IA a échoué : {e}"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)

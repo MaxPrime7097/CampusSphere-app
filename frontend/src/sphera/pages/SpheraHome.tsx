@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import {
-  Sparkles, BookOpen, Brain, Layers, Upload, Loader2,
+  Sparkles, BookOpen, BrainCircuit, Columns, Upload, Loader2,
   FileText, Zap, Plus, Scroll,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -29,8 +29,8 @@ type ToolFilter = "all" | "fiche" | "quiz" | "flashcards";
 const FILTER_OPTIONS: { value: ToolFilter; label: string; icon: React.ReactNode }[] = [
   { value: "all",        label: "Toutes",      icon: <Sparkles className="h-3.5 w-3.5" /> },
   { value: "fiche",      label: "Fiches",      icon: <BookOpen className="h-3.5 w-3.5" /> },
-  { value: "quiz",       label: "Quiz",        icon: <Brain className="h-3.5 w-3.5" /> },
-  { value: "flashcards", label: "Flashcards",  icon: <Layers className="h-3.5 w-3.5" /> },
+  { value: "quiz",       label: "Quiz",        icon: <BrainCircuit className="h-3.5 w-3.5" /> },
+  { value: "flashcards", label: "Flashcards",  icon: <Columns className="h-3.5 w-3.5" /> },
 ];
 
 export const SpheraHome: React.FC = () => {

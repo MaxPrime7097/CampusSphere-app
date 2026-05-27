@@ -97,6 +97,10 @@ class AnnaleSession(models.Model):
 
     content = models.JSONField(default=dict)  # JSON de correction généré par l'IA
 
+    # Q&A et données brutes
+    extracted_text = models.TextField(blank=True, null=True)
+    qa_history = models.JSONField(default=list, blank=True, null=True)
+
     # Partage
     is_shared = models.BooleanField(default=False)
     shared_in_sphere = models.ForeignKey(

@@ -9,6 +9,7 @@ from .models import StudySession, AnnaleSession
 class StudySessionSerializer(serializers.ModelSerializer):
     owner_username = serializers.CharField(source="owner.username", read_only=True)
     resource_title = serializers.SerializerMethodField()
+    resource_file_url = serializers.SerializerMethodField()
     sphere_name = serializers.SerializerMethodField()
     has_qa = serializers.SerializerMethodField()
 
@@ -20,6 +21,7 @@ class StudySessionSerializer(serializers.ModelSerializer):
             "owner_username",
             "resource",
             "resource_title",
+            "resource_file_url",
             "source_filename",
             "tool_types",
             "content",
@@ -41,6 +43,11 @@ class StudySessionSerializer(serializers.ModelSerializer):
         if obj.resource:
             return obj.resource.title
         return obj.source_filename or ""
+
+    def get_resource_file_url(self, obj):
+        if obj.resource and obj.resource.file:
+            return obj.resource.file.url
+        return None
 
     def get_sphere_name(self, obj):
         if obj.shared_in_sphere:
@@ -107,6 +114,7 @@ class AnnaleSessionSerializer(serializers.ModelSerializer):
     owner_username = serializers.CharField(source="owner.username", read_only=True)
     sphere_name = serializers.SerializerMethodField()
     source_title = serializers.SerializerMethodField()
+    resource_file_url = serializers.SerializerMethodField()
     cours_title = serializers.SerializerMethodField()
 
     class Meta:
@@ -119,9 +127,11 @@ class AnnaleSessionSerializer(serializers.ModelSerializer):
             "source_filename",
             "resource",
             "source_title",
+            "resource_file_url",
             "cours_resource",
             "cours_title",
             "content",
+            "qa_history",
             "is_shared",
             "shared_in_sphere",
             "sphere_name",
@@ -139,6 +149,11 @@ class AnnaleSessionSerializer(serializers.ModelSerializer):
         if obj.resource:
             return obj.resource.title
         return obj.source_filename or "Annale"
+
+    def get_resource_file_url(self, obj):
+        if obj.resource and obj.resource.file:
+            return obj.resource.file.url
+        return None
 
     def get_cours_title(self, obj):
         if obj.cours_resource:

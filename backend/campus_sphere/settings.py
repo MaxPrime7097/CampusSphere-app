@@ -309,9 +309,12 @@ REST_FRAMEWORK = {
         'rest_framework.filters.SearchFilter',
         'rest_framework.filters.OrderingFilter',
     ],
-    'DEFAULT_THROTTLE_CLASSES': [],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+    ],
     'DEFAULT_THROTTLE_RATES': {
-        'auth': '5/min',
+        'anon': '60/hour',           # Taux général anonyme
+        'guest_generate': '5/hour',  # Endpoint Sphera guest (5 générations/heure/IP)
     },
 }
 

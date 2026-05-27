@@ -50,7 +50,7 @@ Course Text:
 """
 
 QUIZ_PROMPT = SPHERA_PERSONA + """
-Generate 10 multiple-choice questions (MCQs) in JSON format based on the provided course text.
+Generate 20 multiple-choice questions (MCQs) in JSON format based on the provided course text.
 No text before or after the JSON. The JSON KEYS must remain in French ("question", "options", etc.), but the content must be in the SAME LANGUAGE as the source text.
 
 Strict JSON format:
@@ -71,7 +71,7 @@ Course Text:
 """
 
 FLASHCARDS_PROMPT = SPHERA_PERSONA + """
-Generate 10 front/back flashcards in JSON format based on the provided course text.
+Generate 20 front/back flashcards in JSON format based on the provided course text.
 No text before or after the JSON. The JSON KEYS must remain in French ("recto", "verso", etc.), but the content must be in the SAME LANGUAGE as the source text.
 
 Strict JSON format:
@@ -94,10 +94,10 @@ Course Text:
 # ---------------------------------------------------------------------------
 
 QA_PROMPT = SPHERA_PERSONA + (
-    "You are a tutor based ONLY on the provided university course.\n"
-    "Answer the question using ONLY the content of the provided course.\n"
+    "You are a tutor based ONLY on the provided university course or past paper.\n"
+    "Answer the question using ONLY the content of the provided course or past paper.\n"
     "If the answer is not in the course, say exactly:\n"
-    "\"Cette information ne se trouve pas dans ton cours.\"\n"
+    "\"Cette information ne se trouve pas dans ton cours ou annale.\"\n"
     "Be clear, precise, and pedagogical.\n\n"
     "Course:\n{text}\n\n"
     "Question: {question}"
@@ -107,8 +107,9 @@ QA_PROMPT = SPHERA_PERSONA + (
 # Prompts V2 — Annales (Smart)
 # ---------------------------------------------------------------------------
 
-_ANNALE_SMART_BASE = SPHERA_PERSONA + (
-    "You are correcting a university exam. Follow these two steps:\n"
+_ANNALE_SMART_COMPLET = SPHERA_PERSONA + (
+    "You are correcting a university exam. Be thorough and detailed in every answer.\n"
+    "Follow these two steps:\n"
     "\n"
     "STEP 1 — IDENTIFY THE STRUCTURE: Read the exam and identify all sections and questions.\n"
     "STEP 2 — CORRECT EACH QUESTION: For every question identified, provide the full correction.\n"
@@ -123,32 +124,70 @@ _ANNALE_SMART_BASE = SPHERA_PERSONA + (
     "- If a question requires a diagram, describe it textually.\n"
     "- For 'code' answers: put ONLY the raw code in 'reponse', explanation in 'explication'.\n"
     "- No text before or after the JSON. JSON KEYS stay in French, VALUES in the SOURCE TEXT LANGUAGE.\n"
-    "{mode_instruction}\n"
     "\n"
     "Strict JSON format:\n"
-    "{{\n"
+    "{\n"
     '  "titre": "Exam Title",\n'
     '  "sections": [\n'
-    "    {{\n"
+    "    {\n"
     '      "nom": "Section name (e.g. Section A, Exercice 1, Partie I)",\n'
     '      "questions": [\n'
-    "        {{\n"
+    "        {\n"
     '          "numero": "1",\n'
     '          "enonce": "The question as written in the exam",\n'
     '          "reponse": "Complete and correct answer",\n'
     '          "explication": "Detailed explanation of the reasoning",\n'
     '          "type": "qcm|ouvert|code|preuve"\n'
-    "        }}\n"
+    "        }\n"
     "      ]\n"
-    "    }}\n"
+    "    }\n"
     "  ],\n"
     '  "conseils_generaux": ["general advice 1", "general advice 2"]\n'
-    "}}\n\n"
+    "}\n\n"
     "Exam:\n{text}"
 )
 
-_ANNALE_SMART_AVEC_COURS_BASE = SPHERA_PERSONA + (
-    "You are correcting a university exam using the provided course as reference. Follow these two steps:\n"
+_ANNALE_SMART_RAPIDE = SPHERA_PERSONA + (
+    "You are correcting a university exam. Be concise — direct answers only, no long explanations.\n"
+    "Follow these two steps:\n"
+    "\n"
+    "STEP 1 — IDENTIFY THE STRUCTURE: Read the exam and identify all sections and questions.\n"
+    "STEP 2 — CORRECT EACH QUESTION: Provide the direct correction without unnecessary details.\n"
+    "\n"
+    "IMPORTANT RULES:\n"
+    "- Respect the original numbering (e.g. Section A Q1, Q2.a, Q2.b...).\n"
+    "- Detect the type of each question and set the 'type' field accordingly:\n"
+    "    'qcm'    → multiple choice: give the correct letter only\n"
+    "    'code'   → programming: provide working code only\n"
+    "    'preuve' → mathematical proof: give the key steps quickly\n"
+    "    'ouvert' → open-ended: direct answer\n"
+    "- No text before or after the JSON. JSON KEYS stay in French, VALUES in the SOURCE TEXT LANGUAGE.\n"
+    "\n"
+    "Strict JSON format:\n"
+    "{\n"
+    '  "titre": "Exam Title",\n'
+    '  "sections": [\n'
+    "    {\n"
+    '      "nom": "Section name (e.g. Section A, Exercice 1, Partie I)",\n'
+    '      "questions": [\n'
+    "        {\n"
+    '          "numero": "1",\n'
+    '          "enonce": "The question as written in the exam",\n'
+    '          "reponse": "Direct and concise answer",\n'
+    '          "explication": "",\n'
+    '          "type": "qcm|ouvert|code|preuve"\n'
+    "        }\n"
+    "      ]\n"
+    "    }\n"
+    "  ],\n"
+    '  "conseils_generaux": ["general advice 1", "general advice 2"]\n'
+    "}\n\n"
+    "Exam:\n{text}"
+)
+
+_ANNALE_SMART_AVEC_COURS_COMPLET = SPHERA_PERSONA + (
+    "You are correcting a university exam using the provided course as reference. Be thorough and detailed in every answer.\n"
+    "Follow these two steps:\n"
     "\n"
     "STEP 1 — IDENTIFY THE STRUCTURE: Read the exam and identify all sections and questions.\n"
     "STEP 2 — CORRECT EACH QUESTION: For every question, provide the full correction and cite the course reference.\n"
@@ -162,34 +201,71 @@ _ANNALE_SMART_AVEC_COURS_BASE = SPHERA_PERSONA + (
     "    'ouvert' → complete structured answer\n"
     "- Add 'source_cours' citing the exact chapter/section from the course.\n"
     "- No text before or after the JSON. JSON KEYS stay in French, VALUES in the SOURCE TEXT LANGUAGE.\n"
-    "{mode_instruction}\n"
     "\n"
     "Strict JSON format:\n"
-    "{{\n"
+    "{\n"
     '  "titre": "Exam Title",\n'
     '  "sections": [\n'
-    "    {{\n"
+    "    {\n"
     '      "nom": "Section name",\n'
     '      "questions": [\n'
-    "        {{\n"
+    "        {\n"
     '          "numero": "1",\n'
     '          "enonce": "The question as written in the exam",\n'
     '          "reponse": "Complete and correct answer",\n'
     '          "explication": "Detailed explanation",\n'
     '          "source_cours": "Chapter/section reference from course",\n'
     '          "type": "qcm|ouvert|code|preuve"\n'
-    "        }}\n"
+    "        }\n"
     "      ]\n"
-    "    }}\n"
+    "    }\n"
     "  ],\n"
     '  "conseils_generaux": ["advice 1"]\n'
-    "}}\n\n"
+    "}\n\n"
     "Course:\n{cours_text}\n\n"
     "Exam:\n{annale_text}"
 )
 
-_MODE_COMPLET = "Be thorough and detailed in every answer."
-_MODE_RAPIDE = "Be concise — direct answers only, no long explanations."
+_ANNALE_SMART_AVEC_COURS_RAPIDE = SPHERA_PERSONA + (
+    "You are correcting a university exam using the provided course as reference. Be concise — direct answers only, no long explanations.\n"
+    "Follow these two steps:\n"
+    "\n"
+    "STEP 1 — IDENTIFY THE STRUCTURE: Read the exam and identify all sections and questions.\n"
+    "STEP 2 — CORRECT EACH QUESTION: Provide the direct correction and cite the course reference quickly.\n"
+    "\n"
+    "IMPORTANT RULES:\n"
+    "- Respect the original numbering.\n"
+    "- Detect the type of each question:\n"
+    "    'qcm'    → give the correct letter only\n"
+    "    'code'   → provide working code only\n"
+    "    'preuve' → give the key steps quickly\n"
+    "    'ouvert' → direct answer\n"
+    "- Add 'source_cours' citing the exact chapter/section from the course.\n"
+    "- No text before or after the JSON. JSON KEYS stay in French, VALUES in the SOURCE TEXT LANGUAGE.\n"
+    "\n"
+    "Strict JSON format:\n"
+    "{\n"
+    '  "titre": "Exam Title",\n'
+    '  "sections": [\n'
+    "    {\n"
+    '      "nom": "Section name",\n'
+    '      "questions": [\n'
+    "        {\n"
+    '          "numero": "1",\n'
+    '          "enonce": "The question as written in the exam",\n'
+    '          "reponse": "Direct and concise answer",\n'
+    '          "explication": "",\n'
+    '          "source_cours": "Chapter/section reference from course",\n'
+    '          "type": "qcm|ouvert|code|preuve"\n'
+    "        }\n"
+    "      ]\n"
+    "    }\n"
+    "  ],\n"
+    '  "conseils_generaux": ["advice 1"]\n'
+    "}\n\n"
+    "Course:\n{cours_text}\n\n"
+    "Exam:\n{annale_text}"
+)
 
 # ---------------------------------------------------------------------------
 # Mapping prompts V1
@@ -469,18 +545,16 @@ def generate_annale(annale_text: str, mode: str, cours_text: str = None) -> dict
     if not annale_text or len(annale_text) < 50:
         raise ValueError("Le texte de l'annale est trop court.")
 
-    mode_instruction = _MODE_RAPIDE if mode == "rapide" else _MODE_COMPLET
-
     if cours_text and len(cours_text) >= 50:
         # Mode croisé : annale + cours
-        prompt = _ANNALE_SMART_AVEC_COURS_BASE.format(
-            mode_instruction=mode_instruction,
+        template = _ANNALE_SMART_AVEC_COURS_RAPIDE if mode == "rapide" else _ANNALE_SMART_AVEC_COURS_COMPLET
+        prompt = template.format(
             cours_text=cours_text,
             annale_text=annale_text,
         )
     else:
-        prompt = _ANNALE_SMART_BASE.format(
-            mode_instruction=mode_instruction,
+        template = _ANNALE_SMART_RAPIDE if mode == "rapide" else _ANNALE_SMART_COMPLET
+        prompt = template.format(
             text=annale_text,
         )
 

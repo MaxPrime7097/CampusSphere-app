@@ -2,7 +2,7 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Brain, Layers, Share2, Play, Trash2 } from "lucide-react";
+import { BookOpen, BrainCircuit, Columns, Share2, Play, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -29,11 +29,11 @@ const TOOL_CONFIG = {
     label: "Fiche",
   },
   quiz: {
-    icon: Brain,
+    icon: BrainCircuit,
     label: "Quiz",
   },
   flashcards: {
-    icon: Layers,
+    icon: Columns,
     label: "Flashcards",
   },
 };

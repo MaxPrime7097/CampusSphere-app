@@ -6,6 +6,7 @@ from .views import (
     # V1 — Sessions
     StudySessionListView,
     StudySessionDetailView,
+    AddToolToSessionView,
     ShareStudySessionView,
     SphereStudySessionsView,
     # V2 — Q&A
@@ -16,6 +17,9 @@ from .views import (
     AnnaleSessionDetailView,
     ShareAnnaleSessionView,
     SphereAnnaleSessionsView,
+    AskAnnaleQuestionView,
+    # Guest (sans auth)
+    GuestGenerateView,
 )
 
 urlpatterns = [
@@ -23,9 +27,13 @@ urlpatterns = [
     path("generate/from-resource/", GenerateFromResourceView.as_view(), name="sphera-generate-resource"),
     path("generate/from-upload/",   GenerateFromUploadView.as_view(),   name="sphera-generate-upload"),
 
+    # --- Guest (sans auth, rate limité) ---
+    path("guest/generate/",         GuestGenerateView.as_view(),        name="sphera-guest-generate"),
+
     # --- V1 : Sessions ---
     path("sessions/",               StudySessionListView.as_view(),      name="sphera-session-list"),
     path("sessions/<int:pk>/",      StudySessionDetailView.as_view(),    name="sphera-session-detail"),
+    path("sessions/<int:pk>/add-tool/", AddToolToSessionView.as_view(),  name="sphera-session-add-tool"),
     path("sessions/<int:pk>/share/", ShareStudySessionView.as_view(),   name="sphera-session-share"),
 
     # --- V2 : Q&A ---
@@ -38,6 +46,7 @@ urlpatterns = [
     path("generate/annale/",               GenerateAnnaleView.as_view(),       name="sphera-generate-annale"),
     path("annales/",                       AnnaleSessionListView.as_view(),    name="sphera-annale-list"),
     path("annales/<int:pk>/",             AnnaleSessionDetailView.as_view(),  name="sphera-annale-detail"),
+    path("annales/<int:pk>/ask/",         AskAnnaleQuestionView.as_view(),    name="sphera-annale-ask"),
     path("annales/<int:pk>/share/",       ShareAnnaleSessionView.as_view(),   name="sphera-annale-share"),
     path("sphere/<int:sphere_id>/annales/", SphereAnnaleSessionsView.as_view(), name="sphera-sphere-annales"),
 ]

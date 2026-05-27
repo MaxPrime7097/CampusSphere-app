@@ -10,7 +10,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Share2, Sparkles, AlertCircle, Loader2, Check, MessageCircleQuestion, BookOpen, Brain, Layers } from "lucide-react";
+import { ArrowLeft, Share2, Sparkles, AlertCircle, Loader2, Check, MessageCircleQuestion, BookOpen, BrainCircuit, Columns } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -23,7 +23,7 @@ import { Flashcards } from "@/sphera/components/study/Flashcards";
 import { QAChat } from "../components/QAChat";
 
 // Sphera service
-import { getStudySession, shareStudySession } from "../services/spheraService";
+import { getStudySession, shareStudySession, addToolToSession } from "../services/spheraService";
 import type { StudySession } from "../types/sphera.types";
 
 const TAB_STYLE =
@@ -45,6 +45,10 @@ export const StudySessionDetail: React.FC = () => {
   const [sharing, setSharing] = useState(false);
   const [shared, setShared] = useState(false);
   const [loadingSpheres, setLoadingSpheres] = useState(false);
+
+  // Génération
+  const [isGeneratingTool, setIsGeneratingTool] = useState(false);
+  const [toolError, setToolError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -89,6 +93,24 @@ export const StudySessionDetail: React.FC = () => {
       toast({ title: "Erreur de partage", description: err?.message, variant: "destructive" });
     } finally {
       setSharing(false);
+    }
+  };
+
+  const handleAddTool = async (tool: string) => {
+    if (!id) return;
+    setIsGeneratingTool(true);
+    setToolError(null);
+    try {
+      const res = await addToolToSession(id, tool as any);
+      if (res.success && res.data) {
+        setSession(res.data);
+      } else {
+        setToolError(res.error || `Impossible de générer le ${tool}.`);
+      }
+    } catch (err: any) {
+      setToolError(err.message || `Une erreur est survenue lors de la génération de ${tool}.`);
+    } finally {
+      setIsGeneratingTool(false);
     }
   };
 
@@ -174,63 +196,78 @@ export const StudySessionDetail: React.FC = () => {
       {/* ─── Tabs ─── */}
       <Tabs defaultValue={defaultTab} className="w-full">
         <TabsList className="w-full justify-start overflow-x-auto bg-transparent border-b rounded-none h-auto p-0 space-x-6">
-          {toolTypes.includes("fiche") && (
-            <TabsTrigger value="fiche" className={TAB_STYLE}>
-              <BookOpen className="h-5 w-5 mr-2" />
-              Fiche de révision
-            </TabsTrigger>
-          )}
-          {toolTypes.includes("quiz") && (
-            <TabsTrigger value="quiz" className={TAB_STYLE}>
-              <Brain className="h-5 w-5 mr-2" />
-              Quiz interactif
-            </TabsTrigger>
-          )}
-          {toolTypes.includes("flashcards") && (
-            <TabsTrigger value="flashcards" className={TAB_STYLE}>
-              <Layers className="h-5 w-5 mr-2" />
-              Flashcards
-            </TabsTrigger>
-          )}
-          {hasQA && (
-            <TabsTrigger value="qa" className={TAB_STYLE}>
-              <MessageCircleQuestion className="h-5 w-5 mr-2" />
-              Q&A
-            </TabsTrigger>
-          )}
+          {["fiche", "quiz", "flashcards"].map((t) => {
+            const isGenerated = toolTypes.includes(t);
+            return (
+              <TabsTrigger 
+                key={t} 
+                value={t} 
+                className={`${TAB_STYLE} ${!isGenerated ? "opacity-70" : ""}`}
+              >
+                {t === "fiche" && <BookOpen className="h-5 w-5 mr-2" />}
+                {t === "quiz" && <BrainCircuit className="h-5 w-5 mr-2" />}
+                {t === "flashcards" && <Columns className="h-5 w-5 mr-2" />}
+                {t.charAt(0).toUpperCase() + t.slice(1)}
+                {!isGenerated && (
+                  <span className="ml-2 text-[10px] bg-secondary px-1.5 py-0.5 rounded-full border opacity-50">+</span>
+                )}
+              </TabsTrigger>
+            );
+          })}
+          <TabsTrigger value="qa" className={TAB_STYLE}>
+            <MessageCircleQuestion className="h-5 w-5 mr-2" />
+            Q&A
+          </TabsTrigger>
         </TabsList>
 
         <div className="mt-8">
-          {toolTypes.includes("fiche") && content.fiche && (
-            <TabsContent value="fiche" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-              <FicheRevision data={content.fiche} />
-            </TabsContent>
-          )}
-          {toolTypes.includes("quiz") && content.quiz && (
-            <TabsContent value="quiz" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-              <QuizInteractif data={content.quiz} />
-            </TabsContent>
-          )}
-          {toolTypes.includes("flashcards") && content.flashcards && (
-            <TabsContent value="flashcards" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-              <Flashcards data={content.flashcards} />
-            </TabsContent>
-          )}
+          {["fiche", "quiz", "flashcards"].map((t) => {
+            const isGenerated = toolTypes.includes(t);
+            return (
+              <TabsContent key={t} value={t} className="mt-0 focus-visible:outline-none focus-visible:ring-0">
+                {!isGenerated ? (
+                  <div className="flex flex-col items-center justify-center p-12 text-center bg-card rounded-2xl border">
+                    <Sparkles className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                    <h3 className="text-xl font-bold mb-2">Cet outil n'a pas encore été généré</h3>
+                    <p className="text-sm text-muted-foreground mb-8 max-w-sm">
+                      Génère ce contenu instantanément en utilisant l'analyse déjà effectuée sur ton document.
+                    </p>
+                    <Button 
+                      onClick={() => handleAddTool(t)}
+                      disabled={isGeneratingTool}
+                      className="campus-gradient text-white flex items-center gap-2"
+                    >
+                      {isGeneratingTool ? (
+                        <><Loader2 className="w-4 h-4 animate-spin"/> Génération...</>
+                      ) : (
+                        <><Sparkles className="w-4 h-4"/> Générer {t === 'flashcards' ? 'les' : 'le'} {t}</>
+                      )}
+                    </Button>
+                    {toolError && <p className="text-destructive text-sm mt-4">{toolError}</p>}
+                  </div>
+                ) : (
+                  <>
+                    {t === "fiche" && content.fiche && <FicheRevision data={content.fiche} />}
+                    {t === "quiz" && content.quiz && <QuizInteractif data={content.quiz} />}
+                    {t === "flashcards" && content.flashcards && <Flashcards data={content.flashcards} />}
+                  </>
+                )}
+              </TabsContent>
+            );
+          })}
 
           {/* ─── Q&A Tab ─── */}
-          {hasQA && (
-            <TabsContent value="qa" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-              <div className="max-w-2xl">
-                <p className="text-sm text-muted-foreground mb-4">
-                  Pose tes questions sur le contenu de ce cours. Sphera répond uniquement depuis le document original.
-                </p>
-                <QAChat
-                  sessionId={session.id}
-                  initialHistory={session.qa_history || []}
-                />
-              </div>
-            </TabsContent>
-          )}
+          <TabsContent value="qa" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
+            <div className="max-w-2xl">
+              <p className="text-sm text-muted-foreground mb-4">
+                Pose tes questions sur le contenu de ce cours. Sphera répond uniquement depuis le document original.
+              </p>
+              <QAChat
+                sessionId={session.id}
+                initialHistory={session.qa_history || []}
+              />
+            </div>
+          </TabsContent>
         </div>
       </Tabs>
 

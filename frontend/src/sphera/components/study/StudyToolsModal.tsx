@@ -9,14 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   BookOpen,
-  Brain,
-  Layers,
   Loader2,
   Share2,
   AlertCircle,
   Sparkles,
   ChevronLeft,
   Check,
+  Columns,
+  BrainCircuit,
 } from "lucide-react";
 import { FicheRevision } from "./FicheRevision";
 import { QuizInteractif } from "./QuizInteractif";
@@ -62,7 +62,7 @@ const TOOLS: { type: ToolType; icon: React.ReactNode; label: string; desc: strin
   },
   {
     type: "quiz",
-    icon: <Brain className="h-6 w-6" />,
+    icon: <BrainCircuit className="h-6 w-6" />,
     label: "Quiz interactif",
     desc: "10 questions QCM avec timer et score",
     color: "text-[#ff9800]",
@@ -70,9 +70,9 @@ const TOOLS: { type: ToolType; icon: React.ReactNode; label: string; desc: strin
   },
   {
     type: "flashcards",
-    icon: <Layers className="h-6 w-6" />,
+    icon: <Columns className="h-6 w-6" />,
     label: "Flashcards",
-    desc: "Cartes recto/verso style Anki",
+    desc: "10 cartes recto/verso pour mémoriser",
     color: "text-purple-500",
     bg: "bg-purple-500/10 border-purple-500/30 hover:border-purple-500",
   },

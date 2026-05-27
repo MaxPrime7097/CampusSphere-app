@@ -131,6 +131,16 @@ export async function deleteStudySession(id: string | number): Promise<void> {
   return apiFetch(`api/sphera/sessions/${id}/`, { method: "DELETE" });
 }
 
+export async function addToolToSession(
+  sessionId: string | number,
+  toolType: ToolType
+): Promise<{ success: boolean; data: StudySession; error?: string }> {
+  return apiFetch(`api/sphera/sessions/${sessionId}/add-tool/`, {
+    method: "PATCH",
+    body: { tool_type: toolType } as any,
+  });
+}
+
 export async function shareStudySession(
   sessionId: string | number,
   sphereId: string | number
