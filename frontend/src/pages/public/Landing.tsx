@@ -234,6 +234,68 @@ export function Landing() {
             </div>
           </div>
 
+          {/* Sphera IA Section */}
+          <section className="mb-20 rounded-[2rem] border border-border/20 bg-white/80 p-8 shadow-xl backdrop-blur-sm">
+            <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-10 items-center">
+              <div className="space-y-6">
+                <div className="inline-flex items-center gap-2 rounded-full bg-[#fff4e3] px-4 py-2 text-sm font-semibold text-[#b45309]">
+                  <Sparkles className="h-4 w-4" />
+                  Nouveau : Sphera IA
+                </div>
+                <h2 className="text-3xl md:text-4xl font-bold text-foreground">L’IA Sphera rejoint l’écosystème CampusSphere</h2>
+                <p className="text-lg text-muted-foreground max-w-2xl">
+                  Notre assistant IA académique est maintenant intégré à CampusSphere.
+                  Transforme tes PDF et annales en fiches, quiz et flashcards dès maintenant,
+                  avec une connexion transparente et le même compte.
+                </p>
+                <ul className="list-disc list-inside space-y-3 text-muted-foreground text-base">
+                  <li>Générer des fiches et quiz en quelques secondes</li>
+                  <li>Corriger des annales automatiquement</li>
+                  <li>Poser tes questions de révision à l’IA</li>
+                </ul>
+                <div className="flex flex-wrap gap-3">
+                  <Button size="lg" onClick={() => navigate('/sphera')} className="bg-[#ff9800] text-white hover:bg-[#f57c00]">
+                    Découvrir Sphera
+                  </Button>
+                  <Button variant="outline" size="lg" onClick={() => navigate('/sphera')}>
+                    Aller à Sphera
+                  </Button>
+                </div>
+              </div>
+              <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#fff3e0] via-[#fff7ed] to-[#ffe8cc] p-8 shadow-inner">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,152,0,0.18),transparent_40%)]" />
+                <div className="relative space-y-5">
+                  <div className="rounded-3xl border border-white/70 bg-white/90 p-6 shadow-xl">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#ff9800]/15 text-[#ff9800]">
+                        <Sparkles className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-[#b45309]">Sphera IA</p>
+                        <p className="text-xs text-muted-foreground">Assistant de révision académique</p>
+                      </div>
+                    </div>
+                    <p className="mt-4 text-sm text-foreground/80">
+                      Accompagne tes révisions avec une IA qui comprend ton contenu et génère les meilleurs supports.
+                    </p>
+                  </div>
+                  <div className="rounded-3xl border border-white/70 bg-slate-950/95 p-6 text-white shadow-2xl">
+                    <p className="text-lg font-semibold">Connexion fluide</p>
+                    <p className="mt-3 text-sm text-slate-300">
+                      Même compte, même backend. Ouvre Sphera standalone et commence ta session sans reconnecter.
+                    </p>
+                  </div>
+                  <div className="rounded-3xl border border-white/70 bg-white/95 p-6">
+                    <p className="text-sm uppercase tracking-[0.3em] text-[#b45309]">Documents traités</p>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      PDF, annales et ressources sont analysés pour créer des supports, sans être utilisés pour entraîner des modèles publics.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* Ressources Section */}
           <div className="flex grid lg:grid-cols-2 gap-12 items-center mb-20">
             {/* Illustration Ressources */}

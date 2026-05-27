@@ -126,6 +126,12 @@ export function Terms(): JSX.Element {
                   <li>Ne pas utiliser la plateforme à des fins commerciales sans autorisation</li>
                   <li>Ne pas tenter de contourner les mesures de sécurité</li>
                 </ul>
+                <p>
+                  CampusSphere inclut également l’assistante IA Sphera. En utilisant cette fonctionnalité,
+                  vous acceptez que les documents uploadés soient traités par l’IA pour générer des fiches,
+                  quiz, flashcards et corrections d'annales.
+                  Ces documents ne sont pas utilisés pour entraîner des modèles publics.
+                </p>
               </div>
             </div>
 

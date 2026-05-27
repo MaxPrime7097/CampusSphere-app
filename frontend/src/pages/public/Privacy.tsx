@@ -113,6 +113,10 @@ export function Privacy(): JSX.Element {
                   <li>Assurer la sécurité de la communauté</li>
                   <li>Analyser l'utilisation de la plateforme</li>
                 </ul>
+                <p>
+                  Nous utilisons également des outils d'IA, notamment Sphera, pour analyser les documents que vous téléchargez afin de générer des fiches, quiz, flashcards et corrections d'annales.
+                  Les documents PDF uploadés sont traités pour ce service et ne sont pas utilisés pour entraîner des modèles publics.
+                </p>
               </div>
             </div>
 

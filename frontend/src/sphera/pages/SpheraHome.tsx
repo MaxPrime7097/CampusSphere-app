@@ -33,6 +33,21 @@ const FILTER_OPTIONS: { value: ToolFilter; label: string; icon: React.ReactNode 
   { value: "flashcards", label: "Flashcards",  icon: <Columns className="h-3.5 w-3.5" /> },
 ];
 
+const getSpheraStandaloneUrl = () => {
+  const envUrl = (import.meta.env.VITE_SPHERA_STANDALONE_URL as string)?.trim();
+  const isLocal = ["localhost", "127.0.0.1"].some((host) => window.location.hostname.includes(host));
+  const baseUrl = envUrl || (isLocal ? "http://localhost:4173" : "https://sphera.campussphere.app");
+  const accessToken = localStorage.getItem("access") || localStorage.getItem("access_token");
+  const refreshToken = localStorage.getItem("refresh");
+  const params = new URLSearchParams();
+
+  if (accessToken) params.set("access_token", accessToken);
+  if (refreshToken) params.set("refresh_token", refreshToken);
+
+  const query = params.toString();
+  return `${baseUrl.replace(/\/$/, "")}/app${query ? `?${query}` : ""}`;
+};
+
 export const SpheraHome: React.FC = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -121,6 +136,45 @@ export const SpheraHome: React.FC = () => {
 
       <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
         <div className="container max-w-6xl mx-auto py-4 md:py-8 px-4">
+
+          {/* ─── Top CTA Header ─── */}
+          <div className="mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="overflow-hidden rounded-[2rem] border border-[#ff9800]/20 bg-gradient-to-br from-[#fff3e0] via-[#fff7ed] to-[#fff1d1] shadow-xl">
+              <div className="relative overflow-hidden">
+                <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-r from-[#ff9800] via-[#ffb74d] to-[#ff9800] opacity-90"></div>
+                <div className="relative px-6 py-6 sm:px-8 sm:py-8">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="flex items-start gap-4">
+                      <div className="relative rounded-3xl bg-white/10 p-3 shadow-glow">
+                        <img src="/sphera-logo-dark.png" alt="Logo Sphera" className="h-14 w-auto" />
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.35em] text-white/80">Sphera</p>
+                        <h2 className="text-3xl md:text-4xl font-bold text-white">Assistant IA académique</h2>
+                        <p className="mt-3 max-w-2xl text-sm md:text-base text-white/90">
+                          Ouvre l’application Sphera standalone avec connexion automatique.
+                          Accède directement à la V2 déjà connectée pour réviser, générer des fiches,
+                          corriger des annales et poser des questions à l’IA.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-3 md:items-end">
+                      <Button
+                        onClick={() => { window.location.href = getSpheraStandaloneUrl(); }}
+                        className="rounded-full bg-slate-950 px-6 py-3 text-white shadow-lg shadow-slate-950/20 hover:bg-slate-900"
+                      >
+                        Ouvrir l'app Sphera
+                      </Button>
+                      <p className="text-xs text-white/75 max-w-sm">
+                        Connexion transparente via le même backend Django et le même token JWT.
+                        Tu arrives directement dans la V2, prêt à chatter.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* ─── Header ─── */}
           <div className="mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">

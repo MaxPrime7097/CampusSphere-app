@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getAnnale } from '../services/spheraApi'
+import { getAnnale, askQuestion } from '../services/spheraApi'
+import { MessageSquare, Bot, User, Send, ArrowUp } from 'lucide-react'
 
 export default function AnnaleDetail() {
   const { id } = useParams<{ id: string }>()
@@ -8,11 +9,19 @@ export default function AnnaleDetail() {
   const [annale, setAnnale] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [openSections, setOpenSections] = useState<Record<number, boolean>>({ 0: true })
+  const [activeTab, setActiveTab] = useState<'correction' | 'chat'>('correction')
+  const [chatMessage, setChatMessage] = useState('')
+  const [chatHistory, setChatHistory] = useState<any[]>([])
+  const [isChatting, setIsChatting] = useState(false)
 
   useEffect(() => {
     if (!id) return
     getAnnale(id)
-      .then(r => setAnnale(r?.data ?? r))
+      .then(r => {
+        const annaleData = r?.data ?? r
+        setAnnale(annaleData)
+        if (annaleData.qa_history) setChatHistory(annaleData.qa_history)
+      })
       .catch(() => navigate('/dashboard'))
       .finally(() => setLoading(false))
   }, [id])
@@ -35,6 +44,34 @@ export default function AnnaleDetail() {
     qcm: 'QCM', ouvert: 'Ouvert', code: 'Code', preuve: 'Preuve',
   }
 
+  const handleSendChat = async () => {
+    if (!chatMessage.trim() || !id) return
+
+    const msg = chatMessage
+    setChatMessage('')
+    setIsChatting(true)
+    setActiveTab('chat')
+
+    setChatHistory(prev => [...prev, { question: msg, answer: '...' }])
+
+    try {
+      const res = await askQuestion(id, msg, 'annale')
+      setChatHistory(prev => {
+        const newHist = [...prev]
+        newHist[newHist.length - 1].answer = res.data.answer
+        return newHist
+      })
+    } catch (e) {
+      setChatHistory(prev => {
+        const newHist = [...prev]
+        newHist[newHist.length - 1].answer = "Erreur de connexion avec l'assistant."
+        return newHist
+      })
+    } finally {
+      setIsChatting(false)
+    }
+  }
+
   return (
     <div style={{ padding: '2rem 1.25rem 4rem', maxWidth: 860, margin: '0 auto' }}>
       <div className="animate-in" style={{ marginBottom: '2rem' }}>
@@ -48,12 +85,41 @@ export default function AnnaleDetail() {
             {new Date(annale.created_at).toLocaleDateString('fr-FR', { dateStyle: 'long' })}
           </p>
         )}
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.5rem' }}>
+          <button
+            onClick={() => setActiveTab('correction')}
+            style={{
+              padding: '0.5rem 1.25rem', borderRadius: 'var(--radius-sm)',
+              background: activeTab === 'correction' ? 'var(--brand)' : 'var(--bg-2)',
+              color: activeTab === 'correction' ? 'white' : 'var(--text-2)',
+              border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem',
+              transition: 'all 0.2s',
+            }}
+          >
+            📚 Correction
+          </button>
+          <button
+            onClick={() => setActiveTab('chat')}
+            style={{
+              padding: '0.5rem 1.25rem', borderRadius: 'var(--radius-sm)',
+              background: activeTab === 'chat' ? 'var(--brand)' : 'var(--bg-2)',
+              color: activeTab === 'chat' ? 'white' : 'var(--text-2)',
+              border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem',
+              transition: 'all 0.2s',
+            }}
+          >
+            💬 Assistant
+          </button>
+        </div>
       </div>
 
       <div className="animate-in">
-        {/* Format V2 : sections */}
-        {sections.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        {activeTab === 'correction' ? (
+          <>
+            {/* Format V2 : sections */}
+            {sections.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {sections.map((sec: any, si: number) => (
               <div key={si} className="card">
                 <button
@@ -136,7 +202,107 @@ export default function AnnaleDetail() {
             <p style={{ color: 'var(--text-2)' }}>Correction non disponible.</p>
           </div>
         )}
+          </>
+        ) : (
+          /* Chat Tab */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {chatHistory.length === 0 ? (
+              <div style={{
+                textAlign: 'center', padding: '3rem 2rem', background: 'var(--bg-2)',
+                borderRadius: 'var(--radius)', border: '1px solid var(--border)',
+              }}>
+                <MessageSquare style={{ width: '2.5rem', height: '2.5rem', color: 'var(--text-3)', margin: '0 auto 1rem', opacity: 0.5 }} />
+                <p style={{ color: 'white', fontWeight: 600, marginBottom: '0.5rem' }}>Posez vos questions</p>
+                <p style={{ color: 'var(--text-2)', fontSize: '0.9rem' }}>Demandez des éclaircissements sur cette correction.</p>
+              </div>
+            ) : (
+              chatHistory.map((msg, i) => (
+                <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {/* User Message */}
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', alignItems: 'flex-start' }}>
+                    <div style={{
+                      background: 'var(--brand)', color: 'white', padding: '0.75rem 1rem',
+                      borderRadius: 'var(--radius)', maxWidth: '85%', borderBottomRightRadius: '0.25rem',
+                    }}>
+                      <p style={{ fontSize: '0.9rem', lineHeight: 1.5 }}>{msg.question}</p>
+                    </div>
+                    <div style={{
+                      width: '2rem', height: '2rem', borderRadius: '50%', background: 'var(--bg-2)',
+                      border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      <User style={{ width: '1rem', height: '1rem', color: 'var(--text-3)' }} />
+                    </div>
+                  </div>
+                  {/* AI Response */}
+                  <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                    <div style={{
+                      width: '2rem', height: '2rem', borderRadius: '50%', background: 'var(--bg-2)',
+                      border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      <Bot style={{ width: '1rem', height: '1rem', color: 'var(--brand)' }} />
+                    </div>
+                    <div style={{
+                      background: 'var(--bg-2)', color: 'var(--text-2)', padding: '0.75rem 1rem',
+                      borderRadius: 'var(--radius)', maxWidth: '85%', borderBottomLeftRadius: '0.25rem',
+                      border: '1px solid var(--border)',
+                    }}>
+                      {msg.answer === '...' ? (
+                        <div style={{ display: 'flex', gap: '0.25rem' }}>
+                          <div style={{ width: '0.375rem', height: '0.375rem', borderRadius: '50%', background: 'var(--text-2)', animation: 'bounce 1.4s infinite' }} />
+                          <div style={{ width: '0.375rem', height: '0.375rem', borderRadius: '50%', background: 'var(--text-2)', animation: 'bounce 1.4s infinite 0.2s' }} />
+                          <div style={{ width: '0.375rem', height: '0.375rem', borderRadius: '50%', background: 'var(--text-2)', animation: 'bounce 1.4s infinite 0.4s' }} />
+                        </div>
+                      ) : (
+                        <p style={{ fontSize: '0.9rem', lineHeight: 1.6, whiteSpace: 'pre-wrap', color: 'white' }}>{msg.answer}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Chat Input (Fixed Bottom) */}
+      {activeTab === 'chat' && (
+        <div style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0, padding: '1rem', background: 'linear-gradient(to top, var(--bg), transparent)',
+          borderTop: '1px solid var(--border)',
+        }}>
+          <div style={{ maxWidth: 860, margin: '0 auto', display: 'flex', gap: '0.75rem' }}>
+            <input
+              type="text"
+              placeholder="Demandez n'importe quoi sur cette correction..."
+              value={chatMessage}
+              onChange={e => setChatMessage(e.target.value)}
+              style={{
+                flex: 1, padding: '0.75rem 1rem', background: 'var(--bg-2)', color: 'white',
+                border: '1px solid var(--border)', borderRadius: 'var(--radius)', outline: 'none',
+                fontSize: '0.9rem',
+              }}
+              onKeyDown={e => {
+                if (e.key === 'Enter') handleSendChat()
+              }}
+            />
+            <button
+              onClick={handleSendChat}
+              disabled={!chatMessage.trim() || isChatting}
+              style={{
+                padding: '0.75rem 1.25rem', background: chatMessage.trim() && !isChatting ? 'var(--brand)' : 'var(--text-3)',
+                color: 'white', border: 'none', borderRadius: 'var(--radius)', cursor: 'pointer', fontWeight: 600,
+                opacity: chatMessage.trim() && !isChatting ? 1 : 0.5, transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '0.5rem',
+              }}
+            >
+              <Send style={{ width: '1rem', height: '1rem' }} />
+              Envoyer
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+
