@@ -8,6 +8,8 @@ import { Maximize2, Minimize2, Send, MessageSquare, Bot, User } from 'lucide-rea
 import { FicheView, QuizView, FlashcardsView, AnnaleView } from '../components/app/ResultViews'
 import { generateFromUpload, generateAnnale, askQuestion } from '../services/spheraApi'
 import { Sparkles } from 'lucide-react'
+import { QuestionSuggestions } from '../components/app/QuestionSuggestions'
+import { CommandMenu, COMMANDS, type Command } from '../components/app/CommandMenu'
 
 export default function CreateSession() {
   const navigate = useNavigate()
@@ -32,6 +34,12 @@ export default function CreateSession() {
   const [chatMessage, setChatMessage] = useState('')
   const [chatHistory, setChatHistory] = useState<any[]>([])
   const [isChatting, setIsChatting] = useState(false)
+
+  // Command menu state
+  const [showCommandMenu, setShowCommandMenu] = useState(false)
+  const [commandFilter, setCommandFilter] = useState('')
+  const [commandActiveIdx, setCommandActiveIdx] = useState(0)
+  const chatInputRef = React.useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (!file) {
@@ -128,6 +136,50 @@ export default function CreateSession() {
     } finally {
       setIsGeneratingTool(false);
     }
+  }
+
+  const handleChatInputChange = (val: string) => {
+    setChatMessage(val)
+    const atIdx = val.lastIndexOf('@')
+    if (atIdx !== -1) {
+      const after = val.slice(atIdx + 1)
+      if (!after.includes(' ')) {
+        setShowCommandMenu(true)
+        setCommandFilter('@' + after)
+        setCommandActiveIdx(0)
+        return
+      }
+    }
+    setShowCommandMenu(false)
+  }
+
+  const handleCommandSelect = async (cmd: Command) => {
+    // Nettoyer le @... du message
+    setChatMessage(prev => prev.replace(/@\w*$/, '').trim())
+    setShowCommandMenu(false)
+    // Si l'outil est déjà généré → naviguer directement
+    if (generatedContent && generatedContent[cmd.toolType] !== undefined) {
+      setActiveTab(cmd.toolType)
+    } else {
+      // Sinon lancer la génération
+      await handleAddTool(cmd.toolType)
+      setActiveTab(cmd.toolType)
+    }
+  }
+
+  const handleChatKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (showCommandMenu) {
+      const filtered = COMMANDS.filter(c =>
+        c.trigger.includes(commandFilter.toLowerCase()) ||
+        c.label.toLowerCase().includes(commandFilter.toLowerCase())
+      )
+      if (e.key === 'ArrowDown') { e.preventDefault(); setCommandActiveIdx(i => Math.min(i + 1, filtered.length - 1)) }
+      if (e.key === 'ArrowUp') { e.preventDefault(); setCommandActiveIdx(i => Math.max(i - 1, 0)) }
+      if (e.key === 'Enter') { e.preventDefault(); if (filtered[commandActiveIdx]) { handleCommandSelect(filtered[commandActiveIdx]); } return }
+      if (e.key === 'Escape') { setShowCommandMenu(false); return }
+      return
+    }
+    if (e.key === 'Enter') handleSendChat()
   }
 
   const STUDY_TABS = ['fiche', 'quiz', 'flashcards']
@@ -386,28 +438,49 @@ export default function CreateSession() {
         </div>
 
         {/* Q&A Chat Input (Fixed Bottom) */}
-        <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-sphera-bg via-sphera-bg/90 to-transparent p-4 pt-12 z-30">
-          <div className="max-w-3xl mx-auto flex items-center gap-3 bg-sphera-surface-2 border border-sphera-border rounded-full p-2 pl-5 shadow-[0_0_30px_rgba(0,0,0,0.5)] focus-within:border-sphera-green/50 transition-colors">
-            <MessageSquare className="w-4 h-4 text-sphera-text-muted hidden sm:block" />
-            <input 
-              type="text" 
-              placeholder="Demandez n'importe quoi sur ce cours..." 
-              value={chatMessage}
-              onChange={e => setChatMessage(e.target.value)}
-              className="flex-1 bg-transparent border-none text-sm text-white placeholder-sphera-text-muted outline-none focus:ring-0"
-              onKeyDown={e => {
-                if(e.key === 'Enter') {
-                  handleSendChat()
-                }
+        <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-sphera-bg via-sphera-bg/90 to-transparent p-4 pt-8 z-30">
+          {/* Suggestions de questions */}
+          {sessionId && activeTab === 'chat' && (
+            <QuestionSuggestions
+              sessionId={sessionId}
+              onSelect={(q) => {
+                setChatMessage(q)
+                chatInputRef.current?.focus()
               }}
             />
-            <button 
-              onClick={handleSendChat}
-              disabled={!chatMessage.trim() || isChatting || !sessionId}
-              className="w-9 h-9 rounded-full bg-sphera-green text-black flex items-center justify-center hover:bg-green-400 disabled:opacity-50 disabled:hover:bg-sphera-green transition-colors flex-shrink-0 shadow-[0_0_15px_rgba(34,197,94,0.3)]"
-            >
-              <Send className="w-4 h-4 ml-0.5" />
-            </button>
+          )}
+
+          {/* Chat input with @ command detection */}
+          <div className="max-w-3xl mx-auto relative">
+            <CommandMenu
+              isVisible={showCommandMenu}
+              filter={commandFilter}
+              activeIndex={commandActiveIdx}
+              onSelect={handleCommandSelect}
+              onClose={() => setShowCommandMenu(false)}
+            />
+            <div className="flex items-center gap-3 bg-sphera-surface-2 border border-sphera-border rounded-full p-2 pl-5 shadow-[0_0_30px_rgba(0,0,0,0.5)] focus-within:border-sphera-green/50 transition-colors">
+              <MessageSquare className="w-4 h-4 text-sphera-text-muted hidden sm:block" />
+              <input 
+                ref={chatInputRef}
+                type="text" 
+                placeholder={sessionId ? "Demandez n'importe quoi... ou @ pour les commandes" : "Génère d'abord une session"}
+                value={chatMessage}
+                onChange={e => handleChatInputChange(e.target.value)}
+                onKeyDown={handleChatKeyDown}
+                className="flex-1 bg-transparent border-none text-sm text-white placeholder-sphera-text-muted outline-none focus:ring-0"
+              />
+              {!chatMessage && (
+                <span className="text-[10px] text-sphera-green/40 font-mono shrink-0 hidden sm:block">@commandes</span>
+              )}
+              <button 
+                onClick={handleSendChat}
+                disabled={!chatMessage.trim() || isChatting || !sessionId}
+                className="w-9 h-9 rounded-full bg-sphera-green text-black flex items-center justify-center hover:bg-green-400 disabled:opacity-50 disabled:hover:bg-sphera-green transition-colors flex-shrink-0 shadow-[0_0_15px_rgba(34,197,94,0.3)]"
+              >
+                <Send className="w-4 h-4 ml-0.5" />
+              </button>
+            </div>
           </div>
         </div>
 

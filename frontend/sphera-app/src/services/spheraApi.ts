@@ -164,6 +164,18 @@ export async function addToolToSession(sessionId: number | string, toolType: Too
   })
 }
 
+export async function getSuggestions(sessionId: number | string): Promise<string[]> {
+  try {
+    const res = await apiFetch<{ success: boolean; data: { suggestions: string[] } }>(
+      `api/sphera/sessions/${sessionId}/suggestions/`,
+      { requireAuth: true }
+    )
+    return res?.data?.suggestions ?? []
+  } catch {
+    return []
+  }
+}
+
 export async function generateAnnale(params: { file: File; mode: 'complete' | 'rapide' }) {
   const formData = new FormData()
   formData.append('file', params.file)

@@ -104,6 +104,30 @@ QA_PROMPT = SPHERA_PERSONA + (
 )
 
 # ---------------------------------------------------------------------------
+# Prompt V2 — Suggestions de questions
+# ---------------------------------------------------------------------------
+
+SUGGESTIONS_PROMPT = SPHERA_PERSONA + """
+From this university course, generate exactly 4 short, relevant questions
+that a student would want to explore before an exam.
+Variety is key: one definition, one comparison, one application, one example.
+Max 12 words per question. Respond ONLY in the same language as the course text.
+
+Strict JSON, no text before or after:
+{{
+  "suggestions": [
+    "Question 1 ?",
+    "Question 2 ?",
+    "Question 3 ?",
+    "Question 4 ?"
+  ]
+}}
+
+Course:
+{text}
+"""
+
+# ---------------------------------------------------------------------------
 # Prompts V2 — Annales (Smart)
 # ---------------------------------------------------------------------------
 
@@ -301,13 +325,54 @@ def extract_text_from_file(file_path: str, max_chars: int = 12000) -> str:
             raise ImportError("PyMuPDF n'est pas installé. Exécutez : pip install pymupdf")
         try:
             doc = fitz.open(file_path)
+            text = ""
             for page in doc:
                 text += page.get_text()
                 if len(text) >= max_chars:
                     break
             doc.close()
+
+            # PDF numérique avec assez de texte → pas besoin d'OCR
+            if len(text.strip()) > 150:
+                logger.info(f"[Extraction] PDF numérique : {len(text)} caractères extraits")
+                return text[:max_chars].strip()
+
+            # Texte insuffisant → PDF scanné, bascule sur OCR
+            logger.info("[Extraction] Texte insuffisant, bascule sur OCR Tesseract...")
+
         except Exception as e:
-            raise ValueError(f"Impossible de lire le PDF : {e}")
+            logger.warning(f"[Extraction] Extraction directe échouée : {e}, tentative OCR...")
+
+        # OCR via Tesseract
+        try:
+            import pytesseract
+            from pdf2image import convert_from_path
+        except ImportError:
+            raise ImportError("pytesseract / pdf2image non installé. Ajoutez-les à requirements.txt")
+
+        try:
+            images = convert_from_path(file_path, dpi=300, fmt='PNG', thread_count=2)
+            ocr_text = ""
+            for i, image in enumerate(images):
+                logger.info(f"[OCR] Traitement page {i + 1}/{len(images)}...")
+                page_text = pytesseract.image_to_string(
+                    image,
+                    lang='fra+eng',
+                    config='--psm 6 --oem 3'
+                )
+                ocr_text += f"\n--- Page {i + 1} ---\n{page_text}"
+                if len(ocr_text) > max_chars:
+                    break
+
+            if ocr_text.strip():
+                logger.info(f"[OCR] Réussi : {len(ocr_text)} caractères")
+                return ("[OCR] " + ocr_text)[:max_chars].strip()  # Préfixe pour détecter côté vue
+            else:
+                logger.warning("[OCR] Aucun texte retourné")
+                return ""
+        except Exception as e:
+            logger.error(f"[OCR] Échec OCR : {e}")
+            raise ValueError(f"Impossible de lire le PDF (numérique + OCR) : {e}")
 
     elif ext == ".docx":
         try:
@@ -560,3 +625,27 @@ def generate_annale(annale_text: str, mode: str, cours_text: str = None) -> dict
 
     raw = _call_with_fallback(prompt, providers=PROVIDERS_ANNALE)
     return _parse_json_with_fallback(raw)
+
+
+# ---------------------------------------------------------------------------
+# Fonctions publiques V2 — Suggestions de questions
+# ---------------------------------------------------------------------------
+
+def generate_suggestions(text: str) -> list:
+    """
+    Génère 4 suggestions de questions contextuelles à partir du texte du cours.
+    Retourne une liste de strings, liste vide si échec.
+    """
+    if not text or len(text.strip()) < 50:
+        return []
+    try:
+        prompt = SUGGESTIONS_PROMPT.format(text=text[:8000])
+        raw = _call_with_fallback(prompt)
+        data = _parse_json_with_fallback(raw)
+        suggestions = data.get("suggestions", [])
+        if isinstance(suggestions, list):
+            return [s for s in suggestions if isinstance(s, str)][:4]
+        return []
+    except Exception as e:
+        logger.warning(f"[Suggestions] Génération échouée : {e}")
+        return []

@@ -7,6 +7,7 @@ from .views import (
     StudySessionListView,
     StudySessionDetailView,
     AddToolToSessionView,
+    StudySessionSuggestionsView,
     ShareStudySessionView,
     SphereStudySessionsView,
     # V2 — Q&A
@@ -34,6 +35,7 @@ urlpatterns = [
     path("sessions/",               StudySessionListView.as_view(),      name="sphera-session-list"),
     path("sessions/<int:pk>/",      StudySessionDetailView.as_view(),    name="sphera-session-detail"),
     path("sessions/<int:pk>/add-tool/", AddToolToSessionView.as_view(),  name="sphera-session-add-tool"),
+    path("sessions/<int:pk>/suggestions/", StudySessionSuggestionsView.as_view(), name="sphera-session-suggestions"),
     path("sessions/<int:pk>/share/", ShareStudySessionView.as_view(),   name="sphera-session-share"),
 
     # --- V2 : Q&A ---

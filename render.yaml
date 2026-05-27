@@ -2,20 +2,16 @@
 services:
   - type: web
     name: campus-sphere-backend
-    runtime: python
+    runtime: docker
     plan: free
-
-    #Root directory of the backend service
-    # Adjust this if your backend code is not in the root of the repository
-    rootDir: backend
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
 
     # Build and deployment settings
-    # Render manages the environment automatically; manual venv creation is optional but included here per your logic
     buildCommand: |
-      pip install -r requirements.txt && python manage.py migrate --noinput && python manage.py collectstatic --noinput
+      python manage.py migrate --noinput && python manage.py collectstatic --noinput
 
-    # Start command for the service
-    # Gunicorn will serve the Django application
+    # Start command defined in Dockerfile CMD
     startCommand: |
       daphne -b 0.0.0.0 -p 10000 --access-log - --proxy-headers -t 120 campus_sphere.asgi:application
       

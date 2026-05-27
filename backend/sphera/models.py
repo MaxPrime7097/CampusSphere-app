@@ -35,6 +35,9 @@ class StudySession(models.Model):
     qa_history = models.JSONField(default=list)
     # Format : [{"question": "...", "answer": "...", "created_at": "..."}]
 
+    # V2 — Suggestions de questions contextuelles
+    suggestions = models.JSONField(default=list, blank=True)
+
     # Partage
     is_shared = models.BooleanField(default=False)
     shared_in_sphere = models.ForeignKey(

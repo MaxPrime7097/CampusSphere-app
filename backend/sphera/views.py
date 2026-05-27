@@ -12,7 +12,7 @@ from rest_framework.views import APIView
 
 from resources.models import Resource
 from spheres.models import Sphere
-from .ai_service import extract_text_from_file, generate_with_fallback, generate_qa_answer, generate_annale
+from .ai_service import extract_text_from_file, generate_with_fallback, generate_qa_answer, generate_annale, generate_suggestions
 from .models import StudySession, AnnaleSession
 from .serializers import (
     StudySessionSerializer,
@@ -361,6 +361,31 @@ class AddToolToSessionView(APIView):
         session.save()
 
         return Response({"success": True, "data": StudySessionSerializer(session).data}, status=status.HTTP_200_OK)
+
+
+class StudySessionSuggestionsView(APIView):
+    """
+    GET /api/sphera/sessions/<pk>/suggestions/
+    Génère (une seule fois) et retourne 4 suggestions de questions sur le cours.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            session = StudySession.objects.get(pk=pk, owner=request.user)
+        except StudySession.DoesNotExist:
+            return Response({"error": "Session introuvable."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Générer les suggestions si pas encore fait
+        if not session.suggestions:
+            text = session.extracted_text
+            if not text:
+                return Response({"success": True, "data": {"suggestions": []}}, status=status.HTTP_200_OK)
+            suggestions = generate_suggestions(text)
+            session.suggestions = suggestions
+            session.save(update_fields=["suggestions"])
+
+        return Response({"success": True, "data": {"suggestions": session.suggestions}}, status=status.HTTP_200_OK)
 
 
 class ShareStudySessionView(APIView):
