@@ -129,7 +129,16 @@ export default function Pricing() {
               ════════════════════════════════════════
             */}
             <div className="w-full min-h-[140px] rounded-xl border border-dashed border-sphera-border flex items-center justify-center text-sphera-text-muted text-sm">
-              📋 Formulaire Tally à insérer ici
+              <iframe
+                src="https://tally.so/embed/vGdQbl?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1"
+                loading="lazy"
+                width="90%"
+                height="1000"
+                frameBorder="0"
+                marginHeight="0"
+                marginWidth="0"
+                title="Sphera Premium Waitlist"
+              />  
             </div>
 
             <p className="text-xs text-sphera-text-muted/50 mt-6">

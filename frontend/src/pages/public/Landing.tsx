@@ -353,10 +353,10 @@ export function Landing() {
             </div>
           </div>
 
-          {/* Fonctionnalités à venir */}
-          <div className="text-center">
+          {/* Fonctionnalités supplémentaires */}
+          <div className="text-center mt-24">
             <h2 className="font-raleway text-4xl md:text-5xl font-bold mb-6">
-              ...Et beaucoup d'autres <span className="campus-gradient bg-clip-text text-transparent">fonctionnalités à venir</span>
+              Un écosystème <span className="campus-gradient bg-clip-text text-transparent">complet</span>
             </h2>
             <div className="grid md:grid-cols-2 gap-8 lg:grid-cols-3">
               <div className="bg-white/50 dark:bg-gray-800/50 rounded-2xl p-6 border-2 border-dashed border-primary/30">
@@ -386,14 +386,17 @@ export function Landing() {
                 </div>
                 <p className="text-muted-foreground font-nunito font-semibold">Une bibliothèque numérique moderne regroupant livres, cours et formations gratuits ou premium, créés en partenariat avec des professeurs et experts pour rendre le savoir accessible à tous.</p>
               </div>
-              <div className="bg-white/50 dark:bg-gray-800/50 rounded-2xl p-6 border-2 border-dashed border-primary/30">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-12 rounded-lg flex items-center justify-center group-hover:animate-pulse-glow">
-                    <img src="/icons/tuteur-ai.png" alt="Assistant" />
-                  </div>
-                  <h3 className="font-semibold font-poppins text-xl">Assistante Sphera</h3>
+              <div className="bg-[#ff9800]/5 dark:bg-[#ff9800]/10 rounded-2xl p-6 border-2 border-[#ff9800] relative overflow-hidden shadow-[0_0_20px_rgba(255,152,0,0.15)] group transition-all hover:scale-105">
+                <div className="absolute -right-6 top-6 bg-[#ff9800] text-white text-xs font-bold px-8 py-1 rotate-45 shadow-sm">
+                  NOUVEAU
                 </div>
-                <p className="text-muted-foreground font-nunito font-semibold">Votre compagnon intelligent pour apprendre et vous organiser. Il résume vos cours, génère des quiz, vous aide à réviser et offre un espace d’écoute et de soutien émotionnel.</p>
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-[#ff9800]/15 ring-1 ring-[#ff9800]/30 flex items-center justify-center group-hover:animate-pulse-glow">
+                    <img src="https://sphera.campussphere.app/favicon-96x96.png" className="w-8 h-8 object-contain" alt="Sphera" />
+                  </div>
+                  <h3 className="font-semibold font-poppins text-xl text-[#ff9800]">Assistante Sphera V2</h3>
+                </div>
+                <p className="text-muted-foreground font-nunito font-semibold">Votre IA académique personnelle. Génerez des fiches de révision instantanées, des quiz interactifs et corrigez vos annales avec des explications détaillées.</p>
               </div>
               <div className="bg-white/50 dark:bg-gray-800/50 rounded-2xl p-6 border-2 border-dashed border-primary/30">
                 <div className="flex items-center gap-4 mb-4">

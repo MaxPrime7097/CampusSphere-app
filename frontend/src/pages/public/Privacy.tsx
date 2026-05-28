@@ -140,6 +140,22 @@ export function Privacy(): JSX.Element {
             <div className="campus-animate-slide-up">
               <div className="p-0">
                 <CardTitle className="font-poppins flex items-center gap-3 p-0">
+                  Traitement par l'Intelligence Artificielle (Sphera)
+                </CardTitle>
+              </div>
+              <div className="font-nunito font-semibold space-y-4 text-muted-foreground mt-4">
+                <p>Dans le cadre de l'utilisation de notre assistante académique Sphera :</p>
+                <ul className="list-disc list-inside space-y-2 ml-4">
+                  <li>Les documents soumis (PDF, images, textes) sont analysés uniquement pour générer vos fiches de révision, quiz ou corrections.</li>
+                  <li>Vos documents personnels <strong>ne sont jamais</strong> utilisés pour entraîner des modèles d'intelligence artificielle publics.</li>
+                  <li>Les données extraites sont sécurisées et peuvent être supprimées de nos serveurs à tout moment sur votre demande.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="campus-animate-slide-up">
+              <div className="p-0">
+                <CardTitle className="font-poppins flex items-center gap-3 p-0">
                   Vos Droits
                 </CardTitle>
               </div>

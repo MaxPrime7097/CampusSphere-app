@@ -137,52 +137,18 @@ export const SpheraHome: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
         <div className="container max-w-6xl mx-auto py-4 md:py-8 px-4">
 
-          {/* ─── Top CTA Header ─── */}
-          <div className="mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="overflow-hidden rounded-[2rem] border border-[#ff9800]/20 bg-gradient-to-br from-[#fff3e0] via-[#fff7ed] to-[#fff1d1] shadow-xl">
-              <div className="relative overflow-hidden">
-                <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-r from-[#ff9800] via-[#ffb74d] to-[#ff9800] opacity-90"></div>
-                <div className="relative px-6 py-6 sm:px-8 sm:py-8">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div className="flex items-start gap-4">
-                      <div className="relative rounded-3xl bg-white/10 p-3 shadow-glow">
-                        <img src="/sphera-logo-dark.png" alt="Logo Sphera" className="h-14 w-auto" />
-                      </div>
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.35em] text-white/80">Sphera</p>
-                        <h2 className="text-3xl md:text-4xl font-bold text-white">Assistant IA académique</h2>
-                        <p className="mt-3 max-w-2xl text-sm md:text-base text-white/90">
-                          Ouvre l’application Sphera standalone avec connexion automatique.
-                          Accède directement à la V2 déjà connectée pour réviser, générer des fiches,
-                          corriger des annales et poser des questions à l’IA.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-3 md:items-end">
-                      <Button
-                        onClick={() => { window.location.href = getSpheraStandaloneUrl(); }}
-                        className="rounded-full bg-slate-950 px-6 py-3 text-white shadow-lg shadow-slate-950/20 hover:bg-slate-900"
-                      >
-                        Ouvrir l'app Sphera
-                      </Button>
-                      <p className="text-xs text-white/75 max-w-sm">
-                        Connexion transparente via le même backend Django et le même token JWT.
-                        Tu arrives directement dans la V2, prêt à chatter.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* ─── Header ─── */}
           <div className="mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div>
-                <div className="flex items-center gap-2.5 mb-2">
-                  <div className="w-9 h-9 rounded-xl bg-[#ff9800]/15 ring-1 ring-[#ff9800]/25 flex items-center justify-center">
-                    <Sparkles className="w-5 h-5 text-[#ff9800]" />
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-xl bg-[#ff9800]/15 ring-1 ring-[#ff9800]/25 flex items-center justify-center">
+                    <img 
+                      src="https://sphera.campussphere.app/favicon-96x96.png" 
+                      className="w-6 h-6 object-contain"
+                      style={{ filter: "brightness(0) saturate(100%) invert(62%) sepia(97%) saturate(3195%) hue-rotate(13deg) brightness(103%) contrast(101%)" }}
+                      alt="Sphera Logo"
+                    />
                   </div>
                   <h1 className="text-3xl font-bold tracking-tight">
                     Assistante <span className="text-[#ff9800]">Sphera</span>
@@ -198,22 +164,33 @@ export const SpheraHome: React.FC = () => {
               </div>
 
               {/* Actions */}
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2.5">
                 <Button
+                  onClick={() => { window.open(getSpheraStandaloneUrl(), "_blank"); }}
+                  className="gap-2 bg-[#ff9800] hover:bg-[#ff9800]/90 text-white font-semibold shadow-md shadow-[#ff9800]/10 hover:shadow-lg transition-all"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Ouvrir l'app Sphera
+                </Button>
+                
+                <Button
+                  variant="outline"
                   onClick={() => fileInputRef.current?.click()}
-                  className="gap-2 bg-[#ff9800] hover:bg-[#ff9800]/90 text-white"
+                  className="gap-2 border-border text-foreground hover:bg-accent"
                 >
                   <Upload className="h-4 w-4" />
                   Uploader un cours
                 </Button>
+                
                 <Button
                   variant="outline"
                   onClick={() => setAnnaleModalOpen(true)}
-                  className="gap-2 border-[#ff9800]/30 text-[#ff9800] hover:bg-[#ff9800]/10"
+                  className="gap-2 border-border text-foreground hover:bg-accent"
                 >
                   <Scroll className="h-4 w-4" />
                   Corriger une annale
                 </Button>
+                
                 <input
                   ref={fileInputRef}
                   type="file"

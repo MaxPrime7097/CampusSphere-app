@@ -1,5 +1,5 @@
 // Force Vite HMR reload
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useSpheraAuth } from './contexts/SpheraAuthContext'
 import Landing from './pages/Landing'
@@ -17,6 +17,23 @@ import BlogDetail from './pages/BlogDetail'
 import Privacy from './pages/Privacy'
 import Terms from './pages/Terms'
 import { SidebarLayout } from './components/layout/SidebarLayout'
+
+function SSOCatcher() {
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const token = params.get('access_token')
+    const refresh = params.get('refresh_token')
+    if (token) {
+      localStorage.setItem('sphera_access', token)
+      if (refresh) localStorage.setItem('sphera_refresh', refresh)
+      // Nettoyer l'URL
+      window.history.replaceState({}, document.title, window.location.pathname)
+      // Recharger pour que le contexte Auth prenne le token en compte
+      window.location.href = '/dashboard'
+    }
+  }, [])
+  return null
+}
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useSpheraAuth()
@@ -45,6 +62,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <div className="flex flex-col min-h-screen">
+      <SSOCatcher />
       <main className="flex-1">
         <Routes>
           {/* Public */}

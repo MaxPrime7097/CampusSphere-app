@@ -1,18 +1,18 @@
 import { useState } from 'react'
 import jsPDF from 'jspdf'
 
-// ── Couleurs ──────────────────────────────────────────────
+// ── Couleurs Premium (Orange Sphera V2 / CampusSphere) ─────────
 const C = {
-  green:    [34, 197, 94]   as [number,number,number],
-  greenBg:  [240, 253, 244] as [number,number,number],
-  greenBd:  [187, 247, 208] as [number,number,number],
+  brand:    [255, 152, 0]   as [number,number,number], // #ff9800
+  brandBg:  [255, 248, 235] as [number,number,number], // Orange très clair
+  brandBd:  [254, 215, 170] as [number,number,number], // Orange bordure
   dark:     [18,  18,  18]  as [number,number,number],
-  text:     [30,  30,  30]  as [number,number,number],
+  text:     [40,  40,  40]  as [number,number,number],
   muted:    [100, 100, 100] as [number,number,number],
-  border:   [220, 220, 220] as [number,number,number],
-  cardBg:   [249, 250, 251] as [number,number,number],
-  yellowBg: [255, 251, 235] as [number,number,number],
-  yellowBd: [253, 224, 100] as [number,number,number],
+  border:   [229, 231, 235] as [number,number,number], // Gray-200
+  cardBg:   [249, 250, 251] as [number,number,number], // Gray-50
+  yellowBg: [254, 243, 199] as [number,number,number], // Amber-100
+  yellowBd: [252, 211, 77]  as [number,number,number], // Amber-300
   white:    [255, 255, 255] as [number,number,number],
 }
 
@@ -36,9 +36,9 @@ class PDFBuilder {
     if (this.y + need > H - 18) this.newPage()
   }
 
-  // ── Barre verte en haut ──
+  // ── Barre de marque Orange en haut ──
   header(courseName: string, label: string, logoData: string) {
-    this.pdf.setFillColor(...C.green)
+    this.pdf.setFillColor(...C.brand)
     this.pdf.rect(0, 0, W, 20, 'F')
 
     // Logo image
@@ -61,22 +61,22 @@ class PDFBuilder {
 
     // Nom du cours
     this.pdf.setTextColor(...C.dark)
-    this.pdf.setFontSize(16)
+    this.pdf.setFontSize(15)
     this.pdf.setFont('helvetica', 'bold')
     const lines = this.pdf.splitTextToSize(courseName || 'Document', CW)
     this.pdf.text(lines, M, this.y)
-    this.y += lines.length * 7
+    this.y += lines.length * 6.5
 
-    // Badge type (Fiche / Correction)
-    this.pdf.setFillColor(...C.greenBg)
-    this.pdf.setDrawColor(...C.green)
-    this.pdf.setLineWidth(0.3)
-    this.pdf.roundedRect(M, this.y, 52, 6.5, 1.5, 1.5, 'FD')
-    this.pdf.setTextColor(...C.green)
+    // Badge type
+    this.pdf.setFillColor(...C.brandBg)
+    this.pdf.setDrawColor(...C.brandBd)
+    this.pdf.setLineWidth(0.25)
+    this.pdf.roundedRect(M, this.y, 45, 6, 1.2, 1.2, 'FD')
+    this.pdf.setTextColor(...C.brand)
     this.pdf.setFontSize(7)
     this.pdf.setFont('helvetica', 'bold')
-    this.pdf.text(label.toUpperCase(), M + 3, this.y + 4.5)
-    this.y += 11
+    this.pdf.text(label.toUpperCase(), M + 3, this.y + 4.2)
+    this.y += 10
 
     this.divider()
   }
@@ -88,122 +88,183 @@ class PDFBuilder {
     this.y += 6
   }
 
-  // ── Titre de section (ex: Résumé, Points clés) ──
-  sectionTitle(text: string, color: [number,number,number] = C.green) {
+  // ── Titre de section stylisé ──
+  sectionTitle(text: string, color: [number,number,number] = C.brand) {
     this.guard(14)
     this.pdf.setFillColor(...color)
     this.pdf.rect(M, this.y, 3, 5.5, 'F')
     this.pdf.setTextColor(...color)
-    this.pdf.setFontSize(8.5)
+    this.pdf.setFontSize(9)
     this.pdf.setFont('helvetica', 'bold')
-    this.pdf.text(text.toUpperCase(), M + 6, this.y + 4)
+    this.pdf.text(text.toUpperCase(), M + 6, this.y + 4.2)
     this.y += 10
   }
 
-  // ── Texte courant ──
+  // ── Unified text drawer with automatic inline markdown bold tracking ──
   text(content: string, indent = 0, opts: { bold?: boolean; size?: number; color?: [number,number,number] } = {}) {
     const { bold = false, size = 9.5, color = C.text } = opts
     this.pdf.setTextColor(...color)
     this.pdf.setFontSize(size)
-    this.pdf.setFont('helvetica', bold ? 'bold' : 'normal')
-    const lines = this.pdf.splitTextToSize(String(content || ''), CW - indent)
-    this.guard(lines.length * 5.2)
-    this.pdf.text(lines, M + indent, this.y)
-    this.y += lines.length * 5.2 + 1.5
+
+    let cleanText = String(content || '')
+      .replace(/^#+\s+/gm, '') // Enlever les titres markdown résiduels
+      .replace(/\*([^*]+)\*/g, '$1') // Enlever l'italique simple
+
+    // Séparer les paragraphes par saut de ligne
+    const paragraphs = cleanText.split('\n')
+    let isBoldState = bold
+
+    paragraphs.forEach((p, pIdx) => {
+      // Gérer le paragraphe vide
+      if (!p.trim()) {
+        this.y += 2.5
+        return
+      }
+
+      // Si c'est un bullet point markdown brut (ex: "- Point" ou "* Point")
+      let hasBullet = false
+      let processedP = p
+      if (/^\s*[-*+]\s+/.test(processedP)) {
+        hasBullet = true
+        processedP = processedP.replace(/^\s*[-*+]\s+/, '')
+      }
+
+      const lines = this.pdf.splitTextToSize(processedP, CW - indent - (hasBullet ? 6 : 0))
+      this.guard(lines.length * 5.2 + 2)
+
+      lines.forEach((line: string) => {
+        let xOffset = M + indent
+        
+        // Dessiner le point si c'est un bullet
+        if (hasBullet && line === lines[0]) {
+          this.pdf.setFillColor(...C.brand)
+          this.pdf.circle(xOffset + 2, this.y - 1.5, 1, 'F')
+          xOffset += 6
+        } else if (hasBullet) {
+          xOffset += 6
+        }
+
+        // Séparer la ligne par les balises de gras **
+        const parts = line.split('**')
+        
+        parts.forEach((part, partIdx) => {
+          // L'état gras alterne à chaque délimiteur **
+          const activeBold = partIdx % 2 === 0 ? isBoldState : !isBoldState
+          
+          this.pdf.setFont('helvetica', activeBold ? 'bold' : 'normal')
+          this.pdf.setTextColor(...(activeBold ? C.dark : color))
+          
+          this.pdf.text(part, xOffset, this.y)
+          xOffset += this.pdf.getTextWidth(part)
+        })
+
+        // Mettre à jour l'état persistant si on a rencontré des délimiteurs
+        if (parts.length > 1 && parts.length % 2 === 0) {
+          isBoldState = !isBoldState
+        }
+
+        this.y += 5.2
+      })
+
+      // Espace léger entre paragraphes
+      if (pIdx < paragraphs.length - 1) {
+        this.y += 2
+      }
+    })
   }
 
-  // ── Bullet numéroté ──
-  bullet(text: string, n?: number) {
+  // ── Bullet Point stylisé ──
+  bullet(content: string, n?: number) {
     this.guard(9)
     const bx = M + 4
-    const tx = M + 11
     if (n !== undefined) {
-      this.pdf.setFillColor(...C.green)
+      this.pdf.setFillColor(...C.brand)
       this.pdf.circle(bx, this.y - 1.5, 3, 'F')
       this.pdf.setTextColor(...C.white)
-      this.pdf.setFontSize(7)
+      this.pdf.setFontSize(7.5)
       this.pdf.setFont('helvetica', 'bold')
       this.pdf.text(String(n), bx, this.y + 0.5, { align: 'center' })
     } else {
       this.pdf.setFillColor(...C.muted)
-      this.pdf.circle(bx, this.y - 1.8, 1.2, 'F')
+      this.pdf.circle(bx, this.y - 1.8, 1, 'F')
     }
-    this.pdf.setTextColor(...C.text)
-    this.pdf.setFontSize(9.5)
-    this.pdf.setFont('helvetica', 'normal')
-    const lines = this.pdf.splitTextToSize(String(text || ''), CW - 13)
-    this.pdf.text(lines, tx, this.y)
-    this.y += lines.length * 5 + 2.5
+
+    this.text(content, 11, { bold: false, size: 9.5, color: C.text })
   }
 
-  // ── Carte définition ──
+  // ── Carte Définition ──
   defCard(terme: string, definition: string) {
     const tLines = this.pdf.splitTextToSize(terme || '', CW - 10)
     const dLines = this.pdf.splitTextToSize(definition || '', CW - 10)
-    const h = (tLines.length + dLines.length) * 5 + 10
+    const h = tLines.length * 5 + dLines.length * 4.8 + 8
     this.guard(h + 4)
 
+    const startY = this.y
     this.pdf.setFillColor(...C.cardBg)
     this.pdf.setDrawColor(...C.border)
     this.pdf.setLineWidth(0.2)
-    this.pdf.roundedRect(M, this.y, CW, h, 2, 2, 'FD')
-    this.pdf.setFillColor(...C.green)
-    this.pdf.rect(M, this.y, 2.5, h, 'F')
+    this.pdf.roundedRect(M, startY, CW, h, 2, 2, 'FD')
+    
+    // Barre de marque Orange
+    this.pdf.setFillColor(...C.brand)
+    this.pdf.rect(M, startY, 2, h, 'F')
 
-    this.pdf.setTextColor(...C.dark)
-    this.pdf.setFontSize(9.5)
-    this.pdf.setFont('helvetica', 'bold')
-    this.pdf.text(tLines, M + 6, this.y + 5)
-
-    this.pdf.setFontSize(9)
-    this.pdf.setFont('helvetica', 'normal')
-    this.pdf.setTextColor(...C.muted)
-    this.pdf.text(dLines, M + 6, this.y + 5 + tLines.length * 5)
-
-    this.y += h + 3
+    // Terme
+    this.y = startY + 4.5
+    this.text(terme, 6, { bold: true, size: 9.5, color: C.dark })
+    
+    // Définition
+    this.y = startY + 4.5 + tLines.length * 5
+    this.text(definition, 6, { bold: false, size: 8.5, color: C.muted })
+    
+    this.y = startY + h + 2.5
   }
 
-  // ── Bloc formule ──
-  formula(text: string) {
-    const lines = this.pdf.splitTextToSize(text || '', CW - 10)
+  // ── Bloc Formule ──
+  formula(content: string) {
+    const lines = this.pdf.splitTextToSize(content || '', CW - 10)
     const h = lines.length * 5 + 7
     this.guard(h + 3)
 
-    this.pdf.setFillColor(...C.greenBg)
-    this.pdf.setDrawColor(...C.greenBd)
+    const startY = this.y
+    this.pdf.setFillColor(...C.brandBg)
+    this.pdf.setDrawColor(...C.brandBd)
     this.pdf.setLineWidth(0.3)
-    this.pdf.roundedRect(M, this.y, CW, h, 2, 2, 'FD')
-    this.pdf.setTextColor(...C.green)
-    this.pdf.setFontSize(9)
-    this.pdf.setFont('helvetica', 'bold')
-    this.pdf.text(lines, M + 5, this.y + 5)
-    this.y += h + 3
+    this.pdf.roundedRect(M, startY, CW, h, 2, 2, 'FD')
+
+    this.y = startY + 4.5
+    this.text(content, 5, { bold: true, size: 9, color: C.brand })
+    
+    this.y = startY + h + 2.5
   }
 
-  // ── Bloc À retenir ──
-  tip(text: string) {
-    const lines = this.pdf.splitTextToSize(text || '', CW - 14)
+  // ── Bloc Attention / À Retenir ──
+  tip(content: string) {
+    const lines = this.pdf.splitTextToSize(content || '', CW - 14)
     const h = lines.length * 5 + 7
     this.guard(h + 3)
 
+    const startY = this.y
     this.pdf.setFillColor(...C.yellowBg)
     this.pdf.setDrawColor(...C.yellowBd)
     this.pdf.setLineWidth(0.3)
-    this.pdf.roundedRect(M, this.y, CW, h, 2, 2, 'FD')
-    this.pdf.setFillColor(251, 191, 36)
-    this.pdf.circle(M + 5.5, this.y + h / 2, 2.5, 'F')
-    this.pdf.setTextColor(255, 255, 255)
-    this.pdf.setFontSize(7)
+    this.pdf.roundedRect(M, startY, CW, h, 2, 2, 'FD')
+    
+    // Icône Attention
+    this.pdf.setFillColor(245, 158, 11) // Amber 500
+    this.pdf.circle(M + 5.5, startY + h / 2, 2.5, 'F')
+    this.pdf.setTextColor(...C.white)
+    this.pdf.setFontSize(7.5)
     this.pdf.setFont('helvetica', 'bold')
-    this.pdf.text('!', M + 5.5, this.y + h / 2 + 1.5, { align: 'center' })
-    this.pdf.setTextColor(92, 65, 0)
-    this.pdf.setFontSize(9)
-    this.pdf.setFont('helvetica', 'normal')
-    this.pdf.text(lines, M + 11, this.y + 5)
-    this.y += h + 2.5
+    this.pdf.text('!', M + 5.5, startY + h / 2 + 1, { align: 'center' })
+
+    this.y = startY + 4.5
+    this.text(content, 11, { bold: false, size: 9, color: [120, 53, 4] }) // Amber 900
+    
+    this.y = startY + h + 2.5
   }
 
-  // ── Question annale ──
+  // ── Bloc de Correction de Question (Annale) ──
   questionBlock(q: any, mode?: string) {
     const enonce = q.enonce || q.question || ''
     const reponse = q.reponse || ''
@@ -211,79 +272,67 @@ class PDFBuilder {
     const chapitre = q.source_cours || q.chapitre || ''
     const num = q.numero || '?'
 
-    // Énoncé
     const eLines = this.pdf.splitTextToSize(String(enonce), CW - 16)
     const rLines = this.pdf.splitTextToSize(String(reponse), CW - 20)
     const xLines = explication ? this.pdf.splitTextToSize(String(explication), CW - 20) : []
-    const totalH = (eLines.length + rLines.length) * 5 + (xLines.length * 4.8) + 22 + (chapitre ? 8 : 0)
+    const totalH = eLines.length * 5 + rLines.length * 4.8 + (xLines.length * 4.8) + 22 + (chapitre ? 8 : 0)
     this.guard(totalH)
 
     const startY = this.y
 
     // Numéro bulle
-    this.pdf.setFillColor(...C.green)
+    this.pdf.setFillColor(...C.brand)
     this.pdf.circle(M + 4, startY + 4, 3.5, 'F')
     this.pdf.setTextColor(...C.white)
-    this.pdf.setFontSize(7)
+    this.pdf.setFontSize(7.5)
     this.pdf.setFont('helvetica', 'bold')
     this.pdf.text(String(num), M + 4, startY + 5.5, { align: 'center' })
 
-    // Énoncé
-    this.pdf.setTextColor(...C.dark)
-    this.pdf.setFontSize(9.5)
-    this.pdf.setFont('helvetica', 'bold')
-    this.pdf.text(eLines, M + 11, startY + 5)
-    this.y = startY + eLines.length * 5 + 7
+    // Question
+    this.y = startY + 5
+    this.text(enonce, 11, { bold: true, size: 9.5, color: C.dark })
+    this.y += 2
 
     // Réponse
-    this.pdf.setFillColor(...C.greenBg)
-    this.pdf.setDrawColor(...C.greenBd)
-    const rH = rLines.length * 4.8 + 7
-    this.pdf.roundedRect(M + 6, this.y, CW - 6, rH, 1.5, 1.5, 'FD')
-    this.pdf.setFillColor(...C.green)
-    this.pdf.rect(M + 6, this.y, 2, rH, 'F')
-    this.pdf.setTextColor(...C.green)
-    this.pdf.setFontSize(7)
-    this.pdf.setFont('helvetica', 'bold')
-    this.pdf.text('RÉPONSE', M + 11, this.y + 3.5)
-    this.pdf.setTextColor(...C.text)
-    this.pdf.setFontSize(9)
-    this.pdf.setFont('helvetica', 'normal')
-    this.pdf.text(rLines, M + 11, this.y + 7)
-    this.y += rH + 2
+    const rStart = this.y
+    const rH = rLines.length * 4.8 + 8
+    this.pdf.setFillColor(...C.brandBg)
+    this.pdf.setDrawColor(...C.brandBd)
+    this.pdf.roundedRect(M + 6, rStart, CW - 6, rH, 1.5, 1.5, 'FD')
+    
+    this.pdf.setFillColor(...C.brand)
+    this.pdf.rect(M + 6, rStart, 2, rH, 'F')
+    
+    this.y = rStart + 4
+    this.text(reponse, 11, { bold: false, size: 9, color: C.text })
+    this.y = rStart + rH + 3
 
     // Explication (mode complet)
     if (explication && mode !== 'rapide') {
-      const xH = xLines.length * 4.8 + 7
-      this.pdf.setFillColor(239, 246, 255)
-      this.pdf.setDrawColor(191, 219, 254)
-      this.pdf.roundedRect(M + 6, this.y, CW - 6, xH, 1.5, 1.5, 'FD')
-      this.pdf.setFillColor(59, 130, 246)
-      this.pdf.rect(M + 6, this.y, 2, xH, 'F')
-      this.pdf.setTextColor(59, 130, 246)
-      this.pdf.setFontSize(7)
-      this.pdf.setFont('helvetica', 'bold')
-      this.pdf.text('EXPLICATION', M + 11, this.y + 3.5)
-      this.pdf.setTextColor(...C.muted)
-      this.pdf.setFontSize(8.5)
-      this.pdf.setFont('helvetica', 'normal')
-      this.pdf.text(xLines, M + 11, this.y + 7)
-      this.y += xH + 2
+      const xStart = this.y
+      const xH = xLines.length * 4.8 + 8
+      this.pdf.setFillColor(239, 246, 255) // Blue-50
+      this.pdf.setDrawColor(191, 219, 254) // Blue-200
+      this.pdf.roundedRect(M + 6, xStart, CW - 6, xH, 1.5, 1.5, 'FD')
+      
+      this.pdf.setFillColor(59, 130, 246) // Blue-500
+      this.pdf.rect(M + 6, xStart, 2, xH, 'F')
+      
+      this.y = xStart + 4
+      this.text(explication, 11, { bold: false, size: 8.5, color: [30, 64, 175] }) // Blue-800
+      this.y = xStart + xH + 3
     }
 
     // Chapitre
     if (chapitre) {
-      this.pdf.setTextColor(...C.muted)
-      this.pdf.setFontSize(7.5)
-      this.pdf.setFont('helvetica', 'italic')
-      this.pdf.text(`📖  ${chapitre}`, M + 11, this.y + 3)
-      this.y += 7
+      this.text(`📖  ${chapitre}`, 11, { bold: false, size: 7.5, color: C.muted })
+      this.y += 2
     }
 
-    this.y += 3
+    this.y += 2
   }
 
-  // ── Footer sur toutes les pages ──
+  // ── Footer finalisé sur toutes les pages ──
   finalize(filename: string) {
     const total = this.pdf.getNumberOfPages()
     for (let i = 1; i <= total; i++) {
@@ -315,25 +364,25 @@ export function generateFichePDF(content: any, sourceName: string | undefined, l
   }
 
   if (f.points_cles?.length) {
-    b.sectionTitle('Points clés', C.green)
+    b.sectionTitle('Points clés', C.brand)
     f.points_cles.forEach((p: string, i: number) => b.bullet(p, i + 1))
     b.y += 2
   }
 
   if (f.definitions?.length) {
-    b.sectionTitle('Définitions', [147, 51, 234])
-    f.definitions.forEach((d: any) => b.defCard(d.terme, d.definition))
+    b.sectionTitle('Définitions', [147, 51, 234]) // Violet
+    f.definitions.forEach((d: any) => b.defCard(d.terme || d.word || '', d.definition || d.meaning || ''))
     b.y += 2
   }
 
   if (f.formules?.length) {
-    b.sectionTitle('Formules & Concepts', [236, 72, 153])
+    b.sectionTitle('Formules & Concepts', [236, 72, 153]) // Rose
     f.formules.forEach((fm: string) => b.formula(fm))
     b.y += 2
   }
 
   if (f.a_retenir?.length) {
-    b.sectionTitle('À retenir', [234, 179, 8])
+    b.sectionTitle('À retenir', [234, 179, 8]) // Jaune
     f.a_retenir.forEach((t: string) => b.tip(t))
   }
 
@@ -351,7 +400,6 @@ export function generateAnnalePDF(annale: any, sourceName: string | undefined, l
 
   const isRawArray  = Array.isArray(content)
   const hasSections = !isRawArray && Array.isArray(content?.sections) && content.sections.length > 0
-  const hasLegacy   = !isRawArray && Array.isArray(content?.corrections)
 
   if (hasSections) {
     content.sections.forEach((section: any, si: number) => {
@@ -377,7 +425,6 @@ export function generateAnnalePDF(annale: any, sourceName: string | undefined, l
 }
 
 // ── Hook ─────────────────────────────────────────────────
-
 const loadImage = async (url: string): Promise<string> => {
   return new Promise((resolve, reject) => {
     const img = new Image()
@@ -406,7 +453,6 @@ export const useDownloadPDF = () => {
     setIsDownloading(true)
     try { 
       await document.fonts.ready;
-      // On charge le logo (fallback vide si échec pour ne pas bloquer le PDF)
       let logoData = ''
       try {
         logoData = await loadImage('/favicon-96x96.png')
