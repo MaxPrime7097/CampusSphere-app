@@ -10,6 +10,9 @@ const getApiBase = () => {
   if (hostname === "www.campussphere.app" || hostname === "campussphere.app" || hostname.includes("campussphere.app")) {
     return "https://api.campussphere.app";
   }
+  if (hostname.includes("sphera.campussphere.app")) {
+    return "https://sphera.campussphere.app";
+  }
   if (hostname.includes("onrender.com") && !hostname.includes("-backend")) {
     return "https://campus-sphere-backend-dyfu.onrender.com";
   }
