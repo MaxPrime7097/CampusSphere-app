@@ -34,9 +34,10 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="font-poppins font-semibold mb-4">Informations</h4>
+            <h4 className="font-poppins font-semibold mb-4">Company</h4>
             <ul className="font-nunito font-semibold space-y-2 text-sm text-muted-foreground">
               <li><a href="/cs-inc" className="hover:text-foreground transition-colors">CampusSphere</a></li>
+              <li><a href="https://sphera.campussphere.app" target='blank' className="hover:text-foreground transition-colors">Sphera</a></li>
               <li><a href="/cs-inc/about" className="hover:text-foreground transition-colors">À propos</a></li>
               <li><a href="/cs-inc/contact" className="hover:text-foreground transition-colors">Contact</a></li>
               <li><a href="/cs-inc/faq" className="hover:text-foreground transition-colors">FAQ</a></li>

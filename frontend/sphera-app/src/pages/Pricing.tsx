@@ -135,8 +135,8 @@ export default function Pricing() {
                 width="90%"
                 height="1000"
                 frameBorder="0"
-                marginHeight="0"
-                marginWidth="0"
+                marginHeight={0}
+                marginWidth={0}
                 title="Sphera Premium Waitlist"
               />  
             </div>
