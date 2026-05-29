@@ -15,6 +15,19 @@ import { sectionOneCard, sectionTwoCard, sectionThreeCard } from "@/components/l
 export function Landing() {
   const navigate = useNavigate();
 
+  const getSpheraUrl = () => {
+    const envUrl = (import.meta.env.VITE_SPHERA_STANDALONE_URL as string)?.trim();
+    const isLocal = ["localhost", "127.0.0.1"].some((host) => window.location.hostname.includes(host));
+    const baseUrl = envUrl || (isLocal ? "http://localhost:4173" : "https://sphera.campussphere.app");
+    const accessToken = localStorage.getItem("access") || localStorage.getItem("access_token");
+    const refreshToken = localStorage.getItem("refresh");
+    const params = new URLSearchParams();
+    if (accessToken) params.set("access_token", accessToken);
+    if (refreshToken) params.set("refresh_token", refreshToken);
+    const query = params.toString();
+    return `${baseUrl.replace(/\/$/, "")}/app${query ? `?${query}` : ""}`;
+  };
+
   useEffect(() => {
     // Création des particules
     function createParticles() {
@@ -359,7 +372,7 @@ export function Landing() {
                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
                   </button>
                   <a
-                    href="https://sphera.campussphere.app"
+                    href={getSpheraUrl()}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2 px-7 py-4 rounded-2xl text-sm font-semibold transition-all duration-200 hover:scale-105 font-poppins"

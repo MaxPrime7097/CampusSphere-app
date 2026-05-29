@@ -145,7 +145,7 @@ export const SpheraHome: React.FC = () => {
                   <div className="w-10 h-10 rounded-xl bg-[#ff9800]/15 ring-1 ring-[#ff9800]/25 flex items-center justify-center">
                     <img 
                       src="/sphera-logo.png" 
-                      className="w-6 h-6 object-contain"
+                      className="w-10 h-10 object-contain"
                       style={{ filter: "brightness(0) saturate(100%) invert(62%) sepia(97%) saturate(3195%) hue-rotate(13deg) brightness(103%) contrast(101%)" }}
                       alt="Sphera Logo"
                     />

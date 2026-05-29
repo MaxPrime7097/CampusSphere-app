@@ -55,7 +55,7 @@ No text before or after the JSON. The JSON KEYS must remain in French ("question
 
 Strict JSON format:
 {{
-  "titre": "Quiz - Course Title",
+  "titre": "Course Title",
   "questions": [
     {{
       "question": "...",
@@ -76,7 +76,7 @@ No text before or after the JSON. The JSON KEYS must remain in French ("recto", 
 
 Strict JSON format:
 {{
-  "titre": "Flashcards - Course Title",
+  "titre": "Course Title",
   "cartes": [
     {{
       "recto": "Question or term",

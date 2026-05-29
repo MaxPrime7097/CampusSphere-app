@@ -15,10 +15,8 @@ function hydrateSpheraTokensFromUrl() {
   if (accessToken) localStorage.setItem('sphera_access', accessToken)
   if (refreshToken) localStorage.setItem('sphera_refresh', refreshToken)
 
-  params.delete('access_token')
-  params.delete('refresh_token')
-  const cleanUrl = `${window.location.origin}${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}${window.location.hash}`
-  window.history.replaceState({}, document.title, cleanUrl)
+  // Redirect immediately to the dashboard to complete the SSO authentication flow
+  window.location.href = '/dashboard'
 }
 
 hydrateSpheraTokensFromUrl()
