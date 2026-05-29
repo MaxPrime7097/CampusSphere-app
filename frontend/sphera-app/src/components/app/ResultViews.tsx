@@ -87,9 +87,8 @@ export function FicheView({ content, sourceName }: { content: any; sourceName?: 
         {/* PDF Header */}
         <div className="flex items-center justify-between pb-4 border-b border-sphera-border">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full border-2 border-sphera-green flex items-center justify-center text-xs font-bold text-sphera-green">S</div>
             <div>
-              <p className="text-xs text-sphera-green font-semibold">Sphera — Fiche de révision</p>
+              <p className="text-xs text-sphera-green font-semibold">Fiche de révision</p>
               <p className="text-xs text-sphera-text-muted">Généré le {new Date().toLocaleDateString('fr-FR')}</p>
             </div>
           </div>

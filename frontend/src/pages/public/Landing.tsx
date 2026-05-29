@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
-import { ArrowRight, Users, Calendar, BookOpen, Shield, Star, UserPlus, LogIn, Sparkles, Zap, Heart, FolderOpen, MessageSquare, Dot, Circle } from "lucide-react";
+import { ArrowRight, Users, Calendar, BookOpen, Shield, Star, UserPlus, LogIn, Sparkles, Zap, Heart, FolderOpen, MessageSquare, Dot, Circle, FileDown, Bot, FilePenLine, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
@@ -234,68 +234,6 @@ export function Landing() {
             </div>
           </div>
 
-          {/* Sphera IA Section */}
-          <section className="mb-20 rounded-[2rem] border border-border/20 bg-white/80 p-8 shadow-xl backdrop-blur-sm">
-            <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-10 items-center">
-              <div className="space-y-6">
-                <div className="inline-flex items-center gap-2 rounded-full bg-[#fff4e3] px-4 py-2 text-sm font-semibold text-[#b45309]">
-                  <Sparkles className="h-4 w-4" />
-                  Nouveau : Sphera IA
-                </div>
-                <h2 className="text-3xl md:text-4xl font-bold text-foreground">L’IA Sphera rejoint l’écosystème CampusSphere</h2>
-                <p className="text-lg text-muted-foreground max-w-2xl">
-                  Notre assistant IA académique est maintenant intégré à CampusSphere.
-                  Transforme tes PDF et annales en fiches, quiz et flashcards dès maintenant,
-                  avec une connexion transparente et le même compte.
-                </p>
-                <ul className="list-disc list-inside space-y-3 text-muted-foreground text-base">
-                  <li>Générer des fiches et quiz en quelques secondes</li>
-                  <li>Corriger des annales automatiquement</li>
-                  <li>Poser tes questions de révision à l’IA</li>
-                </ul>
-                <div className="flex flex-wrap gap-3">
-                  <Button size="lg" onClick={() => navigate('/sphera')} className="bg-[#ff9800] text-white hover:bg-[#f57c00]">
-                    Découvrir Sphera
-                  </Button>
-                  <Button variant="outline" size="lg" onClick={() => navigate('/sphera')}>
-                    Aller à Sphera
-                  </Button>
-                </div>
-              </div>
-              <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#fff3e0] via-[#fff7ed] to-[#ffe8cc] p-8 shadow-inner">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,152,0,0.18),transparent_40%)]" />
-                <div className="relative space-y-5">
-                  <div className="rounded-3xl border border-white/70 bg-white/90 p-6 shadow-xl">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#ff9800]/15 text-[#ff9800]">
-                        <Sparkles className="h-6 w-6" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-[#b45309]">Sphera IA</p>
-                        <p className="text-xs text-muted-foreground">Assistant de révision académique</p>
-                      </div>
-                    </div>
-                    <p className="mt-4 text-sm text-foreground/80">
-                      Accompagne tes révisions avec une IA qui comprend ton contenu et génère les meilleurs supports.
-                    </p>
-                  </div>
-                  <div className="rounded-3xl border border-white/70 bg-slate-950/95 p-6 text-white shadow-2xl">
-                    <p className="text-lg font-semibold">Connexion fluide</p>
-                    <p className="mt-3 text-sm text-slate-300">
-                      Même compte, même backend. Ouvre Sphera standalone et commence ta session sans reconnecter.
-                    </p>
-                  </div>
-                  <div className="rounded-3xl border border-white/70 bg-white/95 p-6">
-                    <p className="text-sm uppercase tracking-[0.3em] text-[#b45309]">Documents traités</p>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      PDF, annales et ressources sont analysés pour créer des supports, sans être utilisés pour entraîner des modèles publics.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
           {/* Ressources Section */}
           <div className="flex grid lg:grid-cols-2 gap-12 items-center mb-20">
             {/* Illustration Ressources */}
@@ -353,10 +291,145 @@ export function Landing() {
             </div>
           </div>
 
-          {/* Fonctionnalités supplémentaires */}
-          <div className="text-center mt-24">
+          {/* ── Sphera Section ─────────────────────────────────── */}
+          <div className="relative mb-20 rounded-3xl overflow-hidden">
+            {/* Fond Midnight Black avec gradient vert profond */}
+            <div
+              className="absolute inset-0 rounded-3xl"
+              style={{ background: 'linear-gradient(135deg, #0d0e1b 0%, #0f1a14 60%, #0b1a10 100%)' }}
+            />
+            {/* Glow vert Sphera en arrière-plan */}
+            <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full blur-3xl opacity-20" style={{ background: '#22c55e' }} />
+            <div className="absolute -bottom-10 -left-10 w-60 h-60 rounded-full blur-3xl opacity-10" style={{ background: '#22c55e' }} />
+
+            <div className="relative z-10 grid lg:grid-cols-2 gap-10 items-center p-10 md:p-16">
+              {/* Colonne gauche : texte + CTA */}
+              <div className="space-y-7">
+                {/* Badge */}
+                <div
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold tracking-wider font-poppins"
+                  style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.35)', color: '#22c55e' }}
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Nouveau - Powered by CampusSphere
+                </div>
+
+                {/* Logo + Titre */}
+                <div className="flex items-center gap-4">
+                  <img
+                    src="/sphera-logo.png"
+                    alt="Sphera"
+                    className="w-14 h-14 rounded-2xl"
+                    style={{ filter: 'invert(58%) sepia(80%) saturate(400%) hue-rotate(100deg) brightness(105%)' }}
+                  />
+                  <div>
+                    <h2 className="text-4xl md:text-5xl font-bold text-white font-poppins tracking-tight">
+                      Sphera
+                    </h2>
+                    <p className="text-sm font-semibold font-poppins" style={{ color: '#22c55e' }}>Votre assistante académique personnelle</p>
+                  </div>
+                </div>
+
+                <p className="text-lg leading-relaxed text-white/70 font-nunito font-semibold">
+                  Ton assistante académique dopée à l'IA. Génère des fiches de révision, corrige tes annales sujets d'examens,
+                  crée des quiz personnalisés et des flashcards — puis exporte tout en PDF premium en un clic.
+                </p>
+
+                {/* Feature pills */}
+                <div className="flex flex-wrap gap-2">
+                  {["Fiches de révision", "Flashcards", "Quiz adaptatifs", "Correction d'annales", "Export PDF premium", "Chat IA en direct"].map((feat) => (
+                    <span
+                      key={feat}
+                      className="px-3 py-1.5 rounded-full text-xs font-semibold font-poppins"
+                      style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)', color: 'rgba(255,255,255,0.85)' }}
+                    >
+                      {feat}
+                    </span>
+                  ))}
+                </div>
+
+                {/* CTA Buttons */}
+                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                  <button
+                    onClick={() => navigate('/sphera')}
+                    className="group flex items-center justify-center gap-2 px-7 py-4 rounded-2xl text-sm font-bold text-white transition-all duration-200 hover:scale-105 font-poppins"
+                    style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)', boxShadow: '0 4px 24px rgba(34,197,94,0.35)' }}
+                  >
+                    Essayer Sphera gratuitement
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+                  </button>
+                  <a
+                    href="https://sphera.campussphere.app"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 px-7 py-4 rounded-2xl text-sm font-semibold transition-all duration-200 hover:scale-105 font-poppins"
+                    style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.85)' }}
+                  >
+                    Ouvrir l'app Sphera
+                  </a>
+                </div>
+              </div>
+
+              {/* Colonne droite : mini-cards feature */}
+              <div className="grid grid-cols-1 gap-3">
+                {[
+                  { icon: <FileText className="w-5 h-5" style={{ color: '#22c55e' }} />, title: 'Outils de révision', desc: 'Fiches détaillées, quiz interactifs d\'auto-évaluation et flashcards intelligentes avec répétition espacée pour retenir tes cours sans effort.' },
+                  { icon: <FilePenLine className="w-5 h-5" style={{ color: '#22c55e' }} />, title: "Correction d'annales", desc: "Upload ton sujet d'examen. Sphera te génère une correction structurée en profondeur avec explications pédagogiques." },
+                  { icon: <Bot className="w-5 h-5" style={{ color: '#22c55e' }} />, title: "Chat IA en direct", desc: "Pose toutes tes questions ou discute librement. Sphera conserve le contexte complet pour t'accompagner comme un véritable tuteur." },
+                  { icon: <FileDown className="w-5 h-5" style={{ color: '#22c55e' }} />, title: 'Export PDF Premium', desc: 'Télécharge toutes tes fiches de révisions, synthèses et corrections d\'annales sous forme de PDF magnifiquement stylisés.' },
+                ].map((item) => (
+                  <div
+                    key={item.title}
+                    className="flex items-start gap-4 p-4 rounded-2xl transition-all duration-200 hover:scale-[1.02] cursor-default"
+                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+                  >
+                    <div className="flex-shrink-0 mt-0.5 p-2 rounded-lg" style={{ background: 'rgba(34,197,94,0.12)' }}>
+                      {item.icon}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-white mb-0.5 font-poppins">{item.title}</p>
+                      <p className="text-xs leading-relaxed font-nunito" style={{ color: 'rgba(255,255,255,0.5)' }}>{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+
+                {/* SSO hint */}
+                <div
+                  className="flex items-center gap-3 p-3 rounded-xl mt-1"
+                  style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}
+                >
+                  <div className="flex-shrink-0 p-1.5 rounded-lg" style={{ background: 'rgba(34,197,94,0.15)' }}>
+                    <Shield className="w-4 h-4" style={{ color: '#22c55e' }} />
+                  </div>
+                  <p className="text-xs font-nunito" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                    <strong style={{ color: '#22c55e' }}>Ton compte CampusSphere suffit.</strong>{' '}
+                    Pas d'inscription séparée — connexion automatique à Sphera.
+                  </p>
+                </div>
+
+                {/* Ecosystem integration note */}
+                <div
+                  className="flex items-start gap-3 p-4 rounded-xl"
+                  style={{ background: 'rgba(34,197,94,0.04)', border: '1px dashed rgba(34,197,94,0.25)' }}
+                >
+                  <div className="flex-shrink-0 mt-0.5 p-1.5 rounded-lg" style={{ background: 'rgba(34,197,94,0.1)' }}>
+                    <Sparkles className="w-4 h-4" style={{ color: '#22c55e' }} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-white mb-1 font-poppins">Bientôt intégré dans tout ton écosystème !</p>
+                    <p className="text-[11px] leading-relaxed font-nunito" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                      Sphera sera bientôt connectée à tes <span className="text-white font-semibold">Sphères collaboratives</span> (aide à la rédaction, synthèse d'équipe), ton <span className="text-white font-semibold">Feed</span> (explications automatiques des posts complexes) et tes <span className="text-white font-semibold">Messages Directs</span> pour réviser à plusieurs !
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Fonctionnalités à venir */}
+          <div className="text-center">
             <h2 className="font-raleway text-4xl md:text-5xl font-bold mb-6">
-              Un écosystème <span className="campus-gradient bg-clip-text text-transparent">complet</span>
+              ...Et beaucoup d'autres <span className="campus-gradient bg-clip-text text-transparent">fonctionnalités à venir</span>
             </h2>
             <div className="grid md:grid-cols-2 gap-8 lg:grid-cols-3">
               <div className="bg-white/50 dark:bg-gray-800/50 rounded-2xl p-6 border-2 border-dashed border-primary/30">
@@ -385,18 +458,6 @@ export function Landing() {
                   <h3 className="font-semibold font-poppins text-xl">Campus Learn</h3>
                 </div>
                 <p className="text-muted-foreground font-nunito font-semibold">Une bibliothèque numérique moderne regroupant livres, cours et formations gratuits ou premium, créés en partenariat avec des professeurs et experts pour rendre le savoir accessible à tous.</p>
-              </div>
-              <div className="bg-[#ff9800]/5 dark:bg-[#ff9800]/10 rounded-2xl p-6 border-2 border-[#ff9800] relative overflow-hidden shadow-[0_0_20px_rgba(255,152,0,0.15)] group transition-all hover:scale-105">
-                <div className="absolute -right-6 top-6 bg-[#ff9800] text-white text-xs font-bold px-8 py-1 rotate-45 shadow-sm">
-                  NOUVEAU
-                </div>
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-[#ff9800]/15 ring-1 ring-[#ff9800]/30 flex items-center justify-center group-hover:animate-pulse-glow">
-                    <img src="https://sphera.campussphere.app/favicon-96x96.png" className="w-8 h-8 object-contain" alt="Sphera" />
-                  </div>
-                  <h3 className="font-semibold font-poppins text-xl text-[#ff9800]">Assistante Sphera V2</h3>
-                </div>
-                <p className="text-muted-foreground font-nunito font-semibold">Votre IA académique personnelle. Génerez des fiches de révision instantanées, des quiz interactifs et corrigez vos annales avec des explications détaillées.</p>
               </div>
               <div className="bg-white/50 dark:bg-gray-800/50 rounded-2xl p-6 border-2 border-dashed border-primary/30">
                 <div className="flex items-center gap-4 mb-4">
