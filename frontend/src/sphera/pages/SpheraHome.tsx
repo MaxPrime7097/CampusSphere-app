@@ -142,7 +142,7 @@ export const SpheraHome: React.FC = () => {
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div>
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-xl bg-[#ff9800]/15 ring-1 ring-[#ff9800]/25 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-full bg-[#ff9800]/15 ring-1 ring-[#ff9800]/25 flex items-center justify-center">
                     <img 
                       src="/sphera-logo.png" 
                       className="w-10 h-10 object-contain"

@@ -33,12 +33,31 @@ export function clearTokens() {
   localStorage.removeItem('sphera_refresh')
 }
 
+let refreshPromise: Promise<string | null> | null = null;
+
+async function performRefreshRaw(refresh: string): Promise<string | null> {
+  try {
+    const url = `${API_BASE.replace(/\/$/, "")}/api/auth/refresh/`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh }),
+      credentials: "include",
+    });
+    if (!res.ok) return null;
+    const json = await res.json().catch(() => null as any);
+    return json?.access || json?.accessToken || json?.data?.access || null;
+  } catch {
+    return null;
+  }
+}
+
 // ─── Core fetch ─────────────────────────────────────────────────
 async function apiFetch<T>(
   path: string,
-  options: { method?: string; body?: unknown | FormData; requireAuth?: boolean } = {}
+  options: { method?: string; body?: unknown | FormData; requireAuth?: boolean; _retry?: boolean } = {}
 ): Promise<T> {
-  const { method = 'GET', body, requireAuth = false } = options
+  const { method = 'GET', body, requireAuth = false, _retry = false } = options
   const url = `${API_BASE.replace(/\/$/, '')}/${path.replace(/^\//, '')}`
   const token = getToken()
 
@@ -63,6 +82,24 @@ async function apiFetch<T>(
   }
 
   if (!res.ok) {
+    // Si expiration du token (401) et que nous n'avons pas déjà réessayé, tente de rafraîchir
+    if (res.status === 401 && !_retry) {
+      const refresh = getRefreshToken()
+      if (refresh) {
+        if (!refreshPromise) {
+          refreshPromise = performRefreshRaw(refresh)
+        }
+        const newAccess = await refreshPromise.catch(() => null)
+        refreshPromise = null
+        if (newAccess) {
+          setTokens(newAccess, refresh)
+          // Re-tente la requête avec le nouveau token
+          return apiFetch<T>(path, { ...options, _retry: true })
+        }
+      }
+      clearTokens()
+    }
+
     const ct = res.headers.get('content-type') || ''
     if (ct.includes('application/json')) {
       const err = await res.json().catch(() => ({}))
