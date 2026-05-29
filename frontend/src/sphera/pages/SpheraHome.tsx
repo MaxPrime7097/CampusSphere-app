@@ -36,7 +36,7 @@ const FILTER_OPTIONS: { value: ToolFilter; label: string; icon: React.ReactNode 
 const getSpheraStandaloneUrl = () => {
   const envUrl = (import.meta.env.VITE_SPHERA_STANDALONE_URL as string)?.trim();
   const isLocal = ["localhost", "127.0.0.1"].some((host) => window.location.hostname.includes(host));
-  const baseUrl = envUrl || (isLocal ? "http://localhost:4173" : "https://sphera.campussphere.app");
+  const baseUrl = envUrl || (isLocal ? "http://localhost:5174" : "https://sphera.campussphere.app");
   const accessToken = localStorage.getItem("access") || localStorage.getItem("access_token");
   const refreshToken = localStorage.getItem("refresh");
   const params = new URLSearchParams();

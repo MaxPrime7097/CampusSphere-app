@@ -4,7 +4,18 @@
  * Supporte mode invité (sans token) et mode connecté (avec JWT)
  */
 
-export const API_BASE = import.meta.env.VITE_API_URL || 'https://api.campussphere.app'
+const getApiBase = () => {
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+  const { hostname } = window.location;
+  if (hostname === "www.campussphere.app" || hostname === "campussphere.app" || hostname.includes("campussphere.app")) {
+    return "https://api.campussphere.app";
+  }
+  if (hostname.includes("onrender.com") && !hostname.includes("-backend")) {
+    return "https://campus-sphere-backend-dyfu.onrender.com";
+  }
+  return "http://127.0.0.1:8000";
+};
+export const API_BASE = getApiBase();
 
 // ─── Auth helpers ───────────────────────────────────────────────
 export function getToken(): string | null {
