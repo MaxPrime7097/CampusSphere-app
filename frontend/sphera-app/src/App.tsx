@@ -1,42 +1,43 @@
 // Force Vite HMR reload
-import React, { useEffect } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
-import { useSpheraAuth } from './contexts/SpheraAuthContext'
-import Landing from './pages/Landing'
-import AppPage from './pages/AppPage'
-import Login from './pages/Login'
-import Register from './pages/Register'
-import GuestResult from './pages/GuestResult'
-import Dashboard from './pages/Dashboard'
-import SessionDetail from './pages/SessionDetail'
-import AnnaleDetail from './pages/AnnaleDetail'
-import CreateSession from './pages/CreateSession'
-import Pricing from './pages/Pricing'
-import Blogs from './pages/Blogs'
-import BlogDetail from './pages/BlogDetail'
-import Privacy from './pages/Privacy'
-import Terms from './pages/Terms'
-import { SidebarLayout } from './components/layout/SidebarLayout'
+import React, { useEffect } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
+import { useSpheraAuth } from './contexts/SpheraAuthContext';
+import Landing from './pages/Landing';
+import AppPage from './pages/AppPage';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import GuestResult from './pages/GuestResult';
+import Dashboard from './pages/Dashboard';
+import SessionDetail from './pages/SessionDetail';
+import AnnaleDetail from './pages/AnnaleDetail';
+import CreateSession from './pages/CreateSession';
+import Pricing from './pages/Pricing';
+import Blogs from './pages/Blogs';
+import BlogDetail from './pages/BlogDetail';
+import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
+import { SidebarLayout } from './components/layout/SidebarLayout';
 
 function SSOCatcher() {
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const token = params.get('access_token')
-    const refresh = params.get('refresh_token')
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('access_token');
+    const refresh = params.get('refresh_token');
     if (token) {
-      localStorage.setItem('sphera_access', token)
-      if (refresh) localStorage.setItem('sphera_refresh', refresh)
+      localStorage.setItem('sphera_access', token);
+      if (refresh) localStorage.setItem('sphera_refresh', refresh);
       // Nettoyer l'URL
-      window.history.replaceState({}, document.title, window.location.pathname)
+      window.history.replaceState({}, document.title, window.location.pathname);
       // Recharger pour que le contexte Auth prenne le token en compte
-      window.location.href = '/dashboard'
+      window.location.href = '/dashboard';
     }
-  }, [])
-  return null
+  }, []);
+  return null;
 }
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useSpheraAuth()
+  const { isAuthenticated, isLoading } = useSpheraAuth();
 
   if (isLoading) {
     return (
@@ -52,16 +53,40 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
           Initialisation...
         </p>
       </div>
-    )
+    );
   }
 
-  if (!isAuthenticated) return <Navigate to="/login" replace />
-  return <>{children}</>
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  return <>{children}</>;
 }
 
 export default function App() {
   return (
     <div className="flex flex-col min-h-screen">
+      {/* SEO meta tags */}
+      <Helmet>
+        <title>Sphera – Assistante IA · CampusSphere</title>
+        <meta
+          name="description"
+          content="Sphera, l’assistante IA académique, propose fiches de révision, quiz, flashcards, correction d’annales et un chat IA en direct. Connectez votre compte CampusSphere pour une expérience fluide."
+        />
+        <link rel="canonical" href="https://sphera.campussphere.app/" />
+        <meta property="og:title" content="Sphera – Application IA" />
+        <meta
+          property="og:description"
+          content="Explorez Sphera : génération de fiches, quiz, flashcards, correction d’annales et chat IA en temps réel, intégré à CampusSphere."
+        />
+        <meta property="og:url" content="https://sphera.campussphere.app/" />
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content="https://sphera.campussphere.app/og-image.png" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Sphera – Application IA" />
+        <meta
+          name="twitter:description"
+          content="Votre assistante IA pour réviser, créer des quiz, flashcards, corriger des annales et discuter en direct."
+        />
+        <meta name="twitter:image" content="https://sphera.campussphere.app/og-image.png" />
+      </Helmet>
       <SSOCatcher />
       <main className="flex-1">
         <Routes>
@@ -72,23 +97,21 @@ export default function App() {
           <Route path="/blogs/:id" element={<BlogDetail />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
-          <Route path="/app" element={<AppPage />} />
+          <Route path="/app" element={localStorage.getItem('sphera_access') ? <Navigate to="/dashboard" replace /> : <AppPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/result" element={<GuestResult />} />
-
           {/* Protected */}
-          <Route element={<ProtectedRoute><SidebarLayout /></ProtectedRoute>}>
+          <Route element={<ProtectedRoute><SidebarLayout /></ProtectedRoute>}> 
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/create" element={<CreateSession />} />
             <Route path="/sessions/:id" element={<SessionDetail type="session" />} />
             <Route path="/annales/:id" element={<SessionDetail type="annale" />} />
           </Route>
-
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
     </div>
-  )
+  );
 }

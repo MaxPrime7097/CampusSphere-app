@@ -130,8 +130,18 @@ export const SpheraHome: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Sphera — Assistant IA · CampusSphere</title>
-        <meta name="description" content="Générez des fiches, quiz, flashcards et corrections d'annales intelligentes avec l'IA Sphera." />
+        <title>Sphera – Assistant IA · CampusSphere</title>
+        <meta name="description" content="Sphera, votre assistante IA académique, génère fiches, quiz, flashcards, corrige les annales et offre un chat IA en direct. Explorez l’écosystème CampusSphere via Sphera." />
+        <link rel="canonical" href="https://sphera.campussphere.app/" />
+        <meta property="og:title" content="Sphera – Assistant IA" />
+        <meta property="og:description" content="Générez des fiches de révision, des quiz, des flashcards, corrigez vos annales et discutez avec une IA académique grâce à Sphera." />
+        <meta property="og:url" content="https://sphera.campussphere.app/" />
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content="https://sphera.campussphere.app/og-image.png" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Sphera – Assistant IA" />
+        <meta name="twitter:description" content="Votre aide IA pour réviser, créer des quiz, flashcards et corriger des annales. Connectez‑vous via CampusSphere." />
+        <meta name="twitter:image" content="https://sphera.campussphere.app/og-image.png" />
       </Helmet>
 
       <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
