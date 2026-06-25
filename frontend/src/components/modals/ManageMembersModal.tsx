@@ -10,9 +10,11 @@ import { Users, Search, Loader2, CheckCircle, Crown, Shield, User, UserMinus, Us
 import { useToast } from "@/hooks/use-toast";
 
 interface Props {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   sphereId?: string;
   sphereName?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 interface Member {
@@ -25,7 +27,7 @@ interface Member {
   status: string;
 }
 
-export function ManageMembersModal({ children, sphereId, sphereName }: Props) {
+export function ManageMembersModal({ children, sphereId, sphereName, open: controlledOpen, onOpenChange: setControlledOpen }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -33,6 +35,8 @@ export function ManageMembersModal({ children, sphereId, sphereName }: Props) {
   const [activeTab, setActiveTab] = useState<"members" | "pending">("members");
   const [processing, setProcessing] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
+  const open = controlledOpen !== undefined ? controlledOpen : isOpen;
+  const setOpen = setControlledOpen ?? setIsOpen;
 
   const loadMembers = async () => {
     if (!sphereId) return;
@@ -55,7 +59,7 @@ export function ManageMembersModal({ children, sphereId, sphereName }: Props) {
     }
   };
 
-  useEffect(() => { if (isOpen) void loadMembers(); }, [isOpen, sphereId]);
+  useEffect(() => { if (open) void loadMembers(); }, [open, sphereId]);
 
   const activeMembers = useMemo(() =>
     members.filter((m) => m.status === "active" && (
@@ -121,8 +125,8 @@ export function ManageMembersModal({ children, sphereId, sphereName }: Props) {
     <User className="h-3.5 w-3.5 text-muted-foreground" />;
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+    <Dialog open={open} onOpenChange={setOpen}>
+      {children ? <DialogTrigger asChild>{children}</DialogTrigger> : null}
       <DialogContent className="w-full max-w-lg max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">

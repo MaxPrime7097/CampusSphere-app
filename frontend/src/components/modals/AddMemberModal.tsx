@@ -21,13 +21,15 @@ interface UserOption {
 }
 
 interface AddMemberModalProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   onMemberAdded?: (memberData: unknown) => void;
   sphereId?: string;
   sphereName?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function AddMemberModal({ children, onMemberAdded, sphereId, sphereName }: AddMemberModalProps) {
+export function AddMemberModal({ children, onMemberAdded, sphereId, sphereName, open: controlledOpen, onOpenChange: setControlledOpen }: AddMemberModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
@@ -35,9 +37,11 @@ export function AddMemberModal({ children, onMemberAdded, sphereId, sphereName }
   const [searchResults, setSearchResults] = useState<UserOption[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<UserOption[]>([]);
   const { toast } = useToast();
+  const open = controlledOpen !== undefined ? controlledOpen : isOpen;
+  const setOpen = setControlledOpen ?? setIsOpen;
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!open) return;
 
     const timeoutId = setTimeout(() => {
       void (async () => {
@@ -69,7 +73,7 @@ export function AddMemberModal({ children, onMemberAdded, sphereId, sphereName }
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [isOpen, searchQuery]);
+  }, [open, searchQuery]);
 
   const addUserToSelection = (user: UserOption) => {
     setSelectedUsers((prev) => (prev.some((item) => item.id === user.id) ? prev : [...prev, user]));
@@ -118,7 +122,7 @@ export function AddMemberModal({ children, onMemberAdded, sphereId, sphereName }
       setSelectedUsers([]);
       setSearchQuery("");
       setSearchResults([]);
-      setIsOpen(false);
+      setOpen(false);
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -140,13 +144,13 @@ export function AddMemberModal({ children, onMemberAdded, sphereId, sphereName }
 
   return (
     <Dialog
-      open={isOpen}
-      onOpenChange={(open) => {
-        setIsOpen(open);
-        if (!open) resetForm();
+      open={open}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen);
+        if (!nextOpen) resetForm();
       }}
     >
-      <DialogTrigger asChild>{children}</DialogTrigger>
+      {children ? <DialogTrigger asChild>{children}</DialogTrigger> : null}
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -265,7 +269,7 @@ export function AddMemberModal({ children, onMemberAdded, sphereId, sphereName }
           )}
 
           <div className="flex gap-2 pt-4">
-            <Button variant="outline" className="flex-1" onClick={() => setIsOpen(false)} disabled={isAdding}>
+            <Button variant="outline" className="flex-1" onClick={() => setOpen(false)} disabled={isAdding}>
               Annuler
             </Button>
             <Button

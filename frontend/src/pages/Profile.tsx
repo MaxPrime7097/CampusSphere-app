@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { Suspense, lazy, useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
-import { getCurrentUser, getUserByUsername, getUserPosts, uploadAvatar, uploadCoverPhoto, updateUserProfile, getUserConnections, getUserResources, connectWithUser, disconnectFromUser, downloadResource, getUserProfile, getUserConnectionRelation, isApiRequestErrorStatus } from "@/services/api";
+import { getCurrentUser, getUserByUsername, getUserPosts, uploadAvatar, uploadCoverPhoto, updateUserProfile, getUserConnections, getUserResources, connectWithUser, disconnectFromUser, downloadResource, getUserProfile, getUserConnectionRelation, isApiRequestErrorStatus, acceptConnection } from "@/services/api";
 import { MapPin, Camera, Calendar, Link, Users, User, BookOpen, Award, Settings, FileText, Briefcase, GraduationCap, Loader2, Check, Download, Unlink, ExternalLink, Upload, X, Zap, Smile, BriefcaseBusiness, Shield, Info, Pencil, BadgeCheck, Plus, Languages } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,6 @@ import { OptimizedImage } from "@/components/ui/optimized-image";
 import { ResourceCard } from "@/components/resources/ResourceCard";
 import { ResourceSkeleton } from "@/components/ui/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
-import { VerificationModal } from "@/components/modals/VerificationModal";
 import { formatFrenchDate } from "@/lib/date";
 import { normalizeResourceType, normalizeSubject } from "@/lib/resourceMetadata";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -33,15 +32,18 @@ import { SkillsCombobox } from "@/components/forms/SkillsCombobox";
 import { InterestsCombobox } from "@/components/forms/InterestsCombobox";
 import { CityCombobox } from "@/components/forms/CityCombobox";
 import { LanguageCombobox } from "@/components/forms/LanguageCombobox";
-import { EditAcademicModal } from "@/components/modals/EditAcademicModal";
-import { EditPersonalModal } from "@/components/modals/EditPersonalModal";
-import { EditAccountModal } from "@/components/modals/EditAccountModal";
-import { EditEducationModal } from "@/components/modals/EditEducationModal";
-import { EditExperiencesModal } from "@/components/modals/EditExperiencesModal";
-import { EditSkillsModal } from "@/components/modals/EditSkillsModal";
-import { EditInterestsModal } from "@/components/modals/EditInterestsModal";
-import { EditPortfolioModal } from "@/components/modals/EditPortfolioModal";
 import { useAuth } from "@/contexts/AuthContext";
+import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
+
+const VerificationModal = lazy(() => import("@/components/modals/VerificationModal").then((module) => ({ default: module.VerificationModal })));
+const EditAcademicModal = lazy(() => import("@/components/modals/EditAcademicModal").then((module) => ({ default: module.EditAcademicModal })));
+const EditPersonalModal = lazy(() => import("@/components/modals/EditPersonalModal").then((module) => ({ default: module.EditPersonalModal })));
+const EditAccountModal = lazy(() => import("@/components/modals/EditAccountModal").then((module) => ({ default: module.EditAccountModal })));
+const EditEducationModal = lazy(() => import("@/components/modals/EditEducationModal").then((module) => ({ default: module.EditEducationModal })));
+const EditExperiencesModal = lazy(() => import("@/components/modals/EditExperiencesModal").then((module) => ({ default: module.EditExperiencesModal })));
+const EditSkillsModal = lazy(() => import("@/components/modals/EditSkillsModal").then((module) => ({ default: module.EditSkillsModal })));
+const EditInterestsModal = lazy(() => import("@/components/modals/EditInterestsModal").then((module) => ({ default: module.EditInterestsModal })));
+const EditPortfolioModal = lazy(() => import("@/components/modals/EditPortfolioModal").then((module) => ({ default: module.EditPortfolioModal })));
 
 const NOT_AVAILABLE_TEXT = "...";
 const MOOD_OPTIONS = [
@@ -457,6 +459,15 @@ export function Profile() {
   const [loading, setLoading] = useState(true);
   const [profileLoadError, setProfileLoadError] = useState(false);
   const [profileUnavailableDueToOnboarding, setProfileUnavailableDueToOnboarding] = useState(false);
+  const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
+  const [isEditAccountOpen, setIsEditAccountOpen] = useState(false);
+  const [isEditAcademicOpen, setIsEditAcademicOpen] = useState(false);
+  const [isEditPersonalOpen, setIsEditPersonalOpen] = useState(false);
+  const [isEditEducationOpen, setIsEditEducationOpen] = useState(false);
+  const [isEditExperiencesOpen, setIsEditExperiencesOpen] = useState(false);
+  const [isEditSkillsOpen, setIsEditSkillsOpen] = useState(false);
+  const [isEditInterestsOpen, setIsEditInterestsOpen] = useState(false);
+  const [isEditPortfolioOpen, setIsEditPortfolioOpen] = useState(false);
 
   // Tab State - NEW (same as Spheres)
   const [activeTab, setActiveTab] = useState("posts");
@@ -709,7 +720,7 @@ export function Profile() {
         // Si c'est déjà accepté, on déconnecte.
         // Si c'est en attente et qu'on est le destinataire, on accepte.
         if (connectionStatus === "pending" && isRecipient) {
-          const { acceptConnection } = await import("@/services/api");
+          
           await acceptConnection(targetUser.id);
           setConnectionStatus("accepted");
           setIsFollowing(true);
@@ -992,15 +1003,25 @@ export function Profile() {
                 </p>
               </div>
             </div>
-            <VerificationModal onSuccess={() => {
-              void refreshUser();
-            }}>
+            <>
               <Button
                 className="bg-amber-600 hover:bg-amber-700 text-white w-full sm:w-auto shadow-lg shadow-amber-600/20"
+                onClick={() => setIsVerificationModalOpen(true)}
               >
                 Certifier mon statut
               </Button>
-            </VerificationModal>
+              {isVerificationModalOpen && (
+                <Suspense fallback={<ModalLoadingFallback />}>
+                  <VerificationModal
+                    open={isVerificationModalOpen}
+                    onOpenChange={setIsVerificationModalOpen}
+                    onSuccess={() => {
+                      void refreshUser();
+                    }}
+                  />
+                </Suspense>
+              )}
+            </>
           </div>
         )}
         {/* Profile Header */}
@@ -1105,23 +1126,31 @@ export function Profile() {
                     </div>
                   )}
                   {isOwnProfile && (
-                    <EditAccountModal
-                      initialData={{
-                        firstName: user.firstName || "",
-                        lastName: user.lastName || "",
-                        username: user.username || "",
-                        bio: user.bio || "",
-                      }}
-                      onSuccess={() => window.location.reload()}
-                    >
+                    <>
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => setIsEditAccountOpen(true)}
                       >
                         <Pencil className="h-4 w-4 mr-2" />
                         <span className="inline">Modifier</span>
                       </Button>
-                    </EditAccountModal>
+                      {isEditAccountOpen && (
+                        <Suspense fallback={<ModalLoadingFallback />}>
+                          <EditAccountModal
+                            open={isEditAccountOpen}
+                            onOpenChange={setIsEditAccountOpen}
+                            initialData={{
+                              firstName: user.firstName || "",
+                              lastName: user.lastName || "",
+                              username: user.username || "",
+                              bio: user.bio || "",
+                            }}
+                            onSuccess={() => window.location.reload()}
+                          />
+                        </Suspense>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -1359,24 +1388,31 @@ export function Profile() {
               <div className="rounded-lg border bg-card p-6">
                 <h3 className="flex items-center justify-between text-lg font-semibold mb-4">
                   <div className="flex items-center gap-2">
-                    <GraduationCap className="h-5 w-5 text-primary" />
-                    Informations académiques
-                  </div>
-                  {isOwnProfile && (
-                    <EditAcademicModal
-                      initialData={{
-                        university: user.university || "",
-                        faculty: user.faculty || "",
-                        studyYear: user.studyYear || "",
-                        studentId: user.studentId || "",
-                        campus: user.campus || "",
-                      }}
-                      onSuccess={() => window.location.reload()}
-                    >
-                      <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-primary hover:text-primary hover:bg-primary/10">
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                    </EditAcademicModal>
+                  <GraduationCap className="h-5 w-5 text-primary" />
+                  Informations académiques
+                </div>
+                {isOwnProfile && (
+                  <>
+                    <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-primary hover:text-primary hover:bg-primary/10" onClick={() => setIsEditAcademicOpen(true)}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    {isEditAcademicOpen && (
+                      <Suspense fallback={<ModalLoadingFallback />}>
+                        <EditAcademicModal
+                          open={isEditAcademicOpen}
+                          onOpenChange={setIsEditAcademicOpen}
+                          initialData={{
+                            university: user.university || "",
+                            faculty: user.faculty || "",
+                            studyYear: user.studyYear || "",
+                            studentId: user.studentId || "",
+                            campus: user.campus || "",
+                          }}
+                          onSuccess={() => window.location.reload()}
+                        />
+                      </Suspense>
+                    )}
+                  </>
                   )}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1414,20 +1450,27 @@ export function Profile() {
                     Informations Personnelles
                   </div>
                   {isOwnProfile && (
-                    <EditPersonalModal
-                      initialData={{
-                        email: user.email || "",
-                        phoneNumber: user.phoneNumber || "",
-                        dateOfBirth: user.dateOfBirth || "",
-                        town: user.town || "",
-                        languages: Array.isArray(user.language) ? user.language : [],
-                      }}
-                      onSuccess={() => window.location.reload()}
-                    >
-                      <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-primary hover:text-primary hover:bg-primary/10">
+                    <>
+                      <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-primary hover:text-primary hover:bg-primary/10" onClick={() => setIsEditPersonalOpen(true)}>
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
-                    </EditPersonalModal>
+                      {isEditPersonalOpen && (
+                        <Suspense fallback={<ModalLoadingFallback />}>
+                          <EditPersonalModal
+                            open={isEditPersonalOpen}
+                            onOpenChange={setIsEditPersonalOpen}
+                            initialData={{
+                              email: user.email || "",
+                              phoneNumber: user.phoneNumber || "",
+                              dateOfBirth: user.dateOfBirth || "",
+                              town: user.town || "",
+                              languages: Array.isArray(user.language) ? user.language : [],
+                            }}
+                            onSuccess={() => window.location.reload()}
+                          />
+                        </Suspense>
+                      )}
+                    </>
                   )}
                 </h3>
                 <div className="space-y-3">
@@ -1476,14 +1519,21 @@ export function Profile() {
                     Formations précédentes
                   </div>
                   {isOwnProfile && (
-                    <EditEducationModal
-                      initialEducation={user.previousEducation || []}
-                      onSuccess={() => window.location.reload()}
-                    >
-                      <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-primary hover:text-primary hover:bg-primary/10">
+                    <>
+                      <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-primary hover:text-primary hover:bg-primary/10" onClick={() => setIsEditEducationOpen(true)}>
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
-                    </EditEducationModal>
+                      {isEditEducationOpen && (
+                        <Suspense fallback={<ModalLoadingFallback />}>
+                          <EditEducationModal
+                            open={isEditEducationOpen}
+                            onOpenChange={setIsEditEducationOpen}
+                            initialEducation={user.previousEducation || []}
+                            onSuccess={() => window.location.reload()}
+                          />
+                        </Suspense>
+                      )}
+                    </>
                   )}
                 </h3>
                 {user.previousEducation?.length > 0 ? (
@@ -1508,14 +1558,21 @@ export function Profile() {
                     Expériences
                   </div>
                   {isOwnProfile && (
-                    <EditExperiencesModal
-                      initialExperiences={user.experiences || []}
-                      onSuccess={() => window.location.reload()}
-                    >
-                      <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-primary hover:text-primary hover:bg-primary/10">
+                    <>
+                      <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-primary hover:text-primary hover:bg-primary/10" onClick={() => setIsEditExperiencesOpen(true)}>
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
-                    </EditExperiencesModal>
+                      {isEditExperiencesOpen && (
+                        <Suspense fallback={<ModalLoadingFallback />}>
+                          <EditExperiencesModal
+                            open={isEditExperiencesOpen}
+                            onOpenChange={setIsEditExperiencesOpen}
+                            initialExperiences={user.experiences || []}
+                            onSuccess={() => window.location.reload()}
+                          />
+                        </Suspense>
+                      )}
+                    </>
                   )}
                 </h3>
                 {user.experiences?.length > 0 ? (
@@ -1542,14 +1599,21 @@ export function Profile() {
                     Compétences
                   </div>
                   {isOwnProfile && (
-                    <EditSkillsModal
-                      initialSkills={user.skills || []}
-                      onSuccess={() => window.location.reload()}
-                    >
-                      <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-primary hover:text-primary hover:bg-primary/10">
+                    <>
+                      <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-primary hover:text-primary hover:bg-primary/10" onClick={() => setIsEditSkillsOpen(true)}>
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
-                    </EditSkillsModal>
+                      {isEditSkillsOpen && (
+                        <Suspense fallback={<ModalLoadingFallback />}>
+                          <EditSkillsModal
+                            open={isEditSkillsOpen}
+                            onOpenChange={setIsEditSkillsOpen}
+                            initialSkills={user.skills || []}
+                            onSuccess={() => window.location.reload()}
+                          />
+                        </Suspense>
+                      )}
+                    </>
                   )}
                 </h3>
                 {user.skills?.length > 0 ? (
@@ -1572,14 +1636,21 @@ export function Profile() {
                     Centres d'intérêt
                   </div>
                   {isOwnProfile && (
-                    <EditInterestsModal
-                      initialInterests={user.interests || []}
-                      onSuccess={() => window.location.reload()}
-                    >
-                      <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-primary hover:text-primary hover:bg-primary/10">
+                    <>
+                      <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-primary hover:text-primary hover:bg-primary/10" onClick={() => setIsEditInterestsOpen(true)}>
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
-                    </EditInterestsModal>
+                      {isEditInterestsOpen && (
+                        <Suspense fallback={<ModalLoadingFallback />}>
+                          <EditInterestsModal
+                            open={isEditInterestsOpen}
+                            onOpenChange={setIsEditInterestsOpen}
+                            initialInterests={user.interests || []}
+                            onSuccess={() => window.location.reload()}
+                          />
+                        </Suspense>
+                      )}
+                    </>
                   )}
                 </h3>
                 {user.interests?.length > 0 ? (
@@ -1602,14 +1673,21 @@ export function Profile() {
                     Portfolio
                   </div>
                   {isOwnProfile && (
-                    <EditPortfolioModal
-                      initialLinks={user.portfolioLinks || []}
-                      onSuccess={() => window.location.reload()}
-                    >
-                      <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-primary hover:text-primary hover:bg-primary/10">
+                    <>
+                      <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-primary hover:text-primary hover:bg-primary/10" onClick={() => setIsEditPortfolioOpen(true)}>
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
-                    </EditPortfolioModal>
+                      {isEditPortfolioOpen && (
+                        <Suspense fallback={<ModalLoadingFallback />}>
+                          <EditPortfolioModal
+                            open={isEditPortfolioOpen}
+                            onOpenChange={setIsEditPortfolioOpen}
+                            initialLinks={user.portfolioLinks || []}
+                            onSuccess={() => window.location.reload()}
+                          />
+                        </Suspense>
+                      )}
+                    </>
                   )}
                 </h3>
                 {user.portfolioLinks?.length > 0 ? (

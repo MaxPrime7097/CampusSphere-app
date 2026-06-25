@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Camera, Upload, Shield, Check, Loader2, AlertCircle, Info } from "lucide-react";
 import { verifyStudentStatus, getCurrentUser } from "@/services/api";
-import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 interface VerificationModalProps {
@@ -116,14 +115,11 @@ export function VerificationModal({ children, onSuccess, open: controlledOpen, o
         <div className="h-2 w-full bg-gradient-to-r from-primary via-accent to-primary animate-gradient-x" />
         
         <div className="p-6">
-          <AnimatePresence mode="wait">
+          <div className="relative">
             {step === 1 && (
-              <motion.div
+              <div
                 key="step1"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="space-y-6"
+                className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300"
               >
                 <DialogHeader>
                   <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
@@ -153,16 +149,13 @@ export function VerificationModal({ children, onSuccess, open: controlledOpen, o
                 <Button className="w-full campus-gradient h-12 text-lg" onClick={() => setStep(2)}>
                   Commencer la certification
                 </Button>
-              </motion.div>
+              </div>
             )}
 
             {step === 2 && (
-              <motion.div
+              <div
                 key="step2"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="space-y-6"
+                className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300"
               >
                 <DialogHeader>
                   <DialogTitle>Vos informations</DialogTitle>
@@ -244,15 +237,13 @@ export function VerificationModal({ children, onSuccess, open: controlledOpen, o
                     )}
                   </Button>
                 </div>
-              </motion.div>
+              </div>
             )}
 
             {step === 3 && (
-              <motion.div
+              <div
                 key="step3"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="py-8 text-center space-y-6"
+                className="py-8 text-center space-y-6 animate-in fade-in zoom-in-95 duration-300"
               >
                 <div className="mx-auto w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center">
                   <Check className="h-10 w-10 text-green-500" />
@@ -282,9 +273,9 @@ export function VerificationModal({ children, onSuccess, open: controlledOpen, o
                 <Button className="w-full max-w-[200px]" onClick={() => setOpen(false)}>
                   Fermer
                 </Button>
-              </motion.div>
+              </div>
             )}
-          </AnimatePresence>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

@@ -9,7 +9,8 @@ import { Header } from "@/components/layout/Header";
 import { CookieBanner } from "@/components/layout/CookieBanner";
 import { FaBullseye } from "react-icons/fa";
 import Countdown from "@/components/layout/Countdown"
-import ScrollTriggered from "@/components/layout/ScrollTriggered"
+import { lazy, Suspense } from "react"
+const ScrollTriggered = lazy(() => import("@/components/layout/ScrollTriggered"))
 import { sectionOneCard, sectionTwoCard, sectionThreeCard } from "@/components/layout/cardData"
 
 export function Landing() {
@@ -243,7 +244,7 @@ export function Landing() {
 
             {/* Illustration Sphères */}
             <div className="relative items-center justify-center">
-              <ScrollTriggered cardData={sectionOneCard} />
+              <Suspense fallback={<div>Loading animation...</div>}><ScrollTriggered cardData={sectionOneCard} /></Suspense>
             </div>
           </div>
 
@@ -251,7 +252,7 @@ export function Landing() {
           <div className="flex grid lg:grid-cols-2 gap-12 items-center mb-20">
             {/* Illustration Ressources */}
             <div className="order-2 lg:relative items-center justify-center">
-              <ScrollTriggered cardData={sectionTwoCard} />
+              <Suspense fallback={<div>Loading animation...</div>}><ScrollTriggered cardData={sectionTwoCard} /></Suspense>
             </div>
 
             {/* Partage de ressources */}
@@ -300,7 +301,7 @@ export function Landing() {
 
             {/* Illustration Feed */}
             <div className="relative items-center justify-center">
-              <ScrollTriggered cardData={sectionThreeCard} />
+              <Suspense fallback={<div>Loading animation...</div>}><ScrollTriggered cardData={sectionThreeCard} /></Suspense>
             </div>
           </div>
 

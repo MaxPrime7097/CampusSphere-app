@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { Suspense, lazy, useState, useRef, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { ChevronLeft, ChevronRight, Upload, Check, Loader2, AlertCircle, Eye, EyeOff, X, ExternalLink, Plus, FileText, Mail, RefreshCw, Camera, Info } from "lucide-react";
 import { FaGoogle, FaFacebook } from "react-icons/fa";
@@ -27,8 +27,6 @@ import {
 } from "@/services/api";
 import { supabase } from "@/lib/supabase";
 import { completeSupabaseProfilePayloadSchema, mapCompleteProfileErrors } from "@/schemas/completeProfilePayload";
-import { AddEducationModal } from "@/components/modals/AddEducationModal";
-import { AddExperienceModal } from "@/components/modals/AddExperienceModal";
 import { cn } from "@/lib/utils";
 import { openVerificationModal } from "@/lib/events";
 import { UniversityCombobox } from "@/components/forms/UniversityCombobox";
@@ -38,6 +36,10 @@ import { SkillsCombobox } from "@/components/forms/SkillsCombobox";
 import { InterestsCombobox } from "@/components/forms/InterestsCombobox";
 import { LanguageCombobox } from "@/components/forms/LanguageCombobox";
 import { AuthSidePanel } from "@/components/auth/AuthSidePanel";
+import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
+
+const AddEducationModal = lazy(() => import("@/components/modals/AddEducationModal").then((module) => ({ default: module.AddEducationModal })));
+const AddExperienceModal = lazy(() => import("@/components/modals/AddExperienceModal").then((module) => ({ default: module.AddExperienceModal })));
 
 // Étapes : 1=infos perso, "verify"=attente email, 2=académique, 3=compétences
 type Step = 1 | "verify" | 2 | 3;
@@ -82,6 +84,8 @@ export function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isAddEducationOpen, setIsAddEducationOpen] = useState(false);
+  const [isAddExperienceOpen, setIsAddExperienceOpen] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [availability, setAvailability] = useState({
     email: { checking: false, available: true, checkedValue: "" },
@@ -729,9 +733,17 @@ export function Register() {
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <Label>Formations précédentes</Label>
-                  <AddEducationModal existingEducations={formData.previousEducation} onEducationAdded={edu => setFormData(p => ({ ...p, previousEducation: [...p.previousEducation, edu] }))}>
-                    <Button size="sm" variant="outline"><Plus className="h-4 w-4 mr-1" />Ajouter</Button>
-                  </AddEducationModal>
+                  <Button size="sm" variant="outline" onClick={() => setIsAddEducationOpen(true)}><Plus className="h-4 w-4 mr-1" />Ajouter</Button>
+                  {isAddEducationOpen && (
+                    <Suspense fallback={<ModalLoadingFallback />}>
+                      <AddEducationModal
+                        open={isAddEducationOpen}
+                        onOpenChange={setIsAddEducationOpen}
+                        existingEducations={formData.previousEducation}
+                        onEducationAdded={edu => setFormData(p => ({ ...p, previousEducation: [...p.previousEducation, edu] }))}
+                      />
+                    </Suspense>
+                  )}
                 </div>
                 {formData.previousEducation.length === 0 ? (
                   <div className="text-center py-6 text-muted-foreground border-2 border-dashed rounded-lg text-sm">Aucune formation ajoutée</div>
@@ -751,9 +763,17 @@ export function Register() {
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <Label>Expériences</Label>
-                  <AddExperienceModal existingExperiences={formData.experiences} onExperienceAdded={exp => setFormData(p => ({ ...p, experiences: [...p.experiences, exp] }))}>
-                    <Button size="sm" variant="outline"><Plus className="h-4 w-4 mr-1" />Ajouter</Button>
-                  </AddExperienceModal>
+                  <Button size="sm" variant="outline" onClick={() => setIsAddExperienceOpen(true)}><Plus className="h-4 w-4 mr-1" />Ajouter</Button>
+                  {isAddExperienceOpen && (
+                    <Suspense fallback={<ModalLoadingFallback />}>
+                      <AddExperienceModal
+                        open={isAddExperienceOpen}
+                        onOpenChange={setIsAddExperienceOpen}
+                        existingExperiences={formData.experiences}
+                        onExperienceAdded={exp => setFormData(p => ({ ...p, experiences: [...p.experiences, exp] }))}
+                      />
+                    </Suspense>
+                  )}
                 </div>
                 {formData.experiences.length === 0 ? (
                   <div className="text-center py-6 text-muted-foreground border-2 border-dashed rounded-lg text-sm">Aucune expérience ajoutée</div>

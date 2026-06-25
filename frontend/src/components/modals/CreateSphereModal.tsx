@@ -35,8 +35,10 @@ interface SphereData {
 }
 
 interface CreateSphereModalProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   onSphereCreated?: (sphereData: SphereData) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 const colorOptions = [
@@ -65,7 +67,7 @@ const sphereSchema = z.object({
 
 type Step = 0 | 1 | 2;
 
-export function CreateSphereModal({ children, onSphereCreated }: CreateSphereModalProps) {
+export function CreateSphereModal({ children, onSphereCreated, open: controlledOpen, onOpenChange: setControlledOpen }: CreateSphereModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState<Step>(0);
 
@@ -163,7 +165,7 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
       });
 
       resetForm();
-      setIsOpen(false);
+      setOpen(false);
     } catch (error) {
       setIsCreating(false);
       if (error instanceof z.ZodError) {
@@ -204,9 +206,12 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
     "Paramètres avancés",
   ];
 
+  const open = controlledOpen !== undefined ? controlledOpen : isOpen;
+  const setOpen = setControlledOpen ?? setIsOpen;
+
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) resetForm(); }}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+    <Dialog open={open} onOpenChange={(nextOpen) => { setOpen(nextOpen); if (!nextOpen) resetForm(); }}>
+      {children ? <DialogTrigger asChild>{children}</DialogTrigger> : null}
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-3">
@@ -460,7 +465,7 @@ export function CreateSphereModal({ children, onSphereCreated }: CreateSphereMod
               <div className="flex justify-end gap-2">
                 <Button
                   variant="outline"
-                  onClick={() => { resetForm(); setIsOpen(false); }}
+                  onClick={() => { resetForm(); setOpen(false); }}
                   disabled={isCreating}
                 >
                   Annuler

@@ -1,5 +1,5 @@
 import { format, formatDistanceToNowStrict, isValid, parseISO } from "date-fns";
-import { fr } from "date-fns/locale";
+import { fr } from "date-fns/locale/fr";
 
 function toDate(value?: string | number | Date | null) {
   if (!value) return null;

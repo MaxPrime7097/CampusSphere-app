@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { updateUserProfile } from "@/services/api";
 
 interface EditAccountModalProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   initialData: {
     firstName: string;
     lastName: string;
@@ -17,9 +17,11 @@ interface EditAccountModalProps {
     bio: string;
   };
   onSuccess?: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function EditAccountModal({ children, initialData, onSuccess }: EditAccountModalProps) {
+export function EditAccountModal({ children, initialData, onSuccess, open: controlledOpen, onOpenChange: setControlledOpen }: EditAccountModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [firstName, setFirstName] = useState(initialData.firstName);
   const [lastName, setLastName] = useState(initialData.lastName);
@@ -27,6 +29,8 @@ export function EditAccountModal({ children, initialData, onSuccess }: EditAccou
   const [bio, setBio] = useState(initialData.bio);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const open = controlledOpen !== undefined ? controlledOpen : isOpen;
+  const setOpen = setControlledOpen ?? setIsOpen;
 
   const handleSave = async () => {
     setIsSubmitting(true);
@@ -44,7 +48,7 @@ export function EditAccountModal({ children, initialData, onSuccess }: EditAccou
       });
       
       if (onSuccess) onSuccess();
-      setIsOpen(false);
+      setOpen(false);
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -57,10 +61,8 @@ export function EditAccountModal({ children, initialData, onSuccess }: EditAccou
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={setOpen}>
+      {children ? <DialogTrigger asChild>{children}</DialogTrigger> : null}
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -115,7 +117,7 @@ export function EditAccountModal({ children, initialData, onSuccess }: EditAccou
         </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t">
-          <Button variant="outline" onClick={() => setIsOpen(false)} disabled={isSubmitting}>
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={isSubmitting}>
             Annuler
           </Button>
           <Button onClick={handleSave} disabled={isSubmitting} className="campus-gradient text-white">

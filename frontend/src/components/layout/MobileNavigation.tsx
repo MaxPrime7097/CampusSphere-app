@@ -1,17 +1,19 @@
-import { useEffect, useState } from "react";
+import { Fragment, Suspense, lazy, useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { CreatePostModal } from "@/components/modals/CreatePostModal";
 import { getCurrentUser } from "@/services/api";
 import { getNavigationSections, type NavigationUser } from "./navigationConfig";
 import { useUnreadCounts } from "@/hooks/useUnreadCounts";
 import { useToast } from "@/hooks/use-toast";
 import { openVerificationModal } from "@/lib/events";
-import { VerificationModal } from "@/components/modals/VerificationModal";
+import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
+
+const CreatePostModal = lazy(() => import("@/components/modals/CreatePostModal").then((module) => ({ default: module.CreatePostModal })));
 
 export function MobileNavigation({ user: externalUser }: { user?: NavigationUser }) {
   const { toast } = useToast();
   const [localUser, setLocalUser] = useState<NavigationUser>({});
+  const [isCreatePostModalOpen, setIsCreatePostModalOpen] = useState(false);
   const user = externalUser || localUser;
   const { mobileItems } = getNavigationSections(user);
   const counts = useUnreadCounts();
@@ -46,11 +48,24 @@ export function MobileNavigation({ user: externalUser }: { user?: NavigationUser
 
           if (item.url === "#create-post") {
             return isVerified ? (
-              <CreatePostModal key={item.title}>
-                <button type="button" className="py-2 px-3 rounded-lg text-primary bg-primary/10" aria-label={item.title}>
+              <Fragment key={item.title}>
+                <button
+                  type="button"
+                  className="py-2 px-3 rounded-lg text-primary bg-primary/10"
+                  aria-label={item.title}
+                  onClick={() => setIsCreatePostModalOpen(true)}
+                >
                   <item.icon className="h-5 w-5" />
                 </button>
-              </CreatePostModal>
+                {isCreatePostModalOpen && (
+                  <Suspense fallback={<ModalLoadingFallback />}>
+                    <CreatePostModal
+                      open={isCreatePostModalOpen}
+                      onOpenChange={setIsCreatePostModalOpen}
+                    />
+                  </Suspense>
+                )}
+              </Fragment>
             ) : (
               <button 
                 key={item.title}

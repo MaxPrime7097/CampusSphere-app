@@ -11,7 +11,7 @@ import { StudyLevelCombobox } from "@/components/forms/StudyLevelCombobox";
 import { updateUserProfile } from "@/services/api";
 
 interface EditAcademicModalProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   initialData: {
     university: string;
     faculty: string;
@@ -20,9 +20,11 @@ interface EditAcademicModalProps {
     campus: string;
   };
   onSuccess?: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function EditAcademicModal({ children, initialData, onSuccess }: EditAcademicModalProps) {
+export function EditAcademicModal({ children, initialData, onSuccess, open: controlledOpen, onOpenChange: setControlledOpen }: EditAcademicModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [university, setUniversity] = useState(initialData.university);
   const [faculty, setFaculty] = useState(initialData.faculty);
@@ -31,6 +33,8 @@ export function EditAcademicModal({ children, initialData, onSuccess }: EditAcad
   const [campus, setCampus] = useState(initialData.campus);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const open = controlledOpen !== undefined ? controlledOpen : isOpen;
+  const setOpen = setControlledOpen ?? setIsOpen;
 
   const handleSave = async () => {
     if (!university || !faculty || !studyYear) {
@@ -58,7 +62,7 @@ export function EditAcademicModal({ children, initialData, onSuccess }: EditAcad
       });
       
       if (onSuccess) onSuccess();
-      setIsOpen(false);
+      setOpen(false);
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -71,10 +75,8 @@ export function EditAcademicModal({ children, initialData, onSuccess }: EditAcad
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={setOpen}>
+      {children ? <DialogTrigger asChild>{children}</DialogTrigger> : null}
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -121,7 +123,7 @@ export function EditAcademicModal({ children, initialData, onSuccess }: EditAcad
         </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t">
-          <Button variant="outline" onClick={() => setIsOpen(false)} disabled={isSubmitting}>
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={isSubmitting}>
             Annuler
           </Button>
           <Button onClick={handleSave} disabled={isSubmitting} className="campus-gradient text-white">

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { Suspense, lazy, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   listResources,
@@ -10,6 +10,7 @@ import {
   deleteFolder,
   downloadFolderZip,
   type ResourceFolder,
+  getFolderDetail,
 } from "@/services/api";
 import {
   Search,
@@ -38,11 +39,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { UploadResourceModal } from "@/components/modals/UploadResourceModal";
 import { ResourceCard } from "@/components/resources/ResourceCard";
 import { FolderCard } from "@/components/resources/FolderCard";
-import { CreateFolderModal } from "@/components/modals/CreateFolderModal";
-import { VerificationModal } from "@/components/modals/VerificationModal";
 import { cn, formatFileSize } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { RESOURCE_TYPE_OPTIONS, normalizeResourceType } from "@/constants/resourceTypes";
@@ -55,6 +53,10 @@ import {
 } from "@/constants/defaultSort";
 import { ResourceSkeleton } from "@/components/ui/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
+import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
+
+const UploadResourceModal = lazy(() => import("@/components/modals/UploadResourceModal").then((module) => ({ default: module.UploadResourceModal })));
+const CreateFolderModal = lazy(() => import("@/components/modals/CreateFolderModal").then((module) => ({ default: module.CreateFolderModal })));
 
 function mapResourceCard(r: any) {
   return {
@@ -85,6 +87,7 @@ export function Resources() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("all");
   const [selectedType, setSelectedType] = useState("all");
+  const [isUploadResourceOpen, setIsUploadResourceOpen] = useState(false);
 
   const [activeTab, setActiveTab] = useState<ResourceSortKey>(DEFAULT_SORT.resources);
   const [viewAllCategory, setViewAllCategory] = useState<string | null>(null);
@@ -168,7 +171,7 @@ export function Resources() {
     }
     setSelectedFolder(folder);
     try {
-      const { getFolderDetail } = await import('@/services/api');
+      
       const detail = await getFolderDetail(folder.id);
       setFolderResources((detail.resources || []).map(mapResourceCard));
     } catch {
@@ -297,9 +300,7 @@ export function Resources() {
         description: "Vérifiez votre compte pour télécharger des ressources.",
         variant: "destructive",
         action: (
-          <VerificationModal>
-            <Button variant="outline" size="sm">Vérifier</Button>
-          </VerificationModal>
+          <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>Vérifier</Button>
         )
       });
       return;
@@ -431,15 +432,25 @@ export function Resources() {
                 <span className="hidden sm:inline">Chargement...</span>
               </Button>
             ) : currentUser?.isVerified ? (
-              <UploadResourceModal onResourceUploaded={handleResourceUploaded}>
+              <>
                 <Button
                   size="sm"
                   className="campus-gradient text-white hover:opacity-90 gap-2 w-full sm:w-auto"
+                  onClick={() => setIsUploadResourceOpen(true)}
                 >
                   <Upload className="h-4 w-4" />
                   <span className="hidden sm:inline">Uploader</span>
                 </Button>
-              </UploadResourceModal>
+                {isUploadResourceOpen && (
+                  <Suspense fallback={<ModalLoadingFallback />}>
+                    <UploadResourceModal
+                      open={isUploadResourceOpen}
+                      onOpenChange={setIsUploadResourceOpen}
+                      onResourceUploaded={handleResourceUploaded}
+                    />
+                  </Suspense>
+                )}
+              </>
             ) : (
               <Button
                 size="sm"
@@ -777,21 +788,25 @@ export function Resources() {
         </>
         )}
 
-        <CreateFolderModal
-          open={showCreateFolder}
-          onOpenChange={setShowCreateFolder}
-          existingCount={folders.length}
-          folder={editingFolder}
-          onSuccess={(folder) => {
-            if (editingFolder) {
-              setFolders(prev => prev.map(f => f.id === folder.id ? folder : f));
-              if (selectedFolder?.id === folder.id) setSelectedFolder(folder);
-            } else {
-              setFolders(prev => [...prev, folder]);
-            }
-            setEditingFolder(null);
-          }}
-        />
+        {showCreateFolder && (
+          <Suspense fallback={<ModalLoadingFallback />}>
+            <CreateFolderModal
+              open={showCreateFolder}
+              onOpenChange={setShowCreateFolder}
+              existingCount={folders.length}
+              folder={editingFolder}
+              onSuccess={(folder) => {
+                if (editingFolder) {
+                  setFolders(prev => prev.map(f => f.id === folder.id ? folder : f));
+                  if (selectedFolder?.id === folder.id) setSelectedFolder(folder);
+                } else {
+                  setFolders(prev => [...prev, folder]);
+                }
+                setEditingFolder(null);
+              }}
+            />
+          </Suspense>
+        )}
       </div>
     </div>
   );

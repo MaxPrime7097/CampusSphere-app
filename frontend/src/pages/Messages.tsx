@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { Suspense, lazy, useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { createPrivateConversation, deleteMessage, deleteConversation, getCurrentUser, getConversationMessages, getConversationParticipants, getUserConnections, getUserConversations, markConversationRead, markConversationUnread, addParticipant, removeParticipant, renameConversation, leaveConversation, sendMessage, updateMessage, uploadConversationAvatar, removeConversationAvatar, searchUsers } from "@/services/api";
 import { useTranslation } from "react-i18next";
@@ -13,8 +13,10 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { CreateGroupConversationModal } from "@/components/modals/CreateGroupConversationModal";
 import { formatRelativeTime } from "@/lib/date";
+import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
+
+const CreateGroupConversationModal = lazy(() => import("@/components/modals/CreateGroupConversationModal").then((module) => ({ default: module.CreateGroupConversationModal })));
 
 
 function unwrapApiData(payload: any) {
@@ -90,6 +92,7 @@ export function Messages() {
   const [messages, setMessages] = useState([]);
   const [isSending, setIsSending] = useState(false);
   const [showNewConversationModal, setShowNewConversationModal] = useState(false);
+  const [showCreateGroupConversationModal, setShowCreateGroupConversationModal] = useState(false);
   const [connectionSearch, setConnectionSearch] = useState("");
   const [isCreatingPrivate, setIsCreatingPrivate] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
@@ -758,22 +761,33 @@ export function Messages() {
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
-                <CreateGroupConversationModal
-                  onGroupCreated={(groupData) => {
-                    const newConversation = mapConversation(groupData, String(currentUser?.id || ""));
-                    setConversations((prev) => [newConversation, ...prev.filter((item) => item.id !== newConversation.id)]);
-                    toast({
-                      title: "Conversation créée !",
-                      description: `Le groupe "${newConversation.name}" a été créé`,
-                      duration: 2000,
-                    });
-                    navigate(`/messages/${newConversation.id}`);
-                  }}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 w-8 p-0"
+                  aria-label="Nouveau groupe"
+                  onClick={() => setShowCreateGroupConversationModal(true)}
                 >
-                  <Button size="sm" variant="outline" className="h-8 w-8 p-0" aria-label="Nouveau groupe">
-                    <Users className="h-4 w-4" />
-                  </Button>
-                </CreateGroupConversationModal>
+                  <Users className="h-4 w-4" />
+                </Button>
+                {showCreateGroupConversationModal && (
+                  <Suspense fallback={<ModalLoadingFallback />}>
+                    <CreateGroupConversationModal
+                      open={showCreateGroupConversationModal}
+                      onOpenChange={setShowCreateGroupConversationModal}
+                      onGroupCreated={(groupData) => {
+                        const newConversation = mapConversation(groupData, String(currentUser?.id || ""));
+                        setConversations((prev) => [newConversation, ...prev.filter((item) => item.id !== newConversation.id)]);
+                        toast({
+                          title: "Conversation créée !",
+                          description: `Le groupe "${newConversation.name}" a été créé`,
+                          duration: 2000,
+                        });
+                        navigate(`/messages/${newConversation.id}`);
+                      }}
+                    />
+                  </Suspense>
+                )}
               </div>
             </div>
             

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { searchUsers, getCurrentUser, getUserConnections, createConnection, disconnectFromUser, getMutualConnectionCounts } from "@/services/api";
+import { searchUsers, getCurrentUser, getUserConnections, createConnection, disconnectFromUser, getMutualConnectionCounts, acceptConnection } from "@/services/api";
 import { Users, Link, Search, Filter, Zap, UserPlus, UserCheck, Check, X, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -422,7 +422,7 @@ export function Connections() {
                             className="h-8 w-8 sm:w-auto p-0 sm:px-3 text-xs campus-gradient text-white hover:opacity-90"
                             onClick={async () => {
                               try {
-                                const { acceptConnection } = await import("@/services/api");
+                                
                                 await acceptConnection(request.id);
                                 toast({ title: "Connexion acceptée", description: `Vous êtes maintenant connecté(e) à ${request.name}` });
                                 setConnections(prev => [...prev, { ...request, status: 'accepted' }]);

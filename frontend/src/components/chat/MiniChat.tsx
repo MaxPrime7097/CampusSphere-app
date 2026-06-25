@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { getConversationMessages, getUserConversations, sendMessage, getCurrentUser } from "@/services/api";
+import { getConversationMessages, getUserConversations, sendMessage, getCurrentUser, listSphereMembers, createGroupConversation } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -133,7 +133,7 @@ export function MiniChat({ sphereId, sphereName, isExpanded, onToggleExpanded, c
 
         if (!existing) {
           try {
-            const { listSphereMembers } = await import("@/services/api");
+            
             const membersRaw = await listSphereMembers(sphereId);
             const ids = toList(membersRaw)
               .map((m: any) => String(m.user_info?.id ?? m.user ?? ""))
@@ -189,7 +189,7 @@ export function MiniChat({ sphereId, sphereName, isExpanded, onToggleExpanded, c
       let currentConvId = conversationId;
       
       if (!currentConvId) {
-        const { createGroupConversation } = await import("@/services/api");
+        
         const SPHERE_CONV_PREFIX = `sphere-${sphereId}`;
         // Use a more descriptive name for the conversation
         const convName = `${sphereName} (sphere-${sphereId})`;

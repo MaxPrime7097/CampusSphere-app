@@ -9,7 +9,6 @@ import { apiFetch } from "@/services/api";
 
 // Appel direct car pas encore dans api.ts
 async function getAdminLogs(params?: { page?: number; search?: string }) {
-  const { getAccessToken } = await import("@/services/api") as any;
   const q = new URLSearchParams();
   if (params?.page) q.set('page', String(params.page));
   if (params?.search) q.set('search', params.search);

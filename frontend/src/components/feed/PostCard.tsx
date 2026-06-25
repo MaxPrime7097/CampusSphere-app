@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { Heart, MessageCircle, Share, Bookmark, MoreVertical, Zap, Copy, Flag, ExternalLink, Users, Plus, Minus, X, Pencil, Trash2, Loader2, FileText, Download, ChevronLeft, ChevronRight, Search, Facebook, Instagram, Twitter, Linkedin, Info, BadgeCheck } from "lucide-react";
 import { FaFacebook, FaTwitter, FaInstagram, FaWhatsapp, FaLinkedin } from 'react-icons/fa';
 
@@ -22,7 +22,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { CommentsModal } from "@/components/modals/CommentsModal";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
@@ -32,6 +31,9 @@ import { formatRelativeTime } from "@/lib/date";
 import { renderMentionText } from "@/lib/mentions";
 import { Textarea } from "@/components/ui/textarea";
 import { OptimizedImage } from "@/components/ui/optimized-image";
+import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
+
+const CommentsModal = lazy(() => import("@/components/modals/CommentsModal").then((module) => ({ default: module.CommentsModal })));
 
 interface PostCardProps {
   post: {
@@ -321,8 +323,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
     const messageContent = `Post partagé par ${post.author.name} :\n${postUrl}`;
     try {
       // Rechercher d'abord si une conversation existe déjà (plus robuste)
-      const { getUserConversations: getConvs } = await import("@/services/api");
-      const convs = await getConvs();
+      const convs = await getUserConversations();
       const existing = (convs || []).find((c: any) => {
         const isPrivate = (c.type || c.conversation_type || "private") === "private";
         const participants = c.participants_info || c.participants || [];
@@ -752,11 +753,15 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
         </CardContent>
       </Card>
 
-      <CommentsModal
-        open={commentsOpen}
-        onOpenChange={setCommentsOpen}
-        postId={post.id}
-      />
+      {commentsOpen && (
+        <Suspense fallback={<ModalLoadingFallback />}>
+          <CommentsModal
+            open={commentsOpen}
+            onOpenChange={setCommentsOpen}
+            postId={post.id}
+          />
+        </Suspense>
+      )}
 
       {/* Lightbox */}
       {lightboxIndex !== null && (

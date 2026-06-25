@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Search, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CreatePostModal } from "@/components/modals/CreatePostModal";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MenuDropdown } from "./MenuDropdown";
 import { ProfileBubble } from "./ProfileBubble";

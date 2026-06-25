@@ -33,7 +33,7 @@ interface SphereSettings {
 
 
 interface SphereSettingsModalProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   sphereData?: {
     id: string;
     name: string;
@@ -55,13 +55,17 @@ interface SphereSettingsModalProps {
   };
   onSettingsUpdated?: (updatedSettings: SphereSettings) => void;
   onSphereDeleted?: (sphereId: string) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function SphereSettingsModal({ 
   children, 
   sphereData, 
   onSettingsUpdated, 
-  onSphereDeleted 
+  onSphereDeleted,
+  open: controlledOpen,
+  onOpenChange: setControlledOpen,
 }: SphereSettingsModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -86,6 +90,8 @@ export function SphereSettingsModal({
 
 
   const { toast } = useToast();
+  const open = controlledOpen !== undefined ? controlledOpen : isOpen;
+  const setOpen = setControlledOpen ?? setIsOpen;
 
   // Initialiser les paramètres avec les données de la sphère
   useEffect(() => {
@@ -185,7 +191,7 @@ export function SphereSettingsModal({
         duration: 3000,
       });
 
-      setIsOpen(false);
+      setOpen(false);
 
     } catch (error) {
       toast({
@@ -249,7 +255,7 @@ export function SphereSettingsModal({
         duration: 3000,
       });
 
-      setIsOpen(false);
+      setOpen(false);
       setShowDeleteConfirm(false);
 
     } catch (error) {
@@ -264,10 +270,8 @@ export function SphereSettingsModal({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={setOpen}>
+      {children ? <DialogTrigger asChild>{children}</DialogTrigger> : null}
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -525,7 +529,7 @@ export function SphereSettingsModal({
             <Button
               variant="outline"
               className="flex-1"
-              onClick={() => setIsOpen(false)}
+              onClick={() => setOpen(false)}
               disabled={isSaving || isDeleting}
             >
               Annuler

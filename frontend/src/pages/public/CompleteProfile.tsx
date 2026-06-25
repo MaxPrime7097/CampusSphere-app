@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { Suspense, lazy, useEffect, useState, useRef } from "react";
 import { ChevronLeft, ChevronRight, Check, Loader2, Plus, X, AlertCircle, Eye, EyeOff, Camera, Upload, Info, Briefcase, Languages, Smile, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, REGISTRATION_MAX_LENGTHS } from "@/components/ui/input";
@@ -13,8 +13,6 @@ import { z } from "zod";
 import { completeSupabaseProfile, checkUserAvailability, verifyStudentStatus, getCurrentUser } from "@/services/api";
 import { completeSupabaseProfilePayloadSchema, mapCompleteProfileErrors } from "@/schemas/completeProfilePayload";
 import { cn, formatSlugToLabel } from "@/lib/utils";
-import { AddEducationModal } from "@/components/modals/AddEducationModal";
-import { AddExperienceModal } from "@/components/modals/AddExperienceModal";
 import { UniversityCombobox } from "@/components/forms/UniversityCombobox";
 import { FacultyCombobox } from "@/components/forms/FacultyCombobox";
 import { StudyLevelCombobox } from "@/components/forms/StudyLevelCombobox";
@@ -23,6 +21,10 @@ import { InterestsCombobox } from "@/components/forms/InterestsCombobox";
 import { LanguageCombobox } from "@/components/forms/LanguageCombobox";
 import { CityCombobox } from "@/components/forms/CityCombobox";
 import Sphere3D from "@/components/layout/Sphere3D";
+import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
+
+const AddEducationModal = lazy(() => import("@/components/modals/AddEducationModal").then((module) => ({ default: module.AddEducationModal })));
+const AddExperienceModal = lazy(() => import("@/components/modals/AddExperienceModal").then((module) => ({ default: module.AddExperienceModal })));
 
 type Step = 1 | 2 | 3;
 const MINIMUM_AGE = 16;
@@ -56,6 +58,8 @@ export function CompleteProfile() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [usernameCheck, setUsernameCheck] = useState({ checking: false, available: true, checkedValue: "" });
+  const [isAddExperienceOpen, setIsAddExperienceOpen] = useState(false);
+  const [isAddEducationOpen, setIsAddEducationOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     firstName: "", lastName: "",
@@ -557,9 +561,19 @@ export function CompleteProfile() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label className="text-xs font-medium">Parcours Professionnel</Label>
-                    <AddExperienceModal existingExperiences={formData.experiences} onExperienceAdded={exp => setFormData(p => ({ ...p, experiences: [...p.experiences, exp] }))}>
-                      <Button size="sm" variant="ghost" className="h-7 text-xs text-primary hover:bg-primary/10"><Plus className="h-3 w-3 mr-1" /> Ajouter</Button>
-                    </AddExperienceModal>
+                    <Button size="sm" variant="ghost" className="h-7 text-xs text-primary hover:bg-primary/10" onClick={() => setIsAddExperienceOpen(true)}>
+                      <Plus className="h-3 w-3 mr-1" /> Ajouter
+                    </Button>
+                    {isAddExperienceOpen && (
+                      <Suspense fallback={<ModalLoadingFallback />}>
+                        <AddExperienceModal
+                          open={isAddExperienceOpen}
+                          onOpenChange={setIsAddExperienceOpen}
+                          existingExperiences={formData.experiences}
+                          onExperienceAdded={exp => setFormData(p => ({ ...p, experiences: [...p.experiences, exp] }))}
+                        />
+                      </Suspense>
+                    )}
                   </div>
                   <div className="grid gap-2">
                     {formData.experiences.map((exp, i) => (
@@ -735,9 +749,19 @@ export function CompleteProfile() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label className="text-xs font-medium">Cursus Antérieur</Label>
-                    <AddEducationModal existingEducations={formData.previousEducation} onEducationAdded={edu => setFormData(p => ({ ...p, previousEducation: [...p.previousEducation, edu] }))}>
-                      <Button size="sm" variant="ghost" className="h-7 p-0 text-primary hover:bg-transparent"><Plus className="h-3 w-3 mr-1" /> Ajouter</Button>
-                    </AddEducationModal>
+                    <Button size="sm" variant="ghost" className="h-7 p-0 text-primary hover:bg-transparent" onClick={() => setIsAddEducationOpen(true)}>
+                      <Plus className="h-3 w-3 mr-1" /> Ajouter
+                    </Button>
+                    {isAddEducationOpen && (
+                      <Suspense fallback={<ModalLoadingFallback />}>
+                        <AddEducationModal
+                          open={isAddEducationOpen}
+                          onOpenChange={setIsAddEducationOpen}
+                          existingEducations={formData.previousEducation}
+                          onEducationAdded={edu => setFormData(p => ({ ...p, previousEducation: [...p.previousEducation, edu] }))}
+                        />
+                      </Suspense>
+                    )}
                   </div>
                   <div className="grid gap-2">
                     {formData.previousEducation.map((edu, i) => (

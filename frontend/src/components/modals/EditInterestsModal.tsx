@@ -10,17 +10,21 @@ import { Badge } from "@/components/ui/badge";
 import { formatSlugToLabel } from "@/lib/utils";
 
 interface EditInterestsModalProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   initialInterests: string[];
   onSuccess?: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function EditInterestsModal({ children, initialInterests, onSuccess }: EditInterestsModalProps) {
+export function EditInterestsModal({ children, initialInterests, onSuccess, open: controlledOpen, onOpenChange: setControlledOpen }: EditInterestsModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [interests, setInterests] = useState<string[]>(initialInterests);
   const [newInterest, setNewInterest] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const open = controlledOpen !== undefined ? controlledOpen : isOpen;
+  const setOpen = setControlledOpen ?? setIsOpen;
 
   const handleSave = async () => {
     setIsSubmitting(true);
@@ -35,7 +39,7 @@ export function EditInterestsModal({ children, initialInterests, onSuccess }: Ed
       });
       
       if (onSuccess) onSuccess();
-      setIsOpen(false);
+      setOpen(false);
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -59,10 +63,8 @@ export function EditInterestsModal({ children, initialInterests, onSuccess }: Ed
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={setOpen}>
+      {children ? <DialogTrigger asChild>{children}</DialogTrigger> : null}
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -111,7 +113,7 @@ export function EditInterestsModal({ children, initialInterests, onSuccess }: Ed
         </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t">
-          <Button variant="outline" onClick={() => setIsOpen(false)} disabled={isSubmitting}>
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={isSubmitting}>
             Annuler
           </Button>
           <Button onClick={handleSave} disabled={isSubmitting} className="campus-gradient text-white">

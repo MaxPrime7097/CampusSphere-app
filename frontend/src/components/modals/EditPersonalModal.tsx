@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatSlugToLabel } from "@/lib/utils";
 
 interface EditPersonalModalProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   initialData: {
     email: string;
     phoneNumber: string;
@@ -22,9 +22,11 @@ interface EditPersonalModalProps {
     languages: string[];
   };
   onSuccess?: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function EditPersonalModal({ children, initialData, onSuccess }: EditPersonalModalProps) {
+export function EditPersonalModal({ children, initialData, onSuccess, open: controlledOpen, onOpenChange: setControlledOpen }: EditPersonalModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState(initialData.phoneNumber);
   const [dateOfBirth, setDateOfBirth] = useState(initialData.dateOfBirth);
@@ -33,6 +35,8 @@ export function EditPersonalModal({ children, initialData, onSuccess }: EditPers
   const [newLanguageInput, setNewLanguageInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const open = controlledOpen !== undefined ? controlledOpen : isOpen;
+  const setOpen = setControlledOpen ?? setIsOpen;
 
   const handleSave = async () => {
     setIsSubmitting(true);
@@ -50,7 +54,7 @@ export function EditPersonalModal({ children, initialData, onSuccess }: EditPers
       });
       
       if (onSuccess) onSuccess();
-      setIsOpen(false);
+      setOpen(false);
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -74,10 +78,8 @@ export function EditPersonalModal({ children, initialData, onSuccess }: EditPers
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={setOpen}>
+      {children ? <DialogTrigger asChild>{children}</DialogTrigger> : null}
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -146,7 +148,7 @@ export function EditPersonalModal({ children, initialData, onSuccess }: EditPers
         </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t">
-          <Button variant="outline" onClick={() => setIsOpen(false)} disabled={isSubmitting}>
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={isSubmitting}>
             Annuler
           </Button>
           <Button onClick={handleSave} disabled={isSubmitting} className="campus-gradient text-white">

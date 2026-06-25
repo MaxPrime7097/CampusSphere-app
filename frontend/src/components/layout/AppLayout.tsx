@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, Suspense, lazy, useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { openVerificationModal } from "@/lib/events";
 import { Moon, Sun, Search, Plus, Bell } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { CreatePostModal } from "@/components/modals/CreatePostModal";
 import { MobileNavigation } from "./MobileNavigation";
 import { MobileTopBar } from "./MobileTopBar";
 import { ProfileBubble } from "./ProfileBubble";
@@ -14,10 +13,13 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { CookieBanner } from "./CookieBanner";
 import { getCurrentUser } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
-import { VerificationModal } from "@/components/modals/VerificationModal";
 import { SearchDropdown } from "./SearchDropdown";
-import { useUnreadCounts } from "@/hooks/useUnreadCounts";
+import { useUnreadCounts, refreshCounts } from "@/hooks/useUnreadCounts";
 import { useAuth } from "@/contexts/AuthContext";
+import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
+
+const CreatePostModal = lazy(() => import("@/components/modals/CreatePostModal").then((module) => ({ default: module.CreatePostModal })));
+const VerificationModal = lazy(() => import("@/components/modals/VerificationModal").then((module) => ({ default: module.VerificationModal })));
 
 
 interface AppLayoutProps {
@@ -34,6 +36,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [isSearchDropdownVisible, setIsSearchDropdownVisible] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
+  const [isCreatePostModalOpen, setIsCreatePostModalOpen] = useState(false);
 
   useEffect(() => {
     const handleOpen = () => setIsVerificationModalOpen(true);
@@ -103,7 +106,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             duration: 5000,
           });
           // Refresh global counts
-          import("@/hooks/useUnreadCounts").then(m => m.refreshCounts());
+          refreshCounts();
         } catch (e) {
           console.error("Notification WS Error:", e);
         }
@@ -212,12 +215,20 @@ export function AppLayout({ children }: AppLayoutProps) {
                 {isAuthenticated && (
                   <>
                     {isVerified ? (
-                      <CreatePostModal>
-                        <Button variant="outline" size="sm">
+                      <>
+                        <Button variant="outline" size="sm" onClick={() => setIsCreatePostModalOpen(true)}>
                           <Plus className="h-4 w-4 mr-2" />
                           Nouveau post
                         </Button>
-                      </CreatePostModal>
+                        {isCreatePostModalOpen && (
+                          <Suspense fallback={<ModalLoadingFallback />}>
+                            <CreatePostModal
+                              open={isCreatePostModalOpen}
+                              onOpenChange={setIsCreatePostModalOpen}
+                            />
+                          </Suspense>
+                        )}
+                      </>
                     ) : (
                       <Button variant="outline" size="sm" onClick={(e) => handleCreateAction(e as any, () => {})}>
                         <Plus className="h-4 w-4 mr-2" />
@@ -261,10 +272,14 @@ export function AppLayout({ children }: AppLayoutProps) {
         </div>
       </div>
       <CookieBanner />
-      <VerificationModal 
-        open={isVerificationModalOpen} 
-        onOpenChange={setIsVerificationModalOpen} 
-      />
+      {isVerificationModalOpen && (
+        <Suspense fallback={<ModalLoadingFallback />}>
+          <VerificationModal
+            open={isVerificationModalOpen}
+            onOpenChange={setIsVerificationModalOpen}
+          />
+        </Suspense>
+      )}
     </SidebarProvider>
   );
 }

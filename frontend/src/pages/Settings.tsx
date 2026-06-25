@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { User, Bell, Shield, Globe, Moon, Sun, ChevronRight, TriangleAlert, UserX, LogOut, Loader2, Mail, Lock, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +12,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { NotificationSettings } from "@/components/NotificationSettings";
-import { EditAccountModal } from "@/components/modals/EditAccountModal";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   blockUser,
@@ -29,6 +28,9 @@ import {
   updatePrivacySettings,
   updateUserProfile,
 } from "@/services/api";
+import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
+
+const EditAccountModal = lazy(() => import("@/components/modals/EditAccountModal").then((module) => ({ default: module.EditAccountModal })));
 
 export function Settings() {
   const navigate = useNavigate();
@@ -60,6 +62,7 @@ export function Settings() {
   const [showPostVisibilityModal, setShowPostVisibilityModal] = useState(false);
   const [showDataExportModal, setShowDataExportModal] = useState(false);
   const [showBlockListModal, setShowBlockListModal] = useState(false);
+  const [isEditAccountOpen, setIsEditAccountOpen] = useState(false);
   
   // États pour les formulaires
   const [personalInfo, setPersonalInfo] = useState({
@@ -528,21 +531,29 @@ export function Settings() {
                 {section.items.map((item, itemIndex) => (
                   <div key={itemIndex}>
                     {item.label === "Informations personnelles" ? (
-                      <EditAccountModal
-                        initialData={personalInfo}
-                        onSuccess={async () => {
-                          await refreshUser();
-                          toast({ title: "Informations mises à jour" });
-                        }}
-                      >
+                      <>
                         <Button
                           variant="ghost"
                           className={"w-full justify-between h-auto p-3 md:p-4 text-sm md:text-base"}
+                          onClick={() => setIsEditAccountOpen(true)}
                         >
                           <span>{item.label}</span>
                           <ChevronRight className="h-3 w-3 md:h-4 md:w-4" />
                         </Button>
-                      </EditAccountModal>
+                        {isEditAccountOpen && (
+                          <Suspense fallback={<ModalLoadingFallback />}>
+                            <EditAccountModal
+                              open={isEditAccountOpen}
+                              onOpenChange={setIsEditAccountOpen}
+                              initialData={personalInfo}
+                              onSuccess={async () => {
+                                await refreshUser();
+                                toast({ title: "Informations mises à jour" });
+                              }}
+                            />
+                          </Suspense>
+                        )}
+                      </>
                     ) : (
                       <Button
                         variant="ghost"

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { Suspense, lazy, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { listSpheres, getCurrentUser, joinSphere, getUserSpheres, leaveSphere } from "@/services/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,9 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Globe, Search, Users, TrendingUp, Clock, Loader2, Check, RefreshCw, Plus, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { openVerificationModal } from "@/lib/events";
-import { CreateSphereModal } from "@/components/modals/CreateSphereModal";
 import { SphereCard } from "@/components/sphere/SphereCard";
-import { VerificationModal } from "@/components/modals/VerificationModal";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
@@ -26,6 +24,9 @@ import {
   ensureValidSortKey,
 } from "@/constants/defaultSort";
 import { SphereSkeleton } from "@/components/ui/skeletons";
+import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
+
+const CreateSphereModal = lazy(() => import("@/components/modals/CreateSphereModal").then((module) => ({ default: module.CreateSphereModal })));
 
 export function Spheres() {
   const navigate = useNavigate();
@@ -35,6 +36,7 @@ export function Spheres() {
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterAudience, setFilterAudience] = useState("all");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [isCreateSphereOpen, setIsCreateSphereOpen] = useState(false);
 
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userJoinedSpheres, setUserJoinedSpheres] = useState<string[]>([]);
@@ -364,11 +366,20 @@ export function Spheres() {
 
             </Button>
             {currentUser?.isVerified ? (
-              <CreateSphereModal onSphereCreated={handleSphereCreated}>
-                <Button size="sm" className="campus-gradient text-white hover:opacity-90 gap-2 w-full sm:w-auto">
+              <>
+                <Button size="sm" className="campus-gradient text-white hover:opacity-90 gap-2 w-full sm:w-auto" onClick={() => setIsCreateSphereOpen(true)}>
                   <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Créer</span>
                 </Button>
-              </CreateSphereModal>
+                {isCreateSphereOpen && (
+                  <Suspense fallback={<ModalLoadingFallback />}>
+                    <CreateSphereModal
+                      open={isCreateSphereOpen}
+                      onOpenChange={setIsCreateSphereOpen}
+                      onSphereCreated={handleSphereCreated}
+                    />
+                  </Suspense>
+                )}
+              </>
             ) : (
               <Button 
                 size="sm" 

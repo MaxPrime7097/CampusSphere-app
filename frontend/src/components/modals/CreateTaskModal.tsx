@@ -10,10 +10,12 @@ import { useToast } from "@/hooks/use-toast";
 import { createTask } from "@/services/api";
 
 interface CreateTaskModalProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   onTaskCreated?: (taskData: any) => void;
   sphereMembers?: Array<{ id: string; userId?: string; name: string; username: string; avatar?: string }>;
   sphereId: string | number;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 const PRIORITIES = [
@@ -22,7 +24,7 @@ const PRIORITIES = [
   { value: "high",   label: "Haute",   color: "bg-red-500" },
 ];
 
-export function CreateTaskModal({ children, onTaskCreated, sphereMembers = [], sphereId }: CreateTaskModalProps) {
+export function CreateTaskModal({ children, onTaskCreated, sphereMembers = [], sphereId, open: controlledOpen, onOpenChange: setControlledOpen }: CreateTaskModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [title, setTitle] = useState("");
@@ -43,11 +45,13 @@ export function CreateTaskModal({ children, onTaskCreated, sphereMembers = [], s
     return "";
   });
   const { toast } = useToast();
+  const open = controlledOpen !== undefined ? controlledOpen : isOpen;
+  const setOpen = setControlledOpen ?? setIsOpen;
 
   const reset = () => {
     setTitle(""); setDescription(""); setDueDate("");
     setPriority("medium"); setAssignedTo("");
-    setIsOpen(false);
+    setOpen(false);
   };
 
   const handleSubmit = async () => {
@@ -87,8 +91,8 @@ export function CreateTaskModal({ children, onTaskCreated, sphereMembers = [], s
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+    <Dialog open={open} onOpenChange={setOpen}>
+      {children ? <DialogTrigger asChild>{children}</DialogTrigger> : null}
       <DialogContent className="w-full max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -154,7 +158,7 @@ export function CreateTaskModal({ children, onTaskCreated, sphereMembers = [], s
           </div>
 
           <div className="flex gap-2 pt-2">
-            <Button variant="outline" className="flex-1" onClick={() => setIsOpen(false)} disabled={isSubmitting}>
+            <Button variant="outline" className="flex-1" onClick={() => setOpen(false)} disabled={isSubmitting}>
               Annuler
             </Button>
             <Button

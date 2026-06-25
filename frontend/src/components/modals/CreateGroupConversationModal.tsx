@@ -13,8 +13,10 @@ import { z } from "zod";
 interface UserOption { id: string; name: string; username: string; avatar?: string | null; }
 
 interface Props {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   onGroupCreated?: (groupData: unknown) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 const groupSchema = z.object({
@@ -22,7 +24,7 @@ const groupSchema = z.object({
   members: z.array(z.string()).min(2, "Sélectionnez au moins 2 membres"),
 });
 
-export function CreateGroupConversationModal({ children, onGroupCreated }: Props) {
+export function CreateGroupConversationModal({ children, onGroupCreated, open: controlledOpen, onOpenChange: setControlledOpen }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
@@ -31,9 +33,11 @@ export function CreateGroupConversationModal({ children, onGroupCreated }: Props
   const [connections, setConnections] = useState<UserOption[]>([]);
   const [loadingConnections, setLoadingConnections] = useState(false);
   const { toast } = useToast();
+  const open = controlledOpen !== undefined ? controlledOpen : isOpen;
+  const setOpen = setControlledOpen ?? setIsOpen;
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!open) return;
     let mounted = true;
     setLoadingConnections(true);
     (async () => {
@@ -61,7 +65,7 @@ export function CreateGroupConversationModal({ children, onGroupCreated }: Props
       }
     })();
     return () => { mounted = false; };
-  }, [isOpen]);
+  }, [open]);
 
   const filtered = connections.filter((u) => {
     const q = searchQuery.toLowerCase();
@@ -82,7 +86,7 @@ export function CreateGroupConversationModal({ children, onGroupCreated }: Props
       toast({ title: "Groupe créé !", description: `"${name}" a été créé`, duration: 3000 });
       onGroupCreated?.(groupData);
       reset();
-      setIsOpen(false);
+      setOpen(false);
     } catch (error: any) {
       toast({
         title: error instanceof z.ZodError ? "Erreur de validation" : "Erreur",
@@ -99,8 +103,8 @@ export function CreateGroupConversationModal({ children, onGroupCreated }: Props
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(o) => { setIsOpen(o); if (!o) reset(); }}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) reset(); }}>
+      {children ? <DialogTrigger asChild>{children}</DialogTrigger> : null}
       <DialogContent className="w-full max-w-lg max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -187,7 +191,7 @@ export function CreateGroupConversationModal({ children, onGroupCreated }: Props
         </div>
 
         <div className="flex justify-end gap-2 pt-2 border-t">
-          <Button variant="outline" onClick={() => setIsOpen(false)} disabled={isCreating}>Annuler</Button>
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={isCreating}>Annuler</Button>
           <Button
             onClick={handleCreate}
             disabled={isCreating || !name.trim() || selectedMembers.length < 2}

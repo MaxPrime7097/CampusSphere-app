@@ -1,14 +1,15 @@
-import { useState, useEffect } from "react";
+import { Suspense, lazy, useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { CreatePostModal } from "@/components/modals/CreatePostModal";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getCurrentUser } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { openVerificationModal } from "@/lib/events";
-import { VerificationModal } from "@/components/modals/VerificationModal";
 import { Button } from "@/components/ui/button";
+import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
+
+const CreatePostModal = lazy(() => import("@/components/modals/CreatePostModal").then((module) => ({ default: module.CreatePostModal })));
 
 interface CreatePostProps {
   onPostCreated?: (postData: unknown) => void;
@@ -17,6 +18,7 @@ interface CreatePostProps {
 export function CreatePost({ onPostCreated }: CreatePostProps) {
   const isMobile = useIsMobile();
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -44,8 +46,12 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
   const isVerified = currentUser?.isVerified ?? false;
 
   const content = (
-    <Card className={cardClasses} onClick={() => {
-      if (!isVerified) {
+    <>
+      <Card className={cardClasses} onClick={() => {
+        if (isVerified) {
+          setIsCreatePostOpen(true);
+          return;
+        }
         toast({
           title: "Compte non certifié",
           description: "Certifiez votre compte pour publier sur le campus.",
@@ -54,8 +60,7 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
             <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>Vérifier</Button>
           )
         });
-      }
-    }}>
+      }}>
       <CardContent className="p-4">
         <div className="flex gap-3 items-center">
           <Avatar className="h-10 w-10">
@@ -72,16 +77,18 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
           </div>
         </div>
       </CardContent>
-    </Card>
+      </Card>
+      {isVerified && isCreatePostOpen && (
+        <Suspense fallback={<ModalLoadingFallback />}>
+          <CreatePostModal
+            open={isCreatePostOpen}
+            onOpenChange={setIsCreatePostOpen}
+            onPostCreated={onPostCreated}
+          />
+        </Suspense>
+      )}
+    </>
   );
-
-  if (isVerified) {
-    return (
-      <CreatePostModal onPostCreated={onPostCreated}>
-        {content}
-      </CreatePostModal>
-    );
-  }
 
   return content;
 }

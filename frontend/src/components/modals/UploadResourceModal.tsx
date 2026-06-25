@@ -19,18 +19,21 @@ import { z } from "zod";
 import { FileUpload } from "@/components/upload/FileUpload";
 import { RESOURCE_TYPE_OPTIONS } from "@/constants/resourceTypes";
 import { ACCEPTED_RESOURCE_MIME_TYPES, ACCEPTED_RESOURCE_FILE_EXTENSIONS } from "@/constants/resourceUpload";
+import { listFolders, createResource } from "@/services/api";
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 const ACCEPTED_FILE_TYPES = [...ACCEPTED_RESOURCE_MIME_TYPES];
 
 interface UploadResourceModalProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   onResourceUploaded?: (resource?: unknown) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function UploadResourceModal({ children, onResourceUploaded }: UploadResourceModalProps) {
+export function UploadResourceModal({ children, onResourceUploaded, open: controlledOpen, onOpenChange: setControlledOpen }: UploadResourceModalProps) {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState("");
@@ -47,13 +50,13 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
   const [folders, setFolders] = useState<Array<{id: number; name: string; resource_count: number}>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = setControlledOpen ?? setInternalOpen;
 
   // Load user's folders when modal opens
   useEffect(() => {
     if (open) {
-      import('@/services/api').then(({ listFolders }) => {
-        listFolders().then(setFolders).catch(() => null);
-      });
+      listFolders().then(setFolders).catch(() => null);
     }
   }, [open]);
 
@@ -214,8 +217,6 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
     setUploadProgress(0);
 
     try {
-      // Import API function dynamically to avoid circular deps
-      const { createResource } = await import('@/services/api');
       
       const formData = new FormData();
       formData.append('title', title);
@@ -276,7 +277,7 @@ export function UploadResourceModal({ children, onResourceUploaded }: UploadReso
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+      {children ? <DialogTrigger asChild>{children}</DialogTrigger> : null}
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">

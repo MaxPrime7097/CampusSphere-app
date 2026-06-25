@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import React, { lazy, Suspense } from "react";
 import { Helmet } from "react-helmet-async";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -6,57 +6,71 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
-import { Landing } from "./pages/public/Landing";
-import { Login } from "./pages/public/Login";
-import { Register } from "./pages/public/Register";
-import { Home } from "./pages/Home";
-import { Profile } from "./pages/Profile";
-import { Messages } from "./pages/Messages";
-import { Settings } from "./pages/Settings";
-import NotFound from "./pages/NotFound";
-import { Notifications } from "./pages/Notifications";
-import { SearchResults } from "./pages/SearchResults";
-import { EditProfile } from "./pages/EditProfile";
-import { SavedItems } from "./pages/SavedItems";
-import { Resources } from "./pages/Resources";
-import { ResourceDetailRoute } from "./pages/ResourceDetailRoute";
-import { PostDetail } from "./pages/PostDetail";
-import { Spheres } from "./pages/Spheres";
-import { SphereDetail } from "./pages/SphereDetail";
-import { AdminPanelRouter } from "./pages/admin/AdminPanelRouter";
-import { AdminDashboard } from "./pages/admin/AdminDashboard";
-import { About } from "./pages/public/About";
-import { Contact } from "./pages/public/Contact";
-import { FAQ } from "./pages/public/FAQ";
-import { ForgotPassword } from "./pages/public/ForgotPassword";
-import { AuthCallback } from "./pages/public/AuthCallback";
-import { CompleteProfile } from "./pages/public/CompleteProfile";
-import { Privacy } from "./pages/public/Privacy";
-import { Terms } from "./pages/public/Terms";
-import { Connections } from "./pages/Connections";
-// Sphera V2 — module isolé
-import { SpheraHome } from "./sphera/pages/SpheraHome";
-import { StudySessionDetail } from "./sphera/pages/StudySessionDetail";
-import { AnnaleDetail } from "./sphera/pages/AnnaleDetail";
-import { CommunityGuidelines } from "./pages/public/CommunityGuidelines";
-import { Copyright } from "./pages/public/Copyright";
-import { CookiePolicy } from "./pages/public/CookiePolicy";
-import { DataDeletion } from "./pages/public/DataDeletion";
-import { Waitinglist } from "./pages/public/Waitinglist";
-import { Policies } from "./pages/public/Policies";
 import { RequireAdminRole } from "./components/auth/RequireAdminRole";
-import Forbidden from "./pages/public/Forbidden";
 import { AdminLayout } from "./admin/components/AdminLayout";
-import { AdminDashboardPage } from "./admin/pages/AdminDashboardPage";
-import { AdminUsersPage } from "./admin/pages/AdminUsersPage";
-import { AdminSpheresPage } from "./admin/pages/AdminSpheresPage";
-import { AdminModerationPage } from "./admin/pages/AdminModerationPage";
-import { AdminResourcesPage } from "./admin/pages/AdminResourcesPage";
-import { AdminLogsPage } from "./admin/pages/AdminLogsPage";
-import { AdminContactMessagesPage } from "./admin/pages/AdminContactMessagesPage";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 
+// Lazy loaded pages
+const Landing = lazy(() => import("./pages/public/Landing").then(m => ({ default: m.Landing })));
+const Login = lazy(() => import("./pages/public/Login").then(m => ({ default: m.Login })));
+const Register = lazy(() => import("./pages/public/Register").then(m => ({ default: m.Register })));
+const Home = lazy(() => import("./pages/Home").then(m => ({ default: m.Home })));
+const Profile = lazy(() => import("./pages/Profile").then(m => ({ default: m.Profile })));
+const Messages = lazy(() => import("./pages/Messages").then(m => ({ default: m.Messages })));
+const Settings = lazy(() => import("./pages/Settings").then(m => ({ default: m.Settings })));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const Notifications = lazy(() => import("./pages/Notifications").then(m => ({ default: m.Notifications })));
+const SearchResults = lazy(() => import("./pages/SearchResults").then(m => ({ default: m.SearchResults })));
+const EditProfile = lazy(() => import("./pages/EditProfile").then(m => ({ default: m.EditProfile })));
+const SavedItems = lazy(() => import("./pages/SavedItems").then(m => ({ default: m.SavedItems })));
+const Resources = lazy(() => import("./pages/Resources").then(m => ({ default: m.Resources })));
+const ResourceDetailRoute = lazy(() => import("./pages/ResourceDetailRoute").then(m => ({ default: m.ResourceDetailRoute })));
+const PostDetail = lazy(() => import("./pages/PostDetail").then(m => ({ default: m.PostDetail })));
+const Spheres = lazy(() => import("./pages/Spheres").then(m => ({ default: m.Spheres })));
+const SphereDetail = lazy(() => import("./pages/SphereDetail").then(m => ({ default: m.SphereDetail })));
+const AdminPanelRouter = lazy(() => import("./pages/admin/AdminPanelRouter").then(m => ({ default: m.AdminPanelRouter })));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard").then(m => ({ default: m.AdminDashboard })));
+const About = lazy(() => import("./pages/public/About").then(m => ({ default: m.About })));
+const Contact = lazy(() => import("./pages/public/Contact").then(m => ({ default: m.Contact })));
+const FAQ = lazy(() => import("./pages/public/FAQ").then(m => ({ default: m.FAQ })));
+const ForgotPassword = lazy(() => import("./pages/public/ForgotPassword").then(m => ({ default: m.ForgotPassword })));
+const AuthCallback = lazy(() => import("./pages/public/AuthCallback").then(m => ({ default: m.AuthCallback })));
+const CompleteProfile = lazy(() => import("./pages/public/CompleteProfile").then(m => ({ default: m.CompleteProfile })));
+const Privacy = lazy(() => import("./pages/public/Privacy").then(m => ({ default: m.Privacy })));
+const Terms = lazy(() => import("./pages/public/Terms").then(m => ({ default: m.Terms })));
+const Connections = lazy(() => import("./pages/Connections").then(m => ({ default: m.Connections })));
+const SpheraHome = lazy(() => import("./sphera/pages/SpheraHome").then(m => ({ default: m.SpheraHome })));
+const StudySessionDetail = lazy(() => import("./sphera/pages/StudySessionDetail").then(m => ({ default: m.StudySessionDetail })));
+const AnnaleDetail = lazy(() => import("./sphera/pages/AnnaleDetail").then(m => ({ default: m.AnnaleDetail })));
+const CommunityGuidelines = lazy(() => import("./pages/public/CommunityGuidelines").then(m => ({ default: m.CommunityGuidelines })));
+const Copyright = lazy(() => import("./pages/public/Copyright").then(m => ({ default: m.Copyright })));
+const CookiePolicy = lazy(() => import("./pages/public/CookiePolicy").then(m => ({ default: m.CookiePolicy })));
+const DataDeletion = lazy(() => import("./pages/public/DataDeletion").then(m => ({ default: m.DataDeletion })));
+const Waitinglist = lazy(() => import("./pages/public/Waitinglist").then(m => ({ default: m.Waitinglist })));
+const Policies = lazy(() => import("./pages/public/Policies").then(m => ({ default: m.Policies })));
+const Forbidden = lazy(() => import("./pages/public/Forbidden"));
+const AdminDashboardPage = lazy(() => import("./admin/pages/AdminDashboardPage").then(m => ({ default: m.AdminDashboardPage })));
+const AdminUsersPage = lazy(() => import("./admin/pages/AdminUsersPage").then(m => ({ default: m.AdminUsersPage })));
+const AdminSpheresPage = lazy(() => import("./admin/pages/AdminSpheresPage").then(m => ({ default: m.AdminSpheresPage })));
+const AdminModerationPage = lazy(() => import("./admin/pages/AdminModerationPage").then(m => ({ default: m.AdminModerationPage })));
+const AdminResourcesPage = lazy(() => import("./admin/pages/AdminResourcesPage").then(m => ({ default: m.AdminResourcesPage })));
+const AdminLogsPage = lazy(() => import("./admin/pages/AdminLogsPage").then(m => ({ default: m.AdminLogsPage })));
+const AdminContactMessagesPage = lazy(() => import("./admin/pages/AdminContactMessagesPage").then(m => ({ default: m.AdminContactMessagesPage })));
+
+const PageLoader = () => (
+  <div className="min-h-screen w-full flex items-center justify-center bg-background">
+    <div className="flex flex-col items-center gap-4">
+      <div className="relative">
+        <img src="/CS.svg" alt="Loading..." className="h-16 w-16 animate-pulse" />
+        <div className="absolute inset-0 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+      </div>
+      <p className="text-sm font-medium text-muted-foreground animate-pulse">
+        Chargement...
+      </p>
+    </div>
+  </div>
+);
 
 const queryClient = new QueryClient();
 
@@ -106,8 +120,9 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            {/* Auth routes */}
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              {/* Auth routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
@@ -302,7 +317,8 @@ const App = () => (
 
             {/* 404 */}
             <Route path="*" element={<NotFound />} />
-          </Routes>
+            </Routes>
+          </Suspense>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

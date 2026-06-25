@@ -17,12 +17,14 @@ interface Experience {
 }
 
 interface AddExperienceModalProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   onExperienceAdded?: (experience: Experience) => void;
   existingExperiences?: Experience[];
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function AddExperienceModal({ children, onExperienceAdded, existingExperiences = [] }: AddExperienceModalProps) {
+export function AddExperienceModal({ children, onExperienceAdded, existingExperiences = [], open: controlledOpen, onOpenChange: setControlledOpen }: AddExperienceModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [company, setCompany] = useState("");
@@ -30,6 +32,8 @@ export function AddExperienceModal({ children, onExperienceAdded, existingExperi
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const open = controlledOpen !== undefined ? controlledOpen : isOpen;
+  const setOpen = setControlledOpen ?? setIsOpen;
 
   const handleSubmit = async () => {
     if (!title.trim() || !company.trim() || !duration.trim() || !description.trim()) {
@@ -81,7 +85,7 @@ export function AddExperienceModal({ children, onExperienceAdded, existingExperi
     setCompany("");
     setDuration("");
     setDescription("");
-    setIsOpen(false);
+    setOpen(false);
   };
 
   const removeExperience = (index: number) => {
@@ -90,10 +94,8 @@ export function AddExperienceModal({ children, onExperienceAdded, existingExperi
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={setOpen}>
+      {children ? <DialogTrigger asChild>{children}</DialogTrigger> : null}
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">

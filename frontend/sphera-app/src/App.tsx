@@ -1,6 +1,6 @@
 // Force Vite HMR reload
 import React, { useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useSpheraAuth } from './contexts/SpheraAuthContext';
 import Landing from './pages/Landing';
@@ -20,6 +20,7 @@ import Terms from './pages/Terms';
 import { SidebarLayout } from './components/layout/SidebarLayout';
 
 function SSOCatcher() {
+  const navigate = useNavigate();
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get('access_token');
@@ -27,12 +28,12 @@ function SSOCatcher() {
     if (token) {
       localStorage.setItem('sphera_access', token);
       if (refresh) localStorage.setItem('sphera_refresh', refresh);
-      // Nettoyer l'URL
+      // Clean URL
       window.history.replaceState({}, document.title, window.location.pathname);
-      // Recharger pour que le contexte Auth prenne le token en compte
-      window.location.href = '/dashboard';
+      // Navigate to dashboard without full reload
+      navigate('/dashboard', { replace: true });
     }
-  }, []);
+  }, [navigate]);
   return null;
 }
 

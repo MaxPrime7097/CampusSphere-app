@@ -9,17 +9,21 @@ import { uploadSphereFile } from "@/services/api";
 
 interface Props {
   sphereId: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   onUploaded?: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function SphereUploadResourceModal({ sphereId, children, onUploaded }: Props) {
-  const [open, setOpen] = useState(false);
+export function SphereUploadResourceModal({ sphereId, children, onUploaded, open: controlledOpen, onOpenChange: setControlledOpen }: Props) {
+  const [internalOpen, setInternalOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = setControlledOpen ?? setInternalOpen;
 
   const handleFile = (f: File) => {
     if (f.size > 50 * 1024 * 1024) {
@@ -49,7 +53,7 @@ export function SphereUploadResourceModal({ sphereId, children, onUploaded }: Pr
 
   return (
     <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setFile(null); setTitle(""); } }}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+      {children ? <DialogTrigger asChild>{children}</DialogTrigger> : null}
       <DialogContent className="max-w-sm" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">

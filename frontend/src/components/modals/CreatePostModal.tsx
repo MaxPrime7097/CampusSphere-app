@@ -37,8 +37,10 @@ interface PostDraftData {
 }
 
 interface CreatePostModalProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   onPostCreated?: (postData: unknown) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 const POST_VISIBILITY_API_MAP: Record<string, "public" | "sphere" | "friends"> = {
@@ -123,7 +125,7 @@ const QUICK_PILLS = [
 
 const QUICK_EMOJIS = ['😀', '😂', '🥰', '😎', '🤔', '👍', '🎉', '🔥', '💯', '✨', '🚀', '❤️', '👏', '🙌', '💪', '🎯'];
 
-export function CreatePostModal({ children, onPostCreated }: CreatePostModalProps) {
+export function CreatePostModal({ children, onPostCreated, open: controlledOpen, onOpenChange: setControlledOpen }: CreatePostModalProps) {
   const [content, setContent] = useState("");
   const [location, setLocation] = useState("");
   const [tags, setTags] = useState<string[]>([]);
@@ -131,7 +133,6 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
   const [category, setCategory] = useState("general");
   const [visibility, setVisibility] = useState("public");
   const [allowComments, setAllowComments] = useState(true);
-  const [isOpen, setIsOpen] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [activeEmojiPack, setActiveEmojiPack] = useState("academic");
@@ -153,6 +154,7 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
   const [audience, setAudience] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const [internalOpen, setInternalOpen] = useState(false);
 
   // Charger les utilisateurs disponibles pour les mentions
   useEffect(() => {
@@ -367,7 +369,7 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
       });
       
       // Fermer le modal
-      setIsOpen(false);
+      setOpen(false);
       
       // Réinitialiser le formulaire
       resetForm();
@@ -401,7 +403,7 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
     setSubject("");
     setType("");
     setAudience("");
-      setIsOpen(false);
+      setOpen(false);
     setIsDraft(false);
     
     // Effacer le brouillon
@@ -410,11 +412,12 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
 
   const [showAdvanced, setShowAdvanced] = useState(false);
 
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = setControlledOpen ?? setInternalOpen;
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={setOpen}>
+      {children ? <DialogTrigger asChild>{children}</DialogTrigger> : null}
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0 border-none">
         <DialogHeader className="p-6 pb-2">
           <DialogTitle className="flex items-center gap-2">
@@ -685,7 +688,7 @@ export function CreatePostModal({ children, onPostCreated }: CreatePostModalProp
 
           {/* Footer Actions */}
           <div className="flex justify-end gap-3 pt-4">
-            <Button variant="ghost" onClick={() => setIsOpen(false)} disabled={isSubmitting} className="text-muted-foreground hover:text-foreground">
+            <Button variant="ghost" onClick={() => setOpen(false)} disabled={isSubmitting} className="text-muted-foreground hover:text-foreground">
               Annuler
             </Button>
             <Button 

@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from "react";
+import { Suspense, lazy, useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   getSphere, listSphereMembers, listSphereTasks, joinSphere,
   cancelSphereJoinRequest, getCurrentUser, completeTask,
-  updateSphereMember, removeSphereMember, uploadSphereBanner, getSphereFiles, deleteSphereFile
+  updateSphereMember, removeSphereMember, uploadSphereBanner, getSphereFiles, deleteSphereFile, deleteTask
 } from "@/services/api";
 
 import { Button } from "@/components/ui/button";
@@ -31,19 +31,20 @@ import { AnnouncementsTab } from "@/components/sphere/AnnouncementsTab";
 
 import { useToast } from "@/hooks/use-toast";
 import { openVerificationModal } from "@/lib/events";
-import { VerificationModal } from "@/components/modals/VerificationModal";
-import { CreateTaskModal } from "@/components/modals/CreateTaskModal";
-import { AddMemberModal } from "@/components/modals/AddMemberModal";
-import { SphereSettingsModal } from "@/components/modals/SphereSettingsModal";
-import { ManageMembersModal } from "@/components/modals/ManageMembersModal";
 import { MiniChat } from "@/components/chat/MiniChat";
 import { KanbanBoard, type KanbanTask } from "@/components/kanban/KanbanBoard";
 import { SphereOverview } from "@/components/sphere/SphereOverview";
-import { SphereUploadResourceModal } from "@/components/modals/SphereUploadResourceModal";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import { ResourceCard } from "@/components/resources/ResourceCard";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ResourceSkeleton } from "@/components/ui/skeletons";
+import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
+
+const CreateTaskModal = lazy(() => import("@/components/modals/CreateTaskModal").then((module) => ({ default: module.CreateTaskModal })));
+const AddMemberModal = lazy(() => import("@/components/modals/AddMemberModal").then((module) => ({ default: module.AddMemberModal })));
+const SphereSettingsModal = lazy(() => import("@/components/modals/SphereSettingsModal").then((module) => ({ default: module.SphereSettingsModal })));
+const ManageMembersModal = lazy(() => import("@/components/modals/ManageMembersModal").then((module) => ({ default: module.ManageMembersModal })));
+const SphereUploadResourceModal = lazy(() => import("@/components/modals/SphereUploadResourceModal").then((module) => ({ default: module.SphereUploadResourceModal })));
 
 export function SphereDetail() {
   const { id } = useParams();
@@ -69,6 +70,11 @@ export function SphereDetail() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [isCopyingLink, setIsCopyingLink] = useState(false);
   const [fileSearchQuery, setFileSearchQuery] = useState("");
+  const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
+  const [isSphereSettingsOpen, setIsSphereSettingsOpen] = useState(false);
+  const [isManageMembersOpen, setIsManageMembersOpen] = useState(false);
+  const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+  const [isUploadResourceOpen, setIsUploadResourceOpen] = useState(false);
 
 
   const [loading, setLoading] = useState<boolean>(true);
@@ -307,11 +313,7 @@ export function SphereDetail() {
         title: "Compte non certifié",
         description: "Vous devez être certifié pour rejoindre une sphère.",
         variant: "destructive",
-        action: (
-          <VerificationModal>
-            <Button variant="outline" size="sm">Vérifier</Button>
-          </VerificationModal>
-        )
+        action: <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>Vérifier</Button>
       });
       return;
     }
@@ -364,7 +366,7 @@ export function SphereDetail() {
 
   const handleTaskDelete = async (taskId: string) => {
     try {
-      const { deleteTask } = await import("@/services/api");
+      
       await deleteTask(taskId);
       setTasks(prev => prev.filter(t => t.id !== taskId));
       toast({ title: "Tâche supprimée" });
@@ -589,19 +591,57 @@ export function SphereDetail() {
                   {isMember ? (
                     <>
                       {canManageSphereSettings && (
-                        <SphereSettingsModal sphereData={sphereFallback} onSettingsUpdated={loadSphereData} onSphereDeleted={() => navigate("/spheres")}>
-                          <Button variant="outline" size="sm" className="gap-2"><Settings className="h-4 w-4" /> <span className="hidden sm:inline">Paramètres</span></Button>
-                        </SphereSettingsModal>
+                        <>
+                          <Button variant="outline" size="sm" className="gap-2" onClick={() => setIsSphereSettingsOpen(true)}>
+                            <Settings className="h-4 w-4" /> <span className="hidden sm:inline">Paramètres</span>
+                          </Button>
+                          {isSphereSettingsOpen && (
+                            <Suspense fallback={<ModalLoadingFallback />}>
+                              <SphereSettingsModal
+                                open={isSphereSettingsOpen}
+                                onOpenChange={setIsSphereSettingsOpen}
+                                sphereData={sphereFallback}
+                                onSettingsUpdated={loadSphereData}
+                                onSphereDeleted={() => navigate("/spheres")}
+                              />
+                            </Suspense>
+                          )}
+                        </>
                       )}
                       {canModerateMembers && (
-                        <ManageMembersModal sphereId={sphereFallback.id} sphereName={sphereFallback.name}>
-                          <Button variant="outline" size="sm" className="gap-2"><Users className="h-4 w-4" /> <span className="hidden sm:inline">Équipe</span></Button>
-                        </ManageMembersModal>
+                        <>
+                          <Button variant="outline" size="sm" className="gap-2" onClick={() => setIsManageMembersOpen(true)}>
+                            <Users className="h-4 w-4" /> <span className="hidden sm:inline">Équipe</span>
+                          </Button>
+                          {isManageMembersOpen && (
+                            <Suspense fallback={<ModalLoadingFallback />}>
+                              <ManageMembersModal
+                                open={isManageMembersOpen}
+                                onOpenChange={setIsManageMembersOpen}
+                                sphereId={sphereFallback.id}
+                                sphereName={sphereFallback.name}
+                              />
+                            </Suspense>
+                          )}
+                        </>
                       )}
                       {canModerateMembers && (
-                        <AddMemberModal sphereId={sphereFallback.id} sphereName={sphereFallback.name} onMemberAdded={loadSphereData}>
-                          <Button variant="outline" size="sm" className="gap-2"><UserPlus className="h-4 w-4" /> <span className="hidden sm:inline">Inviter</span></Button>
-                        </AddMemberModal>
+                        <>
+                          <Button variant="outline" size="sm" className="gap-2" onClick={() => setIsAddMemberOpen(true)}>
+                            <UserPlus className="h-4 w-4" /> <span className="hidden sm:inline">Inviter</span>
+                          </Button>
+                          {isAddMemberOpen && (
+                            <Suspense fallback={<ModalLoadingFallback />}>
+                              <AddMemberModal
+                                open={isAddMemberOpen}
+                                onOpenChange={setIsAddMemberOpen}
+                                sphereId={sphereFallback.id}
+                                sphereName={sphereFallback.name}
+                                onMemberAdded={loadSphereData}
+                              />
+                            </Suspense>
+                          )}
+                        </>
                       )}
                     </>
                   ) : (
@@ -696,9 +736,22 @@ export function SphereDetail() {
                     <div className="flex justify-between items-center bg-card p-3 md:p-4 rounded-lg border mb-4">
                       <h3 className="font-bold">Tableau Kanban</h3>
                       {currentUser?.isVerified ? (
-                        <CreateTaskModal onTaskCreated={loadSphereData} sphereId={String(id)} sphereMembers={members}>
-                          <Button size="sm" className="campus-gradient text-white"><Plus className="mr-1 h-4 w-4" /> Tâche</Button>
-                        </CreateTaskModal>
+                        <>
+                          <Button size="sm" className="campus-gradient text-white" onClick={() => setIsCreateTaskOpen(true)}>
+                            <Plus className="mr-1 h-4 w-4" /> Tâche
+                          </Button>
+                          {isCreateTaskOpen && (
+                            <Suspense fallback={<ModalLoadingFallback />}>
+                              <CreateTaskModal
+                                open={isCreateTaskOpen}
+                                onOpenChange={setIsCreateTaskOpen}
+                                onTaskCreated={loadSphereData}
+                                sphereId={String(id)}
+                                sphereMembers={members}
+                              />
+                            </Suspense>
+                          )}
+                        </>
                       ) : (
                         <Button
                           size="sm"
@@ -750,11 +803,21 @@ export function SphereDetail() {
                 <TabsContent value="files" className="mt-4 space-y-4">
                   <div className="flex justify-between items-center bg-card p-3 md:p-4 rounded-lg border">
                     <h3 className="font-bold">Fichiers partagés ({resources.length})</h3>
-                    <SphereUploadResourceModal sphereId={String(id)} onUploaded={() => getSphereFiles(String(id)).then(setResources).catch(() => null)}>
-                      <Button size="sm" className="campus-gradient text-white gap-1">
+                    <>
+                      <Button size="sm" className="campus-gradient text-white gap-1" onClick={() => setIsUploadResourceOpen(true)}>
                         <Plus className="h-4 w-4" /> Partager
                       </Button>
-                    </SphereUploadResourceModal>
+                      {isUploadResourceOpen && (
+                        <Suspense fallback={<ModalLoadingFallback />}>
+                          <SphereUploadResourceModal
+                            open={isUploadResourceOpen}
+                            onOpenChange={setIsUploadResourceOpen}
+                            sphereId={String(id)}
+                            onUploaded={() => getSphereFiles(String(id)).then(setResources).catch(() => null)}
+                          />
+                        </Suspense>
+                      )}
+                    </>
                   </div>
 
                   <div className="relative">

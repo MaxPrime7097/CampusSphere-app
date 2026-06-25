@@ -15,18 +15,22 @@ interface Education {
 }
 
 interface AddEducationModalProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   onEducationAdded?: (education: Education) => void;
   existingEducations?: Education[];
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function AddEducationModal({ children, onEducationAdded, existingEducations = [] }: AddEducationModalProps) {
+export function AddEducationModal({ children, onEducationAdded, existingEducations = [], open: controlledOpen, onOpenChange: setControlledOpen }: AddEducationModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [degree, setDegree] = useState("");
   const [school, setSchool] = useState("");
   const [year, setYear] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const open = controlledOpen !== undefined ? controlledOpen : isOpen;
+  const setOpen = setControlledOpen ?? setIsOpen;
 
   const handleSubmit = async () => {
     if (!degree.trim() || !school.trim() || !year.trim()) {
@@ -76,7 +80,7 @@ export function AddEducationModal({ children, onEducationAdded, existingEducatio
     setDegree("");
     setSchool("");
     setYear("");
-    setIsOpen(false);
+    setOpen(false);
   };
 
   const removeEducation = (index: number) => {
@@ -85,10 +89,8 @@ export function AddEducationModal({ children, onEducationAdded, existingEducatio
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={setOpen}>
+      {children ? <DialogTrigger asChild>{children}</DialogTrigger> : null}
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
