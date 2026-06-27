@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
-import { exchangeSupabaseToken, getCurrentUser } from "@/services/api";
+import { exchangeSupabaseToken } from "@/services/api";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -42,7 +42,7 @@ const debugRoutingDecision = (details: Record<string, unknown>) => {
 export function AuthCallback() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { refreshUser } = useAuth();
+  const { refreshUser, user } = useAuth();
   const [status, setStatus] = useState("Finalisation...");
 
   useEffect(() => {
@@ -90,12 +90,11 @@ export function AuthCallback() {
           });
         } else {
           // Fallback: check profile data manually
-          const profile = await getCurrentUser();
-          shouldCompleteProfile = !hasCompleteProfile(profile as Record<string, unknown>);
+          shouldCompleteProfile = !hasCompleteProfile(user as Record<string, unknown>);
           debugRoutingDecision({
             source: "fallback_profile_check",
             profile_completion_required: shouldCompleteProfile,
-            profile_data: profile,
+            profile_data: user,
             destination: shouldCompleteProfile ? "/complete-profile" : "/",
           });
         }

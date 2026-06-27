@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { getCurrentUser, getPostComments, createComment, updateComment, deleteComment, likeComment, normalizeUser, searchUsers } from "@/services/api";
+import { getPostComments, createComment, updateComment, deleteComment, likeComment, normalizeUser, searchUsers } from "@/services/api";
 import {
   Dialog,
   DialogContent,
@@ -25,6 +25,8 @@ import {
 import { formatRelativeTime } from "@/lib/date";
 import { findInvalidMentions, getActiveMentionQuery, renderMentionText } from "@/lib/mentions";
 import { CommentSkeleton } from "@/components/ui/skeletons";
+import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
 
 const MAX_COMMENT_THREAD_DEPTH = 4;
 
@@ -98,26 +100,31 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
   const [isUpdatingComment, setIsUpdatingComment] = useState(false);
   const [commentToDelete, setCommentToDelete] = useState<Comment | null>(null);
   const [isDeletingComment, setIsDeletingComment] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { user: currentUser } = useAuth();
+  const normalizedMentionQuery = useMemo(() => mentionQuery.trim().toLowerCase(), [mentionQuery]);
+  const commentsQuery = useQuery({
+    queryKey: ["comments", postId],
+    queryFn: () => getPostComments(postId),
+    enabled: open && Boolean(postId),
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  });
+  const mentionUsersQuery = useQuery({
+    queryKey: ["user-search", "comments-modal", postId, normalizedMentionQuery],
+    queryFn: () => searchUsers(mentionQuery),
+    enabled: open && showMentions && normalizedMentionQuery.length > 0,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  });
 
   useEffect(() => {
-    let isMounted = true;
-    (async () => {
-      try {
-        const data = await getCurrentUser();
-        if (isMounted) {
-          setCurrentUser(data);
-          setCurrentUserId(data?.id ? String(data.id) : null);
-        }
-      } catch (e) {
-        // User not logged in
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    setCurrentUserId(currentUser?.id ? String(currentUser.id) : null);
+  }, [currentUser?.id]);
 
   const mapApiComment = (apiComment: any, parentId?: string): Comment => ({
     id: String(apiComment.id),
@@ -185,50 +192,44 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
       }));
 
   useEffect(() => {
-    if (!open || !postId) return;
+    if (!open || !postId) {
+      setIsLoading(false);
+      return;
+    }
 
-    let isMounted = true;
-    (async () => {
-      setIsLoading(true);
-      try {
-        const data = await getPostComments(postId);
-        if (isMounted && Array.isArray(data)) {
-          const mapped = data.map((comment: any) => mapApiComment(comment));
-          setComments(mapped);
-        }
-      } catch (error) {
-        console.error("Error loading comments:", error);
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    })();
+    setIsLoading(commentsQuery.isLoading);
+    if (commentsQuery.data && Array.isArray(commentsQuery.data)) {
+      const mapped = commentsQuery.data.map((comment: any) => mapApiComment(comment));
+      setComments(mapped);
+      return;
+    }
 
-    return () => {
-      isMounted = false;
-    };
-  }, [open, postId]);
+    if (commentsQuery.error) {
+      console.error("Error loading comments:", commentsQuery.error);
+    }
+  }, [commentsQuery.data, commentsQuery.error, commentsQuery.isLoading, open, postId]);
 
   useEffect(() => {
-    if (!showMentions) return;
-    const handle = window.setTimeout(async () => {
-      try {
-        const users = await searchUsers(mentionQuery);
-        const mapped = (users || []).map((user: any) => ({
-          id: String(user.id),
-          username: user.username,
-          name: user.name || "Utilisateur",
-          avatar: user.avatar || undefined,
-        }));
-        setAvailableUsers(mapped);
-      } catch {
-        setAvailableUsers([]);
-      }
-    }, 180);
+    if (!open || !showMentions || !normalizedMentionQuery) {
+      setAvailableUsers([]);
+      return;
+    }
 
-    return () => window.clearTimeout(handle);
-  }, [mentionQuery, showMentions]);
+    if (mentionUsersQuery.data) {
+      const mapped = (mentionUsersQuery.data || []).map((user: any) => ({
+        id: String(user.id),
+        username: user.username,
+        name: user.name || "Utilisateur",
+        avatar: user.avatar || undefined,
+      }));
+      setAvailableUsers(mapped);
+      return;
+    }
+
+    if (mentionUsersQuery.error) {
+      setAvailableUsers([]);
+    }
+  }, [mentionUsersQuery.data, mentionUsersQuery.error, normalizedMentionQuery, open, showMentions]);
 
   const commentSchema = z.object({
     content: z.string().trim().min(1, { message: t("modals.comments.validation.tooShort") }).max(500, { message: t("modals.comments.validation.tooLong") }),
@@ -260,7 +261,6 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
 
     try {
       const result = await createComment(postId, { content: newComment });
-      const currentUser = await getCurrentUser().catch(() => null);
       const normalizedCurrentUser = normalizeCommentAuthor(currentUser);
 
       const newCommentObj: Comment = {
@@ -334,7 +334,6 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
 
     try {
       const result = await createComment(postId, { content: replyContent, parent: parentId });
-      const currentUser = await getCurrentUser().catch(() => null);
       const normalizedCurrentUser = normalizeCommentAuthor(currentUser);
 
       const newReply: Comment = {

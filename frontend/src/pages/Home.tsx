@@ -4,7 +4,7 @@ import { FriendSuggestions } from "@/components/feed/FriendSuggestions";
 import { FeedSidebar } from "@/components/layout/FeedSidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState, useEffect } from "react";
-import { listPosts, listSpheres, getCurrentUser } from "@/services/api";
+import { listPosts, listSpheres } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { mapPostToCard } from "@/lib/postCardMapper";
 import { PostSkeleton } from "@/components/ui/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useQuery } from "@tanstack/react-query";
 
 export function Home() {
   const isMobile = useIsMobile();
@@ -22,75 +23,58 @@ export function Home() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
-
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [popularSpheres, setPopularSpheres] = useState<any[]>([]);
-
-  // Load current user
-  useEffect(() => {
-    let isMounted = true;
-    (async () => {
-      try {
-        const data = await getCurrentUser();
-        if (isMounted) setCurrentUser(data);
-      } catch (e) {
-        // User not logged in
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  // Load popular spheres
-  useEffect(() => {
-    let isMounted = true;
-    (async () => {
-      try {
-        const spheres = await listSpheres();
-        if (isMounted) {
-          const sorted = (spheres || [])
-            .sort((a: any, b: any) => (b.member_count || 0) - (a.member_count || 0))
-            .slice(0, 3);
-          setPopularSpheres(sorted);
-        }
-      } catch (e) {
-        // Error loading spheres
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const spheresQuery = useQuery({
+    queryKey: ["home", "popular-spheres"],
+    queryFn: listSpheres,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    select: (spheres) =>
+      [...(Array.isArray(spheres) ? spheres : [])]
+        .sort((a: any, b: any) => (b.member_count || 0) - (a.member_count || 0))
+        .slice(0, 3),
+  });
 
   const [posts, setPosts] = useState<any[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
-
-  const fetchPosts = async () => {
-    const data = await listPosts();
-    setPosts((data || []).map(mapPostToCard));
-    setLoadError(null);
-  };
+  const postsQuery = useQuery({
+    queryKey: ["home", "posts"],
+    queryFn: listPosts,
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    select: (data) => (data || []).map(mapPostToCard),
+  });
 
   useEffect(() => {
-    let isMounted = true;
-    (async () => {
-      try {
-        const data = await listPosts();
-        if (!isMounted) return;
-        setPosts((data || []).map(mapPostToCard));
-        setLoadError(null);
-      } catch (e: any) {
-        setLoadError(e?.message || "Erreur de chargement du fil d'actualité");
-      } finally {
-        if (isMounted) setIsInitialLoading(false);
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    if (Array.isArray(postsQuery.data)) {
+      setPosts(postsQuery.data);
+      setLoadError(null);
+      setIsInitialLoading(false);
+      return;
+    }
+
+    if (postsQuery.isLoading) {
+      setIsInitialLoading(true);
+      return;
+    }
+
+    if (postsQuery.error) {
+      setLoadError((postsQuery.error as any)?.message || "Erreur de chargement du fil d'actualité");
+      setIsInitialLoading(false);
+    }
+  }, [postsQuery.data, postsQuery.error, postsQuery.isLoading]);
+
+  const popularSpheres = spheresQuery.data || [];
+
+  const fetchPosts = async () => {
+    const result = await postsQuery.refetch();
+    setPosts((result.data || []) as any[]);
+    setLoadError(null);
+  };
 
   const handleLoadMore = () => {
     void handleRefresh();

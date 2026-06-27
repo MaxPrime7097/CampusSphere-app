@@ -21,38 +21,18 @@ import {
   SheetHeader,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { type MouseEvent, useEffect, useState } from "react";
-import { getCurrentUser } from "@/services/api";
+import { type MouseEvent, useState } from "react";
 import { getNavigationSections, type NavigationUser } from "./navigationConfig";
 import { resolveAdminRole } from "@/lib/adminPermissions";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function MenuDropdown({ user: externalUser }: { user?: NavigationUser }) {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const [localUser, setLocalUser] = useState<NavigationUser>({});
-
-  const user = externalUser || localUser;
-
-  useEffect(() => {
-    if (externalUser && Object.keys(externalUser).length > 0) return;
-    let isMounted = true;
-    (async () => {
-      try {
-        const data = await getCurrentUser();
-        if (isMounted && data) {
-          setLocalUser(data);
-        }
-      } catch {
-        // User not logged in or error
-      }
-    })();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const { user: authUser } = useAuth();
+  const user = externalUser || authUser || {};
 
   const getNavClasses = ({ isActive }: { isActive: boolean }) =>
     isActive 

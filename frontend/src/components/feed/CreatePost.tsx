@@ -1,13 +1,13 @@
-import { Suspense, lazy, useState, useEffect } from "react";
+import { Suspense, lazy, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { getCurrentUser } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { openVerificationModal } from "@/lib/events";
 import { Button } from "@/components/ui/button";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
+import { useAuth } from "@/contexts/AuthContext";
 
 const CreatePostModal = lazy(() => import("@/components/modals/CreatePostModal").then((module) => ({ default: module.CreatePostModal })));
 
@@ -17,23 +17,8 @@ interface CreatePostProps {
 
 export function CreatePost({ onPostCreated }: CreatePostProps) {
   const isMobile = useIsMobile();
-  const [currentUser, setCurrentUser] = useState<any>(null);
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
-
-  useEffect(() => {
-    let isMounted = true;
-    (async () => {
-      try {
-        const data = await getCurrentUser();
-        if (isMounted) setCurrentUser(data);
-      } catch (e) {
-        // User not logged in
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const { user: currentUser } = useAuth();
 
   const cardClasses = cn(
     "transition-all duration-300",

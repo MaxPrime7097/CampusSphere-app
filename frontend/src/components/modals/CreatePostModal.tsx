@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { createPost, searchUsers } from "@/services/api";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { Plus, Image, MapPin, Users, X, Lock, Globe, Video, FileText, Smile, AtS
 import { useToast } from "@/hooks/use-toast";
 import { findInvalidMentions, getActiveMentionQuery, renderMentionText } from "@/lib/mentions";
 import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
 
 interface PostDraftData {
   content: string;
@@ -155,36 +156,39 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const [internalOpen, setInternalOpen] = useState(false);
+  const normalizedMentionQuery = useMemo(() => mentionQuery.trim().toLowerCase(), [mentionQuery]);
+  const mentionUsersQuery = useQuery({
+    queryKey: ["user-search", "create-post", normalizedMentionQuery],
+    queryFn: () => searchUsers(mentionQuery),
+    enabled: showMentions && normalizedMentionQuery.length > 0,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  });
 
   // Charger les utilisateurs disponibles pour les mentions
   useEffect(() => {
-    if (!showMentions) return;
-    let isMounted = true;
+    if (!showMentions || !normalizedMentionQuery) {
+      setAvailableUsers([]);
+      return;
+    }
 
-    const handle = window.setTimeout(async () => {
-      try {
-        const users = await searchUsers(mentionQuery);
-        if (isMounted && users) {
-          const mapped = users.map((u: any) => ({
-            id: String(u.id),
-            name: u.name || u.first_name + ' ' + u.last_name,
-            username: u.username,
-            avatar: u.avatar || '/placeholder-avatar.jpg'
-          }));
-          setAvailableUsers(mapped);
-        }
-      } catch {
-        if (isMounted) {
-          setAvailableUsers([]);
-        }
-      }
-    }, 180);
+    if (mentionUsersQuery.data) {
+      const mapped = mentionUsersQuery.data.map((u: any) => ({
+        id: String(u.id),
+        name: u.name || u.first_name + ' ' + u.last_name,
+        username: u.username,
+        avatar: u.avatar || '/placeholder-avatar.jpg'
+      }));
+      setAvailableUsers(mapped);
+      return;
+    }
 
-    return () => {
-      isMounted = false;
-      window.clearTimeout(handle);
-    };
-  }, [mentionQuery, showMentions]);
+    if (mentionUsersQuery.error) {
+      setAvailableUsers([]);
+    }
+  }, [mentionUsersQuery.data, mentionUsersQuery.error, normalizedMentionQuery, showMentions]);
 
   
 

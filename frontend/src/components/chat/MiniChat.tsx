@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { getConversationMessages, getUserConversations, sendMessage, getCurrentUser, listSphereMembers, createGroupConversation } from "@/services/api";
+import { getConversationMessages, getUserConversations, sendMessage, listSphereMembers, createGroupConversation } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatRelativeTime } from "@/lib/date";
 import { renderMentionText } from "@/lib/mentions";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 
 
@@ -28,13 +29,13 @@ export function MiniChat({ sphereId, sphereName, isExpanded, onToggleExpanded, c
 
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
-  const [currentUser, setCurrentUser] = useState<any>(null);
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [transportMode, setTransportMode] = useState<"ws" | "polling" | "idle">("idle");
   const [memberIds, setMemberIds] = useState<string[]>([]);
+  const { user: currentUser } = useAuth();
 
 
   const toList = (v: any): any[] => {
@@ -113,11 +114,10 @@ export function MiniChat({ sphereId, sphereName, isExpanded, onToggleExpanded, c
       setIsBootstrapping(true);
       setLoadError(null);
       try {
-        const [user, convsRaw] = await Promise.all([getCurrentUser(), getUserConversations()]);
+        const convsRaw = await getUserConversations();
         if (!mounted) return;
 
-        const myId = user?.id ? String(user.id) : undefined;
-        setCurrentUser(user);
+        const myId = currentUser?.id ? String(currentUser.id) : undefined;
 
         const convs = toList(convsRaw);
         // Chercher une conv de groupe existante liée à cette sphère (nommée sphere-<id>)
@@ -162,7 +162,7 @@ export function MiniChat({ sphereId, sphereName, isExpanded, onToggleExpanded, c
 
     void bootstrap();
     return () => { mounted = false; stopRealtime(); };
-  }, [sphereId]);
+  }, [sphereId, currentUser?.id]);
 
   // Auto-scroll
   useEffect(() => {

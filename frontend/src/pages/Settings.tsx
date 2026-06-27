@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
 import {
   blockUser,
   changeUserEmail,
@@ -98,6 +99,16 @@ export function Settings() {
   const [isPrivacyLoading, setIsPrivacyLoading] = useState(false);
   const appVersion = import.meta.env.VITE_APP_VERSION || "2.0.0";
   const [marketingNotifications, setMarketingNotifications] = useState(false);
+  const blockSearchKey = blockSearch.trim().toLowerCase();
+  const blockSearchQuery = useQuery({
+    queryKey: ["settings", "block-search", blockSearchKey],
+    queryFn: () => searchUsers(blockSearch.trim()),
+    enabled: false,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  });
 
   useEffect(() => {
     if (currentUser) {
@@ -381,7 +392,8 @@ export function Settings() {
     if (!blockSearch.trim()) return;
     setIsPrivacyLoading(true);
     try {
-      const users = await searchUsers(blockSearch.trim());
+      const result = await blockSearchQuery.refetch();
+      const users = result.data || [];
       const target = users?.[0];
       if (!target?.id) {
         toast({ variant: "destructive", title: "Utilisateur introuvable", description: "Aucun utilisateur trouvé avec cette recherche", duration: 2500 });

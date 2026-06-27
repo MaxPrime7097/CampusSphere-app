@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { UserPlus, Search, Loader2, CheckCircle, Users, UserCheck, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { addSphereMember, searchUsers } from "@/services/api";
+import { useQuery } from "@tanstack/react-query";
 
 interface UserOption {
   id: string;
@@ -40,40 +41,44 @@ export function AddMemberModal({ children, onMemberAdded, sphereId, sphereName, 
   const open = controlledOpen !== undefined ? controlledOpen : isOpen;
   const setOpen = setControlledOpen ?? setIsOpen;
 
+  const searchQueryKey = useMemo(() => searchQuery.trim().toLowerCase(), [searchQuery]);
+  const usersQuery = useQuery({
+    queryKey: ["user-search", searchQueryKey],
+    queryFn: () => searchUsers(searchQuery.trim()),
+    enabled: open && searchQueryKey.length > 0,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  });
+
   useEffect(() => {
-    if (!open) return;
+    if (!open || !searchQueryKey) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
 
-    const timeoutId = setTimeout(() => {
-      void (async () => {
-        if (!searchQuery.trim()) {
-          setSearchResults([]);
-          return;
-        }
+    setIsSearching(usersQuery.isFetching);
+    if (usersQuery.data) {
+      const mapped = (usersQuery.data || []).map((user: any) => ({
+        id: String(user.id),
+        name: user.name || user.username || "Utilisateur",
+        username: user.username || "user",
+        email: user.email,
+        avatar: user.avatar || null,
+        university: user.university,
+        faculty: user.faculty,
+        skills: user.skills || [],
+      }));
+      setSearchResults(mapped);
+      return;
+    }
 
-        try {
-          setIsSearching(true);
-          const users = await searchUsers(searchQuery.trim());
-          const mapped = (users || []).map((user: any) => ({
-            id: String(user.id),
-            name: user.name || user.username || "Utilisateur",
-            username: user.username || "user",
-            email: user.email,
-            avatar: user.avatar || null,
-            university: user.university,
-            faculty: user.faculty,
-            skills: user.skills || [],
-          }));
-          setSearchResults(mapped);
-        } catch {
-          setSearchResults([]);
-        } finally {
-          setIsSearching(false);
-        }
-      })();
-    }, 300);
-
-    return () => clearTimeout(timeoutId);
-  }, [open, searchQuery]);
+    if (usersQuery.error) {
+      setSearchResults([]);
+    }
+  }, [open, searchQueryKey, usersQuery.data, usersQuery.error, usersQuery.isFetching]);
 
   const addUserToSelection = (user: UserOption) => {
     setSelectedUsers((prev) => (prev.some((item) => item.id === user.id) ? prev : [...prev, user]));

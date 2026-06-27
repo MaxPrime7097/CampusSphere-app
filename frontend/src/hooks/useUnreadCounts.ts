@@ -15,6 +15,10 @@ function notify() {
 
 async function fetchCounts() {
   try {
+    if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+      return;
+    }
+
     const [notifs, convs] = await Promise.allSettled([
       listNotifications(),
       getUserConversations(),
@@ -34,7 +38,7 @@ let pollInterval: ReturnType<typeof setInterval> | null = null;
 export function startUnreadPolling() {
   void fetchCounts();
   if (!pollInterval) {
-    pollInterval = setInterval(() => void fetchCounts(), 30000);
+    pollInterval = setInterval(() => void fetchCounts(), 45000);
   }
 }
 

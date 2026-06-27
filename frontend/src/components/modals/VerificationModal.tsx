@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Camera, Upload, Shield, Check, Loader2, AlertCircle, Info } from "lucide-react";
-import { verifyStudentStatus, getCurrentUser } from "@/services/api";
+import { verifyStudentStatus } from "@/services/api";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface VerificationModalProps {
   children?: React.ReactNode;
@@ -29,14 +30,13 @@ export function VerificationModal({ children, onSuccess, open: controlledOpen, o
   const [isVerifiedImmediately, setIsVerifiedImmediately] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     if (open) {
-      getCurrentUser().then(user => {
-        if (user?.studentId) setMatricule(user.studentId);
-      }).catch(() => {});
+      if (user?.studentId) setMatricule(user.studentId);
     }
-  }, [open]);
+  }, [open, user?.studentId]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

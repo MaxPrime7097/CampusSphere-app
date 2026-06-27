@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { createConnection, deleteConnection, getCurrentUser, globalSearch } from "@/services/api";
+import { createConnection, deleteConnection, globalSearch } from "@/services/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +26,8 @@ import {
   normalizeResourceType,
   normalizeSubject,
 } from "@/lib/resourceMetadata";
+import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
 
 export function SearchResults() {
   const [searchParams] = useSearchParams();
@@ -49,24 +51,13 @@ export function SearchResults() {
     spheres: []
   });
 
+  const { user: currentUser } = useAuth();
+
   useEffect(() => {
-    let isMounted = true;
-
-    (async () => {
-      try {
-        const me = await getCurrentUser();
-        if (isMounted && me?.id != null) {
-          setCurrentUserId(String(me.id));
-        }
-      } catch {
-        // Current user is optional for read-only search experience.
-      }
-    })();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    if (currentUser?.id != null) {
+      setCurrentUserId(String(currentUser.id));
+    }
+  }, [currentUser?.id]);
 
   useEffect(() => {
     setSearchTerm(query);
@@ -84,6 +75,25 @@ export function SearchResults() {
   }, [searchTerm]);
 
   // Recherche en temps réel
+  const searchQueryResult = useQuery({
+    queryKey: ["search", debouncedSearchTerm, activeTab, sortBy],
+    queryFn: async () => {
+      const searchType = "all";
+      const searchLimit = 20;
+      console.debug("[SearchResults] globalSearch params", {
+        searchTerm: debouncedSearchTerm,
+        type: searchType,
+        limit: searchLimit,
+      });
+      return globalSearch(debouncedSearchTerm, searchType, searchLimit);
+    },
+    enabled: Boolean(debouncedSearchTerm.trim()),
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  });
+
   useEffect(() => {
     if (!debouncedSearchTerm.trim()) {
       setSearchResults({ users: [], resources: [], spheres: [] });
@@ -92,73 +102,51 @@ export function SearchResults() {
       return;
     }
 
-    let isMounted = true;
-    setIsSearching(true);
-    setSearchError(null);
-    
-    (async () => {
-      try {
-        const searchType = "all";
-        const searchLimit = 20;
-        console.debug("[SearchResults] globalSearch params", {
-          searchTerm: debouncedSearchTerm,
-          type: searchType,
-          limit: searchLimit,
-        });
-        const result = await globalSearch(debouncedSearchTerm, searchType, searchLimit);
-        if (isMounted && result.success) {
-          const data = result.data || {};
-          setSearchResults({
-            users: (data.users || []).map((u: any) => ({
-              id: String(u.id),
-              name: u.name || u.first_name + ' ' + u.last_name,
-              username: u.username,
-              avatar: u.avatar || '/placeholder-avatar.jpg',
-              bio: u.bio || [formatSlugToLabel(u.university), formatSlugToLabel(u.faculty)].filter(Boolean).join(" • "),
-              university: formatSlugToLabel(u.university),
-              faculty: formatSlugToLabel(u.faculty),
-              isVerified: Boolean(u.is_verified ?? u.isVerified),
-            })),
-            resources: (data.resources || []).map((r: any) => ({
-              id: String(r.id),
-              title: r.title,
-              description: r.description || '',
-              subject: normalizeSubject(r.subject),
-              type: normalizeResourceType(r.type),
-              category: normalizeCategory(r.category),
-              authorName: r.author_info?.name || r.author_name || r.author?.name || "Auteur inconnu",
-              tags: r.tags || [],
-            })),
-            spheres: (data.spheres || []).map((s: any) => ({
-              id: String(s.id),
-              name: s.name,
-              description: s.description || '',
-              category: s.category || '',
-              tags: s.tags || [],
-              memberCount: s.member_count || 0,
-            }))
-          });
-        }
-      } catch (error: any) {
-        if (isMounted) {
-          const message = error?.message || "Impossible d'effectuer la recherche pour le moment.";
-          setSearchError(message);
-          toast({
-            title: "Erreur de recherche",
-            description: message,
-            variant: "destructive",
-          });
-          setSearchResults({ users: [], resources: [], spheres: [] });
-        }
-      } finally {
-        if (isMounted) setIsSearching(false);
-      }
-    })();
+    setIsSearching(searchQueryResult.isLoading);
+    setSearchError(searchQueryResult.error ? ((searchQueryResult.error as any)?.message || "Impossible d'effectuer la recherche pour le moment.") : null);
 
-    return () => {
-      isMounted = false;
-    };
-  }, [debouncedSearchTerm, toast]);
+    if (searchQueryResult.data?.success) {
+      const data = searchQueryResult.data.data || {};
+      setSearchResults({
+        users: (data.users || []).map((u: any) => ({
+          id: String(u.id),
+          name: u.name || u.first_name + ' ' + u.last_name,
+          username: u.username,
+          avatar: u.avatar || '/placeholder-avatar.jpg',
+          bio: u.bio || [formatSlugToLabel(u.university), formatSlugToLabel(u.faculty)].filter(Boolean).join(" • "),
+          university: formatSlugToLabel(u.university),
+          faculty: formatSlugToLabel(u.faculty),
+          isVerified: Boolean(u.is_verified ?? u.isVerified),
+        })),
+        resources: (data.resources || []).map((r: any) => ({
+          id: String(r.id),
+          title: r.title,
+          description: r.description || '',
+          subject: normalizeSubject(r.subject),
+          type: normalizeResourceType(r.type),
+          category: normalizeCategory(r.category),
+          authorName: r.author_info?.name || r.author_name || r.author?.name || "Auteur inconnu",
+          tags: r.tags || [],
+        })),
+        spheres: (data.spheres || []).map((s: any) => ({
+          id: String(s.id),
+          name: s.name,
+          description: s.description || '',
+          category: s.category || '',
+          tags: s.tags || [],
+          memberCount: s.member_count || 0,
+        }))
+      });
+    } else if (searchQueryResult.error) {
+      const message = (searchQueryResult.error as any)?.message || "Impossible d'effectuer la recherche pour le moment.";
+      toast({
+        title: "Erreur de recherche",
+        description: message,
+        variant: "destructive",
+      });
+      setSearchResults({ users: [], resources: [], spheres: [] });
+    }
+  }, [debouncedSearchTerm, searchQueryResult.data, searchQueryResult.error, searchQueryResult.isLoading, toast]);
 
   const handleFollowUser = async (userId: string, userName: string) => {
     if (!currentUserId || followLoadingUserId) {

@@ -26,12 +26,13 @@ import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { impactRatePost, likePost, savePost, reportPost, updatePost, deletePost, getCurrentUser, getUserConnections, createPrivateConversation, sendMessage } from "@/services/api";
+import { impactRatePost, likePost, savePost, reportPost, updatePost, deletePost, getUserConnections, createPrivateConversation, sendMessage } from "@/services/api";
 import { formatRelativeTime } from "@/lib/date";
 import { renderMentionText } from "@/lib/mentions";
 import { Textarea } from "@/components/ui/textarea";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
+import { useAuth } from "@/contexts/AuthContext";
 
 const CommentsModal = lazy(() => import("@/components/modals/CommentsModal").then((module) => ({ default: module.CommentsModal })));
 
@@ -74,6 +75,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { toast } = useToast();
+  const { user: currentUser } = useAuth();
   const [isLiked, setIsLiked] = useState(Boolean(post.isLiked));
   const [isSaved, setIsSaved] = useState(Boolean(post.isSaved));
   const [likesCount, setLikesCount] = useState(post.likes);
@@ -266,22 +268,23 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
       setShareSearch("");
       if (shareConnections.length === 0) {
         setLoadingShareConnections(true);
-        getCurrentUser().then((user) => {
-          if (!user?.id) { setLoadingShareConnections(false); return; }
-          return getUserConnections(user.id).then((conns) => {
-            const mapped = (conns || []).map((conn: any) => {
-              const isRequester = String(conn.requester) === String(user.id);
-              const counterpart = isRequester ? conn.recipient_info : conn.requester_info;
-              const counterpartId = isRequester ? conn.recipient : conn.requester;
-              return {
-                id: String(counterpart?.id || counterpartId),
-                name: counterpart?.full_name || counterpart?.name || counterpart?.username || "Utilisateur",
-                username: counterpart?.username || "",
-                avatar: counterpart?.avatar || "/placeholder-avatar.jpg",
-              };
-            }).filter((c: any) => c.id);
-            setShareConnections(mapped);
-          });
+        if (!currentUser?.id) {
+          setLoadingShareConnections(false);
+          return;
+        }
+        getUserConnections(currentUser.id).then((conns) => {
+          const mapped = (conns || []).map((conn: any) => {
+            const isRequester = String(conn.requester) === String(currentUser.id);
+            const counterpart = isRequester ? conn.recipient_info : conn.requester_info;
+            const counterpartId = isRequester ? conn.recipient : conn.requester;
+            return {
+              id: String(counterpart?.id || counterpartId),
+              name: counterpart?.full_name || counterpart?.name || counterpart?.username || "Utilisateur",
+              username: counterpart?.username || "",
+              avatar: counterpart?.avatar || "/placeholder-avatar.jpg",
+            };
+          }).filter((c: any) => c.id);
+          setShareConnections(mapped);
         }).catch(() => null).finally(() => setLoadingShareConnections(false));
       }
     });

@@ -6,10 +6,12 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCallback, useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { searchUsers, getCurrentUser, getUserConnections } from "@/services/api";
+import { searchUsers, getUserConnections } from "@/services/api";
 import { normalizeUniversity, normalizeFaculty } from "@/lib/profileMetadata";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
 
 type FriendSuggestion = {
   id: string;
@@ -23,18 +25,27 @@ type FriendSuggestion = {
 
 export function FriendSuggestions() {
   const { toast } = useToast();
+  const { user: currentUser } = useAuth();
   const [friends, setFriends] = useState<FriendSuggestion[]>([]);
   const [addedFriends, setAddedFriends] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const suggestionsQuery = useQuery({
+    queryKey: ["friend-suggestions", currentUser?.id || "anon"],
+    queryFn: () => searchUsers(""),
+    enabled: Boolean(currentUser?.id),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  });
 
   const loadSuggestions = useCallback(async (showToast = false) => {
     setError(null);
     setIsRefreshing(true);
 
     try {
-      const currentUser = await getCurrentUser();
       if (!currentUser) throw new Error("Non authentifié");
 
       const userConnections = await getUserConnections(currentUser.id);
@@ -42,7 +53,7 @@ export function FriendSuggestions() {
         String(c.requester === currentUser.id ? c.recipient : c.requester)
       ));
 
-      const users = await searchUsers("");
+      const users = suggestionsQuery.data || [];
       
       const mapped = (users || [])
         .filter((u: any) => u.id !== currentUser.id && !connectionIds.has(String(u.id)))
@@ -73,7 +84,7 @@ export function FriendSuggestions() {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [toast]);
+  }, [toast, currentUser, suggestionsQuery.data]);
 
   useEffect(() => {
     loadSuggestions();

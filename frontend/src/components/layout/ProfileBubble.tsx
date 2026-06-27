@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCurrentUser } from "@/services/api";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +17,7 @@ import {
   ChevronDown,
   BadgeCheck
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ProfileBubbleProps {
   user?: any;
@@ -27,48 +27,11 @@ interface ProfileBubbleProps {
 export function ProfileBubble({ user: externalUser, isLoading: externalLoading }: ProfileBubbleProps) {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
-  const [localIsLoading, setLocalIsLoading] = useState(true);
-  const [localUser, setLocalUser] = useState<any>(null);
+  const { user: authUser, isLoading: authLoading } = useAuth();
 
   // Determine which state to use
-  const isLoading = externalLoading !== undefined ? externalLoading : localIsLoading;
-  const user = externalUser !== undefined ? externalUser : localUser;
-
-  useEffect(() => {
-    // Only fetch if external data is not provided
-    if (externalUser !== undefined) return;
-
-    let isMounted = true;
-    const token = localStorage.getItem("access");
-    
-    if (!token) {
-      setLocalIsLoading(false);
-      setLocalUser(null);
-      return;
-    }
-
-    (async () => {
-      try {
-        const data = await getCurrentUser();
-        if (isMounted && data) {
-          setLocalUser({
-            name: data.name || data.first_name + ' ' + data.last_name || "Utilisateur",
-            username: data.username || "user",
-            avatar: data.avatar || "/placeholder-avatar.jpg",
-            email: data.email || "user@university.cm",
-            isVerified: Boolean(data.is_verified ?? data.isVerified)
-          });
-        }
-      } catch (e) {
-        if (isMounted) setLocalUser(null);
-      } finally {
-        if (isMounted) setLocalIsLoading(false);
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const isLoading = externalLoading !== undefined ? externalLoading : authLoading;
+  const user = externalUser !== undefined ? externalUser : authUser;
 
   const handleLogout = () => {
     localStorage.removeItem("access");

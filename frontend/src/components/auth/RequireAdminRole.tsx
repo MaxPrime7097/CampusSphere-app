@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Navigate } from "react-router-dom";
-import { getCurrentUser, getAdminPermissions as getAdminPermissionsFromApi, type AdminPermissions as ApiAdminPermissions } from "@/services/api";
+import { getAdminPermissions as getAdminPermissionsFromApi, type AdminPermissions as ApiAdminPermissions } from "@/services/api";
 import { canAdmin } from "@/lib/adminPermissions";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface RequireAdminRoleProps {
   action?: "view" | "create" | "update" | "delete" | "export";
@@ -11,11 +12,17 @@ interface RequireAdminRoleProps {
 export function RequireAdminRole({ action = "view", children }: RequireAdminRoleProps) {
   const hasToken = Boolean(localStorage.getItem("access"));
   const [isLoading, setIsLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
   const [backendPermissions, setBackendPermissions] = useState<ApiAdminPermissions | null>(null);
+  const { user, isLoading: isAuthLoading } = useAuth();
 
   useEffect(() => {
     let mounted = true;
+
+    if (isAuthLoading) {
+      return () => {
+        mounted = false;
+      };
+    }
 
     if (!hasToken) {
       setIsLoading(false);
@@ -26,11 +33,8 @@ export function RequireAdminRole({ action = "view", children }: RequireAdminRole
 
     (async () => {
       try {
-        const me = await getCurrentUser();
         if (!mounted) return;
-        setUser(me);
-
-        if (!canAdmin(me, action)) {
+        if (!canAdmin(user, action)) {
           return;
         }
 
@@ -43,7 +47,6 @@ export function RequireAdminRole({ action = "view", children }: RequireAdminRole
           // Fallback to frontend matrix if endpoint is unavailable.
         }
       } catch {
-        if (mounted) setUser(null);
       } finally {
         if (mounted) setIsLoading(false);
       }
@@ -52,7 +55,7 @@ export function RequireAdminRole({ action = "view", children }: RequireAdminRole
     return () => {
       mounted = false;
     };
-  }, [action, hasToken]);
+  }, [action, hasToken, isAuthLoading, user]);
 
   const allowed = useMemo(() => canAdmin(user, action, backendPermissions), [user, action, backendPermissions]);
 

@@ -3,9 +3,8 @@ import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar,
 } from "@/components/ui/sidebar";
-import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { ExternalLink } from "lucide-react";
-import { getCurrentUser } from "@/services/api";
 import { getNavigationSections, type NavigationUser, type NavigationItem } from "./navigationConfig";
 import { useUnreadCounts } from "@/hooks/useUnreadCounts";
 
@@ -14,21 +13,8 @@ export function AppSidebar({ user: externalUser }: { user?: NavigationUser }) {
   const location = useLocation();
   const isCollapsed = state === "collapsed";
   const counts = useUnreadCounts();
-  const [localUser, setLocalUser] = useState<NavigationUser>({});
-
-  const user = externalUser || localUser;
-
-  useEffect(() => {
-    if (externalUser) return;
-    let isMounted = true;
-    (async () => {
-      try {
-        const data = await getCurrentUser();
-        if (isMounted && data) setLocalUser(data);
-      } catch { /* ignore */ }
-    })();
-    return () => { isMounted = false; };
-  }, []);
+  const { user: authUser } = useAuth();
+  const user = externalUser || authUser || {};
 
   const { navigationItems, quickActions, utilities } = getNavigationSections(user);
 

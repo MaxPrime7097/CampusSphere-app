@@ -1,34 +1,22 @@
-import { Fragment, Suspense, lazy, useEffect, useState } from "react";
+import { Fragment, Suspense, lazy, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { getCurrentUser } from "@/services/api";
 import { getNavigationSections, type NavigationUser } from "./navigationConfig";
 import { useUnreadCounts } from "@/hooks/useUnreadCounts";
 import { useToast } from "@/hooks/use-toast";
 import { openVerificationModal } from "@/lib/events";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
+import { useAuth } from "@/contexts/AuthContext";
 
 const CreatePostModal = lazy(() => import("@/components/modals/CreatePostModal").then((module) => ({ default: module.CreatePostModal })));
 
 export function MobileNavigation({ user: externalUser }: { user?: NavigationUser }) {
   const { toast } = useToast();
-  const [localUser, setLocalUser] = useState<NavigationUser>({});
   const [isCreatePostModalOpen, setIsCreatePostModalOpen] = useState(false);
-  const user = externalUser || localUser;
+  const { user: authUser } = useAuth();
+  const user = externalUser || authUser || {};
   const { mobileItems } = getNavigationSections(user);
   const counts = useUnreadCounts();
-
-  useEffect(() => {
-    if (externalUser && Object.keys(externalUser).length > 0) return;
-    let isMounted = true;
-    (async () => {
-      try {
-        const data = await getCurrentUser();
-        if (isMounted && data) setLocalUser(data);
-      } catch { /* ignore */ }
-    })();
-    return () => { isMounted = false; };
-  }, [externalUser]);
 
   const getBadge = (url: string) => {
     if (url === "/notifications" && counts.notifications > 0) return counts.notifications;

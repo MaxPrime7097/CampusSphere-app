@@ -1,6 +1,6 @@
 import { Suspense, lazy, useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { createPrivateConversation, deleteMessage, deleteConversation, getCurrentUser, getConversationMessages, getConversationParticipants, getUserConnections, getUserConversations, markConversationRead, markConversationUnread, addParticipant, removeParticipant, renameConversation, leaveConversation, sendMessage, updateMessage, uploadConversationAvatar, removeConversationAvatar, searchUsers } from "@/services/api";
+import { createPrivateConversation, deleteMessage, deleteConversation, getConversationMessages, getConversationParticipants, getUserConnections, getUserConversations, markConversationRead, markConversationUnread, addParticipant, removeParticipant, renameConversation, leaveConversation, sendMessage, updateMessage, uploadConversationAvatar, removeConversationAvatar, searchUsers } from "@/services/api";
 import { useTranslation } from "react-i18next";
 import { Search, Send, Phone, Video, EllipsisVertical, MoreVertical, MessageSquare, Loader2, Users, Plus, Camera, Smile, ArrowLeft, CheckCheck, Trash, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,8 @@ import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { formatRelativeTime } from "@/lib/date";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
+import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
 
 const CreateGroupConversationModal = lazy(() => import("@/components/modals/CreateGroupConversationModal").then((module) => ({ default: module.CreateGroupConversationModal })));
 
@@ -115,7 +117,6 @@ export function Messages() {
   const [loadingGlobalUsers, setLoadingGlobalUsers] = useState(false);
   const [loadingConnections, setLoadingConnections] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState<any>(null);
   const [participantsDialogOpen, setParticipantsDialogOpen] = useState(false);
   const [participants, setParticipants] = useState<any[]>([]);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
@@ -123,6 +124,27 @@ export function Messages() {
   const [isUpdatingConversation, setIsUpdatingConversation] = useState(false);
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [renameValue, setRenameValue] = useState("");
+  const { user: currentUser } = useAuth();
+
+  const conversationsQuery = useQuery({
+    queryKey: ["messages", "conversations", currentUser?.id || "anon"],
+    queryFn: getUserConversations,
+    enabled: Boolean(currentUser?.id),
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  });
+
+  const connectionsQuery = useQuery({
+    queryKey: ["messages", "connections", currentUser?.id || "anon"],
+    queryFn: () => getUserConnections(String(currentUser?.id || "")),
+    enabled: Boolean(currentUser?.id),
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  });
 
   const messageSchema = z.object({
     content: z.string()
@@ -131,109 +153,97 @@ export function Messages() {
       .max(1000, { message: t('messages.validation.tooLong') })
   });
 
-  // Load current user
   useEffect(() => {
-    let isMounted = true;
-    (async () => {
-      try {
-        const data = await getCurrentUser();
-        if (isMounted) setCurrentUser(data);
-      } catch (e) {
-        // User not logged in
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  // Load conversations
-  useEffect(() => {
-    let isMounted = true;
-    (async () => {
-      try {
-        setLoading(true);
-        const data = await getUserConversations();
-        if (isMounted) {
-          const mapped = (data || []).map((conv: any) => mapConversation(conv, String(currentUser?.id || "")));
-          setConversations(mapped);
-        }
-      } catch (e: any) {
-        toast({
-          title: "Erreur",
-          description: e?.message || "Impossible de charger les conversations",
-          variant: "destructive",
-        });
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, [currentUser?.id]);
+    if (conversationsQuery.data) {
+      setConversations((conversationsQuery.data || []).map((conv: any) => mapConversation(conv, String(currentUser?.id || ""))));
+      setLoading(false);
+      return;
+    }
+    if (conversationsQuery.isLoading) {
+      setLoading(true);
+      return;
+    }
+    if (conversationsQuery.error) {
+      toast({
+        title: "Erreur",
+        description: (conversationsQuery.error as any)?.message || "Impossible de charger les conversations",
+        variant: "destructive",
+      });
+      setLoading(false);
+    }
+  }, [conversationsQuery.data, conversationsQuery.error, conversationsQuery.isLoading, currentUser?.id, toast]);
 
   // Load current user connections for new DM flow
   useEffect(() => {
-    if (!currentUser?.id) return;
+    if (connectionsQuery.data) {
+      const mapped = (connectionsQuery.data || []).map((conn: any) => {
+        const isRequester = String(conn.requester) === String(currentUser?.id);
+        const counterpart = isRequester ? conn.recipient_info : conn.requester_info;
+        const counterpartId = isRequester ? conn.recipient : conn.requester;
+        return {
+          id: String(counterpart?.id || counterpartId),
+          name: counterpart?.full_name || counterpart?.name || counterpart?.username || "Utilisateur",
+          username: counterpart?.username || "",
+          avatar: counterpart?.avatar || "/placeholder-avatar.jpg",
+        };
+      });
+      setConnections(mapped.filter((contact: any) => contact.id));
+      setLoadingConnections(false);
+      return;
+    }
+    if (connectionsQuery.isLoading) {
+      setLoadingConnections(true);
+      return;
+    }
+    if (connectionsQuery.error) {
+      setConnections([]);
+      setLoadingConnections(false);
+    }
+  }, [connectionsQuery.data, connectionsQuery.error, connectionsQuery.isLoading, currentUser?.id]);
 
-    let isMounted = true;
-    (async () => {
-      try {
-        setLoadingConnections(true);
-        const connectionsData = await getUserConnections(currentUser.id);
-        if (isMounted) {
-          const mapped = (connectionsData || []).map((conn: any) => {
-            const isRequester = String(conn.requester) === String(currentUser.id);
-            const counterpart = isRequester ? conn.recipient_info : conn.requester_info;
-            const counterpartId = isRequester ? conn.recipient : conn.requester;
+  const normalizedConnectionSearch = connectionSearch.trim().toLowerCase();
+  const globalUsersQuery = useQuery({
+    queryKey: ["messages", "global-users", currentUser?.id || "anon", normalizedConnectionSearch],
+    queryFn: () => searchUsers(connectionSearch.trim()),
+    enabled: normalizedConnectionSearch.length >= 2,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  });
 
-            return {
-              id: String(counterpart?.id || counterpartId),
-              name: counterpart?.full_name || counterpart?.name || counterpart?.username || "Utilisateur",
-              username: counterpart?.username || "",
-              avatar: counterpart?.avatar || "/placeholder-avatar.jpg",
-            };
-          });
-          setConnections(mapped.filter((contact: any) => contact.id));
-        }
-      } catch {
-        if (isMounted) setConnections([]);
-      } finally {
-        if (isMounted) setLoadingConnections(false);
-      }
-    })();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [currentUser]);
+  const conversationMessagesQuery = useQuery({
+    queryKey: ["messages", "conversation", conversationId || "none"],
+    queryFn: () => getConversationMessages(String(conversationId || "")),
+    enabled: Boolean(conversationId),
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  });
 
   // Global search for any user
   useEffect(() => {
-    if (!connectionSearch || connectionSearch.trim().length < 2) {
+    if (normalizedConnectionSearch.length < 2) {
       setGlobalUsers([]);
+      setLoadingGlobalUsers(false);
       return;
     }
-    const timer = setTimeout(async () => {
-      try {
-        setLoadingGlobalUsers(true);
-        const results = await searchUsers(connectionSearch);
-        const mapped = (results || []).map((u: any) => ({
-          id: String(u.id),
-          name: u.full_name || u.username || "Utilisateur",
-          username: u.username || "",
-          avatar: u.avatar || "/placeholder-avatar.jpg",
-        })).filter((u: any) => String(u.id) !== String(currentUser?.id));
-        setGlobalUsers(mapped);
-      } catch {
-        setGlobalUsers([]);
-      } finally {
-        setLoadingGlobalUsers(false);
-      }
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [connectionSearch, currentUser?.id]);
+    setLoadingGlobalUsers(globalUsersQuery.isLoading);
+    if (globalUsersQuery.data) {
+      const mapped = (globalUsersQuery.data || []).map((u: any) => ({
+        id: String(u.id),
+        name: u.full_name || u.username || "Utilisateur",
+        username: u.username || "",
+        avatar: u.avatar || "/placeholder-avatar.jpg",
+      })).filter((u: any) => String(u.id) !== String(currentUser?.id));
+      setGlobalUsers(mapped);
+      return;
+    }
+    if (globalUsersQuery.error) {
+      setGlobalUsers([]);
+    }
+  }, [connectionSearch, currentUser?.id, globalUsersQuery.data, globalUsersQuery.error, globalUsersQuery.isLoading, normalizedConnectionSearch]);
 
   const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
     if (scrollRef.current) {
@@ -255,33 +265,26 @@ export function Messages() {
     }
   }, [messages.length, conversationId]);
 
-  // Load messages for selected conversation
   useEffect(() => {
     if (!conversationId) {
       setMessages([]);
       return;
     }
-    
-    let isMounted = true;
-    (async () => {
-      try {
-        const data = await getConversationMessages(conversationId);
-        if (isMounted) {
-          const mapped = (data || []).map((msg: any) => mapMessage(msg, String(currentUser?.id || "")));
-          setMessages(mapped);
-        }
-      } catch (e: any) {
-        toast({
-          title: "Erreur",
-          description: "Impossible de charger les messages",
-          variant: "destructive",
-        });
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, [conversationId, currentUser]);
+
+    if (conversationMessagesQuery.data) {
+      const mapped = (conversationMessagesQuery.data || []).map((msg: any) => mapMessage(msg, String(currentUser?.id || "")));
+      setMessages(mapped);
+      return;
+    }
+
+    if (conversationMessagesQuery.error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les messages",
+        variant: "destructive",
+      });
+    }
+  }, [conversationId, conversationMessagesQuery.data, conversationMessagesQuery.error, currentUser?.id, toast]);
 
   const stopRealtime = () => {
     if (socketRef.current) {
@@ -296,7 +299,9 @@ export function Messages() {
   };
 
   const fetchConversationMessages = async (targetConversationId: string) => {
-    const data = await getConversationMessages(targetConversationId);
+    const data = targetConversationId === conversationId
+      ? (conversationMessagesQuery.data || await conversationMessagesQuery.refetch().then((result) => result.data))
+      : await getConversationMessages(targetConversationId);
     const mapped = (data || []).map((msg: any) => mapMessage(msg, String(currentUser?.id || "")));
     setMessages(mapped);
   };

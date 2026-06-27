@@ -2,7 +2,6 @@ import { Suspense, lazy, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   listResources,
-  getCurrentUser,
   downloadResource,
   saveResource,
   getSavedResources,
@@ -54,6 +53,8 @@ import {
 import { ResourceSkeleton } from "@/components/ui/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
+import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
 
 const UploadResourceModal = lazy(() => import("@/components/modals/UploadResourceModal").then((module) => ({ default: module.UploadResourceModal })));
 const CreateFolderModal = lazy(() => import("@/components/modals/CreateFolderModal").then((module) => ({ default: module.CreateFolderModal })));
@@ -83,6 +84,7 @@ export function Resources() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const { user: currentUser, isLoading: isAuthLoading } = useAuth();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("all");
@@ -98,9 +100,7 @@ export function Resources() {
   const [savedResources, setSavedResources] = useState<Set<string>>(new Set());
 
   const [resources, setResources] = useState<any[]>([]);
-  const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [userLoading, setUserLoading] = useState(true);
 
   // Folders state
   const [showFoldersTab, setShowFoldersTab] = useState(false);
@@ -110,46 +110,36 @@ export function Resources() {
   const [folderResources, setFolderResources] = useState<any[]>([]);
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [editingFolder, setEditingFolder] = useState<ResourceFolder | null>(null);
+  const resourcesQuery = useQuery({
+    queryKey: ["resources"],
+    queryFn: listResources,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  });
 
-  const loadResources = async () => {
-    try {
+  useEffect(() => {
+    if (Array.isArray(resourcesQuery.data)) {
+      setResources(resourcesQuery.data.map(mapResourceCard));
+      setLoading(false);
+      return;
+    }
+
+    if (resourcesQuery.isLoading) {
       setLoading(true);
-      const data = await listResources();
-      if (Array.isArray(data)) {
-        const mapped = data.map(mapResourceCard);
-        setResources(mapped);
-      }
-    } catch (e: any) {
+      return;
+    }
+
+    if (resourcesQuery.error) {
+      setLoading(false);
       toast({
         title: "Erreur",
-        description: e?.message || "Impossible de charger les ressources",
+        description: (resourcesQuery.error as any)?.message || "Impossible de charger les ressources",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    let isMounted = true;
-    setUserLoading(true);
-    (async () => {
-      try {
-        const data = await getCurrentUser();
-        if (isMounted) setCurrentUser(data);
-      } catch (e) {
-      } finally {
-        if (isMounted) setUserLoading(false);
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    loadResources();
-  }, []);
+  }, [resourcesQuery.data, resourcesQuery.error, resourcesQuery.isLoading, toast]);
 
   const loadFolders = async () => {
     setFoldersLoading(true);
@@ -355,8 +345,8 @@ export function Resources() {
     setIsRefreshing(true);
 
     try {
-      const data = await listResources();
-      const mapped = (data || []).map(mapResourceCard);
+      const result = await resourcesQuery.refetch();
+      const mapped = (result.data || []).map(mapResourceCard);
       setResources(mapped);
 
       toast({
@@ -384,7 +374,7 @@ export function Resources() {
 
   const handleResourceUploaded = (resource?: unknown) => {
     if (!resource) {
-      void loadResources();
+      void resourcesQuery.refetch();
       return;
     }
 
@@ -426,7 +416,7 @@ export function Resources() {
               <span className="hidden sm:inline">Actualiser</span>
 
             </Button>
-            {userLoading ? (
+            {isAuthLoading ? (
               <Button size="sm" variant="outline" className="gap-2 w-full sm:w-auto opacity-70" disabled>
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span className="hidden sm:inline">Chargement...</span>
@@ -666,7 +656,7 @@ export function Resources() {
           </div>
         ) : (
         <>
-        {loading ? (
+        {loading || resourcesQuery.isLoading ? (
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {Array.from({ length: 8 }).map((_, i) => (

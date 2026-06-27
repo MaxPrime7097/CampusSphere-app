@@ -2,7 +2,7 @@ import { Suspense, lazy, useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   getSphere, listSphereMembers, listSphereTasks, joinSphere,
-  cancelSphereJoinRequest, getCurrentUser, completeTask,
+  cancelSphereJoinRequest, completeTask,
   updateSphereMember, removeSphereMember, uploadSphereBanner, getSphereFiles, deleteSphereFile, deleteTask
 } from "@/services/api";
 
@@ -39,6 +39,7 @@ import { ResourceCard } from "@/components/resources/ResourceCard";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ResourceSkeleton } from "@/components/ui/skeletons";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
+import { useAuth } from "@/contexts/AuthContext";
 
 const CreateTaskModal = lazy(() => import("@/components/modals/CreateTaskModal").then((module) => ({ default: module.CreateTaskModal })));
 const AddMemberModal = lazy(() => import("@/components/modals/AddMemberModal").then((module) => ({ default: module.AddMemberModal })));
@@ -50,10 +51,10 @@ export function SphereDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user: currentUser } = useAuth();
 
   // ==================== STATE ====================
   const [sphere, setSphere] = useState<any | null>(null);
-  const [currentUser, setCurrentUser] = useState<any>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [members, setMembers] = useState<any[]>([]);
   const [pendingMembers, setPendingMembers] = useState<any[]>([]);
@@ -157,14 +158,12 @@ export function SphereDetail() {
       setLoadError(null);
       setTaskState("ready");
 
-      const [sphereData, rawMembersData, userData] = await Promise.all([
+      const [sphereData, rawMembersData] = await Promise.all([
         getSphere(String(id)),
         listSphereMembers(String(id)),
-        getCurrentUser(),
       ]);
 
-      setCurrentUser(userData);
-      setCurrentUserId(userData?.id ? String(userData.id) : null);
+      setCurrentUserId(currentUser?.id ? String(currentUser.id) : null);
       setSphere(sphereData);
 
       // listSphereMembers retourne apiFetch<any[]> sans unwrap — normaliser ici
@@ -176,7 +175,6 @@ export function SphereDetail() {
             ? (rawMembersData as any).results
             : [];
 
-      setCurrentUserId(userData?.id ? String(userData.id) : null);
       setSphere(sphereData);
 
       const mappedMembers = (membersData || []).map((m: any) => ({
@@ -236,7 +234,7 @@ export function SphereDetail() {
 
   useEffect(() => {
     if (id) void loadSphereData();
-  }, [id]);
+  }, [id, currentUser?.id]);
 
   // ==================== COMPUTED ====================
   const sphereFallback = useMemo(() => sphere || {

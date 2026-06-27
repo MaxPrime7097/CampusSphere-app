@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { searchUsers, getCurrentUser, getUserConnections, createConnection, disconnectFromUser, getMutualConnectionCounts, acceptConnection } from "@/services/api";
+import { searchUsers, getUserConnections, createConnection, disconnectFromUser, getMutualConnectionCounts, acceptConnection } from "@/services/api";
 import { Users, Link, Search, Filter, Zap, UserPlus, UserCheck, Check, X, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { ConnectionSkeleton } from "@/components/ui/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
 import {
   getFacultyLabel,
   normalizeFaculty,
@@ -25,28 +27,21 @@ type ConnectionFilter = "all" | "university" | "faculty" | "mutual" | "impact";
 export function Connections() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const { user: currentUser } = useAuth();
   const [connections, setConnections] = useState<any[]>([]);
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [mutualCountStatus, setMutualCountStatus] = useState<string | null>(null);
-
-  // Load current user
-  useEffect(() => {
-    let isMounted = true;
-    (async () => {
-      try {
-        const data = await getCurrentUser();
-        if (isMounted) setCurrentUser(data);
-      } catch (e) {
-        // User not logged in
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const suggestionsQuery = useQuery({
+    queryKey: ["connections", "suggestions", currentUser?.id || "anon"],
+    queryFn: () => searchUsers(""),
+    enabled: Boolean(currentUser?.id),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  });
 
   // Load connections
   useEffect(() => {
@@ -154,47 +149,40 @@ export function Connections() {
     if (!currentUser) return;
     
     let isMounted = true;
-    (async () => {
-      try {
-        // Load user suggestions (using search as fallback)
-        const users = await searchUsers("");
-        if (isMounted && users) {
-          const connectionIds = new Set(connections.map(c => c.id));
-          const mapped = (users || [])
-            .filter((u: any) => u.id !== currentUser.id && !connectionIds.has(String(u.id)))
-            .map((u: any) => ({
-              id: String(u.id),
-              name: u.name || u.first_name + ' ' + u.last_name,
-              username: u.username,
-              avatar: u.avatar || '/placeholder-avatar.jpg',
-              university: u.university || '',
-              faculty: u.faculty || '',
-              field: u.faculty || '',
-              isVerified: u.is_verified || false,
-              impactScore: u.impact_score || 0,
-              normalizedUniversity: normalizeUniversity(u.university),
-              normalizedFaculty: normalizeFaculty(u.faculty),
-              reason:
-                normalizeUniversity(u.university) &&
-                normalizeUniversity(currentUser.university) &&
-                normalizeUniversity(u.university) === normalizeUniversity(currentUser.university)
-                  ? "Même université"
-                  : normalizeFaculty(u.faculty) &&
-                      normalizeFaculty(currentUser.faculty) &&
-                      normalizeFaculty(u.faculty) === normalizeFaculty(currentUser.faculty)
-                    ? "Même filière"
-                    : "Suggéré pour vous",
-            }));
-          setSuggestions(mapped.slice(0, 20));
-        }
-      } catch (e) {
-        // Error loading suggestions
-      }
-    })();
+    const users = suggestionsQuery.data;
+    if (isMounted && users) {
+      const connectionIds = new Set(connections.map(c => c.id));
+      const mapped = (users || [])
+        .filter((u: any) => u.id !== currentUser.id && !connectionIds.has(String(u.id)))
+        .map((u: any) => ({
+          id: String(u.id),
+          name: u.name || u.first_name + ' ' + u.last_name,
+          username: u.username,
+          avatar: u.avatar || '/placeholder-avatar.jpg',
+          university: u.university || '',
+          faculty: u.faculty || '',
+          field: u.faculty || '',
+          isVerified: u.is_verified || false,
+          impactScore: u.impact_score || 0,
+          normalizedUniversity: normalizeUniversity(u.university),
+          normalizedFaculty: normalizeFaculty(u.faculty),
+          reason:
+            normalizeUniversity(u.university) &&
+            normalizeUniversity(currentUser.university) &&
+            normalizeUniversity(u.university) === normalizeUniversity(currentUser.university)
+              ? "Même université"
+              : normalizeFaculty(u.faculty) &&
+                  normalizeFaculty(currentUser.faculty) &&
+                  normalizeFaculty(u.faculty) === normalizeFaculty(currentUser.faculty)
+                ? "Même filière"
+                : "Suggéré pour vous",
+        }));
+      setSuggestions(mapped.slice(0, 20));
+    }
     return () => {
       isMounted = false;
     };
-  }, [currentUser, connections]);
+  }, [currentUser, connections, suggestionsQuery.data]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<ConnectionFilter>("all");

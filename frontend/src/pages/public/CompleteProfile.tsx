@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { completeSupabaseProfile, checkUserAvailability, verifyStudentStatus, getCurrentUser } from "@/services/api";
+import { completeSupabaseProfile, checkUserAvailability, verifyStudentStatus } from "@/services/api";
 import { completeSupabaseProfilePayloadSchema, mapCompleteProfileErrors } from "@/schemas/completeProfilePayload";
 import { cn, formatSlugToLabel } from "@/lib/utils";
 import { UniversityCombobox } from "@/components/forms/UniversityCombobox";
@@ -22,6 +22,7 @@ import { LanguageCombobox } from "@/components/forms/LanguageCombobox";
 import { CityCombobox } from "@/components/forms/CityCombobox";
 import Sphere3D from "@/components/layout/Sphere3D";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
+import { useAuth } from "@/contexts/AuthContext";
 
 const AddEducationModal = lazy(() => import("@/components/modals/AddEducationModal").then((module) => ({ default: module.AddEducationModal })));
 const AddExperienceModal = lazy(() => import("@/components/modals/AddExperienceModal").then((module) => ({ default: module.AddExperienceModal })));
@@ -52,6 +53,7 @@ const getAgeFromDate = (birthDate: Date, today: Date) => {
 export function CompleteProfile() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [step, setStep] = useState<Step>(1);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -178,26 +180,14 @@ export function CompleteProfile() {
   }, [formData.username, step]);
 
   useEffect(() => {
-    let isMounted = true;
-    (async () => {
-      try {
-        const data = await getCurrentUser();
-        if (isMounted) {
-          setFormData(prev => ({
-            ...prev,
-            firstName: data.first_name || data.firstName || "",
-            lastName: data.last_name || data.lastName || "",
-            username: data.username || prev.username,
-          }));
-        }
-      } catch (e) {
-        // User not logged in
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    if (!user) return;
+    setFormData(prev => ({
+      ...prev,
+      firstName: user.first_name || user.firstName || "",
+      lastName: user.last_name || user.lastName || "",
+      username: user.username || prev.username,
+    }));
+  }, [user]);
 
   const validateAndNext = (schema: z.ZodTypeAny, nextStep: Step) => {
     const v = schema.safeParse(formData);

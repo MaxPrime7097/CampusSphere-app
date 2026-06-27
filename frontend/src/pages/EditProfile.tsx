@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCurrentUser, updateUserProfile, uploadAvatar, uploadCoverPhoto } from "@/services/api";
+import { updateUserProfile, uploadAvatar, uploadCoverPhoto } from "@/services/api";
 import { 
   MapPin, Camera, Calendar, Link, User, BookOpen, 
   Briefcase, GraduationCap, Loader2, Check, Upload, 
@@ -22,13 +22,14 @@ import { InterestsCombobox } from "@/components/forms/InterestsCombobox";
 import { CityCombobox } from "@/components/forms/CityCombobox";
 import { LanguageCombobox } from "@/components/forms/LanguageCombobox";
 import { formatSlugToLabel } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function EditProfile() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user: currentUser, isLoading: isAuthLoading } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
 
   // States for form
   const [firstName, setFirstName] = useState("");
@@ -60,50 +61,46 @@ export function EditProfile() {
   const studentCardInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const user = await getCurrentUser();
-        setCurrentUser(user);
-        
-        // Initialize form
-        setFirstName(user.firstName || "");
-        setLastName(user.lastName || "");
-        setUsername(user.username || "");
-        setBio(user.bio || "");
-        setEmail(user.email || "");
-        setPhone(user.phoneNumber || "");
-        setTown(user.town || "");
-        setDateOfBirth(user.dateOfBirth || "");
-        
-        const langs = user.language 
-          ? (typeof user.language === "string" ? user.language.split(",").map((l: string) => l.trim()).filter(Boolean) : user.language)
-          : [];
-        setLanguages(langs);
-        
-        setUniversity(user.university || "");
-        setFaculty(user.faculty || "");
-        setStudyYear(user.studyYear || "");
-        setStudentId(user.studentId || "");
-        
-        setSkills(user.skills || []);
-        setInterests(user.interests || []);
-        setExperiences(user.experiences || []);
-        setPreviousEducation(user.previousEducation || []);
-        setPortfolioLinks(user.portfolioLinks || []);
-        
-        setIsLoading(false);
-      } catch (error) {
-        toast({
-          variant: "destructive",
-          title: "Erreur",
-          description: "Impossible de charger votre profil.",
-        });
-        navigate("/profile");
-      }
-    };
+    if (isAuthLoading) return;
 
-    fetchUser();
-  }, [navigate, toast]);
+    if (!currentUser) {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de charger votre profil.",
+      });
+      navigate("/profile");
+      return;
+    }
+
+    setIsLoading(false);
+    // Initialize form
+    setFirstName(currentUser.firstName || currentUser.first_name || "");
+    setLastName(currentUser.lastName || currentUser.last_name || "");
+    setUsername(currentUser.username || "");
+    setBio(currentUser.bio || "");
+    setEmail(currentUser.email || "");
+    setPhone(currentUser.phoneNumber || currentUser.phone_number || "");
+    setTown(currentUser.town || "");
+    setDateOfBirth(currentUser.dateOfBirth || currentUser.date_of_birth || "");
+
+    const langs = currentUser.language
+      ? (typeof currentUser.language === "string" ? currentUser.language.split(",").map((l: string) => l.trim()).filter(Boolean) : currentUser.language)
+      : [];
+    setLanguages(langs);
+
+    setUniversity(currentUser.university || "");
+    setFaculty(currentUser.faculty || "");
+    setStudyYear(currentUser.studyYear || currentUser.study_year || "");
+    setStudentId(currentUser.studentId || currentUser.student_id || "");
+
+    setSkills(currentUser.skills || []);
+    setInterests(currentUser.interests || []);
+    setExperiences(currentUser.experiences || []);
+    setPreviousEducation(currentUser.previousEducation || []);
+    setPortfolioLinks(currentUser.portfolioLinks || []);
+    setIsLoading(false);
+  }, [currentUser, isAuthLoading, navigate, toast]);
 
   const handleSave = async () => {
     setIsSaving(true);

@@ -5,6 +5,7 @@ import { Search, User, BookOpen, Users, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
 
 interface SearchDropdownProps {
   query: string;
@@ -21,33 +22,37 @@ export function SearchDropdown({ query, isVisible, onClose }: SearchDropdownProp
   });
   const [isLoading, setIsLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const normalizedQuery = query.trim().toLowerCase();
+  const searchQuery = useQuery({
+    queryKey: ["search-dropdown", normalizedQuery],
+    queryFn: () => globalSearch(query, "all", 5),
+    enabled: isVisible && normalizedQuery.length > 0,
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  });
 
   useEffect(() => {
-    if (!query.trim() || !isVisible) {
+    if (!normalizedQuery || !isVisible) {
       setResults({ users: [], resources: [], spheres: [] });
       return;
     }
 
-    const timer = setTimeout(async () => {
-      setIsLoading(true);
-      try {
-        const response = await globalSearch(query, "all", 5);
-        if (response.success) {
-          setResults({
-            users: response.data.users || [],
-            resources: response.data.resources || [],
-            spheres: response.data.spheres || [],
-          });
-        }
-      } catch (error) {
-        console.error("Search suggestions error:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    }, 300);
+    setIsLoading(searchQuery.isLoading);
+    if (searchQuery.data?.success) {
+      setResults({
+        users: searchQuery.data.data.users || [],
+        resources: searchQuery.data.data.resources || [],
+        spheres: searchQuery.data.data.spheres || [],
+      });
+      return;
+    }
 
-    return () => clearTimeout(timer);
-  }, [query, isVisible]);
+    if (searchQuery.error) {
+      console.error("Search suggestions error:", searchQuery.error);
+    }
+  }, [isVisible, normalizedQuery, searchQuery.data, searchQuery.error, searchQuery.isLoading]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

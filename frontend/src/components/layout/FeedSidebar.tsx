@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { TrendingUp, ExternalLink, BookOpen, ArrowRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,62 +9,52 @@ import { useToast } from "@/hooks/use-toast";
 import { formatRelativeTime } from "@/lib/date";
 import { getSphereCategoryLabel } from "@/constants/sphereCategories";
 import { getResourceTypeLabel, getSubjectLabel, normalizeResourceType, normalizeSubject } from "@/lib/resourceMetadata";
+import { useQuery } from "@tanstack/react-query";
 
 export function FeedSidebar() {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [popularSpheres, setPopularSpheres] = useState<any[]>([]);
-  const [recentResources, setRecentResources] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const appVersion = import.meta.env.VITE_APP_VERSION || "2.0.0";
+  const spheresQuery = useQuery({
+    queryKey: ["sidebar", "popular-spheres"],
+    queryFn: listSpheres,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    select: (spheres) =>
+      [...(Array.isArray(spheres) ? spheres : [])]
+        .sort((a: any, b: any) => Number(b.memberCount || 0) - Number(a.memberCount || 0))
+        .slice(0, 4),
+  });
+  const resourcesQuery = useQuery({
+    queryKey: ["sidebar", "recent-resources"],
+    queryFn: () => listResources({ ordering: "-created_at" }),
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    select: (resources) =>
+      (Array.isArray(resources) ? resources : []).slice(0, 4).map((resource: any) => ({
+        ...resource,
+        subject: normalizeSubject(resource?.subject),
+        type: normalizeResourceType(resource?.type),
+      })),
+  });
+
+  const popularSpheres = spheresQuery.data || [];
+  const recentResources = resourcesQuery.data || [];
+  const isLoading = spheresQuery.isLoading || resourcesQuery.isLoading;
+  const loadError = spheresQuery.error || resourcesQuery.error;
 
   useEffect(() => {
-    let isMounted = true;
-
-    (async () => {
-      try {
-        const [spheres, resources] = await Promise.all([
-          listSpheres(),
-          listResources({ ordering: "-created_at" }),
-        ]);
-
-        if (!isMounted) {
-          return;
-        }
-
-        setPopularSpheres(
-          [...(spheres || [])]
-            .sort((a: any, b: any) => Number(b.memberCount || 0) - Number(a.memberCount || 0))
-            .slice(0, 4)
-        );
-        setRecentResources(
-          (resources || []).slice(0, 4).map((resource: any) => ({
-            ...resource,
-            subject: normalizeSubject(resource?.subject),
-            type: normalizeResourceType(resource?.type),
-          }))
-        );
-      } catch (error: any) {
-        if (!isMounted) {
-          return;
-        }
-
-        toast({
-          title: "Sidebar incomplète",
-          description: error?.message || "Impossible de charger les données latérales",
-          variant: "destructive",
-        });
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    })();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [toast]);
+    if (!loadError) return;
+    toast({
+      title: "Sidebar incomplète",
+      description: (loadError as any)?.message || "Impossible de charger les données latérales",
+      variant: "destructive",
+    });
+  }, [loadError, toast]);
 
   const openSphere = (sphereId: string | number, sphereName: string) => {
     navigate(`/spheres/${sphereId}`);

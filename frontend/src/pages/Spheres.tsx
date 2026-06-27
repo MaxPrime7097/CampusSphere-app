@@ -1,6 +1,6 @@
 import { Suspense, lazy, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { listSpheres, getCurrentUser, joinSphere, getUserSpheres, leaveSphere } from "@/services/api";
+import { listSpheres, joinSphere, getUserSpheres, leaveSphere } from "@/services/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SPHERE_CATEGORY_OPTIONS, getSphereCategoryLabel, SPHERE_AUDIENCE_OPTIONS } from "@/constants/sphereCategories";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,8 @@ import {
 } from "@/constants/defaultSort";
 import { SphereSkeleton } from "@/components/ui/skeletons";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
 
 const CreateSphereModal = lazy(() => import("@/components/modals/CreateSphereModal").then((module) => ({ default: module.CreateSphereModal })));
 
@@ -32,13 +34,13 @@ export function Spheres() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const { user: currentUser, isLoading: isAuthLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterAudience, setFilterAudience] = useState("all");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [isCreateSphereOpen, setIsCreateSphereOpen] = useState(false);
 
-  const [currentUser, setCurrentUser] = useState<any>(null);
   const [userJoinedSpheres, setUserJoinedSpheres] = useState<string[]>([]);
   const [pendingJoinRequests, setPendingJoinRequests] = useState<string[]>([]);
   const [userSpheres, setUserSpheres] = useState<any[]>([]);
@@ -46,6 +48,14 @@ export function Spheres() {
   const [allSpheres, setAllSpheres] = useState<any[]>([]);
   const [loadingSpheres, setLoadingSpheres] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const spheresQuery = useQuery({
+    queryKey: ["spheres"],
+    queryFn: listSpheres,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  });
 
   // Tab State - Initialized to page1
   const [activeTab, setActiveTab] = useState("page1");
@@ -60,46 +70,15 @@ export function Spheres() {
     let isMounted = true;
     (async () => {
       try {
-        setLoadingSpheres(true);
-        setLoadError(null);
-        // Charger tout en parallèle pour éviter la race condition
-        const [userData, spheresData, userSpheresData] = await Promise.allSettled([
-          getCurrentUser(),
-          listSpheres(),
-          getUserSpheres(),
-        ]);
+        const userSpheresData = await getUserSpheres();
 
         if (!isMounted) return;
 
-        if (userData.status === "fulfilled") setCurrentUser(userData.value);
-        else debugApiError("GET /users/me", userData.reason);
-
-        if (spheresData.status === "fulfilled") {
-          setAllSpheres(spheresData.value || []);
-        } else {
-          debugApiError("GET /spheres", spheresData.reason);
-          setLoadError(spheresData.reason?.message || "Erreur de chargement");
-        }
-
-        if (userSpheresData.status === "fulfilled" && userSpheresData.value) {
-          const sphereIds = (userSpheresData.value || []).map((s: any) => String(s.id));
+        if (userSpheresData) {
+          const sphereIds = (userSpheresData || []).map((s: any) => String(s.id));
           setUserJoinedSpheres(sphereIds);
-          setUserSpheres(userSpheresData.value || []);
+          setUserSpheres(userSpheresData || []);
           setUserSpheresLoadError(null);
-
-          // Extraire les pending depuis allSpheres (is_member=false + membership_status=pending)
-          if (spheresData.status === "fulfilled") {
-            const pendingIds = (spheresData.value || [])
-              .filter((s: any) => {
-                const st = String(s?.membership_status ?? s?.membershipStatus ?? "").toLowerCase();
-                return st === "pending";
-              })
-              .map((s: any) => String(s.id));
-            if (pendingIds.length > 0) setPendingJoinRequests(pendingIds);
-          }
-        } else if (userSpheresData.status === "rejected") {
-          debugApiError("GET /users/me/spheres", userSpheresData.reason);
-          setUserSpheresLoadError(userSpheresData.reason?.message || "Impossible de charger vos sphères.");
         }
       } finally {
         if (isMounted) setLoadingSpheres(false);
@@ -108,12 +87,25 @@ export function Spheres() {
     return () => { isMounted = false; };
   }, []);
 
+  useEffect(() => {
+    if (spheresQuery.data) {
+      setAllSpheres(spheresQuery.data || []);
+      setLoadError(null);
+    }
+    if (spheresQuery.error) {
+      setLoadError((spheresQuery.error as any)?.message || "Erreur de chargement");
+    }
+  }, [spheresQuery.data, spheresQuery.error]);
+
+  const isSpheresLoading = isAuthLoading || loadingSpheres || spheresQuery.isLoading;
+
   const [isLoading, setIsLoading] = useState(false);
   const [isJoining, setIsJoining] = useState<string | null>(null);
 
   const refreshMembershipState = async () => {
-    const [spheresData, userSpheresData] = await Promise.all([listSpheres(), getUserSpheres()]);
-    setAllSpheres(spheresData || []);
+    const [spheresResult, userSpheresData] = await Promise.all([spheresQuery.refetch(), getUserSpheres()]);
+    const spheresData = spheresResult.data || [];
+    setAllSpheres(spheresData);
     const sphereIds = (userSpheresData || []).map((s: any) => String(s.id));
     setUserJoinedSpheres(sphereIds);
     setPendingJoinRequests([]);
@@ -192,7 +184,7 @@ export function Spheres() {
   const getSphereActionModel = (sphere: any) => {
     const membership = getUnifiedMembershipState(sphere);
     const sphereId = String(sphere?.id);
-    const disabled = loadingSpheres || isJoining === sphereId;
+    const disabled = isSpheresLoading || isJoining === sphereId;
 
     if (membership === "active") {
       return {
@@ -476,7 +468,7 @@ export function Spheres() {
                     </Button>
                   </CardContent>
                 </Card>
-              ) : !loadingSpheres && getSortedSpheres().length === 0 ? (
+              ) : !isSpheresLoading && getSortedSpheres().length === 0 ? (
                 <EmptyState
                   icon={Globe}
                   title="Aucune sphère trouvée"
@@ -490,7 +482,7 @@ export function Spheres() {
                 />
               ) : (
               <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-                {loadingSpheres ? (
+                {isSpheresLoading ? (
                   Array.from({ length: 8 }).map((_, i) => (
                     <SphereSkeleton key={i} />
                   ))
@@ -523,7 +515,7 @@ export function Spheres() {
                     </Button>
                   </CardContent>
                 </Card>
-              ) : loadingSpheres ? (
+              ) : isSpheresLoading ? (
                 <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
                   <SphereSkeleton />
                   <SphereSkeleton />

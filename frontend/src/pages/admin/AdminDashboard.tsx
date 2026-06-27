@@ -11,7 +11,6 @@ import {
   getAdminModerationQueue,
   getAdminReportedContent,
   getAdminUserManagementSummary,
-  getCurrentUser,
   getAdminPermissions,
   type AdminModerationQueueItem,
   type AdminReportedContentItem,
@@ -19,6 +18,7 @@ import {
   type AdminPermissions,
 } from "@/services/api";
 import { canAdmin } from "@/lib/adminPermissions";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -30,8 +30,8 @@ export function AdminDashboard() {
   const [isLoadingModeration, setIsLoadingModeration] = useState(true);
   const [isLoadingReports, setIsLoadingReports] = useState(true);
   const [adminError, setAdminError] = useState<string | null>(null);
-  const [currentUser, setCurrentUser] = useState<any>(null);
   const [adminPermissions, setAdminPermissions] = useState<AdminPermissions | null>(null);
+  const { user: currentUser } = useAuth();
 
   const filteredPendingResources = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -54,15 +54,12 @@ export function AdminDashboard() {
 
     (async () => {
       try {
-        const me = await getCurrentUser();
         const perms = await getAdminPermissions();
         if (isMounted) {
-          setCurrentUser(me);
           setAdminPermissions(perms.permissions);
         }
       } catch {
         if (isMounted) {
-          setCurrentUser(null);
           setAdminPermissions(null);
         }
       }

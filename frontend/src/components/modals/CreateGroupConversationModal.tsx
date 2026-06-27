@@ -7,8 +7,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Users, Search, Loader2, Check, MessageSquare, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { createGroupConversation, getCurrentUser, getUserConnections } from "@/services/api";
+import { createGroupConversation, getUserConnections } from "@/services/api";
 import { z } from "zod";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface UserOption { id: string; name: string; username: string; avatar?: string | null; }
 
@@ -33,6 +34,7 @@ export function CreateGroupConversationModal({ children, onGroupCreated, open: c
   const [connections, setConnections] = useState<UserOption[]>([]);
   const [loadingConnections, setLoadingConnections] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
   const open = controlledOpen !== undefined ? controlledOpen : isOpen;
   const setOpen = setControlledOpen ?? setIsOpen;
 
@@ -42,7 +44,6 @@ export function CreateGroupConversationModal({ children, onGroupCreated, open: c
     setLoadingConnections(true);
     (async () => {
       try {
-        const user = await getCurrentUser();
         if (!user?.id || !mounted) return;
         const conns = await getUserConnections(user.id);
         if (!mounted) return;
@@ -65,7 +66,7 @@ export function CreateGroupConversationModal({ children, onGroupCreated, open: c
       }
     })();
     return () => { mounted = false; };
-  }, [open]);
+  }, [open, user?.id]);
 
   const filtered = connections.filter((u) => {
     const q = searchQuery.toLowerCase();
