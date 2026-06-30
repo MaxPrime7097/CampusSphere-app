@@ -2,28 +2,35 @@
 
 CampusSphere utilise **Supabase Auth** comme fournisseur d'identité. Après vérification, un token Supabase est échangé contre un **JWT Django** pour accéder à l'API.
 
+---
+
 ## Flux d'inscription par email
 
 ```
-1. Utilisateur remplit l'étape 1 (nom, email, mot de passe, date de naissance)
+1. Utilisateur remplit l'étape 1 (nom, prénom, username, email, téléphone,
+   date de naissance, mot de passe)
    └─ supabaseSignUp() → emailRedirectTo: /register?verified=true
 
-2. Supabase envoie un email de vérification
+2. Supabase envoie un email de vérification → écran "verify" affiché
 
 3. Utilisateur clique sur le lien → redirigé vers /register?verified=true
-   └─ Register.tsx détecte verified=true
+   └─ Register.tsx détecte le paramètre verified=true via useSearchParams
    └─ supabase.auth.getSession() → exchangeSupabaseToken(access_token)
-   └─ Django crée/récupère l'utilisateur (is_profile_complete=False)
-   └─ setStep(2) → continue l'inscription
+   └─ Django crée l'utilisateur (is_profile_complete=False)
+   └─ setStep(2) → continue l'inscription sur la même page
 
-4. Étape 2 : infos académiques (université, filière, niveau, matricule)
+4. Étape 2 : infos académiques
+   └─ UniversityCombobox, FacultyCombobox, StudyLevelCombobox, matricule, campus
 
-5. Étape 3 : compétences, expériences, formations, portfolio
+5. Étape 3 : expériences & compétences
+   └─ AddEducationModal, AddExperienceModal, SkillsCombobox, InterestsCombobox, portfolio
 
 6. handleFinalSubmit() → completeSupabaseProfile()
    └─ Django met is_profile_complete=True
    └─ Redirection vers /
 ```
+
+---
 
 ## Flux d'inscription OAuth (Google / Facebook)
 
@@ -40,15 +47,17 @@ CampusSphere utilise **Supabase Auth** comme fournisseur d'identité. Après vé
    └─ response.data.needs_profile_completion = true
    └─ navigate('/complete-profile')
 
-4. CompleteProfile.tsx (3 étapes) :
-   - Étape 1 : username, date de naissance, téléphone, ville
-   - Étape 2 : université, filière, niveau, matricule
-   - Étape 3 : compétences, expériences, formations, portfolio
+4. CompleteProfile.tsx (3 étapes, sans mot de passe) :
+   - Étape 1 : username, date de naissance, téléphone (+237), ville, langue
+   - Étape 2 : université, filière, niveau, matricule, campus
+   - Étape 3 : formations, expériences, compétences, intérêts, portfolio
 
 5. handleSubmit() → completeSupabaseProfile()
    └─ Django met is_profile_complete=True
    └─ Redirection vers /
 ```
+
+---
 
 ## Flux de connexion
 
@@ -56,21 +65,26 @@ CampusSphere utilise **Supabase Auth** comme fournisseur d'identité. Après vé
 Email/Mot de passe :
   supabaseSignIn(email, password)
   → supabase.auth.signInWithPassword()
-  → AuthCallback ou Login page
-  → exchangeSupabaseToken()
+  → exchangeSupabaseToken(access_token)
   → JWT Django stocké dans localStorage
+  → Si needs_profile_completion → /complete-profile
+  → Sinon → /
 
 OAuth :
   supabaseSignInWithGoogle/Facebook()
   → /auth/callback
-  → exchangeSupabaseToken()
-  → Si `needs_profile_completion=true` (ou `is_new_user=true`) → /complete-profile
+  → exchangeSupabaseToken(access_token)
+  → Si needs_profile_completion=true → /complete-profile
   → Sinon → /
 ```
 
+---
+
 ## Endpoint d'échange de token
 
-### POST /api/auth/supabase/exchange/
+### POST `/api/users/auth/supabase/exchange-token/`
+
+Auth requise : **Non**
 
 **Body** :
 ```json
@@ -93,11 +107,17 @@ OAuth :
 }
 ```
 
+`needs_profile_completion` est `true` quand :
+- L'utilisateur vient d'être créé via OAuth
+- Le profil existant est incomplet (`is_profile_complete=False`)
+
+---
+
 ## Endpoint de complétion de profil
 
-### POST /api/auth/supabase/complete-profile/
+### POST `/api/users/auth/supabase/complete-profile/`
 
-**Authentification** : Bearer token Django requis
+Auth requise : **Oui** — Bearer token Django
 
 **Body** :
 ```json
@@ -118,10 +138,10 @@ OAuth :
   "skills": ["React", "Python"],
   "interests": ["Programmation", "IA"],
   "previous_education": [
-    { "degree": "bac", "school": "Lycée Bilingue", "year": "2021" }
+    { "degree": "licence", "school": "universite_yaounde_1", "year": "2021-2024" }
   ],
   "experiences": [
-    { "title": "Stagiaire", "company": "CampusSphere 🚀", "duration": "3 mois", "description": "..." }
+    { "title": "developpeur_web", "company": "campussphere", "duration": "3 mois", "description": "..." }
   ],
   "portfolio_links": [
     { "name": "GitHub", "url": "https://github.com/johndoe" }
@@ -129,13 +149,32 @@ OAuth :
 }
 ```
 
+Champs obligatoires : `username`, `university`, `faculty`, `study_year`, `student_id`
+
+**Response** :
+```json
+{
+  "success": true,
+  "data": { ... },
+  "message": "Profil complété avec succès"
+}
+```
+
+---
+
 ## Stockage des tokens
 
 Les tokens Django sont stockés dans `localStorage` :
 - `access` → JWT d'accès (court terme)
 - `refresh` → Token de rafraîchissement (long terme)
 
-Le service `api.ts` gère automatiquement le rafraîchissement du token d'accès expiré.
+Le service `api.ts` gère automatiquement :
+- La détection de l'expiration du token
+- Le rafraîchissement via `POST /api/auth/refresh/`
+- Le retry automatique de la requête originale après rafraîchissement
+- La déconnexion si le refresh token est expiré
+
+---
 
 ## Configuration Supabase Dashboard
 
@@ -144,28 +183,39 @@ Dans **Authentication → URL Configuration** :
 ```
 Site URL: http://localhost:5173 (dev) / https://votre-domaine.com (prod)
 
-Redirect URLs (minimum recommandé):
+Redirect URLs (à whitelister) :
   http://localhost:5173/register
   http://localhost:5173/auth/callback
   http://127.0.0.1:5173/register
   http://127.0.0.1:5173/auth/callback
-  https://campus-sphere-uni.vercel.app/register
-  https://campus-sphere-uni.vercel.app/auth/callback
+  https://votre-domaine.vercel.app/register
+  https://votre-domaine.vercel.app/auth/callback
   https://votre-domaine.com/register
   https://votre-domaine.com/auth/callback
-  https://www.votre-domaine.com/register
-  https://www.votre-domaine.com/auth/callback
-
-Notes:
-- Le paramètre `?verified=true` est ajouté côté frontend, donc l'URL `/register` suffit dans Supabase (la query string est conservée au retour).
-- Le `redirectTo` utilisé dans le code est toujours basé sur `window.location.origin`, donc il faut whitelister toutes les variantes d'origine réellement utilisées (localhost, 127.0.0.1, domaine, www).
 ```
 
-## Champ is_profile_complete
+Notes :
+- Le paramètre `?verified=true` est ajouté côté frontend — l'URL `/register` suffit dans Supabase.
+- Le `redirectTo` est toujours `window.location.origin` → whitelister toutes les origines utilisées.
+- Pour l'inscription OAuth, pas de mot de passe → l'utilisateur ne connaît que ses credentials Google/Facebook.
 
-Le champ `is_profile_complete` sur le modèle `User` est `False` par défaut.
+---
 
-Il passe à `True` uniquement quand tous les champs obligatoires sont remplis :
+## Champ `is_profile_complete`
+
+Valeur par défaut : `False`
+
+Passe à `True` quand tous les champs obligatoires sont remplis via `completeSupabaseProfile()` :
 - `username`, `university`, `faculty`, `study_year`, `student_id`
 
-Cela garantit qu'aucun utilisateur ne peut accéder à l'application sans avoir terminé son inscription.
+Tant que `is_profile_complete=False`, l'utilisateur est redirigé vers `/complete-profile` à chaque connexion.
+
+---
+
+## Limites d'envoi email Supabase
+
+Si les emails de vérification sont bloqués (erreur 429) :
+
+1. Aller dans **Authentication → Rate limits** dans le dashboard Supabase
+2. Augmenter progressivement les quotas signup/resend
+3. Le frontend gère déjà un cooldown de 60 secondes sur le bouton "Renvoyer l'email"
