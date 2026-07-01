@@ -10,7 +10,6 @@ import { RequireAdminRole } from "./components/auth/RequireAdminRole";
 import { AdminLayout } from "./admin/components/AdminLayout";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { Loader2 } from "lucide-react";
-import { SpeedInsights } from "@vercel/speed-insights/react";
 
 // Lazy loaded pages
 const Landing = lazy(() => import("./pages/public/Landing").then(m => ({ default: m.Landing })));
@@ -331,7 +330,6 @@ const App = () => (
             </Routes>
           </Suspense>
         </BrowserRouter>
-        <SpeedInsights />
       </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>
