@@ -1,10 +1,13 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useSpheraAuth } from '../../contexts/SpheraAuthContext'
-import { LogOut } from 'lucide-react'
+import { LogOut, Menu, X } from 'lucide-react'
 
 export function SpheraHeader() {
   const { user, isAuthenticated, logout } = useSpheraAuth()
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  const closeMenu = () => setMenuOpen(false)
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-sphera-border bg-sphera-bg/80 backdrop-blur-xl">
@@ -17,9 +20,9 @@ export function SpheraHeader() {
           </span>
         </Link>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 relative">
           {isAuthenticated && user ? (
-            <div className="flex items-center gap-4">
+            <div className="hidden sm:flex items-center gap-4">
               <Link to="/dashboard" className="text-sm font-medium text-sphera-text-muted hover:text-white transition-colors">
                 Dashboard
               </Link>
@@ -27,31 +30,105 @@ export function SpheraHeader() {
                 <div className="w-8 h-8 rounded-full bg-sphera-surface-2 flex items-center justify-center text-sm font-bold border border-sphera-border text-white">
                   {user.first_name?.[0]?.toUpperCase() || user.username?.[0]?.toUpperCase() || 'U'}
                 </div>
-                <button 
+                <button
                   onClick={logout}
                   className="text-sm text-red-400 hover:text-red-300 transition-colors font-medium"
                 >
-                  <LogOut/>
+                  <LogOut />
                 </button>
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-4">
-              <Link to="/pricing" className="text-sm font-medium text-sphera-text-muted hover:text-white transition-colors hidden sm:block">
+            <div className="hidden sm:flex items-center gap-4">
+              <Link to="/pricing" className="text-sm font-medium text-sphera-text-muted hover:text-white transition-colors">
                 Tarifs
               </Link>
-              <Link to="/blogs" className="text-sm font-medium text-sphera-text-muted hover:text-white transition-colors hidden sm:block">
+              <Link to="/blogs" className="text-sm font-medium text-sphera-text-muted hover:text-white transition-colors">
                 Blog
               </Link>
-              <a href="https://campussphere.app" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-sphera-text-muted hover:text-cs-orange transition-colors hidden sm:block">
+              <a href="https://campussphere.app" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-sphera-text-muted hover:text-cs-orange transition-colors">
                 CampusSphere
               </a>
               <Link to="/login" className="text-sm font-medium text-white hover:text-sphera-green transition-colors">
                 Se connecter
               </Link>
-              <Link to="/app" className="sphera-primary-btn text-sm py-2 px-4 hidden sm:inline-flex">
+              <Link to="/app" className="sphera-primary-btn text-sm py-2 px-4">
                 Essayer gratuitement
               </Link>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setMenuOpen((open) => !open)}
+            className="inline-flex items-center justify-center rounded-full border border-sphera-border bg-sphera-surface-2 p-2 text-sphera-text-muted hover:text-white transition-colors sm:hidden"
+            aria-label="Ouvrir le menu"
+          >
+            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+
+          {menuOpen && (
+            <div className="absolute right-0 top-full mt-2 w-64 overflow-hidden rounded-3xl border border-sphera-border bg-sphera-bg p-4 shadow-2xl shadow-black/20 sm:hidden">
+              {isAuthenticated && user ? (
+                <div className="space-y-3">
+                  <Link
+                    to="/dashboard"
+                    onClick={closeMenu}
+                    className="block rounded-xl px-3 py-2 text-sm font-medium text-sphera-text-muted hover:bg-sphera-surface hover:text-white transition-colors"
+                  >
+                    Dashboard
+                  </Link>
+                  <button
+                    onClick={() => {
+                      logout()
+                      closeMenu()
+                    }}
+                    className="w-full rounded-xl bg-red-500 px-3 py-2 text-sm font-medium text-white hover:bg-red-400 transition-colors"
+                  >
+                    Se déconnecter
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Link
+                    to="/pricing"
+                    onClick={closeMenu}
+                    className="block rounded-xl px-3 py-2 text-sm font-medium text-sphera-text-muted hover:bg-sphera-surface hover:text-white transition-colors"
+                  >
+                    Tarifs
+                  </Link>
+                  <Link
+                    to="/blogs"
+                    onClick={closeMenu}
+                    className="block rounded-xl px-3 py-2 text-sm font-medium text-sphera-text-muted hover:bg-sphera-surface hover:text-white transition-colors"
+                  >
+                    Blog
+                  </Link>
+                  <a
+                    href="https://campussphere.app"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={closeMenu}
+                    className="block rounded-xl px-3 py-2 text-sm font-medium text-sphera-text-muted hover:bg-sphera-surface hover:text-white transition-colors"
+                  >
+                    CampusSphere
+                  </a>
+                  <Link
+                    to="/login"
+                    onClick={closeMenu}
+                    className="block rounded-xl px-3 py-2 text-sm font-medium text-white hover:bg-sphera-green transition-colors"
+                  >
+                    Se connecter
+                  </Link>
+                  <Link
+                    to="/app"
+                    onClick={closeMenu}
+                    className="block rounded-xl bg-sphera-primary px-3 py-2 text-sm font-medium text-white hover:bg-sphera-green transition-colors"
+                  >
+                    Essayer gratuitement
+                  </Link>
+                </div>
+              )}
             </div>
           )}
         </div>
