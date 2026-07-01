@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getSession, getAnnale, askQuestion, deleteSession, deleteAnnale, shareSession, shareAnnale, API_BASE } from '../services/spheraApi'
+import { normalizeAiResponse } from '../utils/normalizeAiResponse'
 import { FileText, ArrowLeft, Maximize2, Minimize2, Send, MessageSquare, Bot, User, BrainCircuit, Columns, PenTool, Share2, Trash2, Check } from 'lucide-react'
 import { FicheView, QuizView, FlashcardsView, AnnaleView } from '../components/app/ResultViews'
 import { ShareModal } from '../components/app/ShareModal'
@@ -86,9 +87,10 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
 
     try {
       const res = await askQuestion(id, msg, type);
+      const normalized = normalizeAiResponse(res?.data?.answer)
       setChatHistory(prev => {
         const newHist = [...prev];
-        newHist[newHist.length - 1].answer = res.data.answer;
+        newHist[newHist.length - 1].answer = normalized;
         return newHist;
       });
     } catch (e) {

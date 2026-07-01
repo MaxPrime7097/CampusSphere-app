@@ -9,6 +9,7 @@ import { FicheView, QuizView, FlashcardsView, AnnaleView } from '../components/a
 import { generateFromUpload, generateAnnale, askQuestion } from '../services/spheraApi'
 import { Sparkles } from 'lucide-react'
 import { QuestionSuggestions } from '../components/app/QuestionSuggestions'
+import { normalizeAiResponse } from '../utils/normalizeAiResponse'
 import { CommandMenu, COMMANDS, type Command } from '../components/app/CommandMenu'
 
 export default function CreateSession() {
@@ -100,9 +101,10 @@ export default function CreateSession() {
     
     try {
       const res = await askQuestion(sessionId, msg);
+      const normalized = normalizeAiResponse(res?.data?.answer)
       setChatHistory(prev => {
         const newHist = [...prev];
-        newHist[newHist.length - 1].answer = res.data.answer;
+        newHist[newHist.length - 1].answer = normalized;
         return newHist;
       });
     } catch (e) {
@@ -155,7 +157,8 @@ export default function CreateSession() {
 
   const handleCommandSelect = async (cmd: Command) => {
     // Nettoyer le @... du message
-    setChatMessage(prev => prev.replace(/@\w*$/, '').trim())
+    // preserve a single '@' so the token stays visible for the user
+    setChatMessage(prev => prev.replace(/@\w*$/, '@'))
     setShowCommandMenu(false)
     // Si l'outil est déjà généré → naviguer directement
     if (generatedContent && generatedContent[cmd.toolType] !== undefined) {
@@ -165,21 +168,6 @@ export default function CreateSession() {
       await handleAddTool(cmd.toolType)
       setActiveTab(cmd.toolType)
     }
-  }
-
-  const handleChatKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (showCommandMenu) {
-      const filtered = COMMANDS.filter(c =>
-        c.trigger.includes(commandFilter.toLowerCase()) ||
-        c.label.toLowerCase().includes(commandFilter.toLowerCase())
-      )
-      if (e.key === 'ArrowDown') { e.preventDefault(); setCommandActiveIdx(i => Math.min(i + 1, filtered.length - 1)) }
-      if (e.key === 'ArrowUp') { e.preventDefault(); setCommandActiveIdx(i => Math.max(i - 1, 0)) }
-      if (e.key === 'Enter') { e.preventDefault(); if (filtered[commandActiveIdx]) { handleCommandSelect(filtered[commandActiveIdx]); } return }
-      if (e.key === 'Escape') { setShowCommandMenu(false); return }
-      return
-    }
-    if (e.key === 'Enter') handleSendChat()
   }
 
   const STUDY_TABS = ['fiche', 'quiz', 'flashcards']
@@ -483,7 +471,6 @@ export default function CreateSession() {
             </div>
           </div>
         </div>
-
       </div>
     </div>
   )

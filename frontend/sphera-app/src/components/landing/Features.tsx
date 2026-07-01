@@ -11,7 +11,7 @@ export function Features() {
     },
     {
       title: "Quiz interactif",
-      desc: "10 questions avec timer, score et explications",
+      desc: "Questions avec timer, score et explications",
       icon: <BrainCircuit className="w-6 h-6 text-[#F5F5F5]" />,
       emoji: "🎯"
     },

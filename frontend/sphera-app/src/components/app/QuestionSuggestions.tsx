@@ -44,7 +44,10 @@ export function QuestionSuggestions({ sessionId, onSelect }: QuestionSuggestions
         {suggestions.map((q, i) => (
           <button
             key={i}
-            onClick={() => onSelect(q)}
+            onClick={() => {
+              onSelect(q)
+              setSuggestions(prev => prev.filter((_, idx) => idx !== i))
+            }}
             className="text-xs px-3 py-1.5 rounded-full border border-sphera-green/30 
                        text-sphera-green hover:bg-sphera-green/10 hover:border-sphera-green/60
                        transition-all duration-200 text-left cursor-pointer"

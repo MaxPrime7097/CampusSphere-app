@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getAnnale, askQuestion } from '../services/spheraApi'
+import { normalizeAiResponse } from '../utils/normalizeAiResponse'
 import { MessageSquare, Bot, User, Send, ArrowUp } from 'lucide-react'
 
 export default function AnnaleDetail() {
@@ -56,9 +57,10 @@ export default function AnnaleDetail() {
 
     try {
       const res = await askQuestion(id, msg, 'annale')
+      const normalized = normalizeAiResponse(res?.data?.answer)
       setChatHistory(prev => {
         const newHist = [...prev]
-        newHist[newHist.length - 1].answer = res.data.answer
+        newHist[newHist.length - 1].answer = normalized
         return newHist
       })
     } catch (e) {
