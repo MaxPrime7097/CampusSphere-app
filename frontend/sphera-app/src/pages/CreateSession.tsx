@@ -170,6 +170,46 @@ export default function CreateSession() {
     }
   }
 
+  const handleChatKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (showCommandMenu) {
+      const filtered = COMMANDS.filter(c =>
+        c.trigger.includes(commandFilter.toLowerCase()) ||
+        c.label.toLowerCase().includes(commandFilter.toLowerCase())
+      )
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setCommandActiveIdx(i => Math.min(i + 1, filtered.length - 1))
+        return
+      }
+
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setCommandActiveIdx(i => Math.max(i - 1, 0))
+        return
+      }
+
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        if (filtered[commandActiveIdx]) {
+          handleCommandSelect(filtered[commandActiveIdx])
+        }
+        return
+      }
+
+      if (e.key === 'Escape') {
+        setShowCommandMenu(false)
+        return
+      }
+
+      return
+    }
+
+    if (e.key === 'Enter') {
+      handleSendChat()
+    }
+  }
+
   const STUDY_TABS = ['fiche', 'quiz', 'flashcards']
 
   return (
@@ -180,6 +220,8 @@ export default function CreateSession() {
         <div className="h-14 border-b border-sphera-border flex items-center px-4 gap-4 bg-sphera-bg">
           <button 
             onClick={() => navigate('/dashboard')} 
+            title="Retour au tableau de bord"
+            aria-label="Retour au tableau de bord"
             className="p-1.5 text-sphera-text-muted hover:bg-sphera-surface hover:text-white rounded-md transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -464,6 +506,8 @@ export default function CreateSession() {
               <button 
                 onClick={handleSendChat}
                 disabled={!chatMessage.trim() || isChatting || !sessionId}
+                title="Envoyer le message"
+                aria-label="Envoyer le message"
                 className="w-9 h-9 rounded-full bg-sphera-green text-black flex items-center justify-center hover:bg-green-400 disabled:opacity-50 disabled:hover:bg-sphera-green transition-colors flex-shrink-0 shadow-[0_0_15px_rgba(34,197,94,0.3)]"
               >
                 <Send className="w-4 h-4 ml-0.5" />
