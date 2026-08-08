@@ -100,15 +100,19 @@ silently re-authenticated.
 `getDetectedApiUrl()` falls back through three guesses when `VITE_API_URL` is unset, and all three are
 now wrong or unverified:
 
-| Case | Returns | Problem |
+| Case | Returns | Verdict |
 |---|---|---|
-| `campussphere.app` | `https://api.campussphere.app` | Only correct if that hostname is a CNAME to the Render service. The service's own hostname is `campus-sphere-backend.onrender.com`. |
-| `*.onrender.com` | `https://campus-sphere-backend-dyfu.onrender.com` | A hardcoded guess with a suffix that may not match the deployed service. |
-| anything else | `http://127.0.0.1:8000` | **Django's port.** The Node backend runs on `:3000` in development, so local dev silently talks to nothing. |
+| `campussphere.app` | `https://api.campussphere.app` | **Correct.** Verified live: CNAMEd through Cloudflare to the Render service, `GET /api/health/` returns 200. |
+| `*.onrender.com` | `https://campus-sphere-backend-dyfu.onrender.com` | **Correct.** Verified live, same service as above. The `-dyfu` suffix is real, not a guess. |
+| anything else | `http://127.0.0.1:8000` | **Wrong — Django's port.** The Node backend runs on `:3000` in development, so local dev silently talks to nothing. |
 
-None of this is a backend change — the API answers on whatever origin it is deployed to. But it is the
-single most likely reason a correct backend appears broken from the browser, so: **set `VITE_API_URL`
-explicitly in Vercel and in local `.env`**, and treat the fallback chain as dead code to delete.
+Only the third row is a defect. Note that `campus-sphere-backend.onrender.com` — the name in `render.yaml` — is **not** a routable hostname; Render appends a suffix, so the service answers on `campus-sphere-backend-dyfu.onrender.com`. Probing the un-suffixed name returns no server at all.
+
+None of this is a backend change — the API answers on whatever origin it is deployed to. But the
+localhost fallback is the single most likely reason a correct backend appears broken in development,
+so: **set `VITE_API_URL` explicitly in Vercel and in local `.env`** rather than relying on hostname
+sniffing. Use `https://api.campussphere.app` — it is stable across Render service renames, whereas the
+`-dyfu` hostname is not.
 
 CORS is already correct for `campussphere.app`, `www.campussphere.app`, `sphera.campussphere.app` and
 the localhost dev ports, verified against a running server. If you serve the frontend from any other

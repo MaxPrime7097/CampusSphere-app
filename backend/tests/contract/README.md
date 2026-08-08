@@ -27,7 +27,7 @@ suite is not testing what it claims to.
 | Command | What it covers |
 |---|---|
 | `npm run test:contract` | This suite, plus `tests/unit/` — pure functions whose behaviour is otherwise only observable through a live AI provider |
-| `npm run test:defects` | `tests/integration/` — one test per Django defect, run against a server this suite cannot configure (rate limits **on**, SMTP captured, database access for admin promotion) |
+| `npm run test:defects` | All of `tests/integration/` — one test per Django defect **plus** the two-user end-to-end journey — run against a server this suite cannot configure (rate limits **on**, SMTP captured, database access for admin promotion). Broader than the name suggests. |
 
 The split exists to protect this suite's defining property: it imports no application code, so the same
 files run against either backend. Anything needing a Prisma import or a bespoke server environment goes

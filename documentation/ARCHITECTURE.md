@@ -2,24 +2,37 @@
 
 ## Vue d'ensemble
 
-CampusSphere est une plateforme collaborative étudiante full-stack. Le frontend React communique avec le backend Django via une API REST. L'authentification est gérée par Supabase Auth, qui émet des tokens échangés contre des JWT Django.
+CampusSphere est une plateforme collaborative étudiante full-stack. Le frontend React communique avec le backend Node/Express via une API REST et des WebSockets. L'authentification est gérée par Supabase Auth, dont les tokens sont échangés contre des JWT signés par le backend.
 
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                     FRONTEND (Vercel)                    │
 │              React 18 + TypeScript + Vite                │
 └──────────────────────┬──────────────────────────────────┘
-                       │ HTTPS / REST API
+                       │ HTTPS / REST + WebSocket
 ┌──────────────────────▼──────────────────────────────────┐
-│                     BACKEND (Render)                     │
-│              Django 5.2 + DRF + Simple JWT               │
-└──────────┬───────────────────────────┬───────────────────┘
-           │                           │
-┌──────────▼──────────┐   ┌────────────▼────────────────┐
-│   PostgreSQL (prod) │   │   Supabase Auth              │
-│   SQLite (dev)      │   │   (email + OAuth)            │
-└─────────────────────┘   └─────────────────────────────┘
+│              BACKEND (Render, N instances)               │
+│        Node 22 + Express 5 + TypeScript + Prisma         │
+└───┬──────────────┬──────────────┬───────────────┬────────┘
+    │              │              │               │
+┌───▼────────┐ ┌───▼────────┐ ┌───▼─────────┐ ┌───▼──────────┐
+│ PostgreSQL │ │   Redis    │ │  Supabase   │ │  S3 (fichiers)│
+│ (Supabase, │ │ fan-out WS │ │    Auth     │ │              │
+│  Supavisor)│ │ rate limit │ │ email+OAuth │ │              │
+│            │ │ jobs lock  │ │             │ │              │
+└────────────┘ └────────────┘ └─────────────┘ └──────────────┘
 ```
+
+**Pourquoi Redis est structurant.** Tout ce qui doit être partagé *entre* instances y vit :
+la diffusion des événements WebSocket, les compteurs de rate limiting et le verrou qui
+désigne l'instance chargée d'exécuter les tâches planifiées. Sans lui, chaque instance
+retombe sur un état local — correct pour une seule instance, silencieusement faux au-delà
+(messages livrés aux seuls clients de la même instance, limites multipliées par le nombre
+d'instances, jobs exécutés N fois). Le serveur refuse donc de démarrer en production sans
+`REDIS_URL`, sauf `SINGLE_INSTANCE=true` posé explicitement.
+
+Aucune session collante n'est nécessaire : les WebSockets partagent l'écouteur HTTP et la
+diffusion passe par Redis.
 
 ## Structure Frontend
 
@@ -70,63 +83,92 @@ frontend/src/
 
 ```
 backend/
-├── campus_sphere/            # Configuration Django principale
-│   ├── settings.py
-│   ├── urls.py
-│   ├── views.py              # Health check
-│   ├── cache.py              # Gestion du cache
-│   ├── security.py
-│   ├── admin_views.py        # Vues admin
-│   └── supabase_views.py     # Vues Supabase
-├── users/                    # Authentification et profils
-│   ├── models.py             # User, Connection, UserBlock, AdminAuditLog
-│   ├── serializers.py        # Sérialiseurs + SupabaseProfileCompletionSerializer
-│   ├── views.py              # Auth, profil, connexions, Supabase exchange
-│   ├── urls.py
-│   ├── impact_policy.py      # Règles de calcul du score d'impact
-│   ├── signals.py
-│   └── throttles.py
-├── spheres/                  # Sphères collaboratives
-├── posts/                    # Posts et commentaires
-├── resources/                # Ressources partagées
-├── tasks/                    # Tâches (Kanban)
-├── messaging/                # Conversations et messages
-├── notifications/            # Notifications
-├── upload/                   # Upload de fichiers
-└── tests/                    # Tests d'intégration
+├── prisma/
+│   ├── schema.prisma         # 33 modèles — source de vérité du schéma
+│   └── migrations/           # Appliquées par `prisma migrate deploy`
+├── src/
+│   ├── app.ts                # Assemblage Express (middlewares, montage des routes)
+│   ├── server.ts             # Écouteur HTTP + attachement WebSocket + démarrage jobs
+│   ├── config/
+│   │   └── env.ts            # Lecture/validation des variables (assertProductionConfig)
+│   ├── routes/               # Un routeur par domaine
+│   │   ├── auth.routes.ts        users.routes.ts      spheres.routes.ts
+│   │   ├── posts.routes.ts       resources.routes.ts  tasks.routes.ts
+│   │   ├── messaging.routes.ts   notifications.routes.ts
+│   │   ├── sphera.routes.ts      uploads.routes.ts    search.routes.ts
+│   │   ├── admin.routes.ts       health.routes.ts     supabaseAuth.ts
+│   │   └── index.ts              # Montage sous /api
+│   ├── middleware/           # requireAuth, rate limiting, erreurs, upload
+│   ├── serializers/          # Formes de réponse (contrat API)
+│   ├── services/             # Logique métier
+│   │   ├── ai/               # Chaîne Claude → Gemini → Groq, prompts, parsing JSON
+│   │   ├── impact.ts         # Score d'impact
+│   │   ├── extraction.ts     # Texte depuis PDF/DOCX/images (pdftotext, tesseract)
+│   │   ├── email.ts          # SMTP + templates HTML
+│   │   └── verification.ts
+│   ├── realtime/
+│   │   ├── hub.ts            # Abstraction de canaux, diffusion via Redis
+│   │   └── websocket.ts      # Upgrade, autorisation, /ws/chat|conversations|notifications
+│   ├── jobs/                 # Tâches planifiées + verrou de leadership
+│   └── lib/                  # prisma, redis, rateLimit, visibility, storage…
+└── tests/
+    ├── contract/             # Boîte noire HTTP contre un serveur déjà lancé
+    ├── integration/          # Démarrent leur propre serveur (rate limits actifs)
+    └── unit/
 ```
+
+La correspondance avec les anciennes apps Django est directe : `users/` → `users.routes.ts`
++ `auth.routes.ts`, `spheres/` → `spheres.routes.ts`, etc. Les routes conservent leurs URLs.
 
 ## Modèle de données principal
 
-### User
-```python
-class User(AbstractBaseUser, PermissionsMixin):
-    # Identité
-    first_name, last_name, username, email
-    # Académique
-    university, faculty, study_year, student_id, campus, town
-    # Profil
-    bio, avatar, cover_photo, language
-    # Supabase
-    supabase_uid, phone_number, date_of_birth
-    # Statut
-    is_profile_complete  # False jusqu'à la fin de l'inscription
-    # Gamification
-    impact_score, current_mood
-    # JSON
-    skills, interests, previous_education, experiences, portfolio_links
+Source de vérité : [`backend/prisma/schema.prisma`](../backend/prisma/schema.prisma) — 33 modèles.
+
+Le schéma est une **refonte, pas un miroir** du schéma Django : pas de `django_content_type`,
+pas de `auth_permission`, pas de nommage `users_user`, pas de ledger de migrations Django. Les
+tables s'appellent `users`, `spheres`, `posts`… Les identifiants restent des entiers, parce que
+toutes les routes du contrat matchent `<int:pk>` et sérialisent les ids en nombres — passer en
+UUID casserait l'API. `UploadedFile` garde un UUID, sa route étant `<uuid:pk>`.
+
+### User → table `users`
+```prisma
+model User {
+  id, email @unique, username @unique, firstName, lastName
+  passwordHash            // argon2id. Null pour les comptes Supabase-only
+  supabaseUid @unique
+
+  university, faculty, studyYear, studentId, campus, town
+  bio, avatar, coverPhoto, phoneNumber, dateOfBirth, language (Json)
+
+  profileVisibility, postVisibility   // enum ProfileVisibility
+  impactScore, currentMood
+
+  skills, interests, previousEducation, experiences, portfolioLinks  // Json
+}
 ```
 
-### Sphere
-```python
-class Sphere:
-    name, description, category, type
-    is_private, require_approval
-    color, icon, objective, target_audience
-    duration, expires_at, auto_delete_on_expiry
-    collaboration_types  # JSON
-    banner_image
+`is_profile_complete` n'est **pas** une colonne : il est calculé à la lecture sur
+`university` + `faculty` + `study_year`. Django stockait le drapeau avec une liste de champs
+requis vide, si bien que `all([])` valait toujours vrai et que le profil était déclaré complet
+dès la première connexion. Voir [API_CONTRACT.md](./API_CONTRACT.md) §3.1.
+
+### Sphere → table `spheres`
+```prisma
+model Sphere {
+  name, description, category (enum), sphereType (enum)
+  color, icon, bannerImage
+  isPrivate, requireApproval
+  objective, targetAudience
+  duration, expiresAt, autoDeleteOnExpiry
+  collaborationTypes (Json)
+  memberCount        // dénormalisé — recalculé à chaque mutation d'adhésion
+  impactScore
+  createdById → User
+}
 ```
+
+Les sphères expirées sont supprimées par une tâche planifiée horaire quand
+`autoDeleteOnExpiry` est vrai (`src/jobs/`), et non plus au hasard d'une requête.
 
 ## Flux d'authentification
 
@@ -171,23 +213,59 @@ Clic OAuth → Supabase OAuth → /auth/callback
 
 ### Frontend (.env)
 ```env
-VITE_API_URL=http://127.0.0.1:8000
+VITE_API_URL=http://127.0.0.1:3000       # prod : https://api.campussphere.app
 VITE_APP_NAME=CampusSphere
 VITE_APP_ENV=development
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
+`VITE_API_URL` doit toujours être défini : à défaut le frontend devine l'URL du backend
+d'après le hostname, et son repli local vise `127.0.0.1:8000` — le port de Django.
+
 ### Backend (.env)
+
+Référence complète et commentée : [`backend/.env.example`](../backend/.env.example).
+Les **noms sont identiques à ceux de Django**, de sorte que la configuration Render existante
+est reprise telle quelle ; `DIRECT_URL` et `SINGLE_INSTANCE` sont les seuls ajouts.
+
 ```env
-SECRET_KEY=your-django-secret-key
-DEBUG=True
+# Base de données — deux endpoints du même PostgreSQL Supabase
+DATABASE_URL=postgresql://…@…pooler.supabase.com:6543/postgres?pgbouncer=true  # pooled
+DIRECT_URL=postgresql://…@…pooler.supabase.com:5432/postgres                   # session
+
+SECRET_KEY=…
+DEBUG=true
+PORT=3000
 ALLOWED_HOSTS=localhost,127.0.0.1
-CORS_ALLOWED_ORIGINS=http://localhost:5173
-CSRF_TRUSTED_ORIGINS=http://localhost:5173
-DATABASE_URL=postgresql://user:pass@localhost:5432/campussphere
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-FRONTEND_URL=http://localhost:5173
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:8080
+FRONTEND_URL=http://localhost:8080
+
+SUPABASE_URL=…
+SUPABASE_JWT_SECRET=…
+SUPABASE_SERVICE_ROLE_KEY=…
+
+ANTHROPIC_API_KEY=…   GEMINI_API_KEY=…   GROQ_API_KEY=…
+
+USE_S3=false          # doit valoir true en production
+AWS_ACCESS_KEY_ID=…   AWS_SECRET_ACCESS_KEY=…
+AWS_STORAGE_BUCKET_NAME=…   AWS_S3_REGION_NAME=eu-west-1
+
+REDIS_URL=            # obligatoire en production, sauf SINGLE_INSTANCE=true
+SINGLE_INSTANCE=
+
+EMAIL_HOST_USER=…     EMAIL_HOST_PASSWORD=…
+DISABLE_RATE_LIMITS=  # dev/test uniquement — refusé en production
 ```
+
+**Pourquoi deux URLs de base de données.** `DATABASE_URL` vise le pooler en mode transaction
+(port 6543), ce qui permet à N instances de partager un budget de connexions ; `pgbouncer=true`
+y est obligatoire, sans quoi les *prepared statements* de Prisma cassent. `DIRECT_URL` vise le
+mode session (port 5432) et ne sert qu'à `prisma migrate deploy`, qui a besoin d'un état de
+session (verrous consultatifs, DDL transactionnel) qu'un pooler en mode transaction ne fournit
+pas. Ne pas utiliser l'hôte direct `db.<ref>.supabase.co` : il ne résout qu'en IPv6 et reste
+donc injoignable depuis Render.
+
+Le serveur valide sa configuration au démarrage (`assertProductionConfig`) et refuse de démarrer
+en production avec une `SECRET_KEY` de développement, `DEBUG=true`, `USE_S3=false`,
+`DISABLE_RATE_LIMITS` posé, ou sans `REDIS_URL` ni `SINGLE_INSTANCE`.
