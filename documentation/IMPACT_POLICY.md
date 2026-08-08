@@ -1,6 +1,7 @@
 # Impact Policy
 
-Source de vérité backend : `backend/users/impact_policy.py`
+Source de vérité backend : `legacy/django-backend/users/impact_policy.py` (implémentation Django, en cours
+de remplacement). Le contrat cible est décrit dans [API_CONTRACT.md](./API_CONTRACT.md) §3.4.
 
 ## Règles actives
 

@@ -1,0 +1,14 @@
+.env
+node_modules/
+
+# The root .gitignore excludes `.env.*`, which would take `.env.example` with it.
+# That file carries no secrets — only placeholders — and is the documented starting
+# point for local setup (`cp .env.example .env`), so it must be tracked.
+!.env.example
+
+# Compiled output — rebuilt by the Dockerfile on every deploy.
+dist/
+
+# Local-disk storage driver (development only). Production uses object storage;
+# the server refuses to boot with USE_S3=false.
+uploads/

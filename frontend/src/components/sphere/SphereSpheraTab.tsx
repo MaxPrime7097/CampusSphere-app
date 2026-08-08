@@ -31,6 +31,8 @@ export function SphereSpheraTab({ sphereId }: SphereSpheraTabProps) {
 
   useEffect(() => {
     setLoading(true);
+    // [BE-MIGRATION FE-04] Promise.all makes one failing call blank the whole tab; the sessions
+    // call currently always 500s, so files never render. Use allSettled. — documentation/FRONTEND_CHANGES.md
     Promise.all([
       getSphereFiles(sphereId),
       getSphereStudySessions(sphereId)
@@ -118,6 +120,9 @@ export function SphereSpheraTab({ sphereId }: SphereSpheraTabProps) {
             <Button
               size="sm"
               className="bg-[#ff9800] hover:bg-[#e68900] text-white gap-1.5 flex-shrink-0 text-xs px-3"
+              // [BE-MIGRATION FE-02] file.id is a SphereFile id but is passed as resourceId, which the
+              // API resolves against the Resource table — different ID space. Switch to the new
+              // sphereFileId prop. — documentation/FRONTEND_CHANGES.md
               onClick={() =>
                 setStudyModal({ open: true, resourceId: file.id, resourceTitle: file.title })
               }

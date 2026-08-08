@@ -1,0 +1,60 @@
+/**
+ * Express application assembly.
+ *
+ * Kept separate from server.ts so tests and tooling can construct the app without
+ * binding a port.
+ */
+
+import express, { type Express } from "express";
+import cors from "cors";
+import { env } from "./config/env.js";
+import { apiRouter } from "./routes/index.js";
+import { attachUser } from "./middleware/auth.js";
+import { appendSlash, noStore } from "./middleware/trailingSlash.js";
+import { anonymousRateLimit } from "./middleware/rateLimit.js";
+import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
+import { LOCAL_UPLOAD_ROOT } from "./services/storage.js";
+
+export function createApp(): Express {
+  const app = express();
+
+  // Render terminates TLS upstream; without this, req.protocol and any
+  // rate-limiting keyed on IP see the proxy rather than the client.
+  app.set("trust proxy", 1);
+  app.disable("x-powered-by");
+
+  app.use(
+    cors({
+      origin(origin, callback) {
+        // Same-origin and non-browser callers send no Origin header.
+        if (!origin) return callback(null, true);
+        callback(null, env.corsAllowedOrigins.includes(origin));
+      },
+      credentials: true,
+      exposedHeaders: ["Content-Disposition"],
+    }),
+  );
+
+  // 50MB matches the Django FILE_UPLOAD_MAX_MEMORY_SIZE and the resource cap.
+  app.use(express.json({ limit: "50mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+
+  // Development only. In production USE_S3 is mandatory (the server refuses to boot
+  // otherwise), so uploads are served by the object store, not by this process.
+  if (!env.storage.useS3) {
+    app.use("/media", express.static(LOCAL_UPLOAD_ROOT, { index: false, dotfiles: "deny" }));
+  }
+
+  app.use(appendSlash);
+  app.use(noStore);
+  app.use(attachUser);
+
+  // After attachUser: the anonymous limit exempts authenticated callers, matching
+  // DRF's AnonRateThrottle, so it has to know whether a token was presented.
+  app.use("/api", anonymousRateLimit, apiRouter);
+
+  app.use(notFoundHandler);
+  app.use(errorHandler);
+
+  return app;
+}

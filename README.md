@@ -20,12 +20,23 @@ CampusSphere/
 ├── frontend/
 │   ├── src/sphera/        # Intégration Sphera dans l'app principale
 │   └── sphera-app/        # Application Sphera standalone (Vite + React)
-├── backend/
-│   └── sphera/            # App Django : sessions IA, annales, Q&A
+├── backend/               # API Node/Express + TypeScript (Prisma, PostgreSQL)
+│   ├── prisma/            # Schéma de base de données
+│   ├── src/               # Application Express
+│   └── tests/contract/    # Suite de tests de contrat (boîte noire, HTTP)
+├── legacy/
+│   └── django-backend/    # Ancien backend Django — référence, non déployé
 ├── documentation/         # Documentation complète
 ├── SPHERA_DOCUMENTATION.md  # Docs techniques Sphera V2 (SSO, PDF, déploiement)
 └── README.md
 ```
+
+> **Migration en cours.** Le backend passe de Django à Node/Express. `backend/` est la
+> nouvelle implémentation ; l'ancienne est conservée sous `legacy/django-backend/` comme
+> référence comportementale. Le chemin de déploiement (`./backend`) est inchangé, donc le
+> service Render, son URL et ses variables d'environnement restent identiques.
+> Voir [API_CONTRACT.md](./documentation/API_CONTRACT.md) et
+> [API_INVENTORY.md](./documentation/API_INVENTORY.md).
 
 ## Démarrage rapide
 
@@ -33,20 +44,19 @@ CampusSphere/
 
 ```bash
 cd backend
-python -m venv venv
-venv\Scripts\activate          # Windows
-pip install -r requirements.txt
-
-# Variables d'environnement
-set SECRET_KEY=dev-secret-key
-set DEBUG=True
-set ALLOWED_HOSTS=localhost,127.0.0.1
-set CORS_ALLOWED_ORIGINS=http://localhost:5173
-set CSRF_TRUSTED_ORIGINS=http://localhost:5173
-
-python manage.py migrate
-python manage.py runserver 127.0.0.1:8000
+cp .env.example .env           # renseigner au minimum DATABASE_URL
+npm install
+npx prisma generate
+npx prisma migrate deploy      # jamais `migrate dev` — voir backend/README.md
+npm run dev                    # http://127.0.0.1:3000
 ```
+
+Redis est optionnel en local (`REDIS_URL=redis://127.0.0.1:6379`) mais **obligatoire en
+production** : il porte la diffusion WebSocket entre instances, les compteurs de
+rate limiting et l'élection des tâches planifiées. Sans lui le serveur refuse de démarrer
+en production. Détails dans [backend/README.md](./backend/README.md).
+
+L'ancien backend Django reste exécutable depuis `legacy/django-backend/` pour comparaison.
 
 ### Frontend
 
@@ -72,7 +82,11 @@ Toute la documentation est dans le dossier [`documentation/`](./documentation/) 
 | [API.md](./documentation/API.md) | Référence complète des endpoints API |
 | [COMPONENTS.md](./documentation/COMPONENTS.md) | Guide des composants frontend |
 | [AUTH.md](./documentation/AUTH.md) | Flux d'authentification (email + OAuth) |
-| [DEPLOYMENT.md](./documentation/DEPLOYMENT.md) | Guide de déploiement production |
+| [DEPLOYMENT.md](./documentation/DEPLOYMENT.md) | Guide de déploiement production (§2 décrit encore Django — voir `backend/README.md`) |
+| [API_CONTRACT.md](./documentation/API_CONTRACT.md) | **Spécification faisant autorité** : formes des requêtes/réponses, écarts marqués `[CHANGE]` |
+| [API_INVENTORY.md](./documentation/API_INVENTORY.md) | Les 143 routes, leur statut et leurs appelants |
+| [FRONTEND_CHANGES.md](./documentation/FRONTEND_CHANGES.md) | Ce que le frontend doit adapter (`FE-01` … `FE-09`) |
+| [backend/README.md](./backend/README.md) | Backend Node : exécution, scale-out, jobs, tests |
 | [IMPACT_POLICY.md](./documentation/IMPACT_POLICY.md) | Règles de calcul du score d'impact |
 | [CACHE_POLICY.md](./documentation/CACHE_POLICY.md) | Politique de cache API |
 

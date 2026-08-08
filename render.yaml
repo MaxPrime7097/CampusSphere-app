@@ -1,4 +1,12 @@
-# Render.com Configuration for CampusSphere Backend
+# Render.com configuration for the CampusSphere backend.
+#
+# Unchanged across the Django -> Node/Express migration: service name, runtime,
+# plan, build paths, health check path and PORT. The Node app was placed at
+# ./backend precisely so none of this had to move — see documentation/API_CONTRACT.md.
+#
+# buildCommand and startCommand were removed rather than rewritten: both are now
+# owned by ./backend/Dockerfile (build stages) and ./backend/docker-entrypoint.sh
+# (migrate, then start), which keeps this file runtime-agnostic.
 services:
   - type: web
     name: campus-sphere-backend
@@ -7,37 +15,44 @@ services:
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
 
-    # Build and deployment settings
-    buildCommand: |
-      python manage.py migrate --noinput && python manage.py collectstatic --noinput
-
-    # Start command defined in Dockerfile CMD
-    startCommand: |
-      daphne -b 0.0.0.0 -p 10000 --access-log - --proxy-headers -t 120 campus_sphere.asgi:application
-      
-    # Environment variable
     envVars:
       - key: PORT
         value: "10000"
-      # Uncomment and update these as needed
-      # - key: DEBUG
-      #   value: "False"
-      # - key: SECRET_KEY
-      #   value: "your-secret-key"
-      # - key: ALLOWED_HOSTS
-      #   value: "your-render-domain.onrender.com,your-vercel-domain.vercel.app"
-      # - key: DATABASE_URL
-      #   value: "postgresql://..."
-      # - key: REDIS_URL
-      #   value: "redis://..."
-      # - key: JWT_SECRET
-      #   value: "your-jwt-secret"
+      # All remaining variables are set in the Render dashboard and carry over from
+      # the Django deployment unchanged — the Node app reads the same names:
+      #   SECRET_KEY               JWT signing secret
+      #   DATABASE_URL             same Postgres instance; Prisma tables do not
+      #                            collide with the Django ones, so both coexist.
+      #                            Use the POOLED endpoint: with N instances each
+      #                            holding its own Prisma pool, direct connections
+      #                            run out fast. Append `?pgbouncer=true` when the
+      #                            pooler is in transaction mode, or Prisma's
+      #                            prepared statements break.
+      #   DIRECT_URL               REQUIRED. Unpooled/session-mode connection, used
+      #                            only by `prisma migrate deploy`. Migrations need
+      #                            session state a transaction-mode pooler cannot
+      #                            provide. Without this variable the container
+      #                            exits during entrypoint migration and the
+      #                            service never starts.
+      #   REDIS_URL                REQUIRED. Cross-instance realtime fan-out,
+      #                            rate-limit counters and scheduled-job leadership.
+      #                            The service refuses to boot without it in
+      #                            production — without Redis each instance keeps
+      #                            its own state, so chat events would be delivered
+      #                            only to clients that happened to land on the
+      #                            same instance, rate limits would multiply by the
+      #                            instance count, and every instance would run
+      #                            every cron job. Add a Render Key Value instance
+      #                            (or any managed Redis) and set its URL here.
+      #   ALLOWED_HOSTS, CORS_ALLOWED_ORIGINS, FRONTEND_URL
+      #   SUPABASE_URL, SUPABASE_JWT_SECRET, SUPABASE_SERVICE_ROLE_KEY
+      #   ANTHROPIC_API_KEY, GEMINI_API_KEY, GROQ_API_KEY
+      #   USE_S3, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,
+      #   AWS_STORAGE_BUCKET_NAME, AWS_S3_REGION_NAME
+      #   EMAIL_HOST_USER, EMAIL_HOST_PASSWORD
 
-    # Health check configuration
-    # Note: Render Blueprints use specific keys for health check parameters
     healthCheckPath: /api/health/
 
-# Optional: If you want Render to also manage your Database
 databases:
   - name: campus-sphere-db
-    plan: free # or 'standard'    
+    plan: free

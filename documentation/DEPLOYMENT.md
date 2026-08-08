@@ -1,11 +1,18 @@
 # Guide de Déploiement Production
 
+> ⚠️ **§2 ci-dessous décrit l'ancien backend Django.** Le backend est désormais Node/Express et
+> se déploie via [`render.yaml`](../render.yaml) + [`backend/Dockerfile`](../backend/Dockerfile) :
+> ni Build Command ni Start Command à saisir, ils appartiennent au Dockerfile et à
+> `docker-entrypoint.sh` (qui applique les migrations avant de démarrer). Voir §2bis puis
+> [backend/README.md](../backend/README.md). Le nom du service, son URL, son plan, son
+> health check et son port sont **inchangés** : aucune migration de service n'est nécessaire.
+
 ## Architecture cible
 
 ```
-Frontend (Vercel) ──── Backend (Render) ──── PostgreSQL (Supabase/Render)
-                              │
-                        Supabase Auth
+Frontend (Vercel) ──── Backend (Render, N instances) ──── PostgreSQL (Supabase/Render)
+                              │         │
+                        Supabase Auth   └── Redis (fan-out WebSocket, rate limits, jobs)
 ```
 
 ---
@@ -15,11 +22,38 @@ Frontend (Vercel) ──── Backend (Render) ──── PostgreSQL (Supabas
 - Compte [Vercel](https://vercel.com) (frontend)
 - Compte [Render](https://render.com) (backend)
 - Projet [Supabase](https://supabase.com) (auth + optionnellement DB)
+- **Une instance Redis** (Render Key Value, Upstash…) — obligatoire, voir §2bis
 - Repository Git (GitHub recommandé)
 
 ---
 
-## 2. Déploiement Backend (Render)
+## 2bis. Déploiement Backend Node (actuel)
+
+Le service est décrit par [`render.yaml`](../render.yaml). Rien à configurer manuellement hormis
+les variables d'environnement, dont les **noms sont identiques à ceux de Django** : la
+configuration existante du dashboard est reprise telle quelle.
+
+Deux variables sont nouvelles ou changent de statut :
+
+| Variable | Statut | Rôle |
+|---|---|---|
+| `REDIS_URL` | **obligatoire** | Diffusion WebSocket entre instances, compteurs de rate limiting, élection des jobs. Le serveur **refuse de démarrer** sans elle en production. |
+| `USE_S3` | **doit valoir `true`** | Le plan Render n'a pas de disque persistant : tout fichier écrit localement disparaît au redéploiement. |
+
+Le serveur valide sa configuration au démarrage (`assertProductionConfig`) et refuse de
+démarrer avec une `SECRET_KEY` de développement, `DEBUG=true`, `USE_S3=false` ou sans
+`REDIS_URL` — une erreur de configuration se voit au déploiement, pas en production.
+
+### Scaler horizontalement
+
+Augmenter le nombre d'instances suffit : **aucune session collante (sticky session) n'est
+nécessaire**, les WebSockets partagent l'écouteur HTTP et la diffusion passe par Redis. Vérifier
+après montée en charge que `REDIS_URL` est bien renseignée — sans elle chaque instance retombe
+sur un état local et les événements de chat ne traversent plus les instances.
+
+---
+
+## 2. Déploiement Backend (Django — historique)
 
 ### 2.1 Créer le service
 
