@@ -100,6 +100,9 @@ export default function CreateSession() {
     setChatHistory(prev => [...prev, { question: msg, answer: '...' }]);
     
     try {
+      // [BE-MIGRATION FE-07] askQuestion defaults to type 'session', so when generationMode is
+      // 'annale' this posts an AnnaleSession id to /sphera/sessions/<id>/ask/ — wrong resource.
+      // Pass generationMode === 'annale' ? 'annale' : 'session'. — documentation/FRONTEND_CHANGES.md
       const res = await askQuestion(sessionId, msg);
       const normalized = normalizeAiResponse(res?.data?.answer)
       setChatHistory(prev => {

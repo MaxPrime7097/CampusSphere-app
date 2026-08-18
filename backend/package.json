@@ -1,0 +1,55 @@
+{
+  "name": "campussphere-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "CampusSphere API — Node/Express backend (migration from Django).",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=.env src/server.ts",
+    "dev:test": "DISABLE_RATE_LIMITS=1 tsx watch --env-file-if-exists=.env src/server.ts",
+    "build": "tsc --project tsconfig.build.json",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit",
+    "test:contract": "vitest run",
+    "test:contract:watch": "vitest",
+    "test:defects": "vitest run --config vitest.integration.config.ts",
+    "prisma:validate": "prisma validate",
+    "prisma:format": "prisma format",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev"
+  },
+  "devDependencies": {
+    "@types/adm-zip": "^0.5.8",
+    "@types/archiver": "^8.0.0",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/multer": "^2.2.0",
+    "@types/node": "^22.16.5",
+    "@types/nodemailer": "^8.0.1",
+    "@types/ws": "^8.18.1",
+    "prisma": "^5.22.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.8.3",
+    "vitest": "^2.1.8"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1105.0",
+    "@node-rs/argon2": "^2.0.2",
+    "@prisma/client": "^5.22.0",
+    "adm-zip": "^0.6.0",
+    "archiver": "^8.0.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "ioredis": "^6.0.0",
+    "jose": "^6.2.8",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.2.0",
+    "nodemailer": "^9.0.5",
+    "ws": "^8.21.3",
+    "zod": "^3.25.76"
+  }
+}

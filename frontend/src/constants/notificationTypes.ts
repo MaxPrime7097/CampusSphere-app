@@ -1,3 +1,5 @@
+// [BE-MIGRATION FE-01] Node backend emits 3 types missing here: "mention_post",
+// "mention_comment", "verification_status". Add them. — documentation/FRONTEND_CHANGES.md
 export const CANONICAL_NOTIFICATION_TYPES = [
   "post_like",
   "post_comment",

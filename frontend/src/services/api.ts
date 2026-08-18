@@ -166,6 +166,9 @@ export async function verifyStudentStatus(matricule: string, cardImage: File) {
   return response;
 }
 
+// [BE-MIGRATION FE-10] Set VITE_API_URL in every deploy. The fallbacks below are
+// stale: 127.0.0.1:8000 is Django's port (the Node backend dev server is :3000), and
+// the two hardcoded hosts are guesses. — documentation/FRONTEND_CHANGES.md
 const getDetectedApiUrl = (): string => {
   if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
   const { hostname } = window.location;
@@ -931,6 +934,9 @@ export async function getConnectionRecommendations(token?: string) {
 // SPHERES
 // ============================================================================
 
+// [BE-MIGRATION FE-03] Three call sites pass { my_spheres: "true" }, which Django silently ignored —
+// they have been listing every sphere, not the user's. The Node backend honours the param, so those
+// call sites start behaving as intended with no change here. — documentation/FRONTEND_CHANGES.md
 export async function listSpheres(params?: Record<string, string | number>, token?: string) {
   const query = params
     ? `?${new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)]))}`
@@ -2268,7 +2274,13 @@ export async function apiInfo() {
 // ============================================================================
 // STUDY TOOLS (Assistant IA de révision)
 // ============================================================================
+// [BE-MIGRATION FE-06] The 8 functions below call the legacy `api/study/` alias. The Node backend
+// keeps the alias, so this is non-breaking, but `api/sphera/` is canonical — src/sphera/services/
+// spheraService.ts already uses it. Migrate when convenient. — documentation/FRONTEND_CHANGES.md
 
+// [BE-MIGRATION FE-02] Node backend accepts `resource_id` OR `sphere_file_id` (exactly one).
+// Add an optional sphereFileId arg and send it instead of resource_id when the source is a
+// sphere file. — documentation/FRONTEND_CHANGES.md
 export async function generateStudyTools(
   resourceId: string | number,
   toolTypes: ("fiche" | "quiz" | "flashcards")[]

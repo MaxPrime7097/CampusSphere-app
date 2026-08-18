@@ -1,5 +1,18 @@
 # Ajuster les limites d’envoi email Supabase (signup / resend)
 
+## Périmètre : deux canaux d’email distincts
+
+Ce document ne concerne **que les emails d’authentification envoyés par Supabase** (vérification
+d’inscription, renvoi, réinitialisation de mot de passe). Leurs quotas se règlent dans le
+dashboard Supabase et le backend n’a aucune prise dessus.
+
+Le backend dispose par ailleurs de son **propre canal SMTP**
+([`backend/src/services/email.ts`](../backend/src/services/email.ts)), utilisé pour les emails
+transactionnels de l’application. Il est **inactif tant que `EMAIL_HOST_USER` et
+`EMAIL_HOST_PASSWORD` ne sont pas tous deux renseignés** : Django embarquait des valeurs
+placeholder, si bien qu’aucun email applicatif n’a jamais été envoyé. Ce canal a ses propres
+limites — celles du fournisseur SMTP — sans rapport avec les quotas Supabase ci-dessous.
+
 ## Pourquoi
 
 L’UI applique déjà :

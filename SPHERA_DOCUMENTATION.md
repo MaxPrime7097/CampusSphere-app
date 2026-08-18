@@ -105,7 +105,7 @@ Le système de génération de PDF (`useDownloadPDF.ts`) a été entièrement re
 
 ## 4. Guide de Déploiement en Production
 
-Le déploiement de Sphera V2 nécessite la configuration correcte des applications frontend et de l'API backend Django partagée.
+Le déploiement de Sphera V2 nécessite la configuration correcte des applications frontend et de l'API backend partagée (Node/Express).
 
 ```
                    ┌──────────────────────────────────────────────┐
@@ -123,23 +123,34 @@ Le déploiement de Sphera V2 nécessite la configuration correcte des applicatio
                                           │  Partage des Tokens JWT
                                           ▼
                                ┌─────────────────────┐
-                               │   BACKEND DJANGO    │
+                               │  BACKEND NODE/EXPRESS│
                                │  api.campussphere   │
                                └─────────────────────┘
 ```
 
-### Étape 1 : Configuration CORS sur le Backend Django
-Pour que l'application standalone Sphera puisse effectuer des appels d'API vers l'application Django principale sous son propre domaine/sous-domaine, le backend doit autoriser son origine.
+### Étape 1 : Configuration CORS sur le Backend
+Pour que l'application standalone Sphera puisse effectuer des appels d'API sous son propre
+sous-domaine, le backend doit autoriser son origine.
 
-Dans le fichier `settings.py` de Django :
-```python
-CORS_ALLOWED_ORIGINS = [
-    "https://campussphere.app",
-    "https://sphera.campussphere.app",
-    # En local :
-    "http://localhost:5173",
-    "http://localhost:4173",
-]
+**En production, aucune action n'est requise.** Les origines par défaut du backend sont :
+
+```
+http://localhost:5173, http://localhost:8080,
+https://campussphere.app, https://www.campussphere.app, https://sphera.campussphere.app
+```
+
+Laisser `CORS_ALLOWED_ORIGINS` **non renseignée** pour en bénéficier — vérifié contre un serveur
+en marche.
+
+⚠️ **En local, `http://localhost:4173` n'y figure pas.** C'est le port de `vite preview` utilisé
+par l'app Sphera standalone (voir `VITE_SPHERA_STANDALONE_URL`), et ses requêtes seront donc
+bloquées par le navigateur tant que l'origine n'est pas ajoutée.
+
+La variable d'environnement **remplace entièrement** les défauts, elle ne s'y ajoute pas : il
+faut donc lister *toutes* les origines voulues, pas seulement celle qui manque.
+
+```env
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:8080,http://localhost:4173,https://campussphere.app,https://www.campussphere.app,https://sphera.campussphere.app
 ```
 
 ### Étape 2 : Compilation & Build
@@ -168,11 +179,11 @@ Chaque application doit être compilée de manière indépendante pour la produc
 Configurez les variables d'environnement sur vos plateformes de déploiement (ex: Vercel, Render) :
 
 ### Pour l'application principale CampusSphere (Frontend) :
-* `VITE_API_URL` : L'adresse URL de l'API de votre serveur Django de production (ex: `https://api.campussphere.app`).
+* `VITE_API_URL` : L'adresse URL de l'API backend de production (ex: `https://api.campussphere.app`). Toujours la définir explicitement — voir [FRONTEND_CHANGES.md](./documentation/FRONTEND_CHANGES.md) `FE-10`.
 * `VITE_SPHERA_STANDALONE_URL` : L'URL de production de l'application Sphera standalone (ex: `https://sphera.campussphere.app`).
 
 ### Pour l'application standalone Sphera :
-* `VITE_API_URL` : L'adresse URL de l'API Django partagée (ex: `https://api.campussphere.app`).
+* `VITE_API_URL` : L'adresse URL de l'API backend partagée (ex: `https://api.campussphere.app`).
 
 ---
 *Documentation rédigée le 28 mai 2026 pour le projet CampusSphere V2.*
