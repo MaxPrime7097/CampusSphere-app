@@ -33,7 +33,7 @@ RUN npm ci --include=dev
 COPY prisma ./prisma
 RUN npx prisma generate
 
-COPY tsconfig.json ./
+COPY tsconfig.json tsconfig.build.json ./
 COPY src ./src
 RUN npx tsc --project tsconfig.build.json
 
