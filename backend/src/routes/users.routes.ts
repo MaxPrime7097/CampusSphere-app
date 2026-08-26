@@ -697,16 +697,21 @@ usersRouter.post("/me/verify/", requireAuth, singleUpload("card_image", "avatar"
     select: { ...userSelect, isVerified: true, university: true },
   });
 
-  const analysis = await analyseStudentCard(
-    card.buffer,
-    card.mimetype,
-    `${user.firstName} ${user.lastName}`.trim() || user.username,
-    user.university,
-  );
+  let analysis = { verified: false };
+  try {
+    analysis = await analyseStudentCard(
+      card.buffer,
+      card.mimetype,
+      `${user.firstName} ${user.lastName}`.trim() || user.username,
+      user.university,
+    );
 
-  if (analysis.verified && !user.isVerified) {
-    await prisma.user.update({ where: { id: me.id }, data: { isVerified: true } });
-    await notifyVerificationStatus(me.id, true);
+    if (analysis.verified && !user.isVerified) {
+      await prisma.user.update({ where: { id: me.id }, data: { isVerified: true } });
+      await notifyVerificationStatus(me.id, true);
+    }
+  } catch (err) {
+    console.error("AI verification failed, falling back to manual:", err);
   }
 
   ok(res, {
