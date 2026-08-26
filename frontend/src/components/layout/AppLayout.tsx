@@ -182,22 +182,22 @@ export function AppLayout({ children }: AppLayoutProps) {
           {!hideNavOnMobile && <MobileTopBar user={user} isLoading={isProfileLoading} />}
           
           {/* Desktop Top Navigation - Fixed */}
-          <header className="hidden md:flex h-16 w-full border-b bg-card/50 backdrop-blur-sm fixed top-0 right-0 left-0 z-40">
+          <header className="hidden md:flex h-14 w-full border-b border-border/60 bg-card/80 backdrop-blur-md fixed top-0 right-0 left-0 z-40">
             <div className="flex items-center justify-between px-4 h-full w-full">
-              <div className="flex items-center gap-4">
-                <SidebarTrigger className="hover:bg-accent" />
-                <button onClick={() => navigate(`/`)} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                  <img src="/CS.svg" alt="Logo CampusSphere" className="h-10 w-10"/>
-                  <span className="text-2xl font-bold campus-gradient bg-clip-text text-transparent font-automata">
+              <div className="flex items-center gap-3">
+                <SidebarTrigger className="hover:bg-accent text-muted-foreground hover:text-foreground" />
+                <button onClick={() => navigate(`/`)} className="flex items-center gap-2 hover:opacity-75 transition-opacity">
+                  <img src="/CS.svg" alt="Logo CampusSphere" className="h-8 w-8"/>
+                  <span className="text-xl font-bold campus-gradient-text font-automata tracking-wide">
                     CampusSphere
                   </span>
                 </button>
-                <form onSubmit={handleSearch} className="pl-10 flex items-center gap-2 flex-1 max-w-md relative">
+                <form onSubmit={handleSearch} className="pl-8 flex items-center gap-2 flex-1 max-w-sm relative">
                   <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                      placeholder="Rechercher..." 
-                      className="pl-10 bg-background/50 focus-visible:ring-primary/50"
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
+                    <Input
+                      placeholder="Rechercher..."
+                      className="pl-9 h-8 text-sm bg-muted/50 border-0 focus-visible:ring-1 focus-visible:ring-primary/40 rounded-[var(--radius-sm)]"
                       value={searchQuery}
                       onChange={(e) => {
                         setSearchQuery(e.target.value);
@@ -207,23 +207,23 @@ export function AppLayout({ children }: AppLayoutProps) {
                         if (searchQuery.length > 0) setIsSearchDropdownVisible(true);
                       }}
                     />
-                    <SearchDropdown 
-                      query={searchQuery} 
-                      isVisible={isSearchDropdownVisible} 
-                      onClose={() => setIsSearchDropdownVisible(false)} 
+                    <SearchDropdown
+                      query={searchQuery}
+                      isVisible={isSearchDropdownVisible}
+                      onClose={() => setIsSearchDropdownVisible(false)}
                     />
                   </div>
                 </form>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 {isAuthenticated && (
                   <>
                     {isVerified ? (
                       <>
-                        <Button variant="outline" size="sm" onClick={() => setIsCreatePostModalOpen(true)}>
-                          <Plus className="h-4 w-4 mr-2" />
-                          Nouveau post
+                        <Button variant="ghost" size="sm" onClick={() => setIsCreatePostModalOpen(true)} className="text-muted-foreground hover:text-foreground">
+                          <Plus className="h-4 w-4 mr-1.5" />
+                          Publier
                         </Button>
                         {isCreatePostModalOpen && (
                           <Suspense fallback={<ModalLoadingFallback />}>
@@ -235,23 +235,23 @@ export function AppLayout({ children }: AppLayoutProps) {
                         )}
                       </>
                     ) : (
-                      <Button variant="outline" size="sm" onClick={(e) => handleCreateAction(e as any, () => {})}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Nouveau post
+                      <Button variant="ghost" size="sm" onClick={(e) => handleCreateAction(e as any, () => {})} className="text-muted-foreground hover:text-foreground">
+                        <Plus className="h-4 w-4 mr-1.5" />
+                        Publier
                       </Button>
                     )}
 
-                    <Button variant="ghost" size="sm" onClick={() => navigate('/notifications')} className="relative">
+                    <Button variant="ghost" size="icon-sm" onClick={() => navigate('/notifications')} className="relative text-muted-foreground hover:text-foreground">
                       <Bell className="h-4 w-4" />
                       {counts.notifications > 0 && (
-                        <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-0.5">
+                        <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-primary text-primary-foreground text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">
                           {counts.notifications > 99 ? "99+" : counts.notifications}
                         </span>
                       )}
                     </Button>
                   </>
                 )}
-                
+
                 <ProfileBubble user={user} isLoading={isProfileLoading} />
               </div>
             </div>
