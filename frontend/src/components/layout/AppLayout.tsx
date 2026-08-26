@@ -100,6 +100,11 @@ export function AppLayout({ children }: AppLayoutProps) {
       socket.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
+          
+          if (data.type === "connected") {
+            return;
+          }
+
           toast({
             title: data.title || "Nouvelle notification",
             description: data.message,

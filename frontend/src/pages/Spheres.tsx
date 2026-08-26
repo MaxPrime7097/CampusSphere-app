@@ -60,6 +60,7 @@ export function Spheres() {
   const userSpheresQuery = useQuery({
     queryKey: ["user-spheres"],
     queryFn: getUserSpheres,
+    enabled: Boolean(currentUser?.id),
     staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
