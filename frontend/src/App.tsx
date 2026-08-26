@@ -43,6 +43,8 @@ const Terms = lazy(() => import("./pages/public/Terms").then(m => ({ default: m.
 const Connections = lazy(() => import("./pages/Connections").then(m => ({ default: m.Connections })));
 const SpheraHome = lazy(() => import("./sphera/pages/SpheraHome").then(m => ({ default: m.SpheraHome })));
 const SpheraSSORedirect = lazy(() => import("./sphera/pages/SpheraSSORedirect").then(m => ({ default: m.SpheraSSORedirect })));
+const SSOBridge = lazy(() => import("./pages/sso/SSOBridge").then(m => ({ default: m.SSOBridge })));
+const SSOPopup = lazy(() => import("./pages/sso/SSOPopup").then(m => ({ default: m.SSOPopup })));
 const StudySessionDetail = lazy(() => import("./sphera/pages/StudySessionDetail").then(m => ({ default: m.StudySessionDetail })));
 const AnnaleDetail = lazy(() => import("./sphera/pages/AnnaleDetail").then(m => ({ default: m.AnnaleDetail })));
 const CommunityGuidelines = lazy(() => import("./pages/public/CommunityGuidelines").then(m => ({ default: m.CommunityGuidelines })));
@@ -141,6 +143,10 @@ const App = () => (
             <Route path="/register/complete" element={<CompleteProfile />} />
             <Route path="/complete-profile" element={<CompleteProfile />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
+
+            {/* SSO endpoints for Sphera cross-app authentication */}
+            <Route path="/sso/bridge" element={<SSOBridge />} />
+            <Route path="/sso/popup" element={<SSOPopup />} />
 
             {/* Protected routes with layout */}
             <Route path="/" element={
