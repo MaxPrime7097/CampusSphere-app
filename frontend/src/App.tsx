@@ -42,6 +42,7 @@ const Privacy = lazy(() => import("./pages/public/Privacy").then(m => ({ default
 const Terms = lazy(() => import("./pages/public/Terms").then(m => ({ default: m.Terms })));
 const Connections = lazy(() => import("./pages/Connections").then(m => ({ default: m.Connections })));
 const SpheraHome = lazy(() => import("./sphera/pages/SpheraHome").then(m => ({ default: m.SpheraHome })));
+const SpheraSSORedirect = lazy(() => import("./sphera/pages/SpheraSSORedirect").then(m => ({ default: m.SpheraSSORedirect })));
 const StudySessionDetail = lazy(() => import("./sphera/pages/StudySessionDetail").then(m => ({ default: m.StudySessionDetail })));
 const AnnaleDetail = lazy(() => import("./sphera/pages/AnnaleDetail").then(m => ({ default: m.AnnaleDetail })));
 const CommunityGuidelines = lazy(() => import("./pages/public/CommunityGuidelines").then(m => ({ default: m.CommunityGuidelines })));
@@ -256,6 +257,11 @@ const App = () => (
                 <AppLayout>
                   <SpheraHome />
                 </AppLayout>
+              </Protected>
+            } />
+            <Route path="/sphera/sso" element={
+              <Protected>
+                <SpheraSSORedirect />
               </Protected>
             } />
             <Route path="/sphera/sessions/:id" element={

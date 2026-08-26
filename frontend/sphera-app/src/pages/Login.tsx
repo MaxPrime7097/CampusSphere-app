@@ -97,6 +97,26 @@ export default function Login() {
           </button>
         </form>
         
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-sphera-border"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-sphera-bg text-sphera-text-muted">Ou</span>
+          </div>
+        </div>
+
+        <button
+          onClick={() => {
+            const isLocal = ["localhost", "127.0.0.1"].some((host) => window.location.hostname.includes(host));
+            const csUrl = isLocal ? "http://localhost:5173" : "https://campussphere.app";
+            window.location.href = `${csUrl}/login?next=/sphera/sso`;
+          }}
+          className="w-full bg-white text-black hover:bg-gray-200 font-medium py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-sm"
+        >
+          Se connecter avec CampusSphere
+        </button>
+
         <p className="text-center text-sm text-sphera-text-muted mt-6">
           Pas encore de compte ? <Link to="/register" className="text-sphera-green hover:underline">S'inscrire</Link>
         </p>

@@ -27,6 +27,9 @@ export function Login() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({ email: "", password: "", rememberMe: false });
 
+  const searchParams = new URLSearchParams(window.location.search);
+  const nextUrl = searchParams.get("next") || "/";
+
   const loginSchema = z.object({
     email: z.string().min(1, "L'email est requis").email("Format d'email invalide"),
     password: z.string().min(1, "Le mot de passe est requis"),
@@ -58,7 +61,7 @@ export function Login() {
       }
 
       toast({ title: "Connexion réussie !", duration: 2000 });
-      navigate("/");
+      navigate(nextUrl);
     } catch (err: any) {
       const msg = err?.message || "Une erreur est survenue";
       toast({ title: "Erreur de connexion", description: msg, variant: "destructive", duration: 5000 });
