@@ -195,21 +195,21 @@ export function Resources() {
 
   const types = [{ value: "all", label: "Tous types" }, ...RESOURCE_TYPE_OPTIONS];
 
+  const savedResourcesQuery = useQuery({
+    queryKey: ["saved-resources"],
+    queryFn: getSavedResources,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  });
+
   useEffect(() => {
-    let isMounted = true;
-    (async () => {
-      try {
-        const saved = await getSavedResources();
-        if (isMounted && saved) {
-          const savedIds = new Set(saved.map((r: any) => String(r.id || r.resource_id)));
-          setSavedResources(savedIds);
-        }
-      } catch (e) {}
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    if (savedResourcesQuery.data) {
+      const savedIds = new Set(savedResourcesQuery.data.map((r: any) => String(r.id || r.resource_id)));
+      setSavedResources(savedIds);
+    }
+  }, [savedResourcesQuery.data]);
 
   const filteredResources = resources.filter((resource) => {
     const matchesSearch =

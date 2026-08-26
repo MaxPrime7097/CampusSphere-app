@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Helmet } from "react-helmet-async";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { deleteResource, downloadResource, getResource, getResourcePreviewUrl, reportResource, saveResource, trackResourceShare, updateResource, listFolders, updateFolder, type ResourceFolder } from "@/services/api";
@@ -119,112 +120,115 @@ export function ResourceDetail() {
   const EmptyField = () => <span className="italic text-muted-foreground text-xs font-normal">Aucun</span>;
 
   // Load resource from API
+  const resourceQuery = useQuery({
+    queryKey: ["resource", id],
+    queryFn: () => getResource(id!),
+    enabled: Boolean(id),
+    staleTime: 60 * 1000,
+  });
+
   useEffect(() => {
     if (!id) return;
-
     let isMounted = true;
-    (async () => {
-      try {
-        const data = await getResource(id);
-        if (isMounted && data) {
-          logResourceDetailDebug("received_api_resource", {
-            resourceId: id,
-            type: data.type,
-            subject: data.subject,
-            tags: data.tags,
-            author: data.author,
-            author_name: data.author_name,
-            author_username: data.author_username,
-          });
 
-          const author = data.author ?? null;
-          const uploaderContributions =
-            author?.contributions_count ??
-            author?.stats?.contributions ??
-            0;
+    if (resourceQuery.data) {
+      const data = resourceQuery.data;
+      logResourceDetailDebug("received_api_resource", {
+        resourceId: id,
+        type: data.type,
+        subject: data.subject,
+        tags: data.tags,
+        author: data.author,
+        author_name: data.author_name,
+        author_username: data.author_username,
+      });
 
-          const resourcePayload = {
-            id: String(data.id),
-            title: data.title,
-            description: data.description || '',
-            subject: normalizeSubject(data.subject),
-            category: normalizeCategory(data.category),
-            type: normalizeResourceType(data.type),
-            format: (data.fileUrl || data.file)?.toString().split('.').pop(),
-            size: data.fileSize || data.file_size || data.size,
-            level: normalizeAudience(data.level || data.audience || data.courseLevel),
-            pages: data.pages || data.page_count || 0,
-            uploader: {
-              name: author?.name || data.author_name || "Utilisateur",
-              username: author?.username || data.author_username || "",
-              avatar: author?.avatar || "/placeholder-avatar.jpg",
-              verified: author?.isVerified || author?.is_verified || false,
-              level: author?.level || "",
-              contributions: Number.isFinite(Number(uploaderContributions))
-                ? Number(uploaderContributions)
-                : 0,
-            },
-            uploadDate: data.createdAt || data.created_at || data.uploaded_at || null,
-            stats: {
-              downloads: data.downloadCount || data.download_count || data.stats?.downloads || 0,
-              saves: data.saves || data.stats?.saves || data.saves_count || 0,
-              views: data.viewCount || data.view_count || data.stats?.views || 0
-            },
-            isSaved: data.isSaved ?? data.is_saved ?? false,
-            canEdit: data.canEdit ?? data.can_edit ?? false,
-            canDelete: data.canDelete ?? data.can_delete ?? false,
-            fileUrl: data.fileUrl || data.file_url || data.file || "",
-            fileName: data.fileName || data.file_name || "",
-            mimeType: data.mimeType || data.mime_type || data.contentType || data.content_type || "",
-            impactScore: data.impactScore || data.impact_score || 0,
-            tags: data.tags || [],
-            relatedCourse: normalizeSubject(data.subject)
-          };
+      const author = data.author ?? null;
+      const uploaderContributions =
+        author?.contributions_count ??
+        author?.stats?.contributions ??
+        0;
 
-          logResourceDetailDebug("normalized_resource_payload", {
-            resourceId: id,
-            type: resourcePayload.type,
-            subject: resourcePayload.subject,
-            tags: resourcePayload.tags,
-            uploader: {
-              name: resourcePayload.uploader.name,
-              username: resourcePayload.uploader.username,
-              avatar: resourcePayload.uploader.avatar,
-              verified: resourcePayload.uploader.verified,
-              level: resourcePayload.uploader.level,
-              contributions: resourcePayload.uploader.contributions,
-            },
-          });
+      const resourcePayload = {
+        id: String(data.id),
+        title: data.title,
+        description: data.description || "",
+        subject: normalizeSubject(data.subject),
+        category: normalizeCategory(data.category),
+        type: normalizeResourceType(data.type),
+        format: (data.fileUrl || data.file)?.toString().split(".").pop(),
+        size: data.fileSize || data.file_size || data.size,
+        level: normalizeAudience(data.level || data.audience || data.courseLevel),
+        pages: data.pages || data.page_count || 0,
+        uploader: {
+          name: author?.name || data.author_name || "Utilisateur",
+          username: author?.username || data.author_username || "",
+          avatar: author?.avatar || "/placeholder-avatar.jpg",
+          verified: author?.isVerified || author?.is_verified || false,
+          level: author?.level || "",
+          contributions: Number.isFinite(Number(uploaderContributions))
+            ? Number(uploaderContributions)
+            : 0,
+        },
+        uploadDate: data.createdAt || data.created_at || data.uploaded_at || null,
+        stats: {
+          downloads: data.downloadCount || data.download_count || data.stats?.downloads || 0,
+          saves: data.saves || data.stats?.saves || data.saves_count || 0,
+          views: data.viewCount || data.view_count || data.stats?.views || 0
+        },
+        isSaved: data.isSaved ?? data.is_saved ?? false,
+        canEdit: data.canEdit ?? data.can_edit ?? false,
+        canDelete: data.canDelete ?? data.can_delete ?? false,
+        fileUrl: data.fileUrl || data.file_url || data.file || "",
+        fileName: data.fileName || data.file_name || "",
+        mimeType: data.mimeType || data.mime_type || data.contentType || data.content_type || "",
+        impactScore: data.impactScore || data.impact_score || 0,
+        tags: data.tags || [],
+        relatedCourse: normalizeSubject(data.subject)
+      };
 
-          setResource(resourcePayload);
-          setIsSaved(resourcePayload.isSaved);
-          setDraftTitle(resourcePayload.title);
-          setDraftDescription(resourcePayload.description || "");
+      logResourceDetailDebug("normalized_resource_payload", {
+        resourceId: id,
+        type: resourcePayload.type,
+        subject: resourcePayload.subject,
+        tags: resourcePayload.tags,
+        uploader: {
+          name: resourcePayload.uploader.name,
+          username: resourcePayload.uploader.username,
+          avatar: resourcePayload.uploader.avatar,
+          verified: resourcePayload.uploader.verified,
+          level: resourcePayload.uploader.level,
+          contributions: resourcePayload.uploader.contributions,
+        },
+      });
 
-          // If owner, load folders and set current folder
-          if (resourcePayload.canEdit) {
-            listFolders().then((foldersData) => {
-              if (isMounted) {
-                setFolders(foldersData);
-                // Get folder_id from raw data
-                const rawFolderId = (data as any).folder_id ?? (data as any).folder ?? null;
-                setCurrentFolderId(rawFolderId ? String(rawFolderId) : "none");
-              }
-            }).catch(() => null);
+      setResource(resourcePayload);
+      setIsSaved(resourcePayload.isSaved);
+      setDraftTitle(resourcePayload.title);
+      setDraftDescription(resourcePayload.description || "");
+
+      // If owner, load folders and set current folder
+      if (resourcePayload.canEdit) {
+        listFolders().then((foldersData) => {
+          if (isMounted) {
+            setFolders(foldersData);
+            const rawFolderId = (data as any).folder_id ?? (data as any).folder ?? null;
+            setCurrentFolderId(rawFolderId ? String(rawFolderId) : "none");
           }
-        }
-      } catch (e: any) {
-        toast({
-          title: "Erreur",
-          description: e?.message || "Impossible de charger la ressource",
-          variant: "destructive",
-        });
+        }).catch(() => null);
       }
-    })();
+    } else if (resourceQuery.error) {
+      toast({
+        title: "Erreur",
+        description: (resourceQuery.error as any)?.message || "Impossible de charger la ressource",
+        variant: "destructive",
+      });
+    }
+
     return () => {
       isMounted = false;
     };
-  }, [id]);
+  }, [id, resourceQuery.data, resourceQuery.error, toast]);
 
   useEffect(() => {
     if (!id || !isPreviewMode) {

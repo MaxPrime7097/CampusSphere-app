@@ -1,4 +1,5 @@
 import { Suspense, lazy, useState, useEffect, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   getSphere, listSphereMembers, listSphereTasks, joinSphere,
@@ -152,89 +153,136 @@ export function SphereDetail() {
   });
 
   // ==================== DATA LOADING ====================
+  const sphereQuery = useQuery({
+    queryKey: ["sphere", id],
+    queryFn: () => getSphere(String(id)),
+    enabled: Boolean(id),
+    staleTime: 60 * 1000,
+  });
+
+  const membersQuery = useQuery({
+    queryKey: ["sphere-members", id],
+    queryFn: () => listSphereMembers(String(id)),
+    enabled: Boolean(id),
+    staleTime: 60 * 1000,
+  });
+
+  const tasksQuery = useQuery({
+    queryKey: ["sphere-tasks", id],
+    queryFn: () => listSphereTasks(String(id)),
+    enabled: Boolean(id),
+    staleTime: 60 * 1000,
+    retry: false,
+  });
+
+  const filesQuery = useQuery({
+    queryKey: ["sphere-files", id],
+    queryFn: () => getSphereFiles(String(id)),
+    enabled: Boolean(id),
+    staleTime: 60 * 1000,
+  });
+
   const loadSphereData = async () => {
-    try {
-      setLoading(true);
-      setLoadError(null);
-      setTaskState("ready");
-
-      const [sphereData, rawMembersData] = await Promise.all([
-        getSphere(String(id)),
-        listSphereMembers(String(id)),
-      ]);
-
-      setCurrentUserId(currentUser?.id ? String(currentUser.id) : null);
-      setSphere(sphereData);
-
-      // listSphereMembers retourne apiFetch<any[]> sans unwrap — normaliser ici
-      const membersData: any[] = Array.isArray(rawMembersData)
-        ? rawMembersData
-        : Array.isArray((rawMembersData as any)?.data)
-          ? (rawMembersData as any).data
-          : Array.isArray((rawMembersData as any)?.results)
-            ? (rawMembersData as any).results
-            : [];
-
-      setSphere(sphereData);
-
-      const mappedMembers = (membersData || []).map((m: any) => ({
-        id: String(m.id),           // ID de la ligne SphereMember (pour les actions API)
-        userId: String(m.user_info?.id ?? m.user ?? ""), // ID utilisateur (pour les comparaisons)
-        user_info: m.user_info,
-        role: normalizeRole(m.role || m.role_display || 'member'),
-        status: m.status || 'active',
-        name: m.user_info?.name || `${m.user_info?.first_name || ''} ${m.user_info?.last_name || ''}`.trim() || 'Unknown',
-        username: m.user_info?.username || 'unknown',
-        avatar: m.user_info?.avatar || '/placeholder-avatar.jpg',
-        isVerified: Boolean(m.user_info?.is_verified ?? m.user_info?.isVerified),
-        isCreator: String(sphereData?.created_by_info?.id) === String(m.user_info?.id ?? m.user ?? ""),
-      }));
-
-      setMembers(mappedMembers.filter((m: any) => m.status === 'active'));
-      setPendingMembers(mappedMembers.filter((m: any) => m.status === 'pending'));
-      setTasks([]);
-
-      // Membership state logic
-      const isMemberFromServer = sphereData?.is_member ?? sphereData?.isMember ?? false;
-      const membershipStatusFromServer = sphereData?.membership_status ?? sphereData?.membershipStatus ?? null;
-      const currentUserMember = mappedMembers.find(
-        (m: any) => m.userId && m.userId !== "" && String(m.userId) === String(currentUser?.id)
-      );
-
-      const resolvedIsMember =
-        isMemberFromServer ||
-        Boolean(currentUserMember && currentUserMember.status === 'active');
-
-      const resolvedIsPending =
-        membershipStatusFromServer === 'pending' ||
-        Boolean(currentUserMember && currentUserMember.status === 'pending');
-
-      setIsMember(resolvedIsMember);
-      setIsPendingRequest(!resolvedIsMember && resolvedIsPending);
-
-      try {
-        const tasksData = await listSphereTasks(String(id));
-        setTasks((tasksData || []).map(mapTask));
-        setTaskState("ready");
-      } catch (taskError: any) {
-        // ApiRequestError (apiFetch) expose .status directement, pas .response.status
-        const errStatus: number = Number(taskError?.status ?? taskError?.response?.status ?? 0);
-        setTasks([]);
-        setTaskState(errStatus === 403 ? "forbidden" : "server_error");
-      }
-
-      // Ressources de la sphère
-      getSphereFiles(String(id)).then(setResources).catch(() => setResources([]));
-    } catch (e: any) {
-      setLoadError(e?.message || "Erreur de chargement");
-    } finally {
-      setLoading(false);
-    }
+    // For manual refreshes after mutations
+    await Promise.all([
+      sphereQuery.refetch(),
+      membersQuery.refetch(),
+      tasksQuery.refetch(),
+      filesQuery.refetch(),
+    ]);
   };
 
   useEffect(() => {
-    if (id) void loadSphereData();
-  }, [id, currentUser?.id]);
+    if (!id) return;
+    
+    // We only consider the page fully "loaded" when the main sphere data and members are fetched or failed
+    const isFetchingMain = sphereQuery.isLoading || membersQuery.isLoading;
+    if (isFetchingMain) {
+      setLoading(true);
+      return;
+    }
+
+    if (sphereQuery.error) {
+      setLoadError((sphereQuery.error as any)?.message || "Erreur de chargement");
+      setLoading(false);
+      return;
+    }
+
+    setLoading(false);
+    setLoadError(null);
+
+    const sphereData = sphereQuery.data;
+    const rawMembersData = membersQuery.data;
+
+    setCurrentUserId(currentUser?.id ? String(currentUser.id) : null);
+    setSphere(sphereData);
+
+    const membersData: any[] = Array.isArray(rawMembersData)
+      ? rawMembersData
+      : Array.isArray((rawMembersData as any)?.data)
+        ? (rawMembersData as any).data
+        : Array.isArray((rawMembersData as any)?.results)
+          ? (rawMembersData as any).results
+          : [];
+
+    const mappedMembers = (membersData || []).map((m: any) => ({
+      id: String(m.id),           // ID de la ligne SphereMember (pour les actions API)
+      userId: String(m.user_info?.id ?? m.user ?? ""), // ID utilisateur (pour les comparaisons)
+      user_info: m.user_info,
+      role: normalizeRole(m.role || m.role_display || 'member'),
+      status: m.status || 'active',
+      name: m.user_info?.name || `${m.user_info?.first_name || ''} ${m.user_info?.last_name || ''}`.trim() || 'Unknown',
+      username: m.user_info?.username || 'unknown',
+      avatar: m.user_info?.avatar || '/placeholder-avatar.jpg',
+      isVerified: Boolean(m.user_info?.is_verified ?? m.user_info?.isVerified),
+      isCreator: String(sphereData?.created_by_info?.id) === String(m.user_info?.id ?? m.user ?? ""),
+    }));
+
+    setMembers(mappedMembers.filter((m: any) => m.status === 'active'));
+    setPendingMembers(mappedMembers.filter((m: any) => m.status === 'pending'));
+
+    // Membership state logic
+    const isMemberFromServer = sphereData?.is_member ?? sphereData?.isMember ?? false;
+    const membershipStatusFromServer = sphereData?.membership_status ?? sphereData?.membershipStatus ?? null;
+    const currentUserMember = mappedMembers.find(
+      (m: any) => m.userId && m.userId !== "" && String(m.userId) === String(currentUser?.id)
+    );
+
+    const resolvedIsMember =
+      isMemberFromServer ||
+      Boolean(currentUserMember && currentUserMember.status === 'active');
+
+    const resolvedIsPending =
+      membershipStatusFromServer === 'pending' ||
+      Boolean(currentUserMember && currentUserMember.status === 'pending');
+
+    setIsMember(resolvedIsMember);
+    setIsPendingRequest(!resolvedIsMember && resolvedIsPending);
+
+    // Tasks Sync
+    if (tasksQuery.data) {
+      setTasks((tasksQuery.data || []).map(mapTask));
+      setTaskState("ready");
+    } else if (tasksQuery.error) {
+      const errStatus: number = Number((tasksQuery.error as any)?.status ?? (tasksQuery.error as any)?.response?.status ?? 0);
+      setTasks([]);
+      setTaskState(errStatus === 403 ? "forbidden" : "server_error");
+    }
+
+    // Files Sync
+    if (filesQuery.data) {
+      setResources(filesQuery.data);
+    } else if (filesQuery.error) {
+      setResources([]);
+    }
+
+  }, [
+    id, currentUser?.id, 
+    sphereQuery.data, sphereQuery.isLoading, sphereQuery.error,
+    membersQuery.data, membersQuery.isLoading, membersQuery.error,
+    tasksQuery.data, tasksQuery.error,
+    filesQuery.data, filesQuery.error
+  ]);
 
   // ==================== COMPUTED ====================
   const sphereFallback = useMemo(() => sphere || {

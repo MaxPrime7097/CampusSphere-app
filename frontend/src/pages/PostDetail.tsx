@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Helmet } from "react-helmet-async";
 import { useParams, useNavigate } from "react-router-dom";
 import { getPost } from "@/services/api";
@@ -18,29 +19,29 @@ export function PostDetail() {
   const [post, setPost] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  const postQuery = useQuery({
+    queryKey: ["post", id],
+    queryFn: () => getPost(id!),
+    enabled: Boolean(id),
+    staleTime: 60 * 1000,
+  });
+
   useEffect(() => {
-    if (!id) return;
-    let mounted = true;
-
-    (async () => {
-      try {
-        const data = await getPost(id);
-        if (mounted) setPost(mapPostToCard(data));
-      } catch (error: any) {
-        toast({
-          title: "Erreur",
-          description: error?.message || "Impossible de charger le post",
-          variant: "destructive",
-        });
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
-
-    return () => {
-      mounted = false;
-    };
-  }, [id, toast]);
+    if (postQuery.isLoading) {
+      setLoading(true);
+      return;
+    }
+    if (postQuery.data) {
+      setPost(mapPostToCard(postQuery.data));
+    } else if (postQuery.error) {
+      toast({
+        title: "Erreur",
+        description: (postQuery.error as any)?.message || "Impossible de charger le post",
+        variant: "destructive",
+      });
+    }
+    setLoading(false);
+  }, [postQuery.data, postQuery.isLoading, postQuery.error, toast]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">

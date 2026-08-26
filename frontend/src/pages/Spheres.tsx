@@ -57,6 +57,15 @@ export function Spheres() {
     refetchOnMount: false,
   });
 
+  const userSpheresQuery = useQuery({
+    queryKey: ["user-spheres"],
+    queryFn: getUserSpheres,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  });
+
   // Tab State - Initialized to page1
   const [activeTab, setActiveTab] = useState("page1");
   const debugApiError = (endpoint: string, error: unknown) => {
@@ -67,25 +76,14 @@ export function Spheres() {
   };
 
   useEffect(() => {
-    let isMounted = true;
-    (async () => {
-      try {
-        const userSpheresData = await getUserSpheres();
-
-        if (!isMounted) return;
-
-        if (userSpheresData) {
-          const sphereIds = (userSpheresData || []).map((s: any) => String(s.id));
-          setUserJoinedSpheres(sphereIds);
-          setUserSpheres(userSpheresData || []);
-          setUserSpheresLoadError(null);
-        }
-      } finally {
-        if (isMounted) setLoadingSpheres(false);
-      }
-    })();
-    return () => { isMounted = false; };
-  }, []);
+    if (userSpheresQuery.data) {
+      const userSpheresData = userSpheresQuery.data;
+      const sphereIds = (userSpheresData || []).map((s: any) => String(s.id));
+      setUserJoinedSpheres(sphereIds);
+      setUserSpheres(userSpheresData || []);
+      setUserSpheresLoadError(null);
+    }
+  }, [userSpheresQuery.data]);
 
   useEffect(() => {
     if (spheresQuery.data) {
@@ -97,19 +95,23 @@ export function Spheres() {
     }
   }, [spheresQuery.data, spheresQuery.error]);
 
-  const isSpheresLoading = isAuthLoading || loadingSpheres || spheresQuery.isLoading;
+  const isSpheresLoading = isAuthLoading || userSpheresQuery.isLoading || spheresQuery.isLoading;
 
   const [isLoading, setIsLoading] = useState(false);
   const [isJoining, setIsJoining] = useState<string | null>(null);
 
   const refreshMembershipState = async () => {
-    const [spheresResult, userSpheresData] = await Promise.all([spheresQuery.refetch(), getUserSpheres()]);
+    const [spheresResult, userSpheresResult] = await Promise.all([
+      spheresQuery.refetch(),
+      userSpheresQuery.refetch()
+    ]);
     const spheresData = spheresResult.data || [];
     setAllSpheres(spheresData);
-    const sphereIds = (userSpheresData || []).map((s: any) => String(s.id));
+    const userSpheresData = userSpheresResult.data || [];
+    const sphereIds = userSpheresData.map((s: any) => String(s.id));
     setUserJoinedSpheres(sphereIds);
     setPendingJoinRequests([]);
-    setUserSpheres(userSpheresData || []);
+    setUserSpheres(userSpheresData);
     setUserSpheresLoadError(null);
     setLoadError(null);
   };

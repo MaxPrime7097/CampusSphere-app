@@ -1,4 +1,5 @@
 import { Suspense, lazy, useState, useEffect, useMemo, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { getCurrentUser, getUserByUsername, getUserPosts, uploadAvatar, uploadCoverPhoto, updateUserProfile, getUserConnections, getUserResources, connectWithUser, disconnectFromUser, downloadResource, getUserProfile, getUserConnectionRelation, isApiRequestErrorStatus, acceptConnection } from "@/services/api";
 import { MapPin, Camera, Calendar, Link, Users, User, BookOpen, Award, Settings, FileText, Briefcase, GraduationCap, Loader2, Check, Download, Unlink, ExternalLink, Upload, X, Zap, Smile, BriefcaseBusiness, Shield, Info, Pencil, BadgeCheck, Plus, Languages } from "lucide-react";
@@ -480,62 +481,61 @@ export function Profile() {
   }, [username, currentUser]);
 
   // Load target user by username
+  const targetUserQuery = useQuery({
+    queryKey: ["profile-user", username],
+    queryFn: () => getUserByUsername(username!),
+    enabled: Boolean(username),
+    staleTime: 60 * 1000,
+    retry: false,
+  });
+
   useEffect(() => {
     if (!username) return;
 
-    let isMounted = true;
-    (async () => {
-      try {
-        setLoading(true);
-        const user = await getUserByUsername(username);
-        if (isMounted && user && isProfilePayloadValid(user)) {
-          setTargetUser(user);
-          setProfileLoadError(false);
-          setProfileUnavailableDueToOnboarding(false);
-        } else if (isMounted) {
-          setProfileLoadError(true);
-          setProfileUnavailableDueToOnboarding(false);
-        }
-      } catch (e: any) {
-        // User not found
-        console.error('Error loading user:', e);
-        if (isMounted) {
-          const rawMessage = String(e?.message || "").toLowerCase();
-          const onboardingRestricted =
-            isApiRequestErrorStatus(e, 403) ||
-            (isApiRequestErrorStatus(e, 404) && rawMessage.includes("onboarding"));
+    if (targetUserQuery.isLoading) {
+      setLoading(true);
+      return;
+    }
 
-          setProfileLoadError(true);
-          setProfileUnavailableDueToOnboarding(onboardingRestricted);
-        }
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, [username]);
+    if (targetUserQuery.error) {
+      const e = targetUserQuery.error;
+      console.error('Error loading user:', e);
+      const rawMessage = String((e as any)?.message || "").toLowerCase();
+      const onboardingRestricted =
+        isApiRequestErrorStatus(e, 403) ||
+        (isApiRequestErrorStatus(e, 404) && rawMessage.includes("onboarding"));
+
+      setProfileLoadError(true);
+      setProfileUnavailableDueToOnboarding(onboardingRestricted);
+      setLoading(false);
+      return;
+    }
+
+    const user = targetUserQuery.data;
+    if (user && isProfilePayloadValid(user)) {
+      setTargetUser(user);
+      setProfileLoadError(false);
+      setProfileUnavailableDueToOnboarding(false);
+    } else {
+      setProfileLoadError(true);
+      setProfileUnavailableDueToOnboarding(false);
+    }
+    setLoading(false);
+  }, [username, targetUserQuery.data, targetUserQuery.isLoading, targetUserQuery.error]);
 
   // Load user posts
-  useEffect(() => {
-    if (!targetUser?.id) return;
+  const postsQuery = useQuery({
+    queryKey: ["profile-posts", targetUser?.id],
+    queryFn: () => getUserPosts(targetUser!.id),
+    enabled: Boolean(targetUser?.id),
+    staleTime: 60 * 1000,
+  });
 
-    let isMounted = true;
-    (async () => {
-      try {
-        const posts = await getUserPosts(targetUser.id);
-        if (isMounted) {
-          setUserPosts(posts || []);
-        }
-      } catch (e) {
-        // Error loading posts
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, [currentUser?.id, targetUser?.id]);
+  useEffect(() => {
+    if (postsQuery.data) {
+      setUserPosts(postsQuery.data || []);
+    }
+  }, [postsQuery.data]);
 
   // Vérifier si c'est le profil de l'utilisateur actuel
   const isOwnProfile = !username || (currentUser && username === currentUser.username);
@@ -570,55 +570,51 @@ export function Profile() {
   }), [user.phoneNumber, user.dateOfBirth]);
 
   // Load connections
+  const connectionsQuery = useQuery({
+    queryKey: ["profile-connections", targetUser?.id],
+    queryFn: () => getUserConnections(targetUser!.id),
+    enabled: Boolean(targetUser?.id),
+    staleTime: 60 * 1000,
+  });
+
   useEffect(() => {
-    if (!targetUser?.id) return;
-
-    let isMounted = true;
-    (async () => {
-      try {
-        const connections = await getUserConnections(targetUser.id);
-        if (isMounted && connections) {
-          const profileOwnerId = String(targetUser.id);
-
-          const mapped = (connections || [])
-            .map((conn: any) => getConnectionCounterpart(conn, profileOwnerId))
-            .filter(Boolean);
-          setUserConnections(mapped as any[]);
-        }
-      } catch (e) {
-        // Error loading connections
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, [targetUser?.id]);
+    if (connectionsQuery.data && targetUser?.id) {
+      const profileOwnerId = String(targetUser.id);
+      const mapped = (connectionsQuery.data || [])
+        .map((conn: any) => getConnectionCounterpart(conn, profileOwnerId))
+        .filter(Boolean);
+      setUserConnections(mapped as any[]);
+    }
+  }, [connectionsQuery.data, targetUser?.id]);
 
   // Load user resources
-  useEffect(() => {
-    if (!targetUser?.id) return;
+  const resourcesQuery = useQuery({
+    queryKey: ["profile-resources", targetUser?.id],
+    queryFn: () => getUserResources(targetUser!.id),
+    enabled: Boolean(targetUser?.id),
+    staleTime: 60 * 1000,
+    retry: false,
+  });
 
-    let isMounted = true;
-    (async () => {
-      try {
-        const resources = await getUserResources(targetUser.id);
-        if (isMounted) {
-          setUserResources(resources || []);
-          setResourcesAvailable(true);
-        }
-      } catch (e) {
-        if (isMounted) {
-          setUserResources([]);
-          setResourcesAvailable(false);
-        }
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, [currentUser?.id, targetUser?.id]);
+  useEffect(() => {
+    if (resourcesQuery.data) {
+      setUserResources(resourcesQuery.data || []);
+      setResourcesAvailable(true);
+    } else if (resourcesQuery.error) {
+      setUserResources([]);
+      setResourcesAvailable(false);
+    }
+  }, [resourcesQuery.data, resourcesQuery.error]);
 
   // Initialize connection status (current user <-> target user)
+  const relationQuery = useQuery({
+    queryKey: ["profile-relation", targetUser?.id],
+    queryFn: () => getUserConnectionRelation(targetUser!.id),
+    enabled: Boolean(targetUser?.id && currentUser?.id && !isOwnProfile),
+    staleTime: 60 * 1000,
+    retry: false,
+  });
+
   useEffect(() => {
     if (!currentUser?.id || !targetUser?.id || isOwnProfile) {
       setIsFollowing(false);
@@ -629,31 +625,20 @@ export function Profile() {
       return;
     }
 
-    let isMounted = true;
-    (async () => {
-      try {
-        const relation = await getUserConnectionRelation(targetUser.id);
-        if (!isMounted || !relation) return;
-
-        setRelationActionUnavailable(false);
-        setIsFollowing(Boolean(relation.is_connected));
-        setConnectionStatus(relation.connection?.status ?? null);
-        setIsRecipient(relation.connection?.recipient === currentUser.id);
-        setCurrentConnectionId(relation.connection?.id != null ? String(relation.connection.id) : null);
-      } catch (error) {
-        if (isMounted) {
-          setIsFollowing(false);
-          setConnectionStatus(null);
-          setCurrentConnectionId(null);
-          setRelationActionUnavailable(isApiRequestErrorStatus(error, 403));
-        }
-      }
-    })();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [currentUser?.id, targetUser?.id, isOwnProfile]);
+    if (relationQuery.data) {
+      const relation = relationQuery.data;
+      setRelationActionUnavailable(false);
+      setIsFollowing(Boolean(relation.is_connected));
+      setConnectionStatus(relation.connection?.status ?? null);
+      setIsRecipient(relation.connection?.recipient === currentUser.id);
+      setCurrentConnectionId(relation.connection?.id != null ? String(relation.connection.id) : null);
+    } else if (relationQuery.error) {
+      setIsFollowing(false);
+      setConnectionStatus(null);
+      setCurrentConnectionId(null);
+      setRelationActionUnavailable(isApiRequestErrorStatus(relationQuery.error, 403));
+    }
+  }, [currentUser?.id, targetUser?.id, isOwnProfile, relationQuery.data, relationQuery.error]);
 
   // Sync targetUser with currentUser if it's our own profile
   useEffect(() => {
