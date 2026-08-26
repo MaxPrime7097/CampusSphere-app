@@ -6,6 +6,9 @@ import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
+// [BE-MIGRATION FE-09] This local list diverges from the backend's definition of a complete profile,
+// which is university + faculty + study_year only. Drop "username" and "student_id" so the client-side
+// fallback matches needs_profile_completion. — documentation/FRONTEND_CHANGES.md
 const REQUIRED_PROFILE_FIELDS = [
   "username",
   "university",

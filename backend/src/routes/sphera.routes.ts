@@ -1,0 +1,761 @@
+/**
+ * Sphera (AI study tools) — mounted at /api/sphera/ and /api/study/. API_CONTRACT §3.9.
+ *
+ * The `/api/study/` prefix is an alias, retained because `api.ts` still calls it
+ * (see FE-06 in documentation/FRONTEND_CHANGES.md). Both prefixes serve the same
+ * router; there is no second implementation to drift.
+ *
+ * Four defects from the Django original are fixed here, each marked [CHANGE] at
+ * the site:
+ *   1. `resource_id` XOR `sphere_file_id` — the two id spaces were conflated
+ *   2. `sphere.memberships` → the accessor never existed; all four sphere routes 500'd
+ *   3. annale prompt templating — see services/ai/prompts.ts
+ *   4. `extracted_text` unpersisted on annales — Q&A was unreachable
+ *
+ * @status ACTIVE   generate/from-resource/ generate/from-upload/ generate/annale/
+ * @status ACTIVE   guest/generate/ sessions/ sessions/<id>/ sessions/<id>/add-tool/
+ * @status ACTIVE   sessions/<id>/suggestions/ sessions/<id>/ask/ sessions/<id>/share/
+ * @status ACTIVE   annales/ annales/<id>/ annales/<id>/ask/ annales/<id>/share/
+ * @status ACTIVE   sphere/<id>/ sphere/<id>/annales/
+ */
+
+import { Router, type Request } from "express";
+import { z } from "zod";
+import { AnnaleMode as PrismaAnnaleMode, StudyToolType, type Prisma } from "@prisma/client";
+import { prisma } from "../lib/prisma.js";
+import { created, list, noContent, ok } from "../lib/envelope.js";
+import { badRequest, forbidden, notFound } from "../lib/errors.js";
+import { currentUser, requireAuth } from "../middleware/auth.js";
+import { rateLimit, RATE_LIMITS } from "../middleware/rateLimit.js";
+import { singleUpload } from "../middleware/upload.js";
+import { keyFromUrl, storage } from "../services/storage.js";
+import { extractText, SUPPORTED_EXTENSIONS } from "../services/extraction.js";
+import {
+  generateAnnale,
+  generateQaAnswer,
+  generateSuggestions,
+  generateTool,
+  isToolType,
+  MIN_SOURCE_CHARS,
+  VALID_TOOL_TYPES,
+  type ToolType,
+} from "../services/ai/index.js";
+import {
+  annaleSessionInclude,
+  serializeAnnaleSession,
+  serializeAnnaleSessionListItem,
+  serializeStudySession,
+  serializeStudySessionListItem,
+  studySessionInclude,
+  type SerializableAnnaleSession,
+  type SerializableStudySession,
+} from "../serializers/sphera.js";
+
+export const spheraRouter: Router = Router();
+
+// ── Shared helpers ──────────────────────────────────────────────────────────
+
+function idParam(req: Request, name = "id"): number {
+  const id = Number(req.params[name]);
+  if (!Number.isInteger(id) || id < 1) throw notFound("Session introuvable.");
+  return id;
+}
+
+/** Enum value <-> wire value. The DB stores FICHE; the API speaks "fiche". */
+const toPrismaTool = (t: ToolType): StudyToolType => t.toUpperCase() as StudyToolType;
+
+/**
+ * Accept `tool_types` as a JSON array, a repeated field, or a comma-separated
+ * string — all three shapes the two frontends send, depending on whether the call
+ * is JSON or multipart.
+ */
+function parseToolTypes(raw: unknown): ToolType[] {
+  let candidates: unknown[] = [];
+
+  if (Array.isArray(raw)) candidates = raw;
+  else if (typeof raw === "string") {
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      candidates = Array.isArray(parsed) ? parsed : [parsed];
+    } catch {
+      candidates = raw.split(",").map((s) => s.trim()).filter(Boolean);
+    }
+  } else if (raw !== undefined && raw !== null) candidates = [raw];
+
+  const tools: ToolType[] = [];
+  for (const candidate of candidates) {
+    const value = String(candidate).trim().toLowerCase();
+    if (!isToolType(value)) {
+      throw badRequest(`Type d'outil invalide : '${value}'. Choisis parmi : ${VALID_TOOL_TYPES.join(", ")}.`);
+    }
+    // De-duplicate: asking for ["quiz","quiz"] should bill one generation, not two.
+    if (!tools.includes(value)) tools.push(value);
+  }
+
+  if (tools.length === 0) throw badRequest("tool_types doit être une liste non vide.");
+  return tools;
+}
+
+const hasSupportedExtension = (filename: string): boolean =>
+  SUPPORTED_EXTENSIONS.some((ext) => filename.toLowerCase().endsWith(ext));
+
+function assertSupportedUpload(filename: string): void {
+  if (!hasSupportedExtension(filename)) {
+    throw badRequest("Seuls les fichiers PDF, DOCX et TXT sont acceptés.");
+  }
+}
+
+/** Fetch a stored file's bytes. Rows carry a key; older rows only a URL. */
+async function readStoredFile(row: { fileUrl: string; storageKey: string | null }): Promise<Buffer> {
+  const key = row.storageKey ?? keyFromUrl(row.fileUrl);
+  if (!key) throw badRequest("Ce fichier n'est plus disponible.");
+  try {
+    return await storage.get(key);
+  } catch (error) {
+    console.error("[sphera] failed to read stored file", error);
+    throw badRequest("Ce fichier n'est plus disponible.");
+  }
+}
+
+function assertUsableText(text: string): void {
+  if (!text || text.length < MIN_SOURCE_CHARS) {
+    throw badRequest("Ce document ne contient pas de texte extractible.");
+  }
+}
+
+/**
+ * Active membership of a sphere, or creator.
+ *
+ * **[CHANGE]** Django asked `sphere.memberships`, which is not the reverse accessor
+ * for the SphereMember FK (`sphere.members` is), so all four sphere-scoped Sphera
+ * routes raised AttributeError and returned 500 — sphere sharing has never worked.
+ */
+async function assertSphereAccess(sphereId: number, userId: number): Promise<void> {
+  const sphere = await prisma.sphere.findUnique({
+    where: { id: sphereId },
+    select: { createdById: true },
+  });
+  if (!sphere) throw notFound("Sphère introuvable.");
+  if (sphere.createdById === userId) return;
+
+  const membership = await prisma.sphereMember.findUnique({
+    where: { sphereId_userId: { sphereId, userId } },
+    select: { status: true },
+  });
+  if (membership?.status !== "ACTIVE") throw forbidden("Tu dois être membre de cette sphère.");
+}
+
+/** The caller's own session, or 404. */
+async function ownStudySession(id: number, userId: number): Promise<SerializableStudySession> {
+  const session = await prisma.studySession.findFirst({
+    where: { id, ownerId: userId },
+    include: studySessionInclude,
+  });
+  if (!session) throw notFound("Session introuvable.");
+  return session as SerializableStudySession;
+}
+
+/**
+ * A session the caller may read: their own, or one that has been shared.
+ *
+ * A sphere-shared session additionally requires membership of that sphere —
+ * Django checked only `is_shared`, so sharing into a private sphere exposed the
+ * session to anyone who could guess its id.
+ */
+async function readableStudySession(id: number, userId: number): Promise<SerializableStudySession> {
+  const session = await prisma.studySession.findUnique({ where: { id }, include: studySessionInclude });
+  if (!session) throw notFound("Session introuvable.");
+  if (session.ownerId === userId) return session as SerializableStudySession;
+  if (!session.isShared) throw notFound("Session introuvable.");
+  if (session.sharedSphereId !== null) await assertSphereAccess(session.sharedSphereId, userId);
+  return session as SerializableStudySession;
+}
+
+async function ownAnnaleSession(id: number, userId: number): Promise<SerializableAnnaleSession> {
+  const session = await prisma.annaleSession.findFirst({
+    where: { id, ownerId: userId },
+    include: annaleSessionInclude,
+  });
+  if (!session) throw notFound("Annale introuvable.");
+  return session as SerializableAnnaleSession;
+}
+
+async function readableAnnaleSession(id: number, userId: number): Promise<SerializableAnnaleSession> {
+  const session = await prisma.annaleSession.findUnique({ where: { id }, include: annaleSessionInclude });
+  if (!session) throw notFound("Annale introuvable.");
+  if (session.ownerId === userId) return session as SerializableAnnaleSession;
+  if (!session.isShared) throw notFound("Annale introuvable.");
+  if (session.sharedSphereId !== null) await assertSphereAccess(session.sharedSphereId, userId);
+  return session as SerializableAnnaleSession;
+}
+
+/** Run the requested tools over one source text. */
+async function generateAll(text: string, tools: ToolType[]): Promise<Record<string, unknown>> {
+  const content: Record<string, unknown> = {};
+  for (const tool of tools) content[tool] = await generateTool(text, tool);
+  return content;
+}
+
+// ── Guest generation (anonymous) ────────────────────────────────────────────
+// Declared before requireAuth so it stays public.
+
+const guestRateLimit = rateLimit({ scope: "sphera-guest", ...RATE_LIMITS.guestGenerate });
+
+/**
+ * POST /guest/generate/ — 5/hour/IP, nothing persisted.
+ *
+ * The one anonymous route in the domain: it exists so a prospective student can
+ * try Sphera before signing up. No row is written, so there is nothing to read
+ * back and no id to return.
+ */
+spheraRouter.post("/guest/generate/", guestRateLimit, singleUpload("file", "resource"), async (req, res) => {
+  const file = req.file;
+  if (!file) throw badRequest("Un fichier est requis.");
+  assertSupportedUpload(file.originalname);
+
+  const toolType = String((req.body as { tool_type?: unknown }).tool_type ?? "").trim().toLowerCase();
+  const validGuestTools = [...VALID_TOOL_TYPES, "annale"];
+  if (!validGuestTools.includes(toolType)) {
+    throw badRequest(`tool_type invalide. Choisis parmi : ${validGuestTools.join(", ")}.`);
+  }
+
+  // An unrecognised mode falls back to "complete" rather than erroring, as Django did.
+  const rawMode = String((req.body as { mode?: unknown }).mode ?? "complete").trim().toLowerCase();
+  const mode = rawMode === "rapide" ? "rapide" : "complete";
+
+  const text = await extractText(file.buffer, file.originalname);
+  assertUsableText(text);
+
+  if (toolType === "annale") {
+    ok(res, { success: true, tool_type: "annale", mode, content: await generateAnnale(text, mode) });
+    return;
+  }
+
+  ok(res, { success: true, tool_type: toolType, content: await generateTool(text, toolType as ToolType) });
+});
+
+// Everything below requires a token.
+spheraRouter.use(requireAuth);
+
+// ── Generation ──────────────────────────────────────────────────────────────
+
+const fromResourceSchema = z.object({
+  resource_id: z.coerce.number().int().positive().optional(),
+  sphere_file_id: z.coerce.number().int().positive().optional(),
+  tool_types: z.unknown(),
+});
+
+/**
+ * POST /generate/from-resource/
+ *
+ * **[CHANGE] `resource_id` XOR `sphere_file_id`.** Django accepted only
+ * `resource_id`, but `SphereSpheraTab` passes a **SphereFile** id — two tables with
+ * independent sequences. The call therefore 404'd, or, when the numbers happened to
+ * collide, silently generated study material from an unrelated document belonging
+ * to someone else. Supplying both, or neither, is now a 400.
+ */
+spheraRouter.post("/generate/from-resource/", async (req, res) => {
+  const me = currentUser(req);
+  const input = fromResourceSchema.parse(req.body ?? {});
+  const tools = parseToolTypes(input.tool_types);
+
+  const hasResource = input.resource_id !== undefined;
+  const hasSphereFile = input.sphere_file_id !== undefined;
+  if (hasResource === hasSphereFile) {
+    throw badRequest(
+      "Fournis exactement une source : resource_id ou sphere_file_id.",
+      { source: ["resource_id et sphere_file_id s'excluent mutuellement, et l'un des deux est requis."] },
+    );
+  }
+
+  const prismaTools = tools.map(toPrismaTool);
+
+  let source: { fileUrl: string; storageKey: string | null };
+  let sourceFilename: string;
+  let where: Prisma.StudySessionWhereInput;
+  let link: { resourceId?: number; sphereFileId?: number };
+
+  if (hasResource) {
+    const resource = await prisma.resource.findUnique({
+      where: { id: input.resource_id },
+      select: { id: true, title: true, fileUrl: true, storageKey: true },
+    });
+    if (!resource) throw notFound("Ressource introuvable.");
+    if (!resource.fileUrl) throw badRequest("Cette ressource n'a pas de fichier associé.");
+    source = resource;
+    sourceFilename = resource.title;
+    link = { resourceId: resource.id };
+    where = { ownerId: me.id, resourceId: resource.id };
+  } else {
+    const sphereFile = await prisma.sphereFile.findUnique({
+      where: { id: input.sphere_file_id },
+      select: { id: true, title: true, fileUrl: true, storageKey: true, sphereId: true },
+    });
+    if (!sphereFile) throw notFound("Fichier de sphère introuvable.");
+    // Sphere files are membership-gated: reading one to generate from it is still
+    // reading it.
+    await assertSphereAccess(sphereFile.sphereId, me.id);
+    source = sphereFile;
+    sourceFilename = sphereFile.title;
+    link = { sphereFileId: sphereFile.id };
+    where = { ownerId: me.id, sphereFileId: sphereFile.id };
+  }
+
+  // Cache: an identical request returns the stored session rather than paying for
+  // generation again. `hasEvery` + length pins it to the same *set* of tools.
+  const existing = await prisma.studySession.findFirst({
+    where: { ...where, toolTypes: { hasEvery: prismaTools } },
+    include: studySessionInclude,
+    orderBy: { createdAt: "desc" },
+  });
+  if (existing && existing.toolTypes.length === prismaTools.length) {
+    res.status(200).json({
+      success: true,
+      data: serializeStudySession(existing as SerializableStudySession),
+      cached: true,
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const text = await extractText(await readStoredFile(source), sourceFilename);
+  assertUsableText(text);
+
+  const session = await prisma.studySession.create({
+    data: {
+      ownerId: me.id,
+      ...link,
+      sourceFilename,
+      toolTypes: prismaTools,
+      content: (await generateAll(text, tools)) as Prisma.InputJsonObject,
+      // Persisted for Q&A and for add-tool, which regenerate from it rather than
+      // re-reading and re-OCRing the source.
+      extractedText: text,
+    },
+    include: studySessionInclude,
+  });
+
+  res.status(201).json({
+    success: true,
+    data: serializeStudySession(session as SerializableStudySession),
+    cached: false,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * POST /generate/from-upload/ — multipart.
+ *
+ * Creates a backing Resource so the file survives the request and the student can
+ * re-open the original from the session. Visibility is `friends`, matching Django:
+ * an implicitly-created resource must not become public without being asked.
+ */
+spheraRouter.post("/generate/from-upload/", singleUpload("file", "resource"), async (req, res) => {
+  const me = currentUser(req);
+  const file = req.file;
+  if (!file) throw badRequest("Un fichier est requis.");
+
+  const tools = parseToolTypes((req.body as { tool_types?: unknown }).tool_types);
+  assertSupportedUpload(file.originalname);
+
+  // Extract before persisting anything: a document with no text should not leave a
+  // stray resource behind.
+  const text = await extractText(file.buffer, file.originalname);
+  assertUsableText(text);
+
+  const stored = await storage.put({
+    buffer: file.buffer,
+    originalName: file.originalname,
+    contentType: file.mimetype,
+    prefix: "resources",
+  });
+
+  const resource = await prisma.resource.create({
+    data: {
+      title: file.originalname,
+      authorId: me.id,
+      fileUrl: stored.url,
+      storageKey: stored.key,
+      fileSize: file.size,
+      fileType: file.mimetype || "application/octet-stream",
+      type: "COURS",
+      visibility: "FRIENDS",
+    },
+    select: { id: true },
+  });
+
+  const session = await prisma.studySession.create({
+    data: {
+      ownerId: me.id,
+      resourceId: resource.id,
+      sourceFilename: file.originalname,
+      toolTypes: tools.map(toPrismaTool),
+      content: (await generateAll(text, tools)) as Prisma.InputJsonObject,
+      extractedText: text,
+    },
+    include: studySessionInclude,
+  });
+
+  created(res, serializeStudySession(session as SerializableStudySession));
+});
+
+const annaleSchema = z.object({
+  mode: z.enum(["complete", "rapide"]).optional(),
+  resource_id: z.coerce.number().int().positive().optional(),
+  cours_resource_id: z.coerce.number().int().positive().optional(),
+});
+
+/**
+ * POST /generate/annale/ — accepts multipart or JSON.
+ *
+ * **[CHANGE] `extracted_text` is persisted.** Django's create() omitted it, so
+ * `POST /annales/<id>/ask/` — which reads it — could only ever return 400. Annale
+ * Q&A has never worked for anyone.
+ */
+spheraRouter.post("/generate/annale/", singleUpload("file", "resource"), async (req, res) => {
+  const me = currentUser(req);
+  const input = annaleSchema.parse(req.body ?? {});
+  const mode = input.mode ?? "complete";
+  const file = req.file;
+
+  let annaleBuffer: Buffer;
+  let sourceFilename: string;
+  let annaleResourceId: number | null = null;
+
+  if (input.resource_id !== undefined) {
+    const resource = await prisma.resource.findUnique({
+      where: { id: input.resource_id },
+      select: { id: true, title: true, fileUrl: true, storageKey: true },
+    });
+    if (!resource) throw notFound("Ressource d'annale introuvable.");
+    if (!resource.fileUrl) throw badRequest("Cette ressource n'a pas de fichier.");
+    annaleBuffer = await readStoredFile(resource);
+    sourceFilename = resource.title;
+    annaleResourceId = resource.id;
+  } else if (file) {
+    assertSupportedUpload(file.originalname);
+    annaleBuffer = file.buffer;
+    sourceFilename = file.originalname;
+  } else {
+    throw badRequest("Un fichier ou resource_id est requis.");
+  }
+
+  const annaleText = await extractText(annaleBuffer, sourceFilename);
+  if (!annaleText || annaleText.length < MIN_SOURCE_CHARS) {
+    throw badRequest("L'annale ne contient pas de texte extractible.");
+  }
+
+  // The reference course is best-effort: a course that cannot be read falls back to
+  // correcting the paper alone rather than failing the whole request.
+  let coursText = "";
+  let coursResourceId: number | null = null;
+  if (input.cours_resource_id !== undefined) {
+    const cours = await prisma.resource.findUnique({
+      where: { id: input.cours_resource_id },
+      select: { id: true, title: true, fileUrl: true, storageKey: true },
+    });
+    if (!cours) throw notFound("Ressource cours introuvable.");
+    coursResourceId = cours.id;
+    if (cours.fileUrl) {
+      try {
+        coursText = await extractText(await readStoredFile(cours), cours.title);
+      } catch (error) {
+        console.warn("[sphera] could not extract reference course:", error);
+      }
+    }
+  }
+
+  const session = await prisma.annaleSession.create({
+    data: {
+      ownerId: me.id,
+      mode: mode.toUpperCase() as PrismaAnnaleMode,
+      sourceFilename,
+      resourceId: annaleResourceId,
+      coursResourceId,
+      content: (await generateAnnale(annaleText, mode, coursText || null)) as Prisma.InputJsonObject,
+      extractedText: annaleText,
+    },
+    include: annaleSessionInclude,
+  });
+
+  created(res, serializeAnnaleSession(session as SerializableAnnaleSession));
+});
+
+// ── Study sessions ──────────────────────────────────────────────────────────
+
+spheraRouter.get("/sessions/", async (req, res) => {
+  const me = currentUser(req);
+  const where: Prisma.StudySessionWhereInput = { ownerId: me.id };
+
+  const toolType = String(req.query.tool_type ?? "").trim().toLowerCase();
+  if (toolType && isToolType(toolType)) where.toolTypes = { has: toPrismaTool(toolType) };
+
+  const sessions = await prisma.studySession.findMany({
+    where,
+    include: studySessionInclude,
+    orderBy: { createdAt: "desc" },
+  });
+
+  list(res, sessions.map((s) => serializeStudySessionListItem(s as SerializableStudySession)));
+});
+
+spheraRouter.get("/sessions/:id/", async (req, res) => {
+  const me = currentUser(req);
+  ok(res, serializeStudySession(await readableStudySession(idParam(req), me.id)));
+});
+
+spheraRouter.delete("/sessions/:id/", async (req, res) => {
+  const me = currentUser(req);
+  const session = await ownStudySession(idParam(req), me.id);
+  await prisma.studySession.delete({ where: { id: session.id } });
+  noContent(res);
+});
+
+/**
+ * PATCH /sessions/<id>/add-tool/
+ *
+ * Regenerates from the stored `extracted_text`, so adding a quiz to an existing
+ * fiche costs one model call and no re-OCR.
+ */
+spheraRouter.patch("/sessions/:id/add-tool/", async (req, res) => {
+  const me = currentUser(req);
+  const raw = String((req.body as { tool_type?: unknown })?.tool_type ?? "").trim().toLowerCase();
+  if (!isToolType(raw)) {
+    throw badRequest(`Type d'outil invalide. Choisis parmi : ${VALID_TOOL_TYPES.join(", ")}.`);
+  }
+
+  const session = await ownStudySession(idParam(req), me.id);
+  const content = (session.content ?? {}) as Record<string, unknown>;
+
+  if (session.toolTypes.includes(toPrismaTool(raw)) && raw in content) {
+    throw badRequest(`L'outil '${raw}' a déjà été généré pour cette session.`);
+  }
+
+  if (!session.extractedText) {
+    throw badRequest("Aucun texte extractible disponible dans cette session pour générer de nouveaux outils.");
+  }
+
+  const updated = await prisma.studySession.update({
+    where: { id: session.id },
+    data: {
+      content: { ...content, [raw]: await generateTool(session.extractedText, raw) } as Prisma.InputJsonObject,
+      toolTypes: session.toolTypes.includes(toPrismaTool(raw))
+        ? session.toolTypes
+        : [...session.toolTypes, toPrismaTool(raw)],
+    },
+    include: studySessionInclude,
+  });
+
+  ok(res, serializeStudySession(updated as SerializableStudySession));
+});
+
+/**
+ * GET /sessions/<id>/suggestions/ — generated once, then served from the row.
+ *
+ * A session whose source text is gone returns [] rather than erroring; the client
+ * simply shows no prompts.
+ */
+spheraRouter.get("/sessions/:id/suggestions/", async (req, res) => {
+  const me = currentUser(req);
+  const session = await ownStudySession(idParam(req), me.id);
+
+  const stored = Array.isArray(session.suggestions) ? (session.suggestions as string[]) : [];
+  if (stored.length > 0) {
+    ok(res, { suggestions: stored });
+    return;
+  }
+  if (!session.extractedText) {
+    ok(res, { suggestions: [] });
+    return;
+  }
+
+  const suggestions = await generateSuggestions(session.extractedText);
+  if (suggestions.length > 0) {
+    await prisma.studySession.update({
+      where: { id: session.id },
+      data: { suggestions: suggestions as Prisma.InputJsonValue },
+    });
+  }
+  ok(res, { suggestions });
+});
+
+const askSchema = z.object({ question: z.string().trim().min(1, "La question ne peut pas être vide.") });
+
+interface QaEntry {
+  question: string;
+  answer: string;
+  created_at: string;
+}
+
+function appendQa(history: unknown, entry: QaEntry): QaEntry[] {
+  return [...(Array.isArray(history) ? (history as QaEntry[]) : []), entry];
+}
+
+spheraRouter.post("/sessions/:id/ask/", async (req, res) => {
+  const me = currentUser(req);
+  const session = await ownStudySession(idParam(req), me.id);
+  const { question } = askSchema.parse(req.body ?? {});
+
+  if (!session.extractedText) {
+    throw badRequest(
+      "Le texte de ce cours n'est pas disponible pour le Q&A. Régénère la session depuis la ressource originale.",
+    );
+  }
+
+  const entry: QaEntry = {
+    question,
+    answer: await generateQaAnswer(session.extractedText, question),
+    created_at: new Date().toISOString(),
+  };
+
+  await prisma.studySession.update({
+    where: { id: session.id },
+    data: { qaHistory: appendQa(session.qaHistory, entry) as unknown as Prisma.InputJsonValue },
+  });
+
+  ok(res, entry);
+});
+
+const shareSchema = z.object({ sphere_id: z.coerce.number().int().positive().optional() });
+
+spheraRouter.post("/sessions/:id/share/", async (req, res) => {
+  const me = currentUser(req);
+  const session = await ownStudySession(idParam(req), me.id);
+  const { sphere_id: sphereId } = shareSchema.parse(req.body ?? {});
+
+  if (sphereId === undefined) {
+    // Link sharing: readable by anyone holding the id, not attached to a sphere.
+    const updated = await prisma.studySession.update({
+      where: { id: session.id },
+      data: { isShared: true, sharedSphereId: null },
+      include: studySessionInclude,
+    });
+    ok(res, serializeStudySession(updated as SerializableStudySession), "Partage par lien activé.");
+    return;
+  }
+
+  await assertSphereAccess(sphereId, me.id);
+  const updated = await prisma.studySession.update({
+    where: { id: session.id },
+    data: { isShared: true, sharedSphereId: sphereId },
+    include: studySessionInclude,
+  });
+  ok(res, serializeStudySession(updated as SerializableStudySession));
+});
+
+spheraRouter.delete("/sessions/:id/share/", async (req, res) => {
+  const me = currentUser(req);
+  const session = await ownStudySession(idParam(req), me.id);
+  await prisma.studySession.update({
+    where: { id: session.id },
+    data: { isShared: false, sharedSphereId: null },
+  });
+  ok(res, null, "Partage annulé.");
+});
+
+// ── Annales ─────────────────────────────────────────────────────────────────
+
+spheraRouter.get("/annales/", async (req, res) => {
+  const me = currentUser(req);
+  const sessions = await prisma.annaleSession.findMany({
+    where: { ownerId: me.id },
+    include: annaleSessionInclude,
+    orderBy: { createdAt: "desc" },
+  });
+  list(res, sessions.map((s) => serializeAnnaleSessionListItem(s as SerializableAnnaleSession)));
+});
+
+spheraRouter.get("/annales/:id/", async (req, res) => {
+  const me = currentUser(req);
+  ok(res, serializeAnnaleSession(await readableAnnaleSession(idParam(req), me.id)));
+});
+
+spheraRouter.delete("/annales/:id/", async (req, res) => {
+  const me = currentUser(req);
+  const session = await ownAnnaleSession(idParam(req), me.id);
+  await prisma.annaleSession.delete({ where: { id: session.id } });
+  noContent(res);
+});
+
+/** Readable by anyone who may read the annale, so a shared correction is askable. */
+spheraRouter.post("/annales/:id/ask/", async (req, res) => {
+  const me = currentUser(req);
+  const session = await readableAnnaleSession(idParam(req), me.id);
+  const { question } = askSchema.parse(req.body ?? {});
+
+  if (!session.extractedText) {
+    throw badRequest("Le texte de ce document n'est pas disponible pour le Q&A.");
+  }
+
+  const entry: QaEntry = {
+    question,
+    answer: await generateQaAnswer(session.extractedText, question),
+    created_at: new Date().toISOString(),
+  };
+
+  await prisma.annaleSession.update({
+    where: { id: session.id },
+    data: { qaHistory: appendQa(session.qaHistory, entry) as unknown as Prisma.InputJsonValue },
+  });
+
+  ok(res, entry);
+});
+
+spheraRouter.post("/annales/:id/share/", async (req, res) => {
+  const me = currentUser(req);
+  const session = await ownAnnaleSession(idParam(req), me.id);
+  const { sphere_id: sphereId } = shareSchema.parse(req.body ?? {});
+
+  if (sphereId !== undefined) await assertSphereAccess(sphereId, me.id);
+
+  const updated = await prisma.annaleSession.update({
+    where: { id: session.id },
+    data: { isShared: true, sharedSphereId: sphereId ?? null },
+    include: annaleSessionInclude,
+  });
+  ok(
+    res,
+    serializeAnnaleSession(updated as SerializableAnnaleSession),
+    sphereId === undefined ? "Partage par lien activé." : undefined,
+  );
+});
+
+spheraRouter.delete("/annales/:id/share/", async (req, res) => {
+  const me = currentUser(req);
+  const session = await ownAnnaleSession(idParam(req), me.id);
+  await prisma.annaleSession.update({
+    where: { id: session.id },
+    data: { isShared: false, sharedSphereId: null },
+  });
+  ok(res, null, "Partage annulé.");
+});
+
+// ── Sphere-shared listings ──────────────────────────────────────────────────
+// Both routes 500'd in Django via the `sphere.memberships` typo; see
+// assertSphereAccess above.
+
+spheraRouter.get("/sphere/:id/annales/", async (req, res) => {
+  const me = currentUser(req);
+  const sphereId = idParam(req);
+  await assertSphereAccess(sphereId, me.id);
+
+  const sessions = await prisma.annaleSession.findMany({
+    where: { sharedSphereId: sphereId, isShared: true },
+    include: annaleSessionInclude,
+    orderBy: { createdAt: "desc" },
+  });
+  list(res, sessions.map((s) => serializeAnnaleSessionListItem(s as SerializableAnnaleSession)));
+});
+
+spheraRouter.get("/sphere/:id/", async (req, res) => {
+  const me = currentUser(req);
+  const sphereId = idParam(req);
+  await assertSphereAccess(sphereId, me.id);
+
+  const sessions = await prisma.studySession.findMany({
+    where: { sharedSphereId: sphereId, isShared: true },
+    include: studySessionInclude,
+    orderBy: { createdAt: "desc" },
+  });
+  list(res, sessions.map((s) => serializeStudySessionListItem(s as SerializableStudySession)));
+});

@@ -47,6 +47,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
+    // [BE-MIGRATION FE-05] supabaseSignOut() is never called, so the Supabase session survives logout
+    // in localStorage; with autoRefreshToken + detectSessionInUrl a signed-out user can be silently
+    // re-authenticated. Call it here. — documentation/FRONTEND_CHANGES.md
     try {
       await apiLogout();
     } finally {
