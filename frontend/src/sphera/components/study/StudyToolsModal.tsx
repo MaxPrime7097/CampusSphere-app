@@ -42,6 +42,8 @@ import { useNavigate } from "react-router-dom";
 type ToolType = "fiche" | "quiz" | "flashcards";
 type Step = "choose" | "loading" | "result" | "error";
 
+// [BE-MIGRATION FE-02] Needs a `sphereFileId?: string | number | null` prop forwarded to
+// generateStudyTools, so sphere files stop being sent as resource ids. — documentation/FRONTEND_CHANGES.md
 interface StudyToolsModalProps {
   isOpen: boolean;
   onClose: () => void;

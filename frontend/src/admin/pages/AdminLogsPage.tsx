@@ -5,6 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+// [BE-MIGRATION FE-08a] `apiFetch` is not an export of @/services/api (only `http.apiFetch` is), so
+// this import resolves to undefined. It is unused, so it is inert — remove it.
+// — documentation/FRONTEND_CHANGES.md
 import { apiFetch } from "@/services/api";
 
 // Appel direct car pas encore dans api.ts
@@ -14,6 +17,9 @@ async function getAdminLogs(params?: { page?: number; search?: string }) {
   if (params?.search) q.set('search', params.search);
   const suffix = q.toString() ? `?${q}` : '';
   const token = localStorage.getItem('access') || undefined;
+  // [BE-MIGRATION FE-08b] Hardcoded base bypasses getDetectedApiUrl() in api.ts, so in any deploy
+  // without VITE_API_URL set this calls localhost. Move getAdminLogs into api.ts and use apiFetch,
+  // which resolves the base correctly and handles token refresh. — documentation/FRONTEND_CHANGES.md
   const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
   const res = await fetch(`${API}/api/admin/v1/logs/${suffix}`, {
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
