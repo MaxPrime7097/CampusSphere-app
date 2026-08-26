@@ -132,7 +132,7 @@ export default function Login() {
             </>
           ) : (
             <>
-              <img src="/sphera-logo-dark.png" alt="" className="h-5 w-5" />
+              <img src="/CS.svg" alt="" className="h-5 w-5" />
               Se connecter avec CampusSphere
             </>
           )}
