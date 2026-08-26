@@ -44,105 +44,109 @@ export function Connections() {
   });
 
   // Load connections
+  const connectionsQuery = useQuery({
+    queryKey: ["user-connections", currentUser?.id],
+    queryFn: () => getUserConnections(currentUser!.id),
+    enabled: Boolean(currentUser?.id),
+    staleTime: 60 * 1000,
+  });
+
   useEffect(() => {
-    if (!currentUser?.id) return;
-    
-    let isMounted = true;
-    (async () => {
-      try {
-        setLoading(true);
-        // Load user's connections
-        const connectionsData = await getUserConnections(currentUser.id);
-        if (isMounted && connectionsData) {
-          const mapped = (connectionsData || []).map((conn: any) => ({
-            id: String(
-              conn.requester === currentUser.id
-                ? conn.recipient_info?.id || conn.recipient
-                : conn.requester_info?.id || conn.requester
-            ),
-            name:
-              (conn.requester === currentUser.id
-                ? conn.recipient_info?.full_name
-                : conn.requester_info?.full_name) || "Utilisateur",
-            username:
-              (conn.requester === currentUser.id
-                ? conn.recipient_info?.username
-                : conn.requester_info?.username) || "user",
-            avatar:
-              (conn.requester === currentUser.id
-                ? conn.recipient_info?.avatar
-                : conn.requester_info?.avatar) || '/placeholder-avatar.jpg',
-            university:
-              (conn.requester === currentUser.id
-                ? conn.recipient_info?.university
-                : conn.requester_info?.university) || '',
-            faculty:
-              (conn.requester === currentUser.id
-                ? conn.recipient_info?.faculty
-                : conn.requester_info?.faculty) || '',
-            field:
-              (conn.requester === currentUser.id
-                ? conn.recipient_info?.faculty
-                : conn.requester_info?.faculty) || '',
-            normalizedUniversity: normalizeUniversity(
-              conn.requester === currentUser.id
-                ? conn.recipient_info?.university
-                : conn.requester_info?.university
-            ),
-            normalizedFaculty: normalizeFaculty(
-              conn.requester === currentUser.id
-                ? conn.recipient_info?.faculty
-                : conn.requester_info?.faculty
-            ),
-            isVerified: false,
-            impactScore:
-              (conn.requester === currentUser.id
-                ? conn.recipient_info?.impact_score
-                : conn.requester_info?.impact_score) || 0,
-            mutualFriends: 0,
-            status: conn.status,
-            isIncomingRequest: conn.recipient === currentUser.id && conn.status === 'pending'
-          }));
-          setConnections(mapped.filter((c: any) => c.status === 'accepted'));
-          setPendingRequests(mapped.filter((c: any) => c.isIncomingRequest));
+    if (connectionsQuery.isLoading) {
+      setLoading(true);
+      return;
+    }
 
-          try {
-            setMutualCountStatus("Calcul des amis communs...");
-            const mutualCounts = await getMutualConnectionCounts({
-              currentUserId: currentUser.id,
-              connectionUserIds: mapped.map((connection: any) => connection.id),
+    if (connectionsQuery.data && currentUser?.id) {
+      const connectionsData = connectionsQuery.data;
+      const mapped = (connectionsData || []).map((conn: any) => ({
+        id: String(
+          conn.requester === currentUser.id
+            ? conn.recipient_info?.id || conn.recipient
+            : conn.requester_info?.id || conn.requester
+        ),
+        name:
+          (conn.requester === currentUser.id
+            ? conn.recipient_info?.full_name
+            : conn.requester_info?.full_name) || "Utilisateur",
+        username:
+          (conn.requester === currentUser.id
+            ? conn.recipient_info?.username
+            : conn.requester_info?.username) || "user",
+        avatar:
+          (conn.requester === currentUser.id
+            ? conn.recipient_info?.avatar
+            : conn.requester_info?.avatar) || "/placeholder-avatar.jpg",
+        university:
+          (conn.requester === currentUser.id
+            ? conn.recipient_info?.university
+            : conn.requester_info?.university) || "",
+        faculty:
+          (conn.requester === currentUser.id
+            ? conn.recipient_info?.faculty
+            : conn.requester_info?.faculty) || "",
+        field:
+          (conn.requester === currentUser.id
+            ? conn.recipient_info?.faculty
+            : conn.requester_info?.faculty) || "",
+        normalizedUniversity: normalizeUniversity(
+          conn.requester === currentUser.id
+            ? conn.recipient_info?.university
+            : conn.requester_info?.university
+        ),
+        normalizedFaculty: normalizeFaculty(
+          conn.requester === currentUser.id
+            ? conn.recipient_info?.faculty
+            : conn.requester_info?.faculty
+        ),
+        isVerified: false,
+        impactScore:
+          (conn.requester === currentUser.id
+            ? conn.recipient_info?.impact_score
+            : conn.requester_info?.impact_score) || 0,
+        mutualFriends: 0,
+        status: conn.status,
+        isIncomingRequest: conn.recipient === currentUser.id && conn.status === "pending"
+      }));
+
+      setConnections(mapped.filter((c: any) => c.status === "accepted"));
+      setPendingRequests(mapped.filter((c: any) => c.isIncomingRequest));
+
+      let isMounted = true;
+      (async () => {
+        try {
+          setMutualCountStatus("Calcul des amis communs...");
+          const mutualCounts = await getMutualConnectionCounts({
+            currentUserId: currentUser.id,
+            connectionUserIds: mapped.map((connection: any) => connection.id),
+          });
+
+          if (isMounted) {
+            setConnections((prev) =>
+              prev.map((connection) => ({
+                ...connection,
+                mutualFriends: mutualCounts.counts[String(connection.id)] ?? 0,
+              }))
+            );
+            setMutualCountStatus("Amis communs mis à jour.");
+          }
+        } catch {
+          if (isMounted) {
+            setMutualCountStatus(null);
+            toast({
+              title: "Information",
+              description: "Le calcul des amis communs n'est pas disponible pour le moment.",
+              duration: 2000,
             });
-
-            if (isMounted) {
-              setConnections((prev) =>
-                prev.map((connection) => ({
-                  ...connection,
-                  mutualFriends: mutualCounts.counts[String(connection.id)] ?? 0,
-                }))
-              );
-              setMutualCountStatus("Amis communs mis à jour.");
-            }
-          } catch {
-            if (isMounted) {
-              setMutualCountStatus(null);
-              toast({
-                title: "Information",
-                description: "Le calcul des amis communs n'est pas disponible pour le moment.",
-                duration: 2000,
-              });
-            }
           }
         }
-      } catch (e) {
-        // Error loading connections
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, [currentUser]);
+      })();
+      setLoading(false);
+      return () => { isMounted = false; };
+    } else {
+      setLoading(false);
+    }
+  }, [connectionsQuery.data, connectionsQuery.isLoading, currentUser, toast]);
 
   // Load suggestions
   useEffect(() => {
