@@ -1,9 +1,8 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { TrendingUp, ExternalLink, BookOpen, ArrowRight } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { TrendingUp, BookOpen, ChevronRight } from "lucide-react";
+import { Card, CardContent, CardSection } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { listResources, listSpheres } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { formatRelativeTime } from "@/lib/date";
@@ -15,6 +14,7 @@ export function FeedSidebar() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const appVersion = import.meta.env.VITE_APP_VERSION || "2.0.0";
+
   const spheresQuery = useQuery({
     queryKey: ["sidebar", "popular-spheres"],
     queryFn: listSpheres,
@@ -27,6 +27,7 @@ export function FeedSidebar() {
         .sort((a: any, b: any) => Number(b.memberCount || 0) - Number(a.memberCount || 0))
         .slice(0, 4),
   });
+
   const resourcesQuery = useQuery({
     queryKey: ["sidebar", "recent-resources"],
     queryFn: () => listResources({ ordering: "-created_at" }),
@@ -58,132 +59,100 @@ export function FeedSidebar() {
 
   const openSphere = (sphereId: string | number, sphereName: string) => {
     navigate(`/spheres/${sphereId}`);
-    toast({
-      title: "Sphère ouverte",
-      description: `Ouverture de "${sphereName}"`,
-      duration: 2000,
-    });
   };
 
-  const openResource = (resourceId?: string | number, resourceTitle?: string) => {
-    if (resourceId) {
-      navigate(`/resources/${resourceId}`);
-      toast({
-        title: "Ressource ouverte",
-        description: `Ouverture de "${resourceTitle}"`,
-        duration: 2000,
-      });
-      return;
-    }
-
-    navigate("/resources");
+  const openResource = (resourceId?: string | number) => {
+    navigate(resourceId ? `/resources/${resourceId}` : "/resources");
   };
 
   return (
-    <div className="space-y-4 sticky top-20">
-      <Card className="campus-card">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-primary" />
-            Sphères actives
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {isLoading && <p className="text-sm text-muted-foreground">Chargement...</p>}
+    <div className="space-y-3 sticky top-[72px]">
+
+      {/* Spheres actives */}
+      <Card variant="default">
+        <CardSection
+          title="Spheres actives"
+          action={<span onClick={() => navigate("/spheres")}>Voir tout</span>}
+        />
+        <CardContent className="pt-0 space-y-0.5">
+          {isLoading && (
+            <div className="space-y-2 py-1">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="h-10 rounded-[var(--radius-sm)] bg-muted animate-pulse" />
+              ))}
+            </div>
+          )}
           {!isLoading && popularSpheres.length === 0 && (
-            <p className="text-sm text-muted-foreground">Aucune sphère à afficher.</p>
+            <p className="text-caption py-3 text-center">Aucune sphere a afficher.</p>
           )}
           {popularSpheres.map((sphere) => (
             <button
               key={sphere.id}
               type="button"
-              className="w-full flex items-center justify-between hover:bg-accent/50 p-2 rounded-lg transition-colors text-left border border-input"
               onClick={() => openSphere(sphere.id, sphere.name)}
+              className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-[var(--radius-sm)] hover:bg-accent transition-colors text-left group"
             >
-              <div className="min-w-0">
-                <div className="font-medium text-sm truncate">{sphere.name}</div>
-                <Badge variant="secondary" className="text-xs">
-                  {sphere.category ? (getSphereCategoryLabel(String(sphere.category).trim().toLowerCase()) || "Autre") : "Sphère collaborative"}
-                </Badge>
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-medium text-foreground truncate">{sphere.name}</div>
+                <div className="text-micro mt-0.5">
+                  {sphere.category
+                    ? (getSphereCategoryLabel(String(sphere.category).trim().toLowerCase()) || "Autre")
+                    : "Sphere collaborative"}
+                </div>
               </div>
-              <Badge variant="secondary" className="text-xs">
-                {sphere.memberCount || 0} membres
-              </Badge>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <span className="text-micro text-muted-foreground">{sphere.memberCount || 0}</span>
+                <ChevronRight className="h-3 w-3 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
+              </div>
             </button>
           ))}
         </CardContent>
       </Card>
 
-      <Card className="campus-card">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <BookOpen className="h-4 w-4 text-primary" />
-            Ressources récentes
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {isLoading && <p className="text-sm text-muted-foreground">Chargement...</p>}
+      {/* Ressources recentes */}
+      <Card variant="default">
+        <CardSection
+          title="Ressources recentes"
+          action={<span onClick={() => navigate("/resources")}>Voir tout</span>}
+        />
+        <CardContent className="pt-0 space-y-0.5">
+          {isLoading && (
+            <div className="space-y-2 py-1">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="h-14 rounded-[var(--radius-sm)] bg-muted animate-pulse" />
+              ))}
+            </div>
+          )}
           {!isLoading && recentResources.length === 0 && (
-            <p className="text-sm text-muted-foreground">Aucune ressource récente.</p>
+            <p className="text-caption py-3 text-center">Aucune ressource recente.</p>
           )}
           {recentResources.map((resource) => (
             <button
               key={resource.id}
               type="button"
-              className="w-full space-y-1 hover:bg-accent/50 p-2 rounded-lg transition-colors text-left border border-input"
-              onClick={() => openResource(resource.id, resource.title)}
+              onClick={() => openResource(resource.id)}
+              className="w-full px-3 py-2 rounded-[var(--radius-sm)] hover:bg-accent transition-colors text-left space-y-1 group"
             >
-              <div className="font-medium text-sm line-clamp-2">{resource.title}</div>
-              <div className="flex flex-wrap gap-1">
-                <Badge variant="secondary" className="text-[10px]">
-                  {getSubjectLabel(resource.subject)}
-                </Badge>
-                <Badge variant="outline" className="text-[10px]">
-                  {getResourceTypeLabel(resource.type)}
-                </Badge>
+              <div className="text-sm font-medium text-foreground line-clamp-2 leading-snug">{resource.title}</div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <Badge variant="muted" size="sm">{getSubjectLabel(resource.subject)}</Badge>
+                <Badge variant="outline" size="sm">{getResourceTypeLabel(resource.type)}</Badge>
               </div>
-              <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                <span className="truncate">{resource.authorName || "Auteur inconnu"}</span>
-                <span>{formatRelativeTime(resource.createdAt)}</span>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-micro truncate">{resource.authorName || "Auteur inconnu"}</span>
+                <span className="text-micro flex-shrink-0">{formatRelativeTime(resource.createdAt)}</span>
               </div>
             </button>
           ))}
         </CardContent>
       </Card>
 
-      <Card className="campus-card">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <ExternalLink className="h-4 w-4 text-primary" />
-            Accès rapide
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <Button variant="outline" className="w-full justify-between" onClick={() => navigate("/spheres")}>
-            Explorer les sphères
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" className="w-full justify-between" onClick={() => navigate("/resources")}>
-            Explorer les ressources
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" className="w-full justify-between" onClick={() => navigate("/notifications")}>
-            Voir les notifications
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-        </CardContent>
-      </Card>
+      {/* Footer version */}
+      <div className="px-4 py-3 text-center">
+        <span className="font-automata text-sm text-muted-foreground/60 tracking-wide">CampusSphere</span>
+        <span className="block text-micro text-muted-foreground/40">v{appVersion}</span>
+      </div>
 
-      <Card className="campus-card mt-5">
-        <CardContent className="pt-4 md:pt-6 p-4 md:p-6">
-          <div className="text-center space-y-4">
-            <div>
-              <h3 className="font-automata text-primary text-lg md:text-xl">CampusSphere</h3>
-              <p className="text-xs md:text-sm text-muted-foreground">Version {appVersion}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
