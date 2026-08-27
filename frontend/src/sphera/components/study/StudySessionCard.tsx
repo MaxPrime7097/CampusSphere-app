@@ -55,79 +55,62 @@ export const StudySessionCard: React.FC<StudySessionCardProps> = ({
   });
 
   return (
-    <Card
+    <div
+      onClick={() => onResume(session.id)}
       className={cn(
-        "group border bg-card hover:shadow-md transition-all duration-200 overflow-hidden",
-        className
+        "group relative flex flex-col p-5 bg-card hover:bg-accent/50 border border-border/40 hover:border-border hover:shadow-sm transition-all duration-200 cursor-pointer overflow-hidden",
+        className || "rounded-2xl"
       )}
     >
-      <CardContent className="p-0">
-        {/* Barre colorée en haut */}
-        <div className={cn("h-1 w-full bg-[#ff9800]")} />
-
-        <div className="p-4 space-y-3">
-          {/* Header */}
-          <div className="flex items-start gap-3">
-            <div className={cn("p-2 rounded-xl flex-shrink-0 bg-[#ff9800]/10 border border-[#ff9800]/20")}>
-              <Icon className={cn("h-4 w-4 text-[#ff9800]")} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="font-semibold text-sm text-foreground line-clamp-1">
-                {session.content_preview || resourceName}
-              </p>
-              <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-                {resourceName}
-              </p>
-            </div>
-          </div>
-
-          {/* Badges */}
-          <div className="flex items-center gap-2 flex-wrap">
-            {tools.map((t) => (
-              <Badge
-                key={t}
-                variant="secondary"
-                className="text-[10px] px-2 py-0 h-5 bg-[#ff9800]/10 border-[#ff9800]/20 border text-[#ff9800]"
-              >
-                {TOOL_CONFIG[t]?.label || t}
-              </Badge>
-            ))}
-            {session.is_shared && (
-              <Badge
-                variant="secondary"
-                className="text-[10px] px-2 py-0 h-5 bg-green-500/10 border-green-500/20 text-green-600 dark:text-green-400 border"
-              >
-                <Share2 className="h-2.5 w-2.5 mr-1" />
-                {session.sphere_name ? `Partagé dans ${session.sphere_name}` : "Partagé"}
-              </Badge>
-            )}
-            <span className="text-[10px] text-muted-foreground ml-auto">{timeAgo}</span>
-          </div>
-
-          {/* Actions */}
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              className="flex-1 h-8 gap-1.5 campus-gradient text-white text-xs"
-              onClick={() => onResume(session.id)}
-            >
-              <Play className="h-3 w-3" />
-              Reprendre
-            </Button>
-            {onDelete && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 w-8 p-0 text-muted-foreground hover:text-red-500 hover:border-red-500/50"
-                onClick={() => onDelete(session.id)}
-                title="Supprimer"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            )}
-          </div>
+      {/* Top Header: Icon and Trash */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
+          <Icon className="h-5 w-5 text-primary" />
         </div>
-      </CardContent>
-    </Card>
+        
+        {onDelete && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(session.id);
+            }}
+            className="p-2 -mr-2 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all"
+            title="Supprimer"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
+      {/* Middle: Title & Subtitle */}
+      <h3 className="font-semibold text-foreground text-sm mb-1 line-clamp-1">
+        {session.content_preview || resourceName}
+      </h3>
+      <p className="text-xs text-muted-foreground mb-4 line-clamp-1">
+        Extrait de {resourceName}
+      </p>
+
+      {/* Bottom: Date & Badges */}
+      <div className="mt-auto flex items-center justify-between gap-2">
+        <span className="text-xs text-muted-foreground font-medium">
+          {timeAgo}
+        </span>
+        <div className="flex gap-1.5 flex-wrap justify-end">
+          {tools.map((t) => (
+            <span
+              key={t}
+              className="px-2 py-0.5 rounded-md bg-muted border border-border/50 text-[10px] font-medium text-foreground uppercase tracking-wider"
+            >
+              {TOOL_CONFIG[t]?.label || t}
+            </span>
+          ))}
+          {session.is_shared && (
+            <span className="px-2 py-0.5 rounded-md bg-green-500/10 border border-green-500/20 text-[10px] font-medium text-green-600 dark:text-green-400 uppercase tracking-wider flex items-center gap-1">
+              <Share2 className="w-3 h-3" /> Partagé
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };

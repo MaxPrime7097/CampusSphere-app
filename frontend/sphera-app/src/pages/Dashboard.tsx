@@ -49,11 +49,11 @@ export default function Dashboard() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto pb-12">
-      <main className="flex-1 container mx-auto max-w-5xl px-4 py-8">
+      <main className="flex-1 w-full max-w-5xl mx-auto py-8 px-0 sm:px-4">
         
         {/* Welcome Area */}
-        <div className="text-center mb-10 mt-10">
-          <h1 className="font-display text-4xl font-bold text-white mb-2">
+        <div className="text-center mb-10 mt-10 px-4 sm:px-0">
+          <h1 className="font-display text-3xl sm:text-4xl font-bold text-white mb-2">
             Salut {user?.first_name || user?.username || 'Spherian'}, prêt à réviser ?
           </h1>
           <p className="text-sphera-text-muted">Je suis Sphera, ton assistante de révision académique.</p>
@@ -61,7 +61,7 @@ export default function Dashboard() {
         </div>
 
         {/* Upload Area (Simplified) */}
-        <div className="max-w-2xl mx-auto mb-16">
+        <div className="max-w-2xl mx-auto mb-16 px-4 sm:px-0">
           <div className="bg-sphera-surface-2 border border-sphera-border rounded-2xl p-6 shadow-xl relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-sphera-green to-transparent opacity-50" />
             <UploadZone 
@@ -74,7 +74,7 @@ export default function Dashboard() {
 
 
         {/* Tabs */}
-        <div className="flex items-center gap-2 mb-8 border-b border-sphera-border pb-px">
+        <div className="flex items-center gap-2 mb-8 border-b border-sphera-border pb-px px-4 sm:px-0">
           <button
             onClick={() => setActiveTab('sessions')}
             className={`pb-3 px-2 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
@@ -103,18 +103,18 @@ export default function Dashboard() {
             <Loader2 className="w-6 h-6 animate-spin" />
           </div>
         ) : displayedItems.length === 0 ? (
-          <div className="text-center p-12 bg-sphera-surface-2 rounded-2xl border border-sphera-border">
+          <div className="text-center p-12 bg-sphera-surface-2 rounded-2xl border border-sphera-border mx-4 sm:mx-0">
             <FileText className="w-12 h-12 text-sphera-text-muted mx-auto mb-4 opacity-50" />
             <p className="text-white font-medium mb-1">Aucune {activeTab === 'annales' ? 'annale' : 'session'} trouvée</p>
             <p className="text-sm text-sphera-text-muted">Upload un document pour commencer à réviser.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-1 sm:gap-4">
             {displayedItems.map(item => (
               <Link 
                 key={item.id} 
                 to={`/${activeTab === 'annales' ? 'annales' : 'sessions'}/${item.id}`}
-                className="sphera-card p-5 group hover:-translate-y-1 hover:border-sphera-border/80 hover:bg-sphera-surface-2 transition-all block"
+                className="sphera-card p-5 group hover:-translate-y-1 hover:border-sphera-border/80 hover:bg-sphera-surface-2 transition-all block rounded-none sm:rounded-2xl border-x-0 sm:border-x"
               >
                 <div className="flex items-center justify-between mb-4">
                   <div className="w-10 h-10 rounded-lg bg-sphera-bg border border-sphera-border flex items-center justify-center">

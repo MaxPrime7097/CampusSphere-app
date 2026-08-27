@@ -29,7 +29,7 @@ export default function AppPage() {
       // Navigate to a result page
       navigate('/result', { 
         state: { 
-          tools: generationMode === 'study' ? selectedTools : ['annale'], 
+          tool: generationMode === 'study' ? selectedTools[0] : 'annale', 
           filename: file.name 
         } 
       })
