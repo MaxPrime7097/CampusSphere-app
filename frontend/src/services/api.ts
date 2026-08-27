@@ -1751,7 +1751,7 @@ export async function deleteMessage(conversationId: number | string, messageId: 
 export async function createPrivateConversation(userId: number | string, token?: string) {
   const response = await apiFetch<any>("api/conversations/private/create/", {
     method: "POST",
-    body: { recipient_id: userId },
+    body: { recipient_id: typeof userId === 'string' ? parseInt(userId, 10) : userId },
     token: token || getAccessToken(),
   });
   return unwrapItem<any>(response);
