@@ -153,7 +153,7 @@ export const SpheraHome: React.FC = () => {
                 onClick={() => { window.open(getSpheraStandaloneUrl(), "_blank"); }}
                 className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2"
               >
-                  <SpheraIcon size="md" />
+                  <SpheraIcon size="md" variant="white" />
                 <span className="hidden sm:inline">Ouvrir</span> Sphera
               </Button>
               <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} className="gap-2">

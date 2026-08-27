@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { SPHERE_CATEGORY_OPTIONS } from "@/constants/sphereCategories";
-import { Loader2, Check, ArrowLeft, ArrowRight } from "lucide-react";
+import { Loader2, Check, ArrowLeft, ArrowRight, BookOpen, Target, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { createSphere } from "@/services/api";
@@ -262,13 +262,14 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
                         : "border-border hover:border-primary/50 hover:bg-muted/50"
                     )}
                   >
-                    {/* Emoji dans un cercle avec gradient */}
                     <div className={cn(
-                      "h-12 w-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 bg-gradient-to-br",
+                      "h-12 w-12 rounded-xl flex items-center justify-center text-white flex-shrink-0 bg-gradient-to-br",
                       option.gradient,
                       "shadow-sm"
                     )}>
-                      {option.emoji}
+                      {option.iconName === 'book-open' && <BookOpen className="h-6 w-6" />}
+                      {option.iconName === 'target' && <Target className="h-6 w-6" />}
+                      {option.iconName === 'globe' && <Globe className="h-6 w-6" />}
                     </div>
                     <div className="min-w-0">
                       <p className="font-semibold text-sm text-foreground">{option.label}</p>

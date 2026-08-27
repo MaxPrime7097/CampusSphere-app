@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ExternalLink } from "lucide-react";
 import { getNavigationSections, type NavigationUser, type NavigationItem } from "./navigationConfig";
 import { useUnreadCounts } from "@/hooks/useUnreadCounts";
+import { SpheraIcon } from "@/components/ui/sphera-icon";
 
 export function AppSidebar({ user: externalUser }: { user?: NavigationUser }) {
   const { state } = useSidebar();
@@ -47,8 +48,12 @@ export function AppSidebar({ user: externalUser }: { user?: NavigationUser }) {
             {active && !isCollapsed && (
               <span className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-[3px] rounded-full bg-primary" />
             )}
-            <div className="relative flex-shrink-0">
-              <item.icon className={["h-[18px] w-[18px]", active ? "text-primary" : ""].join(" ")} />
+            <div className="relative flex-shrink-0 flex items-center justify-center">
+              {item.url === "/sphera" ? (
+                <SpheraIcon size="md" className={!active ? "opacity-70 grayscale" : ""} />
+              ) : (
+                <item.icon className={["h-[18px] w-[18px]", active ? "text-primary" : ""].join(" ")} />
+              )}
               {badge !== null && isCollapsed && (
                 <span className="absolute -top-1 -right-1 min-w-[14px] h-3.5 bg-primary text-primary-foreground text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">
                   {badge > 99 ? "99+" : badge}
