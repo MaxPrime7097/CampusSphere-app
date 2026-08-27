@@ -302,6 +302,27 @@
     }
   }
 
+  /* ── Legacy aliases (backwards compat) ──
+     campus-card/campus-glow still referenced in ~50 files.
+     They now map to the new clean design system values.
+  ────────────────────────────────────────── */
+  .campus-card {
+    background-color: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-xs);
+    transition: var(--transition-base);
+  }
+  .campus-card:hover {
+    box-shadow: var(--shadow-sm);
+  }
+  .campus-glow {
+    box-shadow: var(--shadow-sm);
+  }
+  .campus-hero-gradient {
+    background: var(--gradient-primary);
+  }
+
   /* ── Horizontal scroll section ──────
      Usage: <div class="cs-scroll-row">
               <div class="cs-scroll-item">...</div>

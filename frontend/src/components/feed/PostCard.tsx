@@ -485,10 +485,10 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
 
   const categoryLabel = getCategoryLabel(post.category);
   const cardClasses = cn(
-    "transition-all duration-300",
+    "transition-all duration-200",
     isMobile
       ? "rounded-none border-x-0 border-t-0 shadow-none bg-card"
-      : "campus-card hover:campus-glow"
+      : "cs-card hover:shadow-[var(--shadow-sm)]"
   );
 
   if (isDeleted) {
@@ -689,19 +689,19 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="gap-2 h-9 px-2 md:px-3 hover:text-primary transition-all active:scale-95"
+                  className="gap-2 h-9 px-2 md:px-3 hover:text-foreground transition-all active:scale-95"
                   onClick={() => requireAuth(() => setCommentsOpen(true))}
                 >
                   <MessageCircle className="h-4 w-4" />
                   <span className="text-xs font-medium">{post.comments}</span>
                 </Button>
 
-                <Button variant="ghost" size="sm" className="h-9 px-2 hover:text-primary transition-all active:scale-95" onClick={handleShare}>
+                <Button variant="ghost" size="sm" className="h-9 px-2 hover:text-foreground transition-all active:scale-95" onClick={handleShare}>
                   <Share className="h-4 w-4" />
                 </Button>
               </div>
 
-              <div className="flex items-center justify-between sm:justify-end gap-2 rounded-xl bg-accent/30 p-1 border border-primary/10">
+              <div className="flex items-center justify-between sm:justify-end gap-2 rounded-lg bg-muted/50 p-1">
                 <div className="flex items-center">
                   <Button
                     variant="ghost"
@@ -730,13 +730,13 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                     <X className="h-3.5 w-3.5" />
                   </Button>
                 </div>
-                <div className="flex items-center gap-1.5 px-3 py-1 bg-background rounded-lg shadow-sm border border-primary/5 group relative">
-                  <Zap className="h-4 w-4 text-primary animate-pulse" />
-                  <span className="text-sm font-bold text-primary">{impactScore}</span>
+                <div className="flex items-center gap-1.5 px-3 py-1 bg-background rounded-md shadow-sm border">
+                  <Zap className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-bold text-foreground">{impactScore}</span>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-5 w-5 p-0 rounded-full hover:bg-primary/20 transition-colors ml-1"
+                    className="h-5 w-5 p-0 rounded-full hover:bg-muted transition-colors ml-1"
                     onClick={(e) => {
                       e.stopPropagation();
                       toast({
@@ -746,7 +746,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
 
                     }}
                   >
-                    <Info className="h-3 w-3 text-primary/60" />
+                    <Info className="h-3 w-3 text-muted-foreground" />
                   </Button>
                 </div>
 
@@ -814,7 +814,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
           <div className="grid grid-cols-3 gap-3 py-2">
             <Button
               variant="outline"
-              className="flex flex-col h-20 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
+              className="flex flex-col h-20 gap-2 hover:bg-accent"
               onClick={() => handleSocialShare("whatsapp")}
             >
               <div className="h-7 w-7 rounded-full bg-green-500 flex items-center justify-center text-white">
@@ -825,7 +825,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
 
             <Button
               variant="outline"
-              className="flex flex-col h-20 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
+              className="flex flex-col h-20 gap-2 hover:bg-accent"
               onClick={() => handleSocialShare("twitter")}
             >
               <div className="h-7 w-7 rounded-full bg-sky-500 flex items-center justify-center text-white">
@@ -836,7 +836,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
 
             <Button
               variant="outline"
-              className="flex flex-col h-20 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
+              className="flex flex-col h-20 gap-2 hover:bg-accent"
               onClick={() => handleSocialShare("facebook")}
             >
               <div className="h-7 w-7 rounded-full bg-blue-600 flex items-center justify-center text-white">
@@ -847,7 +847,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
 
             <Button
               variant="outline"
-              className="flex flex-col h-20 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
+              className="flex flex-col h-20 gap-2 hover:bg-accent"
               onClick={() => handleSocialShare("linkedin")}
             >
               <div className="h-7 w-7 rounded-full bg-blue-700 flex items-center justify-center text-white">
@@ -858,7 +858,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
 
             <Button
               variant="outline"
-              className="flex flex-col h-20 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
+              className="flex flex-col h-20 gap-2 hover:bg-accent"
               onClick={() => handleSocialShare("instagram")}
             >
               <div className="h-7 w-7 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 flex items-center justify-center text-white">
@@ -869,7 +869,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
 
             <Button
               variant="outline"
-              className="flex flex-col h-20 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
+              className="flex flex-col h-20 gap-2 hover:bg-accent"
               onClick={handleCopyLink}
               disabled={isCopyingLink}
             >
@@ -885,7 +885,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
           <div className="space-y-4 pt-2">
             <div className="flex items-center justify-between">
               <p className="text-sm font-bold flex items-center gap-2">
-                <Users className="h-5 w-5 text-primary" /> Envoyer à un ami sur CampusSphere
+                <Users className="h-5 w-5 text-muted-foreground" /> Envoyer à un ami sur CampusSphere
               </p>
             </div>
 
@@ -918,20 +918,21 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                     return !q || c.name.toLowerCase().includes(q) || c.username.toLowerCase().includes(q);
                   })
                   .map((contact) => (
-                    <div key={contact.id} className="flex items-center justify-between gap-2 p-2 rounded-xl hover:bg-accent/50 transition-colors border border-transparent hover:border-primary/10 group">
+                    <div key={contact.id} className="flex items-center justify-between gap-2 p-2 rounded-lg hover:bg-accent transition-colors group">
                       <div className="flex items-center gap-3 min-w-0">
                         <Avatar className="h-9 w-9 flex-shrink-0 border">
                           <AvatarImage src={contact.avatar} />
-                          <AvatarFallback className="bg-primary/5 text-primary">{(contact.name || "U").slice(0, 1).toUpperCase()}</AvatarFallback>
+                          <AvatarFallback className="bg-muted text-muted-foreground">{(contact.name || "U").slice(0, 1).toUpperCase()}</AvatarFallback>
                         </Avatar>
                         <div className="min-w-0">
-                          <p className="text-sm font-semibold truncate group-hover:text-primary transition-colors">{contact.name}</p>
+                          <p className="text-sm font-semibold truncate group-hover:text-foreground transition-colors">{contact.name}</p>
                           {contact.username && <p className="text-[10px] text-muted-foreground">@{contact.username}</p>}
                         </div>
                       </div>
                       <Button
                         size="sm"
-                        className="rounded-full px-4 h-8 bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all active:scale-95 border-none"
+                        variant="secondary"
+                        className="rounded-full px-4 h-8 active:scale-95 border-none"
                         onClick={() => handleShareToFriend(contact.id, contact.name)}
                         disabled={sendingToUserId === contact.id}
                       >

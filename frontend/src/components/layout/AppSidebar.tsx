@@ -76,7 +76,7 @@ export function AppSidebar({ user: externalUser }: { user?: NavigationUser }) {
 
   return (
     <Sidebar className={isCollapsed ? "w-20" : "w-60"} collapsible="icon">
-      <SidebarContent className="pt-20">
+      <SidebarContent className="pt-[60px]">
         {navigationItems.length > 0 && (
           <SidebarGroup>
             <SidebarGroupLabel className="cs-section-title px-3 mb-1">Navigation</SidebarGroupLabel>

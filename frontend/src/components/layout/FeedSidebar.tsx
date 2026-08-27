@@ -66,7 +66,7 @@ export function FeedSidebar() {
   };
 
   return (
-    <div className="space-y-3 sticky top-[72px]">
+    <div className="space-y-3 sticky top-[64px]">
 
       {/* Spheres actives */}
       <Card variant="default">
