@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import {
   FileText, Download, Eye, Bookmark,
   Video, FileCode, Archive, FileImage,
-  Loader2, Sparkles,
+  Loader2,
 } from "lucide-react";
+import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { getTypeLabel, getSubjectLabel } from "@/lib/resourceMetadata";
 import { formatFileSize, cn } from "@/lib/utils";
 import { StudyToolsModal } from "@/sphera/components/study/StudyToolsModal";
@@ -137,7 +138,7 @@ export const ResourceCard = React.memo(({
                 onClick={(e) => { e.stopPropagation(); setStudyOpen(true); }}
                 title="Reviser avec l'IA"
               >
-                <Sparkles className="h-3.5 w-3.5" />
+                <SpheraIcon size="sm" />
               </Button>
               <Button
                 size="sm"

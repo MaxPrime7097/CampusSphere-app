@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Sparkles, FileText, BookOpen, Loader2 } from "lucide-react";
+import { FileText, BookOpen, Loader2 } from "lucide-react";
+import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { Button } from "@/components/ui/button";
 import { StudyToolsModal } from "@/sphera/components/study/StudyToolsModal";
 import { getSphereFiles, getSphereStudySessions } from "@/services/api";
@@ -60,7 +61,7 @@ export function SphereSpheraTab({ sphereId }: SphereSpheraTabProps) {
     return (
       <div className="flex flex-col items-center justify-center py-16 gap-4 text-center px-4">
         <div className="h-16 w-16 rounded-2xl bg-[#ff9800]/10 flex items-center justify-center">
-          <Sparkles className="h-8 w-8 text-[#ff9800]" />
+          <SpheraIcon size="xl" className="opacity-40" />
         </div>
         <div>
           <p className="font-semibold text-foreground">Aucune ressource disponible</p>
@@ -84,7 +85,7 @@ export function SphereSpheraTab({ sphereId }: SphereSpheraTabProps) {
       {/* En-tête */}
       <div className="bg-gradient-to-r from-[#ff9800]/10 to-amber-500/5 border border-[#ff9800]/20 rounded-xl p-4 flex items-center gap-3">
         <div className="h-10 w-10 rounded-xl bg-[#ff9800]/15 flex items-center justify-center flex-shrink-0">
-          <Sparkles className="h-5 w-5 text-[#ff9800]" />
+          <SpheraIcon size="lg" />
         </div>
         <div>
           <p className="font-semibold text-sm">Réviser avec Sphera</p>
@@ -127,7 +128,7 @@ export function SphereSpheraTab({ sphereId }: SphereSpheraTabProps) {
                 setStudyModal({ open: true, resourceId: file.id, resourceTitle: file.title })
               }
             >
-              <Sparkles className="h-3.5 w-3.5" />
+              <SpheraIcon size="sm" />
               Réviser
             </Button>
           </div>
@@ -138,7 +139,7 @@ export function SphereSpheraTab({ sphereId }: SphereSpheraTabProps) {
       {sharedSessions.length > 0 && (
         <div className="pt-6 space-y-4">
           <div className="flex items-center gap-2 px-1">
-            <Sparkles className="h-4 w-4 text-[#ff9800]" />
+            <SpheraIcon size="md" />
             <h3 className="font-bold text-sm">Sessions partagées par les membres</h3>
           </div>
           

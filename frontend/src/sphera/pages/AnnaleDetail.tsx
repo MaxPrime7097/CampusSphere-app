@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { ArrowLeft, Share2, Sparkles, AlertCircle, Loader2, Check } from "lucide-react";
+import { ArrowLeft, Share2, AlertCircle, Loader2, Check } from "lucide-react";
+import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -121,7 +122,7 @@ export const AnnaleDetail: React.FC = () => {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="bg-[#ff9800]/10 text-[#ff9800] px-2.5 py-1 rounded-full text-xs font-semibold flex items-center border border-[#ff9800]/20">
-                <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+                <SpheraIcon size="sm" className="mr-1.5" />
                 Correction Sphera
               </span>
             </div>

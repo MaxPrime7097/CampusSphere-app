@@ -12,12 +12,12 @@ import {
   Loader2,
   Share2,
   AlertCircle,
-  Sparkles,
   ChevronLeft,
   Check,
   Columns,
   BrainCircuit,
 } from "lucide-react";
+import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { FicheRevision } from "./FicheRevision";
 import { QuizInteractif } from "./QuizInteractif";
 import { Flashcards } from "./Flashcards";
@@ -202,7 +202,7 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
               </button>
             )}
             <div className="flex items-center gap-2 min-w-0">
-              <Sparkles className="h-5 w-5 text-[#ff9800] flex-shrink-0" />
+              <SpheraIcon size="lg" />
               <div className="min-w-0">
                 <DialogTitle className="text-base font-bold">
                   Réviser avec l'IA
@@ -255,7 +255,7 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
                 onClick={handleGenerate}
                 className="w-full campus-gradient text-white gap-2 mt-2"
               >
-                <Sparkles className="h-4 w-4" />
+                <SpheraIcon size="md" />
                 Générer{selectedTypes.length > 0 ? ` (${selectedTypes.length} outil${selectedTypes.length > 1 ? 's' : ''})` : ""}
               </Button>
             </div>
@@ -266,7 +266,7 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
             <div className="flex flex-col items-center justify-center py-16 gap-4">
               <div className="relative">
                 <div className="h-14 w-14 rounded-full bg-[#ff9800]/10 flex items-center justify-center">
-                  <Sparkles className="h-7 w-7 text-[#ff9800]" />
+                  <SpheraIcon size="xl" />
                 </div>
                 <Loader2 className="h-14 w-14 text-[#ff9800] animate-spin absolute inset-0" />
               </div>
