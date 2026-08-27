@@ -1293,7 +1293,6 @@ export function Profile() {
               </li>
             ))}
           </ul>
-        </div>
 
           {/* POSTS */}
           {activeTab === "posts" && (
