@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Eye, EyeOff, Mail, Lock, Loader2, AlertCircle } from "lucide-react";
 import { FaGoogle, FaFacebook } from "react-icons/fa";
+import { FcGoogle } from "react-icons/fc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -113,10 +114,10 @@ export function Login() {
             {/* OAuth */}
             <div className="space-y-3">
               <Button variant="outline" className="w-full" onClick={handleGoogle} disabled={isGoogleLoading || isLoading || isFacebookLoading}>
-                {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FaGoogle className="mr-2 h-4 w-4 text-red-500" />}
+                {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FcGoogle className="mr-2 h-4 w-4" />}
                 Continuer avec Google
               </Button>
-              <Button variant="outline" className="w-full" onClick={handleFacebook} disabled={isFacebookLoading || isLoading || isGoogleLoading}>
+              <Button variant="outline" className="hidden w-full" onClick={handleFacebook} disabled={isFacebookLoading || isLoading || isGoogleLoading}>
                 {isFacebookLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FaFacebook className="mr-2 h-4 w-4 text-blue-600" />}
                 Continuer avec Facebook
               </Button>
