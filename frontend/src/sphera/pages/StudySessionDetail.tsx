@@ -196,11 +196,11 @@ export const StudySessionDetail: React.FC = () => {
 
       {/* ─── Tabs ─── */}
       <Tabs defaultValue={defaultTab} className="w-full">
-        <SharedTabsList>
+        <TabsList>
           {(["fiche", "quiz", "flashcards"] as ToolType[]).map((t) => {
             const isGenerated = toolTypes.includes(t);
             return (
-              <SharedTabsTrigger 
+              <TabsTrigger 
                 key={t} 
                 value={t}
                 className={!isGenerated ? "opacity-70" : ""}
@@ -216,16 +216,16 @@ export const StudySessionDetail: React.FC = () => {
                     </span>
                   )}
                 </div>
-              </SharedTabsTrigger>
+              </TabsTrigger>
             );
           })}
-          <SharedTabsTrigger value="qa">
+          <TabsTrigger value="qa">
             <div className="flex items-center">
               <MessageCircleQuestion className="h-4 w-4 mr-2" />
               Q&A
             </div>
-          </SharedTabsTrigger>
-        </SharedTabsList>
+          </TabsTrigger>
+        </TabsList>
 
         <div className="mt-8">
           {(["fiche", "quiz", "flashcards"] as ToolType[]).map((t) => {

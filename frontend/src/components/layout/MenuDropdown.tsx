@@ -1,5 +1,5 @@
 import {
-  Menu, Shield, ExternalLink
+  Menu, Shield, ExternalLink, BadgeCheck
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -91,9 +91,9 @@ export function MenuDropdown({ user: externalUser }: { user?: NavigationUser }) 
                 <div>
                   <div className="flex items-center gap-2">
                     <h4 className="font-semibold text-sm hover:underline">{displayName}</h4>
-                    <div className="w-4 h-4 campus-gradient rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
-                    </div>
+                    {user?.isVerified && (
+                      <BadgeCheck className="h-4 w-4 text-primary fill-primary/10" />
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <p className="text-xs text-muted-foreground">{displayUsername}</p>

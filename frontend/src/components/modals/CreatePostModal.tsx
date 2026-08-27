@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { createPost, searchUsers } from "@/services/api";
+import { createPost, searchUsers, uploadFile } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -318,27 +318,41 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
     setIsSubmitting(true);
     
     try {
-      // Create post via API
-      const postPayload = new FormData();
-      postPayload.append('content', content);
-      postPayload.append('visibility', apiVisibility);
-
-      if (tags.length > 0) {
-        postPayload.append('tags', JSON.stringify(tags));
+      // Upload files first if any
+      const uploadedDescriptors = [];
+      if (uploadedFiles.length > 0) {
+        const uploads = await Promise.all(uploadedFiles.map(f => uploadFile(f, "post")));
+        for (const u of uploads) {
+          if (u.data) {
+            uploadedDescriptors.push(u.data);
+          } else {
+            uploadedDescriptors.push(u);
+          }
+        }
       }
 
-      uploadedFiles.forEach((file) => {
-        postPayload.append('files[]', file);
-      });
+      // Create post via API
+      const postPayload: Record<string, any> = {
+        content,
+        visibility: apiVisibility,
+        allow_comments: allowComments
+      };
 
-      if (category) postPayload.append('category', category);
-      if (subject) postPayload.append('subject', subject);
-      if (type) postPayload.append('type', type);
-      if (audience) postPayload.append('audience', audience);
-      if (location) postPayload.append('location', location);
-      postPayload.append('allow_comments', String(allowComments));
+      if (tags.length > 0) {
+        postPayload.tags = tags;
+      }
+
+      if (uploadedDescriptors.length > 0) {
+        postPayload.files = uploadedDescriptors;
+      }
+
+      if (category) postPayload.category = category;
+      if (subject) postPayload.subject = subject;
+      if (type) postPayload.type = type;
+      if (audience) postPayload.audience = audience;
+      if (location) postPayload.location = location;
       
-      const result = await createPost(postPayload);
+      const result = await createPost(postPayload as any);
       const createdPost = result?.data ?? result;
       
       const postData: PostDraftData = { 
