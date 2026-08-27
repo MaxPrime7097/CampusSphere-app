@@ -1270,8 +1270,8 @@ export function Profile() {
         </div>
 
         {/* Profile Tabs - CUSTOM (SAME AS SPHERES) */}
-        <div className="mt-4 campus-animate-slide-up">
-          <ul className="grid grid-flow-col text-center border-b border-gray-200 text-gray-500">
+        <div className="mt-4 campus-animate-slide-up w-full overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <ul className="inline-grid grid-flow-col text-center border-b border-gray-200 text-gray-500 min-w-full">
             {[
               { id: "posts", label: "Posts" },
               { id: "about", label: "À propos" },
@@ -1282,7 +1282,7 @@ export function Profile() {
                 <button
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
-                    "w-full flex justify-center border-b-4 py-4 transition-all duration-200 text-sm font-medium",
+                    "w-full flex justify-center px-4 whitespace-nowrap border-b-4 py-4 transition-all duration-200 text-sm font-medium",
                     activeTab === tab.id
                       ? "border-primary text-primary"
                       : "border-transparent hover:text-primary hover:border-primary"

@@ -172,7 +172,7 @@ export const StudySessionDetail: React.FC = () => {
                 </span>
               )}
             </div>
-            <h1 className="text-3xl font-bold tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight break-words">
               {session.resource_title || session.source_filename || "Session d'étude"}
             </h1>
             <p className="text-muted-foreground mt-2">
@@ -187,7 +187,7 @@ export const StudySessionDetail: React.FC = () => {
               )}
             </p>
           </div>
-          <Button variant="outline" className="gap-2" onClick={handleOpenShare} disabled={shared}>
+          <Button variant="outline" className="gap-2 w-full md:w-auto mt-4 md:mt-0" onClick={handleOpenShare} disabled={shared}>
             {shared ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
             {shared ? "Partagé" : "Partager"}
           </Button>
@@ -196,22 +196,22 @@ export const StudySessionDetail: React.FC = () => {
 
       {/* ─── Tabs ─── */}
       <Tabs defaultValue={defaultTab} className="w-full">
-        <TabsList>
+        <TabsList className="flex overflow-x-auto w-full h-auto border-b justify-start sm:justify-center gap-1 sm:gap-4 no-scrollbar">
           {(["fiche", "quiz", "flashcards"] as ToolType[]).map((t) => {
             const isGenerated = toolTypes.includes(t);
             return (
               <TabsTrigger 
                 key={t} 
                 value={t}
-                className={!isGenerated ? "opacity-70" : ""}
+                className={!isGenerated ? "opacity-70 whitespace-nowrap" : "whitespace-nowrap"}
               >
                 <div className="flex items-center">
-                  {t === "fiche" && <BookOpen className="h-4 w-4 mr-2" />}
-                  {t === "quiz" && <BrainCircuit className="h-4 w-4 mr-2" />}
-                  {t === "flashcards" && <Columns className="h-4 w-4 mr-2" />}
+                  {t === "fiche" && <BookOpen className="h-4 w-4 mr-2 hidden sm:block" />}
+                  {t === "quiz" && <BrainCircuit className="h-4 w-4 mr-2 hidden sm:block" />}
+                  {t === "flashcards" && <Columns className="h-4 w-4 mr-2 hidden sm:block" />}
                   {t.charAt(0).toUpperCase() + t.slice(1)}
                   {!isGenerated && (
-                    <span className="ml-2 text-[9px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full border">
+                    <span className="ml-2 text-[9px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full border hidden sm:inline-block">
                       + Générer
                     </span>
                   )}
@@ -219,21 +219,21 @@ export const StudySessionDetail: React.FC = () => {
               </TabsTrigger>
             );
           })}
-          <TabsTrigger value="qa">
+          <TabsTrigger value="qa" className="whitespace-nowrap">
             <div className="flex items-center">
-              <MessageCircleQuestion className="h-4 w-4 mr-2" />
+              <MessageCircleQuestion className="h-4 w-4 mr-2 hidden sm:block" />
               Q&A
             </div>
           </TabsTrigger>
         </TabsList>
 
-        <div className="mt-8">
+        <div className="mt-6 sm:mt-8">
           {(["fiche", "quiz", "flashcards"] as ToolType[]).map((t) => {
             const isGenerated = toolTypes.includes(t);
             return (
               <TabsContent key={t} value={t} className="mt-0 focus-visible:outline-none focus-visible:ring-0">
                 {!isGenerated ? (
-                  <div className="flex flex-col items-center justify-center p-12 text-center bg-card rounded-2xl border">
+                  <div className="flex flex-col items-center justify-center p-6 sm:p-12 text-center bg-card rounded-2xl border">
                     <SpheraIcon size="xl" className="mx-auto mb-4 opacity-50" />
                     <h3 className="text-xl font-bold mb-2">Cet outil n'a pas encore été généré</h3>
                     <p className="text-sm text-muted-foreground mb-8 max-w-sm">
@@ -265,7 +265,7 @@ export const StudySessionDetail: React.FC = () => {
 
           {/* ─── Q&A Tab ─── */}
           <TabsContent value="qa" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-            <div className="max-w-2xl">
+            <div className="w-full">
               <p className="text-sm text-muted-foreground mb-4">
                 Pose tes questions sur le contenu de ce cours. Sphera répond uniquement depuis le document original.
               </p>

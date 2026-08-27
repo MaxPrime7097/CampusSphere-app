@@ -172,12 +172,12 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <div className="hidden md:block">
+      <div className="min-h-screen flex w-full bg-background overflow-x-hidden">
+        <div className="hidden md:block shrink-0">
           <AppSidebar user={user} />
         </div>
         
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           {/* Mobile Top Bar*/}
           {!hideNavOnMobile && <MobileTopBar user={user} isLoading={isProfileLoading} />}
           

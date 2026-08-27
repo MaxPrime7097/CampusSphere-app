@@ -521,8 +521,8 @@ export function Resources() {
         </Card>
 
         {/* Tab Navigation */}
-        <div>
-        <ul className="grid grid-flow-col text-center border-b border-gray-200 text-gray-500 mb-6">
+        <div className="w-full overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden mb-6">
+        <ul className="inline-grid grid-flow-col text-center border-b border-gray-200 text-gray-500 min-w-full">
           {[
             { id: "all", label: "Toutes" },
             { id: "suggestions", label: "Suggestions" },
@@ -531,7 +531,7 @@ export function Resources() {
               <button
                 onClick={() => { setActiveTab(tab.id as ResourceSortKey); setShowFoldersTab(false); }}
                 className={cn(
-                  "w-full flex justify-center border-b-4 py-4 transition-all duration-200 text-sm font-medium",
+                  "w-full flex justify-center px-4 whitespace-nowrap border-b-4 py-4 transition-all duration-200 text-sm font-medium",
                   !showFoldersTab && resolvedResourceSort === tab.id
                     ? "border-primary text-primary"
                     : "border-transparent hover:text-primary hover:border-primary"
@@ -546,7 +546,7 @@ export function Resources() {
               <button
                 onClick={() => { setShowFoldersTab(true); loadFolders(); }}
                 className={cn(
-                  "w-full flex justify-center border-b-4 py-4 transition-all duration-200 text-sm font-medium",
+                  "w-full flex justify-center px-4 whitespace-nowrap border-b-4 py-4 transition-all duration-200 text-sm font-medium",
                   showFoldersTab
                     ? "border-primary text-primary"
                     : "border-transparent hover:text-primary hover:border-primary"
