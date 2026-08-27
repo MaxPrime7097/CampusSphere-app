@@ -119,7 +119,6 @@ export function MenuDropdown({ user: externalUser }: { user?: NavigationUser }) 
             <SidebarGroupContent>
               <SidebarMenu>
                 {quickActions.map((item) => (
-                <Card className="py-2" key={item.title}>
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
                       <NavLink to={item.url} className={getNavClasses} onClick={closeMenu}>
@@ -128,7 +127,6 @@ export function MenuDropdown({ user: externalUser }: { user?: NavigationUser }) 
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                </Card>
                 ))}
               </SidebarMenu>
             </SidebarGroupContent>
@@ -141,7 +139,6 @@ export function MenuDropdown({ user: externalUser }: { user?: NavigationUser }) 
             <SidebarGroupContent>
               <SidebarMenu>
                 {utilities.map((item) => (
-                <Card className="py-2" key={item.title}>
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
                       <NavLink to={item.url} end className={getNavClasses} onClick={closeMenu}>
@@ -151,7 +148,6 @@ export function MenuDropdown({ user: externalUser }: { user?: NavigationUser }) 
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                </Card>
                 ))}
               </SidebarMenu>
             </SidebarGroupContent>
@@ -162,7 +158,6 @@ export function MenuDropdown({ user: externalUser }: { user?: NavigationUser }) 
             <SidebarGroupLabel>Administration</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                <Card className="py-2">
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild>
                       <NavLink to="/admin/dashboard" className={getNavClasses} onClick={closeMenu}>
@@ -172,22 +167,15 @@ export function MenuDropdown({ user: externalUser }: { user?: NavigationUser }) 
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                </Card>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         )}
 
-        <Card className="campus-card mt-5">
-          <CardContent className="pt-4 md:pt-6 p-4 md:p-6">
-            <div className="text-center space-y-4">
-              <div>
-                <h3 className="font-automata text-primary text-lg md:text-xl">CampusSphere</h3>
-                <p className="text-xs md:text-sm text-muted-foreground">Version {appVersion}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="mt-8 mb-4 text-center">
+          <h3 className="font-automata text-primary/60 text-lg md:text-xl">CampusSphere</h3>
+          <p className="text-xs text-muted-foreground/60">Version {appVersion}</p>
+        </div>
       </SheetContent>
     </Sheet>
   );

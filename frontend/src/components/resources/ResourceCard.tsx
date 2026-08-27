@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  FileText, Download, Eye, Bookmark,
+  FileText, Download, Bookmark,
   Video, FileCode, Archive, FileImage,
   Loader2,
 } from "lucide-react";
@@ -64,7 +64,13 @@ export const ResourceCard = React.memo(({
           "group overflow-hidden cursor-pointer cs-card-raised border-border/40",
           className
         )}
-        onClick={() => navigate(`/resources/${resource.id}`)}
+        onClick={(e) => {
+          if (onPreview) {
+            onPreview(e);
+          } else {
+            navigate(`/resources/${resource.id}`);
+          }
+        }}
       >
         <CardContent className="p-0">
           {/* Color bar top — type indicator */}
@@ -76,16 +82,6 @@ export const ResourceCard = React.memo(({
               <h3 className="font-semibold text-sm line-clamp-1 text-foreground leading-tight">
                 {resource.title}
               </h3>
-              <div className="flex items-center gap-1.5 mt-1">
-                <Badge variant="muted" size="sm">
-                  {getSubjectLabel(resource.subject)}
-                </Badge>
-                {resource.type && (
-                  <span className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium">
-                    {getTypeLabel(resource.type)}
-                  </span>
-                )}
-              </div>
             </div>
           </div>
 
@@ -94,9 +90,6 @@ export const ResourceCard = React.memo(({
             <div className="flex items-center justify-between text-[10px] text-muted-foreground">
               <span className="truncate max-w-[100px]">Par {resource.authorName}</span>
               <div className="flex items-center gap-2">
-                <span className="flex items-center gap-0.5">
-                  <Eye className="h-3 w-3" /> {resource.viewCount || 0}
-                </span>
                 <span className="flex items-center gap-0.5">
                   <Download className="h-3 w-3" /> {resource.downloadCount || 0}
                 </span>
@@ -110,15 +103,6 @@ export const ResourceCard = React.memo(({
 
             {/* Action buttons */}
             <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 w-7 p-0 rounded-[var(--radius-sm)] hover:bg-accent"
-                onClick={onPreview}
-                title="Apercu"
-              >
-                <Eye className="h-3.5 w-3.5" />
-              </Button>
               <Button
                 size="sm"
                 variant="ghost"
@@ -142,7 +126,8 @@ export const ResourceCard = React.memo(({
               </Button>
               <Button
                 size="sm"
-                className="h-7 flex-1 gap-1 bg-primary text-primary-foreground hover:bg-primary/90 rounded-[var(--radius-sm)] shadow-none"
+                variant="secondary"
+                className="h-7 flex-1 gap-1 rounded-[var(--radius-sm)] shadow-none text-secondary-foreground hover:bg-primary hover:text-primary-foreground transition-colors"
                 onClick={onDownload}
                 disabled={isDownloading}
               >

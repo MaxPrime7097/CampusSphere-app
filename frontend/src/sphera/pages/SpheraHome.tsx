@@ -132,12 +132,7 @@ export const SpheraHome: React.FC = () => {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 px-4 sm:px-0">
             <div>
               <div className="flex items-center gap-2.5 mb-1">
-                <img 
-                  src="/sphera-logo.png" 
-                  className="w-8 h-8 object-contain"
-                  style={{ filter: "brightness(0) saturate(100%) invert(62%) sepia(97%) saturate(3195%) hue-rotate(13deg) brightness(103%) contrast(101%)" }}
-                  alt="Sphera"
-                />
+                <SpheraIcon size="xl" variant="primary" />
                 <h1 className="text-2xl font-bold tracking-tight text-foreground">
                   Assistante <span className="text-primary">Sphera</span>
                 </h1>
