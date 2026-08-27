@@ -934,7 +934,7 @@ export function Profile() {
 
   const cardClasses = cn(
     "transition-all duration-300",
-    isMobile ? "rounded-none border-x-0 border-t-0 shadow-none bg-card" : "campus-card hover:campus-glow"
+    isMobile ? "rounded-none border-x-0 border-t-0 shadow-none bg-card" : "cs-card hover:shadow-[var(--shadow-sm)]"
   );
 
   const EmptyField = () => <span className="italic text-muted-foreground text-xs font-normal">Aucun pour l'instant</span>;
