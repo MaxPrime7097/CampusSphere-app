@@ -146,7 +146,7 @@ export const StudySessionDetail: React.FC = () => {
   const defaultTab = toolTypes[0] || (hasQA ? "qa" : "fiche");
 
   return (
-    <div className="container py-8 max-w-5xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="w-full max-w-5xl mx-auto py-4 sm:py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <Helmet>
         <title>
           {session.resource_title || session.source_filename || "Session d'étude"} — CampusSphere
@@ -154,7 +154,7 @@ export const StudySessionDetail: React.FC = () => {
       </Helmet>
 
       {/* ─── Header ─── */}
-      <div className="mb-8">
+      <div className="mb-6 sm:mb-8 px-4 sm:px-8">
         <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4 -ml-4 text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft className="mr-2 h-4 w-4" /> Retour
         </Button>
@@ -175,7 +175,7 @@ export const StudySessionDetail: React.FC = () => {
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight break-words">
               {session.resource_title || session.source_filename || "Session d'étude"}
             </h1>
-            <p className="text-muted-foreground mt-2">
+            <p className="text-muted-foreground mt-2 text-sm sm:text-base">
               Généré le{" "}
               {new Date(session.created_at).toLocaleDateString("fr-FR", {
                 day: "numeric",
@@ -196,42 +196,44 @@ export const StudySessionDetail: React.FC = () => {
 
       {/* ─── Tabs ─── */}
       <Tabs defaultValue={defaultTab} className="w-full">
-        <TabsList className="flex overflow-x-auto w-full h-auto border-b justify-start sm:justify-center gap-1 sm:gap-4 no-scrollbar">
-          {(["fiche", "quiz", "flashcards"] as ToolType[]).map((t) => {
-            const isGenerated = toolTypes.includes(t);
-            return (
-              <TabsTrigger 
-                key={t} 
-                value={t}
-                className={!isGenerated ? "opacity-70 whitespace-nowrap" : "whitespace-nowrap"}
-              >
-                <div className="flex items-center">
-                  {t === "fiche" && <BookOpen className="h-4 w-4 mr-2 hidden sm:block" />}
-                  {t === "quiz" && <BrainCircuit className="h-4 w-4 mr-2 hidden sm:block" />}
-                  {t === "flashcards" && <Columns className="h-4 w-4 mr-2 hidden sm:block" />}
-                  {t.charAt(0).toUpperCase() + t.slice(1)}
-                  {!isGenerated && (
-                    <span className="ml-2 text-[9px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full border hidden sm:inline-block">
-                      + Générer
-                    </span>
-                  )}
-                </div>
-              </TabsTrigger>
-            );
-          })}
-          <TabsTrigger value="qa" className="whitespace-nowrap">
-            <div className="flex items-center">
-              <MessageCircleQuestion className="h-4 w-4 mr-2 hidden sm:block" />
-              Q&A
-            </div>
-          </TabsTrigger>
-        </TabsList>
+        <div className="px-4 sm:px-8">
+          <TabsList className="flex overflow-x-auto w-full h-auto border-b justify-start sm:justify-center gap-1 sm:gap-4 no-scrollbar">
+            {(["fiche", "quiz", "flashcards"] as ToolType[]).map((t) => {
+              const isGenerated = toolTypes.includes(t);
+              return (
+                <TabsTrigger 
+                  key={t} 
+                  value={t}
+                  className={!isGenerated ? "opacity-70 whitespace-nowrap" : "whitespace-nowrap"}
+                >
+                  <div className="flex items-center">
+                    {t === "fiche" && <BookOpen className="h-4 w-4 mr-2 hidden sm:block" />}
+                    {t === "quiz" && <BrainCircuit className="h-4 w-4 mr-2 hidden sm:block" />}
+                    {t === "flashcards" && <Columns className="h-4 w-4 mr-2 hidden sm:block" />}
+                    {t.charAt(0).toUpperCase() + t.slice(1)}
+                    {!isGenerated && (
+                      <span className="ml-2 text-[9px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full border hidden sm:inline-block">
+                        + Générer
+                      </span>
+                    )}
+                  </div>
+                </TabsTrigger>
+              );
+            })}
+            <TabsTrigger value="qa" className="whitespace-nowrap">
+              <div className="flex items-center">
+                <MessageCircleQuestion className="h-4 w-4 mr-2 hidden sm:block" />
+                Q&A
+              </div>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-        <div className="mt-6 sm:mt-8">
+        <div className="mt-4 sm:mt-8">
           {(["fiche", "quiz", "flashcards"] as ToolType[]).map((t) => {
             const isGenerated = toolTypes.includes(t);
             return (
-              <TabsContent key={t} value={t} className="mt-0 focus-visible:outline-none focus-visible:ring-0">
+              <TabsContent key={t} value={t} className="mt-0 focus-visible:outline-none focus-visible:ring-0 px-4 sm:px-8">
                 {!isGenerated ? (
                   <div className="flex flex-col items-center justify-center p-6 sm:p-12 text-center bg-card rounded-2xl border">
                     <SpheraIcon size="xl" className="mx-auto mb-4 opacity-50" />
@@ -266,7 +268,7 @@ export const StudySessionDetail: React.FC = () => {
           {/* ─── Q&A Tab ─── */}
           <TabsContent value="qa" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
             <div className="w-full">
-              <p className="text-sm text-muted-foreground mb-4">
+              <p className="text-sm text-muted-foreground mb-4 px-4 sm:px-8 hidden sm:block">
                 Pose tes questions sur le contenu de ce cours. Sphera répond uniquement depuis le document original.
               </p>
               <QAChat

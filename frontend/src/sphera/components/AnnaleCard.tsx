@@ -8,11 +8,12 @@ interface AnnaleCardProps {
   annale: AnnaleSessionListItem;
   onOpen: (id: number) => void;
   onDelete: (id: number) => void;
+  className?: string;
 }
 
-export function AnnaleCard({ annale, onOpen, onDelete }: AnnaleCardProps) {
+export function AnnaleCard({ annale, onOpen, onDelete, className }: AnnaleCardProps) {
   return (
-    <div className="group relative flex flex-col rounded-2xl border border-border/40 bg-card/50 hover:bg-card/80 hover:border-[#ff9800]/30 hover:shadow-md transition-all duration-200 overflow-hidden">
+    <div className={cn("group relative flex flex-col rounded-2xl border border-border/40 bg-card/50 hover:bg-card/80 hover:border-[#ff9800]/30 hover:shadow-md transition-all duration-200 overflow-hidden", className)}>
       {/* Color accent */}
       <div className="h-1 w-full bg-gradient-to-r from-[#ff9800]/80 to-[#ff9800]/30" />
 

@@ -125,11 +125,11 @@ export const SpheraHome: React.FC = () => {
         <link rel="canonical" href="https://sphera.campussphere.app/" />
       </Helmet>
 
-      <div className="min-h-screen bg-background">
-        <div className="w-full max-w-6xl mx-auto py-4 md:py-5 px-2 sm:px-4">
+      <div className="min-h-screen bg-background pb-20">
+        <div className="w-full max-w-6xl mx-auto py-4 md:py-5 px-0 sm:px-4">
 
           {/* Header — same pattern as Spheres/Resources pages */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 px-2 sm:px-0">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 px-4 sm:px-0">
             <div>
               <div className="flex items-center gap-2.5 mb-1">
                 <img 
@@ -147,7 +147,7 @@ export const SpheraHome: React.FC = () => {
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 px-4 sm:px-0">
               <Button
                 size="sm"
                 onClick={() => { window.open(getSpheraStandaloneUrl(), "_blank"); }}
@@ -176,21 +176,23 @@ export const SpheraHome: React.FC = () => {
 
           {/* Tabs — same SharedTabsList as Spheres/Resources */}
           <Tabs defaultValue="sessions" className="w-full">
-            <SharedTabsList>
-              <SharedTabsTrigger value="sessions">
-                Sessions d'etude
-                <Badge variant="muted" size="sm" className="ml-1.5">{sessions.length}</Badge>
-              </SharedTabsTrigger>
-              <SharedTabsTrigger value="annales">
-                Annales
-                <Badge variant="muted" size="sm" className="ml-1.5">{annales.length}</Badge>
-              </SharedTabsTrigger>
-            </SharedTabsList>
+            <div className="px-4 sm:px-0">
+              <SharedTabsList>
+                <SharedTabsTrigger value="sessions">
+                  Sessions d'étude
+                  <Badge variant="muted" size="sm" className="ml-1.5">{sessions.length}</Badge>
+                </SharedTabsTrigger>
+                <SharedTabsTrigger value="annales">
+                  Annales
+                  <Badge variant="muted" size="sm" className="ml-1.5">{annales.length}</Badge>
+                </SharedTabsTrigger>
+              </SharedTabsList>
+            </div>
 
             {/* Sessions Tab */}
             <TabsContent value="sessions" className="mt-4">
               {/* Filters */}
-              <div className="flex gap-2 flex-wrap mb-5">
+              <div className="flex gap-2 flex-wrap mb-5 px-4 sm:px-0">
                 {FILTER_OPTIONS.map((opt) => (
                   <button
                     key={opt.value}
@@ -232,13 +234,14 @@ export const SpheraHome: React.FC = () => {
                   </Button>
                 </div>
               ) : (
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-1 sm:gap-3">
                   {filteredSessions.map((session) => (
                     <StudySessionCard
                       key={session.id}
                       session={session}
                       onResume={(id) => navigate(`/sphera/sessions/${id}`)}
                       onDelete={handleDeleteSession}
+                      className="rounded-none sm:rounded-xl border-x-0 sm:border-x"
                     />
                   ))}
                 </div>
@@ -253,14 +256,14 @@ export const SpheraHome: React.FC = () => {
                   <p className="text-sm text-muted-foreground">Chargement des annales...</p>
                 </div>
               ) : annales.length === 0 ? (
-                <div className="flex flex-col items-center py-16 gap-4 text-center">
+                <div className="flex flex-col items-center py-16 gap-4 text-center px-4">
                   <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center">
                     <FileText className="h-6 w-6 text-muted-foreground" />
                   </div>
                   <div>
-                    <p className="font-semibold text-foreground">Aucune annale corrigee</p>
+                    <p className="font-semibold text-foreground">Aucune annale corrigée</p>
                     <p className="text-sm text-muted-foreground mt-1 max-w-xs">
-                      Uploadez une epreuve passee et laissez Sphera la corriger.
+                      Uploadez une épreuve passée et laissez Sphera la corriger.
                     </p>
                   </div>
                   <Button size="sm" onClick={() => setAnnaleModalOpen(true)} className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground">
@@ -269,13 +272,14 @@ export const SpheraHome: React.FC = () => {
                   </Button>
                 </div>
               ) : (
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {annales.map((annale) => (
+                <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-1 sm:gap-3">
+                  {annales.map((session) => (
                     <AnnaleCard
-                      key={annale.id}
-                      annale={annale}
+                      key={session.id}
+                      annale={session}
                       onOpen={(id) => navigate(`/sphera/annales/${id}`)}
                       onDelete={handleDeleteAnnale}
+                      className="rounded-none sm:rounded-xl border-x-0 sm:border-x"
                     />
                   ))}
                 </div>
