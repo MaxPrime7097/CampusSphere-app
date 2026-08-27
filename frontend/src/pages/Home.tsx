@@ -109,9 +109,9 @@ export function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
+    <div className="min-h-screen bg-background">
       <div className={isMobile ? "" : "container max-w-7xl mx-auto"}>
-        <div className={isMobile ? "w-full" : "grid grid-cols-1 lg:grid-cols-12 gap-6 py-4 md:py-6 px-3 md:px-4"}>
+        <div className={isMobile ? "w-full" : "grid grid-cols-1 lg:grid-cols-12 gap-5 py-4 md:py-5 px-3 md:px-4"}>
           {/* Main Feed - Center */}
           <div className={isMobile ? "w-full" : "lg:col-span-8 xl:col-span-7 space-y-4 md:space-y-6"}>
 
@@ -159,7 +159,7 @@ export function Home() {
                 variant="outline"
                 onClick={handleLoadMore}
                 disabled={isLoading}
-                className="text-primary hover:text-primary-light font-medium"
+                className="font-medium"
               >
                 {isLoading ? (
                   <>
