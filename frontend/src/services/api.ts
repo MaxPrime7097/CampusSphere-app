@@ -1953,9 +1953,10 @@ export async function getFilterOptions(token?: string) {
 // UPLOAD
 // ============================================================================
 
-export async function uploadFile(file: File, token?: string) {
+export async function uploadFile(file: File, type: string = "other", token?: string) {
   const formData = new FormData();
   formData.append('file', file);
+  formData.append('type', type);
   return apiFetch<any>("api/upload/", {
     method: "POST",
     body: formData,
