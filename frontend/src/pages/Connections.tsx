@@ -328,7 +328,7 @@ export function Connections() {
                 onAction={hasActiveFilters ? () => { setSearchQuery(""); setActiveFilter("all"); } : undefined}
               />
             ) : (
-              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 cursor-pointer">
                 {filteredConnections.map((connection) => (
                   <Card key={connection.id} className="border bg-card hover:shadow-md transition-shadow duration-200 cursor-pointer" onClick={() => navigate(`/profile/${connection.username}`)}>
                     <CardContent className="p-4">
@@ -393,7 +393,7 @@ export function Connections() {
                 description="Vous n'avez pas de demandes de connexion pour le moment."
               />
             ) : (
-              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 cursor-pointer">
                 {pendingRequests.map((request) => (
                   <Card key={request.id} className="border bg-card">
                     <CardContent className="p-4">
@@ -468,7 +468,7 @@ export function Connections() {
                 onAction={hasActiveFilters ? () => { setSearchQuery(""); setActiveFilter("all"); } : undefined}
               />
             ) : (
-              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 cursor-pointer">
                 {filteredSuggestions.map((suggestion) => (
                   <Card key={suggestion.id} className="border bg-card hover:shadow-md transition-shadow duration-200" onClick={() => navigate(`/profile/${suggestion.username}`)}>
                     <CardContent className="p-4">

@@ -77,11 +77,20 @@ export const getSphereFeatures = (type?: SphereType | string | null): SphereFeat
 
 /** Libellés affichés dans le badge de type */
 export const SPHERE_TYPE_LABELS: Record<SphereType, string> = {
-  cours:      '📚 Cours',
-  projet:     '🎯 Projet',
-  club:       '🏆 Club',
-  revision:   '✏️ Révision',
-  communaute: '🌐 Communauté',
+  cours:      'Cours',
+  projet:     'Projet',
+  club:       'Club',
+  revision:   'Révision',
+  communaute: 'Communauté',
+}
+
+/** Icônes associées au type pour les badges */
+export const SPHERE_TYPE_ICONS: Record<SphereType, any> = {
+  cours:      'BookOpen',
+  projet:     'Target',
+  club:       'Trophy',
+  revision:   'Pencil',
+  communaute: 'Globe',
 }
 
 /** Couleurs Tailwind pour le badge de type */
@@ -99,21 +108,21 @@ export const SPHERE_TYPE_OPTIONS_V1 = [
     value: 'cours' as SphereType,
     label: 'Sphère de Cours',
     description: 'Cours, TDs, annales & révision avec Sphera intégrée',
-    emoji: '📚',
+    iconName: 'book-open',
     gradient: 'from-blue-500 to-indigo-500',
   },
   {
     value: 'projet' as SphereType,
     label: 'Sphère de Projet',
     description: 'Kanban, tâches assignées & fichiers partagés',
-    emoji: '🎯',
+    iconName: 'target',
     gradient: 'from-violet-500 to-purple-500',
   },
   {
     value: 'communaute' as SphereType,
     label: 'Communauté',
     description: 'Espace ouvert pour une filière ou un intérêt commun',
-    emoji: '🌐',
+    iconName: 'globe',
     gradient: 'from-sky-500 to-cyan-500',
   },
 ]

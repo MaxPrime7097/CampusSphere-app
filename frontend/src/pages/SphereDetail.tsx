@@ -16,7 +16,7 @@ import { Progress } from "@/components/ui/progress";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 import {
-  Users, FileText, Settings, Check, MoreVertical, Loader2, Plus, Shield, Crown, UserPlus, UserMinus, UserCheck, UserX, Camera, ExternalLink, Download, Info, X, Copy, Share, ArrowLeft, Share2, BadgeCheck, AlertCircle, Search
+  Users, FileText, Settings, Check, MoreVertical, Loader2, Plus, Shield, Crown, UserPlus, UserMinus, UserCheck, UserX, Camera, ExternalLink, Download, Info, X, Copy, Share, ArrowLeft, Share2, BadgeCheck, AlertCircle, Search, Target, Globe, Trophy, BookOpen
 } from "lucide-react";
 import { FaFacebook, FaTwitter, FaWhatsapp, FaLinkedin } from 'react-icons/fa';
 
@@ -25,7 +25,7 @@ import { renderMentionText } from "@/lib/mentions";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { getSphereFeatures, SPHERE_TYPE_LABELS, SPHERE_TYPE_COLORS, type SphereType } from "@/config/sphereFeatures";
+import { getSphereFeatures, SPHERE_TYPE_LABELS, SPHERE_TYPE_COLORS, SPHERE_TYPE_ICONS, type SphereType } from "@/config/sphereFeatures";
 import { SphereSpheraTab } from "@/components/sphere/SphereSpheraTab";
 import { AnnouncementsTab } from "@/components/sphere/AnnouncementsTab";
 
@@ -623,9 +623,17 @@ export function SphereDetail() {
               {/* Actions */}
               <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  {/* Badge de type */}
                   {sphere?.sphere_type && (
                     <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full border ${SPHERE_TYPE_COLORS[sphere.sphere_type as SphereType] ?? 'bg-muted text-muted-foreground border-border'}`}>
+                      {(() => {
+                        const iconName = SPHERE_TYPE_ICONS[sphere.sphere_type as SphereType];
+                        if (iconName === 'BookOpen') return <BookOpen className="h-3.5 w-3.5" />;
+                        if (iconName === 'Target') return <Target className="h-3.5 w-3.5" />;
+                        if (iconName === 'Globe') return <Globe className="h-3.5 w-3.5" />;
+                        if (iconName === 'Trophy') return <Trophy className="h-3.5 w-3.5" />;
+                        if (iconName === 'Pencil') return <FileText className="h-3.5 w-3.5" />;
+                        return null;
+                      })()}
                       {SPHERE_TYPE_LABELS[sphere.sphere_type as SphereType] ?? sphere.sphere_type}
                     </span>
                   )}

@@ -196,30 +196,36 @@ export const StudySessionDetail: React.FC = () => {
 
       {/* ─── Tabs ─── */}
       <Tabs defaultValue={defaultTab} className="w-full">
-        <TabsList className="w-full justify-start overflow-x-auto bg-transparent border-b rounded-none h-auto p-0 space-x-6">
+        <SharedTabsList>
           {(["fiche", "quiz", "flashcards"] as ToolType[]).map((t) => {
             const isGenerated = toolTypes.includes(t);
             return (
-              <TabsTrigger 
+              <SharedTabsTrigger 
                 key={t} 
-                value={t} 
-                className={`${TAB_STYLE} ${!isGenerated ? "opacity-70" : ""}`}
+                value={t}
+                className={!isGenerated ? "opacity-70" : ""}
               >
-                {t === "fiche" && <BookOpen className="h-5 w-5 mr-2" />}
-                {t === "quiz" && <BrainCircuit className="h-5 w-5 mr-2" />}
-                {t === "flashcards" && <Columns className="h-5 w-5 mr-2" />}
-                {t.charAt(0).toUpperCase() + t.slice(1)}
-                {!isGenerated && (
-                  <span className="ml-2 text-[10px] bg-secondary px-1.5 py-0.5 rounded-full border opacity-50">+</span>
-                )}
-              </TabsTrigger>
+                <div className="flex items-center">
+                  {t === "fiche" && <BookOpen className="h-4 w-4 mr-2" />}
+                  {t === "quiz" && <BrainCircuit className="h-4 w-4 mr-2" />}
+                  {t === "flashcards" && <Columns className="h-4 w-4 mr-2" />}
+                  {t.charAt(0).toUpperCase() + t.slice(1)}
+                  {!isGenerated && (
+                    <span className="ml-2 text-[9px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full border">
+                      + Générer
+                    </span>
+                  )}
+                </div>
+              </SharedTabsTrigger>
             );
           })}
-          <TabsTrigger value="qa" className={TAB_STYLE}>
-            <MessageCircleQuestion className="h-5 w-5 mr-2" />
-            Q&A
-          </TabsTrigger>
-        </TabsList>
+          <SharedTabsTrigger value="qa">
+            <div className="flex items-center">
+              <MessageCircleQuestion className="h-4 w-4 mr-2" />
+              Q&A
+            </div>
+          </SharedTabsTrigger>
+        </SharedTabsList>
 
         <div className="mt-8">
           {(["fiche", "quiz", "flashcards"] as ToolType[]).map((t) => {
@@ -241,7 +247,7 @@ export const StudySessionDetail: React.FC = () => {
                       {isGeneratingTool ? (
                         <><Loader2 className="w-4 h-4 animate-spin"/> Génération...</>
                       ) : (
-                        <><SpheraIcon size="md"/> Générer {t === 'flashcards' ? 'les' : 'le'} {t}</>
+                        <><SpheraIcon size="md" variant="white" /> Générer {t === 'flashcards' ? 'les' : 'le'} {t}</>
                       )}
                     </Button>
                     {toolError && <p className="text-destructive text-sm mt-4">{toolError}</p>}

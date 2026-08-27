@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, Clock, Check, Loader2, Zap } from "lucide-react";
+import { Users, Clock, Check, Loader2, Zap, BookOpen, Target, Globe, Trophy, FileText } from "lucide-react";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import { cn } from "@/lib/utils";
-import { SPHERE_TYPE_LABELS, SPHERE_TYPE_COLORS, type SphereType } from "@/config/sphereFeatures";
+import { SPHERE_TYPE_LABELS, SPHERE_TYPE_COLORS, SPHERE_TYPE_ICONS, type SphereType } from "@/config/sphereFeatures";
 
 interface SphereCardProps {
   sphere: any;
@@ -51,7 +51,16 @@ export const SphereCard = React.memo(({ sphere, isJoining, membership = "none", 
           
           {/* Type badge — top left */}
           <div className="absolute top-2 left-2">
-             <Badge className={cn("px-1.5 py-0 text-[9px] font-semibold border shadow-sm", SPHERE_TYPE_COLORS[sphereType])}>
+             <Badge className={cn("px-1.5 py-0.5 flex items-center gap-1 text-[10px] font-medium border shadow-sm", SPHERE_TYPE_COLORS[sphereType])}>
+                {(() => {
+                  const iconName = SPHERE_TYPE_ICONS[sphereType];
+                  if (iconName === 'BookOpen') return <BookOpen className="h-2.5 w-2.5" />;
+                  if (iconName === 'Target') return <Target className="h-2.5 w-2.5" />;
+                  if (iconName === 'Globe') return <Globe className="h-2.5 w-2.5" />;
+                  if (iconName === 'Trophy') return <Trophy className="h-2.5 w-2.5" />;
+                  if (iconName === 'Pencil') return <FileText className="h-2.5 w-2.5" />;
+                  return null;
+                })()}
                 {SPHERE_TYPE_LABELS[sphereType]}
              </Badge>
           </div>

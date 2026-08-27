@@ -255,7 +255,7 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
                 onClick={handleGenerate}
                 className="w-full campus-gradient text-white gap-2 mt-2"
               >
-                <SpheraIcon size="md" />
+                <SpheraIcon size="md" variant="white" />
                 Générer{selectedTypes.length > 0 ? ` (${selectedTypes.length} outil${selectedTypes.length > 1 ? 's' : ''})` : ""}
               </Button>
             </div>
