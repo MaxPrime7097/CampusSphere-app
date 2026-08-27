@@ -710,9 +710,9 @@ export function Resources() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-4 mb-4">
                     <Button variant="outline" size="sm" onClick={() => setViewAllCategory(null)}>
-                      ← Retour aux catégories
+                      ← Retour
                     </Button>
-                    <h2 className="text-xl font-medium">{categoryLabel}</h2>
+                    <h2 className="ml-2 text-xl font-medium">{categoryLabel}</h2>
                   </div>
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                     {categoryResources.map((resource) => (
@@ -741,7 +741,7 @@ export function Resources() {
                   return (
                     <div key={opt.value} className="flex flex-col w-full max-w-full overflow-hidden">
                       <div className="flex justify-between items-center mb-2">
-                        <h2 className="text-lg font-semibold text-foreground">{opt.label}</h2>
+                        <h2 className="ml-2 text-lg font-semibold text-foreground">{opt.label}</h2>
                         {categoryResources.length > 4 && (
                           <Button 
                             variant="ghost" 

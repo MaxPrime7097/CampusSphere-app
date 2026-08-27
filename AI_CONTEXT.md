@@ -19,6 +19,15 @@ L'écosystème est composé de deux parties principales qui interagissent :
 - **Refonte des Landing Pages croisées** : 
   - La section dédiée à Sphera sur la Landing Page de CampusSphere a été entièrement redésignée pour calquer l'élégance de la section CampusSphere sur la Landing Page de Sphera.
   - Le design est doux : fonds neutres, glow vert subtil (`opacity-5`), badges neutres et bouton principal neutre (`bg-foreground text-background`) qui devient coloré uniquement au survol.
+- **Menu Mobile (MenuDropdown / Burger)** :
+  - Suppression des composants `<Card>` qui enfermaient inutilement chaque élément de navigation (Actions, Utilitaires, Admin). Les éléments s'affichent maintenant en pleine largeur pour optimiser l'espace, suivant le design system de la sidebar.
+  - Remplacement de l'icône générique `Sparkles` par le logo officiel `SpheraIcon` dans la configuration de navigation (`navigationConfig.ts`).
+- **Cartes Ressources & Upload** :
+  - Sur `ResourceCard`, le clic sur la carte entière ouvre désormais l'aperçu directement (suppression de l'icône œil). Le bouton Télécharger est passé en gris (`secondary`) pour ne pas surcharger visuellement, avec un survol orange (`hover:bg-primary`).
+  - La modale d'upload de ressource (`UploadResourceModal`) gère désormais rigoureusement les noms de fichiers extrêmement longs sans élargir la modale.
+- **SpheraHome & Cartes Sphera** :
+  - Harmonisation des cartes (`StudySessionCard` et `AnnaleCard`) avec le design natif de l'app Sphera : ajout de l'effet de soulèvement au survol (`hover:-translate-y-1`) et respect du code couleur original des outils (bleu pour Fiches, violet pour Quiz, vert pour Flashcards, orange pour Annales).
+  - L'ancien logo avec filtre CSS (`sphera-logo.png`) sur la page d'accueil Sphera a été remplacé par le nouveau composant `SpheraIcon`.
 - **Boutons d'Authentification (`Login.tsx`, `Register.tsx`)** : 
   - Le bouton "Continuer avec Facebook" a été masqué (via CSS `hidden`) pour conserver la logique sous-jacente sans polluer l'UI.
   - L'icône Google a été remplacée par sa version officielle multicolore (`FcGoogle` au lieu de `FaGoogle`).
