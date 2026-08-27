@@ -753,7 +753,7 @@ export function Resources() {
                           </Button>
                         )}
                       </div>
-                      <div className="cs-scroll-row gap-3 -mx-2 px-2 pb-1">
+                      <div className="cs-scroll-row gap-3 pb-1">
                         {categoryResources.map((resource) => (
                           <div key={resource.id} className="cs-scroll-item w-[180px] sm:w-[250px]">
                             <ResourceCard

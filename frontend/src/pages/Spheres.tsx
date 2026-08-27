@@ -486,7 +486,7 @@ export function Spheres() {
               ) : (
               <div className={cn(
                 isMobile
-                  ? "cs-scroll-row gap-3 -mx-2 px-2"
+                  ? "cs-scroll-row gap-3"
                   : "grid gap-3 grid-cols-2 lg:grid-cols-4"
               )}>
                 {isSpheresLoading ? (
@@ -540,7 +540,7 @@ export function Spheres() {
               ) : (
               <div className={cn(
                 isMobile
-                  ? "cs-scroll-row gap-3 -mx-2 px-2"
+                  ? "cs-scroll-row gap-3"
                   : "grid gap-3 grid-cols-2 lg:grid-cols-4"
               )}>
                 {getSortedSpheres().map((sphere) => (

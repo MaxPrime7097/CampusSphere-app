@@ -335,8 +335,11 @@
     overflow-y: hidden;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: 4px; /* prevents shadow clipping */
+    padding-bottom: 4px;
     scrollbar-width: none;
+    max-width: 100%;
+    min-width: 0;
+    width: 100%;
   }
   .cs-scroll-row::-webkit-scrollbar { display: none; }
 

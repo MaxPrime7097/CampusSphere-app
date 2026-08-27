@@ -10,7 +10,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Share2, Sparkles, AlertCircle, Loader2, Check, MessageCircleQuestion, BookOpen, BrainCircuit, Columns } from "lucide-react";
+import { ArrowLeft, Share2, AlertCircle, Loader2, Check, MessageCircleQuestion, BookOpen, BrainCircuit, Columns } from "lucide-react";
+import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -161,7 +162,7 @@ export const StudySessionDetail: React.FC = () => {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="bg-[#ff9800]/10 text-[#ff9800] px-2.5 py-1 rounded-full text-xs font-semibold flex items-center border border-[#ff9800]/20">
-                <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+                <SpheraIcon size="sm" className="mr-1.5" />
                 Assistante Sphera
               </span>
               {hasQA && (
@@ -227,7 +228,7 @@ export const StudySessionDetail: React.FC = () => {
               <TabsContent key={t} value={t} className="mt-0 focus-visible:outline-none focus-visible:ring-0">
                 {!isGenerated ? (
                   <div className="flex flex-col items-center justify-center p-12 text-center bg-card rounded-2xl border">
-                    <Sparkles className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                    <SpheraIcon size="xl" className="mx-auto mb-4 opacity-50" />
                     <h3 className="text-xl font-bold mb-2">Cet outil n'a pas encore été généré</h3>
                     <p className="text-sm text-muted-foreground mb-8 max-w-sm">
                       Génère ce contenu instantanément en utilisant l'analyse déjà effectuée sur ton document.
@@ -240,7 +241,7 @@ export const StudySessionDetail: React.FC = () => {
                       {isGeneratingTool ? (
                         <><Loader2 className="w-4 h-4 animate-spin"/> Génération...</>
                       ) : (
-                        <><Sparkles className="w-4 h-4"/> Générer {t === 'flashcards' ? 'les' : 'le'} {t}</>
+                        <><SpheraIcon size="md"/> Générer {t === 'flashcards' ? 'les' : 'le'} {t}</>
                       )}
                     </Button>
                     {toolError && <p className="text-destructive text-sm mt-4">{toolError}</p>}
