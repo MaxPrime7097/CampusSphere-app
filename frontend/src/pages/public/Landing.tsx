@@ -307,11 +307,11 @@ export function Landing() {
 
           {/* ── Sphera Section ─────────────────────────────────── */}
           <div className="relative mb-20">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl h-[400px] bg-[radial-gradient(circle,rgba(34,197,94,0.05)_0%,transparent_70%)] blur-3xl -z-10 pointer-events-none" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl h-[400px] bg-[radial-gradient(circle,rgba(34,197,94,0.03)_0%,transparent_70%)] blur-3xl -z-10 pointer-events-none" />
 
-            <div className="rounded-3xl border border-[#22c55e]/30 bg-card overflow-hidden relative shadow-[0_0_50px_rgba(34,197,94,0.05)]">
+            <div className="rounded-3xl border border-border/50 bg-card overflow-hidden relative shadow-[0_0_50px_rgba(34,197,94,0.03)]">
               {/* Subtle Green Glow inside card */}
-              <div className="absolute top-0 right-0 w-64 h-64 bg-[#22c55e] opacity-10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none" />
+              <div className="absolute top-0 right-0 w-64 h-64 bg-[#22c55e] opacity-5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none" />
 
               <div className="grid grid-cols-1 md:grid-cols-2">
                 {/* Content Side */}
@@ -321,21 +321,20 @@ export function Landing() {
                   </div>
 
                   <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2">
-                    Sphera
+                    Découvre Sphera
                   </h2>
                   <p className="text-sm font-semibold mb-6" style={{ color: '#22c55e' }}>Votre assistante académique personnelle</p>
 
-                  <p className="text-muted-foreground mb-6 leading-relaxed font-medium">
+                  <p className="text-muted-foreground mb-6 leading-relaxed">
                     Ton assistante académique dopée à l'IA. Génère des fiches de révision, corrige tes annales sujets d'examens, crée des quiz personnalisés et des flashcards — puis exporte tout en PDF premium en un clic.
                   </p>
 
-                  {/* Feature pills */}
+                  {/* Feature pills (neutralized) */}
                   <div className="flex flex-wrap gap-2 mb-8">
                     {["Fiches de révision", "Flashcards", "Quiz adaptatifs", "Correction d'annales", "Chat IA en direct", "Export PDF premium"].map((feat) => (
                       <span
                         key={feat}
-                        className="px-3 py-1.5 rounded-full text-xs font-semibold font-poppins"
-                        style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)', color: '#22c55e' }}
+                        className="px-3 py-1.5 rounded-full text-xs font-medium font-poppins bg-muted/50 border border-border/50 text-muted-foreground"
                       >
                         {feat}
                       </span>
@@ -346,17 +345,16 @@ export function Landing() {
                   <div className="flex flex-col sm:flex-row gap-3 pt-2">
                     <button
                       onClick={() => navigate('/sphera')}
-                      className="group flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-bold text-white transition-all duration-300 hover:scale-105 shadow-[0_4px_24px_rgba(34,197,94,0.35)] self-start"
-                      style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)' }}
+                      className="group flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-sm font-semibold transition-colors duration-300 self-start bg-foreground text-background hover:bg-[#22c55e] hover:text-white"
                     >
-                      Essayer Sphera gratuitement
+                      Essayer Sphera
                       <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
                     </button>
                     <a
                       href={getSpheraUrl()}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-200 hover:scale-105 border border-border self-start text-foreground bg-accent/30"
+                      className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-sm font-semibold transition-colors duration-200 hover:bg-accent border border-border self-start text-foreground bg-transparent"
                     >
                       Ouvrir l'app Sphera
                     </a>

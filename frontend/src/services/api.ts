@@ -1284,9 +1284,13 @@ export async function getPostComments(postId: number | string, token?: string) {
 }
 
 export async function createComment(postId: number | string, data: { content: string; parent?: number | string }, token?: string) {
+  const bodyData: any = { content: data.content };
+  if (data.parent) {
+    bodyData.parent = typeof data.parent === 'string' ? parseInt(data.parent) : data.parent;
+  }
   return apiFetch<any>(`api/posts/${postId}/comments/`, {
     method: "POST",
-    body: data,
+    body: bodyData,
     token: token || getAccessToken(),
   });
 }
@@ -1647,7 +1651,7 @@ export async function moveTask(
 export async function assignTask(id: number | string, userId: number | string, token?: string) {
   return apiFetch<any>(`api/tasks/${id}/assign/`, {
     method: "POST",
-    body: { assigned_to_id: userId },
+    body: { assigned_to_id: typeof userId === 'string' ? parseInt(userId) : userId },
     token: token || getAccessToken(),
   });
 }
@@ -1686,7 +1690,7 @@ export async function createConversation(data: {
   participants?: (number | string)[];
   type?: "private" | "group";
 }, token?: string) {
-  const participantIds = data.participants ?? [];
+  const participantIds = (data.participants ?? []).map(id => typeof id === 'string' ? parseInt(id) : id);
   const payload = {
     type: data.type ?? (participantIds.length <= 1 ? "private" : "group"),
     name: data.name,
@@ -1760,7 +1764,7 @@ export async function createPrivateConversation(userId: number | string, token?:
 export async function createGroupConversation(name: string, participantIds: (number | string)[], token?: string) {
   const response = await apiFetch<any>("api/conversations/group/create/", {
     method: "POST",
-    body: { name, participant_ids: participantIds },
+    body: { name, participant_ids: participantIds.map(id => typeof id === 'string' ? parseInt(id) : id) },
     token: token || getAccessToken(),
   });
   return unwrapItem<any>(response);
@@ -1773,7 +1777,7 @@ export async function getConversationParticipants(conversationId: number | strin
 export async function addParticipant(conversationId: number | string, userId: number | string, token?: string) {
   return apiFetch<any>(`api/conversations/${conversationId}/participants/add/`, {
     method: "POST",
-    body: { user_id: userId },
+    body: { user_id: typeof userId === 'string' ? parseInt(userId) : userId },
     token: token || getAccessToken(),
   });
 }
@@ -2325,7 +2329,7 @@ export async function deleteStudySession(id: string | number) {
 export async function shareStudySession(sessionId: string | number, sphereId: string | number) {
   const response = await apiFetch<any>(`api/study/sessions/${sessionId}/share/`, {
     method: "POST",
-    body: { sphere_id: sphereId },
+    body: { sphere_id: typeof sphereId === 'string' ? parseInt(sphereId) : sphereId },
   });
   return response;
 }

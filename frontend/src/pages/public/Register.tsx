@@ -1,7 +1,8 @@
 import { Suspense, lazy, useState, useRef, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { ChevronLeft, ChevronRight, Upload, Check, Loader2, AlertCircle, Eye, EyeOff, X, ExternalLink, Plus, FileText, Mail, RefreshCw, Camera, Info } from "lucide-react";
-import { FaGoogle, FaFacebook } from "react-icons/fa";
+import { FaFacebook } from "react-icons/fa";
+import { FcGoogle } from "react-icons/fc";
 import { Button } from "@/components/ui/button";
 import { Input, REGISTRATION_MAX_LENGTHS } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -504,10 +505,10 @@ export function Register() {
               {/* Boutons OAuth */}
               <div className="space-y-2">
                 <Button variant="outline" className="w-full" onClick={handleGoogle} disabled={isGoogleLoading || isLoading} type="button">
-                  {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FaGoogle className="mr-2 h-4 w-4 text-red-500" />}
+                  {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FcGoogle className="mr-2 h-4 w-4" />}
                   Continuer avec Google
                 </Button>
-                <Button variant="outline" className="w-full disabled" onClick={() => supabaseSignInWithFacebook()} type="button">
+                <Button variant="outline" className="hidden w-full disabled" onClick={() => supabaseSignInWithFacebook()} type="button">
                   <FaFacebook className="mr-2 h-4 w-4 text-blue-600" />
                   Continuer avec Facebook
                 </Button>
