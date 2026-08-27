@@ -341,13 +341,13 @@ export function Spheres() {
 
 
   const cardClasses = cn(
-    "transition-all duration-300",
-    isMobile ? "rounded-none border-x-0 border-t-0 shadow-none bg-card" : "campus-card hover:campus-glow"
+    "transition-all duration-200",
+    isMobile ? "rounded-none border-x-0 border-t-0 shadow-none bg-card" : "cs-card"
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
-      <div className="w-full max-w-6xl mx-auto py-4 md:py-6 px-2 sm:px-4">
+    <div className="min-h-screen bg-background">
+      <div className="w-full max-w-6xl mx-auto py-4 md:py-5 px-2 sm:px-4">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 campus-animate-fade-in">
           <div>
@@ -362,7 +362,7 @@ export function Spheres() {
             </Button>
             {currentUser?.isVerified ? (
               <>
-                <Button size="sm" className="campus-gradient text-white hover:opacity-90 gap-2 w-full sm:w-auto" onClick={() => setIsCreateSphereOpen(true)}>
+                <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 w-full sm:w-auto" onClick={() => setIsCreateSphereOpen(true)}>
                   <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Créer</span>
                 </Button>
                 {isCreateSphereOpen && (
@@ -378,7 +378,7 @@ export function Spheres() {
             ) : (
               <Button 
                 size="sm" 
-                className="campus-gradient text-white hover:opacity-90 gap-2 w-full sm:w-auto"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 w-full sm:w-auto"
                 onClick={() => {
                   toast({
                     title: "Compte non vérifié",
@@ -484,20 +484,27 @@ export function Spheres() {
                   }}
                 />
               ) : (
-              <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+              <div className={cn(
+                isMobile
+                  ? "cs-scroll-row gap-3 -mx-2 px-2"
+                  : "grid gap-3 grid-cols-2 lg:grid-cols-4"
+              )}>
                 {isSpheresLoading ? (
                   Array.from({ length: 8 }).map((_, i) => (
-                    <SphereSkeleton key={i} />
+                    <div key={i} className={isMobile ? "cs-scroll-item w-[200px]" : ""}>
+                      <SphereSkeleton />
+                    </div>
                   ))
                 ) : (
                   getSortedSpheres().map((sphere) => (
-                    <SphereCard
-                      key={sphere.id}
-                      sphere={sphere}
-                      membership={getUnifiedMembershipState(sphere)}
-                      isJoining={isJoining === String(sphere.id)}
-                      onJoin={() => handleJoinSphere(sphere.id, sphere.name)}
-                    />
+                    <div key={sphere.id} className={isMobile ? "cs-scroll-item w-[200px]" : ""}>
+                      <SphereCard
+                        sphere={sphere}
+                        membership={getUnifiedMembershipState(sphere)}
+                        isJoining={isJoining === String(sphere.id)}
+                        onJoin={() => handleJoinSphere(sphere.id, sphere.name)}
+                      />
+                    </div>
                   ))
                 )}
               </div>
@@ -531,15 +538,20 @@ export function Spheres() {
                   <p className="text-muted-foreground">Vous n'avez rejoint aucune sphère pour le moment.</p>
                 </div>
               ) : (
-              <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+              <div className={cn(
+                isMobile
+                  ? "cs-scroll-row gap-3 -mx-2 px-2"
+                  : "grid gap-3 grid-cols-2 lg:grid-cols-4"
+              )}>
                 {getSortedSpheres().map((sphere) => (
-                  <SphereCard
-                    key={sphere.id}
-                    sphere={sphere}
-                    membership={getUnifiedMembershipState(sphere)}
-                    isJoining={isJoining === String(sphere.id)}
-                    onJoin={() => handleJoinSphere(sphere.id, sphere.name)}
-                  />
+                  <div key={sphere.id} className={isMobile ? "cs-scroll-item w-[200px]" : ""}>
+                    <SphereCard
+                      sphere={sphere}
+                      membership={getUnifiedMembershipState(sphere)}
+                      isJoining={isJoining === String(sphere.id)}
+                      onJoin={() => handleJoinSphere(sphere.id, sphere.name)}
+                    />
+                  </div>
                 ))}
               </div>
               )}

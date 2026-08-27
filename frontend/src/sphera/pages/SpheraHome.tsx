@@ -9,17 +9,10 @@ import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
-// Composants migrés depuis components/study/
 import { StudySessionCard } from "@/sphera/components/study/StudySessionCard";
 import { StudyToolsModal } from "@/sphera/components/study/StudyToolsModal";
-
-// Nouveaux composants Sphera V2
 import { AnnaleUploadModal } from "../components/AnnaleUploadModal";
-
-// Annale card simplifiée
 import { AnnaleCard } from "../components/AnnaleCard";
-
-// Service
 import { getStudySessions, deleteStudySession, getAnnaleSessions, deleteAnnaleSession } from "../services/spheraService";
 import type { StudySessionListItem, AnnaleSessionListItem } from "../types/sphera.types";
 
@@ -55,14 +48,12 @@ export const SpheraHome: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<Tab>("sessions");
 
-  // Sessions V1
   const [sessions, setSessions] = useState<StudySessionListItem[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(true);
   const [filter, setFilter] = useState<ToolFilter>("all");
   const [selectedUploadFile, setSelectedUploadFile] = useState<File | null>(null);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
 
-  // Annales V2
   const [annales, setAnnales] = useState<AnnaleSessionListItem[]>([]);
   const [loadingAnnales, setLoadingAnnales] = useState(true);
   const [annaleModalOpen, setAnnaleModalOpen] = useState(false);
@@ -90,7 +81,7 @@ export const SpheraHome: React.FC = () => {
       const res = await getAnnaleSessions();
       setAnnales(res?.data || []);
     } catch {
-      // Silencieux si pas encore de données
+      // Silencieux si pas encore de donnees
     } finally {
       setLoadingAnnales(false);
     }
@@ -100,7 +91,7 @@ export const SpheraHome: React.FC = () => {
     try {
       await deleteStudySession(sessionId);
       setSessions((prev) => prev.filter((s) => s.id !== sessionId));
-      toast({ title: "Session supprimée" });
+      toast({ title: "Session supprimee" });
     } catch {
       toast({ title: "Erreur lors de la suppression", variant: "destructive" });
     }
@@ -110,7 +101,7 @@ export const SpheraHome: React.FC = () => {
     try {
       await deleteAnnaleSession(id);
       setAnnales((prev) => prev.filter((a) => a.id !== id));
-      toast({ title: "Annale supprimée" });
+      toast({ title: "Annale supprimee" });
     } catch {
       toast({ title: "Erreur lors de la suppression", variant: "destructive" });
     }
@@ -130,63 +121,63 @@ export const SpheraHome: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Sphera – Assistant IA · CampusSphere</title>
-        <meta name="description" content="Sphera, votre assistante IA académique, génère fiches, quiz, flashcards, corrige les annales et offre un chat IA en direct. Explorez l’écosystème CampusSphere via Sphera." />
+        <title>Sphera -- Assistant IA -- CampusSphere</title>
+        <meta name="description" content="Sphera, votre assistante IA academique, genere fiches, quiz, flashcards, corrige les annales et offre un chat IA en direct." />
         <link rel="canonical" href="https://sphera.campussphere.app/" />
-        <meta property="og:title" content="Sphera – Assistant IA" />
-        <meta property="og:description" content="Générez des fiches de révision, des quiz, des flashcards, corrigez vos annales et discutez avec une IA académique grâce à Sphera." />
+        <meta property="og:title" content="Sphera -- Assistant IA" />
+        <meta property="og:description" content="Generez des fiches de revision, des quiz, des flashcards, corrigez vos annales et discutez avec une IA academique grace a Sphera." />
         <meta property="og:url" content="https://sphera.campussphere.app/" />
         <meta property="og:type" content="website" />
         <meta property="og:image" content="https://sphera.campussphere.app/og-image.png" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Sphera – Assistant IA" />
-        <meta name="twitter:description" content="Votre aide IA pour réviser, créer des quiz, flashcards et corriger des annales. Connectez‑vous via CampusSphere." />
+        <meta name="twitter:title" content="Sphera -- Assistant IA" />
+        <meta name="twitter:description" content="Votre aide IA pour reviser, creer des quiz, flashcards et corriger des annales." />
         <meta name="twitter:image" content="https://sphera.campussphere.app/og-image.png" />
       </Helmet>
 
-      <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
-        <div className="container max-w-6xl mx-auto py-4 md:py-8 px-4">
+      <div className="min-h-screen bg-background">
+        <div className="container max-w-6xl mx-auto py-4 md:py-6 px-4">
 
-          {/* ─── Header ─── */}
-          <div className="mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {/* Header */}
+          <div className="mb-6">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-full bg-[#ff9800]/15 ring-1 ring-[#ff9800]/25 flex items-center justify-center">
+                <div className="flex items-center gap-3 mb-1.5">
+                  <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
                     <img 
                       src="/sphera-logo.png" 
-                      className="w-10 h-10 object-contain"
+                      className="w-9 h-9 object-contain"
                       style={{ filter: "brightness(0) saturate(100%) invert(62%) sepia(97%) saturate(3195%) hue-rotate(13deg) brightness(103%) contrast(101%)" }}
                       alt="Sphera Logo"
                     />
                   </div>
-                  <h1 className="text-3xl font-bold tracking-tight">
-                    Assistante <span className="text-[#ff9800]">Sphera</span>
+                  <h1 className="text-2xl font-bold tracking-tight">
+                    Assistante <span className="text-primary">Sphera</span>
                   </h1>
                 </div>
-                <p className="text-sm md:text-base text-muted-foreground">
-                  Fiches · Quiz · Flashcards · Q&A · Corrections d'annales
-                  {" "}<span className="text-muted-foreground/60">·</span>{" "}
-                  <span className="text-foreground/60">
-                    {sessions.length} session{sessions.length !== 1 ? "s" : ""} · {annales.length} annale{annales.length !== 1 ? "s" : ""}
+                <p className="text-sm text-muted-foreground">
+                  Fiches -- Quiz -- Flashcards -- Q&A -- Corrections d'annales
+                  {" "}<span className="text-muted-foreground/50">|</span>{" "}
+                  <span className="text-foreground/50">
+                    {sessions.length} session{sessions.length !== 1 ? "s" : ""} -- {annales.length} annale{annales.length !== 1 ? "s" : ""}
                   </span>
                 </p>
               </div>
 
               {/* Actions */}
-              <div className="flex flex-wrap gap-2.5">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   onClick={() => { window.open(getSpheraStandaloneUrl(), "_blank"); }}
-                  className="gap-2 bg-[#ff9800] hover:bg-[#ff9800]/90 text-white font-semibold shadow-md shadow-[#ff9800]/10 hover:shadow-lg transition-all"
+                  className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-none"
                 >
                   <Sparkles className="h-4 w-4" />
-                  Ouvrir l'app Sphera
+                  Ouvrir Sphera
                 </Button>
                 
                 <Button
                   variant="outline"
                   onClick={() => fileInputRef.current?.click()}
-                  className="gap-2 border-border text-foreground hover:bg-accent"
+                  className="gap-2"
                 >
                   <Upload className="h-4 w-4" />
                   Uploader un cours
@@ -195,7 +186,7 @@ export const SpheraHome: React.FC = () => {
                 <Button
                   variant="outline"
                   onClick={() => setAnnaleModalOpen(true)}
-                  className="gap-2 border-border text-foreground hover:bg-accent"
+                  className="gap-2"
                 >
                   <Scroll className="h-4 w-4" />
                   Corriger une annale
@@ -212,19 +203,19 @@ export const SpheraHome: React.FC = () => {
             </div>
           </div>
 
-          {/* ─── Tabs ─── */}
-          <div className="flex gap-1 p-1 bg-accent/30 rounded-xl w-fit mb-6 border border-border/30">
+          {/* Tabs */}
+          <div className="flex gap-1 p-1 bg-muted/50 rounded-lg w-fit mb-5 border border-border/30">
             {[
-              { id: "sessions" as Tab, label: "Sessions d'étude", icon: <BookOpen className="h-3.5 w-3.5" />, count: sessions.length },
+              { id: "sessions" as Tab, label: "Sessions d'etude", icon: <BookOpen className="h-3.5 w-3.5" />, count: sessions.length },
               { id: "annales"  as Tab, label: "Annales",           icon: <Scroll className="h-3.5 w-3.5" />,   count: annales.length },
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200",
+                  "flex items-center gap-2 px-3.5 py-1.5 rounded-md text-sm font-medium transition-all duration-150",
                   activeTab === tab.id
-                    ? "bg-background text-foreground shadow-sm ring-1 ring-border/40"
+                    ? "bg-background text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -232,7 +223,7 @@ export const SpheraHome: React.FC = () => {
                 {tab.label}
                 <span className={cn(
                   "text-xs px-1.5 py-0.5 rounded-full",
-                  activeTab === tab.id ? "bg-[#ff9800]/15 text-[#ff9800]" : "bg-muted text-muted-foreground"
+                  activeTab === tab.id ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
                 )}>
                   {tab.count}
                 </span>
@@ -240,20 +231,20 @@ export const SpheraHome: React.FC = () => {
             ))}
           </div>
 
-          {/* ─── Tab : Sessions ─── */}
+          {/* Tab : Sessions */}
           {activeTab === "sessions" && (
-            <div className="animate-in fade-in duration-300">
-              {/* Filtres */}
-              <div className="flex gap-2 flex-wrap mb-5">
+            <div>
+              {/* Filters — horizontal scroll */}
+              <div className="cs-scroll-row gap-2 mb-5 pb-1">
                 {FILTER_OPTIONS.map((opt) => (
                   <button
                     key={opt.value}
                     onClick={() => setFilter(opt.value)}
                     className={cn(
-                      "flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all",
+                      "cs-scroll-item flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all whitespace-nowrap",
                       filter === opt.value
-                        ? "bg-[#ff9800] border-[#ff9800] text-white shadow-sm"
-                        : "border-border bg-card text-muted-foreground hover:border-[#ff9800]/40 hover:text-foreground"
+                        ? "bg-primary border-primary text-primary-foreground shadow-sm"
+                        : "border-border bg-card text-muted-foreground hover:bg-accent hover:text-foreground"
                     )}
                   >
                     {opt.icon}
@@ -263,33 +254,33 @@ export const SpheraHome: React.FC = () => {
               </div>
 
               {loadingSessions ? (
-                <div className="flex flex-col items-center py-20 gap-3">
-                  <Loader2 className="h-8 w-8 text-[#ff9800] animate-spin" />
-                  <p className="text-sm text-muted-foreground">Chargement des sessions…</p>
+                <div className="flex flex-col items-center py-16 gap-3">
+                  <Loader2 className="h-7 w-7 text-primary animate-spin" />
+                  <p className="text-sm text-muted-foreground">Chargement des sessions...</p>
                 </div>
               ) : filteredSessions.length === 0 ? (
-                <div className="flex flex-col items-center py-20 gap-4 text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-[#ff9800]/10 ring-1 ring-[#ff9800]/20 flex items-center justify-center">
-                    <Sparkles className="h-8 w-8 text-[#ff9800]/60" />
+                <div className="flex flex-col items-center py-16 gap-4 text-center">
+                  <div className="w-14 h-14 rounded-xl bg-muted flex items-center justify-center">
+                    <Sparkles className="h-7 w-7 text-muted-foreground" />
                   </div>
                   <div>
                     <p className="font-semibold text-foreground">
                       Aucune session{filter !== "all" ? " de ce type" : ""}
                     </p>
                     <p className="text-sm text-muted-foreground mt-1 max-w-xs">
-                      Clique sur «&nbsp;Réviser avec l'IA&nbsp;» sur une ressource, ou uploade un document.
+                      Cliquez sur "Reviser avec l'IA" sur une ressource, ou uploadez un document.
                     </p>
                   </div>
                   <Button
                     onClick={() => fileInputRef.current?.click()}
-                    className="gap-2 bg-[#ff9800] hover:bg-[#ff9800]/90 text-white"
+                    className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
                     <Plus className="h-4 w-4" />
                     Uploader un cours
                   </Button>
                 </div>
               ) : (
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {filteredSessions.map((session) => (
                     <StudySessionCard
                       key={session.id}
@@ -303,35 +294,35 @@ export const SpheraHome: React.FC = () => {
             </div>
           )}
 
-          {/* ─── Tab : Annales ─── */}
+          {/* Tab : Annales */}
           {activeTab === "annales" && (
-            <div className="animate-in fade-in duration-300">
+            <div>
               {loadingAnnales ? (
-                <div className="flex flex-col items-center py-20 gap-3">
-                  <Loader2 className="h-8 w-8 text-[#ff9800] animate-spin" />
-                  <p className="text-sm text-muted-foreground">Chargement des annales…</p>
+                <div className="flex flex-col items-center py-16 gap-3">
+                  <Loader2 className="h-7 w-7 text-primary animate-spin" />
+                  <p className="text-sm text-muted-foreground">Chargement des annales...</p>
                 </div>
               ) : annales.length === 0 ? (
-                <div className="flex flex-col items-center py-20 gap-4 text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-[#ff9800]/10 ring-1 ring-[#ff9800]/20 flex items-center justify-center">
-                    <FileText className="h-8 w-8 text-[#ff9800]/60" />
+                <div className="flex flex-col items-center py-16 gap-4 text-center">
+                  <div className="w-14 h-14 rounded-xl bg-muted flex items-center justify-center">
+                    <FileText className="h-7 w-7 text-muted-foreground" />
                   </div>
                   <div>
-                    <p className="font-semibold text-foreground">Aucune annale corrigée</p>
+                    <p className="font-semibold text-foreground">Aucune annale corrigee</p>
                     <p className="text-sm text-muted-foreground mt-1 max-w-xs">
-                      Uploade une épreuve passée et laisse Sphera la corriger en mode complet ou rapide.
+                      Uploadez une epreuve passee et laissez Sphera la corriger.
                     </p>
                   </div>
                   <Button
                     onClick={() => setAnnaleModalOpen(true)}
-                    className="gap-2 bg-[#ff9800] hover:bg-[#ff9800]/90 text-white"
+                    className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
                     <Plus className="h-4 w-4" />
                     Corriger une annale
                   </Button>
                 </div>
               ) : (
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {annales.map((annale) => (
                     <AnnaleCard
                       key={annale.id}
@@ -354,7 +345,7 @@ export const SpheraHome: React.FC = () => {
           onClose={() => setUploadModalOpen(false)}
           uploadFile={selectedUploadFile}
           onSuccess={async () => {
-            toast({ title: "Session générée avec succès !" });
+            toast({ title: "Session generee avec succes !" });
             await loadSessions();
           }}
         />
