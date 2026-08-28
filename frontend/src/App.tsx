@@ -38,6 +38,7 @@ const FAQ = lazy(() => import("./pages/public/FAQ").then(m => ({ default: m.FAQ 
 const ForgotPassword = lazy(() => import("./pages/public/ForgotPassword").then(m => ({ default: m.ForgotPassword })));
 const AuthCallback = lazy(() => import("./pages/public/AuthCallback").then(m => ({ default: m.AuthCallback })));
 const CompleteProfile = lazy(() => import("./pages/public/CompleteProfile").then(m => ({ default: m.CompleteProfile })));
+const Onboarding = lazy(() => import("./pages/public/Onboarding").then(m => ({ default: m.Onboarding })));
 const Privacy = lazy(() => import("./pages/public/Privacy").then(m => ({ default: m.Privacy })));
 const Terms = lazy(() => import("./pages/public/Terms").then(m => ({ default: m.Terms })));
 const Connections = lazy(() => import("./pages/Connections").then(m => ({ default: m.Connections })));
@@ -88,8 +89,8 @@ const queryClient = new QueryClient({
   },
 });
 
-const Protected = ({ children }: { children: ReactNode }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+const Protected = ({ children, requireCompleteProfile = true }: { children: ReactNode, requireCompleteProfile?: boolean }) => {
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -119,6 +120,10 @@ const Protected = ({ children }: { children: ReactNode }) => {
   }
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (requireCompleteProfile && user && user.is_profile_complete === false) {
+    return <Navigate to="/onboarding" replace />;
+  }
+  
   return children;
 };
 
@@ -142,6 +147,11 @@ const App = () => (
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/register/complete" element={<CompleteProfile />} />
             <Route path="/complete-profile" element={<CompleteProfile />} />
+            <Route path="/onboarding" element={
+              <Protected requireCompleteProfile={false}>
+                <Onboarding />
+              </Protected>
+            } />
             <Route path="/forgot-password" element={<ForgotPassword />} />
 
             {/* SSO endpoints for Sphera cross-app authentication */}

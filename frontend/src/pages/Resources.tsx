@@ -563,7 +563,7 @@ export function Resources() {
         {showFoldersTab ? (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="font-bold text-lg">
+              <h2 className="ml-2 font-bold text-lg">
                 Mes dossiers ({folders.length}/4)
               </h2>
               <button
@@ -708,11 +708,11 @@ export function Resources() {
               
               return (
                 <div className="space-y-4">
-                  <div className="flex items-center gap-4 mb-4">
+                  <div className="ml-2 flex items-center gap-8 mb-4">
                     <Button variant="outline" size="sm" onClick={() => setViewAllCategory(null)}>
                       ← Retour
                     </Button>
-                    <h2 className="ml-2 text-xl font-medium">{categoryLabel}</h2>
+                    <h2 className="text-xl font-medium">{categoryLabel}</h2>
                   </div>
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                     {categoryResources.map((resource) => (

@@ -150,7 +150,7 @@ export function Register() {
           const { data: { session } } = await supabase.auth.getSession();
           if (session) {
             await exchangeSupabaseToken(session.access_token);
-            setStep(2);
+            navigate("/onboarding");
             toast({ title: "Email vérifié ✓", description: "Continuez votre inscription", duration: 3000 });
           }
         } catch (err: any) {
@@ -158,7 +158,7 @@ export function Register() {
         }
       })();
     }
-  }, [searchParams, toast]);
+  }, [searchParams, toast, navigate]);
 
   const handleCardChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -188,9 +188,9 @@ export function Register() {
         try {
           const response = await exchangeSupabaseToken(session.access_token);
           
-          // Pour l'inscription par email, on continue toujours avec les étapes 2-3
-          // car l'utilisateur a déjà rempli l'étape 1 avec ses infos
-          setStep(2);
+          // Pour l'inscription par email, on redirige vers l'accueil
+          // Le guard va automatiquement rediriger vers /onboarding
+          navigate("/onboarding");
           toast({ title: "Email vérifié ✓", description: "Continuez votre inscription", duration: 3000 });
         } catch (err: any) {
           toast({ title: "Erreur", description: err?.message, variant: "destructive" });
@@ -607,6 +607,15 @@ export function Register() {
                   Suivant <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
+
+              <div className="text-center mt-8 text-sm text-muted-foreground">
+                <p>
+                  En continuant, vous acceptez nos{" "}
+                  <Button variant="link" className="px-0 h-auto text-primary" onClick={() => navigate("/cs-inc/policies/terms")}>Conditions d'utilisation</Button>
+                  {" "}et notre{" "}
+                  <Button variant="link" className="px-0 h-auto text-primary" onClick={() => navigate("/cs-inc/policies/privacy")}>Politique de confidentialité</Button>
+                </p>
+              </div>
             </div>
           )}
 
@@ -638,318 +647,17 @@ export function Register() {
               </div>
             </div>
           )}
-
-          {/* ── ÉTAPE 2 : Infos académiques ── */}
-          {step === 2 && (
-            <div className="space-y-4">
-              <CardTitle>Informations académiques</CardTitle>
-              <div>
-                <Label>Université/Institut *</Label>
-                <UniversityCombobox value={formData.university} onValueChange={v => handleInputChange("university", v)} className="mt-2" />
-                {errors.university && <p className="text-xs text-red-500 mt-1">{errors.university}</p>}
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label>Filière *</Label>
-                  <FacultyCombobox value={formData.faculty} onValueChange={v => handleInputChange("faculty", v)} className="mt-2" />
-                  {errors.faculty && <p className="text-xs text-red-500 mt-1">{errors.faculty}</p>}
-                </div>
-                <div>
-                  <Label>Niveau *</Label>
-                  <StudyLevelCombobox value={formData.studyYear} onValueChange={v => handleInputChange("studyYear", v)} className="mt-2" />
-                  {errors.studyYear && <p className="text-xs text-red-500 mt-1">{errors.studyYear}</p>}
-                </div>
-              </div>
-              <div>
-                <Label>Matricule <span className="text-muted-foreground">(optionnel)</span></Label>
-                <Input maxLength={REGISTRATION_MAX_LENGTHS.studentId} value={formData.studentId} onChange={e => handleInputChange("studentId", e.target.value)} placeholder="Ex: 21T2045" />
-                {errors.studentId && <p className="text-xs text-red-500 mt-1">{errors.studentId}</p>}
-              </div>
-
-              <div>
-                <Label>Preuve de statut étudiant <span className="text-muted-foreground">(carte, reçu, certificat... - optionnel pour certification)</span></Label>
-                <div 
-                  onClick={() => cardInputRef.current?.click()}
-                  className={cn(
-                    "mt-2 relative h-40 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden bg-muted/30 hover:bg-muted/50",
-                    cardPreview ? "border-primary/50" : "border-muted-foreground/30"
-                  )}
-                >
-                  {cardPreview ? (
-                    <div className="relative w-full h-full">
-                      <img src={cardPreview} alt="Aperçu preuve" className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                        <p className="text-white text-sm font-medium">Changer la photo</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="p-2 bg-primary/10 rounded-full mb-2">
-                        <Camera className="h-5 w-5 text-primary" />
-                      </div>
-                      <p className="text-xs font-medium">Uploader une preuve pour certification</p>
-                      <p className="text-[10px] text-muted-foreground mt-1">JPG, PNG (Max 10Mo)</p>
-                    </>
-                  )}
-                </div>
-                <input 
-                  type="file" 
-                  ref={cardInputRef} 
-                  className="hidden" 
-                  accept="image/*" 
-                  onChange={handleCardChange}
-                />
-                <div className="flex items-center gap-2 mt-2 p-2 bg-blue-500/5 text-blue-600 rounded-lg text-[10px]">
-                  <Info className="h-3 w-3 flex-shrink-0" />
-                  La certification est requise pour publier des posts ou rejoindre des sphères.
-                </div>
-              </div>
-              <div>
-                <Label>Campus</Label>
-                <Input maxLength={REGISTRATION_MAX_LENGTHS.campus} value={formData.campus} onChange={e => handleInputChange("campus", e.target.value)} placeholder="Si plusieurs campus" />
-              </div>
-              <div className="flex justify-between pt-4">
-                <Button variant="outline" onClick={() => setStep(1)}><ChevronLeft className="mr-2 h-4 w-4" />Précédent</Button>
-                <Button onClick={() => {
-                  const v = step2Schema.safeParse(formData);
-                  if (!v.success) {
-                    const fe: Record<string, string> = {};
-                    v.error.errors.forEach(e => { if (e.path[0]) fe[e.path[0] as string] = e.message; });
-                    setErrors(fe); return;
-                  }
-                  setErrors({}); setStep(3);
-                }} className="campus-gradient text-white hover:opacity-90">
-                  Suivant <ChevronRight className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* ── ÉTAPE 3 : Compétences & expériences ── */}
-          {step === 3 && (
-            <div className="space-y-6">
-              <CardTitle>Expérience & Compétences</CardTitle>
-
-              {/* Formations */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <Label>Formations précédentes</Label>
-                  <Button size="sm" variant="outline" onClick={() => setIsAddEducationOpen(true)}><Plus className="h-4 w-4 mr-1" />Ajouter</Button>
-                  {isAddEducationOpen && (
-                    <Suspense fallback={<ModalLoadingFallback />}>
-                      <AddEducationModal
-                        open={isAddEducationOpen}
-                        onOpenChange={setIsAddEducationOpen}
-                        existingEducations={formData.previousEducation}
-                        onEducationAdded={edu => setFormData(p => ({ ...p, previousEducation: [...p.previousEducation, edu] }))}
-                      />
-                    </Suspense>
-                  )}
-                </div>
-                {formData.previousEducation.length === 0 ? (
-                  <div className="text-center py-6 text-muted-foreground border-2 border-dashed rounded-lg text-sm">Aucune formation ajoutée</div>
-                ) : formData.previousEducation.map((edu, i) => (
-                  <div key={i} className="border-l-2 border-primary/50 pl-4 py-2 bg-muted/50 rounded-r-md mb-2 flex justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="font-semibold text-sm overflow-hidden text-ellipsis whitespace-nowrap">{edu.degree}</p>
-                      <p className="text-xs text-muted-foreground break-words">{edu.school} · {edu.year}</p>
-                    </div>
-                    <Button variant="ghost" size="sm" onClick={() => setFormData(p => ({ ...p, previousEducation: p.previousEducation.filter((_, j) => j !== i) }))}><X className="h-4 w-4" /></Button>
-                  </div>
-                ))}
-                {errors.previousEducation && <p className="text-xs text-red-500 mt-1">{errors.previousEducation}</p>}
-              </div>
-
-              {/* Expériences */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <Label>Expériences</Label>
-                  <Button size="sm" variant="outline" onClick={() => setIsAddExperienceOpen(true)}><Plus className="h-4 w-4 mr-1" />Ajouter</Button>
-                  {isAddExperienceOpen && (
-                    <Suspense fallback={<ModalLoadingFallback />}>
-                      <AddExperienceModal
-                        open={isAddExperienceOpen}
-                        onOpenChange={setIsAddExperienceOpen}
-                        existingExperiences={formData.experiences}
-                        onExperienceAdded={exp => setFormData(p => ({ ...p, experiences: [...p.experiences, exp] }))}
-                      />
-                    </Suspense>
-                  )}
-                </div>
-                {formData.experiences.length === 0 ? (
-                  <div className="text-center py-6 text-muted-foreground border-2 border-dashed rounded-lg text-sm">Aucune expérience ajoutée</div>
-                ) : formData.experiences.map((exp, i) => (
-                  <div key={i} className="border-l-2 border-primary/50 pl-4 py-2 bg-muted/50 rounded-r-md mb-2 flex justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="font-semibold text-sm overflow-hidden text-ellipsis whitespace-nowrap">{exp.title}</p>
-                      <p className="text-xs text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap">{exp.company} · {exp.duration}</p>
-                    </div>
-                    <Button variant="ghost" size="sm" onClick={() => setFormData(p => ({ ...p, experiences: p.experiences.filter((_, j) => j !== i) }))}><X className="h-4 w-4" /></Button>
-                  </div>
-                ))}
-                {errors.experiences && <p className="text-xs text-red-500 mt-1">{errors.experiences}</p>}
-              </div>
-
-              {/* Compétences */}
-              <div>
-                <Label>Compétences</Label>
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <SkillsCombobox
-                      value={newSkillInput}
-                      onValueChange={setNewSkillInput}
-                      onSearchValueChange={setNewSkillInput}
-                      onSkillAdd={(skill) => {
-                        if (!formData.skills.includes(skill)) {
-                          setFormData(p => ({ ...p, skills: [...p.skills, skill] }));
-                          setNewSkillInput("");
-                        }
-                      }}
-                    />
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    className="shrink-0"
-                    onClick={() => {
-                      if (newSkillInput.trim() && !formData.skills.includes(newSkillInput.trim())) {
-                        setFormData(p => ({ ...p, skills: [...p.skills, newSkillInput.trim()] }));
-                        setNewSkillInput("");
-                      }
-                    }}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {formData.skills.map(s => <Badge key={s} variant="secondary" className="cursor-pointer" onClick={() => setFormData(p => ({ ...p, skills: p.skills.filter(x => x !== s) }))}>{s} ×</Badge>)}
-                </div>
-              </div>
-
-              {/* Intérêts */}
-              <div>
-                <Label>Centres d'intérêt</Label>
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <InterestsCombobox
-                      value={newInterestInput}
-                      onValueChange={setNewInterestInput}
-                      onSearchValueChange={setNewInterestInput}
-                      onInterestAdd={(interest) => {
-                        if (!formData.interests.includes(interest)) {
-                          setFormData(p => ({ ...p, interests: [...p.interests, interest] }));
-                          setNewInterestInput("");
-                        }
-                      }}
-                    />
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    className="shrink-0"
-                    onClick={() => {
-                      if (newInterestInput.trim() && !formData.interests.includes(newInterestInput.trim())) {
-                        setFormData(p => ({ ...p, interests: [...p.interests, newInterestInput.trim()] }));
-                        setNewInterestInput("");
-                      }
-                    }}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {formData.interests.map(s => <Badge key={s} variant="outline" className="cursor-pointer" onClick={() => setFormData(p => ({ ...p, interests: p.interests.filter(x => x !== s) }))}>{s} ×</Badge>)}
-                </div>
-              </div>
-
-              {/* Langues */}
-              <div>
-                <Label>Langues parlées</Label>
-                <div className="flex gap-2 mt-2">
-                  <div className="flex-1">
-                    <LanguageCombobox
-                      value={newLanguageInput}
-                      onValueChange={setNewLanguageInput}
-                      onSearchValueChange={setNewLanguageInput}
-                      onLanguageAdd={(lang) => {
-                        if (!formData.languages.includes(lang)) {
-                          setFormData(p => ({ ...p, languages: [...p.languages, lang] }));
-                          setNewLanguageInput("");
-                        }
-                      }}
-                    />
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    className="shrink-0"
-                    onClick={() => {
-                      if (newLanguageInput.trim() && !formData.languages.includes(newLanguageInput.trim())) {
-                        setFormData(p => ({ ...p, languages: [...p.languages, newLanguageInput.trim()] }));
-                        setNewLanguageInput("");
-                      }
-                    }}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {formData.languages.map(l => (
-                    <Badge key={l} variant="outline" className="cursor-pointer border-primary/30 bg-primary/5" onClick={() => setFormData(p => ({ ...p, languages: p.languages.filter(x => x !== l) }))}>
-                      {l} ×
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-
-              {/* Portfolio */}
-              <div>
-                <Label>Portfolio / Liens</Label>
-                <div className="flex gap-2 mt-2 min-w-0 w-full">
-                  <Input maxLength={REGISTRATION_MAX_LENGTHS.portfolioName} placeholder="Nom (ex: GitHub)" value={newLink.name} onChange={e => setNewLink(p => ({ ...p, name: e.target.value }))} className="w-1/3 min-w-0" />
-                  <Input maxLength={REGISTRATION_MAX_LENGTHS.portfolioUrl} placeholder="URL" value={newLink.url} onChange={e => setNewLink(p => ({ ...p, url: e.target.value }))} className="w-full min-w-0" />
-                  <Button type="button" variant="outline" onClick={() => { if (newLink.name.trim() && newLink.url.trim()) { setFormData(p => ({ ...p, portfolioLinks: [...p.portfolioLinks, { name: newLink.name.trim(), url: newLink.url.trim() }] })); setNewLink({ name: "", url: "" }); } }}>+</Button>
-                </div>
-                {errors.portfolioLinks && <p className="text-xs text-red-500 mt-1">{errors.portfolioLinks}</p>}
-                {formData.portfolioLinks.map((l, i) => (
-                  <div key={i} className="flex items-center justify-between gap-2 p-2 border rounded-lg mt-2 bg-muted/50">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap">{l.name}</p>
-                      <p className="text-xs text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap" title={l.url}>{l.url}</p>
-                    </div>
-                    <Button variant="ghost" size="sm" onClick={() => setFormData(p => ({ ...p, portfolioLinks: p.portfolioLinks.filter((_, j) => j !== i) }))}><X className="h-4 w-4" /></Button>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex flex-col sm:flex-row justify-between gap-3 pt-4">
-                <Button variant="outline" onClick={() => setStep(2)} className="order-2 sm:order-1">
-                  <ChevronLeft className="mr-2 h-4 w-4" />Précédent
-                </Button>
-                <div className="flex flex-col sm:flex-row gap-2 order-1 sm:order-2">
-                  <Button variant="ghost" onClick={handleFinalSubmit} disabled={isLoading} className="text-muted-foreground">
-                    Passer pour l'instant
-                  </Button>
-                  <Button onClick={handleFinalSubmit} disabled={isLoading} className="campus-gradient text-white hover:opacity-90">
-                    {isLoading ? (
-                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Finalisation...</>
-                    ) : (
-                      <><Check className="mr-2 h-4 w-4" />Terminer l'inscription</>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {step !== "verify" && (
-            <div className="text-center mt-4 text-sm text-muted-foreground">
-              Déjà un compte ?{" "}
-              <Button variant="link" className="px-0 text-primary" onClick={() => navigate("/login")}>Se connecter</Button>
-            </div>
-          )}
         </div>
+
+        <div className="text-center mt-6">
+          <p className="text-muted-foreground text-sm">
+            Déjà un compte ?{" "}
+            <Button variant="link" className="p-0 text-primary" onClick={() => navigate("/login")}>
+              Se connecter
+            </Button>
+          </p>
         </div>
+      </div>
       </div>
       <AuthSidePanel />
     </div>
