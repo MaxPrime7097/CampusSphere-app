@@ -516,7 +516,7 @@ export function CompleteProfile() {
                 />
                 <div className="flex items-center gap-2 mt-2 p-2 bg-blue-500/5 text-blue-600 rounded-lg text-[10px]">
                   <Info className="h-3 w-3 flex-shrink-0" />
-                  La certification est requise pour publier des posts ou rejoindre des sphères.
+                  La certification est requise pour avoir accès à toutes les fonctionnalités et opportunités de la plateforme.
                 </div>
               </div>
               <div>

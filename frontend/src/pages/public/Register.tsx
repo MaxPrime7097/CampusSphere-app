@@ -1,14 +1,12 @@
-import { Suspense, lazy, useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
-import { ChevronLeft, ChevronRight, Upload, Check, Loader2, AlertCircle, Eye, EyeOff, X, ExternalLink, Plus, FileText, Mail, RefreshCw, Camera, Info } from "lucide-react";
+import { ChevronRight, Check, Loader2, AlertCircle, Eye, EyeOff, X, Mail, RefreshCw } from "lucide-react";
 import { FaFacebook } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import { Button } from "@/components/ui/button";
 import { Input, REGISTRATION_MAX_LENGTHS } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
@@ -20,30 +18,14 @@ import {
   supabaseSignInWithGoogle,
   supabaseSignInWithFacebook,
   exchangeSupabaseToken,
-  completeSupabaseProfile,
   getSupabaseRateLimitMetadata,
   supabaseResendSignupEmail,
   checkUserAvailability,
-  verifyStudentStatus,
 } from "@/services/api";
 import { supabase } from "@/lib/supabase";
-import { completeSupabaseProfilePayloadSchema, mapCompleteProfileErrors } from "@/schemas/completeProfilePayload";
-import { cn } from "@/lib/utils";
-import { openVerificationModal } from "@/lib/events";
-import { UniversityCombobox } from "@/components/forms/UniversityCombobox";
-import { FacultyCombobox } from "@/components/forms/FacultyCombobox";
-import { StudyLevelCombobox } from "@/components/forms/StudyLevelCombobox";
-import { SkillsCombobox } from "@/components/forms/SkillsCombobox";
-import { InterestsCombobox } from "@/components/forms/InterestsCombobox";
-import { LanguageCombobox } from "@/components/forms/LanguageCombobox";
 import { AuthSidePanel } from "@/components/auth/AuthSidePanel";
-import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
 
-const AddEducationModal = lazy(() => import("@/components/modals/AddEducationModal").then((module) => ({ default: module.AddEducationModal })));
-const AddExperienceModal = lazy(() => import("@/components/modals/AddExperienceModal").then((module) => ({ default: module.AddExperienceModal })));
-
-// Étapes : 1=infos perso, "verify"=attente email, 2=académique, 3=compétences
-type Step = 1 | "verify" | 2 | 3;
+type Step = 1 | "verify";
 const MINIMUM_AGE = 16;
 const RESEND_COOLDOWN_SECONDS = 60;
 const SUBMIT_DEBOUNCE_MS = 1000;
@@ -85,36 +67,18 @@ export function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isAddEducationOpen, setIsAddEducationOpen] = useState(false);
-  const [isAddExperienceOpen, setIsAddExperienceOpen] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [availability, setAvailability] = useState({
     email: { checking: false, available: true, checkedValue: "" },
     username: { checking: false, available: true, checkedValue: "" },
   });
-  const avatarInputRef = useRef<HTMLInputElement>(null);
   const signupLastSubmitAtRef = useRef(0);
   const resendLastSubmitAtRef = useRef(0);
-  const cardInputRef = useRef<HTMLInputElement>(null);
-
-  const [cardImage, setCardImage] = useState<File | null>(null);
-  const [cardPreview, setCardPreview] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     firstName: "", lastName: "", username: "", email: "",
     phoneNumber: "", dateOfBirth: "", password: "", confirmPassword: "",
-    avatar: null as File | null, bio: "", town: "", languages: [] as string[],
-    university: "", faculty: "", studyYear: "", studentId: "", campus: "",
-    previousEducation: [] as Array<{degree: string; school: string; year: string}>,
-    experiences: [] as Array<{title: string; company: string; duration: string; description: string}>,
-    skills: [] as string[], interests: [] as string[],
-    portfolioLinks: [] as Array<{name: string; url: string}>,
   });
-
-  const [newLanguageInput, setNewLanguageInput] = useState("");
-  const [newSkillInput, setNewSkillInput] = useState("");
-  const [newInterestInput, setNewInterestInput] = useState("");
-  const [newLink, setNewLink] = useState({ name: "", url: "" });
 
   const getPasswordStrength = (password: string) => {
     if (!password) return { score: 0, label: "Faible", color: "text-muted-foreground" };
@@ -140,11 +104,9 @@ export function Register() {
   const passwordsMatch = !!formData.password && !!formData.confirmPassword && formData.password === formData.confirmPassword;
   const hasConfirmInput = formData.confirmPassword.length > 0;
 
-  // Vérifier si l'utilisateur revient après vérification email
   useEffect(() => {
     const verified = searchParams.get('verified');
     if (verified === 'true') {
-      // L'utilisateur a vérifié son email, échanger le token et continuer
       (async () => {
         try {
           const { data: { session } } = await supabase.auth.getSession();
@@ -160,36 +122,13 @@ export function Register() {
     }
   }, [searchParams, toast, navigate]);
 
-  const handleCardChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        toast({
-          title: "Fichier trop lourd",
-          description: "L'image ne doit pas dépasser 10 Mo.",
-          variant: "destructive",
-        });
-        return;
-      }
-      setCardImage(file);
-      const reader = new FileReader();
-      reader.onload = (e) => setCardPreview(e.target?.result as string);
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // Écouter la confirmation email Supabase
   useEffect(() => {
     if (step !== "verify") return;
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_IN" && session) {
-        // Email confirmé → échanger le token avec Django
         try {
-          const response = await exchangeSupabaseToken(session.access_token);
-          
-          // Pour l'inscription par email, on redirige vers l'accueil
-          // Le guard va automatiquement rediriger vers /onboarding
+          await exchangeSupabaseToken(session.access_token);
           navigate("/onboarding");
           toast({ title: "Email vérifié ✓", description: "Continuez votre inscription", duration: 3000 });
         } catch (err: any) {
@@ -244,18 +183,18 @@ export function Register() {
     path: ["confirmPassword"],
   });
 
-  const step2Schema = z.object({
-    university: z.string().min(1, "Requis"),
-    faculty: z.string().min(1, "Requis"),
-    studyYear: z.string().min(1, "Requis"),
-    studentId: z.string().optional(),
-  });
-
   const handleInputChange = (field: string, value: string) => {
     const sensitiveFields = new Set(["username", "email", "phoneNumber"]);
     const sanitizedValue = sensitiveFields.has(field) ? value.trim() : value;
     setFormData(prev => ({ ...prev, [field]: sanitizedValue }));
-    if (errors[field]) setErrors(prev => ({ ...prev, [field]: "" }));
+    
+    if (errors[field]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
   };
 
   useEffect(() => {
@@ -271,7 +210,12 @@ export function Register() {
         const response = await checkUserAvailability({ username });
         const isAvailable = response?.data?.username?.available ?? true;
         setAvailability(prev => ({ ...prev, username: { checking: false, available: isAvailable, checkedValue: username } }));
-        setErrors(prev => ({ ...prev, username: isAvailable ? "" : "Ce nom d'utilisateur est déjà pris" }));
+        
+        if (!isAvailable) {
+          setErrors(prev => ({ ...prev, username: "Ce nom d'utilisateur est déjà pris" }));
+        } else if (errors.username === "Ce nom d'utilisateur est déjà pris") {
+          setErrors(prev => { const e = { ...prev }; delete e.username; return e; });
+        }
       } catch {
         setAvailability(prev => ({ ...prev, username: { ...prev.username, checking: false } }));
       }
@@ -293,7 +237,12 @@ export function Register() {
         const response = await checkUserAvailability({ email });
         const isAvailable = response?.data?.email?.available ?? true;
         setAvailability(prev => ({ ...prev, email: { checking: false, available: isAvailable, checkedValue: email } }));
-        setErrors(prev => ({ ...prev, email: isAvailable ? "" : "Cet email est déjà utilisé" }));
+        
+        if (!isAvailable) {
+          setErrors(prev => ({ ...prev, email: "Cet email est déjà utilisé" }));
+        } else if (errors.email === "Cet email est déjà utilisé") {
+          setErrors(prev => { const e = { ...prev }; delete e.email; return e; });
+        }
       } catch {
         setAvailability(prev => ({ ...prev, email: { ...prev.email, checking: false } }));
       }
@@ -306,15 +255,12 @@ export function Register() {
     setIsGoogleLoading(true);
     try {
       await supabaseSignInWithGoogle();
-      // On success, Supabase redirects to Google, so we don't strictly need to set loading to false.
-      // But we will handle errors if they happen immediately.
     } catch (err: any) {
-      toast({ title: "Erreur Google", description: err?.message, variant: "destructive" });
+      toast({ title: "Erreur", description: err?.message, variant: "destructive" });
       setIsGoogleLoading(false);
     }
   };
 
-  // Étape 1 → Supabase signUp → écran de vérification email
   const handleStep1Submit = async () => {
     const now = Date.now();
     if (now - signupLastSubmitAtRef.current < SUBMIT_DEBOUNCE_MS || isLoading) {
@@ -325,39 +271,44 @@ export function Register() {
     const validation = step1Schema.safeParse(formData);
     if (!validation.success) {
       const fieldErrors: Record<string, string> = {};
-      validation.error.errors.forEach(e => { if (e.path[0]) fieldErrors[e.path[0] as string] = e.message; });
+      validation.error.issues.forEach(issue => {
+        if (issue.path[0]) fieldErrors[issue.path[0].toString()] = issue.message;
+      });
       setErrors(fieldErrors);
       return;
     }
-    const normalizedUsername = formData.username.trim();
-    const normalizedEmail = formData.email.trim().toLowerCase();
-    const usernameUnavailable = availability.username.checkedValue === normalizedUsername && !availability.username.available;
-    const emailUnavailable = availability.email.checkedValue === normalizedEmail && !availability.email.available;
-    if (usernameUnavailable || emailUnavailable) {
-      setErrors(prev => ({
-        ...prev,
-        ...(usernameUnavailable ? { username: "Ce nom d'utilisateur est déjà pris" } : {}),
-        ...(emailUnavailable ? { email: "Cet email est déjà utilisé" } : {}),
-      }));
+
+    if (!availability.username.available) {
+      setErrors(prev => ({ ...prev, username: "Ce nom d'utilisateur est déjà pris" }));
       return;
     }
 
+    if (!availability.email.available) {
+      setErrors(prev => ({ ...prev, email: "Cet email est déjà utilisé" }));
+      return;
+    }
+
+    setErrors({});
     setIsLoading(true);
+
     try {
       await supabaseSignUp(formData.email, formData.password, {
         first_name: formData.firstName,
         last_name: formData.lastName,
         username: formData.username,
       });
-      setStep("verify");
+
       setResendCooldownRemaining(RESEND_COOLDOWN_SECONDS);
+      setStep("verify");
+      toast({ title: "Compte créé !", description: "Veuillez vérifier votre email.", duration: 3000 });
     } catch (err: any) {
       const rateLimit = getSupabaseRateLimitMetadata(err);
       if (rateLimit) {
         const waitSeconds = rateLimit.waitSeconds ?? RESEND_COOLDOWN_SECONDS;
+        setResendCooldownRemaining(waitSeconds);
         toast({
-          title: "Trop de tentatives",
-          description: `Supabase limite temporairement les inscriptions. Réessayez dans ${waitSeconds}s.`,
+          title: "Limite atteinte",
+          description: `Veuillez patienter ${waitSeconds}s avant de réessayer.`,
           variant: "destructive",
         });
       } else {
@@ -402,68 +353,6 @@ export function Register() {
     }
   };
 
-  // Étape 3 → compléter le profil Django
-  const handleFinalSubmit = async () => {
-    if (isLoading) return;
-
-    const normalizedPhoneNumber = formData.phoneNumber
-      ? `+237${formData.phoneNumber.replace(/^\+?237/, "")}`
-      : undefined;
-
-    const payload = {
-      username: formData.username,
-      first_name: formData.firstName,
-      last_name: formData.lastName,
-      phone_number: normalizedPhoneNumber,
-      date_of_birth: formData.dateOfBirth,
-      university: formData.university,
-      faculty: formData.faculty,
-      study_year: formData.studyYear,
-      student_id: formData.studentId,
-      campus: formData.campus,
-      town: formData.town,
-      language: formData.languages.length > 0 ? formData.languages : ["Français"],
-      bio: formData.bio,
-      skills: formData.skills,
-      interests: formData.interests,
-      previous_education: formData.previousEducation,
-      experiences: formData.experiences,
-      portfolio_links: formData.portfolioLinks,
-    };
-
-    const validation = completeSupabaseProfilePayloadSchema.safeParse(payload);
-    if (!validation.success) {
-      setErrors(mapCompleteProfileErrors(validation.error));
-      return;
-    }
-
-    setErrors({});
-    setIsLoading(true);
-    try {
-      await completeSupabaseProfile(payload);
-      
-      // Si une preuve a été fournie, envoyer la demande de vérification
-      if (cardImage) {
-        try {
-          await verifyStudentStatus(formData.studentId || "Inconnu", cardImage);
-        } catch (verifyErr) {
-          console.error("Erreur certification auto:", verifyErr);
-          // On ne bloque pas la fin de l'inscription si seule la certification échoue
-        }
-      }
-
-      toast({ title: "Inscription terminée ! 🎉", description: "Bienvenue sur CampusSphere! Connect. Share. Grow. 🚀", duration: 4000 });
-      navigate("/");
-    } catch (err: any) {
-      toast({ title: "Erreur", description: err?.message, variant: "destructive" });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const stepNumber = step === "verify" ? 1 : step === 1 ? 1 : step === 2 ? 2 : 3;
-  const progress = step === "verify" ? 33 : step === 1 ? 0 : step === 2 ? 33 : 66;
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5 grid lg:grid-cols-2 overflow-hidden">
       <Helmet>
@@ -476,17 +365,8 @@ export function Register() {
         <div className="text-center mb-8 cursor-pointer" onClick={() => navigate("/cs-inc")}>
           <span className="text-2xl font-bold font-automata text-primary">CampusSphere</span>
           <p className="text-muted-foreground mt-2">
-            {step === "verify" ? "Vérification de l'email" : `Étape ${stepNumber} sur 3`}
+            {step === "verify" ? "Vérification de l'email" : `Rejoignez CampusSphere !`}
           </p>
-        </div>
-
-        <div className="mb-8">
-          <Progress value={progress} className="h-2" />
-          <div className="flex justify-between mt-2 text-sm text-muted-foreground">
-            <span>Infos personnelles</span>
-            <span>Infos académiques</span>
-            <span>Compétences</span>
-          </div>
         </div>
 
         <div className="space-y-6 p-5 pt-0 mt-4">
@@ -500,7 +380,7 @@ export function Register() {
           {/* ── ÉTAPE 1 : Infos personnelles ── */}
           {step === 1 && (
             <div className="space-y-4">
-              <CardTitle>Créer votre compte</CardTitle>
+              <CardTitle className="text-center text-2xl">Créer votre compte</CardTitle>
 
               {/* Boutons OAuth */}
               <div className="space-y-2">
