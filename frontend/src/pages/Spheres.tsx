@@ -447,188 +447,153 @@ export function Spheres() {
           </CardContent>
         </Card>
 
-        <Tabs
-          value={resolvedSphereSort}
-          onValueChange={(value) => setActiveTab(value as SphereSortKey)}
-          className="w-full"
-        >
-
-          <SharedTabsList containerClassName="mb-6">
-            <SharedTabsTrigger value="discover">Découvrir</SharedTabsTrigger>
-            <SharedTabsTrigger value="mySpheres">Mes Sphères</SharedTabsTrigger>
-            <SharedTabsTrigger value="top">Top</SharedTabsTrigger>
-          </SharedTabsList>
-
-          {/* Section 1: Pilot Training */}
-          <TabsContent value="discover" className="mt-0">
-            <section id="discover" className="space-y-4">
-              {loadError ? (
-                <Card className={cardClasses}>
-                  <CardContent className="py-8 text-center space-y-3">
-                    <p className="text-sm text-destructive">{loadError}</p>
-                    <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading} className="gap-2">
-                      {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                      Réessayer
-                    </Button>
-                  </CardContent>
-                </Card>
-              ) : !isSpheresLoading && getSortedSpheres().length === 0 ? (
-                <EmptyState
-                  icon={Globe}
-                  title="Aucune sphère trouvée"
-                  description="Essayez d'ajuster vos filtres pour trouver ce que vous cherchez."
-                  actionLabel="Tout réinitialiser"
-                  onAction={() => {
-                    setSearchQuery("");
-                    setFilterCategory("all");
-                    setFilterAudience("all");
-                  }}
-                />
-              ) : (
-                <NetflixCarousel className="gap-3">
-                  {isSpheresLoading ? (
-                    Array.from({ length: 8 }).map((_, i) => (
-                      <div key={i} className="cs-scroll-item w-[200px] sm:w-[250px]">
-                        <SphereSkeleton />
-                      </div>
-                    ))
-                  ) : (
-                    getSortedSpheres().map((sphere) => (
-                      <div key={sphere.id} className="cs-scroll-item w-[200px] sm:w-[250px]">
-                      <SphereCard
-                        sphere={sphere}
-                        membership={getUnifiedMembershipState(sphere)}
-                        isJoining={isJoining === String(sphere.id)}
-                        onJoin={() => handleJoinSphere(sphere.id, sphere.name)}
-                      />
-                    </div>
-                    ))
-                  )}
-                </NetflixCarousel>
-              )}
-            </section>
-          </TabsContent>
-
-          {/* Section 2: Titan maintenance */}
-          <TabsContent value="mySpheres" className="mt-0">
-            <section id="mySpheres" className="space-y-4">
-              {userSpheresLoadError ? (
-                <Card className={cardClasses}>
-                  <CardContent className="py-8 text-center space-y-3">
-                    <p className="text-sm text-destructive">{userSpheresLoadError}</p>
-                    <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading} className="gap-2">
-                      {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                      Réessayer
-                    </Button>
-                  </CardContent>
-                </Card>
-              ) : isSpheresLoading ? (
-                <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-                  <SphereSkeleton />
-                  <SphereSkeleton />
-                  <SphereSkeleton />
-                  <SphereSkeleton />
-                </div>
-              ) : getSortedSpheres().length === 0 ? (
-                <div className="text-center py-8">
-                  <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">Vous n'avez rejoint aucune sphère pour le moment.</p>
-                </div>
-              ) : (
-              <NetflixCarousel className="gap-3">
-                {getSortedSpheres().map((sphere) => (
-                  <div key={sphere.id} className="cs-scroll-item w-[200px] sm:w-[250px]">
-                    <SphereCard
-                      sphere={sphere}
-                      membership={getUnifiedMembershipState(sphere)}
-                      isJoining={isJoining === String(sphere.id)}
-                      onJoin={() => handleJoinSphere(sphere.id, sphere.name)}
-                    />
-                  </div>
+                {/* DASHBOARD OR GRID (Search mode) */}
+        {searchQuery.trim() !== "" || filterCategory !== "all" || filterAudience !== "all" ? (
+          <div className="mt-6">
+            {isSpheresLoading ? (
+              <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+                {Array.from({ length: 8 }).map((_, i) => <SphereSkeleton key={i} />)}
+              </div>
+            ) : filteredSpheres.length === 0 ? (
+              <EmptyState
+                icon={Globe}
+                title="Aucune sphère trouvée"
+                description="Essayez d'ajuster vos filtres pour trouver ce que vous cherchez."
+                actionLabel="Tout réinitialiser"
+                onAction={() => {
+                  setSearchQuery("");
+                  setFilterCategory("all");
+                  setFilterAudience("all");
+                }}
+              />
+            ) : (
+              <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+                {filteredSpheres.map((sphere) => (
+                  <SphereCard
+                    key={sphere.id}
+                    sphere={sphere}
+                    membership={getUnifiedMembershipState(sphere)}
+                    isJoining={isJoining === String(sphere.id)}
+                    onJoin={() => handleJoinSphere(sphere.id, sphere.name)}
+                  />
                 ))}
-              </NetflixCarousel>
-              )}
-            </section>
-          </TabsContent>
-
-          {/* Section 3: Loadout */}
-          <TabsContent value="top" className="mt-0">
-            <section id="top" className="space-y-4">
-              <Card className={cardClasses}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <TrendingUp className="h-4 w-4 text-primary" /> Top Sphères du mois
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-1 pt-0">
-                  {getSortedSpheres().slice(0, 5).map((sphere, index) => {
-                    const membership = getUnifiedMembershipState(sphere);
-                    const actionModel = getSphereActionModel(sphere);
-                    const progress = Math.max(0, Math.min(100, Number(sphere.progression || 0)));
-                    const rankColors = [
-                      "bg-amber-400 text-white",
-                      "bg-slate-400 text-white",
-                      "bg-orange-400 text-white",
-                      "bg-muted text-muted-foreground",
-                      "bg-muted text-muted-foreground",
-                    ];
-                    return (
-                      <div
-                        key={sphere.id}
-                        className="flex items-center gap-1.5 sm:gap-3 p-1.5 sm:p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors group"
-                        onClick={() => navigate(`/spheres/${sphere.id}`)}
-                      >
-                        {/* Rank */}
-                        <span className={`flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[9px] sm:text-[11px] font-bold ${rankColors[index] ?? rankColors[3]}`}>
-                          {index + 1}
-                        </span>
-
-                        {/* Avatar */}
-                        <div className={`flex-shrink-0 w-7 h-7 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br ${sphere.color || "from-primary/30 to-accent/30"} flex items-center justify-center text-white font-bold text-[10px] sm:text-sm`}>
-                          {sphere.name?.charAt(0) || "?"}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-10 mt-8 pb-12">
+            {/* Row 1: Mes Sphères */}
+            {(() => {
+              const mySpheres = allSpheres.filter(sphere => getUnifiedMembershipState(sphere) === "active");
+              if (mySpheres.length === 0 && !isSpheresLoading) return null;
+              return (
+                <section>
+                  <h2 className="text-xl font-bold mb-4 px-1 flex items-center gap-2">⭐ Mes Sphères</h2>
+                  <NetflixCarousel className="gap-3">
+                    {isSpheresLoading ? (
+                      Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="cs-scroll-item w-[200px] sm:w-[250px]">
+                          <SphereSkeleton />
                         </div>
-
-                        {/* Info */}
-                        <div className="flex-1 min-w-0 px-0.5">
-                          <p className="font-semibold text-[11px] sm:text-sm truncate group-hover:text-primary transition-colors">
-                            {sphere.name}
-                          </p>
-                          <div className="flex items-center gap-1 mt-0.5">
-                            <div className="flex-1 h-1 sm:h-1.5 bg-muted rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-primary rounded-full transition-all"
-                                style={{ width: `${progress}%` }}
-                              />
-                            </div>
-                            <span className="text-[8px] sm:text-[10px] text-muted-foreground flex-shrink-0 flex items-center gap-0.5">
-                              <Users className="h-2 w-2 sm:h-2.5 sm:w-2.5" />{sphere.memberCount}
-                            </span>
-                          </div>
+                      ))
+                    ) : (
+                      mySpheres.map(sphere => (
+                        <div key={sphere.id} className="cs-scroll-item w-[200px] sm:w-[250px]">
+                          <SphereCard
+                            sphere={sphere}
+                            membership={getUnifiedMembershipState(sphere)}
+                            isJoining={isJoining === String(sphere.id)}
+                            onJoin={() => handleJoinSphere(sphere.id, sphere.name)}
+                          />
                         </div>
+                      ))
+                    )}
+                  </NetflixCarousel>
+                </section>
+              );
+            })()}
 
-                        {/* Action */}
-                        <Button
-                          size="sm"
-                          className={`flex-shrink-0 h-6 sm:h-7 text-[9px] sm:text-xs px-1.5 sm:px-2.5 ${membership === "active" ? "campus-gradient text-white hover:opacity-90" : actionModel.className}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            membership === "active" ? navigate(`/spheres/${sphere.id}`) : actionModel.onClick();
-                          }}
-                          disabled={actionModel.disabled}
-                        >
-                          {isJoining === String(sphere.id)
-                            ? <Loader2 className="h-3 w-3 animate-spin" />
-                            : membership === "active" ? "Voir" : actionModel.label
-                          }
-                        </Button>
-                      </div>
-                    );
-                  })}
-                </CardContent>
-              </Card>
-            </section>
-          </TabsContent>
-        </Tabs>
+            {/* Row 2: Tendances */}
+            {(() => {
+              const topSpheres = [...allSpheres].sort((a: any, b: any) => {
+                const membersA = Number(a.memberCount) || 0;
+                const membersB = Number(b.memberCount) || 0;
+                const progressA = Math.min(100, Number(a.progression) || 0);
+                const progressB = Math.min(100, Number(b.progression) || 0);
+                return (membersB * 0.5 + progressB * 0.5) - (membersA * 0.5 + progressA * 0.5);
+              }).slice(0, 10);
+              
+              if (topSpheres.length === 0 && !isSpheresLoading) return null;
+              return (
+                <section>
+                  <h2 className="text-xl font-bold mb-4 px-1 flex items-center gap-2">
+                    🔥 Tendances
+                  </h2>
+                  <NetflixCarousel className="gap-3">
+                    {isSpheresLoading ? (
+                      Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="cs-scroll-item w-[200px] sm:w-[250px]">
+                          <SphereSkeleton />
+                        </div>
+                      ))
+                    ) : (
+                      topSpheres.map(sphere => (
+                        <div key={sphere.id} className="cs-scroll-item w-[200px] sm:w-[250px]">
+                          <SphereCard
+                            sphere={sphere}
+                            membership={getUnifiedMembershipState(sphere)}
+                            isJoining={isJoining === String(sphere.id)}
+                            onJoin={() => handleJoinSphere(sphere.id, sphere.name)}
+                          />
+                        </div>
+                      ))
+                    )}
+                  </NetflixCarousel>
+                </section>
+              );
+            })()}
+
+            {/* Rows 3+: Par Catégorie */}
+            {categories.map(cat => {
+              const catSpheres = allSpheres.filter(s => s.sphere_type === cat.value);
+              if (catSpheres.length === 0 && !isSpheresLoading) return null;
+              return (
+                <section key={cat.value}>
+                  <div className="flex justify-between items-center mb-4 px-1">
+                    <h2 className="text-xl font-bold">{cat.label}</h2>
+                    {catSpheres.length > 4 && (
+                      <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => {
+                        setFilterCategory(cat.value);
+                      }}>
+                        Voir tout ({catSpheres.length})
+                      </Button>
+                    )}
+                  </div>
+                  <NetflixCarousel className="gap-3">
+                    {isSpheresLoading ? (
+                      Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="cs-scroll-item w-[200px] sm:w-[250px]">
+                          <SphereSkeleton />
+                        </div>
+                      ))
+                    ) : (
+                      catSpheres.map(sphere => (
+                        <div key={sphere.id} className="cs-scroll-item w-[200px] sm:w-[250px]">
+                          <SphereCard
+                            sphere={sphere}
+                            membership={getUnifiedMembershipState(sphere)}
+                            isJoining={isJoining === String(sphere.id)}
+                            onJoin={() => handleJoinSphere(sphere.id, sphere.name)}
+                          />
+                        </div>
+                      ))
+                    )}
+                  </NetflixCarousel>
+                </section>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

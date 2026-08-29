@@ -16,10 +16,20 @@ interface SphereCardProps {
   className?: string;
 }
 
+const SPHERE_COLOR_MAP: Record<string, string> = {
+  ocean: "from-blue-500 to-purple-500",
+  sunset: "from-pink-500 to-orange-500",
+  mint: "from-green-500 to-teal-500",
+  lime: "from-yellow-500 to-green-500",
+  ruby: "from-red-500 to-pink-500",
+  indigo: "from-indigo-500 to-blue-500",
+};
+
 export const SphereCard = React.memo(({ sphere, isJoining, membership = "none", onJoin, className }: SphereCardProps) => {
   const navigate = useNavigate();
   
-  const sphereColor = sphere.color || "from-primary/20 to-accent/20";
+  const rawColor = sphere.color || "ocean";
+  const sphereColor = SPHERE_COLOR_MAP[rawColor] || "from-primary/20 to-accent/20";
   const bannerImage = sphere.banner_image || sphere.bannerImage;
   const sphereType = (sphere.sphere_type || 'communaute') as SphereType;
   
@@ -33,7 +43,7 @@ export const SphereCard = React.memo(({ sphere, isJoining, membership = "none", 
     >
       {/* HEADER: Banner & Avatar */}
       <div className="relative h-24 bg-muted overflow-hidden">
-        {/* Banner Image or Gradient Fallback */}
+        {/* Banner Image or Neutral Fallback */}
         {bannerImage ? (
           <OptimizedImage 
             src={bannerImage} 
@@ -42,7 +52,7 @@ export const SphereCard = React.memo(({ sphere, isJoining, membership = "none", 
             containerClassName="w-full h-full"
           />
         ) : (
-          <div className={cn("w-full h-full bg-gradient-to-br opacity-60", sphereColor)} />
+          <div className="w-full h-full bg-muted/30 flex items-center justify-center opacity-80" />
         )}
         
         {/* Type Badge - Top Right */}
@@ -61,14 +71,12 @@ export const SphereCard = React.memo(({ sphere, isJoining, membership = "none", 
            </Badge>
         </div>
 
-        {/* Overlapping Avatar */}
-        <div className="absolute -bottom-5 left-4">
-          <div className="w-12 h-12 rounded-full border-[3px] border-card bg-background flex items-center justify-center shadow-sm overflow-hidden z-10 relative">
-            <div className={cn("w-full h-full bg-gradient-to-br flex items-center justify-center", sphereColor)}>
-              <span className="text-lg font-bold text-foreground/80">
-                {sphere.name?.charAt(0)?.toUpperCase()}
-              </span>
-            </div>
+        {/* Overlapping Avatar (Neutral) */}
+        <div className="absolute -bottom-4 left-4">
+          <div className="w-12 h-12 rounded-full border-[3px] border-card bg-muted flex items-center justify-center shadow-sm overflow-hidden z-10 relative">
+            <span className="text-xl font-bold text-foreground">
+              {sphere.name?.charAt(0)?.toUpperCase()}
+            </span>
           </div>
         </div>
       </div>
@@ -99,7 +107,7 @@ export const SphereCard = React.memo(({ sphere, isJoining, membership = "none", 
             <div className="flex items-center text-[11px] font-medium text-muted-foreground bg-muted/60 pl-1.5 pr-2 py-1 rounded-md">
               <div className="flex -space-x-1.5 mr-1.5">
                 {/* Simulated Facepile */}
-                {[1, 2, 3].map((i) => (
+                {Array.from({ length: Math.min(3, Math.max(1, sphere.memberCount || 1)) }).map((_, i) => (
                   <div 
                     key={i} 
                     className="w-[18px] h-[18px] rounded-full bg-background border-[1.5px] border-muted flex items-center justify-center overflow-hidden relative"
