@@ -24,6 +24,7 @@ import {
 } from "@/services/api";
 import { supabase } from "@/lib/supabase";
 import { AuthSidePanel } from "@/components/auth/AuthSidePanel";
+import { useAuth } from "@/contexts/AuthContext";
 
 type Step = 1 | "verify";
 const MINIMUM_AGE = 16;
@@ -104,6 +105,8 @@ export function Register() {
   const passwordsMatch = !!formData.password && !!formData.confirmPassword && formData.password === formData.confirmPassword;
   const hasConfirmInput = formData.confirmPassword.length > 0;
 
+  const { refreshUser } = useAuth();
+
   useEffect(() => {
     const verified = searchParams.get('verified');
     if (verified === 'true') {
@@ -112,6 +115,7 @@ export function Register() {
           const { data: { session } } = await supabase.auth.getSession();
           if (session) {
             await exchangeSupabaseToken(session.access_token);
+            await refreshUser();
             navigate("/onboarding");
             toast({ title: "Email vérifié ✓", description: "Continuez votre inscription", duration: 3000 });
           }
@@ -120,7 +124,7 @@ export function Register() {
         }
       })();
     }
-  }, [searchParams, toast, navigate]);
+  }, [searchParams, toast, navigate, refreshUser]);
 
   useEffect(() => {
     if (step !== "verify") return;
@@ -129,6 +133,7 @@ export function Register() {
       if (event === "SIGNED_IN" && session) {
         try {
           await exchangeSupabaseToken(session.access_token);
+          await refreshUser();
           navigate("/onboarding");
           toast({ title: "Email vérifié ✓", description: "Continuez votre inscription", duration: 3000 });
         } catch (err: any) {
@@ -138,7 +143,7 @@ export function Register() {
     });
 
     return () => subscription.unsubscribe();
-  }, [step, navigate, toast]);
+  }, [step, navigate, toast, refreshUser]);
 
   useEffect(() => {
     if (resendCooldownRemaining <= 0) return;
