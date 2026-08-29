@@ -96,9 +96,20 @@ export const SphereCard = React.memo(({ sphere, isJoining, membership = "none", 
         <div className="flex items-center justify-between mt-auto">
           {/* Stats Pills */}
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground bg-muted/60 px-2 py-1 rounded-md">
-              <Users className="h-3 w-3" />
-              {sphere.memberCount || 0}
+            <div className="flex items-center text-[11px] font-medium text-muted-foreground bg-muted/60 pl-1.5 pr-2 py-1 rounded-md">
+              <div className="flex -space-x-1.5 mr-1.5">
+                {/* Simulated Facepile */}
+                {[1, 2, 3].map((i) => (
+                  <div 
+                    key={i} 
+                    className="w-[18px] h-[18px] rounded-full bg-background border-[1.5px] border-muted flex items-center justify-center overflow-hidden relative"
+                    style={{ zIndex: 4 - i }}
+                  >
+                    <Users className="w-2.5 h-2.5 text-muted-foreground/60" />
+                  </div>
+                ))}
+              </div>
+              {sphere.memberCount || 0} membres
             </div>
             {Number(sphere.impactScore) > 0 && (
               <div className="flex items-center gap-1 text-[11px] font-semibold text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-2 py-1 rounded-md border border-amber-200/50 dark:border-amber-900/50">

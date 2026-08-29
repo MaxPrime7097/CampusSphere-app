@@ -102,11 +102,11 @@ export const ResourceCard = React.memo(({
 
         {/* BOTTOM: Details */}
         <div className="p-3 flex flex-col flex-1 justify-between bg-card">
-          <div className="space-y-1 mb-3">
-            <h3 className="font-semibold text-sm line-clamp-2 text-foreground leading-tight group-hover:text-primary transition-colors">
+          <div className="mb-3 flex flex-col">
+            <h3 className="font-semibold text-sm line-clamp-2 text-foreground leading-tight group-hover:text-primary transition-colors min-h-[2.25rem]">
               {resource.title}
             </h3>
-            <p className="text-[11px] text-muted-foreground line-clamp-1">
+            <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
               Par {resource.authorName}
             </p>
           </div>

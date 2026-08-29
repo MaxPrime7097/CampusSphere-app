@@ -44,70 +44,56 @@ export function CommentSkeleton() {
 
 export function ResourceSkeleton() {
   return (
-    <Card className="overflow-hidden border bg-card/50 backdrop-blur-sm transition-all duration-300">
-      <CardContent className="p-0">
-        {/* Header skeleton */}
-        <div className="flex items-center gap-3 px-3 py-2.5 sm:px-4 sm:py-3 bg-muted/20 border-b">
-          <Skeleton className="h-6 w-6 rounded flex-shrink-0 bg-muted/40" />
-          <div className="flex-1 min-w-0 space-y-1.5">
-            <Skeleton className="h-4 w-4/5 bg-muted/40" />
-            <div className="flex items-center gap-1.5">
-              <Skeleton className="h-3 w-16 rounded-full bg-muted/30" />
-              <Skeleton className="h-3 w-10 rounded-full bg-muted/30" />
-            </div>
-          </div>
-        </div>
-        
-        <div className="px-3 py-2.5 sm:px-4 sm:py-3 space-y-3">
-          {/* Stats row */}
-          <div className="flex items-center justify-between">
-            <Skeleton className="h-3 w-20 bg-muted/30" />
-            <div className="flex gap-2">
-              <Skeleton className="h-3 w-8 bg-muted/30" />
-              <Skeleton className="h-3 w-8 bg-muted/30" />
-              <Skeleton className="h-3 w-10 bg-muted/30" />
-            </div>
-          </div>
+    <Card className="group flex flex-col overflow-hidden border-border/40 transition-all duration-300">
+      <div className="relative aspect-[4/3] w-full flex flex-col items-center justify-center bg-muted animate-pulse">
+        <Skeleton className="w-16 h-16 rounded-lg bg-muted/60" />
+      </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-1.5 pt-1">
-            <Skeleton className="h-8 w-8 rounded-lg bg-muted/30" />
-            <Skeleton className="h-8 w-8 rounded-lg bg-muted/30" />
-            <Skeleton className="h-8 w-8 rounded-lg bg-muted/30" />
-            <Skeleton className="h-8 flex-1 rounded-lg bg-primary/10" />
-          </div>
+      <div className="p-3 flex flex-col flex-1 justify-between bg-card">
+        <div className="mb-3 flex flex-col">
+          <Skeleton className="h-4 w-3/4 mb-1" />
+          <Skeleton className="h-4 w-1/2 mb-1" />
+          <Skeleton className="h-3 w-1/4 mt-1.5" />
         </div>
-      </CardContent>
+
+        <div className="flex items-center justify-between mt-auto h-6">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-3 w-8" />
+            <Skeleton className="h-3 w-8" />
+          </div>
+          <Skeleton className="h-6 w-16" />
+        </div>
+      </div>
     </Card>
   );
 }
 
 export function SphereSkeleton() {
   return (
-    <Card className="overflow-hidden campus-card border-none bg-card/50 backdrop-blur-sm">
-      <div className="h-24 bg-muted animate-pulse" />
-      <div className="p-4 space-y-4">
-        <div className="flex justify-between items-start">
-          <div className="space-y-2 flex-1">
-            <Skeleton className="h-5 w-3/4" />
-            <div className="flex gap-1.5">
-              <Skeleton className="h-4 w-16 rounded-md" />
-              <Skeleton className="h-4 w-20 rounded-md" />
-            </div>
-          </div>
-          <Skeleton className="h-5 w-12 rounded-md" />
+    <Card className="group flex flex-col overflow-hidden border-border/40 transition-all duration-300">
+      <div className="relative h-24 bg-muted animate-pulse">
+        <div className="absolute top-2 right-2">
+           <Skeleton className="h-5 w-16 rounded-full" />
         </div>
-        
-        <div className="flex items-center justify-between py-1">
-          <div className="flex -space-x-2">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-7 w-7 rounded-full border-2 border-background" />
-            ))}
-          </div>
-          <Skeleton className="h-3 w-20" />
+        <div className="absolute -bottom-4 left-4">
+          <Skeleton className="w-12 h-12 rounded-full border-[3px] border-card bg-muted-foreground/20" />
         </div>
+      </div>
 
-        <Skeleton className="h-9 w-full rounded-xl" />
+      <div className="pt-7 px-4 pb-4 flex flex-col flex-1 bg-card">
+        <div className="flex items-start justify-between gap-2 mb-1">
+          <Skeleton className="h-5 w-2/3" />
+        </div>
+        <Skeleton className="h-3 w-full mt-2" />
+        <Skeleton className="h-3 w-4/5 mt-1 mb-4" />
+
+        <div className="flex items-center justify-between mt-auto">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-6 w-12 rounded-md" />
+            <Skeleton className="h-6 w-10 rounded-md" />
+          </div>
+          <Skeleton className="h-7 w-20 rounded-md" />
+        </div>
       </div>
     </Card>
   );

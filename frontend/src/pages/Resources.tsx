@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/select";
 import { ResourceCard } from "@/components/resources/ResourceCard";
 import { FolderCard } from "@/components/resources/FolderCard";
+import { NetflixCarousel } from "@/components/ui/netflix-carousel";
 import { cn, formatFileSize } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { RESOURCE_TYPE_OPTIONS, normalizeResourceType } from "@/constants/resourceTypes";
@@ -753,7 +754,7 @@ export function Resources() {
                           </Button>
                         )}
                       </div>
-                      <div className="cs-scroll-row gap-3 pb-1">
+                      <NetflixCarousel className="gap-3 pb-1">
                         {categoryResources.map((resource) => (
                           <div key={resource.id} className="cs-scroll-item w-[180px] sm:w-[250px]">
                             <ResourceCard
@@ -766,7 +767,7 @@ export function Resources() {
                             />
                           </div>
                         ))}
-                      </div>
+                      </NetflixCarousel>
                     </div>
                   );
                 })}
