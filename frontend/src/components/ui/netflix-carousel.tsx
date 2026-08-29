@@ -30,12 +30,12 @@ export function NetflixCarousel({ children, className }: { children: React.React
   };
 
   return (
-    <div className="relative group w-full">
+    <div className="relative group/carousel w-full">
       {/* Flèche Gauche (PC Uniquement) */}
       <div 
         className={cn(
           "absolute left-0 top-0 bottom-0 w-12 z-20 hidden md:flex items-center justify-start pl-1 opacity-0 transition-opacity duration-300 pointer-events-none",
-          showLeft && "group-hover:opacity-100 pointer-events-auto"
+          showLeft && "group-hover/carousel:opacity-100 pointer-events-auto"
         )}
       >
         <button 
@@ -58,7 +58,7 @@ export function NetflixCarousel({ children, className }: { children: React.React
       <div 
         className={cn(
           "absolute right-0 top-0 bottom-0 w-12 z-20 hidden md:flex items-center justify-end pr-1 opacity-0 transition-opacity duration-300 pointer-events-none",
-          showRight && "group-hover:opacity-100 pointer-events-auto"
+          showRight && "group-hover/carousel:opacity-100 pointer-events-auto"
         )}
       >
         <button 
