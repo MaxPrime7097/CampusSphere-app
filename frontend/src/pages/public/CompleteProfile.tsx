@@ -36,7 +36,7 @@ const parseISODate = (value: string) => {
   return date;
 };
 
-export default function CompleteProfile() {
+export function CompleteProfile() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { refreshUser } = useAuth();
