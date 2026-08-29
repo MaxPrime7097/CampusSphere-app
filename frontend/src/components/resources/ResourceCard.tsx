@@ -1,7 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   FileText, Download, Bookmark,
@@ -9,7 +8,6 @@ import {
   Loader2,
 } from "lucide-react";
 import { SpheraIcon } from "@/components/ui/sphera-icon";
-import { getTypeLabel, getSubjectLabel } from "@/lib/resourceMetadata";
 import { formatFileSize, cn } from "@/lib/utils";
 import { StudyToolsModal } from "@/sphera/components/study/StudyToolsModal";
 
@@ -40,13 +38,14 @@ function getTypeStyle(type: string) {
   return TYPE_STYLES[key] ?? TYPE_STYLES.default;
 }
 
-function getFileIcon(type: string) {
+function getFileIcon(type: string, className?: string) {
   const t = (type || "").toLowerCase();
-  if (t.includes("video"))   return <Video className="h-5 w-5" />;
-  if (t.includes("image"))   return <FileImage className="h-5 w-5" />;
-  if (t.includes("code") || t.includes("project")) return <FileCode className="h-5 w-5" />;
-  if (t.includes("archive") || t.includes("zip"))  return <Archive className="h-5 w-5" />;
-  return <FileText className="h-5 w-5" />;
+  const cls = className || "h-5 w-5";
+  if (t.includes("video"))   return <Video className={cls} />;
+  if (t.includes("image"))   return <FileImage className={cls} />;
+  if (t.includes("code") || t.includes("project")) return <FileCode className={cls} />;
+  if (t.includes("archive") || t.includes("zip"))  return <Archive className={cls} />;
+  return <FileText className={cls} />;
 }
 
 export const ResourceCard = React.memo(({
@@ -61,7 +60,7 @@ export const ResourceCard = React.memo(({
     <>
       <Card
         className={cn(
-          "group overflow-hidden cursor-pointer cs-card-raised border-border/40",
+          "group flex flex-col overflow-hidden cursor-pointer border-border/40 hover:border-border/80 hover:shadow-md transition-all duration-300",
           className
         )}
         onClick={(e) => {
@@ -72,77 +71,66 @@ export const ResourceCard = React.memo(({
           }
         }}
       >
-        <CardContent className="p-0">
-          {/* Color bar top — type indicator */}
-          <div className={cn("flex items-center gap-2.5 px-3 py-2.5", style.bg)}>
-            <div className={cn("flex-shrink-0", style.icon)}>
-              {getFileIcon(resource.type)}
-            </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="font-semibold text-sm line-clamp-1 text-foreground leading-tight">
-                {resource.title}
-              </h3>
-            </div>
+        {/* TOP: Large Thumbnail Area */}
+        <div className={cn("relative aspect-[4/3] w-full flex flex-col items-center justify-center transition-colors duration-300", style.bg, "group-hover:bg-opacity-80")}>
+          <div className={cn("transition-transform duration-500 group-hover:scale-110", style.icon)}>
+            {getFileIcon(resource.type, "w-16 h-16 opacity-80")}
+          </div>
+          
+          {/* Floating Action Buttons (Top Right) */}
+          <div className="absolute top-2 right-2 flex flex-col gap-1.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200" onClick={(e) => e.stopPropagation()}>
+            <Button
+              size="icon"
+              variant="secondary"
+              className={cn("h-8 w-8 rounded-full shadow-sm bg-background/80 backdrop-blur-sm hover:bg-background", isSaved && "text-primary")}
+              onClick={onSave}
+              title="Sauvegarder"
+            >
+              <Bookmark className={cn("h-4 w-4", isSaved && "fill-current")} />
+            </Button>
+            <Button
+              size="icon"
+              variant="secondary"
+              className="h-8 w-8 rounded-full shadow-sm bg-background/80 backdrop-blur-sm hover:bg-background text-primary"
+              onClick={(e) => { e.stopPropagation(); setStudyOpen(true); }}
+              title="Réviser avec l'IA"
+            >
+              <SpheraIcon size="sm" />
+            </Button>
+          </div>
+        </div>
+
+        {/* BOTTOM: Details */}
+        <div className="p-3 flex flex-col flex-1 justify-between bg-card">
+          <div className="space-y-1 mb-3">
+            <h3 className="font-semibold text-sm line-clamp-2 text-foreground leading-tight group-hover:text-primary transition-colors">
+              {resource.title}
+            </h3>
+            <p className="text-[11px] text-muted-foreground line-clamp-1">
+              Par {resource.authorName}
+            </p>
           </div>
 
-          <div className="px-3 py-2.5 space-y-2.5">
-            {/* Stats row */}
-            <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-              <span className="truncate max-w-[100px]">Par {resource.authorName}</span>
-              <div className="flex items-center gap-2">
-                <span className="flex items-center gap-0.5">
-                  <Download className="h-3 w-3" /> {resource.downloadCount || 0}
-                </span>
-                {resource.fileSize > 0 && (
-                  <span className="text-[9px] text-muted-foreground/50">
-                    {formatFileSize(resource.fileSize)}
-                  </span>
-                )}
-              </div>
+          {/* Footer Row */}
+          <div className="flex items-center justify-between text-[11px] text-muted-foreground mt-auto h-6">
+            <div className="flex items-center gap-3">
+              {resource.fileSize > 0 && <span>{formatFileSize(resource.fileSize)}</span>}
+              <span className="flex items-center gap-1">
+                <Download className="h-3 w-3" /> {resource.downloadCount || 0}
+              </span>
             </div>
 
-            {/* Action buttons */}
-            <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
-              <Button
-                size="sm"
-                variant="ghost"
-                className={cn(
-                  "h-7 w-7 p-0 rounded-[var(--radius-sm)]",
-                  isSaved ? "text-primary bg-primary/8" : "hover:bg-accent"
-                )}
-                onClick={onSave}
-                title="Sauvegarder"
-              >
-                <Bookmark className={cn("h-3.5 w-3.5", isSaved ? "fill-current" : "")} />
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 w-7 p-0 rounded-[var(--radius-sm)] hover:bg-accent text-primary"
-                onClick={(e) => { e.stopPropagation(); setStudyOpen(true); }}
-                title="Reviser avec l'IA"
-              >
-                <SpheraIcon size="sm" />
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                className="h-7 flex-1 gap-1 rounded-[var(--radius-sm)] shadow-none text-secondary-foreground hover:bg-primary hover:text-primary-foreground transition-colors"
-                onClick={onDownload}
-                disabled={isDownloading}
-              >
-                {isDownloading ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <>
-                    <Download className="h-3.5 w-3.5" />
-                    <span className="text-[10px] font-semibold hidden sm:inline">Telecharger</span>
-                  </>
-                )}
-              </Button>
-            </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 px-2 text-[10px] bg-primary/10 hover:bg-primary hover:text-primary-foreground text-primary transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100"
+              onClick={(e) => { e.stopPropagation(); if (onDownload) onDownload(e); }}
+              disabled={isDownloading}
+            >
+              {isDownloading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Télécharger"}
+            </Button>
           </div>
-        </CardContent>
+        </div>
       </Card>
 
       <StudyToolsModal

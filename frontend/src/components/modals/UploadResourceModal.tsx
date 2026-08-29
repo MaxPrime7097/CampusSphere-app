@@ -286,8 +286,8 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
           </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4">
-          <div>
+        <div className="space-y-4 min-w-0">
+          <div className="min-w-0">
             <Label>{t('modals.uploadResource.file')} *</Label>
             <div 
               className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors w-full min-w-0 overflow-hidden ${
@@ -376,7 +376,7 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
             </div>
           </div>
 
-          <div>
+          <div className="min-w-0">
             <Label htmlFor="title">{t('modals.uploadResource.title_field')} *</Label>
             <Input id="title" placeholder={t('modals.uploadResource.titlePlaceholder', { defaultValue: "Ex : Notes complètes - Algèbre linéaire" })} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={100} className="mt-1.5" />
           </div>
