@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
+import { NetflixCarousel } from "@/components/ui/netflix-carousel";
 import { UnifiedSearchFiltersBar } from "@/components/ui/unified-search-filters-bar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Globe, Search, Users, TrendingUp, Clock, Loader2, Check, RefreshCw, Plus, Filter } from "lucide-react";
@@ -484,20 +485,16 @@ export function Spheres() {
                   }}
                 />
               ) : (
-              <div className={cn(
-                isMobile
-                  ? "cs-scroll-row gap-3"
-                  : "grid gap-3 grid-cols-2 lg:grid-cols-4"
-              )}>
-                {isSpheresLoading ? (
-                  Array.from({ length: 8 }).map((_, i) => (
-                    <div key={i} className={isMobile ? "cs-scroll-item w-[200px]" : ""}>
-                      <SphereSkeleton />
-                    </div>
-                  ))
-                ) : (
-                  getSortedSpheres().map((sphere) => (
-                    <div key={sphere.id} className={isMobile ? "cs-scroll-item w-[200px]" : ""}>
+                <NetflixCarousel className="gap-3">
+                  {isSpheresLoading ? (
+                    Array.from({ length: 8 }).map((_, i) => (
+                      <div key={i} className="cs-scroll-item w-[200px] sm:w-[250px]">
+                        <SphereSkeleton />
+                      </div>
+                    ))
+                  ) : (
+                    getSortedSpheres().map((sphere) => (
+                      <div key={sphere.id} className="cs-scroll-item w-[200px] sm:w-[250px]">
                       <SphereCard
                         sphere={sphere}
                         membership={getUnifiedMembershipState(sphere)}
@@ -505,9 +502,9 @@ export function Spheres() {
                         onJoin={() => handleJoinSphere(sphere.id, sphere.name)}
                       />
                     </div>
-                  ))
-                )}
-              </div>
+                    ))
+                  )}
+                </NetflixCarousel>
               )}
             </section>
           </TabsContent>
@@ -538,13 +535,9 @@ export function Spheres() {
                   <p className="text-muted-foreground">Vous n'avez rejoint aucune sphère pour le moment.</p>
                 </div>
               ) : (
-              <div className={cn(
-                isMobile
-                  ? "cs-scroll-row gap-3"
-                  : "grid gap-3 grid-cols-2 lg:grid-cols-4"
-              )}>
+              <NetflixCarousel className="gap-3">
                 {getSortedSpheres().map((sphere) => (
-                  <div key={sphere.id} className={isMobile ? "cs-scroll-item w-[200px]" : ""}>
+                  <div key={sphere.id} className="cs-scroll-item w-[200px] sm:w-[250px]">
                     <SphereCard
                       sphere={sphere}
                       membership={getUnifiedMembershipState(sphere)}
@@ -553,7 +546,7 @@ export function Spheres() {
                     />
                   </div>
                 ))}
-              </div>
+              </NetflixCarousel>
               )}
             </section>
           </TabsContent>
