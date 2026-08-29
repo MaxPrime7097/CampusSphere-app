@@ -397,7 +397,7 @@ export function Spheres() {
           </div>
         </div>
 
-        <Card className={cn(cardClasses, "mb-6")}>
+                <Card className={cn(cardClasses, "mb-6")}>
           <CardContent className="p-3">
             {/* Mobile */}
             <div className="flex gap-2 sm:hidden">
@@ -425,6 +425,7 @@ export function Spheres() {
                 </Select>
               </div>
             )}
+            
             {/* Desktop */}
             <div className="hidden sm:grid sm:grid-cols-3 gap-3">
               <div className="relative">
@@ -488,7 +489,7 @@ export function Spheres() {
               if (mySpheres.length === 0 && !isSpheresLoading) return null;
               return (
                 <section>
-                  <h2 className="text-xl font-bold mb-4 px-1 flex items-center gap-2">⭐ Mes Sphères</h2>
+                  <h2 className="text-xl font-bold mb-4 px-1 flex items-center gap-2">Mes Sphères</h2>
                   <NetflixCarousel className="gap-3">
                     {isSpheresLoading ? (
                       Array.from({ length: 4 }).map((_, i) => (
@@ -527,7 +528,7 @@ export function Spheres() {
               return (
                 <section>
                   <h2 className="text-xl font-bold mb-4 px-1 flex items-center gap-2">
-                    🔥 Tendances
+                    Tendances
                   </h2>
                   <NetflixCarousel className="gap-3">
                     {isSpheresLoading ? (
@@ -554,16 +555,22 @@ export function Spheres() {
             })()}
 
             {/* Rows 3+: Par Catégorie */}
-            {categories.map(cat => {
-              const catSpheres = allSpheres.filter(s => s.sphere_type === cat.value);
+                        {[
+              { value: "cours", label: "Cours & Révisions" },
+              { value: "projet", label: "Projets" },
+              { value: "communaute", label: "Communautés" },
+              { value: "club", label: "Clubs & Associations" },
+              { value: "revision", label: "Groupes de révision" }
+            ].map(typeObj => {
+              const catSpheres = allSpheres.filter(s => s.sphere_type === typeObj.value);
               if (catSpheres.length === 0 && !isSpheresLoading) return null;
               return (
-                <section key={cat.value}>
+                <section key={typeObj.value}>
                   <div className="flex justify-between items-center mb-4 px-1">
-                    <h2 className="text-xl font-bold">{cat.label}</h2>
+                    <h2 className="text-xl font-bold">{typeObj.label}</h2>
                     {catSpheres.length > 4 && (
                       <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => {
-                        setFilterCategory(cat.value);
+                        setFilterCategory(typeObj.value);
                       }}>
                         Voir tout ({catSpheres.length})
                       </Button>
@@ -598,3 +605,6 @@ export function Spheres() {
     </div>
   );
 }
+
+
+

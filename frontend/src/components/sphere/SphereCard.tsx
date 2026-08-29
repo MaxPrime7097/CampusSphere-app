@@ -117,7 +117,7 @@ export const SphereCard = React.memo(({ sphere, isJoining, membership = "none", 
                   </div>
                 ))}
               </div>
-              {sphere.memberCount || 0} membres
+              {sphere.memberCount || 0} <span className="sm:hidden">membres</span><span className="hidden sm:inline">membres</span>
             </div>
             {Number(sphere.impactScore) > 0 && (
               <div className="flex items-center gap-1 text-[11px] font-semibold text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-2 py-1 rounded-md border border-amber-200/50 dark:border-amber-900/50">

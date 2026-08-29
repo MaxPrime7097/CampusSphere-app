@@ -52,3 +52,17 @@ L'écosystème est composé de deux parties principales qui interagissent :
 
 ## 🚀 Prochaines Étapes
 - *(À remplir en fonction des prochaines requêtes)*
+
+## Recent Updates (Phase 1 Refactoring - Spheres)
+- Removed emojis from UI titles.
+- Converted Spheres.tsx to a Netflix-style dashboard layout without Tabs.
+- Corrected categorization logic in Spheres.tsx to map over sphere_types instead of categories.
+- Streamlined SphereCard.tsx (neutral banner, no gradient on avatar).
+- **Strict Rule Enforced**: ABSOLUTELY NO EMOJIS in conversational responses or UI strings unless explicitly requested.
+
+
+## Recent Updates (Phase 2 & 3 Refactoring - Resources & Connections)
+- Applied the tab-less dashboard architecture to Resources.tsx. Now uses NetflixCarousel for folders, suggestions, and categories, degrading to a grid on search.
+- Applied the tab-less dashboard architecture to Connections.tsx. Now displays pending requests, active connections, and suggestions as neat horizontal rows. Search degrades gracefully to a grid.
+- Maintained strict no-emojis policy in responses and UI additions.
+
