@@ -563,7 +563,7 @@ export function ResourceDetail() {
                   )}
                   <Badge variant="outline">{resource.format ? resource.format.toUpperCase() : "Non défini"}</Badge>
                 </div>
-                <h1 className="text-2xl md:text-3xl font-bold mb-2">{resource.title}</h1>
+                <h1 className="text-2xl md:text-3xl font-bold mb-2 break-words break-all sm:break-normal">{resource.title}</h1>
                 <p className="text-muted-foreground whitespace-pre-wrap">{renderMentionText(resource.description)}</p>
               </div>
 
