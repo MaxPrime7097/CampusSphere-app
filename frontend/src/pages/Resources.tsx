@@ -519,128 +519,32 @@ export function Resources() {
               </Select>
             </div>
           </CardContent>
-        </Card>
+        </Card>        {/* DASHBOARD OR SEARCH RESULTS */}
+        {(() => {
+          const isSearchOrFilterActive = searchTerm !== "" || selectedSubject !== "all" || selectedType !== "all";
 
-        {/* Tab Navigation */}
-        <div className="w-full overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden mb-6">
-        <ul className="inline-grid grid-flow-col text-center border-b border-gray-200 text-gray-500 min-w-full">
-          {[
-            { id: "all", label: "Toutes" },
-            { id: "suggestions", label: "Suggestions" },
-          ].map((tab) => (
-            <li key={tab.id}>
-              <button
-                onClick={() => { setActiveTab(tab.id as ResourceSortKey); setShowFoldersTab(false); }}
-                className={cn(
-                  "w-full flex justify-center px-4 whitespace-nowrap border-b-4 py-4 transition-all duration-200 text-sm font-medium",
-                  !showFoldersTab && resolvedResourceSort === tab.id
-                    ? "border-primary text-primary"
-                    : "border-transparent hover:text-primary hover:border-primary"
-                )}
-              >
-                {tab.label}
-              </button>
-            </li>
-          ))}
-          {(currentUser || localStorage.getItem('access')) && (
-            <li>
-              <button
-                onClick={() => { setShowFoldersTab(true); loadFolders(); }}
-                className={cn(
-                  "w-full flex justify-center px-4 whitespace-nowrap border-b-4 py-4 transition-all duration-200 text-sm font-medium",
-                  showFoldersTab
-                    ? "border-primary text-primary"
-                    : "border-transparent hover:text-primary hover:border-primary"
-                )}
-              >
-                Dossiers
-              </button>
-            </li>
-          )}
-        </ul>
-        </div>
-
-        {/* ======= FOLDERS TAB ======= */}
-        {showFoldersTab ? (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="ml-2 font-bold text-lg">
-                Mes dossiers ({folders.length}/4)
-              </h2>
-              <button
-                className={cn(
-                  "text-sm font-medium px-3 py-1.5 rounded-lg transition-all",
-                  folders.length >= 4
-                    ? "text-muted-foreground cursor-not-allowed"
-                    : "text-primary hover:bg-primary/10"
-                )}
-                onClick={() => { setEditingFolder(null); setShowCreateFolder(true); }}
-                disabled={folders.length >= 4}
-              >
-                + Nouveau dossier
-              </button>
-            </div>
-
-            {foldersLoading ? (
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="h-32 bg-muted/40 rounded-xl animate-pulse" />
-                ))}
-              </div>
-            ) : folders.length === 0 ? (
-              <EmptyState
-                icon={Folder}
-                title="Aucun dossier"
-                description="Créez jusqu'à 4 dossiers pour organiser vos ressources."
-                actionLabel="Créer un dossier"
-                onAction={() => setShowCreateFolder(true)}
-              />
-            ) : (
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                {folders.map(folder => (
-                  <FolderCard
-                    key={folder.id}
-                    folder={folder}
-                    isSelected={selectedFolder?.id === folder.id}
-                    onOpen={handleOpenFolder}
-                    onDownloadZip={async (f) => {
-                      if (!currentUser?.isVerified) {
-                        toast({
-                          title: "Compte non certifié",
-                          description: "Vérifiez votre compte pour télécharger des dossiers.",
-                          variant: "destructive",
-                          action: (
-                            <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>Vérifier</Button>
-                          )
-                        });
-                        return;
-                      }
-                      await downloadFolderZip(f.id, f.name);
-                      toast({ title: 'Téléchargement du ZIP en cours...' });
-                    }}
-                    onEdit={(f) => { setEditingFolder(f); setShowCreateFolder(true); }}
-                    onDelete={handleDeleteFolder}
-                  />
-                ))}
-              </div>
-            )}
-
-            {selectedFolder && (
-              <div className="mt-6 space-y-3">
-                <div className="flex items-center gap-2 border-b pb-2">
-                  <FolderOpen className="h-4 w-4 text-primary" />
-                  <h3 className="font-semibold">{selectedFolder.name}</h3>
-                  <span className="text-xs text-muted-foreground ml-auto">{folderResources.length} fichier{folderResources.length !== 1 ? 's' : ''}</span>
-                </div>
-                {folderResources.length === 0 ? (
+          if (isSearchOrFilterActive) {
+            return (
+              <div className="mt-6">
+                {loading || resourcesQuery.isLoading ? (
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    {Array.from({ length: 8 }).map((_, i) => <ResourceSkeleton key={i} />)}
+                  </div>
+                ) : getSortedResources().length === 0 ? (
                   <EmptyState
-                    icon={FolderOpen}
-                    title="Dossier vide"
-                    description="Ce dossier ne contient pas encore de ressources."
+                    icon={FileText}
+                    title="Aucune ressource trouvée"
+                    description="Ajustez vos filtres pour trouver ce que vous cherchez."
+                    actionLabel="Tout réinitialiser"
+                    onAction={() => {
+                      setSearchTerm("");
+                      setSelectedSubject("all");
+                      setSelectedType("all");
+                    }}
                   />
                 ) : (
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                    {folderResources.map((resource) => (
+                    {getSortedResources().map((resource) => (
                       <ResourceCard
                         key={resource.id}
                         resource={resource}
@@ -654,40 +558,23 @@ export function Resources() {
                   </div>
                 )}
               </div>
-            )}
-          </div>
-        ) : (
-        <>
-        {loading || resourcesQuery.isLoading ? (
+            );
+          }
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <ResourceSkeleton key={i} />
-            ))}
-          </div>
-        ) : getSortedResources().length === 0 ? (
-          <EmptyState
-            icon={FileText}
-            title="Aucune ressource trouvée"
-            description="Soyez le premier à partager une ressource dans cette catégorie !"
-            actionLabel={currentUser?.isVerified ? "Partager une ressource" : "Se certifier"}
-            onAction={() => {
-              if (currentUser?.isVerified) {
-                window.location.reload();
-              } else {
-                openVerificationModal();
-              }
-            }}
-          />
-        ) : (
-          (() => {
-            const isSearchOrFilterActive = searchTerm !== "" || selectedSubject !== "all" || selectedType !== "all";
-
-            // Mode Recherche ou Filtres : On affiche la grille standard
-            if (isSearchOrFilterActive) {
-              return (
+          if (viewAllCategory) {
+            const categoryLabel = RESOURCE_TYPE_OPTIONS.find(opt => opt.value === viewAllCategory)?.label || "Catégorie";
+            const categoryResources = getSortedResources().filter(r => r.type === viewAllCategory);
+            
+            return (
+              <div className="space-y-4 mt-6">
+                <div className="ml-2 flex items-center gap-8 mb-4">
+                  <Button variant="outline" size="sm" onClick={() => setViewAllCategory(null)}>
+                    Retour
+                  </Button>
+                  <h2 className="text-xl font-medium">{categoryLabel}</h2>
+                </div>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                  {getSortedResources().map((resource) => (
+                  {categoryResources.map((resource) => (
                     <ResourceCard
                       key={resource.id}
                       resource={resource}
@@ -699,63 +586,165 @@ export function Resources() {
                     />
                   ))}
                 </div>
-              );
-            }
+              </div>
+            );
+          }
 
-            // Mode "Voir Tout" pour une catégorie spécifique
-            if (viewAllCategory) {
-              const categoryLabel = RESOURCE_TYPE_OPTIONS.find(opt => opt.value === viewAllCategory)?.label || "Catégorie";
-              const categoryResources = getSortedResources().filter(r => r.type === viewAllCategory);
+          // DASHBOARD (Netflix Mode)
+          return (
+            <div className="flex flex-col gap-10 mt-8 pb-12">
               
-              return (
-                <div className="space-y-4">
-                  <div className="ml-2 flex items-center gap-8 mb-4">
-                    <Button variant="outline" size="sm" onClick={() => setViewAllCategory(null)}>
-                      ← Retour
+              {/* Row 1: Mes Dossiers */}
+              {(currentUser || localStorage.getItem('access')) && (
+                <section className="flex flex-col w-full max-w-full overflow-hidden">
+                  <div className="flex justify-between items-center mb-4 px-1">
+                    <h2 className="text-xl font-bold flex items-center gap-2">
+                      Mes dossiers ({folders.length}/4)
+                    </h2>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={cn(
+                        "text-muted-foreground hover:text-foreground",
+                        folders.length >= 4 && "opacity-50 cursor-not-allowed"
+                      )}
+                      onClick={() => { setEditingFolder(null); setShowCreateFolder(true); }}
+                      disabled={folders.length >= 4}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Nouveau
                     </Button>
-                    <h2 className="text-xl font-medium">{categoryLabel}</h2>
                   </div>
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                    {categoryResources.map((resource) => (
-                      <ResourceCard
-                        key={resource.id}
-                        resource={resource}
-                        isDownloading={downloadingIds.has(resource.id)}
-                        isSaved={savedResources.has(resource.id)}
-                        onDownload={(e) => handleDownload(e, resource.id)}
-                        onSave={(e) => handleSave(e, resource.id)}
-                        onPreview={(e) => handlePreview(e, resource.id)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              );
-            }
-
-            // Mode "Netflix" : Affichage horizontal par catégories
-            return (
-              <div className="space-y-8">
-                {RESOURCE_TYPE_OPTIONS.map((opt) => {
-                  const categoryResources = getSortedResources().filter(r => r.type === opt.value);
-                  if (categoryResources.length === 0) return null;
-
-                  return (
-                    <div key={opt.value} className="flex flex-col w-full max-w-full overflow-hidden">
-                      <div className="flex justify-between items-center mb-2">
-                        <h2 className="ml-2 text-lg font-semibold text-foreground">{opt.label}</h2>
-                        {categoryResources.length > 4 && (
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="text-muted-foreground hover:text-foreground"
-                            onClick={() => setViewAllCategory(opt.value)}
-                          >
-                            Voir tout ({categoryResources.length})
-                          </Button>
-                        )}
+                  
+                  <NetflixCarousel className="gap-3 pb-1">
+                    {foldersLoading ? (
+                      Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="cs-scroll-item w-[200px] sm:w-[250px] h-32 bg-muted/40 rounded-xl animate-pulse" />
+                      ))
+                    ) : folders.length === 0 ? (
+                      <div className="cs-scroll-item w-[200px] sm:w-[250px] h-32 border-2 border-dashed border-border/50 rounded-xl flex flex-col items-center justify-center text-muted-foreground hover:bg-muted/30 cursor-pointer transition-colors" onClick={() => setShowCreateFolder(true)}>
+                        <Folder className="h-6 w-6 mb-2 opacity-50" />
+                        <span className="text-sm font-medium">Créer un dossier</span>
                       </div>
-                      <NetflixCarousel className="gap-3 pb-1">
-                        {categoryResources.map((resource) => (
+                    ) : (
+                      folders.map(folder => (
+                        <div key={folder.id} className="cs-scroll-item w-[200px] sm:w-[250px]">
+                          <FolderCard
+                            folder={folder}
+                            isSelected={selectedFolder?.id === folder.id}
+                            onOpen={handleOpenFolder}
+                            onDownloadZip={async (f) => {
+                              if (!currentUser?.isVerified) {
+                                toast({
+                                  title: "Compte non certifié",
+                                  description: "Vérifiez votre compte pour télécharger des dossiers.",
+                                  variant: "destructive",
+                                  action: (
+                                    <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>Vérifier</Button>
+                                  )
+                                });
+                                return;
+                              }
+                              await downloadFolderZip(f.id, f.name);
+                              toast({ title: 'Téléchargement du ZIP en cours...' });
+                            }}
+                            onEdit={(f) => { setEditingFolder(f); setShowCreateFolder(true); }}
+                            onDelete={handleDeleteFolder}
+                          />
+                        </div>
+                      ))
+                    )}
+                  </NetflixCarousel>
+
+                  {/* FOLDER CONTENTS (Expanded when selectedFolder exists) */}
+                  {selectedFolder && (
+                    <div className="mt-6 bg-muted/30 p-4 rounded-xl border border-border/50">
+                      <div className="flex items-center gap-2 border-b pb-2 mb-4">
+                        <FolderOpen className="h-4 w-4 text-primary" />
+                        <h3 className="font-semibold">{selectedFolder.name}</h3>
+                        <Button variant="ghost" size="sm" className="ml-auto h-7 px-2" onClick={() => setSelectedFolder(null)}>
+                          Fermer
+                        </Button>
+                      </div>
+                      {folderResources.length === 0 ? (
+                        <div className="py-8 text-center text-muted-foreground text-sm">
+                          Dossier vide
+                        </div>
+                      ) : (
+                        <NetflixCarousel className="gap-3 pb-1">
+                          {folderResources.map((resource) => (
+                            <div key={resource.id} className="cs-scroll-item w-[180px] sm:w-[250px]">
+                              <ResourceCard
+                                resource={resource}
+                                isDownloading={downloadingIds.has(resource.id)}
+                                isSaved={savedResources.has(resource.id)}
+                                onDownload={(e) => handleDownload(e, resource.id)}
+                                onSave={(e) => handleSave(e, resource.id)}
+                                onPreview={(e) => handlePreview(e, resource.id)}
+                              />
+                            </div>
+                          ))}
+                        </NetflixCarousel>
+                      )}
+                    </div>
+                  )}
+                </section>
+              )}
+
+              {/* Row 2: Suggestions */}
+              {(() => {
+                const suggestions = [...filteredResources].sort((a, b) => b.impactScore - a.impactScore).slice(0, 10);
+                if (suggestions.length === 0 || loading || resourcesQuery.isLoading) return null;
+                return (
+                  <section>
+                    <h2 className="text-xl font-bold mb-4 px-1 flex items-center gap-2">Suggestions pour vous</h2>
+                    <NetflixCarousel className="gap-3 pb-1">
+                      {suggestions.map((resource) => (
+                        <div key={resource.id} className="cs-scroll-item w-[180px] sm:w-[250px]">
+                          <ResourceCard
+                            resource={resource}
+                            isDownloading={downloadingIds.has(resource.id)}
+                            isSaved={savedResources.has(resource.id)}
+                            onDownload={(e) => handleDownload(e, resource.id)}
+                            onSave={(e) => handleSave(e, resource.id)}
+                            onPreview={(e) => handlePreview(e, resource.id)}
+                          />
+                        </div>
+                      ))}
+                    </NetflixCarousel>
+                  </section>
+                );
+              })()}
+
+              {/* Rows 3+: Par Catégorie */}
+              {RESOURCE_TYPE_OPTIONS.map((opt) => {
+                const categoryResources = filteredResources.filter(r => r.type === opt.value);
+                if (categoryResources.length === 0 && !loading && !resourcesQuery.isLoading) return null;
+
+                return (
+                  <section key={opt.value}>
+                    <div className="flex justify-between items-center mb-4 px-1">
+                      <h2 className="text-xl font-bold">{opt.label}</h2>
+                      {categoryResources.length > 4 && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-muted-foreground hover:text-foreground"
+                          onClick={() => setViewAllCategory(opt.value)}
+                        >
+                          Voir tout ({categoryResources.length})
+                        </Button>
+                      )}
+                    </div>
+                    <NetflixCarousel className="gap-3 pb-1">
+                      {loading || resourcesQuery.isLoading ? (
+                        Array.from({ length: 4 }).map((_, i) => (
+                          <div key={i} className="cs-scroll-item w-[180px] sm:w-[250px]">
+                            <ResourceSkeleton />
+                          </div>
+                        ))
+                      ) : (
+                        categoryResources.map((resource) => (
                           <div key={resource.id} className="cs-scroll-item w-[180px] sm:w-[250px]">
                             <ResourceCard
                               resource={resource}
@@ -766,19 +755,15 @@ export function Resources() {
                               onPreview={(e) => handlePreview(e, resource.id)}
                             />
                           </div>
-                        ))}
-                      </NetflixCarousel>
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })()
-        )}
-        </>
-        )}
-
-        {showCreateFolder && (
+                        ))
+                      )}
+                    </NetflixCarousel>
+                  </section>
+                );
+              })}
+            </div>
+          );
+        })()}{showCreateFolder && (
           <Suspense fallback={<ModalLoadingFallback />}>
             <CreateFolderModal
               open={showCreateFolder}
@@ -801,3 +786,4 @@ export function Resources() {
     </div>
   );
 }
+
