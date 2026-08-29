@@ -701,7 +701,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                 </Button>
               </div>
 
-              <div className="flex items-center justify-between sm:justify-end gap-2 rounded-lg bg-muted/50 p-1">
+              <div className="flex items-center justify-end self-end gap-2 rounded-lg bg-muted/50 p-1 ml-auto sm:ml-0">
                 <div className="flex items-center">
                   <Button
                     variant="ghost"
@@ -1053,3 +1053,4 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
     </>
   );
 }
+

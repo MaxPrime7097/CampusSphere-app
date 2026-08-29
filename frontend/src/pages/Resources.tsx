@@ -24,6 +24,7 @@ import {
   FolderPlus,
   Folder,
   FolderOpen,
+  Plus,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { openVerificationModal } from "@/lib/events";
@@ -402,7 +403,7 @@ export function Resources() {
               Partagez et accédez aux ressources partagées par la communautés
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex w-full sm:w-auto gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -427,7 +428,7 @@ export function Resources() {
               <>
                 <Button
                   size="sm"
-                  className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 w-full sm:w-auto"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 flex-1 sm:flex-none"
                   onClick={() => setIsUploadResourceOpen(true)}
                 >
                   <Upload className="h-4 w-4" />
@@ -446,7 +447,7 @@ export function Resources() {
             ) : (
               <Button
                 size="sm"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 w-full sm:w-auto"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 flex-1 sm:flex-none"
                 onClick={() => {
                   toast({
                     title: "Compte non vérifié",
@@ -598,7 +599,7 @@ export function Resources() {
               {(currentUser || localStorage.getItem('access')) && (
                 <section className="flex flex-col w-full max-w-full overflow-hidden">
                   <div className="flex justify-between items-center mb-4 px-1">
-                    <h2 className="text-xl font-bold flex items-center gap-2">
+                    <h2 className="text-lg font-semibold flex items-center gap-2">
                       Mes dossiers ({folders.length}/4)
                     </h2>
                     <Button
@@ -697,7 +698,7 @@ export function Resources() {
                 if (suggestions.length === 0 || loading || resourcesQuery.isLoading) return null;
                 return (
                   <section>
-                    <h2 className="text-xl font-bold mb-4 px-1 flex items-center gap-2">Suggestions pour vous</h2>
+                    <h2 className="text-lg font-semibold mb-4 px-1 flex items-center gap-2">Suggestions pour vous</h2>
                     <NetflixCarousel className="gap-3 pb-1">
                       {suggestions.map((resource) => (
                         <div key={resource.id} className="cs-scroll-item w-[180px] sm:w-[250px]">
@@ -724,7 +725,7 @@ export function Resources() {
                 return (
                   <section key={opt.value}>
                     <div className="flex justify-between items-center mb-4 px-1">
-                      <h2 className="text-xl font-bold">{opt.label}</h2>
+                      <h2 className="text-lg font-semibold">{opt.label}</h2>
                       {categoryResources.length > 4 && (
                         <Button 
                           variant="ghost" 
@@ -786,4 +787,8 @@ export function Resources() {
     </div>
   );
 }
+
+
+
+
 

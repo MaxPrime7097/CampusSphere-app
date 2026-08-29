@@ -33,6 +33,7 @@ export function Connections() {
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+    const [viewAllSection, setViewAllSection] = useState<string | null>(null);
   const [mutualCountStatus, setMutualCountStatus] = useState<string | null>(null);
   const suggestionsQuery = useQuery({
     queryKey: ["connections", "suggestions", currentUser?.id || "anon"],
@@ -298,7 +299,7 @@ export function Connections() {
               </SelectContent>
             </Select>
           </div>
-        </div>        {/* DASHBOARD OR SEARCH RESULTS */}
+        </div>                {/* DASHBOARD OR SEARCH RESULTS */}
         {hasActiveFilters ? (
           <div className="mt-6 space-y-8">
             {filteredConnections.length > 0 && (
@@ -306,7 +307,7 @@ export function Connections() {
                 <h2 className="text-lg font-semibold mb-4 px-1">Résultats de vos connexions</h2>
                 <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 cursor-pointer">
                   {filteredConnections.map((connection) => (
-                    <Card key={connection.id} className="border bg-card hover:shadow-md transition-shadow duration-200 cursor-pointer" onClick={() => navigate(/profile/ + connection.username)}>
+                    <Card key={connection.id} className="border bg-card hover:shadow-md transition-shadow duration-200 cursor-pointer" onClick={() => navigate("/profile/" + connection.username)}>
                       <CardContent className="p-4">
                         <div className="flex items-center gap-3">
                           <Avatar className="h-12 w-12 flex-shrink-0">
@@ -339,7 +340,7 @@ export function Connections() {
                               </span>
                             </div>
                           </div>
-                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); navigate(/messages/ + connection.id); }}>
+                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); navigate("/messages/" + connection.id); }}>
                             <span className="sr-only">Message</span>
                             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-colors">
                               <UserCheck className="h-4 w-4" />
@@ -358,7 +359,7 @@ export function Connections() {
                 <h2 className="text-lg font-semibold mb-4 px-1">Résultats des suggestions</h2>
                 <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 cursor-pointer">
                   {filteredSuggestions.map((suggestion) => (
-                    <Card key={suggestion.id} className="border bg-card hover:shadow-md transition-shadow duration-200" onClick={() => navigate(/profile/ + suggestion.username)}>
+                    <Card key={suggestion.id} className="border bg-card hover:shadow-md transition-shadow duration-200" onClick={() => navigate("/profile/" + suggestion.username)}>
                       <CardContent className="p-4">
                         <div className="flex items-center gap-3">
                           <Avatar className="h-12 w-12 flex-shrink-0">
@@ -416,12 +417,171 @@ export function Connections() {
               />
             )}
           </div>
+        ) : viewAllSection ? (
+          <div className="mt-6 space-y-4">
+            <div className="ml-2 flex items-center gap-4 mb-4">
+              <Button variant="outline" size="sm" onClick={() => setViewAllSection(null)}>
+                Retour
+              </Button>
+              <h2 className="text-lg font-semibold">
+                {viewAllSection === "requests" && ("Demandes en attente (" + pendingRequests.length + ")")}
+                {viewAllSection === "connections" && ("Mes Connexions (" + filteredConnections.length + ")")}
+                {viewAllSection === "suggestions" && ("Suggestions (" + filteredSuggestions.length + ")")}
+              </h2>
+            </div>
+            
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+              {viewAllSection === "requests" && pendingRequests.map((request) => (
+                <Card key={request.id} className="border bg-card hover:shadow-md transition-shadow duration-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-12 w-12 flex-shrink-0 cursor-pointer" onClick={() => navigate("/profile/" + request.username)}>
+                        <AvatarImage src={request.avatar} />
+                        <AvatarFallback className="bg-input text-muted-foreground font-bold text-lg">
+                          {request.name?.slice(0, 1).toUpperCase() || '...'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-sm truncate cursor-pointer hover:underline" onClick={() => navigate("/profile/" + request.username)}>{request.name}</h3>
+                        <p className="text-xs text-muted-foreground">@{request.username}</p>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Button size="sm" className="h-8 w-8 sm:w-auto p-0 sm:px-3 text-xs campus-gradient text-white hover:opacity-90" onClick={async () => {
+                          try {
+                            await acceptConnection(request.id);
+                            toast({ title: "Connexion acceptée", description: "Vous êtes maintenant connecté(e) à " + request.name });
+                            setConnections(prev => [...prev, { ...request, status: 'accepted' }]);
+                            setPendingRequests(prev => prev.filter(r => r.id !== request.id));
+                          } catch (error: any) {
+                            toast({ title: "Erreur", description: error?.message || "Impossible d'accepter la demande", variant: "destructive" });
+                          }
+                        }}>
+                          <Check className="h-4 w-4 sm:mr-2" />
+                          <span className="hidden sm:inline">Accepter</span>
+                        </Button>
+                        <Button variant="outline" size="sm" className="h-8 w-8 sm:w-auto p-0 sm:px-3 text-xs text-destructive hover:bg-destructive/10" onClick={async () => {
+                          try {
+                            await disconnectFromUser(request.id);
+                            toast({ title: "Demande refusée", description: "Vous avez refusé la demande de " + request.name });
+                            setPendingRequests(prev => prev.filter(r => r.id !== request.id));
+                          } catch (error: any) {
+                            toast({ title: "Erreur", description: error?.message || "Impossible de refuser la demande", variant: "destructive" });
+                          }
+                        }}>
+                          <X className="h-4 w-4 sm:mr-2" />
+                          <span className="hidden sm:inline">Refuser</span>
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+
+              {viewAllSection === "connections" && filteredConnections.map((connection) => (
+                <Card key={connection.id} className="border bg-card hover:shadow-md transition-shadow duration-200 cursor-pointer" onClick={() => navigate("/profile/" + connection.username)}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-12 w-12 flex-shrink-0">
+                        <AvatarImage src={connection.avatar} />
+                        <AvatarFallback className="bg-input text-muted-foreground font-bold text-lg">
+                          {connection.name?.slice(0, 1).toUpperCase() || '...'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <h3 className="font-semibold text-sm truncate">{connection.name}</h3>
+                          {connection.isVerified && (
+                            <div className="w-3.5 h-3.5 campus-gradient rounded-full flex items-center justify-center flex-shrink-0">
+                              <span className="text-white text-[8px]">V</span>
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">@{connection.username}</p>
+                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                          {connection.university && (
+                            <Badge variant="secondary" className="text-[9px] h-4 px-1.5 py-0 max-w-[100px] truncate" title={formatSlugToLabel(connection.university)}>
+                              {truncate(formatSlugToLabel(connection.university), 15)}
+                            </Badge>
+                          )}
+                          <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                            <Zap className="h-2.5 w-2.5 text-primary" />{connection.impactScore}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground hidden sm:inline">
+                            {connection.mutualFriends} communs
+                          </span>
+                        </div>
+                      </div>
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); navigate("/messages/" + connection.id); }}>
+                        <span className="sr-only">Message</span>
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-colors">
+                          <UserCheck className="h-4 w-4" />
+                        </div>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+
+              {viewAllSection === "suggestions" && filteredSuggestions.map((suggestion) => (
+                <Card key={suggestion.id} className="border bg-card hover:shadow-md transition-shadow duration-200" onClick={() => navigate("/profile/" + suggestion.username)}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-12 w-12 flex-shrink-0">
+                        <AvatarImage src={suggestion.avatar} />
+                        <AvatarFallback className="bg-input text-muted-foreground font-bold text-lg">
+                          {suggestion.name?.slice(0, 1).toUpperCase() || '...'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-sm truncate">{suggestion.name}</h3>
+                        <p className="text-xs text-muted-foreground">@{suggestion.username}</p>
+                        <p className="text-[10px] text-primary/80 italic mt-0.5 truncate w-full">
+                          {suggestion.reason}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          {suggestion.university && (
+                            <Badge variant="secondary" className="text-[9px] h-4 px-1.5 py-0 max-w-[100px] truncate" title={formatSlugToLabel(suggestion.university)}>
+                              {truncate(formatSlugToLabel(suggestion.university), 15)}
+                            </Badge>
+                          )}
+                          <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                            <Zap className="h-2.5 w-2.5 text-primary" />{suggestion.impactScore}
+                          </span>
+                        </div>
+                      </div>
+                      <Button size="sm" className="flex-shrink-0 h-8 w-8 sm:w-auto p-0 sm:px-3 text-xs campus-gradient text-white hover:opacity-90" onClick={async (e) => {
+                        e.stopPropagation();
+                        try {
+                          await createConnection(suggestion.id);
+                          toast({ title: "Demande envoyée", description: "Demande envoyée à " + suggestion.name, duration: 2000 });
+                          setConnections((prev) => [...prev, suggestion]);
+                          setSuggestions((prev) => prev.filter((s) => s.id !== suggestion.id));
+                        } catch (error: any) {
+                          toast({ title: "Erreur", description: error?.message || "Impossible d'envoyer la demande", variant: "destructive" });
+                        }
+                      }}>
+                        <Link className="h-4 w-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Connecter</span>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
         ) : (
           <div className="flex flex-col gap-10 mt-8 pb-12">
             {/* Row 1: Demandes (Only if > 0) */}
             {pendingRequests.length > 0 && (
               <section>
-                <h2 className="text-xl font-bold mb-4 px-1 flex items-center gap-2">Demandes en attente ({pendingRequests.length})</h2>
+                <div className="flex justify-between items-center mb-4 px-1">
+                  <h2 className="text-lg font-semibold flex items-center gap-2">Demandes en attente ({pendingRequests.length})</h2>
+                  {pendingRequests.length > 4 && (
+                    <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => setViewAllSection("requests")}>
+                      Voir tout
+                    </Button>
+                  )}
+                </div>
                 <NetflixCarousel className="gap-3 pb-1">
                   {loading ? (
                     Array.from({ length: 3 }).map((_, i) => (
@@ -435,14 +595,14 @@ export function Connections() {
                         <Card className="border bg-card hover:shadow-md transition-shadow duration-200">
                           <CardContent className="p-4">
                             <div className="flex items-center gap-3">
-                              <Avatar className="h-12 w-12 flex-shrink-0 cursor-pointer" onClick={() => navigate(/profile/ + request.username)}>
+                              <Avatar className="h-12 w-12 flex-shrink-0 cursor-pointer" onClick={() => navigate("/profile/" + request.username)}>
                                 <AvatarImage src={request.avatar} />
                                 <AvatarFallback className="bg-input text-muted-foreground font-bold text-lg">
                                   {request.name?.slice(0, 1).toUpperCase() || '...'}
                                 </AvatarFallback>
                               </Avatar>
                               <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-sm truncate cursor-pointer hover:underline" onClick={() => navigate(/profile/ + request.username)}>{request.name}</h3>
+                                <h3 className="font-semibold text-sm truncate cursor-pointer hover:underline" onClick={() => navigate("/profile/" + request.username)}>{request.name}</h3>
                                 <p className="text-xs text-muted-foreground">@{request.username}</p>
                               </div>
                               <div className="flex flex-col gap-2">
@@ -484,7 +644,14 @@ export function Connections() {
 
             {/* Row 2: Mes Connexions */}
             <section>
-              <h2 className="text-xl font-bold mb-4 px-1 flex items-center gap-2">Mes Connexions ({filteredConnections.length})</h2>
+              <div className="flex justify-between items-center mb-4 px-1">
+                <h2 className="text-lg font-semibold flex items-center gap-2">Mes Connexions ({filteredConnections.length})</h2>
+                {filteredConnections.length > 4 && (
+                  <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => setViewAllSection("connections")}>
+                    Voir tout
+                  </Button>
+                )}
+              </div>
               {loading ? (
                 <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                   {Array.from({ length: 3 }).map((_, i) => <ConnectionSkeleton key={i} />)}
@@ -499,7 +666,7 @@ export function Connections() {
                 <NetflixCarousel className="gap-3 pb-1">
                   {filteredConnections.map((connection) => (
                     <div key={connection.id} className="cs-scroll-item w-[280px] sm:w-[320px]">
-                      <Card className="border bg-card hover:shadow-md transition-shadow duration-200 cursor-pointer" onClick={() => navigate(/profile/ + connection.username)}>
+                      <Card className="border bg-card hover:shadow-md transition-shadow duration-200 cursor-pointer" onClick={() => navigate("/profile/" + connection.username)}>
                         <CardContent className="p-4">
                           <div className="flex items-center gap-3">
                             <Avatar className="h-12 w-12 flex-shrink-0">
@@ -532,7 +699,7 @@ export function Connections() {
                                 </span>
                               </div>
                             </div>
-                            <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); navigate(/messages/ + connection.id); }}>
+                            <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); navigate("/messages/" + connection.id); }}>
                               <span className="sr-only">Message</span>
                               <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-colors">
                                 <UserCheck className="h-4 w-4" />
@@ -549,7 +716,14 @@ export function Connections() {
 
             {/* Row 3: Suggestions */}
             <section>
-              <h2 className="text-xl font-bold mb-4 px-1 flex items-center gap-2">Suggestions ({filteredSuggestions.length})</h2>
+              <div className="flex justify-between items-center mb-4 px-1">
+                <h2 className="text-lg font-semibold flex items-center gap-2">Suggestions ({filteredSuggestions.length})</h2>
+                {filteredSuggestions.length > 4 && (
+                  <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => setViewAllSection("suggestions")}>
+                    Voir tout
+                  </Button>
+                )}
+              </div>
               {loading ? (
                 <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                   {Array.from({ length: 3 }).map((_, i) => <ConnectionSkeleton key={i} />)}
@@ -564,7 +738,7 @@ export function Connections() {
                 <NetflixCarousel className="gap-3 pb-1">
                   {filteredSuggestions.map((suggestion) => (
                     <div key={suggestion.id} className="cs-scroll-item w-[280px] sm:w-[320px]">
-                      <Card className="border bg-card hover:shadow-md transition-shadow duration-200" onClick={() => navigate(/profile/ + suggestion.username)}>
+                      <Card className="border bg-card hover:shadow-md transition-shadow duration-200" onClick={() => navigate("/profile/" + suggestion.username)}>
                         <CardContent className="p-4">
                           <div className="flex items-center gap-3">
                             <Avatar className="h-12 w-12 flex-shrink-0">
@@ -617,6 +791,12 @@ export function Connections() {
     </div>
   );
 }
+
+
+
+
+
+
 
 
 

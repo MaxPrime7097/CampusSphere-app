@@ -355,7 +355,7 @@ export function Spheres() {
             <h1 className="text-3xl font-bold bg-clip-text text-muted-foreground">Sphères Collaboratives</h1>
             <p className="text-muted-foreground mt-2">Rejoignez des projets, apprenez ensemble et créez l'impact</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex w-full sm:w-auto gap-2">
             <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading} className="gap-2">
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
               <span className="hidden sm:inline">Actualiser</span>
@@ -363,7 +363,7 @@ export function Spheres() {
             </Button>
             {currentUser?.isVerified ? (
               <>
-                <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 w-full sm:w-auto" onClick={() => setIsCreateSphereOpen(true)}>
+                <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 flex-1 sm:flex-none" onClick={() => setIsCreateSphereOpen(true)}>
                   <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Créer</span>
                 </Button>
                 {isCreateSphereOpen && (
@@ -379,7 +379,7 @@ export function Spheres() {
             ) : (
               <Button 
                 size="sm" 
-                className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 w-full sm:w-auto"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 flex-1 sm:flex-none"
                 onClick={() => {
                   toast({
                     title: "Compte non vérifié",
@@ -489,7 +489,7 @@ export function Spheres() {
               if (mySpheres.length === 0 && !isSpheresLoading) return null;
               return (
                 <section>
-                  <h2 className="text-xl font-bold mb-4 px-1 flex items-center gap-2">Mes Sphères</h2>
+                  <h2 className="text-lg font-semibold mb-4 px-1 flex items-center gap-2">Mes Sphères</h2>
                   <NetflixCarousel className="gap-3">
                     {isSpheresLoading ? (
                       Array.from({ length: 4 }).map((_, i) => (
@@ -527,7 +527,7 @@ export function Spheres() {
               if (topSpheres.length === 0 && !isSpheresLoading) return null;
               return (
                 <section>
-                  <h2 className="text-xl font-bold mb-4 px-1 flex items-center gap-2">
+                  <h2 className="text-lg font-semibold mb-4 px-1 flex items-center gap-2">
                     Tendances
                   </h2>
                   <NetflixCarousel className="gap-3">
@@ -567,7 +567,7 @@ export function Spheres() {
               return (
                 <section key={typeObj.value}>
                   <div className="flex justify-between items-center mb-4 px-1">
-                    <h2 className="text-xl font-bold">{typeObj.label}</h2>
+                    <h2 className="text-lg font-semibold">{typeObj.label}</h2>
                     {catSpheres.length > 4 && (
                       <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => {
                         setFilterCategory(typeObj.value);
@@ -605,6 +605,8 @@ export function Spheres() {
     </div>
   );
 }
+
+
 
 
 
