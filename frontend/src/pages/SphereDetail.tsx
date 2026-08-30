@@ -38,6 +38,7 @@ import { MiniChat } from "@/components/chat/MiniChat";
 import { KanbanBoard, type KanbanTask } from "@/components/kanban/KanbanBoard";
 import { SphereOverview } from "@/components/sphere/SphereOverview";
 import { OptimizedImage } from "@/components/ui/optimized-image";
+import { ImageUploadModal } from "@/components/modals/ImageUploadModal";
 import { ResourceCard } from "@/components/resources/ResourceCard";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ResourceSkeleton } from "@/components/ui/skeletons";
@@ -1146,6 +1147,7 @@ export function SphereDetail() {
     </>
   );
 }
+
 
 
 
