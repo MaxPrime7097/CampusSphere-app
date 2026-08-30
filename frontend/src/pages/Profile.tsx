@@ -851,20 +851,32 @@ export function Profile() {
     }
   };
 
-    const handleCropComplete = async (croppedFile: File) => {
+      const handleCropComplete = async (croppedFile: File) => {
     setCropperState(prev => ({ ...prev, isOpen: false }));
     const compressed = await compressImageFile(croppedFile);
     
     if (cropperState.type === 'avatar') {
-      setAvatarFile(compressed);
-      const reader = new FileReader();
-      reader.onload = (e) => setAvatarPreview(e.target?.result as string);
-      reader.readAsDataURL(compressed);
+      setIsSavingAvatar(true);
+      try {
+        await uploadAvatar(currentUser!.id, compressed);
+        toast({ title: "Avatar mis à jour !", description: "Votre nouvel avatar a été sauvegardé", duration: 3000 });
+        await refreshUser();
+      } catch (error: any) {
+        toast({ title: "Erreur", description: error?.message || "Impossible de mettre à jour l'avatar", variant: "destructive" });
+      } finally {
+        setIsSavingAvatar(false);
+      }
     } else {
-      setCoverPhotoFile(compressed);
-      const reader = new FileReader();
-      reader.onload = (e) => setCoverPhotoPreview(e.target?.result as string);
-      reader.readAsDataURL(compressed);
+      setIsSavingCover(true);
+      try {
+        await uploadCoverPhoto(currentUser!.id, compressed);
+        toast({ title: "Photo de couverture mise à jour !", description: "Votre nouvelle photo de couverture a été sauvegardée", duration: 3000 });
+        await refreshUser();
+      } catch (error: any) {
+        toast({ title: "Erreur", description: error?.message || "Impossible de mettre à jour la photo de couverture", variant: "destructive" });
+      } finally {
+        setIsSavingCover(false);
+      }
     }
   };
 
@@ -990,6 +1002,18 @@ export function Profile() {
 
   return (
     <div key={`${username || 'current'}`} className="min-h-screen bg-gradient-to-br from-background to-accent/20">
+
+        {cropperState.isOpen && (
+          <ImageCropperModal
+            isOpen={cropperState.isOpen}
+            onClose={() => setCropperState(prev => ({ ...prev, isOpen: false }))}
+            imageSrc={cropperState.imageSrc}
+            onCropComplete={handleCropComplete}
+            shape={cropperState.type === 'avatar' ? 'round' : 'rect'}
+            aspectRatio={cropperState.type === 'avatar' ? 1 : 16 / 5}
+            title={cropperState.type === 'avatar' ? 'Recadrer l\'avatar' : 'Recadrer la bannière'}
+          />
+        )}
       <div className="container max-w-4xl mx-auto py-0 px-0 sm:py-4 space-y-4">
         {isOwnProfile && !currentUser?.isVerified && (
           <div className="mx-4 sm:mx-0 p-4 bg-amber-500/10 border border-amber-500/50 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4">
@@ -1051,7 +1075,7 @@ export function Profile() {
                 size="sm"
                 variant="secondary"
                 className="absolute top-4 right-4 bg-white/90 hover:bg-white text-gray-700 shadow-lg"
-                onClick={() => setShowCoverPhotoModal(true)}
+                onClick={() => coverPhotoInputRef.current?.click()}
               >
                 <Camera className="h-4 w-4 mr-2" />
                 Changer
@@ -1075,7 +1099,7 @@ export function Profile() {
                       size="icon"
                       variant="secondary"
                       className="absolute bottom-0 right-0 h-8 w-8 rounded-full shadow-lg"
-                      onClick={() => setShowAvatarModal(true)}
+                      onClick={() => avatarInputRef.current?.click()}
                     >
                       <Camera className="h-4 w-4" />
                     </Button>
@@ -1767,200 +1791,8 @@ export function Profile() {
           )}
         </div>
 
-        {/* Modal pour changer la photo de couverture */}
-        <Dialog open={showCoverPhotoModal} onOpenChange={setShowCoverPhotoModal}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Camera className="h-5 w-5" />
-                Photo de couverture
-              </DialogTitle>
-              <DialogDescription>
-                Téléchargez une nouvelle photo de couverture pour votre profil.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 py-4">
-              {/* Aperçu de la photo */}
-              <div className="relative">
-                <div className="w-full h-32 bg-gradient-to-br from-primary/20 to-accent/20 rounded-lg overflow-hidden">
-                  {coverPhotoPreview ? (
-                    <img
-                      src={coverPhotoPreview}
-                      alt="Aperçu"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                      <div className="text-center">
-                        <Camera className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                        <p className="text-sm">Aucune photo sélectionnée</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Bouton pour supprimer */}
-                {coverPhotoPreview && (
-                  <Button
-                    size="icon"
-                    variant="destructive"
-                    className="absolute top-2 right-2 h-6 w-6"
-                    onClick={handleRemoveCoverPhoto}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                )}
-              </div>
-
-              {/* Input file caché */}
-              <input
-                ref={coverPhotoInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleCoverPhotoChange}
-                aria-label="Sélectionner une photo de couverture"
-                title="Sélectionner une photo de couverture"
-                placeholder="Sélectionner une photo de couverture"
-                className="hidden"
-              />
-
-              {/* Boutons d'action */}
-              <div className="space-y-2">
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => coverPhotoInputRef.current?.click()}
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  {coverPhotoPreview ? "Changer la photo" : "Sélectionner une photo"}
-                </Button>
-
-                <p className="text-xs text-muted-foreground text-center">
-                  Formats acceptés : JPG, PNG, GIF (max 5MB)
-                </p>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-4 border-t">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowCoverPhotoModal(false);
-                  setCoverPhotoFile(null);
-                  setCoverPhotoPreview(null);
-                }}
-              >
-                Annuler
-              </Button>
-              <Button
-                onClick={handleSaveCoverPhoto}
-                disabled={!coverPhotoFile || isSavingCover}
-                className="campus-gradient text-white hover:opacity-90"
-              >
-                {isSavingCover ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
-                {isSavingCover ? "Sauvegarde..." : "Sauvegarder"}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Modal pour changer l'avatar */}
-        <Dialog open={showAvatarModal} onOpenChange={setShowAvatarModal}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Camera className="h-5 w-5" />
-                Photo de profil
-              </DialogTitle>
-              <DialogDescription>
-                Téléchargez une nouvelle photo de profil pour votre compte.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 py-4">
-              {/* Aperçu de l'avatar */}
-              <div className="flex justify-center">
-                <div className="relative">
-                  <div className="w-24 h-24 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full overflow-hidden ring-4 ring-background shadow-lg">
-                    {avatarPreview ? (
-                      <img
-                        src={avatarPreview}
-                        alt="Aperçu avatar"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                        <Camera className="h-8 w-8 opacity-50" />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Bouton pour supprimer */}
-                  {avatarPreview && (
-                    <Button
-                      size="icon"
-                      variant="destructive"
-                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
-                      onClick={handleRemoveAvatar}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-
-              {/* Input file caché */}
-              <input
-                ref={avatarInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleAvatarChange}
-                aria-label="Sélectionner une photo de profil"
-                title="Sélectionner une photo de profil"
-                placeholder="Sélectionner une photo de profil"
-                className="hidden"
-              />
-
-              {/* Boutons d'action */}
-              <div className="space-y-2">
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => avatarInputRef.current?.click()}
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  {avatarPreview ? "Changer la photo" : "Sélectionner une photo"}
-                </Button>
-
-                <p className="text-xs text-muted-foreground text-center">
-                  Formats acceptés : JPG, PNG, GIF (max 2MB)
-                </p>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-4 border-t">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowAvatarModal(false);
-                  setAvatarFile(null);
-                  setAvatarPreview(null);
-                }}
-              >
-                Annuler
-              </Button>
-              <Button
-                onClick={handleSaveAvatar}
-                disabled={!avatarFile || isSavingAvatar}
-                className="campus-gradient text-white hover:opacity-90"
-              >
-                {isSavingAvatar ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
-                {isSavingAvatar ? "Sauvegarde..." : "Sauvegarder"}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <input ref={coverPhotoInputRef} type="file" accept="image/*" onChange={handleCoverPhotoChange} className="hidden" />
+        
 
         {/* Modal pour changer le mood */}
         <Dialog
@@ -2047,5 +1879,11 @@ export function Profile() {
     </div>
   );
 }
+
+
+
+
+
+
 
 
