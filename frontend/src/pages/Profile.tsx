@@ -1,4 +1,4 @@
-import { ImageCropperModal } from "@/components/modals/ImageCropperModal";
+import { ImageUploadModal } from "@/components/modals/ImageUploadModal";
 import { compressImageFile } from "@/lib/imageCompression";
 import { Suspense, lazy, useState, useEffect, useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -452,8 +452,7 @@ export function Profile() {
   const prevScoreRef = useRef<number | null>(null);
   const [isSavingCover, setIsSavingCover] = useState(false);
   const [isSavingAvatar, setIsSavingAvatar] = useState(false);
-  const [cropperState, setCropperState] = useState<{isOpen: boolean; imageSrc: string; type: 'avatar' | 'banner';}>({isOpen: false, imageSrc: '', type: 'avatar'});
-  const [isSavingMood, setIsSavingMood] = useState(false);
+    const [isSavingMood, setIsSavingMood] = useState(false);
   const { user: currentUser, isAuthenticated, isLoading: isAuthLoading, refreshUser } = useAuth();
   const [targetUser, setTargetUser] = useState<any>(null);
   const [userPosts, setUserPosts] = useState<any[]>([]);
@@ -882,21 +881,17 @@ export function Profile() {
     }
   };
 
-  const handleSaveCoverPhoto = async () => {
-    if (!coverPhotoFile || !currentUser?.id || isSavingCover) return;
+    const handleSaveCoverPhotoDirect = async (file: File) => {
+    if (!currentUser?.id) return;
     setIsSavingCover(true);
     try {
-      await uploadCoverPhoto(currentUser.id, coverPhotoFile);
-      toast({ title: "Photo de couverture mise à jour !", description: "Votre nouvelle photo de couverture a été sauvegardée", duration: 3000 });
+      await uploadCoverPhoto(currentUser.id, file);
+      toast({ title: "Photo de couverture mise à jour !", duration: 3000 });
       setShowCoverPhotoModal(false);
-      setCoverPhotoFile(null);
-      setCoverPhotoPreview(null);
       await refreshUser();
     } catch (error: any) {
-      toast({ title: "Erreur", description: error?.message || "Impossible de mettre à jour la photo de couverture", variant: "destructive" });
-    } finally {
-      setIsSavingCover(false);
-    }
+      toast({ title: "Erreur", description: error?.message, variant: "destructive" });
+    } finally { setIsSavingCover(false); }
   };
 
   const handleRemoveCoverPhoto = () => {
@@ -918,21 +913,17 @@ export function Profile() {
     }
   };
 
-  const handleSaveAvatar = async () => {
-    if (!avatarFile || !currentUser?.id || isSavingAvatar) return;
+    const handleSaveAvatarDirect = async (file: File) => {
+    if (!currentUser?.id) return;
     setIsSavingAvatar(true);
     try {
-      await uploadAvatar(currentUser.id, avatarFile);
-      toast({ title: "Avatar mis à jour !", description: "Votre nouvel avatar a été sauvegardé", duration: 3000 });
+      await uploadAvatar(currentUser.id, file);
+      toast({ title: "Avatar mis à jour !", duration: 3000 });
       setShowAvatarModal(false);
-      setAvatarFile(null);
-      setAvatarPreview(null);
       await refreshUser();
     } catch (error: any) {
-      toast({ title: "Erreur", description: error?.message || "Impossible de mettre à jour l'avatar", variant: "destructive" });
-    } finally {
-      setIsSavingAvatar(false);
-    }
+      toast({ title: "Erreur", description: error?.message, variant: "destructive" });
+    } finally { setIsSavingAvatar(false); }
   };
 
   const handleRemoveAvatar = () => {
@@ -1005,17 +996,7 @@ export function Profile() {
   return (
     <div key={`${username || 'current'}`} className="min-h-screen bg-gradient-to-br from-background to-accent/20">
 
-        {cropperState.isOpen && (
-          <ImageCropperModal
-            isOpen={cropperState.isOpen}
-            onClose={() => setCropperState(prev => ({ ...prev, isOpen: false }))}
-            imageSrc={cropperState.imageSrc}
-            onCropComplete={handleCropComplete}
-            shape={cropperState.type === 'avatar' ? 'round' : 'rect'}
-            aspectRatio={cropperState.type === 'avatar' ? 1 : 16 / 5}
-            title={cropperState.type === 'avatar' ? 'Recadrer l\'avatar' : 'Recadrer la bannière'}
-          />
-        )}
+        
       <div className="container max-w-4xl mx-auto py-0 px-0 sm:py-4 space-y-4">
         {isOwnProfile && !currentUser?.isVerified && (
           <div className="mx-4 sm:mx-0 p-4 bg-amber-500/10 border border-amber-500/50 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4">
@@ -1077,7 +1058,7 @@ export function Profile() {
                 size="sm"
                 variant="secondary"
                 className="absolute top-4 right-4 bg-white/90 hover:bg-white text-gray-700 shadow-lg"
-                onClick={() => coverPhotoInputRef.current?.click()}
+                onClick={() => setShowCoverPhotoModal(true)}
               >
                 <Camera className="h-4 w-4 mr-2" />
                 Changer
@@ -1101,7 +1082,7 @@ export function Profile() {
                       size="icon"
                       variant="secondary"
                       className="absolute bottom-0 right-0 h-8 w-8 rounded-full shadow-lg"
-                      onClick={() => avatarInputRef.current?.click()}
+                      onClick={() => setShowAvatarModal(true)}
                     >
                       <Camera className="h-4 w-4" />
                     </Button>
@@ -1881,6 +1862,11 @@ export function Profile() {
     </div>
   );
 }
+
+
+
+
+
 
 
 

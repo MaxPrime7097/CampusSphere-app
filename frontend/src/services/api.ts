@@ -239,7 +239,68 @@ function clearTokens() {
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
-export class ApiRequestError extends Error {
+export // Helper to parse ugly backend errors into a clean string
+function parseBackendError(errJson: any, status: number): string {
+  if (!errJson) return "Une erreur inattendue est survenue.";
+  
+  if (typeof errJson === "string") return translateError(errJson, status);
+
+  // Standard fields
+  if (typeof errJson.detail === "string") return translateError(errJson.detail, status);
+  if (typeof errJson.message === "string") return translateError(errJson.message, status);
+  if (typeof errJson.error === "string") return translateError(errJson.error, status);
+
+  // Handle Django REST Framework field validation errors (e.g. { "name": ["This field must be unique."] })
+  if (typeof errJson === "object" && !Array.isArray(errJson)) {
+    const errorMessages: string[] = [];
+    for (const [key, value] of Object.entries(errJson)) {
+      if (Array.isArray(value) && typeof value[0] === "string") {
+        errorMessages.push(`${translateField(key)}: ${translateError(value[0], status)}`);
+      } else if (typeof value === "string") {
+        errorMessages.push(`${translateField(key)}: ${translateError(value, status)}`);
+      }
+    }
+    if (errorMessages.length > 0) return errorMessages.join(" | ");
+  }
+
+  return "Une erreur technique est survenue.";
+}
+
+function translateField(field: string): string {
+  const fields: Record<string, string> = {
+    username: "Nom d'utilisateur",
+    email: "Email",
+    password: "Mot de passe",
+    name: "Nom",
+    description: "Description",
+    title: "Titre"
+  };
+  return fields[field] || field;
+}
+
+function translateError(msg: string, status: number): string {
+  const m = msg.toLowerCase();
+  
+  if (status === 409 || m.includes("unique") || m.includes("already exists")) {
+    return "Cet élément existe déjà. Veuillez choisir un nom différent.";
+  }
+  if (m.includes("not found") || status === 404) {
+    return "L'élément demandé est introuvable.";
+  }
+  if (m.includes("credentials") || m.includes("unauthorized") || m.includes("invalid login") || m.includes("token")) {
+    return "Identifiants incorrects ou session expirée.";
+  }
+  if (m.includes("permission") || m.includes("forbidden") || status === 403) {
+    return "Vous n'avez pas l'autorisation d'effectuer cette action.";
+  }
+  if (m.includes("required") || m.includes("blank")) {
+    return "Ce champ est obligatoire.";
+  }
+
+  return msg;
+}
+
+class ApiRequestError extends Error {
   status?: number;
 
   constructor(message: string, status?: number) {
@@ -560,7 +621,7 @@ async function apiFetch<T>(
     if (contentType.includes("application/json")) {
       try {
         const errJson = await res.json();
-        const errMsg = errJson?.detail || errJson?.message || JSON.stringify(errJson);
+        const errMsg = parseBackendError(errJson, res.status);
 
         // If unauthorized and we haven't retried yet, try to refresh the access token once.
         if (res.status === 401 && !_retry) {
@@ -1452,7 +1513,7 @@ export function createResource(data: FormData, token?: string, onProgress?: (pro
       } else {
         try {
           const errJson = JSON.parse(xhr.responseText);
-          const errMsg = errJson?.detail || errJson?.message || JSON.stringify(errJson);
+          const errMsg = parseBackendError(errJson, res.status);
           reject(new ApiRequestError(errMsg || `Request failed: ${xhr.status}`, xhr.status));
         } catch (e) {
           reject(new ApiRequestError(xhr.responseText || `Request failed: ${xhr.status}`, xhr.status));
@@ -2351,3 +2412,4 @@ export async function getSphereStudySessions(sphereId: string | number) {
 // ============================================================================
 
 export const http = { apiFetch };
+
