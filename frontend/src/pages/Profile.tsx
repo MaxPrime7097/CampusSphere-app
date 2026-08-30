@@ -996,6 +996,9 @@ export function Profile() {
   return (
     <div key={`${username || 'current'}`} className="min-h-screen bg-gradient-to-br from-background to-accent/20">
 
+        <ImageUploadModal isOpen={showAvatarModal} onClose={() => setShowAvatarModal(false)} onSave={async (f) => { await uploadAvatar(currentUser!.id, f); toast({ title: "Avatar mis à jour !", duration: 3000 }); setShowAvatarModal(false); await refreshUser(); }} title="Photo de profil" description="Téléchargez une nouvelle photo de profil pour votre compte." currentImage={currentUser?.avatar} shape="round" aspectRatio={1} />
+        <ImageUploadModal isOpen={showCoverPhotoModal} onClose={() => setShowCoverPhotoModal(false)} onSave={async (f) => { await uploadCoverPhoto(currentUser!.id, f); toast({ title: "Photo de couverture mise à jour !", duration: 3000 }); setShowCoverPhotoModal(false); await refreshUser(); }} title="Photo de couverture" description="Téléchargez une nouvelle photo de couverture." currentImage={currentUser?.coverPhoto} shape="rect" aspectRatio={16/5} />
+
         
       <div className="container max-w-4xl mx-auto py-0 px-0 sm:py-4 space-y-4">
         {isOwnProfile && !currentUser?.isVerified && (
@@ -1862,6 +1865,7 @@ export function Profile() {
     </div>
   );
 }
+
 
 
 
