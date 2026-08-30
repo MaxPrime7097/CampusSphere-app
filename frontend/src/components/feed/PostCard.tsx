@@ -674,13 +674,13 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
             {/* Impact Score Rating */}
 
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2 border-t">
-              <div className="flex items-center gap-3 md:gap-4">
+            <div className="flex flex-row items-center justify-between gap-1 sm:gap-4 pt-2 border-t overflow-x-auto">
+              <div className="flex items-center gap-2 md:gap-4 shrink-0">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleLike}
-                  className={`gap-2 h-9 px-2 md:px-3 transition-all active:scale-95 ${isLiked ? 'text-red-500 hover:text-red-600' : 'hover:text-red-500'}`}
+                  className={`gap-1 sm:gap-2 h-9 px-1 sm:px-2 md:px-3 transition-all active:scale-95 ${isLiked ? 'text-red-500 hover:text-red-600' : 'hover:text-red-500'}`}
                 >
                   <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
                   <span className="text-xs font-medium">{likesCount}</span>
@@ -689,19 +689,19 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="gap-2 h-9 px-2 md:px-3 hover:text-foreground transition-all active:scale-95"
+                  className="gap-1 sm:gap-2 h-9 px-1 sm:px-2 md:px-3 hover:text-foreground transition-all active:scale-95"
                   onClick={() => requireAuth(() => setCommentsOpen(true))}
                 >
                   <MessageCircle className="h-4 w-4" />
                   <span className="text-xs font-medium">{post.comments}</span>
                 </Button>
 
-                <Button variant="ghost" size="sm" className="h-9 px-2 hover:text-foreground transition-all active:scale-95" onClick={handleShare}>
+                <Button variant="ghost" size="sm" className="h-9 px-1 sm:px-2 hover:text-foreground transition-all active:scale-95" onClick={handleShare}>
                   <Share className="h-4 w-4" />
                 </Button>
               </div>
 
-              <div className="flex items-center justify-end self-end gap-2 rounded-lg bg-muted/50 p-1 ml-auto sm:ml-0">
+              <div className="flex items-center gap-1 sm:gap-2 rounded-lg bg-muted/50 p-1 shrink-0">
                 <div className="flex items-center">
                   <Button
                     variant="ghost"

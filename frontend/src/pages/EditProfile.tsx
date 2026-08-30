@@ -284,7 +284,7 @@ export function EditProfile() {
                   Choisir un fichier
                 </Button>
                 {studentCardFile && <span className="text-sm font-medium text-primary bg-primary/10 px-3 py-1 rounded-full">{studentCardFile.name}</span>}
-                <input type="file" className="hidden" ref={studentCardInputRef} accept="image/*" onChange={(e) => setStudentCardFile(e.target.files?.[0] || null)} />
+                <input type="file" className="hidden" ref={studentCardInputRef} accept="image/*" onChange={async (e) => { const f = e.target.files?.[0]; if (f) { const compressed = await compressImageFile(f); setStudentCardFile(compressed); } else { setStudentCardFile(null); } }} />
               </div>
             </div>
           </CardContent>
@@ -450,3 +450,4 @@ export function EditProfile() {
     </div>
   );
 }
+

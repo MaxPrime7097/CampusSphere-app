@@ -15,6 +15,7 @@ import { Plus, Image, MapPin, Users, X, Lock, Globe, Video, FileText, Smile, AtS
 import { useToast } from "@/hooks/use-toast";
 import { findInvalidMentions, getActiveMentionQuery, renderMentionText } from "@/lib/mentions";
 import { cn } from "@/lib/utils";
+import { compressImageFiles } from "@/lib/imageCompression";
 import { useQuery } from "@tanstack/react-query";
 
 interface PostDraftData {
@@ -209,11 +210,13 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
-      const newFiles = Array.from(files);
-      const totalSize = [...uploadedFiles, ...newFiles].reduce((acc, file) => acc + file.size, 0);
+      // Compress images before checking total size, so large images don't get falsely blocked if compression makes them fit
+      const compressedNewFiles = await compressImageFiles(files);
+      
+      const totalSize = [...uploadedFiles, ...compressedNewFiles].reduce((acc, file) => acc + file.size, 0);
       
       if (totalSize > 50 * 1024 * 1024) { // 50MB limit
         toast({
@@ -224,10 +227,10 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
         return;
       }
       
-      setUploadedFiles([...uploadedFiles, ...newFiles]);
+      setUploadedFiles([...uploadedFiles, ...compressedNewFiles]);
       toast({
         title: "Fichier ajouté",
-        description: `${newFiles.length} fichier(s) ajouté(s)`
+        description: `${compressedNewFiles.length} fichier(s) ajouté(s)`
       });
     }
   };
@@ -729,3 +732,4 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
     </Dialog>
   );
 }
+

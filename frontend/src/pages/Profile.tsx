@@ -450,6 +450,7 @@ export function Profile() {
   const prevScoreRef = useRef<number | null>(null);
   const [isSavingCover, setIsSavingCover] = useState(false);
   const [isSavingAvatar, setIsSavingAvatar] = useState(false);
+  const [cropperState, setCropperState] = useState<{isOpen: boolean; imageSrc: string; type: 'avatar' | 'banner';}>({isOpen: false, imageSrc: '', type: 'avatar'});
   const [isSavingMood, setIsSavingMood] = useState(false);
   const { user: currentUser, isAuthenticated, isLoading: isAuthLoading, refreshUser } = useAuth();
   const [targetUser, setTargetUser] = useState<any>(null);
@@ -837,17 +838,33 @@ export function Profile() {
   };
 
 
-  const handleCoverPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const handleCoverPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
         toast({ title: "Fichier trop grand", description: "La photo de couverture ne doit pas dépasser 5MB", variant: "destructive" });
         return;
       }
-      setCoverPhotoFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => setCropperState({ isOpen: true, imageSrc: e.target?.result as string, type: 'banner' });
+      reader.readAsDataURL(file);
+    }
+  };
+
+    const handleCropComplete = async (croppedFile: File) => {
+    setCropperState(prev => ({ ...prev, isOpen: false }));
+    const compressed = await compressImageFile(croppedFile);
+    
+    if (cropperState.type === 'avatar') {
+      setAvatarFile(compressed);
+      const reader = new FileReader();
+      reader.onload = (e) => setAvatarPreview(e.target?.result as string);
+      reader.readAsDataURL(compressed);
+    } else {
+      setCoverPhotoFile(compressed);
       const reader = new FileReader();
       reader.onload = (e) => setCoverPhotoPreview(e.target?.result as string);
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(compressed);
     }
   };
 
@@ -874,16 +891,15 @@ export function Profile() {
     toast({ title: "Photo de couverture supprimée", description: "Votre photo de couverture a été supprimée", duration: 2000 });
   };
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
         toast({ title: "Fichier trop grand", description: "L'avatar ne doit pas dépasser 2MB", variant: "destructive" });
         return;
       }
-      setAvatarFile(file);
       const reader = new FileReader();
-      reader.onload = (e) => setAvatarPreview(e.target?.result as string);
+      reader.onload = (e) => setCropperState({ isOpen: true, imageSrc: e.target?.result as string, type: 'avatar' });
       reader.readAsDataURL(file);
     }
   };
@@ -2031,3 +2047,5 @@ export function Profile() {
     </div>
   );
 }
+
+

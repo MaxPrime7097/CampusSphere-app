@@ -117,7 +117,10 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
     }
   };
 
-  const validateAndSetFile = (selectedFile: File) => {
+    const validateAndSetFile = async (selectedFile: File) => {
+    // Compress if it's an image
+    selectedFile = await compressImageFile(selectedFile);
+    
     if (selectedFile.size > MAX_FILE_SIZE) {
       toast({ 
         variant: "destructive", 
@@ -543,3 +546,4 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
     </Dialog>
   );
 }
+

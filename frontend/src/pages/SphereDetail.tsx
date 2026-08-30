@@ -421,6 +421,22 @@ export function SphereDetail() {
     }
   };
 
+    const handleCropComplete = async (croppedFile: File) => {
+    setCropperState(prev => ({ ...prev, isOpen: false }));
+    const compressed = await compressImageFile(croppedFile);
+    if (!id) return;
+    
+    try {
+      if (cropperState.type === 'banner') {
+        const res = await uploadSphereBanner(id, compressed);
+        setSphere((prev: any) => prev ? { ...prev, banner_image_url: res.banner_image_url } : prev);
+        toast({ title: "Bannière mise à jour !" });
+      }
+    } catch (err: any) {
+      toast({ title: "Erreur", description: err?.message, variant: "destructive" });
+    }
+  };
+
   const handleRemoveMember = async (memberId: string) => {
     try {
       setProcessingMemberIds(p => ({ ...p, [memberId]: true }));
@@ -590,7 +606,8 @@ export function SphereDetail() {
                     accept="image/*"
                     className="hidden"
                     onChange={async (e) => {
-                      const file = e.target.files?.[0];
+                      let file = e.target.files?.[0];
+                      if (file) file = await compressImageFile(file);
                       if (!file || !id) return;
                       try {
                         const res = await uploadSphereBanner(id, file);
@@ -1153,4 +1170,6 @@ export function SphereDetail() {
     </>
   );
 }
+
+
 
