@@ -118,10 +118,13 @@ export function FileUpload({
     }
   }, [onFileUploaded]);
 
-  const handleFiles = useCallback((files: FileList | null) => {
+    const handleFiles = useCallback(async (files: FileList | null) => {
     if (!files) return;
 
-    const fileArray = Array.from(files);
+    let fileArray = Array.from(files);
+    
+    // Compress images automatically
+    fileArray = await compressImageFiles(fileArray);
     
     // Vérifier le nombre de fichiers
     if (uploadedFiles.length + fileArray.length > maxFiles) {
@@ -313,3 +316,4 @@ export function FileUpload({
     </div>
   );
 }
+

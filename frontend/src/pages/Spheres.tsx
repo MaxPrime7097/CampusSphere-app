@@ -364,7 +364,7 @@ export function Spheres() {
             {currentUser?.isVerified ? (
               <>
                 <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 flex-1 sm:flex-none" onClick={() => setIsCreateSphereOpen(true)}>
-                  <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Créer</span>
+                  <Plus className="h-4 w-4" /> <span>Créer</span>
                 </Button>
                 {isCreateSphereOpen && (
                   <Suspense fallback={<ModalLoadingFallback />}>

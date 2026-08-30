@@ -432,7 +432,7 @@ export function Resources() {
                   onClick={() => setIsUploadResourceOpen(true)}
                 >
                   <Upload className="h-4 w-4" />
-                  <span className="hidden sm:inline">Uploader</span>
+                  <span>Uploader</span>
                 </Button>
                 {isUploadResourceOpen && (
                   <Suspense fallback={<ModalLoadingFallback />}>
