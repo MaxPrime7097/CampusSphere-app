@@ -72,6 +72,7 @@ export function SphereDetail() {
   const [activeTab, setActiveTab] = useState("overview");
   const [isChatExpanded, setIsChatExpanded] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showBannerModal, setShowBannerModal] = useState(false);
   const [isCopyingLink, setIsCopyingLink] = useState(false);
   const [fileSearchQuery, setFileSearchQuery] = useState("");
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
@@ -423,21 +424,7 @@ export function SphereDetail() {
     }
   };
 
-    const handleCropComplete = async (croppedFile: File) => {
-    setCropperState(prev => ({ ...prev, isOpen: false }));
-    const compressed = await compressImageFile(croppedFile);
-    if (!id) return;
-    
-    try {
-      if (cropperState.type === 'banner') {
-        const res = await uploadSphereBanner(id, compressed);
-        setSphere((prev: any) => prev ? { ...prev, banner_image_url: res.banner_image_url } : prev);
-        toast({ title: "Bannière mise à jour !" });
-      }
-    } catch (err: any) {
-      toast({ title: "Erreur", description: err?.message, variant: "destructive" });
-    }
-  };
+    ;
 
   const handleRemoveMember = async (memberId: string) => {
     try {
@@ -566,17 +553,9 @@ export function SphereDetail() {
     <>
       <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
 
-        {cropperState.isOpen && (
-          <ImageCropperModal
-            isOpen={cropperState.isOpen}
-            onClose={() => setCropperState(prev => ({ ...prev, isOpen: false }))}
-            imageSrc={cropperState.imageSrc}
-            onCropComplete={handleCropComplete}
-            shape={cropperState.type === 'avatar' ? 'round' : 'rect'}
-            aspectRatio={cropperState.type === 'avatar' ? 1 : 16 / 5}
-            title={cropperState.type === 'avatar' ? 'Recadrer l\'avatar' : 'Recadrer la bannière'}
-          />
-        )}
+        
+
+        <ImageUploadModal isOpen={showBannerModal} onClose={() => setShowBannerModal(false)} onSave={async (file) => { if (!id) return; const res = await uploadSphereBanner(id, file); setSphere((prev: any) => prev ? { ...prev, banner_image_url: res.banner_image_url } : prev); toast({ title: "Bannière mise à jour !" }); }} title="Photo de couverture de la sphère" description="Téléchargez une nouvelle bannière pour cette sphère." currentImage={sphereFallback.banner_image_url} shape="rect" aspectRatio={16 / 5} />
 
         <div className="max-w-6xl mx-auto py-4 md:py-6 px-0 md:px-4 space-y-4 md:space-y-6">
           <div className="px-4 md:px-0">
@@ -612,27 +591,10 @@ export function SphereDetail() {
               )}
               {/* Bouton upload bannière */}
               {canManageSphereSettings && (
-                <label className="absolute top-3 right-3 bg-black/50 hover:bg-black/70 text-white rounded-lg px-2 py-1.5 flex items-center gap-1.5 text-xs cursor-pointer transition-colors opacity-0 group-hover:opacity-100">
+                <label onClick={() => setShowBannerModal(true)} className="absolute top-3 right-3 bg-black/50 hover:bg-black/70 text-white rounded-lg px-2 py-1.5 flex items-center gap-1.5 text-xs cursor-pointer transition-colors opacity-0 group-hover:opacity-100">
                   <Camera className="h-3.5 w-3.5" />
                   Changer la bannière
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={async (e) => {
-                      let file = e.target.files?.[0];
-                      if (file) file = await compressImageFile(file);
-                      if (!file || !id) return;
-                      try {
-                        const res = await uploadSphereBanner(id, file);
-                        setSphere((prev: any) => prev ? { ...prev, banner_image_url: res.banner_image_url } : prev);
-                        toast({ title: "Bannière mise à jour !" });
-                      } catch (err: any) {
-                        toast({ title: "Erreur", description: err?.message, variant: "destructive" });
-                      }
-                      e.target.value = "";
-                    }}
-                  />
+                  
                 </label>
               )}
             </div>
@@ -1184,6 +1146,10 @@ export function SphereDetail() {
     </>
   );
 }
+
+
+
+
 
 
 
