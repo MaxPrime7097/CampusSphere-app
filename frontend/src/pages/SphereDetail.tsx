@@ -564,6 +564,18 @@ export function SphereDetail() {
     <>
       <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
 
+        {cropperState.isOpen && (
+          <ImageCropperModal
+            isOpen={cropperState.isOpen}
+            onClose={() => setCropperState(prev => ({ ...prev, isOpen: false }))}
+            imageSrc={cropperState.imageSrc}
+            onCropComplete={handleCropComplete}
+            shape={cropperState.type === 'avatar' ? 'round' : 'rect'}
+            aspectRatio={cropperState.type === 'avatar' ? 1 : 16 / 5}
+            title={cropperState.type === 'avatar' ? 'Recadrer l\'avatar' : 'Recadrer la bannière'}
+          />
+        )}
+
         <div className="max-w-6xl mx-auto py-4 md:py-6 px-0 md:px-4 space-y-4 md:space-y-6">
           <div className="px-4 md:px-0">
             <Button variant="ghost" onClick={() => navigate("/spheres")} className="gap-2 -ml-2">
@@ -1170,6 +1182,7 @@ export function SphereDetail() {
     </>
   );
 }
+
 
 
 
