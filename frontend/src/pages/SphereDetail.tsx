@@ -1,3 +1,5 @@
+import { ImageCropperModal } from "@/components/modals/ImageCropperModal";
+import { compressImageFile } from "@/lib/imageCompression";
 import { Suspense, lazy, useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
@@ -1182,6 +1184,7 @@ export function SphereDetail() {
     </>
   );
 }
+
 
 
 
