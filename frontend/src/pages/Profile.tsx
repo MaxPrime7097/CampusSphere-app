@@ -1,3 +1,5 @@
+import { ImageCropperModal } from "@/components/modals/ImageCropperModal";
+import { compressImageFile } from "@/lib/imageCompression";
 import { Suspense, lazy, useState, useEffect, useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
@@ -1879,6 +1881,7 @@ export function Profile() {
     </div>
   );
 }
+
 
 
 
