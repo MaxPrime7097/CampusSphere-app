@@ -45,7 +45,7 @@ import { NetflixCarousel } from "@/components/ui/netflix-carousel";
 import { cn, formatFileSize } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { RESOURCE_TYPE_OPTIONS, normalizeResourceType } from "@/constants/resourceTypes";
-import { getSubjectLabel, getTypeLabel, normalizeSubject } from "@/lib/resourceMetadata";
+import { getTypeLabel } from "@/lib/resourceMetadata";
 import {
   DEFAULT_SORT,
   RESOURCE_SORT_KEYS,
@@ -66,7 +66,6 @@ function mapResourceCard(r: any) {
     id: String(r.id),
     title: r.title,
     description: r.description || "",
-    subject: normalizeSubject(r.subject),
     type: normalizeResourceType(r.type),
     authorId: r.authorId || r.author || r.created_by,
     authorName: r.author?.name || r.author_info?.name || r.author_name || "Unknown",
@@ -89,8 +88,7 @@ export function Resources() {
   const { user: currentUser, isLoading: isAuthLoading } = useAuth();
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedSubject, setSelectedSubject] = useState("all");
-  const [selectedType, setSelectedType] = useState("all");
+    const [selectedType, setSelectedType] = useState("all");
   const [isUploadResourceOpen, setIsUploadResourceOpen] = useState(false);
 
   const [activeTab, setActiveTab] = useState<ResourceSortKey>(DEFAULT_SORT.resources);
@@ -186,15 +184,6 @@ export function Resources() {
     }
   };
 
-  const subjects = [
-    { value: "all", label: "Toutes matières" },
-    { value: "math", label: "Mathématiques" },
-    { value: "cs", label: "Informatique" },
-    { value: "physics", label: "Physique" },
-    { value: "economics", label: "Économie" },
-    { value: "language", label: "Langues" },
-  ];
-
   const types = [{ value: "all", label: "Tous types" }, ...RESOURCE_TYPE_OPTIONS];
 
   const savedResourcesQuery = useQuery({
@@ -220,10 +209,9 @@ export function Resources() {
       resource.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       resource.tags.some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    const matchesSubject = selectedSubject === "all" || resource.subject === selectedSubject;
     const matchesType = selectedType === "all" || resource.type === selectedType;
 
-    return matchesSearch && matchesSubject && matchesType;
+    return matchesSearch && matchesType;
   });
 
   const resolvedResourceSort = ensureValidSortKey(activeTab, RESOURCE_SORT_KEYS, DEFAULT_SORT.resources);
@@ -486,12 +474,7 @@ export function Resources() {
             </div>
             {showMobileFilters && (
               <div className="flex flex-col gap-2 mt-2 sm:hidden">
-                <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                  <SelectTrigger><SelectValue placeholder="Matière" /></SelectTrigger>
-                  <SelectContent>
-                    {subjects.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                
                 <Select value={selectedType} onValueChange={setSelectedType}>
                   <SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger>
                   <SelectContent>
@@ -506,12 +489,7 @@ export function Resources() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input placeholder="Rechercher..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
               </div>
-              <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                <SelectTrigger><SelectValue placeholder="Matière" /></SelectTrigger>
-                <SelectContent>
-                  {subjects.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              
               <Select value={selectedType} onValueChange={setSelectedType}>
                 <SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger>
                 <SelectContent>
@@ -522,7 +500,7 @@ export function Resources() {
           </CardContent>
         </Card>        {/* DASHBOARD OR SEARCH RESULTS */}
         {(() => {
-          const isSearchOrFilterActive = searchTerm !== "" || selectedSubject !== "all" || selectedType !== "all";
+          const isSearchOrFilterActive = searchTerm !== "" ||  selectedType !== "all";
 
           if (isSearchOrFilterActive) {
             return (
@@ -539,7 +517,6 @@ export function Resources() {
                     actionLabel="Tout réinitialiser"
                     onAction={() => {
                       setSearchTerm("");
-                      setSelectedSubject("all");
                       setSelectedType("all");
                     }}
                   />
@@ -787,6 +764,8 @@ export function Resources() {
     </div>
   );
 }
+
+
 
 
 
