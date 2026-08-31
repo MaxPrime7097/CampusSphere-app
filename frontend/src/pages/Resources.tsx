@@ -89,6 +89,7 @@ export function Resources() {
 
   const [searchTerm, setSearchTerm] = useState("");
     const [selectedType, setSelectedType] = useState("all");
+  const [selectedFileFormat, setSelectedFileFormat] = useState("all");
   const [isUploadResourceOpen, setIsUploadResourceOpen] = useState(false);
 
   const [activeTab, setActiveTab] = useState<ResourceSortKey>(DEFAULT_SORT.resources);
@@ -185,6 +186,7 @@ export function Resources() {
   };
 
   const types = [{ value: "all", label: "Tous types" }, ...RESOURCE_TYPE_OPTIONS];
+  const fileFormats = [{ value: "all", label: "Tous les formats" }, { value: "pdf", label: "PDF" }, { value: "document", label: "Documents (Word, TXT)" }, { value: "image", label: "Images" }, { value: "archive", label: "Archives (ZIP)" }, { value: "code", label: "Code source" }, { value: "other", label: "Autres" }];
 
   const savedResourcesQuery = useQuery({
     queryKey: ["saved-resources"],
@@ -209,9 +211,19 @@ export function Resources() {
       resource.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       resource.tags.some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    const matchesType = selectedType === "all" || resource.type === selectedType;
+        const matchesType = selectedType === "all" || resource.type === selectedType;
 
-    return matchesSearch && matchesType;
+    const ext = resource.fileUrl?.split('.').pop()?.toLowerCase() || "";
+    let format = "other";
+    if (ext === "pdf") format = "pdf";
+    else if (["doc", "docx", "txt", "odt"].includes(ext)) format = "document";
+    else if (["png", "jpg", "jpeg", "webp"].includes(ext)) format = "image";
+    else if (["zip", "rar", "7z", "tar", "gz"].includes(ext)) format = "archive";
+    else if (["py", "js", "ts", "cpp", "c", "java", "html", "css"].includes(ext)) format = "code";
+    
+    const matchesFormat = selectedFileFormat === "all" || format === selectedFileFormat;
+
+    return matchesSearch && matchesType && matchesFormat;
   });
 
   const resolvedResourceSort = ensureValidSortKey(activeTab, RESOURCE_SORT_KEYS, DEFAULT_SORT.resources);
@@ -476,11 +488,17 @@ export function Resources() {
               <div className="flex flex-col gap-2 mt-2 sm:hidden">
                 
                 <Select value={selectedType} onValueChange={setSelectedType}>
-                  <SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger>
-                  <SelectContent>
-                    {types.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                    <SelectTrigger><SelectValue placeholder="Catégorie" /></SelectTrigger>
+                    <SelectContent>
+                      {types.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <Select value={selectedFileFormat} onValueChange={setSelectedFileFormat}>
+                    <SelectTrigger><SelectValue placeholder="Format" /></SelectTrigger>
+                    <SelectContent>
+                      {fileFormats.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
               </div>
             )}
             {/* Desktop */}
@@ -491,16 +509,22 @@ export function Resources() {
               </div>
               
               <Select value={selectedType} onValueChange={setSelectedType}>
-                <SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger>
-                <SelectContent>
-                  {types.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
+                    <SelectTrigger><SelectValue placeholder="Catégorie" /></SelectTrigger>
+                    <SelectContent>
+                      {types.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <Select value={selectedFileFormat} onValueChange={setSelectedFileFormat}>
+                    <SelectTrigger><SelectValue placeholder="Format" /></SelectTrigger>
+                    <SelectContent>
+                      {fileFormats.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
             </div>
           </CardContent>
         </Card>        {/* DASHBOARD OR SEARCH RESULTS */}
         {(() => {
-          const isSearchOrFilterActive = searchTerm !== "" ||  selectedType !== "all";
+          const isSearchOrFilterActive = searchTerm !== "" || selectedType !== "all" || selectedFileFormat !== "all";
 
           if (isSearchOrFilterActive) {
             return (
@@ -517,8 +541,7 @@ export function Resources() {
                     actionLabel="Tout réinitialiser"
                     onAction={() => {
                       setSearchTerm("");
-                      setSelectedType("all");
-                    }}
+                      setSelectedType("all"); setSelectedFileFormat("all"); }}
                   />
                 ) : (
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -764,6 +787,8 @@ export function Resources() {
     </div>
   );
 }
+
+
 
 
 
