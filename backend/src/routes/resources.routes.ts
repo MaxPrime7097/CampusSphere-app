@@ -73,7 +73,7 @@ function resourceIdOf(req: Request): number {
 // ── Folders (before /:id/ so `folders` is not read as an id) ────────────────
 
 const folderCreateSchema = z.object({
-  name: z.string().min(1).max(100),
+  name: z.string().trim().min(1).max(100),
   description: z.string().max(300).default(""),
   visibility: z.enum(VISIBILITIES).default("public"),
 });
@@ -159,6 +159,14 @@ async function updateFolder(req: Request, res: import("express").Response) {
   if (!folder) throw notFound("Folder not found.");
 
   const input = folderCreateSchema.partial().parse(req.body ?? {});
+
+  if (input.name && input.name.toLowerCase() !== folder.name.toLowerCase()) {
+    const duplicate = await prisma.resourceFolder.findFirst({
+      where: { ownerId: me.id, name: { equals: input.name, mode: "insensitive" }, NOT: { id: folder.id } },
+    });
+    if (duplicate) throw conflict("A folder with this name already exists.", { name: ["Already used."] });
+  }
+
   const updated = await prisma.resourceFolder.update({
     where: { id: folder.id },
     data: {

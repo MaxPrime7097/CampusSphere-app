@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -314,14 +314,34 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
                 />
               </div>
 
-              <div className="flex justify-end">
-                <Button
-                  onClick={() => setStep(2)}
-                  disabled={!name || !description}
-                  className="campus-gradient text-white gap-2"
-                >
-                  Suivant <ArrowRight className="h-4 w-4" />
-                </Button>
+                            <div className="flex justify-end">
+                {sphereType === 'communaute' || sphereType === 'cours' ? (
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={!name || !description || isCreating}
+                    className="campus-gradient text-white hover:opacity-90 px-8"
+                  >
+                    {isCreating ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Création...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="h-4 w-4 mr-2" />
+                        Créer la Sphère
+                      </>
+                    )}
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => setStep(2)}
+                    disabled={!name || !description}
+                    className="campus-gradient text-white gap-2"
+                  >
+                    Suivant <ArrowRight className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </div>
           )}
@@ -431,6 +451,9 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
     </Dialog>
   );
 }
+
+
+
 
 
 

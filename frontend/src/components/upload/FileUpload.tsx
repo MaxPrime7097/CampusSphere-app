@@ -16,6 +16,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { compressImageFiles } from "@/lib/imageCompression";
 
 interface FileUploadProps {
   onFileUploaded?: (file: File) => void;

@@ -245,15 +245,29 @@ function parseBackendError(errJson: any, status: number): string {
   
   if (typeof errJson === "string") return translateError(errJson, status);
 
+  // Field errors if available from backend envelope (e.g. { error: "...", field_errors: { name: ["Already used."] } })
+  if (errJson.field_errors && typeof errJson.field_errors === "object") {
+    const errorMessages: string[] = [];
+    for (const [key, value] of Object.entries(errJson.field_errors)) {
+      if (Array.isArray(value) && typeof value[0] === "string") {
+        errorMessages.push(`${translateField(key)}: ${translateError(value[0], status)}`);
+      } else if (typeof value === "string") {
+        errorMessages.push(`${translateField(key)}: ${translateError(value, status)}`);
+      }
+    }
+    if (errorMessages.length > 0) return errorMessages.join(" | ");
+  }
+
   // Standard fields
   if (typeof errJson.detail === "string") return translateError(errJson.detail, status);
-  if (typeof errJson.message === "string") return translateError(errJson.message, status);
   if (typeof errJson.error === "string") return translateError(errJson.error, status);
+  if (typeof errJson.message === "string") return translateError(errJson.message, status);
 
   // Handle Django REST Framework field validation errors (e.g. { "name": ["This field must be unique."] })
   if (typeof errJson === "object" && !Array.isArray(errJson)) {
     const errorMessages: string[] = [];
     for (const [key, value] of Object.entries(errJson)) {
+      if (key === "success" || key === "timestamp" || key === "code") continue;
       if (Array.isArray(value) && typeof value[0] === "string") {
         errorMessages.push(`${translateField(key)}: ${translateError(value[0], status)}`);
       } else if (typeof value === "string") {
@@ -281,8 +295,11 @@ function translateField(field: string): string {
 function translateError(msg: string, status: number): string {
   const m = msg.toLowerCase();
   
-  if (status === 409 || m.includes("unique") || m.includes("already exists")) {
-    return "Cet élément existe déjà. Veuillez choisir un nom différent.";
+  if (status === 409 || m.includes("unique") || m.includes("already exists") || m.includes("already used")) {
+    return "Un élément avec ce nom existe déjà. Veuillez choisir un nom différent.";
+  }
+  if (m.includes("reached the limit") || (m.includes("limit") && m.includes("folder"))) {
+    return "Vous avez atteint la limite maximale autorisée (4 dossiers maximum).";
   }
   if (m.includes("not found") || status === 404) {
     return "L'élément demandé est introuvable.";
@@ -617,11 +634,13 @@ async function apiFetch<T>(
   const contentType = (res.headers.get("content-type") || "").toLowerCase();
 
   if (!res.ok) {
+    let errMsg = `Request failed: ${res.status}`;
+
     // Try to parse JSON error payload for a meaningful message, otherwise fall back to text.
     if (contentType.includes("application/json")) {
       try {
         const errJson = await res.json();
-        const errMsg = parseBackendError(errJson, res.status);
+        errMsg = parseBackendError(errJson, res.status) || errMsg;
 
         // If unauthorized and we haven't retried yet, try to refresh the access token once.
         if (res.status === 401 && !_retry) {
@@ -641,16 +660,19 @@ async function apiFetch<T>(
           // If no refresh token or refresh failed, clear everything
           clearTokens();
         }
-
-        throw new ApiRequestError(errMsg || `Request failed: ${res.status}`, res.status);
-      } catch (e) {
-        const text = await res.text().catch(() => "");
-        throw new ApiRequestError(text || `Request failed: ${res.status}`, res.status);
+      } catch {
+        // parsing json failed, fallback will be used
+      }
+    } else {
+      try {
+        const text = await res.text();
+        if (text) errMsg = text;
+      } catch {
+        // ignore
       }
     }
 
-    const text = await res.text().catch(() => "");
-    throw new ApiRequestError(text || `Request failed: ${res.status}`, res.status);
+    throw new ApiRequestError(errMsg, res.status);
   }
 
   if (contentType.includes("application/json")) {
@@ -1765,6 +1787,7 @@ export async function createConversation(data: {
 }
 
 export async function getConversationMessages(id: number | string, token?: string) {
+  if (!id || id === "undefined" || id === "null") return [];
   const response = await apiFetch<any>(`api/conversations/${id}/messages/`, { token: token || getAccessToken() });
   return unwrapList<any>(response);
 }
@@ -2412,4 +2435,5 @@ export async function getSphereStudySessions(sphereId: string | number) {
 // ============================================================================
 
 export const http = { apiFetch };
+
 
