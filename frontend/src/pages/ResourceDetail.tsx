@@ -850,10 +850,7 @@ export function ResourceDetail() {
               <h3 className="font-semibold text-lg mb-4">Détails</h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Matière associée</p>
-                  <p className="font-medium">{getSubjectLabel(resource.subject)}</p>
-                </div>
+                
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Public cible</p>
                   <p className="font-medium">{getAudienceLabel(resource.level)}</p>
@@ -1054,5 +1051,6 @@ export function ResourceDetail() {
     </>
   );
 }
+
 
 

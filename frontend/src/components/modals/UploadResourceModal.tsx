@@ -39,7 +39,6 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
   const [newTag, setNewTag] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [subject, setSubject] = useState("");
   const [type, setType] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -59,28 +58,9 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
       listFolders().then(setFolders).catch(() => null);
     }
   }, [open]);
-
-
-  const subjects = [
-    { value: "math", label: "Mathématiques" },
-    { value: "cs", label: "Informatique" },
-    { value: "electronics", label: "Électronique" },
-    { value: "mechanics", label: "Mécanique" },
-    { value: "physics", label: "Physique" },
-    { value: "chemistry", label: "Chimie" },
-    { value: "biology", label: "Biologie / Santé" },
-    { value: "economics", label: "Économie / Gestion" },
-    { value: "law", label: "Droit / Sc. Politiques" },
-    { value: "language", label: "Langues / Lettres" },
-    { value: "history", label: "Histoire / Géo" },
-    { value: "arts", label: "Arts / Design" },
-    { value: "other", label: "Autre" }
-  ];
-
   const resourceSchema = z.object({
     title: z.string().trim().min(3, { message: t('modals.uploadResource.titleRequired') }).max(100, { message: t('modals.uploadResource.titleTooLong') }),
     description: z.string().trim().min(10, { message: t('modals.uploadResource.descriptionRequired', { defaultValue: "La description est requise" }) }).max(500, { message: t('modals.uploadResource.descriptionTooLong') }),
-    subject: z.string().optional(),
     type: z.string().min(1, { message: t('modals.uploadResource.typeRequired') }),
     file: z.custom<File>((val) => val instanceof File, { message: t('modals.uploadResource.fileRequired') })
       .refine((file) => file.size <= MAX_FILE_SIZE, { message: t('modals.uploadResource.fileTooLarge') })
@@ -224,7 +204,6 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
       const formData = new FormData();
       formData.append('title', title);
       formData.append('description', description || "");
-      if (subject) formData.append('subject', subject);
       formData.append('type', type);
       formData.append('file', file);
       formData.append('tags', JSON.stringify(tags));
@@ -266,9 +245,7 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
 
   const resetForm = () => {
     setTitle(""); 
-    setDescription(""); 
-    setSubject(""); 
-    setType(""); 
+    setDescription("");setType(""); 
     setFile(null); 
     setTags([]);
     setVisibility("");
@@ -405,21 +382,6 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>Matière <span className="text-muted-foreground font-normal text-xs">(optionnel)</span></Label>
-              <Select value={subject} onValueChange={setSubject}>
-                <SelectTrigger className="mt-1.5">
-                  <SelectValue placeholder="Sélectionner..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {subjects.map((subject) => (
-                    <SelectItem key={subject.value} value={subject.value}>
-                      {subject.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
           {/* Visibility & Audience */}
@@ -546,4 +508,5 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
     </Dialog>
   );
 }
+
 

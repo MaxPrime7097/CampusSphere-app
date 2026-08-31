@@ -434,7 +434,7 @@ export function SearchResults() {
                             Type: {getTypeLabel(res.type)}
                           </p>
                           <p className="text-sm text-muted-foreground truncate">
-                            Matière: {getSubjectLabel(res.subject)}
+                            
                           </p>
                           {res.category && (
                             <p className="text-sm text-muted-foreground truncate">
@@ -577,7 +577,7 @@ export function SearchResults() {
                           Type: {getTypeLabel(res.type)}
                         </p>
                         <p className="text-sm text-muted-foreground truncate">
-                          Matière: {getSubjectLabel(res.subject)}
+                          
                         </p>
                         {res.category && (
                           <p className="text-sm text-muted-foreground truncate">
@@ -650,3 +650,4 @@ export function SearchResults() {
     </div>
   );
 }
+

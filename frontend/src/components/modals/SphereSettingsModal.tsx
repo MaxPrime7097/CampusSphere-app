@@ -22,7 +22,6 @@ import { deleteSphere, extendSphereDuration, updateSphere } from "@/services/api
 interface SphereSettings {
   name: string;
   description: string;
-  category: string;
   requireApproval: boolean;
   allowMemberPosts: boolean;
   allowResourceSharing: boolean;
@@ -38,7 +37,6 @@ interface SphereSettingsModalProps {
     id: string;
     name: string;
     description: string;
-    category: string;
     type?: string;
     isPrivate?: boolean;
     requireApproval: boolean;
@@ -77,7 +75,6 @@ export function SphereSettingsModal({
   const [settings, setSettings] = useState({
     name: "",
     description: "",
-    category: "Général",
     requireApproval: false,
     allowMemberPosts: true,
     allowResourceSharing: true,
@@ -99,7 +96,6 @@ export function SphereSettingsModal({
       setSettings({
         name: sphereData.name || "",
         description: sphereData.description || "",
-        category: sphereData.category || "",
         requireApproval: sphereData.requireApproval || false,
         allowMemberPosts: sphereData.allowMemberPosts ?? true,
         allowResourceSharing: sphereData.allowResourceSharing ?? true,
@@ -111,26 +107,10 @@ export function SphereSettingsModal({
       });
 
     }
-  }, [sphereData]);
-
-  const categories = [
-    { title: "Général", value: "Général" },
-    { title: "Académique", value: "Académique" },
-    { title: "Projet", value: "Projet" },
-    { title: "Événement", value: "Événement" },
-    { title: "Étude", value: "Étude" },
-    { title: "Social", value: "Social" },
-    { title: "Technologie", value: "Technologie" },
-    { title: "Art", value: "Art" },
-    { title: "Sport", value: "Sport" },
-    { title: "Autre", value: "Autre" }
-  ];
-
-
-  const durationOptions = [
-    "Court terme (1-3 mois)",
-    "Moyen terme (3-6 mois)",
-    "Long terme (6-12 mois)",
+  }, [sphereData]);const durationOptions = [
+    "Court terme (3 mois)",
+    "Moyen terme (6 mois)",
+    "Long terme (12 mois)",
     "Permanent",
     "Flexible"
   ];
@@ -163,7 +143,6 @@ export function SphereSettingsModal({
       const payload = {
         name: settings.name.trim(),
         description: settings.description,
-        category: settings.category,
         type: sphereData.type,
         is_private: sphereData.isPrivate ?? false,
         require_approval: settings.requireApproval,
@@ -298,21 +277,6 @@ export function SphereSettingsModal({
                   placeholder="Nom de votre sphère"
                   maxLength={50}
                 />
-              </div>
-              <div>
-                <Label htmlFor="category">Catégorie</Label>
-                <Select value={settings.category} onValueChange={(value) => updateSetting("category", value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.value} value={category.value}>
-                        {category.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
             </div>
 
@@ -557,3 +521,4 @@ export function SphereSettingsModal({
     </Dialog>
   );
 }
+

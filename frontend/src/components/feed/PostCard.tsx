@@ -674,86 +674,83 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
             {/* Impact Score Rating */}
 
 
-            <div className="flex flex-row items-center justify-between gap-1 sm:gap-4 pt-2 border-t overflow-x-auto">
-              <div className="flex items-center gap-2 md:gap-4 shrink-0">
+                        <div className="flex flex-row items-center justify-between gap-1 sm:gap-4 pt-2 border-t overflow-x-auto">
+              <div className="flex items-center gap-1 sm:gap-2 md:gap-4 shrink-0">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleLike}
-                  className={`gap-1 sm:gap-2 h-9 px-1 sm:px-2 md:px-3 transition-all active:scale-95 ${isLiked ? 'text-red-500 hover:text-red-600' : 'hover:text-red-500'}`}
+                  className={`gap-1.5 sm:gap-2 h-9 px-2 sm:px-3 transition-all active:scale-95 ${isLiked ? 'text-red-500 hover:text-red-600' : 'hover:text-red-500'}`}
                 >
                   <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
-                  <span className="text-xs font-medium">{likesCount}</span>
+                  <span className="text-sm font-medium">{likesCount}</span>
                 </Button>
 
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="gap-1 sm:gap-2 h-9 px-1 sm:px-2 md:px-3 hover:text-foreground transition-all active:scale-95"
+                  className="gap-1.5 sm:gap-2 h-9 px-2 sm:px-3 hover:text-foreground transition-all active:scale-95"
                   onClick={() => requireAuth(() => setCommentsOpen(true))}
                 >
                   <MessageCircle className="h-4 w-4" />
-                  <span className="text-xs font-medium">{post.comments}</span>
+                  <span className="text-sm font-medium">{post.comments}</span>
                 </Button>
 
-                <Button variant="ghost" size="sm" className="h-9 px-1 sm:px-2 hover:text-foreground transition-all active:scale-95" onClick={handleShare}>
+                <Button variant="ghost" size="sm" className="h-9 px-2 sm:px-3 hover:text-foreground transition-all active:scale-95" onClick={handleShare}>
                   <Share className="h-4 w-4" />
                 </Button>
               </div>
 
-              <div className="flex items-center gap-1 sm:gap-2 rounded-lg bg-muted/50 p-1 shrink-0">
+              <div className="flex items-center gap-0.5 sm:gap-2 rounded-lg bg-muted/50 p-0.5 sm:p-1 shrink-0">
                 <div className="flex items-center">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 w-8 p-0 hover:bg-background/80"
+                    className="h-6 w-6 sm:h-8 sm:w-8 p-0 hover:bg-background/80"
                     onClick={() => handleImpactRate(Math.max((userImpactRating ?? 0) - 1, 1))}
                     disabled={userImpactRating === null}
                   >
-                    <Minus className="h-3.5 w-3.5" />
+                    <Minus className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 w-8 p-0 hover:bg-background/80"
+                    className="h-6 w-6 sm:h-8 sm:w-8 p-0 hover:bg-background/80"
                     onClick={() => handleImpactRate(Math.min((userImpactRating ?? 0) + 1, 5))}
                   >
-                    <Plus className="h-3.5 w-3.5" />
+                    <Plus className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 w-8 p-0 hover:bg-background/80"
+                    className="h-6 w-6 sm:h-8 sm:w-8 p-0 hover:bg-background/80"
                     onClick={() => handleImpactRate(null)}
                     disabled={userImpactRating === null}
                   >
-                    <X className="h-3.5 w-3.5" />
+                    <X className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                   </Button>
                 </div>
-                <div className="flex items-center gap-1.5 px-3 py-1 bg-background rounded-md shadow-sm border">
-                  <Zap className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-bold text-foreground">{impactScore}</span>
+                <div className="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-3 py-0.5 sm:py-1 bg-background rounded-md shadow-sm border">
+                  <Zap className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
+                  <span className="text-xs sm:text-sm font-bold text-foreground">{impactScore}</span>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-5 w-5 p-0 rounded-full hover:bg-muted transition-colors ml-1"
+                    className="h-4 w-4 sm:h-5 sm:w-5 p-0 rounded-full hover:bg-muted transition-colors ml-0.5 sm:ml-1 hidden sm:flex"
                     onClick={(e) => {
                       e.stopPropagation();
                       toast({
                         title: "Score d'impact",
                         description: "Le Score d'Impact mesure l'utilité et la pertinence de ce contenu pour la communauté CampusSphere. Il est calculé en fonction des interactions et des retours des étudiants.",
                       });
-
                     }}
                   >
-                    <Info className="h-3 w-3 text-muted-foreground" />
+                    <Info className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-muted-foreground" />
                   </Button>
                 </div>
-
               </div>
             </div>
-          </div>
-        </CardContent>
+        </div></CardContent>
       </Card>
 
       {commentsOpen && (
@@ -1053,4 +1050,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
     </>
   );
 }
+
+
+
 
