@@ -245,6 +245,7 @@ function parseBackendError(errJson: any, status: number): string {
   
   if (typeof errJson === "string") return translateError(errJson, status);
 
+
   // Field errors if available from backend envelope (e.g. { error: "...", field_errors: { name: ["Already used."] } })
   if (errJson.field_errors && typeof errJson.field_errors === "object") {
     const errorMessages: string[] = [];
@@ -2298,6 +2299,14 @@ export async function verifyAdminUser(userId: string, isVerified: boolean = true
     body: { userId, isVerified },
     token: token || getAccessToken(),
   });
+}
+
+export async function getAdminLogs(params?: { page?: number; search?: string }, token?: string) {
+  const q = new URLSearchParams();
+  if (params?.page) q.set('page', String(params.page));
+  if (params?.search) q.set('search', params.search);
+  const suffix = q.toString() ? `?${q}` : '';
+  return apiFetch<any>(`api/admin/v1/logs/${suffix}`, { token: token || getAccessToken() });
 }
 
 

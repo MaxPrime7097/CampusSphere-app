@@ -61,6 +61,7 @@ const AdminSpheresPage = lazy(() => import("./admin/pages/AdminSpheresPage").the
 const AdminModerationPage = lazy(() => import("./admin/pages/AdminModerationPage").then(m => ({ default: m.AdminModerationPage })));
 const AdminResourcesPage = lazy(() => import("./admin/pages/AdminResourcesPage").then(m => ({ default: m.AdminResourcesPage })));
 const AdminLogsPage = lazy(() => import("./admin/pages/AdminLogsPage").then(m => ({ default: m.AdminLogsPage })));
+const AdminVerificationPage = lazy(() => import("./admin/pages/AdminVerificationPage").then(m => ({ default: m.AdminVerificationPage })));
 const AdminContactMessagesPage = lazy(() => import("./admin/pages/AdminContactMessagesPage").then(m => ({ default: m.AdminContactMessagesPage })));
 
 const PageLoader = () => (
@@ -316,6 +317,7 @@ const App = () => (
             }>
               <Route path="dashboard" element={<AdminDashboardPage />} />
               <Route path="users" element={<AdminUsersPage />} />
+              <Route path="verification" element={<AdminVerificationPage />} />
               <Route path="spheres" element={<AdminSpheresPage />} />
               <Route path="moderation" element={<AdminModerationPage />} />
               <Route path="resources" element={<AdminResourcesPage />} />
@@ -336,6 +338,7 @@ const App = () => (
             {/* Public pages */}
             <Route path="/cs-inc" element={<Landing />} />
             <Route path="/cs-inc/about" element={<About />} />
+            <Route path="/contact" element={<Navigate to="/cs-inc/contact" replace />} />
             <Route path="/cs-inc/contact" element={<Contact />} />
             <Route path="/cs-inc/faq" element={<FAQ />} />
             <Route path="/cs-inc/policies" element={<Policies />} />
