@@ -56,7 +56,7 @@ import { ResourceSkeleton } from "@/components/ui/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const UploadResourceModal = lazy(() => import("@/components/modals/UploadResourceModal").then((module) => ({ default: module.UploadResourceModal })));
 const CreateFolderModal = lazy(() => import("@/components/modals/CreateFolderModal").then((module) => ({ default: module.CreateFolderModal })));
@@ -86,9 +86,10 @@ export function Resources() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { user: currentUser, isLoading: isAuthLoading } = useAuth();
+  const queryClient = useQueryClient();
 
   const [searchTerm, setSearchTerm] = useState("");
-    const [selectedType, setSelectedType] = useState("all");
+  const [selectedType, setSelectedType] = useState("all");
   const [selectedFileFormat, setSelectedFileFormat] = useState("all");
   const [isUploadResourceOpen, setIsUploadResourceOpen] = useState(false);
 
@@ -104,13 +105,24 @@ export function Resources() {
   const [loading, setLoading] = useState(true);
 
   // Folders state
-  const [showFoldersTab, setShowFoldersTab] = useState(false);
-  const [folders, setFolders] = useState<ResourceFolder[]>([]);
-  const [foldersLoading, setFoldersLoading] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<ResourceFolder | null>(null);
   const [folderResources, setFolderResources] = useState<any[]>([]);
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [editingFolder, setEditingFolder] = useState<ResourceFolder | null>(null);
+
+  const foldersQuery = useQuery({
+    queryKey: ["resource-folders"],
+    queryFn: () => listFolders(),
+    enabled: Boolean(currentUser?.id || localStorage.getItem("access")),
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+  });
+
+  const folders = foldersQuery.data || [];
+  const foldersLoading = foldersQuery.isLoading;
+
   const resourcesQuery = useQuery({
     queryKey: ["resources"],
     queryFn: listResources,
@@ -142,18 +154,6 @@ export function Resources() {
     }
   }, [resourcesQuery.data, resourcesQuery.error, resourcesQuery.isLoading, toast]);
 
-  const loadFolders = async () => {
-    setFoldersLoading(true);
-    try {
-      const data = await listFolders();
-      setFolders(data);
-    } catch (e) {
-      // silently fail if not authenticated or no folders yet
-    } finally {
-      setFoldersLoading(false);
-    }
-  };
-
   const handleOpenFolder = async (folder: ResourceFolder) => {
     if (selectedFolder?.id === folder.id) {
       setSelectedFolder(null);
@@ -162,7 +162,6 @@ export function Resources() {
     }
     setSelectedFolder(folder);
     try {
-      
       const detail = await getFolderDetail(folder.id);
       setFolderResources((detail.resources || []).map(mapResourceCard));
     } catch {
@@ -174,19 +173,27 @@ export function Resources() {
     if (!confirm(`Supprimer le dossier "${folder.name}" ? Les fichiers resteront accessibles.`)) return;
     try {
       await deleteFolder(folder.id);
-      setFolders(prev => prev.filter(f => f.id !== folder.id));
+      await queryClient.invalidateQueries({ queryKey: ["resource-folders"] });
       if (selectedFolder?.id === folder.id) {
         setSelectedFolder(null);
         setFolderResources([]);
       }
-      toast({ title: 'Dossier supprimé' });
+      toast({ title: "Dossier supprimé" });
     } catch (e: any) {
-      toast({ title: 'Erreur', description: e?.message, variant: 'destructive' });
+      toast({ title: "Erreur", description: e?.message, variant: "destructive" });
     }
   };
 
   const types = [{ value: "all", label: "Tous types" }, ...RESOURCE_TYPE_OPTIONS];
-  const fileFormats = [{ value: "all", label: "Tous les formats" }, { value: "pdf", label: "PDF" }, { value: "document", label: "Documents (Word, TXT)" }, { value: "image", label: "Images" }, { value: "archive", label: "Archives (ZIP)" }, { value: "code", label: "Code source" }, { value: "other", label: "Autres" }];
+  const fileFormats = [
+    { value: "all", label: "Tous les formats" },
+    { value: "pdf", label: "PDF" },
+    { value: "document", label: "Documents (Word, TXT)" },
+    { value: "image", label: "Images" },
+    { value: "archive", label: "Archives (ZIP)" },
+    { value: "code", label: "Code source" },
+    { value: "other", label: "Autres" },
+  ];
 
   const savedResourcesQuery = useQuery({
     queryKey: ["saved-resources"],
@@ -211,16 +218,16 @@ export function Resources() {
       resource.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       resource.tags.some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase()));
 
-        const matchesType = selectedType === "all" || resource.type === selectedType;
+    const matchesType = selectedType === "all" || resource.type === selectedType;
 
-    const ext = resource.fileUrl?.split('.').pop()?.toLowerCase() || "";
+    const ext = resource.fileUrl?.split(".").pop()?.toLowerCase() || "";
     let format = "other";
     if (ext === "pdf") format = "pdf";
     else if (["doc", "docx", "txt", "odt"].includes(ext)) format = "document";
     else if (["png", "jpg", "jpeg", "webp"].includes(ext)) format = "image";
     else if (["zip", "rar", "7z", "tar", "gz"].includes(ext)) format = "archive";
     else if (["py", "js", "ts", "cpp", "c", "java", "html", "css"].includes(ext)) format = "code";
-    
+
     const matchesFormat = selectedFileFormat === "all" || format === selectedFileFormat;
 
     return matchesSearch && matchesType && matchesFormat;
@@ -294,7 +301,7 @@ export function Resources() {
         variant: "destructive",
         action: (
           <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>Vérifier</Button>
-        )
+        ),
       });
       return;
     }
@@ -348,7 +355,11 @@ export function Resources() {
     setIsRefreshing(true);
 
     try {
-      const result = await resourcesQuery.refetch();
+      const [result] = await Promise.all([
+        resourcesQuery.refetch(),
+        foldersQuery.refetch(),
+        savedResourcesQuery.refetch(),
+      ]);
       const mapped = (result.data || []).map(mapResourceCard);
       setResources(mapped);
 
@@ -417,7 +428,6 @@ export function Resources() {
                 <RefreshCw className="h-4 w-4" />
               )}
               <span className="hidden sm:inline">Actualiser</span>
-
             </Button>
             {isAuthLoading ? (
               <Button size="sm" variant="outline" className="gap-2 w-full sm:w-auto opacity-70" disabled>
@@ -486,19 +496,18 @@ export function Resources() {
             </div>
             {showMobileFilters && (
               <div className="flex flex-col gap-2 mt-2 sm:hidden">
-                
                 <Select value={selectedType} onValueChange={setSelectedType}>
-                    <SelectTrigger><SelectValue placeholder="Catégorie" /></SelectTrigger>
-                    <SelectContent>
-                      {types.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <Select value={selectedFileFormat} onValueChange={setSelectedFileFormat}>
-                    <SelectTrigger><SelectValue placeholder="Format" /></SelectTrigger>
-                    <SelectContent>
-                      {fileFormats.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <SelectTrigger><SelectValue placeholder="Catégorie" /></SelectTrigger>
+                  <SelectContent>
+                    {types.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={selectedFileFormat} onValueChange={setSelectedFileFormat}>
+                  <SelectTrigger><SelectValue placeholder="Format" /></SelectTrigger>
+                  <SelectContent>
+                    {fileFormats.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
             )}
             {/* Desktop */}
@@ -507,22 +516,23 @@ export function Resources() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input placeholder="Rechercher..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
               </div>
-              
               <Select value={selectedType} onValueChange={setSelectedType}>
-                    <SelectTrigger><SelectValue placeholder="Catégorie" /></SelectTrigger>
-                    <SelectContent>
-                      {types.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <Select value={selectedFileFormat} onValueChange={setSelectedFileFormat}>
-                    <SelectTrigger><SelectValue placeholder="Format" /></SelectTrigger>
-                    <SelectContent>
-                      {fileFormats.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                <SelectTrigger><SelectValue placeholder="Catégorie" /></SelectTrigger>
+                <SelectContent>
+                  {types.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={selectedFileFormat} onValueChange={setSelectedFileFormat}>
+                <SelectTrigger><SelectValue placeholder="Format" /></SelectTrigger>
+                <SelectContent>
+                  {fileFormats.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
-        </Card>        {/* DASHBOARD OR SEARCH RESULTS */}
+        </Card>
+
+        {/* DASHBOARD OR SEARCH RESULTS */}
         {(() => {
           const isSearchOrFilterActive = searchTerm !== "" || selectedType !== "all" || selectedFileFormat !== "all";
 
@@ -541,7 +551,9 @@ export function Resources() {
                     actionLabel="Tout réinitialiser"
                     onAction={() => {
                       setSearchTerm("");
-                      setSelectedType("all"); setSelectedFileFormat("all"); }}
+                      setSelectedType("all");
+                      setSelectedFileFormat("all");
+                    }}
                   />
                 ) : (
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -563,9 +575,9 @@ export function Resources() {
           }
 
           if (viewAllCategory) {
-            const categoryLabel = RESOURCE_TYPE_OPTIONS.find(opt => opt.value === viewAllCategory)?.label || "Catégorie";
-            const categoryResources = getSortedResources().filter(r => r.type === viewAllCategory);
-            
+            const categoryLabel = RESOURCE_TYPE_OPTIONS.find((opt) => opt.value === viewAllCategory)?.label || "Catégorie";
+            const categoryResources = getSortedResources().filter((r) => r.type === viewAllCategory);
+
             return (
               <div className="space-y-4 mt-6">
                 <div className="ml-2 flex items-center gap-8 mb-4">
@@ -594,9 +606,8 @@ export function Resources() {
           // DASHBOARD (Netflix Mode)
           return (
             <div className="flex flex-col gap-10 mt-8 pb-12">
-              
               {/* Row 1: Mes Dossiers */}
-              {(currentUser || localStorage.getItem('access')) && (
+              {(currentUser || localStorage.getItem("access")) && (
                 <section className="flex flex-col w-full max-w-full overflow-hidden">
                   <div className="flex justify-between items-center mb-4 px-1">
                     <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -609,26 +620,32 @@ export function Resources() {
                         "text-muted-foreground hover:text-foreground",
                         folders.length >= 4 && "opacity-50 cursor-not-allowed"
                       )}
-                      onClick={() => { setEditingFolder(null); setShowCreateFolder(true); }}
+                      onClick={() => {
+                        setEditingFolder(null);
+                        setShowCreateFolder(true);
+                      }}
                       disabled={folders.length >= 4}
                     >
                       <Plus className="h-4 w-4 mr-1" />
                       Nouveau
                     </Button>
                   </div>
-                  
+
                   <NetflixCarousel className="gap-3 pb-1">
                     {foldersLoading ? (
                       Array.from({ length: 4 }).map((_, i) => (
                         <div key={i} className="cs-scroll-item w-[200px] sm:w-[250px] h-32 bg-muted/40 rounded-xl animate-pulse" />
                       ))
                     ) : folders.length === 0 ? (
-                      <div className="cs-scroll-item w-[200px] sm:w-[250px] h-32 border-2 border-dashed border-border/50 rounded-xl flex flex-col items-center justify-center text-muted-foreground hover:bg-muted/30 cursor-pointer transition-colors" onClick={() => setShowCreateFolder(true)}>
+                      <div
+                        className="cs-scroll-item w-[200px] sm:w-[250px] h-32 border-2 border-dashed border-border/50 rounded-xl flex flex-col items-center justify-center text-muted-foreground hover:bg-muted/30 cursor-pointer transition-colors"
+                        onClick={() => setShowCreateFolder(true)}
+                      >
                         <Folder className="h-6 w-6 mb-2 opacity-50" />
                         <span className="text-sm font-medium">Créer un dossier</span>
                       </div>
                     ) : (
-                      folders.map(folder => (
+                      folders.map((folder) => (
                         <div key={folder.id} className="cs-scroll-item w-[200px] sm:w-[250px]">
                           <FolderCard
                             folder={folder}
@@ -642,14 +659,17 @@ export function Resources() {
                                   variant: "destructive",
                                   action: (
                                     <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>Vérifier</Button>
-                                  )
+                                  ),
                                 });
                                 return;
                               }
                               await downloadFolderZip(f.id, f.name);
-                              toast({ title: 'Téléchargement du ZIP en cours...' });
+                              toast({ title: "Téléchargement du ZIP en cours..." });
                             }}
-                            onEdit={(f) => { setEditingFolder(f); setShowCreateFolder(true); }}
+                            onEdit={(f) => {
+                              setEditingFolder(f);
+                              setShowCreateFolder(true);
+                            }}
                             onDelete={handleDeleteFolder}
                           />
                         </div>
@@ -719,7 +739,7 @@ export function Resources() {
 
               {/* Rows 3+: Par Catégorie */}
               {RESOURCE_TYPE_OPTIONS.map((opt) => {
-                const categoryResources = filteredResources.filter(r => r.type === opt.value);
+                const categoryResources = filteredResources.filter((r) => r.type === opt.value);
                 if (categoryResources.length === 0 && !loading && !resourcesQuery.isLoading) return null;
 
                 return (
@@ -727,9 +747,9 @@ export function Resources() {
                     <div className="flex justify-between items-center mb-4 px-1">
                       <h2 className="text-lg font-semibold">{opt.label}</h2>
                       {categoryResources.length > 4 && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           className="text-muted-foreground hover:text-foreground"
                           onClick={() => setViewAllCategory(opt.value)}
                         >
@@ -764,19 +784,18 @@ export function Resources() {
               })}
             </div>
           );
-        })()}{showCreateFolder && (
+        })()}
+        {showCreateFolder && (
           <Suspense fallback={<ModalLoadingFallback />}>
             <CreateFolderModal
               open={showCreateFolder}
               onOpenChange={setShowCreateFolder}
               existingCount={folders.length}
               folder={editingFolder}
-              onSuccess={(folder) => {
-                if (editingFolder) {
-                  setFolders(prev => prev.map(f => f.id === folder.id ? folder : f));
-                  if (selectedFolder?.id === folder.id) setSelectedFolder(folder);
-                } else {
-                  setFolders(prev => [...prev, folder]);
+              onSuccess={async (folder) => {
+                await queryClient.invalidateQueries({ queryKey: ["resource-folders"] });
+                if (editingFolder && selectedFolder?.id === folder.id) {
+                  setSelectedFolder(folder);
                 }
                 setEditingFolder(null);
               }}
@@ -787,12 +806,3 @@ export function Resources() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-

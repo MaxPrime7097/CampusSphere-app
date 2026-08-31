@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,7 @@ import { FileUpload } from "@/components/upload/FileUpload";
 import { RESOURCE_TYPE_OPTIONS } from "@/constants/resourceTypes";
 import { ACCEPTED_RESOURCE_MIME_TYPES, ACCEPTED_RESOURCE_FILE_EXTENSIONS } from "@/constants/resourceUpload";
 import { listFolders, createResource } from "@/services/api";
+import { compressImageFile } from "@/lib/imageCompression";
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 const ACCEPTED_FILE_TYPES = [...ACCEPTED_RESOURCE_MIME_TYPES];
@@ -264,6 +266,7 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
             <Upload className="h-5 w-5" />
             {t('modals.uploadResource.title')}
           </DialogTitle>
+          <DialogDescription className="sr-only">Formulaire d'upload de ressource</DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4 min-w-0">
@@ -508,5 +511,6 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
     </Dialog>
   );
 }
+
 
 

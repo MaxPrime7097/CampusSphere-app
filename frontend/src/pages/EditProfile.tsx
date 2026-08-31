@@ -23,6 +23,7 @@ import { CityCombobox } from "@/components/forms/CityCombobox";
 import { LanguageCombobox } from "@/components/forms/LanguageCombobox";
 import { formatSlugToLabel } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { compressImageFile } from "@/lib/imageCompression";
 
 export function EditProfile() {
   const navigate = useNavigate();
