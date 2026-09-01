@@ -18,6 +18,7 @@ import {
   RefreshCw,
   Plus,
   X,
+  Filter,
   BookOpen,
   FolderGit2,
   Sparkles,
@@ -59,6 +60,7 @@ export function Spheres() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
   const [filterAudience, setFilterAudience] = useState<string>("all");
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [isCreateSphereOpen, setIsCreateSphereOpen] = useState(false);
 
   const [userJoinedSpheres, setUserJoinedSpheres] = useState<string[]>([]);
@@ -329,18 +331,17 @@ export function Spheres() {
             )}
           </div>
         </div>
-
-        {/* ─── Search & Filters Bar (Nouveau design fluide et moderne) ─── */}
-        <div className="p-4 rounded-3xl border border-border/70 bg-card shadow-xs space-y-3.5">
+        {/* ─── Search & Filters Bar (Épuré sans boîte de carte) ─── */}
+        <div className="space-y-3">
           {/* Top Row: Search Input + Audience Select */}
-          <div className="flex flex-col sm:flex-row items-center gap-2.5">
-            <div className="relative flex-1 w-full">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Rechercher une sphère par nom, description ou projet..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-9 text-xs rounded-2xl h-10 border-border/60 bg-background/80"
+                className="pl-10 pr-9 text-xs rounded-xl h-10 border-border/80 bg-card focus-visible:ring-primary shadow-xs"
               />
               {searchQuery && (
                 <button
@@ -353,40 +354,93 @@ export function Spheres() {
               )}
             </div>
 
-            <Select value={filterAudience} onValueChange={setFilterAudience}>
-              <SelectTrigger className="w-full sm:w-56 h-10 rounded-2xl text-xs border-border/60 bg-background/80 shrink-0">
-                <SelectValue placeholder="Tous publics" />
-              </SelectTrigger>
-              <SelectContent>
-                {SPHERE_AUDIENCE_OPTIONS.map((a) => (
-                  <SelectItem key={a.value} value={a.value} className="text-xs">
-                    {a.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Mobile Filter Toggle Button */}
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setShowMobileFilters((v) => !v)}
+              className={cn(
+                "sm:hidden h-10 w-10 rounded-xl shrink-0 border-border/80",
+                showMobileFilters || filterAudience !== "all"
+                  ? "border-primary text-primary bg-primary/5"
+                  : ""
+              )}
+              title="Filtres"
+            >
+              <Filter className="h-4 w-4" />
+            </Button>
 
-            {isFiltering && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setSearchQuery("");
-                  setFilterType("all");
-                  setFilterAudience("all");
-                }}
-                className="rounded-xl text-xs h-10 text-muted-foreground hover:text-foreground shrink-0"
-              >
-                Réinitialiser
-              </Button>
-            )}
+            {/* Desktop Audience Select */}
+            <div className="hidden sm:flex items-center gap-2 shrink-0">
+              <Select value={filterAudience} onValueChange={setFilterAudience}>
+                <SelectTrigger className="w-56 h-10 rounded-xl text-xs border-border/80 bg-card">
+                  <SelectValue placeholder="Tous publics" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SPHERE_AUDIENCE_OPTIONS.map((a) => (
+                    <SelectItem key={a.value} value={a.value} className="text-xs">
+                      {a.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {isFiltering && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setFilterType("all");
+                    setFilterAudience("all");
+                  }}
+                  className="rounded-xl text-xs h-10 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5 mr-1" />
+                  Réinitialiser
+                </Button>
+              )}
+            </div>
           </div>
 
-          {/* Bottom Row: Horizontal Type Chips */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar pt-1 border-t border-border/40">
+          {/* Mobile Collapsible Filters */}
+          {showMobileFilters && (
+            <div className="flex items-center gap-2 sm:hidden animate-in fade-in duration-200">
+              <Select value={filterAudience} onValueChange={setFilterAudience}>
+                <SelectTrigger className="w-full h-10 rounded-xl text-xs border-border/80 bg-card">
+                  <SelectValue placeholder="Tous publics" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SPHERE_AUDIENCE_OPTIONS.map((a) => (
+                    <SelectItem key={a.value} value={a.value} className="text-xs">
+                      {a.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {isFiltering && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setFilterType("all");
+                    setFilterAudience("all");
+                  }}
+                  className="text-xs text-muted-foreground hover:text-foreground shrink-0 h-10"
+                >
+                  <X className="h-3.5 w-3.5 mr-1" />
+                  Effacer
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Bottom Row: Horizontal Type Chips (Sans scrollbar visible) */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pt-1 border-t border-border/40">
             {SPHERE_TYPE_CHIPS.map((chip) => {
               const isSelected = filterType === chip.value;
-              const Icon = chip.icon;
               return (
                 <button
                   key={chip.value}
@@ -399,7 +453,6 @@ export function Spheres() {
                       : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
                   )}
                 >
-                  <Icon className="h-3.5 w-3.5" />
                   <span>{chip.label}</span>
                 </button>
               );
@@ -458,8 +511,7 @@ export function Spheres() {
               if (mySpheres.length === 0 && !isSpheresLoading) return null;
               return (
                 <section>
-                  <h2 className="text-base sm:text-lg font-bold mb-3 px-1 flex items-center gap-2 text-foreground">
-                    <Users className="h-4 w-4 text-primary" />
+                  <h2 className="text-base sm:text-lg font-bold mb-3 px-1 text-foreground">
                     Mes Sphères ({mySpheres.length})
                   </h2>
                   <NetflixCarousel className="gap-4">
@@ -501,8 +553,7 @@ export function Spheres() {
               if (topSpheres.length === 0 && !isSpheresLoading) return null;
               return (
                 <section>
-                  <h2 className="text-base sm:text-lg font-bold mb-3 px-1 flex items-center gap-2 text-foreground">
-                    <TrendingUp className="h-4 w-4 text-primary" />
+                  <h2 className="text-base sm:text-lg font-bold mb-3 px-1 text-foreground">
                     Sphères Populaires & Tendances
                   </h2>
                   <NetflixCarousel className="gap-4">
@@ -531,23 +582,21 @@ export function Spheres() {
 
             {/* Rows 3+: Par Type de Sphère */}
             {[
-              { value: "cours", label: "Cours, TD & Académique", icon: BookOpen },
-              { value: "projet", label: "Projets & Groupes de Travail", icon: FolderGit2 },
-              { value: "communaute", label: "Communautés & Échanges", icon: Users },
-              { value: "club", label: "Clubs & Associations", icon: Sparkles },
-              { value: "revision", label: "Groupes de Révision & Annales", icon: GraduationCap },
+              { value: "cours", label: "Cours, TD & Académique" },
+              { value: "projet", label: "Projets & Groupes de Travail" },
+              { value: "communaute", label: "Communautés & Échanges" },
+              { value: "club", label: "Clubs & Associations" },
+              { value: "revision", label: "Groupes de Révision & Annales" },
             ].map((typeObj) => {
               const catSpheres = allSpheres.filter((s) => {
                 const sType = (s.sphere_type || s.sphereType || "").toLowerCase();
                 return sType === typeObj.value;
               });
               if (catSpheres.length === 0 && !isSpheresLoading) return null;
-              const Icon = typeObj.icon;
               return (
                 <section key={typeObj.value}>
                   <div className="flex justify-between items-center mb-3 px-1">
-                    <h2 className="text-base sm:text-lg font-bold flex items-center gap-2 text-foreground">
-                      <Icon className="h-4 w-4 text-primary" />
+                    <h2 className="text-base sm:text-lg font-bold text-foreground">
                       {typeObj.label}
                     </h2>
                     {catSpheres.length > 4 && (

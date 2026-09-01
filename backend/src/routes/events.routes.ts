@@ -45,21 +45,31 @@ const CreateEventSchema = z.object({
   title: z.string().trim().min(1, "Le titre est obligatoire").max(200),
   description: z.string().optional().default(""),
   category: CategorySchema.default("other"),
-  startDate: z.string().or(z.date()).transform((val) => new Date(val)),
-  endDate: z
-    .string()
-    .or(z.date())
-    .optional()
-    .nullable()
-    .transform((val) => (val ? new Date(val) : null)),
+  startDate: z.coerce.date(),
+  endDate: z.preprocess(
+    (val) => (val === "" || val === undefined || val === null ? null : val),
+    z.coerce.date().nullable().optional()
+  ),
   location: z.string().optional().default(""),
   isOnline: z.boolean().optional().default(false),
-  onlineLink: z.string().url().optional().nullable().or(z.literal("")),
-  coverImage: z.string().optional().nullable(),
-  maxAttendees: z.number().int().positive().optional().nullable(),
+  onlineLink: z.preprocess(
+    (val) => (val === "" || val === undefined || val === null ? null : String(val)),
+    z.string().nullable().optional()
+  ),
+  coverImage: z.preprocess(
+    (val) => (val === "" || val === undefined || val === null ? null : String(val)),
+    z.string().nullable().optional()
+  ),
+  maxAttendees: z.preprocess(
+    (val) => (val === "" || val === undefined || val === null ? null : Number(val)),
+    z.number().int().positive().nullable().optional()
+  ),
   isPublic: z.boolean().optional().default(true),
   isFeatured: z.boolean().optional().default(false),
-  sphereId: z.number().int().positive().optional().nullable(),
+  sphereId: z.preprocess(
+    (val) => (val === "" || val === undefined || val === null || val === "none" ? null : Number(val)),
+    z.number().int().positive().nullable().optional()
+  ),
 });
 
 const UpdateEventSchema = CreateEventSchema.partial();
@@ -209,6 +219,10 @@ eventsRouter.get("/", async (req, res) => {
     orderBy: { startDate: "asc" },
   });
 
+  if (events.length === 0) {
+    return list(res, []);
+  }
+
   // Fetch viewer attendances in bulk to avoid N+1
   const eventIds = events.map((e) => e.id);
   const [attendeeCounts, userAttendances] = await Promise.all([
@@ -216,9 +230,9 @@ eventsRouter.get("/", async (req, res) => {
       by: ["eventId"],
       where: {
         eventId: { in: eventIds },
-        status: { in: ["GOING", "ATTENDED"] },
+        status: { in: [EventAttendeeStatus.GOING, EventAttendeeStatus.ATTENDED] },
       },
-      _count: { _all: true },
+      _count: { id: true },
     }),
     user
       ? prisma.eventAttendee.findMany({
@@ -226,23 +240,24 @@ eventsRouter.get("/", async (req, res) => {
             eventId: { in: eventIds },
             userId: user.id,
           },
-          select: { eventId: true, status: true },
+          select: { eventId: true, status: true, ticketCode: true, checkedInAt: true },
         })
       : Promise.resolve([]),
   ]);
 
   const countMap = new Map<number, number>(
-    attendeeCounts.map((c) => [c.eventId, c._count._all])
+    attendeeCounts.map((c) => [c.eventId, c._count.id])
   );
-  const statusMap = new Map<number, EventAttendeeStatus>(
-    userAttendances.map((a) => [a.eventId, a.status])
+  const attendanceMap = new Map<number, (typeof userAttendances)[0]>(
+    userAttendances.map((a) => [a.eventId, a])
   );
 
   const payload = events.map((event) =>
     serializeEvent(event as unknown as SerializableEvent, {
       viewerId: user?.id ?? null,
       attendeesCount: countMap.get(event.id) ?? 0,
-      userStatus: statusMap.get(event.id) ?? null,
+      userStatus: attendanceMap.get(event.id)?.status ?? null,
+      userAttendee: attendanceMap.get(event.id) ?? null,
     })
   );
 
