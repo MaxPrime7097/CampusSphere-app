@@ -12,6 +12,7 @@
 
 import { prisma } from "../lib/prisma.js";
 import { claimPeriod } from "./lock.js";
+import { sendEventReminders } from "../services/eventNotifications.js";
 
 const HOUR_MS = 60 * 60 * 1000;
 
@@ -55,6 +56,7 @@ interface ScheduledJob {
 const JOBS: ScheduledJob[] = [
   { name: "cleanup-expired-spheres", periodSeconds: 3600, run: cleanupExpiredSpheres },
   { name: "prune-revoked-tokens", periodSeconds: 86_400, run: pruneRevokedTokens },
+  { name: "send-event-reminders", periodSeconds: 3600, run: sendEventReminders },
 ];
 
 const timers: NodeJS.Timeout[] = [];
