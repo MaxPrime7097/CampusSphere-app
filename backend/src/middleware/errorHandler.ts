@@ -38,6 +38,16 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
     return;
   }
 
+  // Surface AI provider failures explicitly so the client sees exactly which API keys or models failed
+  if (err && typeof err === "object" && "name" in err && err.name === "AllProvidersFailedError") {
+    envelope(res, 503, {
+      error: (err as any).message,
+      code: "ai_providers_failed",
+      attempts: (err as any).attempts,
+    });
+    return;
+  }
+
   // Zod validation failures are client errors, not server errors.
   if (err instanceof ZodError) {
     const fieldErrors: Record<string, string[]> = {};

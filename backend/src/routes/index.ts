@@ -20,6 +20,7 @@ import { resourcesRouter } from "./resources.routes.js";
 import { tasksRouter } from "./tasks.routes.js";
 import { messagingRouter } from "./messaging.routes.js";
 import { notificationsRouter } from "./notifications.routes.js";
+import { eventsRouter } from "./events.routes.js";
 import { spheraRouter } from "./sphera.routes.js";
 import { uploadsRouter } from "./uploads.routes.js";
 import { searchRouter } from "./search.routes.js";
@@ -40,6 +41,7 @@ apiRouter.use("/admin", adminRouter);
 
 apiRouter.use("/users", usersRouter);
 apiRouter.use("/spheres", spheresRouter);
+apiRouter.use("/events", eventsRouter);
 apiRouter.use("/posts", postsRouter);
 apiRouter.use("/resources", resourcesRouter);
 apiRouter.use("/tasks", tasksRouter);
