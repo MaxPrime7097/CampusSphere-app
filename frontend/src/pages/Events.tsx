@@ -131,40 +131,36 @@ export function Events() {
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8 space-y-6 animate-in fade-in duration-300">
-      {/* ─── Top Header (Style sobre et épuré aligné avec Sphères & Ressources) ─── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/60 pb-5">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-bold font-automata tracking-tight text-foreground">
-              Événements
-            </h1>
-            <Badge variant="secondary" className="text-xs font-semibold">
-              Campus IUC
-            </Badge>
-          </div>
-          <p className="text-xs sm:text-sm text-muted-foreground">
-            Découvrez les activités campus, compétitions académiques, hackathons et conférences.
+      {/* ─── Top Header (Parfaitement aligné avec Sphères & Ressources) ─── */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 campus-animate-fade-in">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-white">
+            Événements Campus
+          </h1>
+          <p className="text-muted-foreground mt-2 text-sm">
+            Découvrez les activités campus, compétitions académiques, hackathons et conférences
           </p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex w-full sm:w-auto gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => refetch()}
-            className="rounded-xl text-xs font-medium"
+            disabled={isLoading || isRefetching}
+            className="gap-2"
           >
-            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isRefetching ? "animate-spin" : ""}`} />
-            Actualiser
+            <RefreshCw className={`h-4 w-4 ${isRefetching ? "animate-spin" : ""}`} />
+            <span className="hidden sm:inline">Actualiser</span>
           </Button>
 
           <Button
-            onClick={handleCreateClick}
             size="sm"
-            className="campus-gradient text-white hover:opacity-90 font-semibold rounded-xl gap-1.5 shadow-sm"
+            onClick={handleCreateClick}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 flex-1 sm:flex-none font-semibold"
           >
             <Plus className="h-4 w-4" />
-            <span>Créer un événement</span>
+            <span>Créer</span>
           </Button>
         </div>
       </div>
