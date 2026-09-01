@@ -109,12 +109,14 @@ export async function createEvent(input: CreateEventInput): Promise<Event> {
     try {
       const formData = new FormData();
       formData.append("file", input.coverImage);
-      const uploadRes = await apiFetch<{ url: string }>("api/uploads/image/", {
+      formData.append("type", "cover");
+      const uploadRes = await apiFetch<{ url?: string; file_url?: string; file?: string }>("api/upload/", {
         method: "POST",
         body: formData,
       });
-      if (uploadRes?.url) {
-        coverImageUrl = uploadRes.url;
+      const returnedUrl = uploadRes?.url || uploadRes?.file_url || uploadRes?.file;
+      if (returnedUrl) {
+        coverImageUrl = returnedUrl;
       }
     } catch {
       coverImageUrl = URL.createObjectURL(input.coverImage);

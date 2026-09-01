@@ -16,7 +16,7 @@ import {
   ArrowRight,
   ShieldCheck,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getSphereUrl } from "@/lib/utils";
 
 interface SphereCardProps {
   sphere: any;
@@ -63,10 +63,16 @@ const SPHERE_TYPE_META: Record<
 };
 
 export const SphereCard = React.memo(
-  ({ sphere, isJoining, membership = "none", onJoin, className }: SphereCardProps) => {
+  ({
+    sphere,
+    isJoining = false,
+    membership = "none",
+    onJoin,
+    className,
+  }: SphereCardProps) => {
     const navigate = useNavigate();
 
-    const bannerImage = sphere.banner_image || sphere.bannerImage;
+    const bannerImage = sphere.banner_url || sphere.bannerUrl || sphere.cover_image || sphere.coverImage;
     const rawType = (sphere.sphere_type || sphere.sphereType || "communaute").toLowerCase();
     const meta = SPHERE_TYPE_META[rawType] || SPHERE_TYPE_META.default;
     const IconComponent = meta.icon;
@@ -81,7 +87,7 @@ export const SphereCard = React.memo(
     const handleActionClick = (e: React.MouseEvent) => {
       e.stopPropagation();
       if (isMember) {
-        navigate(`/spheres/${sphere.id}`);
+        navigate(getSphereUrl(sphere));
       } else if (!isPending && onJoin) {
         onJoin();
       }
@@ -89,7 +95,7 @@ export const SphereCard = React.memo(
 
     return (
       <div
-        onClick={() => navigate(`/spheres/${sphere.id}`)}
+        onClick={() => navigate(getSphereUrl(sphere))}
         className={cn(
           "group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/70 bg-card text-card-foreground shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg cursor-pointer",
           className

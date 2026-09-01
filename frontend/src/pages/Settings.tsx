@@ -455,18 +455,18 @@ export function Settings() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
-      <div className="container max-w-4xl mx-auto py-4 md:py-6 px-3 md:px-4">
+    <div className="min-h-screen bg-background">
+      <div className="container max-w-4xl mx-auto py-6 md:py-8 px-4 sm:px-6 space-y-6 animate-in fade-in duration-300">
         {/* Header */}
-        <div className="mb-6 md:mb-8 campus-animate-fade-in">
-          <div className="mb-2">
-            <h1 className="text-3xl font-bold bg-clip-text text-muted-foreground">
+        <div className="mb-6 campus-animate-fade-in">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-white">
               Paramètres
             </h1>
+            <p className="text-sm text-muted-foreground mt-2">
+              Gérez vos préférences, vos options de confidentialité et votre compte
+            </p>
           </div>
-          <p className="text-sm md:text-base text-muted-foreground">
-            Gérez vos préférences et votre compte
-          </p>
         </div>
 
         <div className="grid gap-4 md:gap-6">

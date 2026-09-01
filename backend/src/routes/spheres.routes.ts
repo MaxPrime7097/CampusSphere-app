@@ -57,10 +57,29 @@ async function syncMemberCount(sphereId: number): Promise<void> {
   await prisma.sphere.update({ where: { id: sphereId }, data: { memberCount } });
 }
 
-function sphereIdOf(req: Request): number {
-  const id = Number(req.params.id);
-  if (!Number.isInteger(id) || id <= 0) throw notFound("Sphere not found.");
-  return id;
+async function sphereIdOf(req: Request): Promise<number> {
+  const raw = String(req.params.id ?? "").trim();
+  if (!raw) throw notFound("Sphere not found.");
+
+  const match = raw.match(/^(\d+)(?:-.*)?$/);
+  if (match) {
+    const num = Number(match[1]);
+    if (Number.isInteger(num) && num > 0) return num;
+  }
+
+  const cleaned = raw.replace(/-/g, " ");
+  const sphere = await prisma.sphere.findFirst({
+    where: {
+      OR: [
+        { name: { equals: cleaned, mode: "insensitive" } },
+        { name: { contains: cleaned, mode: "insensitive" } },
+      ],
+    },
+    select: { id: true },
+  });
+
+  if (sphere) return sphere.id;
+  throw notFound("Sphere not found.");
 }
 
 // ── List / create ───────────────────────────────────────────────────────────
@@ -177,7 +196,7 @@ spheresRouter.get("/user/spheres/", async (req, res) => {
 const updateSchema = createSchema.partial();
 
 async function loadVisibleSphere(req: Request) {
-  const id = sphereIdOf(req);
+  const id = await sphereIdOf(req);
   const me = currentUser(req);
 
   const sphere = await prisma.sphere.findUnique({ where: { id }, include: sphereInclude });
@@ -245,7 +264,7 @@ spheresRouter.get("/:id/features/", async (req, res) => {
 // ── Membership ──────────────────────────────────────────────────────────────
 
 spheresRouter.post("/:id/join/", async (req, res) => {
-  const id = sphereIdOf(req);
+  const id = await sphereIdOf(req);
   const me = currentUser(req);
 
   const sphere = await prisma.sphere.findFirst({ where: { id, AND: notExpired } });
@@ -276,7 +295,7 @@ spheresRouter.post("/:id/join/", async (req, res) => {
 });
 
 spheresRouter.post("/:id/leave/", async (req, res) => {
-  const id = sphereIdOf(req);
+  const id = await sphereIdOf(req);
   const me = currentUser(req);
 
   const membership = await prisma.sphereMember.findFirst({
@@ -295,7 +314,7 @@ spheresRouter.post("/:id/leave/", async (req, res) => {
 });
 
 spheresRouter.delete("/:id/cancel-request/", async (req, res) => {
-  const id = sphereIdOf(req);
+  const id = await sphereIdOf(req);
   const me = currentUser(req);
 
   const pending = await prisma.sphereMember.findFirst({ where: { sphereId: id, userId: me.id, status: "PENDING" } });

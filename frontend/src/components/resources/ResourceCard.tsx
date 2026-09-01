@@ -1,24 +1,20 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   FileText,
   Download,
   Bookmark,
-  Video,
   FileCode,
   Archive,
-  FileImage,
   Loader2,
   BookOpen,
-  FileSpreadsheet,
   GraduationCap,
   Sparkles,
 } from "lucide-react";
 import { SpheraIcon } from "@/components/ui/sphera-icon";
-import { formatFileSize, cn } from "@/lib/utils";
+import { formatFileSize, cn, getResourceUrl } from "@/lib/utils";
 import { StudyToolsModal } from "@/sphera/components/study/StudyToolsModal";
 
 interface ResourceCardProps {
@@ -58,50 +54,53 @@ const TYPE_STYLES: Record<string, { icon: string; bg: string; label: string }> =
     label: "Annale corrigée",
   },
   projects: {
-    icon: "text-yellow-500",
-    bg: "bg-yellow-500/10 border-yellow-500/20",
+    icon: "text-pink-500",
+    bg: "bg-pink-500/10 border-pink-500/20",
     label: "Projet / Rapport",
   },
   presentations: {
-    icon: "text-violet-500",
-    bg: "bg-violet-500/10 border-violet-500/20",
-    label: "Présentation",
-  },
-  cours: {
     icon: "text-indigo-500",
     bg: "bg-indigo-500/10 border-indigo-500/20",
     label: "Support de cours",
   },
-  default: {
+  other: {
     icon: "text-muted-foreground",
-    bg: "bg-muted/60 border-border/40",
-    label: "Document",
+    bg: "bg-muted/30 border-border/40",
+    label: "Autre ressource",
   },
 };
 
-function getTypeStyle(type: string) {
-  const key = (type || "").toLowerCase().split("/")[0];
-  return TYPE_STYLES[key] ?? TYPE_STYLES.default;
+function getTypeStyle(type?: string) {
+  if (!type) return TYPE_STYLES.other;
+  const key = type.toLowerCase();
+  return TYPE_STYLES[key] || TYPE_STYLES.other;
 }
 
-function getFileIcon(type: string, className?: string) {
-  const t = (type || "").toLowerCase();
-  const cls = className || "h-4 w-4";
-  if (t.includes("video")) return <Video className={cls} />;
-  if (t.includes("image")) return <FileImage className={cls} />;
-  if (t.includes("code") || t.includes("project")) return <FileCode className={cls} />;
-  if (t.includes("archive") || t.includes("zip")) return <Archive className={cls} />;
-  if (t.includes("exam") || t.includes("annale")) return <GraduationCap className={cls} />;
-  if (t.includes("exercise") || t.includes("td")) return <FileSpreadsheet className={cls} />;
-  if (t.includes("notes") || t.includes("cours")) return <BookOpen className={cls} />;
-  return <FileText className={cls} />;
+function getFileIcon(type?: string, className = "h-4 w-4") {
+  const key = (type || "").toLowerCase();
+  switch (key) {
+    case "notes":
+      return <BookOpen className={className} />;
+    case "resumes":
+      return <FileText className={className} />;
+    case "exercises":
+      return <FileCode className={className} />;
+    case "exam_papers":
+      return <GraduationCap className={className} />;
+    case "annales":
+      return <Sparkles className={className} />;
+    case "projects":
+      return <Archive className={className} />;
+    default:
+      return <FileText className={className} />;
+  }
 }
 
 export const ResourceCard = React.memo(
   ({
     resource,
-    isDownloading,
-    isSaved,
+    isDownloading = false,
+    isSaved = false,
     onDownload,
     onSave,
     onPreview,
@@ -118,7 +117,7 @@ export const ResourceCard = React.memo(
             if (onPreview) {
               onPreview(e);
             } else {
-              navigate(`/resources/${resource.id}`);
+              navigate(getResourceUrl(resource));
             }
           }}
           className={cn(
@@ -182,44 +181,55 @@ export const ResourceCard = React.memo(
             </div>
           </div>
 
-          {/* BOTTOM: Compact Details */}
-          <div className="p-3.5 flex flex-col flex-1 justify-between bg-card">
+          {/* MIDDLE: Information Content */}
+          <div className="p-3 flex-1 flex flex-col justify-between">
             <div>
-              <h3 className="font-bold text-sm line-clamp-1 text-foreground leading-tight group-hover:text-primary transition-colors">
+              <h3 className="font-semibold text-xs leading-snug line-clamp-2 text-foreground group-hover:text-primary transition-colors">
                 {resource.title}
               </h3>
-              <p className="text-[11px] text-muted-foreground line-clamp-1 mt-1">
-                {resource.authorName}
-              </p>
+              {resource.description && (
+                <p className="text-[11px] text-muted-foreground line-clamp-1 mt-1">
+                  {resource.description}
+                </p>
+              )}
             </div>
 
-            {/* Footer Row */}
-            <div className="mt-3 pt-2.5 border-t border-border/50 flex items-center justify-between text-[11px] text-muted-foreground">
-              <div className="flex items-center gap-2 font-medium">
-                {resource.fileSize && <span>{formatFileSize(resource.fileSize)}</span>}
-                {resource.downloadCount !== undefined && (
-                  <span className="flex items-center gap-1">
-                    <Download className="h-3 w-3 text-primary" /> {resource.downloadCount}
-                  </span>
-                )}
-              </div>
-
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-6 px-2 text-[10px] font-semibold text-primary hover:bg-primary/10 hover:text-primary"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (onDownload) onDownload(e);
-                }}
-                disabled={isDownloading}
-              >
-                {isDownloading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Télécharger"}
-              </Button>
+            {/* Micro details: Subject + File details */}
+            <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-2.5 mt-2 border-t border-border/40">
+              <span className="font-medium text-foreground/80 truncate max-w-[120px]">
+                {resource.subject || "Général"}
+              </span>
+              <span className="font-mono">{formatFileSize(resource.fileSize || resource.file_size)}</span>
             </div>
+          </div>
+
+          {/* BOTTOM: Action Bar */}
+          <div
+            className="px-3 py-2 bg-muted/20 border-t border-border/40 flex items-center justify-between gap-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span className="text-[10px] text-muted-foreground truncate max-w-[110px]">
+              {resource.authorName || resource.author?.name || "Étudiant"}
+            </span>
+
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-[11px] px-2.5 gap-1.5 rounded-lg border-border/80 hover:border-primary/50"
+              onClick={onDownload}
+              disabled={isDownloading}
+            >
+              {isDownloading ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Download className="h-3 w-3" />
+              )}
+              <span>Télécharger</span>
+            </Button>
           </div>
         </div>
 
+        {/* Modal Réviser avec l'IA */}
         <StudyToolsModal
           isOpen={studyOpen}
           onClose={() => setStudyOpen(false)}

@@ -60,7 +60,8 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
   const [description, setDescription] = useState("");
   const [objective, setObjective] = useState("");
 
-  // Step 2 — advanced  const [targetAudience, setTargetAudience] = useState("");
+  // Step 2 — advanced
+  const [targetAudience, setTargetAudience] = useState("");
   const [expectedDuration, setExpectedDuration] = useState("");
   const [collaborationType, setCollaborationType] = useState<string[]>([]);
   const [isCreating, setIsCreating] = useState(false);

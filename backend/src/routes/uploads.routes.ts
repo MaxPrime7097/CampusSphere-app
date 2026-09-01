@@ -48,6 +48,7 @@ const UPLOAD_KINDS: Record<string, { enum: UploadType; kind: UploadKind }> = {
 function serializeUpload(file: UploadedFile): Record<string, unknown> {
   return {
     id: file.id,
+    url: file.fileUrl,
     file: file.fileUrl,
     file_url: file.fileUrl,
     original_name: file.originalName,
@@ -107,18 +108,13 @@ async function persistUpload(
  * (resource, 50MB) and the per-type cap enforced immediately after, so an oversized
  * avatar is still a 413 rather than a silent acceptance.
  */
-uploadsRouter.post("/upload/", requireAuth, singleUpload("file", "resource"), async (req, res) => {
+const uploadHandler = async (req: Parameters<typeof currentUser>[0], res: Parameters<typeof created>[0]) => {
   const me = currentUser(req);
-  const file = req.file;
+  const file = (req as { file?: PersistInput }).file;
   if (!file) throw badRequest("No file provided.");
 
-  const requested = String((req.body as { type?: unknown }).type ?? "other").trim().toLowerCase();
-  const mapping = UPLOAD_KINDS[requested];
-  if (!mapping) {
-    throw badRequest(`Unknown upload type '${requested}'.`, {
-      type: [`Must be one of: ${Object.keys(UPLOAD_KINDS).join(", ")}`],
-    });
-  }
+  const requested = String((req.body as { type?: unknown }).type ?? "cover").trim().toLowerCase();
+  const mapping = UPLOAD_KINDS[requested] || UPLOAD_KINDS.cover || UPLOAD_KINDS.other;
 
   const cap = MAX_SIZES[mapping.kind];
   if (file.size > cap) {
@@ -126,7 +122,13 @@ uploadsRouter.post("/upload/", requireAuth, singleUpload("file", "resource"), as
   }
 
   created(res, serializeUpload(await persistUpload(file, mapping.enum, me.id)), "File uploaded successfully");
-});
+};
+
+uploadsRouter.post("/upload/", requireAuth, singleUpload("file", "resource"), uploadHandler);
+uploadsRouter.post("/upload", requireAuth, singleUpload("file", "resource"), uploadHandler);
+uploadsRouter.post("/uploads/image/", requireAuth, singleUpload("file", "resource"), uploadHandler);
+uploadsRouter.post("/uploads/image", requireAuth, singleUpload("file", "resource"), uploadHandler);
+uploadsRouter.post("/uploads/", requireAuth, singleUpload("file", "resource"), uploadHandler);
 
 /** @status UNUSED — owner-scoped read. */
 uploadsRouter.get("/upload/:id/", requireAuth, async (req, res) => {

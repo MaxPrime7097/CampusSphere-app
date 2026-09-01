@@ -756,7 +756,7 @@ export function Messages() {
         <div className={`w-full md:w-80 lg:w-96 border-r bg-card/50 flex-shrink-0 ${conversationId ? 'hidden md:flex' : 'flex'} flex-col h-full`}>
           <div className="p-3 md:p-4 border-b flex-shrink-0">
             <div className="flex items-center justify-between mb-3 md:mb-4">
-              <h2 className="text-3xl font-bold text-muted-foreground">
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
                 Messages
               </h2>
               <div className="flex items-center gap-2">
