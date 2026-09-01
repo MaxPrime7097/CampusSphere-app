@@ -30,6 +30,10 @@ const ResourceDetailRoute = lazy(() => import("./pages/ResourceDetailRoute").the
 const PostDetail = lazy(() => import("./pages/PostDetail").then(m => ({ default: m.PostDetail })));
 const Spheres = lazy(() => import("./pages/Spheres").then(m => ({ default: m.Spheres })));
 const SphereDetail = lazy(() => import("./pages/SphereDetail").then(m => ({ default: m.SphereDetail })));
+const Events = lazy(() => import("./pages/Events").then(m => ({ default: m.Events })));
+const EventDetail = lazy(() => import("./pages/EventDetail").then(m => ({ default: m.EventDetail })));
+const EventCreate = lazy(() => import("./pages/EventCreate").then(m => ({ default: m.EventCreate })));
+const EventEdit = lazy(() => import("./pages/EventEdit").then(m => ({ default: m.EventEdit })));
 const AdminPanelRouter = lazy(() => import("./pages/admin/AdminPanelRouter").then(m => ({ default: m.AdminPanelRouter })));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard").then(m => ({ default: m.AdminDashboard })));
 const About = lazy(() => import("./pages/public/About").then(m => ({ default: m.About })));
@@ -258,6 +262,34 @@ const App = () => (
               <Protected>
                 <AppLayout>
                   <SphereDetail />
+                </AppLayout>
+              </Protected>
+            } />
+            <Route path="/events" element={
+              <Protected>
+                <AppLayout>
+                  <Events />
+                </AppLayout>
+              </Protected>
+            } />
+            <Route path="/events/create" element={
+              <Protected>
+                <AppLayout>
+                  <EventCreate />
+                </AppLayout>
+              </Protected>
+            } />
+            <Route path="/events/:id" element={
+              <Protected>
+                <AppLayout>
+                  <EventDetail />
+                </AppLayout>
+              </Protected>
+            } />
+            <Route path="/events/:id/edit" element={
+              <Protected>
+                <AppLayout>
+                  <EventEdit />
                 </AppLayout>
               </Protected>
             } />

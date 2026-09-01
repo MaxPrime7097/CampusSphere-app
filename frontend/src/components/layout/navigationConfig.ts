@@ -15,6 +15,7 @@ import {
   Bell,
   Plus,
   Link,
+  Calendar,
 } from "lucide-react";
 import { SpheraIcon } from "@/components/ui/sphera-icon";
 
@@ -70,6 +71,7 @@ export function getNavigationSections(user?: NavigationUser | null): NavigationS
   
   // Resources is now public-read
   navigationItems.push({ title: "Ressources", url: "/resources", icon: FolderOpen });
+  navigationItems.push({ title: "Événements", url: "/events", icon: Calendar });
   
   if (isAuthenticated) {
     navigationItems.push({ title: "Sphères", url: "/spheres", icon: Globe });
