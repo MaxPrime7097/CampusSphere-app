@@ -247,14 +247,14 @@ export function Notifications() {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
-      <div className="max-w-4xl mx-auto py-4 px-4">
+    <div className="min-h-screen bg-background">
+      <div className="max-w-4xl mx-auto py-6 md:py-8 px-4 sm:px-6 space-y-6 animate-in fade-in duration-300">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-2">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-muted-foreground">Notifications</h1>
-            <p className="text-sm text-muted-foreground">
-              {unreadCount > 0 ? `${unreadCount} nouvelles notifications` : "Aucune nouvelle notification"}
+            <h1 className="text-3xl font-bold tracking-tight text-white">Notifications</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {unreadCount > 0 ? `${unreadCount} nouvelles notifications` : "Toutes vos notifications sont à jour"}
             </p>
             {statusText && <p className="text-xs text-muted-foreground mt-1">{statusText}</p>}
           </div>

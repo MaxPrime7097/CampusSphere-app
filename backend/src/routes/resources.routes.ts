@@ -47,7 +47,8 @@ function normaliseVisibility(value: string | undefined): ResourceVisibility {
  */
 const visibleToUser = resourcesVisibleTo;
 
-async function loadVisibleResource(id: number, viewerId: number | null) {
+async function loadVisibleResource(idOrReq: number | Request, viewerId: number | null) {
+  const id = typeof idOrReq === "number" ? idOrReq : await resourceIdOf(idOrReq);
   const resource = await prisma.resource.findFirst({
     where: { AND: [{ id }, await visibleToUser(viewerId)] },
     include: resourceInclude,
@@ -64,10 +65,29 @@ async function savedIds(resourceIds: number[], userId: number): Promise<Set<numb
   return new Set(rows.map((r) => r.resourceId));
 }
 
-function resourceIdOf(req: Request): number {
-  const id = Number(req.params.id);
-  if (!Number.isInteger(id) || id <= 0) throw notFound("Resource not found.");
-  return id;
+async function resourceIdOf(req: Request): Promise<number> {
+  const raw = String(req.params.id ?? "").trim();
+  if (!raw) throw notFound("Resource not found.");
+
+  const match = raw.match(/^(\d+)(?:-.*)?$/);
+  if (match) {
+    const num = Number(match[1]);
+    if (Number.isInteger(num) && num > 0) return num;
+  }
+
+  const cleaned = raw.replace(/-/g, " ");
+  const resource = await prisma.resource.findFirst({
+    where: {
+      OR: [
+        { title: { equals: cleaned, mode: "insensitive" } },
+        { title: { contains: cleaned, mode: "insensitive" } },
+      ],
+    },
+    select: { id: true },
+  });
+
+  if (resource) return resource.id;
+  throw notFound("Resource not found.");
 }
 
 // ── Folders (before /:id/ so `folders` is not read as an id) ────────────────
@@ -408,7 +428,7 @@ resourcesRouter.post("/", requireAuth, singleUpload("file", "resource"), async (
 
 resourcesRouter.get("/:id/", async (req, res) => {
   const viewerId = req.user?.id ?? null;
-  const resource = await loadVisibleResource(resourceIdOf(req), viewerId);
+  const resource = await loadVisibleResource(req, viewerId);
 
   // A first view by a signed-in non-author increments the counter once. Views are
   // keyed on a user, so anonymous reads are not counted.
@@ -442,7 +462,7 @@ const updateSchema = z.object({
 
 async function updateResource(req: Request, res: import("express").Response) {
   const me = currentUser(req);
-  const resource = await loadVisibleResource(resourceIdOf(req), me.id);
+  const resource = await loadVisibleResource(req, me.id);
   if (resource.authorId !== me.id) throw forbidden("You can only edit your own resources.");
 
   const input = updateSchema.parse(req.body ?? {});
@@ -480,7 +500,7 @@ resourcesRouter.patch("/:id/", requireAuth, updateResource);
 
 resourcesRouter.delete("/:id/", requireAuth, async (req, res) => {
   const me = currentUser(req);
-  const resource = await loadVisibleResource(resourceIdOf(req), me.id);
+  const resource = await loadVisibleResource(req, me.id);
   if (resource.authorId !== me.id) throw forbidden("You can only delete your own resources.");
 
   await prisma.resource.delete({ where: { id: resource.id } });
@@ -495,7 +515,7 @@ resourcesRouter.delete("/:id/", requireAuth, async (req, res) => {
 // ── Interactions ────────────────────────────────────────────────────────────
 
 resourcesRouter.post("/:id/download/", async (req, res) => {
-  const resource = await loadVisibleResource(resourceIdOf(req), req.user?.id ?? null);
+  const resource = await loadVisibleResource(req, req.user?.id ?? null);
 
   const key = resource.storageKey ?? keyFromUrl(resource.fileUrl);
   if (!key) throw notFound("File not found or corrupted.");
@@ -515,13 +535,13 @@ resourcesRouter.post("/:id/download/", async (req, res) => {
 });
 
 resourcesRouter.get("/:id/preview/", async (req, res) => {
-  const resource = await loadVisibleResource(resourceIdOf(req), req.user?.id ?? null);
+  const resource = await loadVisibleResource(req, req.user?.id ?? null);
   ok(res, { preview_url: resource.fileUrl });
 });
 
 resourcesRouter.post("/:id/save/", requireAuth, async (req, res) => {
   const me = currentUser(req);
-  const resource = await loadVisibleResource(resourceIdOf(req), me.id);
+  const resource = await loadVisibleResource(req, me.id);
 
   const existing = await prisma.resourceSave.findUnique({
     where: { resourceId_userId: { resourceId: resource.id, userId: me.id } },
@@ -545,7 +565,7 @@ resourcesRouter.post("/:id/save/", requireAuth, async (req, res) => {
 
 resourcesRouter.post("/:id/view/", requireAuth, async (req, res) => {
   const me = currentUser(req);
-  const resource = await loadVisibleResource(resourceIdOf(req), me.id);
+  const resource = await loadVisibleResource(req, me.id);
 
   if (resource.authorId !== me.id) {
     const view = await prisma.resourceView.findUnique({
@@ -570,7 +590,7 @@ const reportSchema = z.object({
 
 resourcesRouter.post("/:id/report/", requireAuth, async (req, res) => {
   const me = currentUser(req);
-  const resource = await loadVisibleResource(resourceIdOf(req), me.id);
+  const resource = await loadVisibleResource(req, me.id);
   if (resource.authorId === me.id) throw badRequest("You cannot report your own resource.");
 
   const input = reportSchema.parse(req.body ?? {});
@@ -595,7 +615,7 @@ resourcesRouter.post("/:id/share/", async (req, res) => {
   // Analytics only, and public per the contract: the share event records a null
   // user when the sharer is anonymous.
   const viewerId = req.user?.id ?? null;
-  const resource = await loadVisibleResource(resourceIdOf(req), viewerId);
+  const resource = await loadVisibleResource(req, viewerId);
   const { channel } = shareSchema.parse(req.body ?? {});
 
   await prisma.resourceShareEvent.create({

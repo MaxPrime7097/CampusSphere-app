@@ -57,7 +57,7 @@ export function MenuDropdown({ user: externalUser }: { user?: NavigationUser }) 
   };
 
   return (
-  <Sheet open={open} onOpenChange={setOpen}>
+    <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button variant="ghost" size="sm" className="relative hover:bg-accent">
           <Menu className="h-4 w-4" />
@@ -65,14 +65,14 @@ export function MenuDropdown({ user: externalUser }: { user?: NavigationUser }) 
       </SheetTrigger>
       <SheetContent className="pt-5 overflow-y-auto" onClickCapture={handleContainerClickCapture}>
         <SheetHeader>
-          <h1 className="text-3xl font-bold bg-clip-text text-muted-foreground">
+          <h1 className="text-2xl font-bold tracking-tight text-white">
             Menu
           </h1>
         </SheetHeader>
         
         {isAuthenticated ? (
           <Card
-            className="campus-card mt-5"
+            className="campus-card mt-5 cursor-pointer"
             onClick={() => {
               closeMenu();
               navigate(profileUrl);
@@ -80,7 +80,7 @@ export function MenuDropdown({ user: externalUser }: { user?: NavigationUser }) 
           >
             <CardContent className="pt-4 md:pt-6 p-4 md:p-6">
               <div 
-                className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                className="flex items-center gap-3 hover:opacity-80 transition-opacity"
               >
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={avatarUrl} />
@@ -113,6 +113,28 @@ export function MenuDropdown({ user: externalUser }: { user?: NavigationUser }) 
           </div>
         )}
 
+        {/* Section Navigation Principale (Accueil, Événements, Sphères, Ressources) */}
+        {navigationItems.length > 0 && (
+          <SidebarGroup className="mt-4">
+            <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {navigationItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink to={item.url} className={getNavClasses} onClick={closeMenu}>
+                        <item.icon className="h-5 w-5" />
+                        {!isCollapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Section Actions Rapides (Connexions, Messages, Sphera, Sauvegardes, Paramètres) */}
         {quickActions.length > 0 && (
           <SidebarGroup>
             <SidebarGroupLabel>Actions</SidebarGroupLabel>
@@ -149,24 +171,6 @@ export function MenuDropdown({ user: externalUser }: { user?: NavigationUser }) 
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-        {resolveAdminRole(user) !== 'none' && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Administration</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <NavLink to="/admin/dashboard" className={getNavClasses} onClick={closeMenu}>
-                        <Shield className="h-5 w-5 text-primary" />
-                        <span>Panel Admin</span>
-                        <Badge className="ml-auto campus-gradient text-white text-[10px] px-1.5 py-0.5 border-0">Admin</Badge>
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

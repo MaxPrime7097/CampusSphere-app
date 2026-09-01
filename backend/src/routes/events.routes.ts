@@ -269,23 +269,38 @@ eventsRouter.get("/", async (req, res) => {
  * Retrieve details of a single event.
  */
 eventsRouter.get("/:id", async (req, res) => {
-  const id = idParam(req);
+  const rawId = req.params.id;
+  const numId = Number(rawId);
+  const isNumeric = Number.isInteger(numId) && numId > 0;
   const user = currentUser(req);
 
-  const event = await prisma.event.findUnique({
-    where: { id },
-    include: eventInclude,
-  });
+  const event = isNumeric
+    ? await prisma.event.findUnique({
+        where: { id: numId },
+        include: eventInclude,
+      })
+    : await prisma.event.findFirst({
+        where: {
+          OR: [
+            { title: { equals: rawId.replace(/-/g, " "), mode: "insensitive" } },
+            { title: { contains: rawId.replace(/-/g, " "), mode: "insensitive" } },
+          ],
+        },
+        include: eventInclude,
+      });
 
   if (!event) throw notFound("Événement introuvable.");
 
   const [attendeesCount, userAttendance] = await Promise.all([
     prisma.eventAttendee.count({
-      where: { eventId: id, status: { in: ["GOING", "ATTENDED"] } },
+      where: {
+        eventId: event.id,
+        status: { in: [EventAttendeeStatus.GOING, EventAttendeeStatus.ATTENDED] },
+      },
     }),
     user
       ? prisma.eventAttendee.findUnique({
-          where: { eventId_userId: { eventId: id, userId: user.id } },
+          where: { eventId_userId: { eventId: event.id, userId: user.id } },
           select: { status: true, ticketCode: true, checkedInAt: true },
         })
       : Promise.resolve(null),

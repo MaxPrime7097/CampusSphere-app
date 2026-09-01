@@ -100,11 +100,16 @@ export function SavedItems() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
-      <div className="container max-w-4xl mx-auto py-6 px-4">
-        <h1 className="text-3xl font-bold bg-clip-text text-muted-foreground mb-6">
-          Éléments enregistrés
-        </h1>
+    <div className="min-h-screen bg-background">
+      <div className="container max-w-7xl mx-auto py-6 md:py-8 px-4 sm:px-6 space-y-6 animate-in fade-in duration-300">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold tracking-tight text-white">
+            Éléments enregistrés
+          </h1>
+          <p className="text-sm text-muted-foreground mt-2">
+            Retrouvez rapidement vos publications et ressources académiques mises de côté
+          </p>
+        </div>
 
         <Tabs defaultValue="posts" className="w-full">
           <SharedTabsList containerClassName="mb-6">

@@ -342,7 +342,7 @@ export function EventCreate() {
           {/* Banner & Cover Image */}
           <div className="p-6 rounded-3xl border border-border/70 bg-card shadow-xs space-y-4">
             <Label className="text-xs font-bold text-foreground block">
-              4. Affiche / Bannière de l'événement (Kana / Graphisme)
+              4. Affiche / Bannière de l'événement
             </Label>
 
             {coverPreview ? (

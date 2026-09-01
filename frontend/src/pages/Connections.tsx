@@ -239,15 +239,15 @@ export function Connections() {
   const hasActiveFilters = normalizedQuery.length > 0 || activeFilter !== "all";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
-      <div className="container max-w-6xl mx-auto py-6 px-4">
+    <div className="min-h-screen bg-background">
+      <div className="container max-w-7xl mx-auto py-6 md:py-8 px-4 sm:px-6 space-y-6 animate-in fade-in duration-300">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6">
           <div>
-            <h1 className="text-3xl font-bold bg-clip-text text-muted-foreground">
+            <h1 className="text-3xl font-bold tracking-tight text-white">
               Connexions
             </h1>
-            <p className="text-sm md:text-base text-muted-foreground mt-1">
+            <p className="text-sm text-muted-foreground mt-2">
               Gérez vos connexions et découvrez de nouveaux étudiants
             </p>
           </div>

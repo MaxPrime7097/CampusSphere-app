@@ -141,7 +141,8 @@ export function Resources() {
   const foldersQuery = useQuery({
     queryKey: ["resource-folders"],
     queryFn: listFolders,
-    enabled: Boolean(currentUser || localStorage.getItem("access")),
+    enabled: Boolean(currentUser?.id),
+    retry: false,
     staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -152,7 +153,8 @@ export function Resources() {
   const savedResourcesQuery = useQuery({
     queryKey: ["saved-resources"],
     queryFn: getSavedResources,
-    enabled: Boolean(currentUser || localStorage.getItem("access")),
+    enabled: Boolean(currentUser?.id),
+    retry: false,
     staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
