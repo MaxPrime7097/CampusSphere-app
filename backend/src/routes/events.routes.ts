@@ -5,6 +5,7 @@
  * campus events (Welcome Week, MathScam, Hackathons, Masterclasses, etc.)
  */
 
+import crypto from "node:crypto";
 import { Router, type Request } from "express";
 import { z } from "zod";
 import {
@@ -86,6 +87,11 @@ function toPrismaStatus(status: string): EventAttendeeStatus {
     attended: EventAttendeeStatus.ATTENDED,
   };
   return map[status.toLowerCase()] || EventAttendeeStatus.INTERESTED;
+}
+
+function generateTicketCode(eventId: number, userId: number): string {
+  const hash = crypto.randomBytes(3).toString("hex").toUpperCase();
+  return `CS-EVT-${eventId}-${userId}-${hash}`;
 }
 
 function idParam(req: Request, name = "id"): number {
@@ -264,7 +270,7 @@ eventsRouter.get("/:id", async (req, res) => {
     user
       ? prisma.eventAttendee.findUnique({
           where: { eventId_userId: { eventId: id, userId: user.id } },
-          select: { status: true },
+          select: { status: true, ticketCode: true, checkedInAt: true },
         })
       : Promise.resolve(null),
   ]);
@@ -275,6 +281,7 @@ eventsRouter.get("/:id", async (req, res) => {
       viewerId: user?.id ?? null,
       attendeesCount,
       userStatus: userAttendance?.status ?? null,
+      userAttendee: userAttendance,
     })
   );
 });
@@ -334,12 +341,14 @@ eventsRouter.post("/", requireAuth, async (req, res) => {
     include: eventInclude,
   });
 
-  // Auto-register organizer as 'GOING'
-  await prisma.eventAttendee.create({
+  // Auto-register organizer as 'GOING' with ticket code
+  const organizerTicketCode = generateTicketCode(event.id, user.id);
+  const organizerAttendee = await prisma.eventAttendee.create({
     data: {
       eventId: event.id,
       userId: user.id,
       status: EventAttendeeStatus.GOING,
+      ticketCode: organizerTicketCode,
     },
   });
 
@@ -354,6 +363,7 @@ eventsRouter.post("/", requireAuth, async (req, res) => {
       viewerId: user.id,
       attendeesCount: 1,
       userStatus: EventAttendeeStatus.GOING,
+      userAttendee: organizerAttendee,
     })
   );
 });
@@ -473,19 +483,34 @@ eventsRouter.post("/:id/register", requireAuth, async (req, res) => {
     }
   }
 
-  await prisma.eventAttendee.upsert({
+  const existing = await prisma.eventAttendee.findUnique({
+    where: { eventId_userId: { eventId: id, userId: user.id } },
+  });
+
+  const ticketCode =
+    existing?.ticketCode ||
+    (status === EventAttendeeStatus.GOING ? generateTicketCode(id, user.id) : null);
+
+  const attendee = await prisma.eventAttendee.upsert({
     where: { eventId_userId: { eventId: id, userId: user.id } },
     create: {
       eventId: id,
       userId: user.id,
       status,
+      ticketCode,
     },
     update: {
       status,
+      ...(ticketCode ? { ticketCode } : {}),
     },
   });
 
-  ok(res, { success: true, status: parsed.data.status });
+  ok(res, {
+    success: true,
+    status: parsed.data.status,
+    ticket_code: attendee.ticketCode,
+    ticketCode: attendee.ticketCode,
+  });
 });
 
 /**
@@ -529,4 +554,178 @@ eventsRouter.get("/:id/attendees", async (req, res) => {
   );
 
   list(res, payload);
+});
+
+/**
+ * POST /api/events/:id/check-in
+ * Validate attendee ticket & mark as ATTENDED (organizer or staff only).
+ */
+eventsRouter.post("/:id/check-in", requireAuth, async (req, res) => {
+  const id = idParam(req);
+  const user = req.user!;
+
+  const event = await prisma.event.findUnique({
+    where: { id },
+    select: { id: true, organizerId: true, title: true },
+  });
+  if (!event) throw notFound("Événement introuvable.");
+
+  if (!user.isStaff && !user.isSuperuser && event.organizerId !== user.id) {
+    throw forbidden("Seul l'organisateur de l'événement ou le staff peut valider les entrées.");
+  }
+
+  const { ticketCode, userId, attendeeId } = req.body as {
+    ticketCode?: string;
+    userId?: number;
+    attendeeId?: number;
+  };
+
+  if (!ticketCode && !userId && !attendeeId) {
+    throw badRequest("Code de billet ou identifiant de participant requis.");
+  }
+
+  const attendee = await prisma.eventAttendee.findFirst({
+    where: {
+      eventId: id,
+      OR: [
+        ...(ticketCode ? [{ ticketCode: ticketCode.trim() }] : []),
+        ...(userId ? [{ userId: Number(userId) }] : []),
+        ...(attendeeId ? [{ id: Number(attendeeId) }] : []),
+      ],
+    },
+    include: {
+      user: { select: userSelect },
+    },
+  });
+
+  if (!attendee) {
+    throw notFound("Billet introuvable pour cet événement.");
+  }
+
+  if (attendee.status === EventAttendeeStatus.ATTENDED || attendee.checkedInAt !== null) {
+    ok(res, {
+      alreadyCheckedIn: true,
+      success: true,
+      message: "Billet déjà validé précédemment.",
+      checkedInAt: attendee.checkedInAt?.toISOString() ?? new Date().toISOString(),
+      attendee: serializeEventAttendee(attendee as any, user.id),
+    });
+    return;
+  }
+
+  const now = new Date();
+  const updated = await prisma.eventAttendee.update({
+    where: { id: attendee.id },
+    data: {
+      status: EventAttendeeStatus.ATTENDED,
+      checkedInAt: now,
+      checkedInById: user.id,
+    },
+    include: {
+      user: { select: userSelect },
+    },
+  });
+
+  ok(res, {
+    success: true,
+    alreadyCheckedIn: false,
+    message: `Entrée validée pour ${updated.user.firstName || updated.user.username}.`,
+    checkedInAt: now.toISOString(),
+    attendee: serializeEventAttendee(updated as any, user.id),
+  });
+});
+
+/**
+ * GET /api/events/:id/attendees/export
+ * Export attendees to CSV format (organizer or staff only).
+ */
+eventsRouter.get("/:id/attendees/export", requireAuth, async (req, res) => {
+  const id = idParam(req);
+  const user = req.user!;
+
+  const event = await prisma.event.findUnique({
+    where: { id },
+    select: { id: true, organizerId: true, title: true, startDate: true },
+  });
+  if (!event) throw notFound("Événement introuvable.");
+
+  if (!user.isStaff && !user.isSuperuser && event.organizerId !== user.id) {
+    throw forbidden("Seul l'organisateur ou le staff peut exporter la liste des participants.");
+  }
+
+  const attendees = await prisma.eventAttendee.findMany({
+    where: { eventId: id },
+    include: {
+      user: {
+        select: {
+          id: true,
+          username: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          university: true,
+          faculty: true,
+        },
+      },
+    },
+    orderBy: { registeredAt: "asc" },
+  });
+
+  const escapeCsv = (str: string | null | undefined) => {
+    if (!str) return '""';
+    const clean = String(str).replace(/"/g, '""');
+    return `"${clean}"`;
+  };
+
+  const statusLabel = (s: EventAttendeeStatus) => {
+    switch (s) {
+      case EventAttendeeStatus.ATTENDED:
+        return "Présent (Validé)";
+      case EventAttendeeStatus.GOING:
+        return "Inscrit";
+      case EventAttendeeStatus.INTERESTED:
+        return "Intéressé";
+      default:
+        return s;
+    }
+  };
+
+  const headers = [
+    "Nom complet",
+    "Nom d'utilisateur",
+    "Email",
+    "Université",
+    "Faculté / Filière",
+    "Statut",
+    "Code Billet",
+    "Date d'inscription",
+    "Date Check-in",
+  ];
+
+  const rows = attendees.map((a) => {
+    const fullName = [a.user.firstName, a.user.lastName].filter(Boolean).join(" ") || a.user.username;
+    const registeredDate = new Date(a.registeredAt).toLocaleString("fr-FR");
+    const checkInDate = a.checkedInAt ? new Date(a.checkedInAt).toLocaleString("fr-FR") : "Non scanné";
+
+    return [
+      escapeCsv(fullName),
+      escapeCsv(`@${a.user.username}`),
+      escapeCsv(a.user.email),
+      escapeCsv(a.user.university),
+      escapeCsv(a.user.faculty),
+      escapeCsv(statusLabel(a.status)),
+      escapeCsv(a.ticketCode || "N/A"),
+      escapeCsv(registeredDate),
+      escapeCsv(checkInDate),
+    ].join(";");
+  });
+
+  const bom = "\uFEFF"; // UTF-8 Byte Order Mark for Excel
+  const csvContent = bom + [headers.map((h) => `"${h}"`).join(";"), ...rows].join("\r\n");
+
+  const safeFilename = `participants-event-${event.id}-${event.title.slice(0, 30).replace(/[^a-zA-Z0-9]/g, "_")}.csv`;
+
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="${safeFilename}"`);
+  res.status(200).send(csvContent);
 });

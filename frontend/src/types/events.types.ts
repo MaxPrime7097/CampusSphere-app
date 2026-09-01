@@ -48,6 +48,9 @@ export interface Event {
   isPublic: boolean;
   attendeesCount: number;
   userStatus?: AttendeeStatus | null;
+  userTicketCode?: string | null;
+  isCheckedIn?: boolean;
+  checkedInAt?: string | null;
   createdAt: string;
   updatedAt?: string;
 }
@@ -57,6 +60,9 @@ export interface EventAttendee {
   eventId: string | number;
   user: EventOrganizer;
   status: AttendeeStatus;
+  ticketCode?: string | null;
+  isCheckedIn?: boolean;
+  checkedInAt?: string | null;
   registeredAt: string;
 }
 
@@ -91,4 +97,12 @@ export interface SpheraEventDraft {
   suggestedSchedule?: string;
   tips?: string[];
   category: EventCategory;
+}
+
+export interface CheckInResult {
+  success: boolean;
+  alreadyCheckedIn: boolean;
+  message: string;
+  checkedInAt: string;
+  attendee: EventAttendee;
 }

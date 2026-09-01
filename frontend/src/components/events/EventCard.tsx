@@ -15,6 +15,7 @@ import {
   BookOpen,
   Compass,
   ArrowRight,
+  Ticket,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -245,22 +246,27 @@ export function EventCard({ event, onStatusChange, onShare }: EventCardProps) {
         </div>
 
         {/* Action Button */}
-        <div className="mt-3">
+        <div className="mt-3 flex gap-2">
           {isPast ? (
             <Button variant="outline" size="sm" className="w-full text-xs text-muted-foreground" disabled>
               Événement terminé
             </Button>
-          ) : localStatus === "going" ? (
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-semibold text-xs"
-              onClick={handleQuickRegister}
-              disabled={isRegistering}
-            >
-              <Check className="h-3.5 w-3.5 mr-1.5" />
-              {isRegistering ? "Mise à jour..." : "Vous participez (Modifier)"}
-            </Button>
+          ) : localStatus === "going" || localStatus === "attended" ? (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-semibold text-xs"
+                onClick={handleQuickRegister}
+                disabled={isRegistering}
+              >
+                <Check className="h-3.5 w-3.5 mr-1.5" />
+                {isRegistering ? "Mise à jour..." : "Inscrit (Gérer)"}
+              </Button>
+              <Button size="icon" variant="outline" className="shrink-0">
+                <Ticket className="h-4 w-4" />
+              </Button>
+            </>
           ) : (
             <Button
               size="sm"

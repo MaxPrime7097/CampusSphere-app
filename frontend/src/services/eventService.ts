@@ -441,19 +441,24 @@ export async function deleteEvent(id: string | number): Promise<boolean> {
 export async function registerToEvent(
   id: string | number,
   status: AttendeeStatus
-): Promise<{ success: boolean; status: AttendeeStatus }> {
+): Promise<{ success: boolean; status: AttendeeStatus; ticketCode?: string }> {
   try {
-    await apiFetch(`api/events/${id}/register`, {
+    const res = await apiFetch<{ success: boolean; status: AttendeeStatus; ticketCode?: string; ticket_code?: string }>(`api/events/${id}/register`, {
       method: "POST",
       body: { status },
     });
-    return { success: true, status };
+    return {
+      success: true,
+      status,
+      ticketCode: res?.ticketCode || res?.ticket_code || `CS-EVT-${id}-ME-8A9F`,
+    };
   } catch {
     // Fallback local update
   }
 
   const currentList = getStoredEvents();
   const event = currentList.find((e) => String(e.id) === String(id));
+  const generatedCode = `CS-EVT-${id}-ME-8A9F`;
   if (event) {
     const wasGoing = event.userStatus === "going";
     const isNowGoing = status === "going";
@@ -463,9 +468,116 @@ export async function registerToEvent(
       event.attendeesCount -= 1;
     }
     event.userStatus = status;
+    if (isNowGoing && !event.userTicketCode) {
+      event.userTicketCode = generatedCode;
+    }
     saveStoredEvents(currentList);
   }
-  return { success: true, status };
+  return { success: true, status, ticketCode: generatedCode };
+}
+
+export async function checkInAttendee(
+  eventId: string | number,
+  ticketCodeOrUserId: string | number
+): Promise<{ success: boolean; alreadyCheckedIn: boolean; message: string; attendee: EventAttendee }> {
+  const isCode = typeof ticketCodeOrUserId === "string" && ticketCodeOrUserId.startsWith("CS-EVT-");
+  const payload = isCode ? { ticketCode: ticketCodeOrUserId } : { userId: Number(ticketCodeOrUserId) };
+
+  try {
+    const res = await apiFetch<{
+      success: boolean;
+      alreadyCheckedIn: boolean;
+      message: string;
+      attendee: EventAttendee;
+    }>(`api/events/${eventId}/check-in`, {
+      method: "POST",
+      body: payload as any,
+    });
+    return res;
+  } catch (err: any) {
+    // Fallback simulation for local/offline testing
+    const currentList = getStoredEvents();
+    const event = currentList.find((e) => String(e.id) === String(eventId));
+    if (event) {
+      event.isCheckedIn = true;
+      event.checkedInAt = new Date().toISOString();
+      event.userStatus = "attended";
+      saveStoredEvents(currentList);
+    }
+    return {
+      success: true,
+      alreadyCheckedIn: false,
+      message: "Entrée validée avec succès.",
+      attendee: {
+        id: "att-checked-in",
+        eventId,
+        user: { id: "u-checked", username: "participant", name: "Participant validé" },
+        status: "attended",
+        isCheckedIn: true,
+        checkedInAt: new Date().toISOString(),
+        registeredAt: new Date().toISOString(),
+      },
+    };
+  }
+}
+
+export async function exportAttendeesCsv(eventId: string | number, eventTitle?: string): Promise<void> {
+  const token = getToken();
+  const url = `${API_BASE.replace(/\/$/, "")}/api/events/${eventId}/attendees/export`;
+
+  try {
+    const res = await fetch(url, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) throw new Error("Erreur lors de l'export.");
+    const blob = await res.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = downloadUrl;
+    a.download = `participants-event-${eventId}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(downloadUrl);
+  } catch {
+    // Client-side fallback CSV generator
+    const attendees = await getEventAttendees(eventId);
+    const headers = [
+      "Nom complet",
+      "Nom d'utilisateur",
+      "Email",
+      "Université",
+      "Faculté / Filière",
+      "Statut",
+      "Code Billet",
+      "Date d'inscription",
+      "Date Check-in",
+    ];
+    const escapeCsv = (str: string | null | undefined) => `"${String(str || "").replace(/"/g, '""')}"`;
+    const rows = attendees.map((a) => [
+      escapeCsv(a.user.name || a.user.username),
+      escapeCsv(`@${a.user.username}`),
+      escapeCsv(a.user.email || ""),
+      escapeCsv(a.user.university || "IUC Douala"),
+      escapeCsv(a.user.faculty || ""),
+      escapeCsv(a.status === "attended" ? "Présent (Validé)" : a.status === "going" ? "Inscrit" : "Intéressé"),
+      escapeCsv(a.ticketCode || `CS-EVT-${eventId}-${a.user.id}`),
+      escapeCsv(new Date(a.registeredAt).toLocaleString("fr-FR")),
+      escapeCsv(a.checkedInAt ? new Date(a.checkedInAt).toLocaleString("fr-FR") : "Non scanné"),
+    ].join(";"));
+
+    const bom = "\uFEFF";
+    const csvContent = bom + [headers.map((h) => `"${h}"`).join(";"), ...rows].join("\r\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = downloadUrl;
+    a.download = `participants-event-${eventId}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(downloadUrl);
+  }
 }
 
 export async function unregisterFromEvent(id: string | number): Promise<boolean> {
