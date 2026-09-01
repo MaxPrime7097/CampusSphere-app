@@ -31,14 +31,16 @@ const fichePrompt = (text: string): string =>
 Generate a structured study sheet in JSON format based on the provided course text.
 No text before or after the JSON. The JSON KEYS must remain in French ("titre", "resume", etc.), but the VALUES must be written in the SAME LANGUAGE as the source text.
 
+CRITICAL INSTRUCTION: You MUST generate a very detailed and long study sheet. Do not take shortcuts.
+
 Strict JSON format:
 {
   "titre": "Course Title",
   "resume": "EXTREMELY DETAILED and EXHAUSTIVE summary of the course. You must write at least 3-4 long paragraphs rich in information to deeply cover the main ideas, context, challenges, examples, and main conclusions. Do not be brief.",
-  "points_cles": ["very detailed key point 1", "key point 2", "key point 3", "key point 4"],
+  "points_cles": ["detailed key point 1", "key point 2", "key point 3", "key point 4", "key point 5", "key point 6", "key point 7"],
   "definitions": [{"terme": "...", "definition": "Complete and precise definition..."}],
-  "formules": ["formula or abstract concept 1"],
-  "a_retenir": ["practical revision advice 1", "trap to avoid 2"]
+  "formules": ["formula or abstract concept 1", "formula 2"],
+  "a_retenir": ["practical revision advice 1", "trap to avoid 2", "advice 3"]
 }
 
 Course Text:
@@ -48,7 +50,9 @@ ${text}
 const quizPrompt = (text: string): string =>
   SPHERA_PERSONA +
   `
-Generate 20 multiple-choice questions (MCQs) in JSON format based on the provided course text.
+Generate EXACTLY 20 multiple-choice questions (MCQs) in JSON format based on the provided course text.
+CRITICAL INSTRUCTION: You DOIS générer EXACTEMENT 20 questions de quiz. Ne t'arrête pas avant d'en avoir 20. C'est une règle stricte, do not cut corners.
+
 No text before or after the JSON. The JSON KEYS must remain in French ("question", "options", etc.), but the content must be in the SAME LANGUAGE as the source text.
 
 Strict JSON format:
@@ -71,7 +75,9 @@ ${text}
 const flashcardsPrompt = (text: string): string =>
   SPHERA_PERSONA +
   `
-Generate 20 front/back flashcards in JSON format based on the provided course text.
+Generate EXACTLY 20 front/back flashcards in JSON format based on the provided course text.
+CRITICAL INSTRUCTION: You DOIS générer EXACTEMENT 20 flashcards. Ne t'arrête pas avant d'en avoir 20. C'est une règle stricte, do not cut corners.
+
 No text before or after the JSON. The JSON KEYS must remain in French ("recto", "verso", etc.), but the content must be in the SAME LANGUAGE as the source text.
 
 Strict JSON format:

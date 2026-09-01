@@ -170,6 +170,23 @@ enum NotificationType {
   MESSAGE
   SYSTEM
   VERIFICATION_STATUS
+  NEW_EVENT
+  EVENT_REMINDER
+}
+
+enum EventCategory {
+  CONFERENCE
+  HACKATHON
+  PARTY
+  COMPETITION
+  WORKSHOP
+  OTHER
+}
+
+enum EventAttendeeStatus {
+  INTERESTED
+  GOING
+  ATTENDED
 }
 
 enum StudyToolType {
@@ -280,6 +297,8 @@ model User {
   notificationSetting NotificationSettings?
   studySessions       StudySession[]
   annaleSessions      AnnaleSession[]
+  eventsOrganized     Event[]                   @relation("EventsOrganized")
+  eventAttendances    EventAttendee[]           @relation("UserEventAttendances")
   uploads             UploadedFile[]
   auditLogs           AdminAuditLog[]
   revokedTokens       RevokedToken[]
@@ -404,6 +423,7 @@ model Sphere {
   tasks          Task[]
   studySessions  StudySession[]
   annaleSessions AnnaleSession[]
+  events         Event[]         @relation("SphereEvents")
 
   @@index([isPrivate, expiresAt])
   @@map("spheres")
@@ -963,3 +983,57 @@ model UploadedFile {
   @@index([uploadedById, uploadedAt])
   @@map("uploaded_files")
 }
+
+// ─────────────────────────────────────────────────────────────
+// Events & Attendees
+// ─────────────────────────────────────────────────────────────
+
+model Event {
+  id           Int           @id @default(autoincrement())
+  title        String
+  description  String        @default("")
+  category     EventCategory @default(OTHER)
+
+  organizerId  Int           @map("organizer_id")
+  sphereId     Int?          @map("sphere_id")
+
+  startDate    DateTime      @map("start_date")
+  endDate      DateTime?     @map("end_date")
+  location     String        @default("")
+  isOnline     Boolean       @default(false) @map("is_online")
+  onlineLink   String?       @map("online_link")
+
+  coverImage   String?       @map("cover_image")
+  maxAttendees Int?          @map("max_attendees")
+  isPublic     Boolean       @default(true) @map("is_public")
+
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  organizer    User          @relation("EventsOrganized", fields: [organizerId], references: [id], onDelete: Cascade)
+  sphere       Sphere?       @relation("SphereEvents", fields: [sphereId], references: [id], onDelete: SetNull)
+  attendees    EventAttendee[]
+
+  @@index([startDate])
+  @@index([category])
+  @@index([sphereId])
+  @@index([organizerId])
+  @@map("events")
+}
+
+model EventAttendee {
+  id           Int                 @id @default(autoincrement())
+  eventId      Int                 @map("event_id")
+  userId       Int                 @map("user_id")
+  status       EventAttendeeStatus @default(INTERESTED)
+  registeredAt DateTime            @default(now()) @map("registered_at")
+
+  event        Event               @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user         User                @relation("UserEventAttendances", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([userId, status])
+  @@index([eventId, status])
+  @@map("event_attendees")
+}
+
