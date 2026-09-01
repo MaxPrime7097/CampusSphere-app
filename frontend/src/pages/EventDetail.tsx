@@ -23,6 +23,10 @@ import {
   Compass,
   CalendarPlus,
   AlertCircle,
+  Ticket,
+  QrCode,
+  Download,
+  CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +34,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { EventAttendeesModal } from "@/components/events/EventAttendeesModal";
 import { EventShareModal } from "@/components/events/EventShareModal";
+import { EventTicketModal } from "@/components/events/EventTicketModal";
+import { EventScannerModal } from "@/components/events/EventScannerModal";
 import { getEventCategoryMeta } from "@/constants/eventCategories";
 import {
   getEventById,
@@ -37,10 +43,11 @@ import {
   registerToEvent,
   unregisterFromEvent,
   deleteEvent,
+  exportAttendeesCsv,
 } from "@/services/eventService";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import type { AttendeeStatus } from "@/types/events.types";
+import type { AttendeeStatus, EventAttendee } from "@/types/events.types";
 
 const CategoryIconMap: Record<string, any> = {
   party: Sparkles,
@@ -60,6 +67,8 @@ export function EventDetail() {
 
   const [isAttendeesOpen, setIsAttendeesOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isTicketOpen, setIsTicketOpen] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   // Fetch Event details
   const {
@@ -82,17 +91,20 @@ export function EventDetail() {
   // Register mutation
   const registerMutation = useMutation({
     mutationFn: (status: AttendeeStatus) => registerToEvent(id!, status),
-    onSuccess: (_, status) => {
+    onSuccess: (data, status) => {
       queryClient.invalidateQueries({ queryKey: ["event", id] });
       queryClient.invalidateQueries({ queryKey: ["events"] });
       queryClient.invalidateQueries({ queryKey: ["event-attendees", id] });
       toast({
-        title: status === "going" ? "Inscription confirmée ! 🎉" : "Marqué comme intéressé",
+        title: status === "going" ? "Inscription confirmée" : "Marqué comme intéressé",
         description:
           status === "going"
-            ? "Vous recevrez les rappels pour cet événement."
+            ? "Votre billet d'entrée est maintenant disponible."
             : "L'événement a été ajouté à votre liste d'intérêts.",
       });
+      if (status === "going") {
+        setIsTicketOpen(true);
+      }
     },
     onError: (err: any) => {
       toast({
@@ -130,6 +142,28 @@ export function EventDetail() {
     },
   });
 
+  const handleExportAttendees = async () => {
+    if (!id) return;
+    try {
+      await exportAttendeesCsv(id, event?.title);
+      toast({
+        title: "Export réussi",
+        description: "La liste des participants a été téléchargée en CSV.",
+      });
+    } catch {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'exporter la liste des participants.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAttendeeUpdated = (updated: EventAttendee) => {
+    queryClient.invalidateQueries({ queryKey: ["event", id] });
+    queryClient.invalidateQueries({ queryKey: ["event-attendees", id] });
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto max-w-5xl px-4 py-8 space-y-6 animate-pulse">
@@ -160,6 +194,9 @@ export function EventDetail() {
     event.organizer.id === "current-user" ||
     event.organizer.username === currentUser?.username;
 
+  const isRegistered = event.userStatus === "going" || event.userStatus === "attended";
+  const isCheckedIn = event.isCheckedIn || event.userStatus === "attended";
+
   const meta = getEventCategoryMeta(event.category);
   const IconComponent = CategoryIconMap[event.category] || Calendar;
 
@@ -188,18 +225,55 @@ export function EventDetail() {
   return (
     <div className="container mx-auto max-w-6xl px-4 py-6 md:px-6 md:py-8 space-y-8 animate-in fade-in duration-300">
       {/* Back and actions header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => navigate("/events")}
-          className="rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground"
+          className="rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground self-start"
         >
           <ArrowLeft className="h-4 w-4 mr-1.5" />
           Retour aux événements
         </Button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Action: Ticket Modal (if registered) */}
+          {isRegistered && (
+            <Button
+              size="sm"
+              onClick={() => setIsTicketOpen(true)}
+              className="rounded-xl text-xs font-bold bg-primary text-primary-foreground shadow-xs gap-1.5"
+            >
+              <Ticket className="h-3.5 w-3.5" />
+              Mon Billet d'entrée
+            </Button>
+          )}
+
+          {/* Action: Organizer Scanner */}
+          {isOrganizer && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsScannerOpen(true)}
+                className="rounded-xl text-xs font-semibold gap-1.5"
+              >
+                <QrCode className="h-3.5 w-3.5 text-primary" />
+                Scanner les entrées
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportAttendees}
+                className="rounded-xl text-xs font-semibold gap-1.5"
+              >
+                <Download className="h-3.5 w-3.5 text-primary" />
+                Exporter CSV
+              </Button>
+            </>
+          )}
+
           <Button
             variant="outline"
             size="sm"
@@ -225,7 +299,7 @@ export function EventDetail() {
                 variant="destructive"
                 size="sm"
                 onClick={() => {
-                  if (confirm("Êtes-vous sûr de vouloir supprimer cet événement ?")) {
+                  if (confirm("Voulez-vous vraiment supprimer cet événement ?")) {
                     deleteMutation.mutate();
                   }
                 }}
@@ -348,7 +422,7 @@ export function EventDetail() {
             </h2>
 
             <div className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line space-y-3">
-              {event.description || "Aucune description détaillée fournie."}
+              {event.description || "Aucune description fournie."}
             </div>
           </div>
 
@@ -428,12 +502,21 @@ export function EventDetail() {
                 <Button disabled className="w-full rounded-xl text-xs" variant="outline">
                   Événement terminé
                 </Button>
-              ) : event.userStatus === "going" ? (
+              ) : isRegistered ? (
                 <div className="space-y-2">
                   <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center justify-center gap-2">
-                    <Check className="h-4 w-4 text-emerald-500" />
-                    Vous participez à cet événement !
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                    {isChecked ? "Présence validée au check-in" : "Vous participez à cet événement"}
                   </div>
+
+                  <Button
+                    onClick={() => setIsTicketOpen(true)}
+                    className="w-full rounded-2xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-md transition-all py-5 text-xs gap-1.5"
+                  >
+                    <Ticket className="h-4 w-4" />
+                    Afficher mon Billet & QR Code
+                  </Button>
+
                   <Button
                     variant="outline"
                     size="sm"
@@ -462,7 +545,7 @@ export function EventDetail() {
                     className="w-full rounded-2xl font-semibold text-xs py-4"
                   >
                     <Heart className="h-4 w-4 mr-2 text-amber-500" />
-                    {event.userStatus === "interested" ? "Intéressé ✓" : "Ça m'intéresse"}
+                    {event.userStatus === "interested" ? "Intéressé" : "Ça m'intéresse"}
                   </Button>
                 </div>
               )}
@@ -544,7 +627,26 @@ export function EventDetail() {
         onOpenChange={setIsAttendeesOpen}
         attendees={attendees}
         eventTitle={event.title}
+        eventId={event.id}
         isOrganizer={isOrganizer}
+        onOpenScanner={() => setIsScannerOpen(true)}
+        onAttendeeUpdated={handleAttendeeUpdated}
+      />
+
+      {/* Ticket Modal */}
+      <EventTicketModal
+        open={isTicketOpen}
+        onOpenChange={setIsTicketOpen}
+        event={event}
+      />
+
+      {/* Scanner Check-in Modal */}
+      <EventScannerModal
+        open={isScannerOpen}
+        onOpenChange={setIsScannerOpen}
+        event={event}
+        attendees={attendees}
+        onCheckInSuccess={handleAttendeeUpdated}
       />
 
       {/* Share Modal */}

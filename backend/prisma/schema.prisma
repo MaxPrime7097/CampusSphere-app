@@ -299,6 +299,7 @@ model User {
   annaleSessions      AnnaleSession[]
   eventsOrganized     Event[]                   @relation("EventsOrganized")
   eventAttendances    EventAttendee[]           @relation("UserEventAttendances")
+  eventCheckins       EventAttendee[]           @relation("EventCheckins")
   uploads             UploadedFile[]
   auditLogs           AdminAuditLog[]
   revokedTokens       RevokedToken[]
@@ -1022,18 +1023,23 @@ model Event {
 }
 
 model EventAttendee {
-  id           Int                 @id @default(autoincrement())
-  eventId      Int                 @map("event_id")
-  userId       Int                 @map("user_id")
-  status       EventAttendeeStatus @default(INTERESTED)
-  registeredAt DateTime            @default(now()) @map("registered_at")
+  id            Int                 @id @default(autoincrement())
+  eventId       Int                 @map("event_id")
+  userId        Int                 @map("user_id")
+  status        EventAttendeeStatus @default(INTERESTED)
+  ticketCode    String?             @unique @map("ticket_code")
+  checkedInAt   DateTime?           @map("checked_in_at")
+  checkedInById Int?                @map("checked_in_by_id")
+  registeredAt  DateTime            @default(now()) @map("registered_at")
 
-  event        Event               @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  user         User                @relation("UserEventAttendances", fields: [userId], references: [id], onDelete: Cascade)
+  event         Event               @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user          User                @relation("UserEventAttendances", fields: [userId], references: [id], onDelete: Cascade)
+  checkedInBy   User?               @relation("EventCheckins", fields: [checkedInById], references: [id], onDelete: SetNull)
 
   @@unique([eventId, userId])
   @@index([userId, status])
   @@index([eventId, status])
+  @@index([ticketCode])
   @@map("event_attendees")
 }
 
