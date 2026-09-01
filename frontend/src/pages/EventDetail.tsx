@@ -506,7 +506,7 @@ export function EventDetail() {
                 <div className="space-y-2">
                   <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center justify-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                    {isChecked ? "Présence validée au check-in" : "Vous participez à cet événement"}
+                    {isCheckedIn ? "Présence validée au check-in" : "Vous participez à cet événement"}
                   </div>
 
                   <Button

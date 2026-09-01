@@ -1007,6 +1007,7 @@ model Event {
   coverImage   String?       @map("cover_image")
   maxAttendees Int?          @map("max_attendees")
   isPublic     Boolean       @default(true) @map("is_public")
+  isFeatured   Boolean       @default(false) @map("is_featured")
 
   createdAt    DateTime      @default(now()) @map("created_at")
   updatedAt    DateTime      @updatedAt @map("updated_at")

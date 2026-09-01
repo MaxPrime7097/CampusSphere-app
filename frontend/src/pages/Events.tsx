@@ -74,12 +74,26 @@ export function Events() {
     });
   }, [rawEvents, activeTab, currentUser]);
 
-  // Featured major event (e.g. Welcome Ceremony or MathScam)
+  // Featured major event (1. Événement mis en avant, 2. Plus populaire, 3. Prochain à venir)
   const featuredEvent = useMemo(() => {
-    return (
-      rawEvents.find((e) => e.category === "party" || e.category === "competition") ||
-      rawEvents[0]
+    if (!rawEvents || rawEvents.length === 0) return null;
+    const now = new Date();
+    const upcomingEvents = rawEvents.filter((e) => new Date(e.startDate) >= now);
+
+    // 1. Événement marqué explicitement en vedette
+    const explicitFeatured = upcomingEvents.find((e) => (e as any).isFeatured);
+    if (explicitFeatured) return explicitFeatured;
+
+    // 2. Événement avec le plus d'inscrits / engagement
+    const sortedByPopularity = [...upcomingEvents].sort(
+      (a, b) => (b.attendeesCount || 0) - (a.attendeesCount || 0)
     );
+    if (sortedByPopularity[0] && (sortedByPopularity[0].attendeesCount || 0) > 0) {
+      return sortedByPopularity[0];
+    }
+
+    // 3. Prochain événement chronologique
+    return upcomingEvents[0] || null;
   }, [rawEvents]);
 
   const handleFilterChange = (newFilters: Partial<EventFilters>) => {
