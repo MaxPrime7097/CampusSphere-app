@@ -428,6 +428,20 @@ export function EventCreate() {
                 </Select>
               </div>
             </div>
+
+            {/* Featured toggle */}
+            <div className="flex items-center justify-between pt-2 border-t border-border/50">
+              <div className="space-y-0.5">
+                <Label className="text-xs font-bold text-foreground">Mettre à la une (Spotlight)</Label>
+                <p className="text-[11px] text-muted-foreground">
+                  Affiche cet événement dans la bannière principale en haut de la page.
+                </p>
+              </div>
+              <Switch
+                checked={formData.isFeatured || false}
+                onCheckedChange={(checked) => setFormData({ ...formData, isFeatured: checked })}
+              />
+            </div>
           </div>
 
           {/* Submit Button */}

@@ -58,6 +58,7 @@ const CreateEventSchema = z.object({
   coverImage: z.string().optional().nullable(),
   maxAttendees: z.number().int().positive().optional().nullable(),
   isPublic: z.boolean().optional().default(true),
+  isFeatured: z.boolean().optional().default(false),
   sphereId: z.number().int().positive().optional().nullable(),
 });
 
@@ -309,6 +310,7 @@ eventsRouter.post("/", requireAuth, async (req, res) => {
     coverImage,
     maxAttendees,
     isPublic,
+    isFeatured,
     sphereId,
   } = parsed.data;
 
@@ -335,6 +337,7 @@ eventsRouter.post("/", requireAuth, async (req, res) => {
       coverImage: coverImage || null,
       maxAttendees: maxAttendees || null,
       isPublic,
+      isFeatured: Boolean(isFeatured),
       sphereId: sphereId || null,
       organizerId: user.id,
     },
@@ -404,6 +407,7 @@ eventsRouter.put("/:id", requireAuth, async (req, res) => {
   if (parsed.data.coverImage !== undefined) data.coverImage = parsed.data.coverImage;
   if (parsed.data.maxAttendees !== undefined) data.maxAttendees = parsed.data.maxAttendees;
   if (parsed.data.isPublic !== undefined) data.isPublic = parsed.data.isPublic;
+  if (parsed.data.isFeatured !== undefined) data.isFeatured = parsed.data.isFeatured;
   if (parsed.data.sphereId !== undefined) {
     data.sphere = parsed.data.sphereId ? { connect: { id: parsed.data.sphereId } } : { disconnect: true };
   }

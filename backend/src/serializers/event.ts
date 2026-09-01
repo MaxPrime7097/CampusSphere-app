@@ -90,6 +90,8 @@ export function serializeEvent(
     maxAttendees: event.maxAttendees,
     is_public: event.isPublic,
     isPublic: event.isPublic,
+    is_featured: event.isFeatured,
+    isFeatured: event.isFeatured,
 
     attendees_count: attendeesCount,
     attendeesCount,

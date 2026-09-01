@@ -46,6 +46,7 @@ export interface Event {
   coverImage?: string | null;
   maxAttendees?: number | null;
   isPublic: boolean;
+  isFeatured?: boolean;
   attendeesCount: number;
   userStatus?: AttendeeStatus | null;
   userTicketCode?: string | null;
@@ -78,6 +79,7 @@ export interface CreateEventInput {
   coverImage?: string | File | null;
   maxAttendees?: number | null;
   isPublic?: boolean;
+  isFeatured?: boolean;
   sphereId?: string | number | null;
 }
 
