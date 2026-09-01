@@ -86,7 +86,7 @@ export function EventCard({ event, onStatusChange, onShare }: EventCardProps) {
         setAttendeesCount((prev) => prev + 1);
         onStatusChange?.(event.id, "going");
         toast({
-          title: "Inscription confirmée ! 🎉",
+          title: "Inscription confirmée",
           description: `Vous êtes inscrit à "${event.title}".`,
         });
       }

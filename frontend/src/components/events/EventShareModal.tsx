@@ -24,13 +24,13 @@ export function EventShareModal({ open, onOpenChange, event }: EventShareModalPr
   if (!event) return null;
 
   const eventUrl = `${window.location.origin}/events/${event.id}`;
-  const shareText = `Découvrez l'événement "${event.title}" sur CampusSphere ! 🎓✨`;
+  const shareText = `Découvrez l'événement "${event.title}" sur CampusSphere :`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(eventUrl);
     setCopied(true);
     toast({
-      title: "Lien copié !",
+      title: "Lien copié",
       description: "Le lien a été copié dans votre presse-papier.",
     });
     setTimeout(() => setCopied(false), 2000);

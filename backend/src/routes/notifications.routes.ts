@@ -54,6 +54,8 @@ const TYPE_DISPLAY: Record<NotificationType, string> = {
   MESSAGE: "Nouveau message",
   SYSTEM: "Notification système",
   VERIFICATION_STATUS: "Statut de vérification",
+  NEW_EVENT: "Nouvel événement",
+  EVENT_REMINDER: "Rappel d'événement",
 };
 
 function serializeNotification(n: Notification): Record<string, unknown> {
