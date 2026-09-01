@@ -108,7 +108,7 @@ export async function sendEventReminders(): Promise<number> {
       for (const attendee of event.attendees) {
         await createNotification({
           type: NotificationType.EVENT_REMINDER,
-          title: `Demain : ${event.title} 📅`,
+          title: `Demain : ${event.title}`,
           message: `Rappel pour votre événement de demain à ${formattedTime} (${event.location || "en ligne"}).`,
           recipientId: attendee.userId,
           sender: event.organizer,

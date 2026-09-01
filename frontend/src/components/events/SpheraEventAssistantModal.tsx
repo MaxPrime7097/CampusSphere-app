@@ -100,7 +100,7 @@ export function SpheraEventAssistantModal({
           {/* Quick presets */}
           <div>
             <span className="text-xs font-semibold text-muted-foreground block mb-2">
-              💡 Idées d'événements rapides :
+              Modèles d'événements rapides :
             </span>
             <div className="flex flex-wrap gap-2">
               {PRESET_IDEAS.map((preset, idx) => (
@@ -143,7 +143,7 @@ export function SpheraEventAssistantModal({
             {isGenerating ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Sphera rédige votre événement...
+                Génération en cours...
               </>
             ) : (
               <>
@@ -157,8 +157,8 @@ export function SpheraEventAssistantModal({
           {generatedDraft && (
             <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3 animate-in fade-in duration-300">
               <div className="flex items-center justify-between">
-                <Badge variant="outline" className="text-[11px] font-bold border-primary/40 text-primary">
-                  ✨ Proposition Sphera
+                <Badge variant="outline" className="text-[11px] font-semibold border-primary/40 text-primary flex items-center gap-1">
+                  <Sparkles className="h-3 w-3" /> Proposition Sphera
                 </Badge>
                 <Button
                   size="sm"
@@ -180,7 +180,7 @@ export function SpheraEventAssistantModal({
               {generatedDraft.suggestedSchedule && (
                 <div className="pt-2 border-t border-border/40">
                   <span className="text-[11px] font-bold text-foreground block mb-1">
-                    📅 Programme suggéré :
+                    Programme suggéré :
                   </span>
                   <p className="text-xs text-muted-foreground whitespace-pre-line">
                     {generatedDraft.suggestedSchedule}
