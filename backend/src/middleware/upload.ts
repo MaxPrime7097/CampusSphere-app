@@ -74,9 +74,8 @@ const ALLOWED: Record<UploadKind, string[] | null> = {
   conversationAvatar: IMAGE_TYPES,
   post: POST_MIME_TYPES,
   resource: RESOURCE_MIME_TYPES,
-  // Sphere files are membership-gated rather than type-gated, matching Django.
   sphereFile: null,
-  other: IMAGE_TYPES,
+  other: [...IMAGE_TYPES, "application/json"],
 };
 
 /**
