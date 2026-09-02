@@ -119,44 +119,54 @@ function idParam(req: Request, name = "id"): number {
  */
 eventsRouter.get("/mine", requireAuth, async (req, res) => {
   const user = req.user!;
-  const [createdEvents, attendances] = await Promise.all([
-    prisma.event.findMany({
-      where: { organizerId: user.id },
-      include: eventInclude,
-      orderBy: { startDate: "asc" },
-    }),
-    prisma.eventAttendee.findMany({
-      where: { userId: user.id },
-      include: {
-        event: {
-          include: eventInclude,
+  try {
+    const [createdEvents, attendances] = await Promise.all([
+      prisma.event.findMany({
+        where: { organizerId: user.id },
+        include: eventInclude,
+        orderBy: { startDate: "asc" },
+      }),
+      prisma.eventAttendee.findMany({
+        where: { userId: user.id },
+        include: {
+          event: {
+            include: eventInclude,
+          },
         },
+        orderBy: { registeredAt: "desc" },
+      }),
+    ]);
+
+    const createdSerialized = createdEvents.map((e) =>
+      serializeEvent(e as unknown as SerializableEvent, {
+        viewerId: user.id,
+        userStatus: EventAttendeeStatus.GOING,
+      })
+    );
+
+    const registeredSerialized = attendances.map((a) =>
+      serializeEvent(a.event as unknown as SerializableEvent, {
+        viewerId: user.id,
+        userStatus: a.status,
+      })
+    );
+
+    res.json({
+      success: true,
+      data: {
+        created: createdSerialized,
+        registered: registeredSerialized,
       },
-      orderBy: { registeredAt: "desc" },
-    }),
-  ]);
-
-  const createdSerialized = createdEvents.map((e) =>
-    serializeEvent(e as unknown as SerializableEvent, {
-      viewerId: user.id,
-      userStatus: EventAttendeeStatus.GOING,
-    })
-  );
-
-  const registeredSerialized = attendances.map((a) =>
-    serializeEvent(a.event as unknown as SerializableEvent, {
-      viewerId: user.id,
-      userStatus: a.status,
-    })
-  );
-
-  res.json({
-    success: true,
-    data: {
-      created: createdSerialized,
-      registered: registeredSerialized,
-    },
-  });
+    });
+  } catch (error: any) {
+    if (error?.code === "P2021" || error?.message?.includes("does not exist")) {
+      return res.json({
+        success: true,
+        data: { created: [], registered: [] },
+      });
+    }
+    throw error;
+  }
 });
 
 /**
@@ -213,55 +223,62 @@ eventsRouter.get("/", async (req, res) => {
     ];
   }
 
-  const events = await prisma.event.findMany({
-    where,
-    include: eventInclude,
-    orderBy: { startDate: "asc" },
-  });
+  try {
+    const events = await prisma.event.findMany({
+      where,
+      include: eventInclude,
+      orderBy: { startDate: "asc" },
+    });
 
-  if (events.length === 0) {
-    return list(res, []);
+    if (events.length === 0) {
+      return list(res, []);
+    }
+
+    // Fetch viewer attendances in bulk to avoid N+1
+    const eventIds = events.map((e) => e.id);
+    const [attendeeCounts, userAttendances] = await Promise.all([
+      prisma.eventAttendee.groupBy({
+        by: ["eventId"],
+        where: {
+          eventId: { in: eventIds },
+          status: { in: [EventAttendeeStatus.GOING, EventAttendeeStatus.ATTENDED] },
+        },
+        _count: { id: true },
+      }),
+      user
+        ? prisma.eventAttendee.findMany({
+            where: {
+              eventId: { in: eventIds },
+              userId: user.id,
+            },
+            select: { eventId: true, status: true, ticketCode: true, checkedInAt: true },
+          })
+        : Promise.resolve([]),
+    ]);
+
+    const countMap = new Map<number, number>(
+      attendeeCounts.map((c) => [c.eventId, c._count.id])
+    );
+    const attendanceMap = new Map<number, (typeof userAttendances)[0]>(
+      userAttendances.map((a) => [a.eventId, a])
+    );
+
+    const payload = events.map((event) =>
+      serializeEvent(event as unknown as SerializableEvent, {
+        viewerId: user?.id ?? null,
+        attendeesCount: countMap.get(event.id) ?? 0,
+        userStatus: attendanceMap.get(event.id)?.status ?? null,
+        userAttendee: attendanceMap.get(event.id) ?? null,
+      })
+    );
+
+    list(res, payload);
+  } catch (error: any) {
+    if (error?.code === "P2021" || error?.message?.includes("does not exist")) {
+      return list(res, []);
+    }
+    throw error;
   }
-
-  // Fetch viewer attendances in bulk to avoid N+1
-  const eventIds = events.map((e) => e.id);
-  const [attendeeCounts, userAttendances] = await Promise.all([
-    prisma.eventAttendee.groupBy({
-      by: ["eventId"],
-      where: {
-        eventId: { in: eventIds },
-        status: { in: [EventAttendeeStatus.GOING, EventAttendeeStatus.ATTENDED] },
-      },
-      _count: { id: true },
-    }),
-    user
-      ? prisma.eventAttendee.findMany({
-          where: {
-            eventId: { in: eventIds },
-            userId: user.id,
-          },
-          select: { eventId: true, status: true, ticketCode: true, checkedInAt: true },
-        })
-      : Promise.resolve([]),
-  ]);
-
-  const countMap = new Map<number, number>(
-    attendeeCounts.map((c) => [c.eventId, c._count.id])
-  );
-  const attendanceMap = new Map<number, (typeof userAttendances)[0]>(
-    userAttendances.map((a) => [a.eventId, a])
-  );
-
-  const payload = events.map((event) =>
-    serializeEvent(event as unknown as SerializableEvent, {
-      viewerId: user?.id ?? null,
-      attendeesCount: countMap.get(event.id) ?? 0,
-      userStatus: attendanceMap.get(event.id)?.status ?? null,
-      userAttendee: attendanceMap.get(event.id) ?? null,
-    })
-  );
-
-  list(res, payload);
 });
 
 /**
@@ -274,47 +291,54 @@ eventsRouter.get("/:id", async (req, res) => {
   const isNumeric = Number.isInteger(numId) && numId > 0;
   const user = currentUser(req);
 
-  const event = isNumeric
-    ? await prisma.event.findUnique({
-        where: { id: numId },
-        include: eventInclude,
-      })
-    : await prisma.event.findFirst({
-        where: {
-          OR: [
-            { title: { equals: rawId.replace(/-/g, " "), mode: "insensitive" } },
-            { title: { contains: rawId.replace(/-/g, " "), mode: "insensitive" } },
-          ],
-        },
-        include: eventInclude,
-      });
-
-  if (!event) throw notFound("Événement introuvable.");
-
-  const [attendeesCount, userAttendance] = await Promise.all([
-    prisma.eventAttendee.count({
-      where: {
-        eventId: event.id,
-        status: { in: [EventAttendeeStatus.GOING, EventAttendeeStatus.ATTENDED] },
-      },
-    }),
-    user
-      ? prisma.eventAttendee.findUnique({
-          where: { eventId_userId: { eventId: event.id, userId: user.id } },
-          select: { status: true, ticketCode: true, checkedInAt: true },
+  try {
+    const event = isNumeric
+      ? await prisma.event.findUnique({
+          where: { id: numId },
+          include: eventInclude,
         })
-      : Promise.resolve(null),
-  ]);
+      : await prisma.event.findFirst({
+          where: {
+            OR: [
+              { title: { equals: rawId.replace(/-/g, " "), mode: "insensitive" } },
+              { title: { contains: rawId.replace(/-/g, " "), mode: "insensitive" } },
+            ],
+          },
+          include: eventInclude,
+        });
 
-  ok(
-    res,
-    serializeEvent(event as unknown as SerializableEvent, {
-      viewerId: user?.id ?? null,
-      attendeesCount,
-      userStatus: userAttendance?.status ?? null,
-      userAttendee: userAttendance,
-    })
-  );
+    if (!event) throw notFound("Événement introuvable.");
+
+    const [attendeesCount, userAttendance] = await Promise.all([
+      prisma.eventAttendee.count({
+        where: {
+          eventId: event.id,
+          status: { in: [EventAttendeeStatus.GOING, EventAttendeeStatus.ATTENDED] },
+        },
+      }),
+      user
+        ? prisma.eventAttendee.findUnique({
+            where: { eventId_userId: { eventId: event.id, userId: user.id } },
+            select: { status: true, ticketCode: true, checkedInAt: true },
+          })
+        : Promise.resolve(null),
+    ]);
+
+    ok(
+      res,
+      serializeEvent(event as unknown as SerializableEvent, {
+        viewerId: user?.id ?? null,
+        attendeesCount,
+        userStatus: userAttendance?.status ?? null,
+        userAttendee: userAttendance,
+      })
+    );
+  } catch (error: any) {
+    if (error?.code === "P2021" || error?.message?.includes("does not exist")) {
+      throw notFound("Événement introuvable.");
+    }
+    throw error;
+  }
 });
 
 /**

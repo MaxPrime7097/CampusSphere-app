@@ -94,10 +94,10 @@ export function EventTicketModal({
           </h3>
 
           <div className="mt-2 flex items-center gap-2 text-xs text-white/90 font-medium">
-            <Calendar className="h-3.5 w-3.5 shrink-0 text-orange-200" />
+            <Calendar className="h-3.5 w-3.5 shrink-0 text-white/80" />
             <span className="capitalize">{formattedDate}</span>
             <span>•</span>
-            <Clock className="h-3.5 w-3.5 shrink-0 text-orange-200" />
+            <Clock className="h-3.5 w-3.5 shrink-0 text-white/80" />
             <span>{formattedTime}</span>
           </div>
         </div>

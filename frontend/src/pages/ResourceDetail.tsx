@@ -231,12 +231,7 @@ export function ResourceDetail() {
   }, [id, resourceQuery.data, resourceQuery.error, toast]);
 
   useEffect(() => {
-    if (!id || !isPreviewMode) {
-      setPreviewSrc(null);
-      setPreviewError(null);
-      setIsPreviewLoading(false);
-      return;
-    }
+    if (!id || !resource) return;
 
     if (!isPreviewable) {
       setPreviewSrc(null);
@@ -246,9 +241,14 @@ export function ResourceDetail() {
     }
 
     let isMounted = true;
-
     setIsPreviewLoading(true);
     setPreviewError(null);
+
+    if (resource.fileUrl) {
+      setPreviewSrc(resource.fileUrl);
+      setIsPreviewLoading(false);
+      return;
+    }
 
     void (async () => {
       try {
@@ -270,7 +270,7 @@ export function ResourceDetail() {
     return () => {
       isMounted = false;
     };
-  }, [id, isPreviewMode, isPreviewable]);
+  }, [id, resource?.fileUrl, isPreviewable]);
 
 
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -772,17 +772,12 @@ export function ResourceDetail() {
             <CardContent className="p-4 md:p-6 space-y-4">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <h3 className="font-semibold text-lg">Aperçu</h3>
+                  <h3 className="font-semibold text-lg">Aperçu du document</h3>
                   <p className="text-sm text-muted-foreground">
-                    {isPreviewMode
-                      ? "Mode aperçu actif (ouvert depuis l'icône œil)."
-                      : "Ouvrez cette page avec ?mode=preview pour charger l'aperçu du fichier."}
+                    Consultez directement le document ci-dessous ou téléchargez-le sur votre appareil.
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant={isPreviewMode ? "secondary" : "outline"}>
-                    {isPreviewMode ? "Aperçu actif" : "Aperçu inactif"}
-                  </Badge>
                   <Button
                     variant="outline"
                     size="sm"
@@ -798,47 +793,40 @@ export function ResourceDetail() {
                     )}
                     <span className="hidden md:inline">Télécharger</span>
                   </Button>
-
                 </div>
               </div>
 
-              {isPreviewMode ? (
-                isPreviewLoading ? (
-                  <div className="flex items-center justify-center rounded-lg border border-dashed h-[420px]">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  </div>
-                ) : previewError ? (
-                  <div className="rounded-lg border border-dashed p-6 text-sm text-destructive">
-                    {previewError}
-                  </div>
-                ) : !isPreviewable ? (
-                  <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-                    Ce format n’est pas prévisualisable dans l’application. Utilisez le bouton Télécharger.
-                  </div>
-                ) : previewSrc ? (
-                  <div className="rounded-lg border overflow-hidden bg-background">
-                    {isPdf ? (
-                      <iframe
-                        title={`Aperçu de ${resource.title}`}
-                        src={previewSrc}
-                        className="w-full h-[70vh] min-h-[420px]"
-                      />
-                    ) : (
-                      <img
-                        src={previewSrc}
-                        alt={`Aperçu de ${resource.title}`}
-                        className="w-full max-h-[70vh] object-contain bg-muted/20"
-                      />
-                    )}
-                  </div>
-                ) : (
-                  <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-                    Impossible de charger l’aperçu pour le moment.
-                  </div>
-                )
+              {isPreviewLoading ? (
+                <div className="flex items-center justify-center rounded-lg border border-dashed h-[420px]">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : previewError ? (
+                <div className="rounded-lg border border-dashed p-6 text-sm text-destructive">
+                  {previewError}
+                </div>
+              ) : !isPreviewable ? (
+                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                  Ce format n’est pas prévisualisable directement dans le navigateur. Utilisez le bouton Télécharger pour l'ouvrir.
+                </div>
+              ) : previewSrc ? (
+                <div className="rounded-lg border overflow-hidden bg-background">
+                  {isPdf ? (
+                    <iframe
+                      title={`Aperçu de ${resource.title}`}
+                      src={previewSrc}
+                      className="w-full h-[70vh] min-h-[420px]"
+                    />
+                  ) : (
+                    <img
+                      src={previewSrc}
+                      alt={`Aperçu de ${resource.title}`}
+                      className="w-full max-h-[70vh] object-contain bg-muted/20"
+                    />
+                  )}
+                </div>
               ) : (
                 <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-                  Cliquez sur l’icône œil depuis la liste des ressources pour ouvrir directement cette vue en mode aperçu.
+                  Chargement de l’aperçu du document...
                 </div>
               )}
             </CardContent>

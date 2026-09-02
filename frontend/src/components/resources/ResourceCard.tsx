@@ -49,8 +49,8 @@ const TYPE_STYLES: Record<string, { icon: string; bg: string; label: string }> =
     label: "Épreuve d'examen",
   },
   annales: {
-    icon: "text-amber-500",
-    bg: "bg-amber-500/10 border-amber-500/20",
+    icon: "text-purple-500",
+    bg: "bg-purple-500/10 border-purple-500/20",
     label: "Annale corrigée",
   },
   projects: {
@@ -61,7 +61,7 @@ const TYPE_STYLES: Record<string, { icon: string; bg: string; label: string }> =
   presentations: {
     icon: "text-indigo-500",
     bg: "bg-indigo-500/10 border-indigo-500/20",
-    label: "Support de cours",
+    label: "Présentation / Slides",
   },
   other: {
     icon: "text-muted-foreground",

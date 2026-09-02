@@ -348,8 +348,8 @@ export function EventDetail() {
 
         {/* Title & Date on Cover bottom */}
         <div className="absolute bottom-6 left-6 right-6 text-white space-y-2">
-          <div className="flex items-center gap-2 text-xs font-semibold text-orange-300">
-            <Calendar className="h-4 w-4" />
+          <div className="flex items-center gap-2 text-xs font-semibold text-white/90">
+            <Calendar className="h-4 w-4 text-primary" />
             <span className="capitalize">
               {startDate.toLocaleDateString("fr-FR", {
                 weekday: "long",
