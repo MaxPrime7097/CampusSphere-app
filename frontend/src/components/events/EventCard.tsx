@@ -165,10 +165,10 @@ export function EventCard({ event, onStatusChange, onShare }: EventCardProps) {
         {/* Date Ribbon on Cover */}
         <div className="absolute bottom-3 left-3 flex items-center gap-2 text-white">
           <div className="flex items-center gap-1.5 rounded-lg bg-black/60 px-2.5 py-1 text-xs font-semibold backdrop-blur-md">
-            <Calendar className="h-3.5 w-3.5 text-orange-400" />
+            <Calendar className="h-3.5 w-3.5 text-primary" />
             <span className="capitalize">{formattedDate}</span>
             <span className="opacity-60">•</span>
-            <Clock className="h-3 w-3 text-orange-400" />
+            <Clock className="h-3 w-3 text-white/80" />
             <span>{formattedTime}</span>
           </div>
         </div>

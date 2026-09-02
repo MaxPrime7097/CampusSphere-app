@@ -47,7 +47,7 @@ const SPHERE_TYPE_META: Record<
   },
   club: {
     label: "Club & Asso",
-    gradient: "from-amber-500 to-orange-600",
+    gradient: "from-indigo-600 to-purple-700",
     icon: Sparkles,
   },
   revision: {
@@ -160,7 +160,7 @@ export const SphereCard = React.memo(
               </span>
             )}
             {isPending && (
-              <span className="flex items-center gap-1 rounded-full bg-amber-500/90 text-white text-[10px] font-bold px-2 py-0.5 shadow-xs backdrop-blur-xs">
+              <span className="flex items-center gap-1 rounded-full bg-primary/90 text-primary-foreground text-[10px] font-bold px-2 py-0.5 shadow-xs backdrop-blur-xs">
                 <Clock className="h-3 w-3" /> En attente
               </span>
             )}
@@ -218,7 +218,7 @@ export const SphereCard = React.memo(
                 variant="outline"
                 size="sm"
                 disabled
-                className="w-full border-amber-500/30 text-amber-600 dark:text-amber-400 font-semibold text-xs"
+                className="w-full border-primary/30 text-primary font-semibold text-xs"
               >
                 <Clock className="h-3.5 w-3.5 mr-1.5" />
                 Demande envoyée

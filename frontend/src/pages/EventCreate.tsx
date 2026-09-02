@@ -113,7 +113,7 @@ export function EventCreate() {
       ...prev,
       title: draft.title || prev.title,
       description: draft.suggestedSchedule
-        ? `${draft.description}\n\n**📅 Programme :**\n${draft.suggestedSchedule}`
+        ? `${draft.description}\n\n**Programme :**\n${draft.suggestedSchedule}`
         : draft.description,
       category: draft.category || prev.category,
     }));
@@ -174,16 +174,16 @@ export function EventCreate() {
           className="rounded-xl text-xs font-bold border-primary/30 text-primary hover:bg-primary/10"
         >
           <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-          ✨ Rédiger avec Sphera
+          Rédiger avec Sphera
         </Button>
       </div>
 
       <div className="space-y-2">
-        <h1 className="text-2xl md:text-3xl font-extrabold text-foreground font-automata">
+        <h1 className="text-2xl md:text-3xl text-foreground">
           Créer un événement
         </h1>
         <p className="text-xs md:text-sm text-muted-foreground">
-          Publiez une soirée d'intégration, un hackathon, le MathScam ou une conférence pour la communauté universitaire.
+          Publiez une soirée, un hackathon, un atelier ou une conférence pour la communauté universitaire.
         </p>
       </div>
 
