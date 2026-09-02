@@ -92,6 +92,8 @@ export function serializeEvent(
     isPublic: event.isPublic,
     is_featured: event.isFeatured,
     isFeatured: event.isFeatured,
+    has_ticketing: (event as any).hasTicketing ?? true,
+    hasTicketing: (event as any).hasTicketing ?? true,
 
     attendees_count: attendeesCount,
     attendeesCount,

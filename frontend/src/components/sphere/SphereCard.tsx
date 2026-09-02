@@ -36,7 +36,7 @@ const SPHERE_TYPE_META: Record<
     icon: BookOpen,
   },
   projet: {
-    label: "Projet & Groupe",
+    label: "Projet",
     gradient: "from-pink-600 to-rose-700",
     icon: FolderGit2,
   },

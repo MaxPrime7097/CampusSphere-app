@@ -36,6 +36,9 @@ import { getUserSpheres } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import type { EventCategory, CreateEventInput, SpheraEventDraft } from "@/types/events.types";
 
+import { getEventUrl } from "@/lib/utils";
+import { Ticket } from "lucide-react";
+
 export function EventCreate() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -56,6 +59,7 @@ export function EventCreate() {
     onlineLink: "",
     maxAttendees: undefined,
     isPublic: true,
+    hasTicketing: true,
     sphereId: undefined,
   });
 
@@ -72,7 +76,7 @@ export function EventCreate() {
         title: "Événement créé avec succès ! 🎉",
         description: `"${created.title}" est maintenant en ligne.`,
       });
-      navigate(`/events/${created.id}`);
+      navigate(getEventUrl(created));
     },
     onError: (err: any) => {
       toast({
@@ -427,6 +431,23 @@ export function EventCreate() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            {/* Ticketing Toggle */}
+            <div className="flex items-center justify-between pt-2 border-t border-border/50">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-1.5">
+                  <Ticket className="h-3.5 w-3.5 text-primary" />
+                  <Label className="text-xs font-bold text-foreground">Activer la billetterie & QR Code</Label>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Génère un billet numérique officiel avec QR Code scannable pour chaque participant.
+                </p>
+              </div>
+              <Switch
+                checked={formData.hasTicketing !== false}
+                onCheckedChange={(checked) => setFormData({ ...formData, hasTicketing: checked })}
+              />
             </div>
 
             {/* Featured toggle */}

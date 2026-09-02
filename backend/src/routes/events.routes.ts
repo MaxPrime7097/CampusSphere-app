@@ -66,6 +66,7 @@ const CreateEventSchema = z.object({
   ),
   isPublic: z.boolean().optional().default(true),
   isFeatured: z.boolean().optional().default(false),
+  hasTicketing: z.boolean().optional().default(true),
   sphereId: z.preprocess(
     (val) => (val === "" || val === undefined || val === null || val === "none" ? null : Number(val)),
     z.number().int().positive().nullable().optional()

@@ -47,6 +47,7 @@ export interface Event {
   maxAttendees?: number | null;
   isPublic: boolean;
   isFeatured?: boolean;
+  hasTicketing?: boolean;
   attendeesCount: number;
   userStatus?: AttendeeStatus | null;
   userTicketCode?: string | null;
@@ -80,6 +81,7 @@ export interface CreateEventInput {
   maxAttendees?: number | null;
   isPublic?: boolean;
   isFeatured?: boolean;
+  hasTicketing?: boolean;
   sphereId?: string | number | null;
 }
 

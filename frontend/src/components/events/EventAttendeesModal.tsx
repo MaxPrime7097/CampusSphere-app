@@ -4,7 +4,6 @@ import {
   Users,
   Search,
   Check,
-  Heart,
   ShieldCheck,
   Download,
   QrCode,
@@ -23,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { exportAttendeesCsv, checkInAttendee } from "@/services/eventService";
 import { useToast } from "@/hooks/use-toast";
+import { formatSlugToLabel } from "@/lib/utils";
 import type { EventAttendee } from "@/types/events.types";
 
 interface EventAttendeesModalProps {
@@ -48,12 +48,12 @@ export function EventAttendeesModal({
 }: EventAttendeesModalProps) {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
-  const [activeTab, setActiveTab] = useState<"all" | "going" | "attended" | "interested">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "going" | "attended">("all");
   const [isExporting, setIsExporting] = useState(false);
 
+  // We consider registered / going attendees and checked-in attendees
   const attendedAttendees = attendees.filter((a) => a.status === "attended" || a.isCheckedIn);
-  const goingAttendees = attendees.filter((a) => a.status === "going");
-  const interestedAttendees = attendees.filter((a) => a.status === "interested");
+  const goingAttendees = attendees.filter((a) => a.status === "going" && !a.isCheckedIn);
 
   const filterList = (list: EventAttendee[]) => {
     if (!search.trim()) return list;
@@ -72,9 +72,7 @@ export function EventAttendeesModal({
       ? filterList(attendedAttendees)
       : activeTab === "going"
       ? filterList(goingAttendees)
-      : activeTab === "interested"
-      ? filterList(interestedAttendees)
-      : filterList(attendees);
+      : filterList(attendees.filter(a => a.status === "going" || a.status === "attended" || a.isCheckedIn));
 
   const handleExportCsv = async () => {
     if (!eventId) return;
@@ -114,14 +112,16 @@ export function EventAttendeesModal({
     }
   };
 
+  const totalRegistered = attendees.filter(a => a.status === "going" || a.status === "attended" || a.isCheckedIn).length;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl rounded-3xl p-6 space-y-4">
-        <DialogHeader>
+      <DialogContent className="w-[95vw] sm:max-w-xl max-h-[85vh] rounded-3xl p-5 sm:p-6 flex flex-col overflow-hidden">
+        <DialogHeader className="shrink-0 space-y-1 pb-2">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <DialogTitle className="flex items-center gap-2 text-lg font-bold">
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg font-bold">
               <Users className="h-5 w-5 text-primary" />
-              <span>Participants ({attendees.length})</span>
+              <span>Participants ({totalRegistered})</span>
             </DialogTitle>
 
             <div className="flex items-center gap-2">
@@ -133,7 +133,7 @@ export function EventAttendeesModal({
                     onOpenChange(false);
                     onOpenScanner();
                   }}
-                  className="rounded-xl text-xs font-semibold"
+                  className="rounded-xl text-xs font-semibold h-8"
                 >
                   <QrCode className="h-3.5 w-3.5 mr-1 text-primary" />
                   Scanner
@@ -145,10 +145,10 @@ export function EventAttendeesModal({
                   size="sm"
                   onClick={handleExportCsv}
                   disabled={isExporting}
-                  className="rounded-xl text-xs font-bold bg-primary text-primary-foreground"
+                  className="rounded-xl text-xs font-bold bg-primary text-primary-foreground h-8"
                 >
                   <Download className="h-3.5 w-3.5 mr-1" />
-                  {isExporting ? "Export..." : "Exporter CSV"}
+                  {isExporting ? "Export..." : "CSV"}
                 </Button>
               )}
             </div>
@@ -157,27 +157,23 @@ export function EventAttendeesModal({
         </DialogHeader>
 
         {/* Tabs & Search */}
-        <div className="space-y-3">
+        <div className="space-y-3 shrink-0">
           <Tabs
             value={activeTab}
             onValueChange={(val) => setActiveTab(val as any)}
             className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-3 h-9">
               <TabsTrigger value="all" className="text-xs">
-                Tous ({attendees.length})
+                Tous ({totalRegistered})
               </TabsTrigger>
-              <TabsTrigger value="attended" className="text-xs flex items-center gap-1">
-                <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                Présents ({attendedAttendees.length})
-              </TabsTrigger>
-              <TabsTrigger value="going" className="text-xs flex items-center gap-1">
+              <TabsTrigger value="going" className="text-xs flex items-center justify-center gap-1">
                 <Check className="h-3 w-3 text-primary" />
-                Inscrits ({goingAttendees.length})
+                <span className="truncate">Inscrits ({goingAttendees.length})</span>
               </TabsTrigger>
-              <TabsTrigger value="interested" className="text-xs flex items-center gap-1">
-                <Heart className="h-3 w-3 text-amber-500" />
-                Intéressés ({interestedAttendees.length})
+              <TabsTrigger value="attended" className="text-xs flex items-center justify-center gap-1">
+                <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                <span className="truncate">Présents ({attendedAttendees.length})</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -185,7 +181,7 @@ export function EventAttendeesModal({
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Rechercher par nom, username ou filière..."
+              placeholder="Rechercher par nom, promo ou filière..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 text-xs rounded-xl h-9"
@@ -193,15 +189,18 @@ export function EventAttendeesModal({
           </div>
         </div>
 
-        {/* Attendees List */}
-        <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
+        {/* Attendees List (Scrollable Area) */}
+        <div className="flex-1 overflow-y-auto space-y-2 pr-1 min-h-[180px] mt-2">
           {displayedList.length === 0 ? (
-            <div className="py-8 text-center text-xs text-muted-foreground">
-              Aucun participant dans cette vue.
+            <div className="py-12 text-center text-xs text-muted-foreground">
+              Aucun participant dans cette liste.
             </div>
           ) : (
             displayedList.map((attendee) => {
               const isChecked = attendee.status === "attended" || attendee.isCheckedIn;
+              const formattedFaculty = attendee.user.faculty
+                ? formatSlugToLabel(attendee.user.faculty)
+                : attendee.user.university || `@${attendee.user.username}`;
 
               return (
                 <div
@@ -213,7 +212,7 @@ export function EventAttendeesModal({
                     onClick={() => onOpenChange(false)}
                     className="flex items-center gap-3 min-w-0 flex-1"
                   >
-                    <Avatar className="h-9 w-9 border border-border">
+                    <Avatar className="h-9 w-9 border border-border shrink-0">
                       <AvatarImage src={attendee.user.avatar || undefined} />
                       <AvatarFallback className="text-xs font-bold">
                         {attendee.user.name?.slice(0, 2).toUpperCase() || "US"}
@@ -229,7 +228,7 @@ export function EventAttendeesModal({
                         )}
                       </div>
                       <p className="text-[11px] text-muted-foreground truncate">
-                        {attendee.user.faculty || attendee.user.university || `@${attendee.user.username}`}
+                        {formattedFaculty}
                       </p>
                     </div>
                   </Link>
@@ -243,7 +242,7 @@ export function EventAttendeesModal({
                         <CheckCircle2 className="h-3 w-3 mr-1" />
                         Présent
                       </Badge>
-                    ) : attendee.status === "going" ? (
+                    ) : (
                       <div className="flex items-center gap-1.5">
                         <Badge
                           variant="secondary"
@@ -256,19 +255,12 @@ export function EventAttendeesModal({
                             size="sm"
                             variant="outline"
                             onClick={() => handleManualCheckIn(attendee)}
-                            className="h-6 text-[10px] rounded-lg"
+                            className="h-6 text-[10px] rounded-lg px-2"
                           >
                             Valider
                           </Button>
                         )}
                       </div>
-                    ) : (
-                      <Badge
-                        variant="secondary"
-                        className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 text-[10px] font-semibold"
-                      >
-                        Intéressé
-                      </Badge>
                     )}
                   </div>
                 </div>

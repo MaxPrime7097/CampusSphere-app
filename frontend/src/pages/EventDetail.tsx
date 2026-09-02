@@ -509,13 +509,15 @@ export function EventDetail() {
                     {isCheckedIn ? "Présence validée au check-in" : "Vous participez à cet événement"}
                   </div>
 
-                  <Button
-                    onClick={() => setIsTicketOpen(true)}
-                    className="w-full rounded-2xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-md transition-all py-5 text-xs gap-1.5"
-                  >
-                    <Ticket className="h-4 w-4" />
-                    Afficher mon Billet & QR Code
-                  </Button>
+                  {event.hasTicketing !== false && (
+                    <Button
+                      onClick={() => setIsTicketOpen(true)}
+                      className="w-full rounded-2xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-md transition-all py-5 text-xs gap-1.5"
+                    >
+                      <Ticket className="h-4 w-4" />
+                      Afficher mon Billet & QR Code
+                    </Button>
+                  )}
 
                   <Button
                     variant="outline"
@@ -535,17 +537,11 @@ export function EventDetail() {
                     className="w-full rounded-2xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-md transition-all py-5"
                   >
                     <Check className="h-4 w-4 mr-2" />
-                    {registerMutation.isPending ? "Inscription..." : "Je participe"}
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    onClick={() => registerMutation.mutate("interested")}
-                    disabled={registerMutation.isPending}
-                    className="w-full rounded-2xl font-semibold text-xs py-4"
-                  >
-                    <Heart className="h-4 w-4 mr-2 text-amber-500" />
-                    {event.userStatus === "interested" ? "Intéressé" : "Ça m'intéresse"}
+                    {registerMutation.isPending
+                      ? "Inscription..."
+                      : event.hasTicketing !== false
+                      ? "Obtenir mon billet"
+                      : "Je participe"}
                   </Button>
                 </div>
               )}

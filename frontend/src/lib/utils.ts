@@ -139,3 +139,8 @@ export function getResourceUrl(resource: { id: string | number; title?: string }
   const slug = toSlug(resource.title);
   return slug ? `/resources/${resource.id}-${slug}` : `/resources/${resource.id}`;
 }
+
+export function getEventUrl(event: { id: string | number; title?: string }): string {
+  const slug = toSlug(event.title);
+  return slug ? `/events/${event.id}-${slug}` : `/events/${event.id}`;
+}
