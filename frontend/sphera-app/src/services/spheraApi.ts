@@ -280,3 +280,57 @@ export async function deleteAnnale(id: number | string) {
 export async function shareAnnale(id: number | string) {
   return apiFetch<{ success: boolean; data: any }>(`api/sphera/annales/${id}/share/`, { method: 'POST', body: {}, requireAuth: true })
 }
+
+// ── Quiz Live (Sphera Live) ─────────────────────────────────
+
+export async function createQuizManual(title: string, questions: { question: string; options: string[]; correctIndex: number; timeLimit?: number }[]) {
+  return apiFetch<{ success: boolean; data: any }>('api/quiz-live/create-manual/', {
+    method: 'POST',
+    body: { title, questions },
+    requireAuth: true,
+  });
+}
+
+export async function createQuizFromResource(resourceId: number, title: string) {
+  return apiFetch<{ success: boolean; data: any }>('api/quiz-live/generate-and-create/', {
+    method: 'POST',
+    body: { resource_id: resourceId, title },
+    requireAuth: true,
+  });
+}
+
+export async function importQuizJson(title: string, file: File) {
+  const formData = new FormData();
+  formData.append('title', title);
+  formData.append('file', file);
+  return apiFetch<{ success: boolean; data: any }>('api/quiz-live/import-json/', {
+    method: 'POST',
+    body: formData,
+    requireAuth: true,
+  });
+}
+
+export async function getQuizSessionByCode(roomCode: string) {
+  return apiFetch<{ success: boolean; data: any }>(`api/quiz-live/${roomCode}/`, {
+    method: 'GET',
+    requireAuth: false,
+  });
+}
+
+export async function getMyQuizSessions() {
+  return apiFetch<{ success: boolean; data: any[] }>('api/quiz-live/my-sessions/', {
+    method: 'GET',
+    requireAuth: true,
+  });
+}
+
+export function getQuizSocketUrl(roomCode: string): string {
+  const baseUrl = getApiBase();
+  const wsBase = baseUrl.replace(/^http/, 'ws');
+  const token = getToken();
+  let url = `${wsBase}/ws/quiz-live/${roomCode}/`;
+  if (token) {
+    url += `?token=${token}`;
+  }
+  return url;
+}

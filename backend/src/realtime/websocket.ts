@@ -5,7 +5,7 @@
  *   ws/conversations/<conversationId>/   (alias; both paths are in the Django routing)
  *   ws/notifications/                    (per-user push; AppLayout.tsx connects to it)
  *
- * Authentication is by `?token=<access jwt>` on the upgrade request. Browsers cannot
+ * Authentication is by ?token=<access jwt> on the upgrade request. Browsers cannot
  * set headers on a WebSocket handshake, which is why the token travels in the query
  * string — the same approach the Django middleware used.
  *
@@ -24,9 +24,11 @@ import { WebSocketServer, type WebSocket } from "ws";
 import { bearerToken, verifyToken } from "../lib/jwt.js";
 import { prisma } from "../lib/prisma.js";
 import { conversationChannel, subscribe, userChannel, type ChannelKey } from "./hub.js";
+import { quizLiveWss, handleQuizLiveUpgrade } from "./quizLiveSocket.js";
 
 const CHAT_PATH_RE = /^\/ws\/(?:chat|conversations)\/(\d+)\/?$/;
 const NOTIFICATIONS_PATH_RE = /^\/ws\/notifications\/?$/;
+const QUIZ_LIVE_PATH_RE = /^\/ws\/quiz-live\/([A-Za-z0-9]+)\/?$/;
 
 /** Heartbeat interval. Render drops idle connections, so the server pings. */
 const HEARTBEAT_MS = 30_000;
@@ -86,6 +88,14 @@ export function attachWebSockets(server: Server): void {
   const wss = new WebSocketServer({ noServer: true });
 
   server.on("upgrade", (request: IncomingMessage, socket: Duplex, head: Buffer) => {
+    const url = new URL(request.url ?? "", "http://localhost");
+    const quizMatch = QUIZ_LIVE_PATH_RE.exec(url.pathname);
+    
+    if (quizMatch) {
+      handleQuizLiveUpgrade(request, socket, head, quizLiveWss, quizMatch[1]);
+      return;
+    }
+
     void (async () => {
       let auth: Authorised | null = null;
       try {

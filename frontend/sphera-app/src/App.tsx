@@ -17,6 +17,9 @@ import Blogs from './pages/Blogs';
 import BlogDetail from './pages/BlogDetail';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
+import QuizLiveHome from './pages/QuizLiveHome';
+import QuizLiveHost from './pages/QuizLiveHost';
+import QuizLiveJoin from './pages/QuizLiveJoin';
 import { SidebarLayout } from './components/layout/SidebarLayout';
 
 function SSOCatcher() {
@@ -108,6 +111,9 @@ export default function App() {
             <Route path="/create" element={<CreateSession />} />
             <Route path="/sessions/:id" element={<SessionDetail type="session" />} />
             <Route path="/annales/:id" element={<SessionDetail type="annale" />} />
+            <Route path="/live" element={<QuizLiveHome />} />
+            <Route path="/live/host" element={<QuizLiveHost />} />
+            <Route path="/live/join" element={<QuizLiveJoin />} />
           </Route>
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
