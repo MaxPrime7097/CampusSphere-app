@@ -24,6 +24,7 @@ import { getEvents } from "@/services/eventService";
 import { useAuth } from "@/contexts/AuthContext";
 import { openVerificationModal } from "@/lib/events";
 import { getEventUrl } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 import type { Event, EventFilters, AttendeeStatus } from "@/types/events.types";
 
 export function Events() {

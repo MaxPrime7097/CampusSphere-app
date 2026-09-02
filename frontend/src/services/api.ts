@@ -1418,10 +1418,16 @@ export interface ResourceFolder {
 }
 
 export async function listFolders(token?: string): Promise<ResourceFolder[]> {
-  const response = await apiFetch<any>('api/resources/folders/', {
-    token: token || getAccessToken(),
-  });
-  return unwrapList<ResourceFolder>(response);
+  const authToken = token || getAccessToken();
+  if (!authToken) return [];
+  try {
+    const response = await apiFetch<any>('api/resources/folders/', {
+      token: authToken,
+    });
+    return unwrapList<ResourceFolder>(response);
+  } catch {
+    return [];
+  }
 }
 
 export async function createFolder(
@@ -1620,8 +1626,14 @@ export async function saveResource(id: number | string, token?: string) {
 }
 
 export async function getSavedResources(token?: string) {
-  const response = await apiFetch<any>("api/resources/saved/", { token: token || getAccessToken() });
-  return normalizeResources(unwrapList(response));
+  const authToken = token || getAccessToken();
+  if (!authToken) return [];
+  try {
+    const response = await apiFetch<any>("api/resources/saved/", { token: authToken });
+    return normalizeResources(unwrapList(response));
+  } catch {
+    return [];
+  }
 }
 
 export async function getUserResources(userId: number | string, token?: string) {
