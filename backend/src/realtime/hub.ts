@@ -38,6 +38,7 @@ export type ChannelKey = string & { readonly __brand: "ChannelKey" };
 
 export const conversationChannel = (conversationId: number): ChannelKey => `conv:${conversationId}` as ChannelKey;
 export const userChannel = (userId: number): ChannelKey => `user:${userId}` as ChannelKey;
+export const quizRoomChannel = (roomCode: string): ChannelKey => `quiz:${roomCode}` as ChannelKey;
 
 /**
  * Identifies this process. A frame carries its origin so the instance that
@@ -187,3 +188,4 @@ export function roomStats(): { rooms: number; subscribers: number; instance: str
   for (const room of rooms.values()) subscribers += room.size;
   return { rooms: rooms.size, subscribers, instance: INSTANCE_ID, distributed: redisEnabled };
 }
+export const quizRoomChannel = (roomCode: string): ChannelKey => `quiz:${roomCode}` as ChannelKey;

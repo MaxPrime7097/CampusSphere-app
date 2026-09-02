@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import { Plus, History, LogOut, Settings, LayoutDashboard, FileText, ArrowLeft, ExternalLink, FilePenLine } from 'lucide-react'
+import { Plus, History, LogOut, Settings, LayoutDashboard, FileText, ArrowLeft, ExternalLink, FilePenLine, Zap } from 'lucide-react'
 import { useSpheraAuth } from '../../contexts/SpheraAuthContext'
 import { getSessions, getAnnales } from '../../services/spheraApi'
 
@@ -55,6 +55,10 @@ export function SidebarLayout() {
               className="flex items-center gap-3 w-full px-4 py-3 bg-sphera-green text-black font-semibold rounded-xl text-sm hover:bg-sphera-green-hover transition-colors shadow-[0_0_15px_rgba(34,197,94,0.15)]"
             >
               <Plus className="w-5 h-5" /> Générer une session
+            </Link>
+            <Link to="/live" className="flex items-center gap-2 w-full px-4 py-2.5 rounded-lg border border-sphera-green/30 text-sphera-green hover:bg-sphera-green/10 transition-all text-sm font-medium sphera-live-pulse">
+              <Zap className="w-4 h-4" />
+              Sphera Live
             </Link>
           </div>
 

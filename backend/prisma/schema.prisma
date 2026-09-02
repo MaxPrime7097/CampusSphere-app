@@ -303,6 +303,8 @@ model User {
   uploads             UploadedFile[]
   auditLogs           AdminAuditLog[]
   revokedTokens       RevokedToken[]
+  quizLiveHosted      QuizLiveSession[]       @relation("QuizLiveSessionsHosted")
+  quizLiveParticipations QuizLiveParticipant[] @relation("QuizLiveParticipations")
 
   @@index([university])
   @@index([faculty])
@@ -1044,3 +1046,50 @@ model EventAttendee {
   @@map("event_attendees")
 }
 
+
+// ─────────────────────────────────────────────────────────────
+// Quiz Live (Sphera Live — multiplayer quiz sessions)
+// ─────────────────────────────────────────────────────────────
+
+enum QuizLiveStatus {
+  WAITING
+  ACTIVE
+  QUESTION_ACTIVE
+  QUESTION_RESULTS
+  FINISHED
+}
+
+model QuizLiveSession {
+  id                   Int             @id @default(autoincrement())
+  roomCode             String          @unique @map("room_code")
+  hostId               Int             @map("host_id")
+  title                String          @default("")
+  questions            Json            @default("[]")
+  status               QuizLiveStatus  @default(WAITING)
+  currentQuestionIndex Int             @default(-1) @map("current_question_index")
+  createdAt            DateTime        @default(now()) @map("created_at")
+
+  host                 User            @relation("QuizLiveSessionsHosted", fields: [hostId], references: [id], onDelete: Cascade)
+  participants         QuizLiveParticipant[]
+
+  @@index([roomCode])
+  @@index([hostId])
+  @@map("quiz_live_sessions")
+}
+
+model QuizLiveParticipant {
+  id          Int      @id @default(autoincrement())
+  sessionId   Int      @map("session_id")
+  userId      Int?     @map("user_id")
+  displayName String   @map("display_name")
+  score       Int      @default(0)
+  answers     Json     @default("[]")
+  joinedAt    DateTime @default(now()) @map("joined_at")
+
+  session     QuizLiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user        User?           @relation("QuizLiveParticipations", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([sessionId, userId])
+  @@index([sessionId, score])
+  @@map("quiz_live_participants")
+}
