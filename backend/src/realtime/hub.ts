@@ -188,4 +188,3 @@ export function roomStats(): { rooms: number; subscribers: number; instance: str
   for (const room of rooms.values()) subscribers += room.size;
   return { rooms: rooms.size, subscribers, instance: INSTANCE_ID, distributed: redisEnabled };
 }
-export const quizRoomChannel = (roomCode: string): ChannelKey => `quiz:${roomCode}` as ChannelKey;
