@@ -283,14 +283,6 @@ export async function shareAnnale(id: number | string) {
 
 // ── Quiz Live (Sphera Live) ─────────────────────────────────
 
-export async function createQuizManual(title: string, questions: any[]) {
-  return apiFetch<{ success: boolean; data: any }>('api/quiz-live/create-manual/', {
-    method: 'POST',
-    body: { title, questions },
-    requireAuth: true,
-  });
-}
-
 export async function createQuizManual(title: string, questions: { question: string; options: string[]; correctIndex: number; timeLimit?: number }[]) {
   return apiFetch<{ success: boolean; data: any }>('api/quiz-live/create-manual/', {
     method: 'POST',
