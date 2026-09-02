@@ -23,7 +23,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { getEvents } from "@/services/eventService";
 import { useAuth } from "@/contexts/AuthContext";
 import { openVerificationModal } from "@/lib/events";
-import { useToast } from "@/hooks/use-toast";
+import { getEventUrl } from "@/lib/utils";
 import type { Event, EventFilters, AttendeeStatus } from "@/types/events.types";
 
 export function Events() {
@@ -225,7 +225,7 @@ export function Events() {
 
             <div className="shrink-0 w-full lg:w-auto">
               <Button
-                onClick={() => navigate(`/events/${featuredEvent.id}`)}
+                onClick={() => navigate(getEventUrl(featuredEvent))}
                 className="w-full lg:w-auto rounded-xl font-semibold bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
               >
                 Découvrir l'événement

@@ -147,7 +147,7 @@ export function EventEdit() {
       </div>
 
       <div className="space-y-1">
-        <h1 className="text-2xl md:text-3xl font-extrabold text-foreground font-automata">
+        <h1 className="text-2xl md:text-3xl text-foreground">
           Modifier l'événement
         </h1>
         <p className="text-xs text-muted-foreground">

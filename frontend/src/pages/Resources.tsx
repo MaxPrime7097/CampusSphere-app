@@ -534,8 +534,8 @@ export function Resources() {
             </div>
 
             {resourcesQuery.isLoading ? (
-              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                {Array.from({ length: 8 }).map((_, i) => (
+              <div className="grid gap-3.5 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                {Array.from({ length: 12 }).map((_, i) => (
                   <ResourceSkeleton key={i} />
                 ))}
               </div>
@@ -552,7 +552,7 @@ export function Resources() {
                 }}
               />
             ) : (
-              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              <div className="grid gap-3.5 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                 {filteredResources.map((resource) => (
                   <ResourceCard
                     key={resource.id}
@@ -583,7 +583,7 @@ export function Resources() {
                   viewAllCategory}
               </h2>
             </div>
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            <div className="grid gap-3.5 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {filteredResources
                 .filter((r) => r.type === viewAllCategory)
                 .map((resource) => (
@@ -703,9 +703,9 @@ export function Resources() {
                         Ce dossier est actuellement vide.
                       </div>
                     ) : (
-                      <NetflixCarousel className="gap-4 pb-1">
+                      <NetflixCarousel className="gap-3 pb-1">
                         {folderResources.map((resource) => (
-                          <div key={resource.id} className="cs-scroll-item w-[200px] sm:w-[260px]">
+                          <div key={resource.id} className="cs-scroll-item w-[160px] sm:w-[185px] md:w-[200px]">
                             <ResourceCard
                               resource={resource}
                               isDownloading={downloadingIds.has(resource.id)}
@@ -734,9 +734,9 @@ export function Resources() {
                   <h2 className="text-base sm:text-lg font-bold mb-3 px-1 text-foreground">
                     Ressources Recommandées & Populaires
                   </h2>
-                  <NetflixCarousel className="gap-4 pb-1">
+                  <NetflixCarousel className="gap-3 pb-1">
                     {suggestions.map((resource) => (
-                      <div key={resource.id} className="cs-scroll-item w-[220px] sm:w-[260px]">
+                      <div key={resource.id} className="cs-scroll-item w-[160px] sm:w-[185px] md:w-[200px]">
                         <ResourceCard
                           resource={resource}
                           isDownloading={downloadingIds.has(resource.id)}
@@ -772,16 +772,16 @@ export function Resources() {
                       </Button>
                     )}
                   </div>
-                  <NetflixCarousel className="gap-4 pb-1">
+                  <NetflixCarousel className="gap-3 pb-1">
                     {resourcesQuery.isLoading ? (
-                      Array.from({ length: 4 }).map((_, i) => (
-                        <div key={i} className="cs-scroll-item w-[220px] sm:w-[260px]">
+                      Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i} className="cs-scroll-item w-[160px] sm:w-[185px] md:w-[200px]">
                           <ResourceSkeleton />
                         </div>
                       ))
                     ) : (
                       categoryResources.map((resource) => (
-                        <div key={resource.id} className="cs-scroll-item w-[220px] sm:w-[260px]">
+                        <div key={resource.id} className="cs-scroll-item w-[160px] sm:w-[185px] md:w-[200px]">
                           <ResourceCard
                             resource={resource}
                             isDownloading={downloadingIds.has(resource.id)}

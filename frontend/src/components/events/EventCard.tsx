@@ -24,11 +24,13 @@ import { getEventCategoryMeta } from "@/constants/eventCategories";
 import { registerToEvent, unregisterFromEvent } from "@/services/eventService";
 import { useToast } from "@/hooks/use-toast";
 import type { Event, AttendeeStatus } from "@/types/events.types";
+import { formatSlugToLabel, getEventUrl } from "@/lib/utils";
 
 interface EventCardProps {
   event: Event;
   onStatusChange?: (eventId: string | number, newStatus: AttendeeStatus | null) => void;
   onShare?: (event: Event) => void;
+  className?: string;
 }
 
 const CategoryIconMap: Record<string, any> = {
@@ -40,12 +42,12 @@ const CategoryIconMap: Record<string, any> = {
   other: Compass,
 };
 
-export function EventCard({ event, onStatusChange, onShare }: EventCardProps) {
+export function EventCard({ event, onStatusChange, onShare, className = "" }: EventCardProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isRegistering, setIsRegistering] = useState(false);
-  const [localStatus, setLocalStatus] = useState<AttendeeStatus | null | undefined>(event.userStatus);
-  const [attendeesCount, setAttendeesCount] = useState(event.attendeesCount || 0);
+  const [localStatus, setLocalStatus] = useState<AttendeeStatus | null>(event.userStatus || null);
+  const [attendeesCount, setAttendeesCount] = useState<number>(Number(event.attendeesCount || 0));
 
   const meta = getEventCategoryMeta(event.category);
   const IconComponent = CategoryIconMap[event.category] || Calendar;
@@ -108,7 +110,7 @@ export function EventCard({ event, onStatusChange, onShare }: EventCardProps) {
     if (onShare) {
       onShare(event);
     } else {
-      navigator.clipboard?.writeText(`${window.location.origin}/events/${event.id}`);
+      navigator.clipboard?.writeText(`${window.location.origin}${getEventUrl(event)}`);
       toast({
         title: "Lien copié !",
         description: "Le lien de l'événement a été copié dans le presse-papier.",
@@ -118,8 +120,8 @@ export function EventCard({ event, onStatusChange, onShare }: EventCardProps) {
 
   return (
     <div
-      onClick={() => navigate(`/events/${event.id}`)}
-      className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/70 bg-card text-card-foreground shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl cursor-pointer"
+      onClick={() => navigate(getEventUrl(event))}
+      className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/70 bg-card text-card-foreground shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl cursor-pointer ${className}`}
     >
       {/* Top Banner / Image */}
       <div className="relative h-44 w-full overflow-hidden bg-muted">
