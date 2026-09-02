@@ -44,24 +44,20 @@ export function CommentSkeleton() {
 
 export function ResourceSkeleton() {
   return (
-    <Card className="group flex flex-col overflow-hidden border-border/40 transition-all duration-300">
-      <div className="relative aspect-[4/3] w-full flex flex-col items-center justify-center bg-muted animate-pulse">
-        <Skeleton className="w-16 h-16 rounded-lg bg-muted/60" />
+    <Card className="group flex flex-col overflow-hidden rounded-2xl border-border/70 transition-all duration-300">
+      <div className="relative h-20 w-full flex flex-col items-center justify-center bg-muted/60 animate-pulse border-b">
+        <Skeleton className="w-8 h-8 rounded-lg bg-muted-foreground/20" />
       </div>
 
-      <div className="p-3 flex flex-col flex-1 justify-between bg-card">
-        <div className="mb-3 flex flex-col">
-          <Skeleton className="h-4 w-3/4 mb-1" />
-          <Skeleton className="h-4 w-1/2 mb-1" />
-          <Skeleton className="h-3 w-1/4 mt-1.5" />
+      <div className="p-2.5 flex flex-col flex-1 justify-between bg-card">
+        <div className="mb-2 flex flex-col gap-1">
+          <Skeleton className="h-3.5 w-4/5" />
+          <Skeleton className="h-3 w-3/5" />
         </div>
 
-        <div className="flex items-center justify-between mt-auto h-6">
-          <div className="flex items-center gap-3">
-            <Skeleton className="h-3 w-8" />
-            <Skeleton className="h-3 w-8" />
-          </div>
-          <Skeleton className="h-6 w-16" />
+        <div className="flex items-center justify-between pt-2 mt-2 border-t border-border/40 h-5">
+          <Skeleton className="h-2.5 w-12" />
+          <Skeleton className="h-2.5 w-8" />
         </div>
       </div>
     </Card>

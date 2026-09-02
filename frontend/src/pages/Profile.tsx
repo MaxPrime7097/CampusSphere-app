@@ -1742,8 +1742,8 @@ export function Profile() {
                   Fichiers Partagés
                 </h3>
                 {loading ? (
-                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                    {Array.from({ length: 4 }).map((_, i) => <ResourceSkeleton key={i} />)}
+                  <div className="grid gap-3.5 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                    {Array.from({ length: 6 }).map((_, i) => <ResourceSkeleton key={i} />)}
                   </div>
                 ) : user.sharedFiles.length === 0 ? (
                   <EmptyState
@@ -1752,7 +1752,7 @@ export function Profile() {
                     description={resourcesAvailable ? "Cet utilisateur n'a pas encore partagé de ressources." : NOT_AVAILABLE_TEXT}
                   />
                 ) : (
-                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div className="grid gap-3.5 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                     {user.sharedFiles.map((file: any) => (
                       <ResourceCard
                         key={file.id}
