@@ -44,7 +44,7 @@ export default function QuizLiveJoin() {
     try {
       const code = roomCodeInput.toUpperCase().trim();
       const res = await getQuizSessionByCode(code);
-      if (res.success) {
+      if (res && (res as any).data) {
         setJoinedRoomCode(code);
       } else {
         setJoinError('Session introuvable.');
@@ -97,11 +97,11 @@ export default function QuizLiveJoin() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen h-auto overflow-y-auto bg-sphera-bg relative">
-      {/* Dynamic Grid Background */}
-      <div className="absolute inset-0 z-0 pointer-events-none opacity-20" style={{
-        backgroundImage: `linear-gradient(rgba(34, 197, 94, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 197, 94, 0.2) 1px, transparent 1px)`,
-        backgroundSize: '40px 40px'
+    <div className="flex flex-col min-h-screen h-auto overflow-y-auto bg-sphera-bg relative font-live">
+      {/* Dynamic Grid Background with Glow */}
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-30" style={{
+        backgroundImage: `radial-gradient(circle at center, rgba(34, 197, 94, 0.15) 0%, transparent 70%), linear-gradient(rgba(34, 197, 94, 0.25) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 197, 94, 0.25) 1px, transparent 1px)`,
+        backgroundSize: '100% 100%, 40px 40px, 40px 40px'
       }}></div>
 
       <Helmet>
@@ -111,8 +111,8 @@ export default function QuizLiveJoin() {
       <main className="flex-1 w-full max-w-5xl mx-auto py-8 px-4 flex flex-col justify-center min-h-screen relative z-10">
         
         {phase === 'join' && (
-          <div className="w-full max-w-md mx-auto bg-sphera-surface-2 border border-sphera-border rounded-2xl p-8 shadow-xl">
-            <h2 className="text-2xl font-live font-bold text-white mb-6 text-center">Rejoindre un quiz</h2>
+          <div className="w-full max-w-md mx-auto bg-sphera-surface-2/90 backdrop-blur-md border border-sphera-border rounded-2xl p-8 shadow-2xl">
+            <h2 className="text-3xl font-bold text-white mb-6 text-center uppercase tracking-widest">Rejoindre</h2>
             
             <div className="space-y-4 mb-6">
               <div>

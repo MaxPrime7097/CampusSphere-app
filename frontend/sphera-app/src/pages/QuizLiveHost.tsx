@@ -96,11 +96,11 @@ export default function QuizLiveHost() {
   }, [phase]);
 
   return (
-    <div className="flex flex-col min-h-screen h-auto overflow-y-auto bg-sphera-bg relative">
-      {/* Dynamic Grid Background */}
-      <div className="absolute inset-0 z-0 pointer-events-none opacity-20" style={{
-        backgroundImage: `linear-gradient(rgba(34, 197, 94, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 197, 94, 0.2) 1px, transparent 1px)`,
-        backgroundSize: '40px 40px'
+    <div className="flex flex-col min-h-screen h-auto overflow-y-auto bg-sphera-bg relative font-live">
+      {/* Dynamic Grid Background with Glow */}
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-30" style={{
+        backgroundImage: `radial-gradient(circle at center, rgba(34, 197, 94, 0.15) 0%, transparent 70%), linear-gradient(rgba(34, 197, 94, 0.25) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 197, 94, 0.25) 1px, transparent 1px)`,
+        backgroundSize: '100% 100%, 40px 40px, 40px 40px'
       }}></div>
       
       <Helmet>
@@ -115,7 +115,7 @@ export default function QuizLiveHost() {
 
         {phase === 'countdown' && (
           <div className="flex items-center justify-center w-full">
-            <span className="text-[150px] font-bold text-white tabular-nums animate-pulse">
+            <span className="text-[200px] font-bold text-white tabular-nums animate-pulse drop-shadow-[0_0_30px_rgba(34,197,94,0.8)] text-sphera-green">
               {countdown}
             </span>
           </div>
@@ -123,23 +123,26 @@ export default function QuizLiveHost() {
 
         {phase === 'waiting' && (
           <div className="w-full max-w-3xl mx-auto text-center flex flex-col items-center">
-            <h2 className="text-2xl font-bold text-white mb-2">Code pour rejoindre:</h2>
-            <div className="font-mono text-6xl sm:text-8xl font-bold tracking-[0.3em] text-sphera-green mb-12 select-all bg-sphera-surface-2 py-6 px-12 rounded-3xl border border-sphera-green/30 sphera-glow">
+            <h2 className="text-2xl font-bold text-white mb-2 uppercase tracking-widest">Code pour rejoindre</h2>
+            <div className="font-mono text-7xl sm:text-9xl font-bold tracking-[0.2em] text-sphera-green mb-12 select-all bg-sphera-surface-2 py-8 px-16 rounded-3xl border-2 border-sphera-green/50 shadow-[0_0_50px_rgba(34,197,94,0.3)]">
               {session?.roomCode}
             </div>
             
-            <div className="w-full bg-sphera-surface-2 border border-sphera-border rounded-2xl p-6 mb-8">
-              <h3 className="text-xl font-bold text-white mb-4">
+            <div className="w-full bg-sphera-surface-2/80 backdrop-blur-md border border-sphera-border rounded-2xl p-6 mb-8">
+              <h3 className="text-xl font-bold text-white mb-6 uppercase tracking-wider text-sphera-text-muted">
                 Participants ({participants.length})
               </h3>
-              <div className="flex flex-wrap justify-center gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-left">
                 {participants.length === 0 ? (
-                  <p className="text-sphera-text-muted italic">En attente de joueurs...</p>
+                  <p className="text-sphera-text-muted italic col-span-full text-center py-4">En attente de joueurs...</p>
                 ) : (
                   participants.map((p, i) => (
-                    <span key={i} className="px-4 py-2 bg-sphera-surface border border-sphera-border rounded-full text-white text-sm font-medium">
-                      {p.displayName}
-                    </span>
+                    <div key={i} className="flex items-center gap-3 px-4 py-3 bg-sphera-bg border border-sphera-border rounded-xl">
+                      <div className="w-2 h-2 rounded-full bg-sphera-green animate-pulse"></div>
+                      <span className="text-white font-medium text-lg truncate">
+                        {p.displayName}
+                      </span>
+                    </div>
                   ))
                 )}
               </div>
