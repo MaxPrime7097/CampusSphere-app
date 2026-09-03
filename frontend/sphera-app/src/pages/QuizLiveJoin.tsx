@@ -86,16 +86,22 @@ export default function QuizLiveJoin() {
   }
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-64px)] h-auto overflow-y-auto pb-12 bg-sphera-bg">
+    <div className="flex flex-col min-h-screen h-auto overflow-y-auto bg-sphera-bg relative">
+      {/* Dynamic Grid Background */}
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-20" style={{
+        backgroundImage: `linear-gradient(rgba(34, 197, 94, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 197, 94, 0.2) 1px, transparent 1px)`,
+        backgroundSize: '40px 40px'
+      }}></div>
+
       <Helmet>
         <title>Rejoindre un Quiz · Sphera Live</title>
       </Helmet>
 
-      <main className="flex-1 w-full max-w-5xl mx-auto py-8 px-4 flex flex-col justify-center">
+      <main className="flex-1 w-full max-w-5xl mx-auto py-8 px-4 flex flex-col justify-center min-h-screen relative z-10">
         
         {phase === 'join' && (
           <div className="w-full max-w-md mx-auto bg-sphera-surface-2 border border-sphera-border rounded-2xl p-8 shadow-xl">
-            <h2 className="text-2xl font-display font-bold text-white mb-6 text-center">Rejoindre un quiz</h2>
+            <h2 className="text-2xl font-live font-bold text-white mb-6 text-center">Rejoindre un quiz</h2>
             
             <div className="space-y-4 mb-6">
               <div>
@@ -167,13 +173,13 @@ export default function QuizLiveJoin() {
           <div className="w-full flex flex-col items-center">
             <div className="mb-8 text-center">
               {answerResult ? (
-                answerResult.correct ? (
-                  <h2 className="text-3xl font-bold text-sphera-green mb-2">+ {answerResult.pointsEarned} points !</h2>
-                ) : (
-                  <h2 className="text-3xl font-bold text-red-500 mb-2">Mauvaise réponse</h2>
-                )
+                  answerResult.correct ? (
+                      <h2 className="text-4xl font-bold text-sphera-green mb-2 animate-bounce">+ {answerResult.pointsEarned} pts</h2>
+                  ) : (
+                      <h2 className="text-3xl font-bold text-red-500 mb-2 animate-pulse">Mauvaise reponse</h2>
+                  )
               ) : (
-                <h2 className="text-3xl font-bold text-sphera-text-muted mb-2">Temps écoulé</h2>
+                  <h2 className="text-3xl font-bold text-sphera-text-muted mb-2">Temps ecoule</h2>
               )}
             </div>
 
@@ -195,7 +201,7 @@ export default function QuizLiveJoin() {
         {phase === 'finished' && (
           <div className="w-full flex flex-col items-center">
             <div className="mb-12 text-center">
-              <h2 className="text-4xl font-display font-bold text-white mb-2">Quiz terminé !</h2>
+              <h2 className="text-4xl font-live font-bold text-white mb-2">Quiz terminé !</h2>
             </div>
             <Leaderboard entries={leaderboard} highlightUserId={user?.id} />
           </div>

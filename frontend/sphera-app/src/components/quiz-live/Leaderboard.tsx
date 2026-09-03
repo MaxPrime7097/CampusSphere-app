@@ -12,7 +12,7 @@ export function Leaderboard({ entries, highlightUserId }: LeaderboardProps) {
   return (
     <div className="w-full max-w-2xl mx-auto flex flex-col gap-6">
       <div className="text-center mb-4">
-        <h2 className="text-3xl font-display font-bold text-white flex items-center justify-center gap-3">
+        <h2 className="text-3xl font-live font-bold text-white flex items-center justify-center gap-3">
           <Trophy className="w-8 h-8 text-yellow-500" />
           Classement
         </h2>

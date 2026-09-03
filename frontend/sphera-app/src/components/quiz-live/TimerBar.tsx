@@ -36,11 +36,11 @@ export function TimerBar({ duration, onExpire }: TimerBarProps) {
 
   return (
     <div className="w-full">
-      <div className="flex justify-between text-xs text-sphera-text-muted mb-1 font-medium">
+      <div className="flex justify-between items-center text-sm text-sphera-text-muted mb-2 font-medium">
         <span>Temps restant</span>
-        <span className={timeLeft <= 3 ? 'text-red-500 font-bold' : ''}>{timeLeft}s</span>
+        <span className={`font-mono text-2xl font-bold ${timeLeft <= 3 ? 'text-red-500 animate-pulse' : timeLeft <= duration * 0.3 ? 'text-orange-500' : 'text-sphera-green'}`}>{timeLeft}s</span>
       </div>
-      <div className="h-2 w-full bg-sphera-surface-2 rounded-full overflow-hidden">
+      <div className="h-4 w-full bg-sphera-surface-2 rounded-full overflow-hidden">
         <div 
           className={`h-full ${colorClass} transition-all duration-1000 ease-linear rounded-full`}
           style={{ width: `${percentage}%` }}

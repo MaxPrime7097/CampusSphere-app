@@ -144,8 +144,8 @@ export default function Dashboard() {
                   <div key={session.id} className="sphera-card p-5 border border-sphera-border rounded-xl">
                     <h4 className="text-white font-medium mb-2">{session.title}</h4>
                     <div className="flex justify-between items-center text-xs text-sphera-text-muted">
-                      <span>Code: <strong className="text-white font-mono">{session.room_code}</strong></span>
-                      <span>{new Date(session.created_at).toLocaleDateString('fr-FR')}</span>
+                      <span>Code: <strong className="text-white font-mono">{session.roomCode}</strong></span>
+                      <span>{new Date(session.createdAt).toLocaleDateString('fr-FR')}</span>
                     </div>
                   </div>
                 ))}
