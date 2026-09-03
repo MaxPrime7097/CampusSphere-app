@@ -119,6 +119,12 @@ quizLiveWss.on("connection", (ws: WebSocket, _request: IncomingMessage, roomCode
                     state.hostSocket = ws;
                 }
 
+                if (session.hostId === userId) {
+                    state.hostSocket = ws;
+                    sendToClient(ws, { type: "connected", payload: { roomCode, sessionId: session.id } });
+                    return;
+                }
+
                 // If joining as participant
                 let participant = await prisma.quizLiveParticipant.findFirst({
                     where: { sessionId: session.id, userId: userId || undefined, displayName: userId ? undefined : displayName }

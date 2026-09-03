@@ -69,6 +69,17 @@ export default function QuizLiveJoin() {
     }
   }, [currentQuestion]);
 
+  // Audio Effects
+  useEffect(() => {
+    if (questionResults && currentQuestion && answerResult) {
+      if (answerResult.correct) {
+        new Audio('/sounds/success.mp3').play().catch(e => console.log('Audio error:', e));
+      } else {
+        new Audio('/sounds/fail.mp3').play().catch(e => console.log('Audio error:', e));
+      }
+    }
+  }, [questionResults, currentQuestion, answerResult]);
+
   const handleAnswer = (index: number) => {
     if (selectedOption !== null || !currentQuestion) return;
     setSelectedOption(index);
