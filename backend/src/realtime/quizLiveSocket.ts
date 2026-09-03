@@ -115,13 +115,23 @@ quizLiveWss.on("connection", (ws: WebSocket, _request: IncomingMessage, roomCode
                     return;
                 }
 
-                if (userId === session.hostId) {
-                    state.hostSocket = ws;
-                }
-
                 if (session.hostId === userId) {
                     state.hostSocket = ws;
+                    state.sockets.set(ws, {
+                        userId: userId,
+                        displayName: displayName || "Hôte",
+                        score: 0
+                    });
                     sendToClient(ws, { type: "connected", payload: { roomCode, sessionId: session.id } });
+                    
+                    const allParticipants = await prisma.quizLiveParticipant.findMany({
+                        where: { sessionId: session.id },
+                        select: { id: true, displayName: true, score: true }
+                    });
+                    sendToClient(ws, {
+                        type: "participants_update",
+                        payload: { participants: allParticipants }
+                    });
                     return;
                 }
 
