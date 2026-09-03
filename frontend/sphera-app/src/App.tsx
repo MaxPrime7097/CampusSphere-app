@@ -1,6 +1,6 @@
 // Force Vite HMR reload
 import React, { useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, Outlet } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useSpheraAuth } from './contexts/SpheraAuthContext';
 import Landing from './pages/Landing';
@@ -112,9 +112,13 @@ export default function App() {
             <Route path="/sessions/:id" element={<SessionDetail type="session" />} />
             <Route path="/annales/:id" element={<SessionDetail type="annale" />} />
             <Route path="/live" element={<QuizLiveHome />} />
-            <Route path="/live/host" element={<QuizLiveHost />} />
-            <Route path="/live/join" element={<QuizLiveJoin />} />
           </Route>
+          
+          {/* Sphera Live Fullscreen Routes */}
+          <Route element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
+            <Route path="/live/host" element={<QuizLiveHost />} />
+          </Route>
+          <Route path="/live/join" element={<QuizLiveJoin />} />
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

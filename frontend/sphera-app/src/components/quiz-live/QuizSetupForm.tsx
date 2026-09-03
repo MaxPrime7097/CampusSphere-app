@@ -44,11 +44,8 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
         res = await importQuizJson(title, file);
       }
       
-      if (res.success && res.data) {
-        onSessionCreated(res.data);
-      } else {
-        throw new Error('Erreur lors de la création de la session.');
-      }
+      const session = (res as any)?.data || res;
+      onSessionCreated(session);
     } catch (err: any) {
       setError(err.message || 'Une erreur est survenue.');
     } finally {

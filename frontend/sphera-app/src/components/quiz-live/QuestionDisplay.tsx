@@ -38,7 +38,7 @@ export function QuestionDisplay({
       </div>
       
       <div className="bg-sphera-surface-2 border border-sphera-border rounded-2xl p-8 text-center shadow-lg">
-        <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-white">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-live font-bold text-white">
           {question}
         </h2>
       </div>

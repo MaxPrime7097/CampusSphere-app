@@ -20,12 +20,11 @@ export interface AnswerResult {
   correct: boolean;
   correctIndex: number;
   pointsEarned: number;
-  newScore: number;
 }
 
 export interface QuestionResults {
   correctIndex: number;
-  answerCounts: number[];
+  leaderboard: QuizLiveParticipant[];
 }
 
 export function useQuizSocket(roomCode: string | null) {
@@ -71,7 +70,7 @@ export function useQuizSocket(roomCode: string | null) {
             setAnswerResult(data.payload);
             break;
           case 'question_results':
-            setQuestionResults(data.payload.results);
+            setQuestionResults(data.payload);
             setLeaderboard(data.payload.leaderboard || []);
             break;
           case 'quiz_finished':

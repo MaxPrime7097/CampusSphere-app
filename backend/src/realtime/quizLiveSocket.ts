@@ -15,12 +15,13 @@ interface ParticipantInfo {
 
 const roomStates = new Map<string, {
     sockets: Map<WebSocket, ParticipantInfo>;
+    hostSocket: WebSocket | null;
     timers: NodeJS.Timeout[];
 }>();
 
 function getRoomState(roomCode: string) {
     if (!roomStates.has(roomCode)) {
-        roomStates.set(roomCode, { sockets: new Map(), timers: [] });
+        roomStates.set(roomCode, { sockets: new Map(), hostSocket: null, timers: [] });
     }
     return roomStates.get(roomCode)!;
 }
@@ -45,6 +46,41 @@ function sendToClient(ws: WebSocket, message: any) {
     if (ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify(message));
     }
+}
+
+async function sendNextQuestion(roomCode: string, session: any, questionIndex: number) {
+    const questions = session.questions as any[];
+    const q = questions[questionIndex];
+    const timeLimit = q.timeLimit || 30;
+    
+    broadcastToRoom(roomCode, {
+        type: "new_question",
+        payload: {
+            questionIndex: questionIndex,
+            question: q.question,
+            options: q.options,
+            timeLimit: timeLimit,
+            totalQuestions: questions.length
+        }
+    });
+    
+    const state = getRoomState(roomCode);
+    const timer = setTimeout(async () => {
+        const leaderboard = await prisma.quizLiveParticipant.findMany({
+            where: { sessionId: session.id },
+            orderBy: { score: "desc" },
+            select: { displayName: true, score: true }
+        });
+        
+        broadcastToRoom(roomCode, {
+            type: "question_results",
+            payload: {
+                correctIndex: q.correctIndex,
+                leaderboard
+            }
+        });
+    }, timeLimit * 1000);
+    state.timers.push(timer);
 }
 
 export function handleQuizLiveUpgrade(
@@ -77,6 +113,10 @@ quizLiveWss.on("connection", (ws: WebSocket, _request: IncomingMessage, roomCode
                 if (!session) {
                     sendToClient(ws, { type: "error", payload: { message: "Room not found" } });
                     return;
+                }
+
+                if (userId === session.hostId) {
+                    state.hostSocket = ws;
                 }
 
                 // If joining as participant
@@ -115,7 +155,10 @@ quizLiveWss.on("connection", (ws: WebSocket, _request: IncomingMessage, roomCode
                     payload: { participants: allParticipants }
                 });
             } else if (type === "start_quiz") {
-                 // Assume verified by checking if host
+                 if (ws !== state.hostSocket) {
+                     sendToClient(ws, { type: "error", payload: { message: "Only the host can start the quiz" } });
+                     return;
+                 }
                  await prisma.quizLiveSession.update({
                      where: { roomCode },
                      data: { status: "QUESTION_ACTIVE", currentQuestionIndex: 0 }
@@ -123,20 +166,7 @@ quizLiveWss.on("connection", (ws: WebSocket, _request: IncomingMessage, roomCode
                  
                  const session = await prisma.quizLiveSession.findUnique({ where: { roomCode } });
                  if (session) {
-                     const questions = session.questions as any[];
-                     const q = questions[0];
-                     broadcastToRoom(roomCode, {
-                         type: "new_question",
-                         payload: {
-                             questionIndex: 0,
-                             question: q.question,
-                             options: q.options,
-                             timeLimit: q.timeLimit || 30,
-                             totalQuestions: questions.length
-                         }
-                     });
-                     
-                     // Handle timer logic (omitted for brevity, could set a setTimeout)
+                     await sendNextQuestion(roomCode, session, 0);
                  }
 
             } else if (type === "submit_answer") {
@@ -150,7 +180,7 @@ quizLiveWss.on("connection", (ws: WebSocket, _request: IncomingMessage, roomCode
                 
                 let points = 0;
                 if (isCorrect) {
-                     points = 1000 + Math.max(0, 500 - Math.floor(timeToAnswer / 30));
+                     points = 1000 + Math.max(0, Math.floor(500 - (timeToAnswer * 1000) / 10));
                 }
 
                 if (participantId) {
@@ -170,10 +200,14 @@ quizLiveWss.on("connection", (ws: WebSocket, _request: IncomingMessage, roomCode
 
                 sendToClient(ws, {
                     type: "answer_result",
-                    payload: { isCorrect, points, correctIndex: q.correctIndex }
+                    payload: { correct: isCorrect, pointsEarned: points, correctIndex: q.correctIndex }
                 });
 
             } else if (type === "next_question") {
+                 if (ws !== state.hostSocket) {
+                     sendToClient(ws, { type: "error", payload: { message: "Only the host can go to the next question" } });
+                     return;
+                 }
                  const session = await prisma.quizLiveSession.findUnique({ where: { roomCode } });
                  if (!session) return;
                  const questions = session.questions as any[];
@@ -200,17 +234,7 @@ quizLiveWss.on("connection", (ws: WebSocket, _request: IncomingMessage, roomCode
                          where: { roomCode },
                          data: { status: "QUESTION_ACTIVE", currentQuestionIndex: nextIndex }
                      });
-                     const q = questions[nextIndex];
-                     broadcastToRoom(roomCode, {
-                         type: "new_question",
-                         payload: {
-                             questionIndex: nextIndex,
-                             question: q.question,
-                             options: q.options,
-                             timeLimit: q.timeLimit || 30,
-                             totalQuestions: questions.length
-                         }
-                     });
+                     await sendNextQuestion(roomCode, session, nextIndex);
                  }
             }
         } catch (err) {
