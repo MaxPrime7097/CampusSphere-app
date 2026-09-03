@@ -14,6 +14,7 @@ export default function QuizLiveHost() {
   const { user } = useSpheraAuth();
   const [session, setSession] = useState<any>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
+  const [autoAdvanceTimer, setAutoAdvanceTimer] = useState<number | null>(5);
   
   const {
     participants,
@@ -25,6 +26,15 @@ export default function QuizLiveHost() {
     nextQuestion,
     joinRoom
   } = useQuizSocket(session?.roomCode || null);
+
+  const prevParticipantsCount = React.useRef(0);
+
+  useEffect(() => {
+    if (participants.length > prevParticipantsCount.current) {
+      new Audio('/sounds/join.mp3').play().catch(e => console.log('Audio error:', e));
+    }
+    prevParticipantsCount.current = participants.length;
+  }, [participants.length]);
 
   useEffect(() => {
     if (status === 'connected' && session) {
@@ -43,9 +53,11 @@ export default function QuizLiveHost() {
   useEffect(() => {
     if (countdown === null) return;
     if (countdown > 0) {
+      new Audio('/sounds/tick.mp3').play().catch(e => console.log('Audio error:', e));
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
       return () => clearTimeout(timer);
     } else {
+      new Audio('/sounds/start.mp3').play().catch(e => console.log('Audio error:', e));
       startQuiz();
       setCountdown(null);
     }
@@ -62,6 +74,15 @@ export default function QuizLiveHost() {
       phase = 'finished';
     }
   }
+
+  useEffect(() => {
+    if (phase === 'results' && autoAdvanceTimer !== null) {
+      const timer = setTimeout(() => {
+        nextQuestion();
+      }, autoAdvanceTimer * 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [phase, autoAdvanceTimer, nextQuestion]);
 
   useEffect(() => {
     if (phase === 'finished') {
@@ -122,6 +143,27 @@ export default function QuizLiveHost() {
                   ))
                 )}
               </div>
+            </div>
+
+            <div className="flex flex-col items-center justify-center gap-3 mb-8 bg-sphera-surface px-6 py-4 rounded-xl border border-sphera-border">
+              <label htmlFor="autoAdvance" className="text-white font-medium select-none text-center">
+                Enchaînement automatique :
+              </label>
+              <select
+                id="autoAdvance"
+                value={autoAdvanceTimer === null ? 'manual' : autoAdvanceTimer.toString()}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setAutoAdvanceTimer(val === 'manual' ? null : parseInt(val));
+                }}
+                className="bg-sphera-bg border border-sphera-border text-white px-4 py-2 rounded-lg focus:outline-none focus:border-sphera-green"
+              >
+                <option value="manual">Désactivé (Manuel)</option>
+                <option value="0">Sans pause (Immédiat)</option>
+                <option value="3">3 secondes</option>
+                <option value="5">5 secondes</option>
+                <option value="10">10 secondes</option>
+              </select>
             </div>
 
             <button

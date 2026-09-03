@@ -19,7 +19,12 @@ export function TimerBar({ duration, onExpire }: TimerBarProps) {
     }
 
     const timerId = setTimeout(() => {
-      setTimeLeft(prev => prev - 1);
+      setTimeLeft(prev => {
+        if (prev <= 4 && prev > 1) { // Will become 3, 2, 1
+          new Audio('/sounds/tick.mp3').play().catch(e => console.log('Audio error:', e));
+        }
+        return prev - 1;
+      });
     }, 1000);
 
     return () => clearTimeout(timerId);
