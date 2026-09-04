@@ -8,8 +8,14 @@ import { getQuizSessionByCode } from '../services/spheraApi';
 import { useSpheraAuth } from '../contexts/SpheraAuthContext';
 import { Loader2 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
+import { playSound, preloadSounds } from '../utils/audioManager';
 
 export default function QuizLiveJoin() {
+  // Preload sounds when component mounts
+  useEffect(() => {
+    preloadSounds();
+  }, []);
+
   const [searchParams] = useSearchParams();
   const { user } = useSpheraAuth();
   
@@ -69,24 +75,6 @@ export default function QuizLiveJoin() {
     }
   }, [currentQuestion]);
 
-  // Audio Effects
-  useEffect(() => {
-    if (questionResults && currentQuestion && answerResult) {
-      if (answerResult.correct) {
-        new Audio('/sounds/success.mp3').play().catch(e => console.log('Audio error:', e));
-      } else {
-        new Audio('/sounds/fail.mp3').play().catch(e => console.log('Audio error:', e));
-      }
-    }
-  }, [questionResults, currentQuestion, answerResult]);
-
-  const handleAnswer = (index: number) => {
-    if (selectedOption !== null || !currentQuestion) return;
-    setSelectedOption(index);
-    const timeToAnswer = (Date.now() - answerTime) / 1000;
-    submitAnswer(currentQuestion.questionIndex, index, timeToAnswer);
-  };
-
   // Phases: 'join', 'waiting', 'playing', 'results', 'finished'
   let phase = 'join';
   if (joinedRoomCode) {
@@ -95,6 +83,24 @@ export default function QuizLiveJoin() {
     else if (questionResults && currentQuestion) phase = 'results';
     else if (leaderboard.length > 0 && !currentQuestion) phase = 'finished';
   }
+
+  // Audio Effects
+  useEffect(() => {
+    if (phase === 'results') {
+      if (answerResult && answerResult.correct) {
+        playSound('success');
+      } else {
+        playSound('fail');
+      }
+    }
+  }, [phase, answerResult]);
+
+  const handleAnswer = (index: number) => {
+    if (selectedOption !== null || !currentQuestion) return;
+    setSelectedOption(index);
+    const timeToAnswer = (Date.now() - answerTime) / 1000;
+    submitAnswer(currentQuestion.questionIndex, index, timeToAnswer);
+  };
 
   return (
     <div className="flex flex-col min-h-screen h-auto overflow-y-auto bg-sphera-bg relative font-live">
