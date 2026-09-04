@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { playSound } from '../../utils/audioManager';
 
 interface TimerBarProps {
   duration: number;
@@ -21,7 +22,7 @@ export function TimerBar({ duration, onExpire }: TimerBarProps) {
     const timerId = setTimeout(() => {
       setTimeLeft(prev => {
         if (prev <= 4 && prev > 1) { // Will become 3, 2, 1
-          new Audio('/sounds/tick.mp3').play().catch(e => console.log('Audio error:', e));
+          playSound('tick');
         }
         return prev - 1;
       });

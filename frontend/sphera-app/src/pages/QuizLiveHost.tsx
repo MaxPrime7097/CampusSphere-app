@@ -8,8 +8,13 @@ import { Leaderboard } from '../components/quiz-live/Leaderboard';
 import { Helmet } from 'react-helmet-async';
 import { useSpheraAuth } from '../contexts/SpheraAuthContext';
 import confetti from 'canvas-confetti';
+import { playSound, preloadSounds } from '../utils/audioManager';
 
 export default function QuizLiveHost() {
+  useEffect(() => {
+    preloadSounds();
+  }, []);
+
   const navigate = useNavigate();
   const { user } = useSpheraAuth();
   const [session, setSession] = useState<any>(null);
@@ -31,7 +36,7 @@ export default function QuizLiveHost() {
 
   useEffect(() => {
     if (participants.length > prevParticipantsCount.current) {
-      new Audio('/sounds/join.mp3').play().catch(e => console.log('Audio error:', e));
+      playSound('join');
     }
     prevParticipantsCount.current = participants.length;
   }, [participants.length]);
@@ -47,17 +52,16 @@ export default function QuizLiveHost() {
   };
 
   const handleStartWithCountdown = () => {
+    playSound('start');
     setCountdown(3);
   };
 
   useEffect(() => {
     if (countdown === null) return;
     if (countdown > 0) {
-      new Audio('/sounds/tick.mp3').play().catch(e => console.log('Audio error:', e));
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
       return () => clearTimeout(timer);
     } else {
-      new Audio('/sounds/start.mp3').play().catch(e => console.log('Audio error:', e));
       startQuiz();
       setCountdown(null);
     }
@@ -86,6 +90,7 @@ export default function QuizLiveHost() {
 
   useEffect(() => {
     if (phase === 'finished') {
+      playSound('podium');
       confetti({
         particleCount: 150,
         spread: 70,
