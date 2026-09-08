@@ -35,6 +35,8 @@ export function useQuizSocket(roomCode: string | null) {
   const [leaderboard, setLeaderboard] = useState<QuizLiveParticipant[]>([]);
   const [status, setStatus] = useState<'connecting' | 'connected' | 'disconnected'>('disconnected');
 
+  const [countdownActive, setCountdownActive] = useState(false);
+
   const ws = useRef<WebSocket | null>(null);
   const reconnectCount = useRef(0);
   const maxRetries = 3;
@@ -61,7 +63,11 @@ export function useQuizSocket(roomCode: string | null) {
           case 'participants_update':
             setParticipants(data.payload.participants || []);
             break;
+          case 'countdown_started':
+            setCountdownActive(true);
+            break;
           case 'new_question':
+            setCountdownActive(false);
             setCurrentQuestion(data.payload);
             setAnswerResult(null);
             setQuestionResults(null);
@@ -123,6 +129,10 @@ export function useQuizSocket(roomCode: string | null) {
     sendMessage('join', { displayName, userId });
   }, [sendMessage]);
 
+  const startCountdown = useCallback(() => {
+    sendMessage('start_countdown');
+  }, [sendMessage]);
+
   const startQuiz = useCallback(() => {
     sendMessage('start_quiz');
   }, [sendMessage]);
@@ -142,7 +152,9 @@ export function useQuizSocket(roomCode: string | null) {
     questionResults,
     leaderboard,
     status,
+    countdownActive,
     joinRoom,
+    startCountdown,
     startQuiz,
     submitAnswer,
     nextQuestion,

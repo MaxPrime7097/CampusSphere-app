@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import { Plus, History, LogOut, Settings, LayoutDashboard, FileText, ArrowLeft, ExternalLink, FilePenLine, Zap } from 'lucide-react'
+import { Plus, LogOut, FileText, ExternalLink, Zap } from 'lucide-react'
 import { useSpheraAuth } from '../../contexts/SpheraAuthContext'
-import { getSessions, getAnnales } from '../../services/spheraApi'
+import { getMyQuizSessions } from '../../services/spheraApi'
 
 export function SidebarLayout() {
   const { user, logout } = useSpheraAuth()
@@ -10,21 +10,15 @@ export function SidebarLayout() {
   const [recentSessions, setRecentSessions] = useState<any[]>([])
 
   useEffect(() => {
-    Promise.all([
-      getSessions().catch(() => ({ data: [] })),
-      getAnnales().catch(() => ({ data: [] }))
-    ]).then(([sessRes, annRes]) => {
-      const sess = (sessRes?.data || (Array.isArray(sessRes) ? sessRes : [])).map((s: any) => ({ ...s, _type: 'session' }))
-      const ann = (annRes?.data || (Array.isArray(annRes) ? annRes : [])).map((a: any) => ({ ...a, _type: 'annale' }))
-      
-      const all = [...sess, ...ann].sort((a, b) => {
-        const da = new Date(a.created_at || 0).getTime()
-        const db = new Date(b.created_at || 0).getTime()
+    getMyQuizSessions().then((res) => {
+      const sess = res?.data || (Array.isArray(res) ? res : [])
+      const all = [...sess].sort((a, b) => {
+        const da = new Date(a.createdAt || 0).getTime()
+        const db = new Date(b.createdAt || 0).getTime()
         return db - da
       })
-      
       setRecentSessions(all.slice(0, 5))
-    })
+    }).catch(() => setRecentSessions([]))
   }, [location.pathname]) // Refresh when navigating
 
   return (
@@ -65,42 +59,53 @@ export function SidebarLayout() {
           {/* Récents */}
           <div>
             <div className="px-3 mb-2 text-xs font-semibold text-sphera-text-muted uppercase tracking-wider">
-              Récents
+              Quiz Récents
             </div>
             <div className="space-y-1">
               {recentSessions.length === 0 ? (
-                <div className="px-3 py-2 text-xs text-sphera-text-muted italic">Aucune session</div>
+                <div className="px-3 py-2 text-xs text-sphera-text-muted italic">Aucun quiz</div>
               ) : (
                 recentSessions.map(session => (
                   <Link 
-                    key={`${session._type}-${session.id}`}
-                    to={`/${session._type === 'annale' ? 'annales' : 'sessions'}/${session.id}`}
+                    key={`quiz-${session.id}`}
+                    to={`/live/host?code=${session.roomCode}`}
                     className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors truncate ${
-                      location.pathname === `/${session._type === 'annale' ? 'annales' : 'sessions'}/${session.id}` ? 'bg-sphera-surface text-white' : 'text-sphera-text-muted hover:bg-sphera-surface hover:text-white'
+                      location.search.includes(`code=${session.roomCode}`) ? 'bg-sphera-surface text-white' : 'text-sphera-text-muted hover:bg-sphera-surface hover:text-white'
                     }`}
                   >
-                    {session._type === 'annale' ? <FilePenLine className="w-4 h-4 shrink-0" /> : <FileText className="w-4 h-4 shrink-0" />}
-                    <span className="truncate">{session.source_filename || session.source_title || `Session #${session.id}`}</span>
+                    <FileText className="w-4 h-4 shrink-0" />
+                    <span className="truncate">{session.title || `Quiz #${session.id}`}</span>
                   </Link>
                 ))
               )}
             </div>
           </div>
           <div className="mt-auto pt-4 px-1">
-            <div className="bg-gradient-to-br from-cs-orange/10 to-transparent border border-cs-orange p-4 rounded-xl relative overflow-hidden group">
-              <div className="absolute inset-0 bg-cs-orange/5 group-hover:bg-cs-orange/10 transition-colors" />
-              <div className="relative z-10 flex flex-col items-start gap-1.5">
-                <p className="text-sm text-white font-medium leading-tight">Rejoins la communauté CampusSphere. Le réseau social qui connecte les étudiants.</p>
-                <a 
-                  href="https://campussphere.app" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="mt-2 text-xs font-semibold text-black bg-cs-orange px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity flex items-center gap-1.5"
-                >
-                  Découvrir CampusSphere <ExternalLink className="w-3 h-3" />
-                </a>
+            {user?.is_profile_complete ? (
+              <a 
+                href="https://campussphere.app" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="w-full text-sm font-semibold text-white bg-sphera-surface border border-sphera-border py-2.5 rounded-xl hover:bg-sphera-surface-2 transition-colors flex items-center justify-center gap-2"
+              >
+                Ouvrir CampusSphere <ExternalLink className="w-4 h-4" />
+              </a>
+            ) : (
+              <div className="bg-gradient-to-br from-cs-orange/10 to-transparent border border-cs-orange p-4 rounded-xl relative overflow-hidden group">
+                <div className="absolute inset-0 bg-cs-orange/5 group-hover:bg-cs-orange/10 transition-colors" />
+                <div className="relative z-10 flex flex-col items-start gap-1.5">
+                  <p className="text-sm text-white font-medium leading-tight">Rejoins la communauté CampusSphere. Le réseau social qui connecte les étudiants.</p>
+                  <a 
+                    href="https://campussphere.app" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="mt-2 text-xs font-semibold text-black bg-cs-orange px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity flex items-center gap-1.5"
+                  >
+                    Découvrir CampusSphere <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
