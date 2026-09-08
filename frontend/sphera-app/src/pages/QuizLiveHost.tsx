@@ -10,7 +10,7 @@ import { useSpheraAuth } from '../contexts/SpheraAuthContext';
 import confetti from 'canvas-confetti';
 import { playSound, preloadSounds, toggleMute, getMuteState } from '../utils/audioManager';
 import { Volume2, VolumeX } from 'lucide-react';
-import { getQuizSessionByCode } from '../services/spheraApi';
+import { getQuizSessionByCode, resetQuizSession } from '../services/spheraApi';
 
 export default function QuizLiveHost() {
   const [isMuted, setIsMuted] = useState(getMuteState());
@@ -20,7 +20,7 @@ export default function QuizLiveHost() {
   }, []);
 
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useSpheraAuth();
   const [session, setSession] = useState<any>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
@@ -29,22 +29,36 @@ export default function QuizLiveHost() {
 
   useEffect(() => {
     const code = searchParams.get('code');
+    const reset = searchParams.get('reset');
     if (code) {
       setIsFetchingSession(true);
-      getQuizSessionByCode(code).then(res => {
-        if (res && (res as any).data) {
-          // getQuizSessionByCode currently only returns public info, wait, if the host needs it to connect...
-          // For the host to bypass setup, they just need the roomCode. The backend doesn't require session ID for WS join, just roomCode.
-          // Let's set a minimal session object so it enters waiting phase.
-          setSession({ roomCode: code, title: (res as any).data.title });
+      
+      const prepareSession = async () => {
+        if (reset === '1') {
+          try {
+            await resetQuizSession(code);
+            searchParams.delete('reset');
+            setSearchParams(searchParams, { replace: true });
+          } catch (e) {
+            console.error("Failed to reset session:", e);
+          }
         }
-      }).catch(err => {
-        console.error(err);
-      }).finally(() => {
-        setIsFetchingSession(false);
-      });
+        
+        try {
+          const res = await getQuizSessionByCode(code);
+          if (res && (res as any).data) {
+            setSession({ roomCode: code, title: (res as any).data.title });
+          }
+        } catch (err) {
+          console.error(err);
+        } finally {
+          setIsFetchingSession(false);
+        }
+      };
+      
+      prepareSession();
     }
-  }, [searchParams]);
+  }, [searchParams, setSearchParams]);
 
   const {
     participants,

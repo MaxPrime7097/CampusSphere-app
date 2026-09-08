@@ -299,6 +299,17 @@ export async function createQuizFromResource(resourceId: number, title: string) 
   });
 }
 
+export async function createQuizFromUpload(file: File, title: string) {
+  const formData = new FormData();
+  formData.append('title', title);
+  formData.append('file', file);
+  return apiFetch<{ success: boolean; data: any }>('api/quiz-live/generate-from-upload/', {
+    method: 'POST',
+    body: formData,
+    requireAuth: true,
+  });
+}
+
 export async function importQuizJson(title: string, file: File) {
   const formData = new FormData();
   formData.append('title', title);
@@ -333,4 +344,18 @@ export function getQuizSocketUrl(roomCode: string): string {
     url += `?token=${token}`;
   }
   return url;
+}
+
+export async function deleteQuizSession(roomCode: string) {
+  return apiFetch<{ success: boolean }>(`api/quiz-live/${roomCode}/`, {
+    method: 'DELETE',
+    requireAuth: true,
+  });
+}
+
+export async function resetQuizSession(roomCode: string) {
+  return apiFetch<{ success: boolean }>(`api/quiz-live/${roomCode}/reset/`, {
+    method: 'PATCH',
+    requireAuth: true,
+  });
 }

@@ -6,7 +6,7 @@ import { QuestionDisplay } from '../components/quiz-live/QuestionDisplay';
 import { Leaderboard } from '../components/quiz-live/Leaderboard';
 import { getQuizSessionByCode } from '../services/spheraApi';
 import { useSpheraAuth } from '../contexts/SpheraAuthContext';
-import { Loader2 } from 'lucide-react';
+import { Loader2, LogIn } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import confetti from 'canvas-confetti';
 import { playSound, preloadSounds } from '../utils/audioManager';
@@ -153,44 +153,56 @@ export default function QuizLiveJoin() {
       <main className="flex-1 w-full max-w-5xl mx-auto py-8 px-4 flex flex-col justify-center min-h-screen relative z-10">
         
         {phase === 'join' && (
-          <div className="w-full max-w-md mx-auto bg-sphera-surface-2/90 backdrop-blur-md border border-sphera-border rounded-2xl p-8 shadow-2xl">
-            <h2 className="text-3xl font-bold text-white mb-6 text-center uppercase tracking-widest">Rejoindre</h2>
+          <div className="w-full max-w-md mx-auto relative group overflow-hidden bg-sphera-surface-2/90 backdrop-blur-md border border-sphera-border rounded-3xl p-8 sm:p-10 shadow-2xl transition-all duration-500 hover:border-sphera-green/50 hover:shadow-[0_10px_50px_rgba(34,197,94,0.15)] animate-fade-in-up">
+            <div className="absolute top-0 right-0 w-40 h-40 bg-sphera-green/5 rounded-bl-[100px] -z-10 transition-transform duration-700 group-hover:scale-125" />
             
-            <div className="space-y-4 mb-6">
+            <div className="flex justify-center mb-8">
+              <div className="w-16 h-16 rounded-2xl bg-sphera-green/10 flex items-center justify-center border border-sphera-green/20 shadow-[0_0_20px_rgba(34,197,94,0.1)]">
+                <LogIn className="w-8 h-8 text-sphera-green" />
+              </div>
+            </div>
+
+            <h2 className="text-3xl font-display font-bold text-white mb-2 text-center tracking-tight">Rejoindre</h2>
+            <p className="text-sphera-text-muted text-center mb-8">Entrez le code de la partie pour commencer.</p>
+            
+            <div className="space-y-5 mb-8">
               <div>
-                <label className="block text-sm font-medium text-sphera-text-muted mb-2">Code de la session</label>
+                <label className="block text-xs font-bold text-sphera-text-muted mb-2 uppercase tracking-wider">Code de la session</label>
                 <input
                   type="text"
                   value={roomCodeInput}
                   onChange={e => setRoomCodeInput(e.target.value.toUpperCase())}
                   placeholder="EX: ABCDEF"
                   maxLength={6}
-                  className="w-full font-mono text-center text-2xl tracking-widest bg-sphera-surface border border-sphera-border rounded-xl px-4 py-3 text-white focus:outline-none focus:border-sphera-green transition-colors uppercase"
+                  className="w-full font-mono text-center text-3xl tracking-[0.3em] bg-sphera-surface border-2 border-sphera-border rounded-2xl px-4 py-4 text-white focus:outline-none focus:border-sphera-green transition-colors uppercase shadow-inner"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-sphera-text-muted mb-2">Votre pseudo</label>
+                <label className="block text-xs font-bold text-sphera-text-muted mb-2 uppercase tracking-wider">Votre pseudo</label>
                 <input
                   type="text"
                   value={displayName}
                   onChange={e => setDisplayName(e.target.value)}
                   placeholder="Pseudo"
                   maxLength={20}
-                  className="w-full bg-sphera-surface border border-sphera-border rounded-xl px-4 py-3 text-white focus:outline-none focus:border-sphera-green transition-colors"
+                  className="w-full text-center text-xl bg-sphera-surface border-2 border-sphera-border rounded-2xl px-4 py-4 text-white focus:outline-none focus:border-sphera-green transition-colors shadow-inner"
                 />
               </div>
             </div>
 
-            {joinError && <p className="text-red-500 text-sm mb-4 text-center">{joinError}</p>}
+            {joinError && (
+              <div className="mb-6 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm text-center font-medium animate-shake">
+                {joinError}
+              </div>
+            )}
 
             <button
               onClick={handleJoin}
               disabled={joining}
-              className="w-full sphera-primary-btn flex justify-center items-center gap-2"
+              className="w-full bg-sphera-green text-black font-bold text-lg rounded-2xl px-6 py-4 hover:bg-sphera-green-hover transition-all duration-300 shadow-[0_0_20px_rgba(34,197,94,0.3)] hover:shadow-[0_0_30px_rgba(34,197,94,0.5)] hover:-translate-y-1 flex justify-center items-center gap-2"
             >
-              {joining && <Loader2 className="w-5 h-5 animate-spin" />}
-              Rejoindre
+              {joining ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Rejoindre la partie'}
             </button>
           </div>
         )}
