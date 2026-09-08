@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { QuizSetupForm } from '../components/quiz-live/QuizSetupForm';
 import { useQuizSocket } from '../hooks/useQuizSocket';
 import { TimerBar } from '../components/quiz-live/TimerBar';
@@ -8,25 +8,52 @@ import { Leaderboard } from '../components/quiz-live/Leaderboard';
 import { Helmet } from 'react-helmet-async';
 import { useSpheraAuth } from '../contexts/SpheraAuthContext';
 import confetti from 'canvas-confetti';
-import { playSound, preloadSounds } from '../utils/audioManager';
+import { playSound, preloadSounds, toggleMute, getMuteState } from '../utils/audioManager';
+import { Volume2, VolumeX } from 'lucide-react';
+import { getQuizSessionByCode } from '../services/spheraApi';
 
 export default function QuizLiveHost() {
+  const [isMuted, setIsMuted] = useState(getMuteState());
+
   useEffect(() => {
     preloadSounds();
   }, []);
 
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useSpheraAuth();
   const [session, setSession] = useState<any>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [autoAdvanceTimer, setAutoAdvanceTimer] = useState<number | null>(5);
-  
+  const [isFetchingSession, setIsFetchingSession] = useState(false);
+
+  useEffect(() => {
+    const code = searchParams.get('code');
+    if (code) {
+      setIsFetchingSession(true);
+      getQuizSessionByCode(code).then(res => {
+        if (res && (res as any).data) {
+          // getQuizSessionByCode currently only returns public info, wait, if the host needs it to connect...
+          // For the host to bypass setup, they just need the roomCode. The backend doesn't require session ID for WS join, just roomCode.
+          // Let's set a minimal session object so it enters waiting phase.
+          setSession({ roomCode: code, title: (res as any).data.title });
+        }
+      }).catch(err => {
+        console.error(err);
+      }).finally(() => {
+        setIsFetchingSession(false);
+      });
+    }
+  }, [searchParams]);
+
   const {
     participants,
     currentQuestion,
     questionResults,
     leaderboard,
     status,
+    countdownActive,
+    startCountdown,
     startQuiz,
     nextQuestion,
     joinRoom
@@ -52,9 +79,17 @@ export default function QuizLiveHost() {
   };
 
   const handleStartWithCountdown = () => {
-    playSound('start');
-    setCountdown(3);
+    startCountdown();
   };
+
+  useEffect(() => {
+    if (countdownActive) {
+      playSound('start');
+      setCountdown(3);
+    } else {
+      setCountdown(null);
+    }
+  }, [countdownActive]);
 
   useEffect(() => {
     if (countdown === null) return;
@@ -66,6 +101,10 @@ export default function QuizLiveHost() {
       setCountdown(null);
     }
   }, [countdown, startQuiz]);
+
+  const toggleSound = () => {
+    setIsMuted(toggleMute());
+  };
 
   // Phases: 'setup', 'waiting', 'playing', 'results', 'finished'
   let phase = 'setup';
@@ -111,6 +150,14 @@ export default function QuizLiveHost() {
       <Helmet>
         <title>Héberger un Quiz · Sphera Live</title>
       </Helmet>
+
+      {/* Mute Button */}
+      <button 
+        onClick={toggleSound}
+        className="absolute top-6 right-6 z-50 p-3 rounded-full bg-sphera-surface-2 border border-sphera-border text-white hover:bg-sphera-surface transition-colors shadow-lg"
+      >
+        {isMuted ? <VolumeX className="w-6 h-6 text-red-500" /> : <Volume2 className="w-6 h-6 text-sphera-green" />}
+      </button>
       
       <main className="flex-1 w-full max-w-5xl mx-auto py-8 px-4 sm:px-6 flex flex-col justify-center min-h-screen relative z-10">
         

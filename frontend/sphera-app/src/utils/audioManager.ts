@@ -9,7 +9,19 @@ export function preloadSounds() {
   });
 }
 
+let isMuted = false;
+
+export function toggleMute() {
+  isMuted = !isMuted;
+  return isMuted;
+}
+
+export function getMuteState() {
+  return isMuted;
+}
+
 export function playSound(name: string) {
+  if (isMuted) return;
   try {
     if (!audioCache[name]) {
       const audio = new Audio('/sounds/' + name + '.mp3');

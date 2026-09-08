@@ -8,6 +8,7 @@ import { getQuizSessionByCode } from '../services/spheraApi';
 import { useSpheraAuth } from '../contexts/SpheraAuthContext';
 import { Loader2 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
+import confetti from 'canvas-confetti';
 import { playSound, preloadSounds } from '../utils/audioManager';
 
 export default function QuizLiveJoin() {
@@ -28,13 +29,16 @@ export default function QuizLiveJoin() {
 
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [answerTime, setAnswerTime] = useState<number>(0);
+  const [countdown, setCountdown] = useState<number | null>(null);
 
   const {
+    participants,
     currentQuestion,
     answerResult,
     questionResults,
     leaderboard,
     status,
+    countdownActive,
     joinRoom,
     submitAnswer
   } = useQuizSocket(joinedRoomCode);
@@ -75,10 +79,30 @@ export default function QuizLiveJoin() {
     }
   }, [currentQuestion]);
 
-  // Phases: 'join', 'waiting', 'playing', 'results', 'finished'
+  useEffect(() => {
+    if (countdownActive) {
+      playSound('start');
+      setCountdown(3);
+    } else {
+      setCountdown(null);
+    }
+  }, [countdownActive]);
+
+  useEffect(() => {
+    if (countdown === null) return;
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    } else {
+      setCountdown(null);
+    }
+  }, [countdown]);
+
+  // Phases: 'join', 'waiting', 'countdown', 'playing', 'results', 'finished'
   let phase = 'join';
   if (joinedRoomCode) {
-    if (!currentQuestion && !leaderboard.length) phase = 'waiting';
+    if (countdown !== null) phase = 'countdown';
+    else if (!currentQuestion && !leaderboard.length) phase = 'waiting';
     else if (currentQuestion && !questionResults) phase = 'playing';
     else if (questionResults && currentQuestion) phase = 'results';
     else if (leaderboard.length > 0 && !currentQuestion) phase = 'finished';
@@ -94,6 +118,18 @@ export default function QuizLiveJoin() {
       }
     }
   }, [phase, answerResult]);
+
+  useEffect(() => {
+    if (phase === 'finished') {
+      playSound('podium');
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#22C55E', '#EAB308', '#FFFFFF']
+      });
+    }
+  }, [phase]);
 
   const handleAnswer = (index: number) => {
     if (selectedOption !== null || !currentQuestion) return;
@@ -159,13 +195,47 @@ export default function QuizLiveJoin() {
           </div>
         )}
 
+        {phase === 'countdown' && (
+          <div className="flex items-center justify-center w-full">
+            <span className="text-[200px] font-bold text-white tabular-nums animate-pulse drop-shadow-[0_0_30px_rgba(34,197,94,0.8)] text-sphera-green">
+              {countdown}
+            </span>
+          </div>
+        )}
+
         {phase === 'waiting' && (
-          <div className="w-full max-w-md mx-auto text-center">
-            <div className="inline-flex items-center justify-center p-4 bg-sphera-surface-2 rounded-full mb-6 sphera-live-pulse">
-              <Loader2 className="w-8 h-8 text-sphera-green animate-spin" />
+          <div className="w-full max-w-3xl mx-auto text-center flex flex-col items-center">
+            <h2 className="text-2xl font-bold text-white mb-2 uppercase tracking-widest">Code pour rejoindre</h2>
+            <div className="font-mono text-7xl sm:text-9xl font-bold tracking-[0.2em] text-sphera-green mb-12 select-all bg-sphera-surface-2 py-8 px-16 rounded-3xl border-2 border-sphera-green/50 shadow-[0_0_50px_rgba(34,197,94,0.3)]">
+              {joinedRoomCode}
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Vous êtes dans la salle</h2>
-            <p className="text-sphera-text-muted">En attente du lancement par l'hôte...</p>
+            
+            <div className="w-full bg-sphera-surface-2/80 backdrop-blur-md border border-sphera-border rounded-2xl p-6 mb-8">
+              <h3 className="text-xl font-bold text-white mb-6 uppercase tracking-wider text-sphera-text-muted">
+                Participants ({participants.length})
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-left">
+                {participants.length === 0 ? (
+                  <p className="text-sphera-text-muted italic col-span-full text-center py-4">En attente de joueurs...</p>
+                ) : (
+                  participants.map((p, i) => (
+                    <div key={i} className="flex items-center gap-3 px-4 py-3 bg-sphera-bg border border-sphera-border rounded-xl">
+                      <div className="w-2 h-2 rounded-full bg-sphera-green animate-pulse"></div>
+                      <span className="text-white font-medium text-lg truncate">
+                        {p.displayName}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center mt-8">
+              <div className="inline-flex items-center justify-center p-4 bg-sphera-surface-2 rounded-full mb-4 sphera-live-pulse">
+                <Loader2 className="w-8 h-8 text-sphera-green animate-spin" />
+              </div>
+              <p className="text-sphera-text-muted uppercase tracking-widest text-lg font-bold">En attente de l'hôte...</p>
+            </div>
           </div>
         )}
 

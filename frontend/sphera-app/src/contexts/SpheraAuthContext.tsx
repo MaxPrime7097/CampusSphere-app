@@ -8,6 +8,7 @@ interface SpheraUser {
   first_name?: string
   last_name?: string
   avatar?: string | null
+  is_profile_complete?: boolean
 }
 
 interface SpheraAuthContextType {

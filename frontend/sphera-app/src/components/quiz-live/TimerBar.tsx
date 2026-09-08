@@ -10,26 +10,32 @@ export function TimerBar({ duration, onExpire }: TimerBarProps) {
   const [timeLeft, setTimeLeft] = useState(duration);
 
   useEffect(() => {
-    setTimeLeft(duration);
-  }, [duration]);
+    const startTime = Date.now();
+    let rAF: number;
+    let tickedSeconds = new Set<number>();
 
-  useEffect(() => {
-    if (timeLeft <= 0) {
-      if (onExpire) onExpire();
-      return;
-    }
+    const updateTimer = () => {
+      const elapsed = (Date.now() - startTime) / 1000;
+      const remaining = Math.max(0, duration - elapsed);
+      setTimeLeft(remaining);
 
-    const timerId = setTimeout(() => {
-      setTimeLeft(prev => {
-        if (prev <= 4 && prev > 1) { // Will become 3, 2, 1
-          playSound('tick');
-        }
-        return prev - 1;
-      });
-    }, 1000);
+      const currentSecond = Math.ceil(remaining);
+      if (currentSecond <= 3 && currentSecond > 0 && !tickedSeconds.has(currentSecond)) {
+        tickedSeconds.add(currentSecond);
+        playSound('tick');
+      }
 
-    return () => clearTimeout(timerId);
-  }, [timeLeft, onExpire]);
+      if (remaining > 0) {
+        rAF = requestAnimationFrame(updateTimer);
+      } else {
+        if (onExpire) onExpire();
+      }
+    };
+
+    rAF = requestAnimationFrame(updateTimer);
+
+    return () => cancelAnimationFrame(rAF);
+  }, [duration, onExpire]);
 
   const percentage = duration > 0 ? (timeLeft / duration) * 100 : 0;
   
@@ -40,11 +46,13 @@ export function TimerBar({ duration, onExpire }: TimerBarProps) {
     colorClass = 'bg-orange-500';
   }
 
+  const displayTime = Math.ceil(timeLeft);
+
   return (
     <div className="w-full">
       <div className="flex justify-between items-center text-sm text-sphera-text-muted mb-2 font-medium">
         <span>Temps restant</span>
-        <span className={`font-mono text-2xl font-bold ${timeLeft <= 3 ? 'text-red-500 animate-pulse' : timeLeft <= duration * 0.3 ? 'text-orange-500' : 'text-sphera-green'}`}>{timeLeft}s</span>
+        <span className={`font-mono text-2xl font-bold ${displayTime <= 3 ? 'text-red-500 animate-pulse' : displayTime <= duration * 0.3 ? 'text-orange-500' : 'text-sphera-green'}`}>{displayTime}s</span>
       </div>
       <div className="h-4 w-full bg-sphera-surface-2 rounded-full overflow-hidden">
         <div 

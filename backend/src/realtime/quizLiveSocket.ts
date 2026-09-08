@@ -170,6 +170,15 @@ quizLiveWss.on("connection", (ws: WebSocket, _request: IncomingMessage, roomCode
                     type: "participants_update",
                     payload: { participants: allParticipants }
                 });
+            } else if (type === "start_countdown") {
+                 if (ws !== state.hostSocket) {
+                     sendToClient(ws, { type: "error", payload: { message: "Only the host can start the countdown" } });
+                     return;
+                 }
+                 broadcastToRoom(roomCode, {
+                     type: "countdown_started",
+                     payload: { duration: 3 }
+                 });
             } else if (type === "start_quiz") {
                  if (ws !== state.hostSocket) {
                      sendToClient(ws, { type: "error", payload: { message: "Only the host can start the quiz" } });
