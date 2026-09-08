@@ -240,8 +240,8 @@ quizLiveRouter.patch("/:roomCode/reset/", requireAuth, async (req, res) => {
     await prisma.quizLiveSession.update({
         where: { id: session.id },
         data: {
-            status: "waiting",
-            currentQuestionIndex: null
+            status: "WAITING",
+            currentQuestionIndex: 0
         }
     });
 
