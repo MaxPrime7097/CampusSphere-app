@@ -1,25 +1,43 @@
 import React, { useEffect, useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import { Plus, LogOut, FileText, ExternalLink, Zap } from 'lucide-react'
+import { Plus, LogOut, FileText, ExternalLink, Zap, FilePenLine } from 'lucide-react'
 import { useSpheraAuth } from '../../contexts/SpheraAuthContext'
-import { getMyQuizSessions } from '../../services/spheraApi'
+import { getMyQuizSessions, getSessions, getAnnales } from '../../services/spheraApi'
 
 export function SidebarLayout() {
   const { user, logout } = useSpheraAuth()
   const location = useLocation()
   const [recentSessions, setRecentSessions] = useState<any[]>([])
+  
+  const isLivePage = location.pathname.includes('/live');
 
   useEffect(() => {
-    getMyQuizSessions().then((res) => {
-      const sess = res?.data || (Array.isArray(res) ? res : [])
-      const all = [...sess].sort((a, b) => {
-        const da = new Date(a.createdAt || 0).getTime()
-        const db = new Date(b.createdAt || 0).getTime()
-        return db - da
+    if (isLivePage) {
+      getMyQuizSessions().then((res) => {
+        const sess = res?.data || (Array.isArray(res) ? res : [])
+        const all = [...sess].sort((a, b) => {
+          const da = new Date(a.createdAt || 0).getTime()
+          const db = new Date(b.createdAt || 0).getTime()
+          return db - da
+        })
+        setRecentSessions(all.slice(0, 5))
+      }).catch(() => setRecentSessions([]))
+    } else {
+      Promise.all([
+        getSessions().catch(() => ({ data: [] })),
+        getAnnales().catch(() => ({ data: [] }))
+      ]).then(([sessRes, annRes]) => {
+        const sess = (sessRes?.data || (Array.isArray(sessRes) ? sessRes : [])).map((s: any) => ({ ...s, _type: 'session' }))
+        const ann = (annRes?.data || (Array.isArray(annRes) ? annRes : [])).map((a: any) => ({ ...a, _type: 'annale' }))
+        const all = [...sess, ...ann].sort((a, b) => {
+          const da = new Date(a.created_at || 0).getTime()
+          const db = new Date(b.created_at || 0).getTime()
+          return db - da
+        })
+        setRecentSessions(all.slice(0, 5))
       })
-      setRecentSessions(all.slice(0, 5))
-    }).catch(() => setRecentSessions([]))
-  }, [location.pathname]) // Refresh when navigating
+    }
+  }, [location.pathname, isLivePage])
 
   return (
     <div className="flex h-screen bg-sphera-bg overflow-hidden font-sans">
@@ -59,24 +77,41 @@ export function SidebarLayout() {
           {/* Récents */}
           <div>
             <div className="px-3 mb-2 text-xs font-semibold text-sphera-text-muted uppercase tracking-wider">
-              Quiz Récents
+              {isLivePage ? 'Quiz Récents' : 'Récents'}
             </div>
             <div className="space-y-1">
               {recentSessions.length === 0 ? (
-                <div className="px-3 py-2 text-xs text-sphera-text-muted italic">Aucun quiz</div>
+                <div className="px-3 py-2 text-xs text-sphera-text-muted italic">Aucun document</div>
               ) : (
-                recentSessions.map(session => (
-                  <Link 
-                    key={`quiz-${session.id}`}
-                    to={`/live/host?code=${session.roomCode}`}
-                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors truncate ${
-                      location.search.includes(`code=${session.roomCode}`) ? 'bg-sphera-surface text-white' : 'text-sphera-text-muted hover:bg-sphera-surface hover:text-white'
-                    }`}
-                  >
-                    <FileText className="w-4 h-4 shrink-0" />
-                    <span className="truncate">{session.title || `Quiz #${session.id}`}</span>
-                  </Link>
-                ))
+                recentSessions.map(session => {
+                  if (isLivePage) {
+                    return (
+                      <Link 
+                        key={`quiz-${session.id}`}
+                        to={`/live/host?code=${session.roomCode}&reset=1`}
+                        className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors truncate ${
+                          location.search.includes(`code=${session.roomCode}`) ? 'bg-sphera-surface text-white' : 'text-sphera-text-muted hover:bg-sphera-surface hover:text-white'
+                        }`}
+                      >
+                        <FileText className="w-4 h-4 shrink-0" />
+                        <span className="truncate">{session.title || `Quiz #${session.id}`}</span>
+                      </Link>
+                    )
+                  } else {
+                    return (
+                      <Link 
+                        key={`${session._type}-${session.id}`}
+                        to={`/${session._type === 'annale' ? 'annales' : 'sessions'}/${session.id}`}
+                        className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors truncate ${
+                          location.pathname === `/${session._type === 'annale' ? 'annales' : 'sessions'}/${session.id}` ? 'bg-sphera-surface text-white' : 'text-sphera-text-muted hover:bg-sphera-surface hover:text-white'
+                        }`}
+                      >
+                        {session._type === 'annale' ? <FilePenLine className="w-4 h-4 shrink-0" /> : <FileText className="w-4 h-4 shrink-0" />}
+                        <span className="truncate">{session.source_filename || session.source_title || `Session #${session.id}`}</span>
+                      </Link>
+                    )
+                  }
+                })
               )}
             </div>
           </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Zap, Plus, LogIn, Loader2, ArrowRight } from 'lucide-react';
-import { getMyQuizSessions } from '../services/spheraApi';
+import { Zap, Plus, LogIn, Loader2, ArrowRight, Trash2 } from 'lucide-react';
+import { getMyQuizSessions, deleteQuizSession } from '../services/spheraApi';
 import { Helmet } from 'react-helmet-async';
 
 export default function QuizLiveHome() {
@@ -9,6 +9,19 @@ export default function QuizLiveHome() {
   const [loading, setLoading] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(true);
   const navigate = useNavigate();
+
+  const handleDelete = async (e: React.MouseEvent, roomCode: string) => {
+    e.stopPropagation();
+    if (window.confirm('Voulez-vous vraiment supprimer ce quiz ?')) {
+      try {
+        await deleteQuizSession(roomCode);
+        setLiveSessions(prev => prev.filter(s => s.roomCode !== roomCode));
+      } catch (err) {
+        console.error("Erreur suppression:", err);
+        alert("Erreur lors de la suppression.");
+      }
+    }
+  };
 
   useEffect(() => {
     // Fake transition delay for the cool Sphera Live effect
@@ -119,16 +132,25 @@ export default function QuizLiveHome() {
               {liveSessions.map(session => (
                 <div 
                   key={session.id} 
-                  onClick={() => navigate(`/live/host?code=${session.roomCode}`)}
-                  className="bg-sphera-surface hover:bg-sphera-surface-2 p-6 border border-sphera-border rounded-2xl cursor-pointer transition-all hover:border-sphera-green/50 group"
+                  onClick={() => navigate(`/live/host?code=${session.roomCode}&reset=1`)}
+                  className="bg-sphera-surface hover:bg-sphera-surface-2 p-6 border border-sphera-border rounded-2xl cursor-pointer transition-all hover:border-sphera-green/50 group relative"
                 >
                   <div className="flex justify-between items-start mb-4">
                     <div className="p-2 bg-sphera-bg rounded-lg">
                       <Zap className="w-5 h-5 text-sphera-text-muted group-hover:text-sphera-green transition-colors" />
                     </div>
-                    <span className="px-3 py-1 bg-sphera-bg rounded-full text-xs font-mono text-sphera-text-muted group-hover:text-white transition-colors border border-sphera-border">
-                      {session.roomCode}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={(e) => handleDelete(e, session.roomCode)}
+                        className="p-1.5 rounded-lg text-sphera-text-muted hover:text-red-500 hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100"
+                        title="Supprimer la session"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      <span className="px-3 py-1 bg-sphera-bg rounded-full text-xs font-mono text-sphera-text-muted group-hover:text-white transition-colors border border-sphera-border">
+                        {session.roomCode}
+                      </span>
+                    </div>
                   </div>
                   <h4 className="text-white font-bold text-lg mb-2 line-clamp-1">{session.title}</h4>
                   <div className="text-sm text-sphera-text-muted">

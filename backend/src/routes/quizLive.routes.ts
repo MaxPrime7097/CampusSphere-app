@@ -122,6 +122,43 @@ quizLiveRouter.post("/generate-and-create/", requireAuth, async (req, res) => {
   return created(res, session);
 });
 
+quizLiveRouter.post("/generate-from-upload/", requireAuth, singleUpload("file", "other"), async (req, res) => {
+    const user = currentUser(req);
+    const title = req.body.title || "Quiz Généré";
+
+    if (!req.file) {
+        throw badRequest("Missing file");
+    }
+
+    const textToExtract = await extractText(req.file.buffer, req.file.mimetype);
+    if (!textToExtract) {
+        throw badRequest("Could not extract text from file");
+    }
+
+    const generated = await generateTool(textToExtract, "quiz");
+    if (!generated || !Array.isArray(generated.questions)) {
+        throw badRequest("Failed to generate quiz");
+    }
+
+    const mappedQuestions = generated.questions.map((q: any) => {
+        let correctIndex = 0;
+        if (q.bonne_reponse === "A") correctIndex = 0;
+        else if (q.bonne_reponse === "B") correctIndex = 1;
+        else if (q.bonne_reponse === "C") correctIndex = 2;
+        else if (q.bonne_reponse === "D") correctIndex = 3;
+
+        return {
+            question: q.question,
+            options: q.options || [],
+            correctIndex,
+            timeLimit: 30,
+        };
+    });
+
+    const session = await createSessionWithQuestions(user.id, title, mappedQuestions);
+    return created(res, session);
+});
+
 quizLiveRouter.post("/import-json/", requireAuth, singleUpload("file", "other"), async (req, res) => {
     const user = currentUser(req);
     const title = req.body.title || "Imported Quiz";
@@ -165,8 +202,54 @@ quizLiveRouter.get("/my-sessions/", requireAuth, async (req, res) => {
     return list(res, sessions);
 });
 
+quizLiveRouter.delete("/:roomCode/", requireAuth, async (req, res) => {
+    const user = currentUser(req);
+    const roomCode = req.params.roomCode as string;
+    
+    const session = await prisma.quizLiveSession.findUnique({
+        where: { roomCode }
+    });
+
+    if (!session) throw notFound();
+    if (session.hostId !== user.id) throw badRequest("Non autorisé");
+
+    await prisma.quizLiveSession.delete({
+        where: { roomCode }
+    });
+
+    return ok(res, { success: true });
+});
+
+quizLiveRouter.patch("/:roomCode/reset/", requireAuth, async (req, res) => {
+    const user = currentUser(req);
+    const roomCode = req.params.roomCode as string;
+    
+    const session = await prisma.quizLiveSession.findUnique({
+        where: { roomCode }
+    });
+
+    if (!session) throw notFound();
+    if (session.hostId !== user.id) throw badRequest("Non autorisé");
+
+    // Delete existing participants
+    await prisma.quizLiveParticipant.deleteMany({
+        where: { sessionId: session.id }
+    });
+
+    // Reset status and active question
+    await prisma.quizLiveSession.update({
+        where: { id: session.id },
+        data: {
+            status: "waiting",
+            currentQuestionIndex: null
+        }
+    });
+
+    return ok(res, { success: true });
+});
+
 quizLiveRouter.get("/:roomCode/", async (req, res) => {
-    const { roomCode } = req.params;
+    const roomCode = req.params.roomCode as string;
     const session = await prisma.quizLiveSession.findUnique({
         where: { roomCode },
         include: {
