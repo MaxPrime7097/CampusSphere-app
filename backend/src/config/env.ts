@@ -102,6 +102,14 @@ export const env = {
     anthropicApiKey: process.env.ANTHROPIC_API_KEY || null,
     geminiApiKey: process.env.GEMINI_API_KEY || null,
     groqApiKey: process.env.GROQ_API_KEY || null,
+    bedrock: {
+      accessKeyId: process.env.BEDROCK_AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID || "",
+      secretAccessKey: process.env.BEDROCK_AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY || "",
+      region: process.env.BEDROCK_AWS_REGION || process.env.AWS_REGION || "us-east-1",
+      modelId: process.env.BEDROCK_MODEL_ID || "anthropic.claude-haiku-4-5-20251001-v1:0",
+      budgetUsd: Number(process.env.BEDROCK_TOTAL_BUDGET_USD || "90"),
+      safetyThresholdPercent: Number(process.env.BEDROCK_SAFETY_THRESHOLD_PERCENT || "90"),
+    },
   },
 
   storage: {

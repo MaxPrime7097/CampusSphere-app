@@ -17,6 +17,7 @@ import { StudySessionCard } from "@/sphera/components/study/StudySessionCard";
 import { StudyToolsModal } from "@/sphera/components/study/StudyToolsModal";
 import { AnnaleUploadModal } from "../components/AnnaleUploadModal";
 import { AnnaleCard } from "../components/AnnaleCard";
+import { QuotaIndicator } from "../components/QuotaIndicator";
 import { getStudySessions, deleteStudySession, getAnnaleSessions, deleteAnnaleSession } from "../services/spheraService";
 import type { StudySessionListItem, AnnaleSessionListItem } from "../types/sphera.types";
 
@@ -131,11 +132,12 @@ export const SpheraHome: React.FC = () => {
           {/* Header — same pattern as Spheres/Resources pages */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 px-4 sm:px-0">
             <div>
-              <div className="flex items-center gap-2.5 mb-1">
+              <div className="flex flex-wrap items-center gap-2.5 mb-1">
                 <SpheraIcon size="xl" variant="primary" />
                 <h1 className="text-2xl font-bold tracking-tight text-foreground">
                   Assistante <span className="text-primary">Sphera</span>
                 </h1>
+                <QuotaIndicator className="ml-1" />
               </div>
               <p className="text-muted-foreground text-sm">
                 Fiches, Quiz, Flashcards, Q&A et Corrections d'annales
