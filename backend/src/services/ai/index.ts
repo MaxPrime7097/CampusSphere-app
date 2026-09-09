@@ -10,6 +10,7 @@ import { badRequest, serviceUnavailable } from "../../lib/errors.js";
 import { parseJsonWithFallback, UnparseableModelOutputError } from "./json.js";
 import { annalePrompt, qaPrompt, suggestionsPrompt, toolPrompt, type AnnaleMode, type ToolType } from "./prompts.js";
 import { AllProvidersFailedError, callWithFallback, TOKENS_ANNALE, TOKENS_DEFAULT } from "./providers.js";
+import { buildContextPrefix, getUserAcademicContext } from "./userContext.js";
 
 /** Below this, a document has no usable content — usually a failed scan. */
 export const MIN_SOURCE_CHARS = 50;
@@ -44,21 +45,48 @@ function assertUsableSource(text: string, what = "Le texte extrait"): void {
   }
 }
 
-/** Generate one V1 tool (fiche, quiz or flashcards). */
-export async function generateTool(text: string, toolType: ToolType): Promise<Record<string, unknown>> {
-  assertUsableSource(text);
+async function resolveContextPrefix(userId?: number): Promise<string> {
+  if (!userId) return "";
   try {
-    return parseJsonWithFallback(await callWithFallback(toolPrompt(toolType, text), TOKENS_DEFAULT));
+    const context = await getUserAcademicContext(userId);
+    return buildContextPrefix(context);
+  } catch (err) {
+    console.warn("[sphera-ai] Failed to load academic context:", err);
+    return "";
+  }
+}
+
+/** Generate one V1 tool (fiche, quiz or flashcards). */
+export async function generateTool(
+  text: string,
+  toolType: ToolType,
+  userId?: number,
+): Promise<Record<string, unknown>> {
+  assertUsableSource(text);
+  const prefix = await resolveContextPrefix(userId);
+  const prompt = prefix + toolPrompt(toolType, text);
+  try {
+    return parseJsonWithFallback(
+      await callWithFallback(prompt, TOKENS_DEFAULT, { toolType, userId }),
+    );
   } catch (error) {
     throw asApiError(error);
   }
 }
 
 /** Answer a question grounded only in the supplied source text. Returns prose. */
-export async function generateQaAnswer(sourceText: string, question: string): Promise<string> {
+export async function generateQaAnswer(
+  sourceText: string,
+  question: string,
+  userId?: number,
+): Promise<string> {
   assertUsableSource(sourceText, "Le texte du cours");
+  const prefix = await resolveContextPrefix(userId);
+  const prompt = prefix + qaPrompt(sourceText, question);
   try {
-    return (await callWithFallback(qaPrompt(sourceText, question), TOKENS_DEFAULT)).trim();
+    return (
+      await callWithFallback(prompt, TOKENS_DEFAULT, { toolType: "qa", userId })
+    ).trim();
   } catch (error) {
     throw asApiError(error);
   }
@@ -69,10 +97,15 @@ export async function generateAnnale(
   annaleText: string,
   mode: AnnaleMode,
   coursText?: string | null,
+  userId?: number,
 ): Promise<Record<string, unknown>> {
   assertUsableSource(annaleText, "Le texte de l'annale");
+  const prefix = await resolveContextPrefix(userId);
+  const prompt = prefix + annalePrompt(annaleText, mode, coursText);
   try {
-    return parseJsonWithFallback(await callWithFallback(annalePrompt(annaleText, mode, coursText), TOKENS_ANNALE));
+    return parseJsonWithFallback(
+      await callWithFallback(prompt, TOKENS_ANNALE, { toolType: "annale", userId }),
+    );
   } catch (error) {
     throw asApiError(error);
   }
@@ -84,10 +117,14 @@ export async function generateAnnale(
  * Returns [] rather than throwing on any failure: suggestions are a convenience,
  * and a provider outage should not turn a working session page into an error page.
  */
-export async function generateSuggestions(text: string): Promise<string[]> {
+export async function generateSuggestions(text: string, userId?: number): Promise<string[]> {
   if (!text || text.trim().length < MIN_SOURCE_CHARS) return [];
+  const prefix = await resolveContextPrefix(userId);
+  const prompt = prefix + suggestionsPrompt(text.slice(0, 8000));
   try {
-    const data = parseJsonWithFallback(await callWithFallback(suggestionsPrompt(text.slice(0, 8000)), TOKENS_DEFAULT));
+    const data = parseJsonWithFallback(
+      await callWithFallback(prompt, TOKENS_DEFAULT, { toolType: "suggestions", userId }),
+    );
     const suggestions = data.suggestions;
     if (!Array.isArray(suggestions)) return [];
     return suggestions.filter((s): s is string => typeof s === "string").slice(0, 4);

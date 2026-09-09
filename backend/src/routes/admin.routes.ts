@@ -24,6 +24,7 @@
 import { Router, type Request, type Response } from "express";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
+import { env } from "../config/env.js";
 import { prisma } from "../lib/prisma.js";
 import { badRequest, notFound } from "../lib/errors.js";
 import { currentUser, requireAdmin, requireAuth } from "../middleware/auth.js";
@@ -714,3 +715,63 @@ adminRouter.get("/v1/stats/", async (req, res) => {
     endDate: req.query.endDate ? String(req.query.endDate) : null,
   });
 });
+
+// ── AI Usage & Bedrock Budget Tracking ─────────────────────────────────────
+
+async function aiUsageSummaryHandler(_req: Request, res: Response): Promise<void> {
+  const TOTAL_BUDGET_USD = env.ai.bedrock.budgetUsd || 90;
+
+  const totalSpentResult = await prisma.aIUsageLog.aggregate({
+    where: { provider: "bedrock" },
+    _sum: { estimatedCostUSD: true },
+    _count: true,
+  });
+  const spent = totalSpentResult._sum.estimatedCostUSD ?? 0;
+  const totalGenerations = totalSpentResult._count;
+
+  // Consommation des 7 derniers jours pour projeter la tendance
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const recentSpentResult = await prisma.aIUsageLog.aggregate({
+    where: { provider: "bedrock", createdAt: { gte: sevenDaysAgo } },
+    _sum: { estimatedCostUSD: true },
+    _count: true,
+  });
+  const weeklyRate = recentSpentResult._sum.estimatedCostUSD ?? 0;
+  const remaining = Math.max(0, TOTAL_BUDGET_USD - spent);
+  const weeksRemaining = weeklyRate > 0 ? (remaining / weeklyRate).toFixed(1) : null;
+
+  // Répartition par type d'outil
+  const breakdown = await prisma.aIUsageLog.groupBy({
+    by: ["toolType"],
+    where: { provider: "bedrock" },
+    _sum: { estimatedCostUSD: true, inputTokensEstimate: true, outputTokensEstimate: true },
+    _count: true,
+  });
+
+  const data = {
+    totalBudget: TOTAL_BUDGET_USD,
+    spent: Number(spent.toFixed(4)),
+    remaining: Number(remaining.toFixed(4)),
+    percentUsed: Number(((spent / TOTAL_BUDGET_USD) * 100).toFixed(1)),
+    weeklyBurnRate: Number(weeklyRate.toFixed(4)),
+    estimatedWeeksRemaining: weeksRemaining ? Number(weeksRemaining) : null,
+    totalGenerations,
+    recentGenerations7d: recentSpentResult._count,
+    model: env.ai.bedrock.modelId,
+    safetyThresholdPercent: env.ai.bedrock.safetyThresholdPercent,
+    safetyThresholdUSD: Number(((TOTAL_BUDGET_USD * env.ai.bedrock.safetyThresholdPercent) / 100).toFixed(2)),
+    isThresholdExceeded: (spent / TOTAL_BUDGET_USD) * 100 >= env.ai.bedrock.safetyThresholdPercent,
+    breakdownByTool: breakdown.map((b) => ({
+      toolType: b.toolType,
+      count: b._count,
+      totalCostUSD: Number((b._sum.estimatedCostUSD ?? 0).toFixed(4)),
+      inputTokens: b._sum.inputTokensEstimate ?? 0,
+      outputTokens: b._sum.outputTokensEstimate ?? 0,
+    })),
+  };
+
+  adminOk(res, data, {}, "Résumé de consommation IA Bedrock chargé.");
+}
+
+adminRouter.get("/ai-usage-summary/", aiUsageSummaryHandler);
+adminRouter.get("/v1/ai-usage-summary/", aiUsageSummaryHandler);

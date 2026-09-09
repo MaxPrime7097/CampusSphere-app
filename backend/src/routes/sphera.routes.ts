@@ -30,6 +30,8 @@ import { rateLimit, RATE_LIMITS } from "../middleware/rateLimit.js";
 import { singleUpload } from "../middleware/upload.js";
 import { keyFromUrl, storage } from "../services/storage.js";
 import { extractText, SUPPORTED_EXTENSIONS } from "../services/extraction.js";
+import { checkGenerationQuota, incrementGenerationQuota, WEEKLY_LIMIT } from "../middleware/generationQuota.js";
+import { getWeekStartDate } from "../lib/weekHelper.js";
 import {
   generateAnnale,
   generateQaAnswer,
@@ -190,52 +192,53 @@ async function readableAnnaleSession(id: number, userId: number): Promise<Serial
 }
 
 /** Run the requested tools over one source text. */
-async function generateAll(text: string, tools: ToolType[]): Promise<Record<string, unknown>> {
+async function generateAll(text: string, tools: ToolType[], userId?: number): Promise<Record<string, unknown>> {
   const content: Record<string, unknown> = {};
-  for (const tool of tools) content[tool] = await generateTool(text, tool);
+  for (const tool of tools) content[tool] = await generateTool(text, tool, userId);
   return content;
 }
 
 // ── Guest generation (anonymous) ────────────────────────────────────────────
-// Declared before requireAuth so it stays public.
+// Blocked to protect AWS credits and encourage account creation per migration spec.
 
 const guestRateLimit = rateLimit({ scope: "sphera-guest", ...RATE_LIMITS.guestGenerate });
 
-/**
- * POST /guest/generate/ — 5/hour/IP, nothing persisted.
- *
- * The one anonymous route in the domain: it exists so a prospective student can
- * try Sphera before signing up. No row is written, so there is nothing to read
- * back and no id to return.
- */
-spheraRouter.post("/guest/generate/", guestRateLimit, singleUpload("file", "resource"), async (req, res) => {
-  const file = req.file;
-  if (!file) throw badRequest("Un fichier est requis.");
-  assertSupportedUpload(file.originalname);
-
-  const toolType = String((req.body as { tool_type?: unknown }).tool_type ?? "").trim().toLowerCase();
-  const validGuestTools = [...VALID_TOOL_TYPES, "annale"];
-  if (!validGuestTools.includes(toolType)) {
-    throw badRequest(`tool_type invalide. Choisis parmi : ${validGuestTools.join(", ")}.`);
-  }
-
-  // An unrecognised mode falls back to "complete" rather than erroring, as Django did.
-  const rawMode = String((req.body as { mode?: unknown }).mode ?? "complete").trim().toLowerCase();
-  const mode = rawMode === "rapide" ? "rapide" : "complete";
-
-  const text = await extractText(file.buffer, file.originalname);
-  assertUsableText(text);
-
-  if (toolType === "annale") {
-    ok(res, { success: true, tool_type: "annale", mode, content: await generateAnnale(text, mode) });
-    return;
-  }
-
-  ok(res, { success: true, tool_type: toolType, content: await generateTool(text, toolType as ToolType) });
+spheraRouter.post("/guest/generate/", guestRateLimit, singleUpload("file", "resource"), (_req, res) => {
+  res.status(403).json({
+    success: false,
+    error: "account_required",
+    message: "La génération Sphera nécessite un compte étudiant. Connecte-toi ou crée un compte gratuit pour profiter de tes 5 générations par semaine !",
+  });
 });
 
 // Everything below requires a token.
 spheraRouter.use(requireAuth);
+
+/**
+ * GET /quota/ (accessible at /api/sphera/quota and /api/study/quota)
+ * Returns the student's remaining weekly generation quota.
+ */
+spheraRouter.get("/quota/", async (req, res) => {
+  const me = currentUser(req);
+  const weekStart = getWeekStartDate();
+  const usage = await prisma.generationUsage.findUnique({
+    where: {
+      userId_weekStartDate: {
+        userId: me.id,
+        weekStartDate: weekStart,
+      },
+    },
+  });
+  const used = usage?.count ?? 0;
+  const resetsOn = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+  ok(res, {
+    used,
+    remaining: Math.max(0, WEEKLY_LIMIT - used),
+    limit: WEEKLY_LIMIT,
+    resetsOn: resetsOn.toISOString(),
+  });
+});
 
 // ── Generation ──────────────────────────────────────────────────────────────
 
@@ -254,7 +257,7 @@ const fromResourceSchema = z.object({
  * collide, silently generated study material from an unrelated document belonging
  * to someone else. Supplying both, or neither, is now a 400.
  */
-spheraRouter.post("/generate/from-resource/", async (req, res) => {
+spheraRouter.post("/generate/from-resource/", checkGenerationQuota, async (req, res) => {
   const me = currentUser(req);
   const input = fromResourceSchema.parse(req.body ?? {});
   const tools = parseToolTypes(input.tool_types);
@@ -327,13 +330,15 @@ spheraRouter.post("/generate/from-resource/", async (req, res) => {
       ...link,
       sourceFilename,
       toolTypes: prismaTools,
-      content: (await generateAll(text, tools)) as Prisma.InputJsonObject,
+      content: (await generateAll(text, tools, me.id)) as Prisma.InputJsonObject,
       // Persisted for Q&A and for add-tool, which regenerate from it rather than
       // re-reading and re-OCRing the source.
       extractedText: text,
     },
     include: studySessionInclude,
   });
+
+  await incrementGenerationQuota(me.id, tools.length);
 
   res.status(201).json({
     success: true,
@@ -350,7 +355,7 @@ spheraRouter.post("/generate/from-resource/", async (req, res) => {
  * re-open the original from the session. Visibility is `friends`, matching Django:
  * an implicitly-created resource must not become public without being asked.
  */
-spheraRouter.post("/generate/from-upload/", singleUpload("file", "resource"), async (req, res) => {
+spheraRouter.post("/generate/from-upload/", checkGenerationQuota, singleUpload("file", "resource"), async (req, res) => {
   const me = currentUser(req);
   const file = req.file;
   if (!file) throw badRequest("Un fichier est requis.");
@@ -390,11 +395,13 @@ spheraRouter.post("/generate/from-upload/", singleUpload("file", "resource"), as
       resourceId: resource.id,
       sourceFilename: file.originalname,
       toolTypes: tools.map(toPrismaTool),
-      content: (await generateAll(text, tools)) as Prisma.InputJsonObject,
+      content: (await generateAll(text, tools, me.id)) as Prisma.InputJsonObject,
       extractedText: text,
     },
     include: studySessionInclude,
   });
+
+  await incrementGenerationQuota(me.id, tools.length);
 
   created(res, serializeStudySession(session as SerializableStudySession));
 });
@@ -412,7 +419,7 @@ const annaleSchema = z.object({
  * `POST /annales/<id>/ask/` — which reads it — could only ever return 400. Annale
  * Q&A has never worked for anyone.
  */
-spheraRouter.post("/generate/annale/", singleUpload("file", "resource"), async (req, res) => {
+spheraRouter.post("/generate/annale/", checkGenerationQuota, singleUpload("file", "resource"), async (req, res) => {
   const me = currentUser(req);
   const input = annaleSchema.parse(req.body ?? {});
   const mode = input.mode ?? "complete";
@@ -472,11 +479,13 @@ spheraRouter.post("/generate/annale/", singleUpload("file", "resource"), async (
       sourceFilename,
       resourceId: annaleResourceId,
       coursResourceId,
-      content: (await generateAnnale(annaleText, mode, coursText || null)) as Prisma.InputJsonObject,
+      content: (await generateAnnale(annaleText, mode, coursText || null, me.id)) as Prisma.InputJsonObject,
       extractedText: annaleText,
     },
     include: annaleSessionInclude,
   });
+
+  await incrementGenerationQuota(me.id, 1);
 
   created(res, serializeAnnaleSession(session as SerializableAnnaleSession));
 });
@@ -517,7 +526,7 @@ spheraRouter.delete("/sessions/:id/", async (req, res) => {
  * Regenerates from the stored `extracted_text`, so adding a quiz to an existing
  * fiche costs one model call and no re-OCR.
  */
-spheraRouter.patch("/sessions/:id/add-tool/", async (req, res) => {
+spheraRouter.patch("/sessions/:id/add-tool/", checkGenerationQuota, async (req, res) => {
   const me = currentUser(req);
   const raw = String((req.body as { tool_type?: unknown })?.tool_type ?? "").trim().toLowerCase();
   if (!isToolType(raw)) {
@@ -538,13 +547,15 @@ spheraRouter.patch("/sessions/:id/add-tool/", async (req, res) => {
   const updated = await prisma.studySession.update({
     where: { id: session.id },
     data: {
-      content: { ...content, [raw]: await generateTool(session.extractedText, raw) } as Prisma.InputJsonObject,
+      content: { ...content, [raw]: await generateTool(session.extractedText, raw, me.id) } as Prisma.InputJsonObject,
       toolTypes: session.toolTypes.includes(toPrismaTool(raw))
         ? session.toolTypes
         : [...session.toolTypes, toPrismaTool(raw)],
     },
     include: studySessionInclude,
   });
+
+  await incrementGenerationQuota(me.id, 1);
 
   ok(res, serializeStudySession(updated as SerializableStudySession));
 });
@@ -569,7 +580,7 @@ spheraRouter.get("/sessions/:id/suggestions/", async (req, res) => {
     return;
   }
 
-  const suggestions = await generateSuggestions(session.extractedText);
+  const suggestions = await generateSuggestions(session.extractedText, me.id);
   if (suggestions.length > 0) {
     await prisma.studySession.update({
       where: { id: session.id },
@@ -604,7 +615,7 @@ spheraRouter.post("/sessions/:id/ask/", async (req, res) => {
 
   const entry: QaEntry = {
     question,
-    answer: await generateQaAnswer(session.extractedText, question),
+    answer: await generateQaAnswer(session.extractedText, question, me.id),
     created_at: new Date().toISOString(),
   };
 
@@ -689,7 +700,7 @@ spheraRouter.post("/annales/:id/ask/", async (req, res) => {
 
   const entry: QaEntry = {
     question,
-    answer: await generateQaAnswer(session.extractedText, question),
+    answer: await generateQaAnswer(session.extractedText, question, me.id),
     created_at: new Date().toISOString(),
   };
 
