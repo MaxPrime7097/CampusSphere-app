@@ -21,10 +21,10 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
   const { user: currentUser } = useAuth();
 
   const cardClasses = cn(
-    "transition-all duration-300",
+    "transition-all duration-200",
     isMobile 
       ? "rounded-none border-x-0 border-t-0 shadow-none bg-card" 
-      : "campus-card hover:campus-glow"
+      : "cs-card"
   );
 
   const { toast } = useToast();

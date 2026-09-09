@@ -1,6 +1,15 @@
 # Référence API CampusSphere
 
-Base URL : `http://127.0.0.1:8000` (dev) / `https://your-backend.onrender.com` (prod)
+> **Statut : référence pratique, pas spécification.**
+> Ce document est organisé par domaine et sert de survol rapide. Il a été écrit à l'époque du
+> backend Django et n'a pas été réécrit route par route.
+>
+> **En cas de désaccord, [API_CONTRACT.md](./API_CONTRACT.md) fait autorité** : c'est la
+> spécification exhaustive contre laquelle la suite de tests de contrat est écrite, et elle
+> marque `[CHANGE]` chaque écart volontaire vis-à-vis du comportement Django. Pour savoir si une
+> route existe et qui l'appelle, voir [API_INVENTORY.md](./API_INVENTORY.md).
+
+Base URL : `http://127.0.0.1:3000` (dev) / `https://api.campussphere.app` (prod)
 
 Toutes les requêtes authentifiées nécessitent :
 ```http
@@ -43,7 +52,7 @@ Format d'erreur :
 | POST | `/api/users/auth/change-email/` | Oui | Changer l'email |
 | DELETE | `/api/users/auth/delete-account/` | Oui | Supprimer le compte |
 | POST | `/api/users/auth/password-reset/` | Non | Envoyer lien de reset mot de passe |
-| POST | `/api/users/auth/supabase/exchange-token/` | Non | Échanger token Supabase → JWT Django |
+| POST | `/api/users/auth/supabase/exchange-token/` | Non | Échanger token Supabase → JWT applicatif |
 | POST | `/api/users/auth/supabase/complete-profile/` | Oui | Compléter le profil après inscription |
 
 ### POST `/api/users/auth/supabase/exchange-token/`

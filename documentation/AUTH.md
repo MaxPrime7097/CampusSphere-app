@@ -1,6 +1,9 @@
 # Authentification CampusSphere
 
-CampusSphere utilise **Supabase Auth** comme fournisseur d'identité. Après vérification, un token Supabase est échangé contre un **JWT Django** pour accéder à l'API.
+CampusSphere utilise **Supabase Auth** comme fournisseur d'identité. Après vérification, un token Supabase est échangé contre un **JWT signé par le backend** pour accéder à l'API.
+
+Le backend vérifie la signature du token Supabase avant tout échange. La version Django acceptait,
+en mode `DEBUG`, des tokens **non vérifiés** ; ce comportement n'a délibérément pas été reproduit.
 
 ---
 
@@ -16,7 +19,7 @@ CampusSphere utilise **Supabase Auth** comme fournisseur d'identité. Après vé
 3. Utilisateur clique sur le lien → redirigé vers /register?verified=true
    └─ Register.tsx détecte le paramètre verified=true via useSearchParams
    └─ supabase.auth.getSession() → exchangeSupabaseToken(access_token)
-   └─ Django crée l'utilisateur (is_profile_complete=False)
+   └─ Le backend crée l'utilisateur (is_profile_complete=false)
    └─ setStep(2) → continue l'inscription sur la même page
 
 4. Étape 2 : infos académiques
@@ -26,7 +29,7 @@ CampusSphere utilise **Supabase Auth** comme fournisseur d'identité. Après vé
    └─ AddEducationModal, AddExperienceModal, SkillsCombobox, InterestsCombobox, portfolio
 
 6. handleFinalSubmit() → completeSupabaseProfile()
-   └─ Django met is_profile_complete=True
+   └─ is_profile_complete devient true (dérivé des champs renseignés)
    └─ Redirection vers /
 ```
 
@@ -43,7 +46,7 @@ CampusSphere utilise **Supabase Auth** comme fournisseur d'identité. Après vé
 3. AuthCallback.tsx :
    └─ supabase.auth.getSession()
    └─ exchangeSupabaseToken(access_token)
-   └─ Django crée l'utilisateur (is_profile_complete=False)
+   └─ Le backend crée l'utilisateur (is_profile_complete=false)
    └─ response.data.needs_profile_completion = true
    └─ navigate('/complete-profile')
 
@@ -53,7 +56,7 @@ CampusSphere utilise **Supabase Auth** comme fournisseur d'identité. Après vé
    - Étape 3 : formations, expériences, compétences, intérêts, portfolio
 
 5. handleSubmit() → completeSupabaseProfile()
-   └─ Django met is_profile_complete=True
+   └─ is_profile_complete devient true (dérivé des champs renseignés)
    └─ Redirection vers /
 ```
 
@@ -66,7 +69,7 @@ Email/Mot de passe :
   supabaseSignIn(email, password)
   → supabase.auth.signInWithPassword()
   → exchangeSupabaseToken(access_token)
-  → JWT Django stocké dans localStorage
+  → JWT applicatif stocké dans localStorage
   → Si needs_profile_completion → /complete-profile
   → Sinon → /
 
@@ -98,8 +101,8 @@ Auth requise : **Non**
   "data": {
     "user": { ... },
     "tokens": {
-      "accessToken": "<django_jwt>",
-      "refreshToken": "<django_refresh>"
+      "accessToken": "<access_jwt>",
+      "refreshToken": "<refresh_jwt>"
     },
     "needs_profile_completion": false,
     "is_new_user": false
@@ -109,7 +112,7 @@ Auth requise : **Non**
 
 `needs_profile_completion` est `true` quand :
 - L'utilisateur vient d'être créé via OAuth
-- Le profil existant est incomplet (`is_profile_complete=False`)
+- Le profil existant est incomplet (`is_profile_complete=false`)
 
 ---
 
@@ -117,7 +120,7 @@ Auth requise : **Non**
 
 ### POST `/api/users/auth/supabase/complete-profile/`
 
-Auth requise : **Oui** — Bearer token Django
+Auth requise : **Oui** — Bearer token applicatif
 
 **Body** :
 ```json
@@ -149,7 +152,12 @@ Auth requise : **Oui** — Bearer token Django
 }
 ```
 
-Champs obligatoires : `username`, `university`, `faculty`, `study_year`, `student_id`
+Champs qui déterminent la complétude : **`university`, `faculty`, `study_year`**.
+
+⚠️ `username` et `student_id` ne sont **pas** pris en compte, contrairement à ce que suppose
+`AuthCallback.tsx` côté frontend — voir [FRONTEND_CHANGES.md](./FRONTEND_CHANGES.md) `FE-09`.
+Les autres champs du body sont acceptés et enregistrés, mais n'influent pas sur
+`is_profile_complete`.
 
 **Response** :
 ```json
@@ -164,7 +172,7 @@ Champs obligatoires : `username`, `university`, `faculty`, `study_year`, `studen
 
 ## Stockage des tokens
 
-Les tokens Django sont stockés dans `localStorage` :
+Les tokens applicatifs sont stockés dans `localStorage` :
 - `access` → JWT d'accès (court terme)
 - `refresh` → Token de rafraîchissement (long terme)
 
@@ -203,12 +211,21 @@ Notes :
 
 ## Champ `is_profile_complete`
 
-Valeur par défaut : `False`
+**Dérivé, jamais stocké.** Il est recalculé à chaque sérialisation d'utilisateur à partir de
+trois champs — `university`, `faculty`, `study_year` — tous non vides :
 
-Passe à `True` quand tous les champs obligatoires sont remplis via `completeSupabaseProfile()` :
-- `username`, `university`, `faculty`, `study_year`, `student_id`
+```ts
+// backend/src/serializers/user.ts
+export function isProfileComplete(user): boolean
+```
 
-Tant que `is_profile_complete=False`, l'utilisateur est redirigé vers `/complete-profile` à chaque connexion.
+Tant qu'il vaut `false`, l'utilisateur est redirigé vers `/complete-profile` à chaque connexion.
+
+> **Correctif de migration.** Django stockait ce drapeau en colonne et le calculait contre une
+> liste de champs requis **vide** : `all([])` valant `True`, chaque connexion forçait
+> `is_profile_complete=True` et personne n'était jamais renvoyé vers la complétion de profil.
+> Le calcul dérivé supprime la classe entière de bugs de désynchronisation — modifier
+> `university` remet mécaniquement le profil en incomplet, sans écriture ni migration.
 
 ---
 

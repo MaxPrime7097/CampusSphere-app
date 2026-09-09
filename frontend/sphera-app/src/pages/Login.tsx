@@ -1,19 +1,28 @@
 import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { loginWithCS } from '../services/spheraApi'
+import { loginWithCS, getCurrentUser, setTokens, clearTokens } from '../services/spheraApi'
 import { useSpheraAuth } from '../contexts/SpheraAuthContext'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, Loader2 } from 'lucide-react'
+
+// ─── Known CampusSphere origins (for postMessage security) ──────
+const CS_ORIGINS = [
+  "https://campussphere.app",
+  "https://www.campussphere.app",
+  "http://localhost:5173",
+]
 
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [ssoLoading, setSsoLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
 
   const navigate = useNavigate()
   const { setUser } = useSpheraAuth()
 
+  // ─── Classic email/password login ─────────────────────────────
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -29,6 +38,62 @@ export default function Login() {
     }
   }
 
+  // ─── Popup SSO (Google-style) ─────────────────────────────────
+  const handleCampusSphereSSO = () => {
+    setSsoLoading(true)
+    setError(null)
+
+    const isLocal = ["localhost", "127.0.0.1"].some(h => window.location.hostname.includes(h))
+    const myOrigin = window.location.origin
+    const popupUrl = isLocal
+      ? `http://localhost:5173/sso/popup?origin=${encodeURIComponent(myOrigin)}`
+      : `https://campussphere.app/sso/popup?origin=${encodeURIComponent(myOrigin)}`
+
+    // Center the popup on screen
+    const w = 420, h = 520
+    const left = window.screenX + (window.outerWidth - w) / 2
+    const top = window.screenY + (window.outerHeight - h) / 2
+
+    const popup = window.open(
+      popupUrl,
+      "cs_sso_popup",
+      `width=${w},height=${h},left=${left},top=${top},resizable=no,scrollbars=no`,
+    )
+
+    // Listen for tokens from the popup
+    const handler = async (e: MessageEvent) => {
+      if (!CS_ORIGINS.includes(e.origin)) return
+      if (e.data?.type !== "cs_sso" || !e.data.access) return
+
+      window.removeEventListener("message", handler)
+      clearInterval(checkClosed)
+
+      // Store tokens and fetch user profile
+      setTokens(e.data.access, e.data.refresh || "")
+      try {
+        const user = await getCurrentUser()
+        setUser(user)
+        navigate("/dashboard")
+      } catch {
+        clearTokens()
+        setError("La connexion SSO a échoué. Réessaie.")
+        setSsoLoading(false)
+      }
+    }
+
+    window.addEventListener("message", handler)
+
+    // Clean up if the popup is closed without completing auth
+    const checkClosed = setInterval(() => {
+      if (popup && popup.closed) {
+        clearInterval(checkClosed)
+        window.removeEventListener("message", handler)
+        setSsoLoading(false)
+      }
+    }, 500)
+  }
+
+  // ─── UI ───────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-sphera-bg flex flex-col items-center justify-center p-4">
       <Link to="/" className="flex items-center gap-3 mb-8">
@@ -54,6 +119,38 @@ export default function Login() {
           </div>
         )}
 
+        {/* ── CampusSphere SSO Button (primary action) ─────────── */}
+        <button
+          onClick={handleCampusSphereSSO}
+          disabled={ssoLoading}
+          className="w-full bg-white hover:bg-gray-100 text-gray-900 font-semibold py-3 rounded-xl flex items-center justify-center gap-3 transition-all shadow-lg shadow-white/5 disabled:opacity-70 mb-6"
+        >
+          {ssoLoading ? (
+            <>
+              <Loader2 className="h-5 w-5 animate-spin" />
+              Connexion en cours…
+            </>
+          ) : (
+            <>
+              <img src="/CS.svg" alt="" className="h-5 w-5" />
+              Se connecter avec CampusSphere
+            </>
+          )}
+        </button>
+
+        {/* ── Separator ──────────────────────────────────────── */}
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-sphera-border" />
+          </div>
+          <div className="relative flex justify-center text-xs">
+            <span className="px-3 bg-[var(--sphera-card-bg,#1a1a2e)] text-sphera-text-muted">
+              ou avec ton email
+            </span>
+          </div>
+        </div>
+
+        {/* ── Email / Password form ──────────────────────────── */}
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-sphera-text-muted mb-1.5">Email</label>
@@ -91,12 +188,12 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="sphera-primary-btn w-full mt-6"
+            className="sphera-primary-btn w-full mt-2"
           >
             {loading ? 'Connexion en cours...' : 'Se connecter'}
           </button>
         </form>
-        
+
         <p className="text-center text-sm text-sphera-text-muted mt-6">
           Pas encore de compte ? <Link to="/register" className="text-sphera-green hover:underline">S'inscrire</Link>
         </p>

@@ -1,4 +1,7 @@
+import { ImageUploadModal } from "@/components/modals/ImageUploadModal";
+import { compressImageFile } from "@/lib/imageCompression";
 import { Suspense, lazy, useState, useEffect, useMemo, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { getCurrentUser, getUserByUsername, getUserPosts, uploadAvatar, uploadCoverPhoto, updateUserProfile, getUserConnections, getUserResources, connectWithUser, disconnectFromUser, downloadResource, getUserProfile, getUserConnectionRelation, isApiRequestErrorStatus, acceptConnection } from "@/services/api";
 import { MapPin, Camera, Calendar, Link, Users, User, BookOpen, Award, Settings, FileText, Briefcase, GraduationCap, Loader2, Check, Download, Unlink, ExternalLink, Upload, X, Zap, Smile, BriefcaseBusiness, Shield, Info, Pencil, BadgeCheck, Plus, Languages } from "lucide-react";
@@ -449,7 +452,7 @@ export function Profile() {
   const prevScoreRef = useRef<number | null>(null);
   const [isSavingCover, setIsSavingCover] = useState(false);
   const [isSavingAvatar, setIsSavingAvatar] = useState(false);
-  const [isSavingMood, setIsSavingMood] = useState(false);
+    const [isSavingMood, setIsSavingMood] = useState(false);
   const { user: currentUser, isAuthenticated, isLoading: isAuthLoading, refreshUser } = useAuth();
   const [targetUser, setTargetUser] = useState<any>(null);
   const [userPosts, setUserPosts] = useState<any[]>([]);
@@ -480,62 +483,61 @@ export function Profile() {
   }, [username, currentUser]);
 
   // Load target user by username
+  const targetUserQuery = useQuery({
+    queryKey: ["profile-user", username],
+    queryFn: () => getUserByUsername(username!),
+    enabled: Boolean(username),
+    staleTime: 60 * 1000,
+    retry: false,
+  });
+
   useEffect(() => {
     if (!username) return;
 
-    let isMounted = true;
-    (async () => {
-      try {
-        setLoading(true);
-        const user = await getUserByUsername(username);
-        if (isMounted && user && isProfilePayloadValid(user)) {
-          setTargetUser(user);
-          setProfileLoadError(false);
-          setProfileUnavailableDueToOnboarding(false);
-        } else if (isMounted) {
-          setProfileLoadError(true);
-          setProfileUnavailableDueToOnboarding(false);
-        }
-      } catch (e: any) {
-        // User not found
-        console.error('Error loading user:', e);
-        if (isMounted) {
-          const rawMessage = String(e?.message || "").toLowerCase();
-          const onboardingRestricted =
-            isApiRequestErrorStatus(e, 403) ||
-            (isApiRequestErrorStatus(e, 404) && rawMessage.includes("onboarding"));
+    if (targetUserQuery.isLoading) {
+      setLoading(true);
+      return;
+    }
 
-          setProfileLoadError(true);
-          setProfileUnavailableDueToOnboarding(onboardingRestricted);
-        }
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, [username]);
+    if (targetUserQuery.error) {
+      const e = targetUserQuery.error;
+      console.error('Error loading user:', e);
+      const rawMessage = String((e as any)?.message || "").toLowerCase();
+      const onboardingRestricted =
+        isApiRequestErrorStatus(e, 403) ||
+        (isApiRequestErrorStatus(e, 404) && rawMessage.includes("onboarding"));
+
+      setProfileLoadError(true);
+      setProfileUnavailableDueToOnboarding(onboardingRestricted);
+      setLoading(false);
+      return;
+    }
+
+    const user = targetUserQuery.data;
+    if (user && isProfilePayloadValid(user)) {
+      setTargetUser(user);
+      setProfileLoadError(false);
+      setProfileUnavailableDueToOnboarding(false);
+    } else {
+      setProfileLoadError(true);
+      setProfileUnavailableDueToOnboarding(false);
+    }
+    setLoading(false);
+  }, [username, targetUserQuery.data, targetUserQuery.isLoading, targetUserQuery.error]);
 
   // Load user posts
-  useEffect(() => {
-    if (!targetUser?.id) return;
+  const postsQuery = useQuery({
+    queryKey: ["profile-posts", targetUser?.id],
+    queryFn: () => getUserPosts(targetUser!.id),
+    enabled: Boolean(targetUser?.id),
+    staleTime: 60 * 1000,
+  });
 
-    let isMounted = true;
-    (async () => {
-      try {
-        const posts = await getUserPosts(targetUser.id);
-        if (isMounted) {
-          setUserPosts(posts || []);
-        }
-      } catch (e) {
-        // Error loading posts
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, [currentUser?.id, targetUser?.id]);
+  useEffect(() => {
+    if (postsQuery.data) {
+      setUserPosts(postsQuery.data || []);
+    }
+  }, [postsQuery.data]);
 
   // Vérifier si c'est le profil de l'utilisateur actuel
   const isOwnProfile = !username || (currentUser && username === currentUser.username);
@@ -570,55 +572,51 @@ export function Profile() {
   }), [user.phoneNumber, user.dateOfBirth]);
 
   // Load connections
+  const connectionsQuery = useQuery({
+    queryKey: ["profile-connections", targetUser?.id],
+    queryFn: () => getUserConnections(targetUser!.id),
+    enabled: Boolean(targetUser?.id),
+    staleTime: 60 * 1000,
+  });
+
   useEffect(() => {
-    if (!targetUser?.id) return;
-
-    let isMounted = true;
-    (async () => {
-      try {
-        const connections = await getUserConnections(targetUser.id);
-        if (isMounted && connections) {
-          const profileOwnerId = String(targetUser.id);
-
-          const mapped = (connections || [])
-            .map((conn: any) => getConnectionCounterpart(conn, profileOwnerId))
-            .filter(Boolean);
-          setUserConnections(mapped as any[]);
-        }
-      } catch (e) {
-        // Error loading connections
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, [targetUser?.id]);
+    if (connectionsQuery.data && targetUser?.id) {
+      const profileOwnerId = String(targetUser.id);
+      const mapped = (connectionsQuery.data || [])
+        .map((conn: any) => getConnectionCounterpart(conn, profileOwnerId))
+        .filter(Boolean);
+      setUserConnections(mapped as any[]);
+    }
+  }, [connectionsQuery.data, targetUser?.id]);
 
   // Load user resources
-  useEffect(() => {
-    if (!targetUser?.id) return;
+  const resourcesQuery = useQuery({
+    queryKey: ["profile-resources", targetUser?.id],
+    queryFn: () => getUserResources(targetUser!.id),
+    enabled: Boolean(targetUser?.id),
+    staleTime: 60 * 1000,
+    retry: false,
+  });
 
-    let isMounted = true;
-    (async () => {
-      try {
-        const resources = await getUserResources(targetUser.id);
-        if (isMounted) {
-          setUserResources(resources || []);
-          setResourcesAvailable(true);
-        }
-      } catch (e) {
-        if (isMounted) {
-          setUserResources([]);
-          setResourcesAvailable(false);
-        }
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, [currentUser?.id, targetUser?.id]);
+  useEffect(() => {
+    if (resourcesQuery.data) {
+      setUserResources(resourcesQuery.data || []);
+      setResourcesAvailable(true);
+    } else if (resourcesQuery.error) {
+      setUserResources([]);
+      setResourcesAvailable(false);
+    }
+  }, [resourcesQuery.data, resourcesQuery.error]);
 
   // Initialize connection status (current user <-> target user)
+  const relationQuery = useQuery({
+    queryKey: ["profile-relation", targetUser?.id],
+    queryFn: () => getUserConnectionRelation(targetUser!.id),
+    enabled: Boolean(targetUser?.id && currentUser?.id && !isOwnProfile),
+    staleTime: 60 * 1000,
+    retry: false,
+  });
+
   useEffect(() => {
     if (!currentUser?.id || !targetUser?.id || isOwnProfile) {
       setIsFollowing(false);
@@ -629,31 +627,20 @@ export function Profile() {
       return;
     }
 
-    let isMounted = true;
-    (async () => {
-      try {
-        const relation = await getUserConnectionRelation(targetUser.id);
-        if (!isMounted || !relation) return;
-
-        setRelationActionUnavailable(false);
-        setIsFollowing(Boolean(relation.is_connected));
-        setConnectionStatus(relation.connection?.status ?? null);
-        setIsRecipient(relation.connection?.recipient === currentUser.id);
-        setCurrentConnectionId(relation.connection?.id != null ? String(relation.connection.id) : null);
-      } catch (error) {
-        if (isMounted) {
-          setIsFollowing(false);
-          setConnectionStatus(null);
-          setCurrentConnectionId(null);
-          setRelationActionUnavailable(isApiRequestErrorStatus(error, 403));
-        }
-      }
-    })();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [currentUser?.id, targetUser?.id, isOwnProfile]);
+    if (relationQuery.data) {
+      const relation = relationQuery.data;
+      setRelationActionUnavailable(false);
+      setIsFollowing(Boolean(relation.is_connected));
+      setConnectionStatus(relation.connection?.status ?? null);
+      setIsRecipient(relation.connection?.recipient === currentUser.id);
+      setCurrentConnectionId(relation.connection?.id != null ? String(relation.connection.id) : null);
+    } else if (relationQuery.error) {
+      setIsFollowing(false);
+      setConnectionStatus(null);
+      setCurrentConnectionId(null);
+      setRelationActionUnavailable(isApiRequestErrorStatus(relationQuery.error, 403));
+    }
+  }, [currentUser?.id, targetUser?.id, isOwnProfile, relationQuery.data, relationQuery.error]);
 
   // Sync targetUser with currentUser if it's our own profile
   useEffect(() => {
@@ -852,35 +839,59 @@ export function Profile() {
   };
 
 
-  const handleCoverPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const handleCoverPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
         toast({ title: "Fichier trop grand", description: "La photo de couverture ne doit pas dépasser 5MB", variant: "destructive" });
         return;
       }
-      setCoverPhotoFile(file);
       const reader = new FileReader();
-      reader.onload = (e) => setCoverPhotoPreview(e.target?.result as string);
+      reader.onload = (e) => setCropperState({ isOpen: true, imageSrc: e.target?.result as string, type: 'banner' });
       reader.readAsDataURL(file);
     }
   };
 
-  const handleSaveCoverPhoto = async () => {
-    if (!coverPhotoFile || !currentUser?.id || isSavingCover) return;
+      const handleCropComplete = async (croppedFile: File) => {
+    setCropperState(prev => ({ ...prev, isOpen: false }));
+    const compressed = await compressImageFile(croppedFile);
+    
+    if (cropperState.type === 'avatar') {
+      setIsSavingAvatar(true);
+      try {
+        await uploadAvatar(currentUser!.id, compressed);
+        toast({ title: "Avatar mis à jour !", description: "Votre nouvel avatar a été sauvegardé", duration: 3000 });
+        await refreshUser();
+      } catch (error: any) {
+        toast({ title: "Erreur", description: error?.message || "Impossible de mettre à jour l'avatar", variant: "destructive" });
+      } finally {
+        setIsSavingAvatar(false);
+      }
+    } else {
+      setIsSavingCover(true);
+      try {
+        await uploadCoverPhoto(currentUser!.id, compressed);
+        toast({ title: "Photo de couverture mise à jour !", description: "Votre nouvelle photo de couverture a été sauvegardée", duration: 3000 });
+        await refreshUser();
+      } catch (error: any) {
+        toast({ title: "Erreur", description: error?.message || "Impossible de mettre à jour la photo de couverture", variant: "destructive" });
+      } finally {
+        setIsSavingCover(false);
+      }
+    }
+  };
+
+    const handleSaveCoverPhotoDirect = async (file: File) => {
+    if (!currentUser?.id) return;
     setIsSavingCover(true);
     try {
-      await uploadCoverPhoto(currentUser.id, coverPhotoFile);
-      toast({ title: "Photo de couverture mise à jour !", description: "Votre nouvelle photo de couverture a été sauvegardée", duration: 3000 });
+      await uploadCoverPhoto(currentUser.id, file);
+      toast({ title: "Photo de couverture mise à jour !", duration: 3000 });
       setShowCoverPhotoModal(false);
-      setCoverPhotoFile(null);
-      setCoverPhotoPreview(null);
       await refreshUser();
     } catch (error: any) {
-      toast({ title: "Erreur", description: error?.message || "Impossible de mettre à jour la photo de couverture", variant: "destructive" });
-    } finally {
-      setIsSavingCover(false);
-    }
+      toast({ title: "Erreur", description: error?.message, variant: "destructive" });
+    } finally { setIsSavingCover(false); }
   };
 
   const handleRemoveCoverPhoto = () => {
@@ -889,35 +900,30 @@ export function Profile() {
     toast({ title: "Photo de couverture supprimée", description: "Votre photo de couverture a été supprimée", duration: 2000 });
   };
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
         toast({ title: "Fichier trop grand", description: "L'avatar ne doit pas dépasser 2MB", variant: "destructive" });
         return;
       }
-      setAvatarFile(file);
       const reader = new FileReader();
-      reader.onload = (e) => setAvatarPreview(e.target?.result as string);
+      reader.onload = (e) => setCropperState({ isOpen: true, imageSrc: e.target?.result as string, type: 'avatar' });
       reader.readAsDataURL(file);
     }
   };
 
-  const handleSaveAvatar = async () => {
-    if (!avatarFile || !currentUser?.id || isSavingAvatar) return;
+    const handleSaveAvatarDirect = async (file: File) => {
+    if (!currentUser?.id) return;
     setIsSavingAvatar(true);
     try {
-      await uploadAvatar(currentUser.id, avatarFile);
-      toast({ title: "Avatar mis à jour !", description: "Votre nouvel avatar a été sauvegardé", duration: 3000 });
+      await uploadAvatar(currentUser.id, file);
+      toast({ title: "Avatar mis à jour !", duration: 3000 });
       setShowAvatarModal(false);
-      setAvatarFile(null);
-      setAvatarPreview(null);
       await refreshUser();
     } catch (error: any) {
-      toast({ title: "Erreur", description: error?.message || "Impossible de mettre à jour l'avatar", variant: "destructive" });
-    } finally {
-      setIsSavingAvatar(false);
-    }
+      toast({ title: "Erreur", description: error?.message, variant: "destructive" });
+    } finally { setIsSavingAvatar(false); }
   };
 
   const handleRemoveAvatar = () => {
@@ -949,7 +955,7 @@ export function Profile() {
 
   const cardClasses = cn(
     "transition-all duration-300",
-    isMobile ? "rounded-none border-x-0 border-t-0 shadow-none bg-card" : "campus-card hover:campus-glow"
+    isMobile ? "rounded-none border-x-0 border-t-0 shadow-none bg-card" : "cs-card hover:shadow-[var(--shadow-sm)]"
   );
 
   const EmptyField = () => <span className="italic text-muted-foreground text-xs font-normal">Aucun pour l'instant</span>;
@@ -989,6 +995,11 @@ export function Profile() {
 
   return (
     <div key={`${username || 'current'}`} className="min-h-screen bg-gradient-to-br from-background to-accent/20">
+
+        <ImageUploadModal isOpen={showAvatarModal} onClose={() => setShowAvatarModal(false)} onSave={async (f) => { await uploadAvatar(currentUser!.id, f); toast({ title: "Avatar mis à jour !", duration: 3000 }); setShowAvatarModal(false); await refreshUser(); }} title="Photo de profil" description="Téléchargez une nouvelle photo de profil pour votre compte." currentImage={currentUser?.avatar} shape="round" aspectRatio={1} />
+        <ImageUploadModal isOpen={showCoverPhotoModal} onClose={() => setShowCoverPhotoModal(false)} onSave={async (f) => { await uploadCoverPhoto(currentUser!.id, f); toast({ title: "Photo de couverture mise à jour !", duration: 3000 }); setShowCoverPhotoModal(false); await refreshUser(); }} title="Photo de couverture" description="Téléchargez une nouvelle photo de couverture." currentImage={currentUser?.coverPhoto} shape="rect" aspectRatio={16/5} />
+
+        
       <div className="container max-w-4xl mx-auto py-0 px-0 sm:py-4 space-y-4">
         {isOwnProfile && !currentUser?.isVerified && (
           <div className="mx-4 sm:mx-0 p-4 bg-amber-500/10 border border-amber-500/50 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4">
@@ -1285,8 +1296,8 @@ export function Profile() {
         </div>
 
         {/* Profile Tabs - CUSTOM (SAME AS SPHERES) */}
-        <div className="mt-4 campus-animate-slide-up">
-          <ul className="grid grid-flow-col text-center border-b border-gray-200 text-gray-500">
+        <div className="mt-4 campus-animate-slide-up w-full overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <ul className="inline-grid grid-flow-col text-center border-b border-gray-200 text-gray-500 min-w-full">
             {[
               { id: "posts", label: "Posts" },
               { id: "about", label: "À propos" },
@@ -1297,7 +1308,7 @@ export function Profile() {
                 <button
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
-                    "w-full flex justify-center border-b-4 py-4 transition-all duration-200 text-sm font-medium",
+                    "w-full flex justify-center px-4 whitespace-nowrap border-b-4 py-4 transition-all duration-200 text-sm font-medium",
                     activeTab === tab.id
                       ? "border-primary text-primary"
                       : "border-transparent hover:text-primary hover:border-primary"
@@ -1731,8 +1742,8 @@ export function Profile() {
                   Fichiers Partagés
                 </h3>
                 {loading ? (
-                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                    {Array.from({ length: 4 }).map((_, i) => <ResourceSkeleton key={i} />)}
+                  <div className="grid gap-3.5 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                    {Array.from({ length: 6 }).map((_, i) => <ResourceSkeleton key={i} />)}
                   </div>
                 ) : user.sharedFiles.length === 0 ? (
                   <EmptyState
@@ -1741,7 +1752,7 @@ export function Profile() {
                     description={resourcesAvailable ? "Cet utilisateur n'a pas encore partagé de ressources." : NOT_AVAILABLE_TEXT}
                   />
                 ) : (
-                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div className="grid gap-3.5 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                     {user.sharedFiles.map((file: any) => (
                       <ResourceCard
                         key={file.id}
@@ -1766,200 +1777,8 @@ export function Profile() {
           )}
         </div>
 
-        {/* Modal pour changer la photo de couverture */}
-        <Dialog open={showCoverPhotoModal} onOpenChange={setShowCoverPhotoModal}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Camera className="h-5 w-5" />
-                Photo de couverture
-              </DialogTitle>
-              <DialogDescription>
-                Téléchargez une nouvelle photo de couverture pour votre profil.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 py-4">
-              {/* Aperçu de la photo */}
-              <div className="relative">
-                <div className="w-full h-32 bg-gradient-to-br from-primary/20 to-accent/20 rounded-lg overflow-hidden">
-                  {coverPhotoPreview ? (
-                    <img
-                      src={coverPhotoPreview}
-                      alt="Aperçu"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                      <div className="text-center">
-                        <Camera className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                        <p className="text-sm">Aucune photo sélectionnée</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Bouton pour supprimer */}
-                {coverPhotoPreview && (
-                  <Button
-                    size="icon"
-                    variant="destructive"
-                    className="absolute top-2 right-2 h-6 w-6"
-                    onClick={handleRemoveCoverPhoto}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                )}
-              </div>
-
-              {/* Input file caché */}
-              <input
-                ref={coverPhotoInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleCoverPhotoChange}
-                aria-label="Sélectionner une photo de couverture"
-                title="Sélectionner une photo de couverture"
-                placeholder="Sélectionner une photo de couverture"
-                className="hidden"
-              />
-
-              {/* Boutons d'action */}
-              <div className="space-y-2">
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => coverPhotoInputRef.current?.click()}
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  {coverPhotoPreview ? "Changer la photo" : "Sélectionner une photo"}
-                </Button>
-
-                <p className="text-xs text-muted-foreground text-center">
-                  Formats acceptés : JPG, PNG, GIF (max 5MB)
-                </p>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-4 border-t">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowCoverPhotoModal(false);
-                  setCoverPhotoFile(null);
-                  setCoverPhotoPreview(null);
-                }}
-              >
-                Annuler
-              </Button>
-              <Button
-                onClick={handleSaveCoverPhoto}
-                disabled={!coverPhotoFile || isSavingCover}
-                className="campus-gradient text-white hover:opacity-90"
-              >
-                {isSavingCover ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
-                {isSavingCover ? "Sauvegarde..." : "Sauvegarder"}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Modal pour changer l'avatar */}
-        <Dialog open={showAvatarModal} onOpenChange={setShowAvatarModal}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Camera className="h-5 w-5" />
-                Photo de profil
-              </DialogTitle>
-              <DialogDescription>
-                Téléchargez une nouvelle photo de profil pour votre compte.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 py-4">
-              {/* Aperçu de l'avatar */}
-              <div className="flex justify-center">
-                <div className="relative">
-                  <div className="w-24 h-24 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full overflow-hidden ring-4 ring-background shadow-lg">
-                    {avatarPreview ? (
-                      <img
-                        src={avatarPreview}
-                        alt="Aperçu avatar"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                        <Camera className="h-8 w-8 opacity-50" />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Bouton pour supprimer */}
-                  {avatarPreview && (
-                    <Button
-                      size="icon"
-                      variant="destructive"
-                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
-                      onClick={handleRemoveAvatar}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-
-              {/* Input file caché */}
-              <input
-                ref={avatarInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleAvatarChange}
-                aria-label="Sélectionner une photo de profil"
-                title="Sélectionner une photo de profil"
-                placeholder="Sélectionner une photo de profil"
-                className="hidden"
-              />
-
-              {/* Boutons d'action */}
-              <div className="space-y-2">
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => avatarInputRef.current?.click()}
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  {avatarPreview ? "Changer la photo" : "Sélectionner une photo"}
-                </Button>
-
-                <p className="text-xs text-muted-foreground text-center">
-                  Formats acceptés : JPG, PNG, GIF (max 2MB)
-                </p>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-4 border-t">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowAvatarModal(false);
-                  setAvatarFile(null);
-                  setAvatarPreview(null);
-                }}
-              >
-                Annuler
-              </Button>
-              <Button
-                onClick={handleSaveAvatar}
-                disabled={!avatarFile || isSavingAvatar}
-                className="campus-gradient text-white hover:opacity-90"
-              >
-                {isSavingAvatar ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
-                {isSavingAvatar ? "Sauvegarde..." : "Sauvegarder"}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <input ref={coverPhotoInputRef} type="file" accept="image/*" onChange={handleCoverPhotoChange} className="hidden" />
+        
 
         {/* Modal pour changer le mood */}
         <Dialog
@@ -2046,3 +1865,18 @@ export function Profile() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

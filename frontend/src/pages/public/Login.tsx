@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Eye, EyeOff, Mail, Lock, Loader2, AlertCircle } from "lucide-react";
 import { FaGoogle, FaFacebook } from "react-icons/fa";
+import { FcGoogle } from "react-icons/fc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +27,9 @@ export function Login() {
   const [isFacebookLoading, setIsFacebookLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({ email: "", password: "", rememberMe: false });
+
+  const searchParams = new URLSearchParams(window.location.search);
+  const nextUrl = searchParams.get("next") || "/";
 
   const loginSchema = z.object({
     email: z.string().min(1, "L'email est requis").email("Format d'email invalide"),
@@ -58,7 +62,7 @@ export function Login() {
       }
 
       toast({ title: "Connexion réussie !", duration: 2000 });
-      navigate("/");
+      navigate(nextUrl);
     } catch (err: any) {
       const msg = err?.message || "Une erreur est survenue";
       toast({ title: "Erreur de connexion", description: msg, variant: "destructive", duration: 5000 });
@@ -110,10 +114,10 @@ export function Login() {
             {/* OAuth */}
             <div className="space-y-3">
               <Button variant="outline" className="w-full" onClick={handleGoogle} disabled={isGoogleLoading || isLoading || isFacebookLoading}>
-                {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FaGoogle className="mr-2 h-4 w-4 text-red-500" />}
+                {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FcGoogle className="mr-2 h-4 w-4" />}
                 Continuer avec Google
               </Button>
-              <Button variant="outline" className="w-full" onClick={handleFacebook} disabled={isFacebookLoading || isLoading || isGoogleLoading}>
+              <Button variant="outline" className="hidden w-full" onClick={handleFacebook} disabled={isFacebookLoading || isLoading || isGoogleLoading}>
                 {isFacebookLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FaFacebook className="mr-2 h-4 w-4 text-blue-600" />}
                 Continuer avec Facebook
               </Button>
@@ -179,7 +183,7 @@ export function Login() {
 
         <div className="text-center mt-8 text-sm text-muted-foreground">
           <p>
-            En vous connectant, vous acceptez nos{" "}
+            En continuant, vous acceptez nos{" "}
             <Button variant="link" className="px-0 h-auto text-primary" onClick={() => navigate("/cs-inc/policies/terms")}>Conditions d'utilisation</Button>
             {" "}et notre{" "}
             <Button variant="link" className="px-0 h-auto text-primary" onClick={() => navigate("/cs-inc/policies/privacy")}>Politique de confidentialité</Button>

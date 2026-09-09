@@ -1,25 +1,40 @@
 # Impact Policy
 
-Source de vérité backend : `backend/users/impact_policy.py`
+Source de vérité backend : [`backend/src/services/impact.ts`](../backend/src/services/impact.ts).
+Le contrat est décrit dans [API_CONTRACT.md](./API_CONTRACT.md) §3.4.
+L'implémentation Django d'origine reste consultable sous
+`legacy/django-backend/users/impact_policy.py`.
 
 ## Règles actives
 
 | Événement | Points | Déclencheur | Implémentation |
 |-----------|--------|-------------|----------------|
-| Upload d'une ressource | **+5** | `resource.uploaded` | `resources/serializers.py` → `apply_impact_event(user, RESOURCE_UPLOADED)` |
-| Notation d'un post | **dynamique (1–5)** | Valeur envoyée par le frontend | `posts/views.py` → `apply_impact_points(post.author, rating_value)` |
+| Upload d'une ressource | **+5** | Création d'une ressource | `applyImpactEvent(userId, "RESOURCE_UPLOADED")` |
+| Notation d'un post | **dynamique (1–5)** | Valeur envoyée par le frontend | `recomputePostImpact(postId)` / `adjustPostImpact(postId, delta)` |
 
 ## Utilisation backend
 
-```python
-from users.impact_policy import apply_impact_event, apply_impact_points, RESOURCE_UPLOADED
+```ts
+import {
+  applyImpactEvent,
+  applyImpactDelta,
+  recomputePostImpact,
+} from "../services/impact.js";
 
-# Upload ressource → +5 pts à l'auteur
-apply_impact_event(user, RESOURCE_UPLOADED)
+// Upload ressource → +5 pts à l'auteur
+await applyImpactEvent(userId, "RESOURCE_UPLOADED");
 
-# Notation d'un post → points dynamiques (valeur de la note, 1 à 5)
-apply_impact_points(post.author, rating_value)
+// Ajustement arbitraire (retrait d'une ressource, correction admin…)
+await applyImpactDelta(userId, -5);
+
+// Recalcul de l'impact d'un post à partir de la somme de ses notes
+await recomputePostImpact(postId);
 ```
+
+Chaque fonction accepte un `client` Prisma optionnel en dernier argument, afin de participer à
+une transaction appelante plutôt que d'ouvrir la sienne. Le score d'un post est **recalculé par
+agrégation** de ses notes plutôt qu'incrémenté au fil de l'eau : une note modifiée ou supprimée
+ne peut donc pas laisser le total désynchronisé, ce qui était le cas côté Django.
 
 ## Ce qui n'est PAS inclus (intentionnellement)
 

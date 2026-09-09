@@ -166,6 +166,9 @@ export async function verifyStudentStatus(matricule: string, cardImage: File) {
   return response;
 }
 
+// [BE-MIGRATION FE-10] Set VITE_API_URL in every deploy. The fallbacks below are
+// stale: 127.0.0.1:8000 is Django's port (the Node backend dev server is :3000), and
+// the two hardcoded hosts are guesses. — documentation/FRONTEND_CHANGES.md
 const getDetectedApiUrl = (): string => {
   if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
   const { hostname } = window.location;
@@ -236,7 +239,86 @@ function clearTokens() {
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
-export class ApiRequestError extends Error {
+export // Helper to parse ugly backend errors into a clean string
+function parseBackendError(errJson: any, status: number): string {
+  if (!errJson) return "Une erreur inattendue est survenue.";
+  
+  if (typeof errJson === "string") return translateError(errJson, status);
+
+
+  // Field errors if available from backend envelope (e.g. { error: "...", field_errors: { name: ["Already used."] } })
+  if (errJson.field_errors && typeof errJson.field_errors === "object") {
+    const errorMessages: string[] = [];
+    for (const [key, value] of Object.entries(errJson.field_errors)) {
+      if (Array.isArray(value) && typeof value[0] === "string") {
+        errorMessages.push(`${translateField(key)}: ${translateError(value[0], status)}`);
+      } else if (typeof value === "string") {
+        errorMessages.push(`${translateField(key)}: ${translateError(value, status)}`);
+      }
+    }
+    if (errorMessages.length > 0) return errorMessages.join(" | ");
+  }
+
+  // Standard fields
+  if (typeof errJson.detail === "string") return translateError(errJson.detail, status);
+  if (typeof errJson.error === "string") return translateError(errJson.error, status);
+  if (typeof errJson.message === "string") return translateError(errJson.message, status);
+
+  // Handle Django REST Framework field validation errors (e.g. { "name": ["This field must be unique."] })
+  if (typeof errJson === "object" && !Array.isArray(errJson)) {
+    const errorMessages: string[] = [];
+    for (const [key, value] of Object.entries(errJson)) {
+      if (key === "success" || key === "timestamp" || key === "code") continue;
+      if (Array.isArray(value) && typeof value[0] === "string") {
+        errorMessages.push(`${translateField(key)}: ${translateError(value[0], status)}`);
+      } else if (typeof value === "string") {
+        errorMessages.push(`${translateField(key)}: ${translateError(value, status)}`);
+      }
+    }
+    if (errorMessages.length > 0) return errorMessages.join(" | ");
+  }
+
+  return "Une erreur technique est survenue.";
+}
+
+function translateField(field: string): string {
+  const fields: Record<string, string> = {
+    username: "Nom d'utilisateur",
+    email: "Email",
+    password: "Mot de passe",
+    name: "Nom",
+    description: "Description",
+    title: "Titre"
+  };
+  return fields[field] || field;
+}
+
+function translateError(msg: string, status: number): string {
+  const m = msg.toLowerCase();
+  
+  if (status === 409 || m.includes("unique") || m.includes("already exists") || m.includes("already used")) {
+    return "Un élément avec ce nom existe déjà. Veuillez choisir un nom différent.";
+  }
+  if (m.includes("reached the limit") || (m.includes("limit") && m.includes("folder"))) {
+    return "Vous avez atteint la limite maximale autorisée (4 dossiers maximum).";
+  }
+  if (m.includes("not found") || status === 404) {
+    return "L'élément demandé est introuvable.";
+  }
+  if (m.includes("credentials") || m.includes("unauthorized") || m.includes("invalid login") || m.includes("token")) {
+    return "Identifiants incorrects ou session expirée.";
+  }
+  if (m.includes("permission") || m.includes("forbidden") || status === 403) {
+    return "Vous n'avez pas l'autorisation d'effectuer cette action.";
+  }
+  if (m.includes("required") || m.includes("blank")) {
+    return "Ce champ est obligatoire.";
+  }
+
+  return msg;
+}
+
+class ApiRequestError extends Error {
   status?: number;
 
   constructor(message: string, status?: number) {
@@ -553,11 +635,13 @@ async function apiFetch<T>(
   const contentType = (res.headers.get("content-type") || "").toLowerCase();
 
   if (!res.ok) {
+    let errMsg = `Request failed: ${res.status}`;
+
     // Try to parse JSON error payload for a meaningful message, otherwise fall back to text.
     if (contentType.includes("application/json")) {
       try {
         const errJson = await res.json();
-        const errMsg = errJson?.detail || errJson?.message || JSON.stringify(errJson);
+        errMsg = parseBackendError(errJson, res.status) || errMsg;
 
         // If unauthorized and we haven't retried yet, try to refresh the access token once.
         if (res.status === 401 && !_retry) {
@@ -577,16 +661,19 @@ async function apiFetch<T>(
           // If no refresh token or refresh failed, clear everything
           clearTokens();
         }
-
-        throw new ApiRequestError(errMsg || `Request failed: ${res.status}`, res.status);
-      } catch (e) {
-        const text = await res.text().catch(() => "");
-        throw new ApiRequestError(text || `Request failed: ${res.status}`, res.status);
+      } catch {
+        // parsing json failed, fallback will be used
+      }
+    } else {
+      try {
+        const text = await res.text();
+        if (text) errMsg = text;
+      } catch {
+        // ignore
       }
     }
 
-    const text = await res.text().catch(() => "");
-    throw new ApiRequestError(text || `Request failed: ${res.status}`, res.status);
+    throw new ApiRequestError(errMsg, res.status);
   }
 
   if (contentType.includes("application/json")) {
@@ -931,6 +1018,9 @@ export async function getConnectionRecommendations(token?: string) {
 // SPHERES
 // ============================================================================
 
+// [BE-MIGRATION FE-03] Three call sites pass { my_spheres: "true" }, which Django silently ignored —
+// they have been listing every sphere, not the user's. The Node backend honours the param, so those
+// call sites start behaving as intended with no change here. — documentation/FRONTEND_CHANGES.md
 export async function listSpheres(params?: Record<string, string | number>, token?: string) {
   const query = params
     ? `?${new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)]))}`
@@ -1278,9 +1368,13 @@ export async function getPostComments(postId: number | string, token?: string) {
 }
 
 export async function createComment(postId: number | string, data: { content: string; parent?: number | string }, token?: string) {
+  const bodyData: any = { content: data.content };
+  if (data.parent) {
+    bodyData.parent = typeof data.parent === 'string' ? parseInt(data.parent) : data.parent;
+  }
   return apiFetch<any>(`api/posts/${postId}/comments/`, {
     method: "POST",
-    body: data,
+    body: bodyData,
     token: token || getAccessToken(),
   });
 }
@@ -1324,10 +1418,16 @@ export interface ResourceFolder {
 }
 
 export async function listFolders(token?: string): Promise<ResourceFolder[]> {
-  const response = await apiFetch<any>('api/resources/folders/', {
-    token: token || getAccessToken(),
-  });
-  return unwrapList<ResourceFolder>(response);
+  const authToken = token || getAccessToken();
+  if (!authToken) return [];
+  try {
+    const response = await apiFetch<any>('api/resources/folders/', {
+      token: authToken,
+    });
+    return unwrapList<ResourceFolder>(response);
+  } catch {
+    return [];
+  }
 }
 
 export async function createFolder(
@@ -1442,7 +1542,7 @@ export function createResource(data: FormData, token?: string, onProgress?: (pro
       } else {
         try {
           const errJson = JSON.parse(xhr.responseText);
-          const errMsg = errJson?.detail || errJson?.message || JSON.stringify(errJson);
+          const errMsg = parseBackendError(errJson, res.status);
           reject(new ApiRequestError(errMsg || `Request failed: ${xhr.status}`, xhr.status));
         } catch (e) {
           reject(new ApiRequestError(xhr.responseText || `Request failed: ${xhr.status}`, xhr.status));
@@ -1526,8 +1626,14 @@ export async function saveResource(id: number | string, token?: string) {
 }
 
 export async function getSavedResources(token?: string) {
-  const response = await apiFetch<any>("api/resources/saved/", { token: token || getAccessToken() });
-  return normalizeResources(unwrapList(response));
+  const authToken = token || getAccessToken();
+  if (!authToken) return [];
+  try {
+    const response = await apiFetch<any>("api/resources/saved/", { token: authToken });
+    return normalizeResources(unwrapList(response));
+  } catch {
+    return [];
+  }
 }
 
 export async function getUserResources(userId: number | string, token?: string) {
@@ -1641,7 +1747,7 @@ export async function moveTask(
 export async function assignTask(id: number | string, userId: number | string, token?: string) {
   return apiFetch<any>(`api/tasks/${id}/assign/`, {
     method: "POST",
-    body: { assigned_to_id: userId },
+    body: { assigned_to_id: typeof userId === 'string' ? parseInt(userId) : userId },
     token: token || getAccessToken(),
   });
 }
@@ -1680,7 +1786,7 @@ export async function createConversation(data: {
   participants?: (number | string)[];
   type?: "private" | "group";
 }, token?: string) {
-  const participantIds = data.participants ?? [];
+  const participantIds = (data.participants ?? []).map(id => typeof id === 'string' ? parseInt(id) : id);
   const payload = {
     type: data.type ?? (participantIds.length <= 1 ? "private" : "group"),
     name: data.name,
@@ -1694,6 +1800,7 @@ export async function createConversation(data: {
 }
 
 export async function getConversationMessages(id: number | string, token?: string) {
+  if (!id || id === "undefined" || id === "null") return [];
   const response = await apiFetch<any>(`api/conversations/${id}/messages/`, { token: token || getAccessToken() });
   return unwrapList<any>(response);
 }
@@ -1745,7 +1852,7 @@ export async function deleteMessage(conversationId: number | string, messageId: 
 export async function createPrivateConversation(userId: number | string, token?: string) {
   const response = await apiFetch<any>("api/conversations/private/create/", {
     method: "POST",
-    body: { recipient_id: userId },
+    body: { recipient_id: typeof userId === 'string' ? parseInt(userId, 10) : userId },
     token: token || getAccessToken(),
   });
   return unwrapItem<any>(response);
@@ -1754,7 +1861,7 @@ export async function createPrivateConversation(userId: number | string, token?:
 export async function createGroupConversation(name: string, participantIds: (number | string)[], token?: string) {
   const response = await apiFetch<any>("api/conversations/group/create/", {
     method: "POST",
-    body: { name, participant_ids: participantIds },
+    body: { name, participant_ids: participantIds.map(id => typeof id === 'string' ? parseInt(id) : id) },
     token: token || getAccessToken(),
   });
   return unwrapItem<any>(response);
@@ -1767,7 +1874,7 @@ export async function getConversationParticipants(conversationId: number | strin
 export async function addParticipant(conversationId: number | string, userId: number | string, token?: string) {
   return apiFetch<any>(`api/conversations/${conversationId}/participants/add/`, {
     method: "POST",
-    body: { user_id: userId },
+    body: { user_id: typeof userId === 'string' ? parseInt(userId) : userId },
     token: token || getAccessToken(),
   });
 }
@@ -1947,9 +2054,10 @@ export async function getFilterOptions(token?: string) {
 // UPLOAD
 // ============================================================================
 
-export async function uploadFile(file: File, token?: string) {
+export async function uploadFile(file: File, type: string = "other", token?: string) {
   const formData = new FormData();
   formData.append('file', file);
+  formData.append('type', type);
   return apiFetch<any>("api/upload/", {
     method: "POST",
     body: formData,
@@ -2205,6 +2313,14 @@ export async function verifyAdminUser(userId: string, isVerified: boolean = true
   });
 }
 
+export async function getAdminLogs(params?: { page?: number; search?: string }, token?: string) {
+  const q = new URLSearchParams();
+  if (params?.page) q.set('page', String(params.page));
+  if (params?.search) q.set('search', params.search);
+  const suffix = q.toString() ? `?${q}` : '';
+  return apiFetch<any>(`api/admin/v1/logs/${suffix}`, { token: token || getAccessToken() });
+}
+
 
 export async function getAdminPermissions(token?: string): Promise<AdminPermissionsPayload> {
   const response = await apiFetch<any>("api/admin/permissions/", { token: token || getAccessToken() });
@@ -2268,7 +2384,13 @@ export async function apiInfo() {
 // ============================================================================
 // STUDY TOOLS (Assistant IA de révision)
 // ============================================================================
+// [BE-MIGRATION FE-06] The 8 functions below call the legacy `api/study/` alias. The Node backend
+// keeps the alias, so this is non-breaking, but `api/sphera/` is canonical — src/sphera/services/
+// spheraService.ts already uses it. Migrate when convenient. — documentation/FRONTEND_CHANGES.md
 
+// [BE-MIGRATION FE-02] Node backend accepts `resource_id` OR `sphere_file_id` (exactly one).
+// Add an optional sphereFileId arg and send it instead of resource_id when the source is a
+// sphere file. — documentation/FRONTEND_CHANGES.md
 export async function generateStudyTools(
   resourceId: string | number,
   toolTypes: ("fiche" | "quiz" | "flashcards")[]
@@ -2312,7 +2434,7 @@ export async function deleteStudySession(id: string | number) {
 export async function shareStudySession(sessionId: string | number, sphereId: string | number) {
   const response = await apiFetch<any>(`api/study/sessions/${sessionId}/share/`, {
     method: "POST",
-    body: { sphere_id: sphereId },
+    body: { sphere_id: typeof sphereId === 'string' ? parseInt(sphereId) : sphereId },
   });
   return response;
 }
@@ -2334,3 +2456,5 @@ export async function getSphereStudySessions(sphereId: string | number) {
 // ============================================================================
 
 export const http = { apiFetch };
+
+

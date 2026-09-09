@@ -126,40 +126,39 @@ export function Settings() {
     }
   }, [currentUser]);
 
+  const privacyQuery = useQuery({
+    queryKey: ["privacy-settings"],
+    queryFn: getPrivacySettings,
+    staleTime: 60 * 1000,
+  });
+
+  const blockedUsersQuery = useQuery({
+    queryKey: ["blocked-users"],
+    queryFn: getBlockedUsers,
+    staleTime: 60 * 1000,
+  });
+
   useEffect(() => {
-    let isMounted = true;
-
-    const hydrateSettingsFromUser = async () => {
-      try {
-        const [privacy, blocks] = await Promise.all([
-          getPrivacySettings(),
-          getBlockedUsers(),
-        ]);
-        if (!isMounted) return;
-
-        if (privacy) {
-          setPrivacySettings({
-            profile_visibility: privacy.profile_visibility || "public",
-            post_visibility: privacy.post_visibility || "public",
-          });
-        }
-        setBlockedUsers(blocks || []);
-      } catch (error: any) {
-        toast({
-          variant: "destructive",
-          title: "Erreur",
-          description: error?.message || "Impossible de charger vos paramètres",
-          duration: 3000,
-        });
-      }
-    };
-
-    hydrateSettingsFromUser();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [toast]);
+    if (privacyQuery.data) {
+      setPrivacySettings({
+        profile_visibility: privacyQuery.data.profile_visibility || "public",
+        post_visibility: privacyQuery.data.post_visibility || "public",
+      });
+    }
+    if (blockedUsersQuery.data) {
+      setBlockedUsers(blockedUsersQuery.data || []);
+    }
+    
+    const error = privacyQuery.error || blockedUsersQuery.error;
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: (error as any)?.message || "Impossible de charger vos paramètres",
+        duration: 3000,
+      });
+    }
+  }, [privacyQuery.data, privacyQuery.error, blockedUsersQuery.data, blockedUsersQuery.error, toast]);
 
   const toggleTheme = () => {
     const nextDarkMode = !darkMode;
@@ -456,18 +455,18 @@ export function Settings() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
-      <div className="container max-w-4xl mx-auto py-4 md:py-6 px-3 md:px-4">
+    <div className="min-h-screen bg-background">
+      <div className="container max-w-4xl mx-auto py-6 md:py-8 px-4 sm:px-6 space-y-6 animate-in fade-in duration-300">
         {/* Header */}
-        <div className="mb-6 md:mb-8 campus-animate-fade-in">
-          <div className="mb-2">
-            <h1 className="text-3xl font-bold bg-clip-text text-muted-foreground">
+        <div className="mb-6 campus-animate-fade-in">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-white">
               Paramètres
             </h1>
+            <p className="text-sm text-muted-foreground mt-2">
+              Gérez vos préférences, vos options de confidentialité et votre compte
+            </p>
           </div>
-          <p className="text-sm md:text-base text-muted-foreground">
-            Gérez vos préférences et votre compte
-          </p>
         </div>
 
         <div className="grid gap-4 md:gap-6">

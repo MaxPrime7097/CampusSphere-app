@@ -306,135 +306,82 @@ export function Landing() {
           </div>
 
           {/* ── Sphera Section ─────────────────────────────────── */}
-          <div className="relative mb-20 rounded-3xl overflow-hidden">
-            {/* Fond Midnight Black avec gradient vert profond */}
-            <div
-              className="absolute inset-0 rounded-3xl"
-              style={{ background: 'linear-gradient(135deg, #0d0e1b 0%, #0f1a14 60%, #0b1a10 100%)' }}
-            />
-            {/* Glow vert Sphera en arrière-plan */}
-            <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full blur-3xl opacity-20" style={{ background: '#22c55e' }} />
-            <div className="absolute -bottom-10 -left-10 w-60 h-60 rounded-full blur-3xl opacity-10" style={{ background: '#22c55e' }} />
+          <div className="relative mb-20">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl h-[400px] bg-[radial-gradient(circle,rgba(34,197,94,0.03)_0%,transparent_70%)] blur-3xl -z-10 pointer-events-none" />
 
-            <div className="relative z-10 grid lg:grid-cols-2 gap-10 items-center p-10 md:p-16">
-              {/* Colonne gauche : texte + CTA */}
-              <div className="space-y-7">
-                {/* Badge */}
-                <div
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold tracking-wider font-poppins"
-                  style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.35)', color: '#22c55e' }}
-                >
-                  <Sparkles className="w-4 h-4" />
-                  Nouveau - Powered by CampusSphere
-                </div>
+            <div className="rounded-3xl border border-border/50 bg-card overflow-hidden relative shadow-[0_0_50px_rgba(34,197,94,0.03)]">
+              {/* Subtle Green Glow inside card */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-[#22c55e] opacity-5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none" />
 
-                {/* Logo + Titre */}
-                <div className="flex items-center gap-4">
-                  <img
-                    src="/sphera-logo.png"
-                    alt="Sphera"
-                    className="w-14 h-14 rounded-2xl"
-                    style={{ filter: 'invert(58%) sepia(80%) saturate(400%) hue-rotate(100deg) brightness(105%)' }}
-                  />
-                  <div>
-                    <h2 className="text-4xl md:text-5xl font-bold text-white font-poppins tracking-tight">
-                      Sphera
-                    </h2>
-                    <p className="text-sm font-semibold font-poppins" style={{ color: '#22c55e' }}>Votre assistante académique personnelle</p>
+              <div className="grid grid-cols-1 md:grid-cols-2">
+                {/* Content Side */}
+                <div className="p-10 md:p-12 flex flex-col justify-center">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#22c55e] border border-[#22c55e] text-xs font-bold text-white mb-6 self-start">
+                    <Sparkles className="w-4 h-4" /> Nouveau - Powered by CampusSphere
                   </div>
-                </div>
 
-                <p className="text-lg leading-relaxed text-white/70 font-nunito font-semibold">
-                  Ton assistante académique dopée à l'IA. Génère des fiches de révision, corrige tes annales sujets d'examens,
-                  crée des quiz personnalisés et des flashcards — puis exporte tout en PDF premium en un clic.
-                </p>
+                  <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2">
+                    Découvre Sphera
+                  </h2>
+                  <p className="text-sm font-semibold mb-6" style={{ color: '#22c55e' }}>Votre assistante académique personnelle</p>
 
-                {/* Feature pills */}
-                <div className="flex flex-wrap gap-2">
-                  {["Fiches de révision", "Flashcards", "Quiz adaptatifs", "Correction d'annales", "Export PDF premium", "Chat IA en direct"].map((feat) => (
-                    <span
-                      key={feat}
-                      className="px-3 py-1.5 rounded-full text-xs font-semibold font-poppins"
-                      style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)', color: 'rgba(255,255,255,0.85)' }}
-                    >
-                      {feat}
-                    </span>
-                  ))}
-                </div>
-
-                {/* CTA Buttons */}
-                <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                  <button
-                    onClick={() => navigate('/sphera')}
-                    className="group flex items-center justify-center gap-2 px-7 py-4 rounded-2xl text-sm font-bold text-white transition-all duration-200 hover:scale-105 font-poppins"
-                    style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)', boxShadow: '0 4px 24px rgba(34,197,94,0.35)' }}
-                  >
-                    Essayer Sphera gratuitement
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
-                  </button>
-                  <a
-                    href={getSpheraUrl()}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 px-7 py-4 rounded-2xl text-sm font-semibold transition-all duration-200 hover:scale-105 font-poppins"
-                    style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.85)' }}
-                  >
-                    Ouvrir l'app Sphera
-                  </a>
-                </div>
-              </div>
-
-              {/* Colonne droite : mini-cards feature */}
-              <div className="grid grid-cols-1 gap-3">
-                {[
-                  { icon: <FileText className="w-5 h-5" style={{ color: '#22c55e' }} />, title: 'Outils de révision', desc: 'Fiches détaillées, quiz interactifs d\'auto-évaluation et flashcards intelligentes avec répétition espacée pour retenir tes cours sans effort.' },
-                  { icon: <FilePenLine className="w-5 h-5" style={{ color: '#22c55e' }} />, title: "Correction d'annales", desc: "Upload ton sujet d'examen. Sphera te génère une correction structurée en profondeur avec explications pédagogiques." },
-                  { icon: <Bot className="w-5 h-5" style={{ color: '#22c55e' }} />, title: "Chat IA en direct", desc: "Pose toutes tes questions ou discute librement. Sphera conserve le contexte complet pour t'accompagner comme un véritable tuteur." },
-                  { icon: <FileDown className="w-5 h-5" style={{ color: '#22c55e' }} />, title: 'Export PDF Premium', desc: 'Télécharge toutes tes fiches de révisions, synthèses et corrections d\'annales sous forme de PDF magnifiquement stylisés.' },
-                ].map((item) => (
-                  <div
-                    key={item.title}
-                    className="flex items-start gap-4 p-4 rounded-2xl transition-all duration-200 hover:scale-[1.02] cursor-default"
-                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
-                  >
-                    <div className="flex-shrink-0 mt-0.5 p-2 rounded-lg" style={{ background: 'rgba(34,197,94,0.12)' }}>
-                      {item.icon}
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-white mb-0.5 font-poppins">{item.title}</p>
-                      <p className="text-xs leading-relaxed font-nunito" style={{ color: 'rgba(255,255,255,0.5)' }}>{item.desc}</p>
-                    </div>
-                  </div>
-                ))}
-
-                {/* SSO hint */}
-                <div
-                  className="flex items-center gap-3 p-3 rounded-xl mt-1"
-                  style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}
-                >
-                  <div className="flex-shrink-0 p-1.5 rounded-lg" style={{ background: 'rgba(34,197,94,0.15)' }}>
-                    <Shield className="w-4 h-4" style={{ color: '#22c55e' }} />
-                  </div>
-                  <p className="text-xs font-nunito" style={{ color: 'rgba(255,255,255,0.55)' }}>
-                    <strong style={{ color: '#22c55e' }}>Ton compte CampusSphere suffit.</strong>{' '}
-                    Pas d'inscription séparée — connexion automatique à Sphera.
+                  <p className="text-muted-foreground mb-6 leading-relaxed">
+                    Ton assistante académique dopée à l'IA. Génère des fiches de révision, corrige tes annales sujets d'examens, crée des quiz personnalisés et des flashcards — puis exporte tout en PDF premium en un clic.
                   </p>
+
+                  {/* Feature pills (neutralized) */}
+                  <div className="flex flex-wrap gap-2 mb-8">
+                    {["Fiches de révision", "Flashcards", "Quiz adaptatifs", "Correction d'annales", "Chat IA en direct", "Export PDF premium"].map((feat) => (
+                      <span
+                        key={feat}
+                        className="px-3 py-1.5 rounded-full text-xs font-medium font-poppins bg-muted/50 border border-border/50 text-muted-foreground"
+                      >
+                        {feat}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* CTA Buttons */}
+                  <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                    <button
+                      onClick={() => navigate('/sphera')}
+                      className="group flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-sm font-semibold transition-colors duration-300 self-start bg-foreground text-background hover:bg-[#22c55e] hover:text-white"
+                    >
+                      Essayer Sphera
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+                    </button>
+                    <a
+                      href={getSpheraUrl()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-sm font-semibold transition-colors duration-200 hover:bg-accent border border-border self-start text-foreground bg-transparent"
+                    >
+                      Ouvrir l'app Sphera
+                    </a>
+                  </div>
                 </div>
 
-                {/* Ecosystem integration note */}
-                <div
-                  className="flex items-start gap-3 p-4 rounded-xl"
-                  style={{ background: 'rgba(34,197,94,0.04)', border: '1px dashed rgba(34,197,94,0.25)' }}
-                >
-                  <div className="flex-shrink-0 mt-0.5 p-1.5 rounded-lg" style={{ background: 'rgba(34,197,94,0.1)' }}>
-                    <Sparkles className="w-4 h-4" style={{ color: '#22c55e' }} />
+                {/* Visual Side */}
+                <div className="relative min-h-[350px] md:min-h-full bg-accent/20 border-t md:border-t-0 md:border-l border-border/50 flex flex-col items-center justify-center p-8 overflow-hidden">
+                  <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none"></div>
+
+                  {/* Sphera Logo Card */}
+                  <div className="relative z-10 w-full max-w-[220px] aspect-square bg-card/80 backdrop-blur-md rounded-2xl border border-[#22c55e]/30 shadow-[0_0_50px_rgba(34,197,94,0.15)] flex flex-col items-center justify-center p-6 group hover:border-[#22c55e]/60 transition-colors duration-500">
+                    <div className="absolute inset-0 bg-[#22c55e]/5 rounded-2xl animate-pulse" style={{ animationDuration: '3s' }} />
+                    
+                    <img 
+                      src="/sphera-logo.png" 
+                      alt="Sphera Logo" 
+                      className="w-24 h-24 object-contain drop-shadow-[0_0_15px_rgba(34,197,94,0.5)] group-hover:scale-110 transition-transform duration-500 z-10 rounded-2xl"
+                      style={{ filter: 'invert(58%) sepia(80%) saturate(400%) hue-rotate(100deg) brightness(105%)' }}
+                    />
+                    
+                    <h3 className="font-display font-bold text-foreground mt-6 text-xl tracking-tight z-10">Sphera</h3>
                   </div>
-                  <div>
-                    <p className="text-xs font-bold text-white mb-1 font-poppins">Bientôt intégré dans tout ton écosystème !</p>
-                    <p className="text-[11px] leading-relaxed font-nunito" style={{ color: 'rgba(255,255,255,0.45)' }}>
-                      Sphera sera bientôt connectée à tes <span className="text-white font-semibold">Sphères collaboratives</span> (aide à la rédaction, synthèse d'équipe), ton <span className="text-white font-semibold">Feed</span> (explications automatiques des posts complexes) et tes <span className="text-white font-semibold">Messages Directs</span> pour réviser à plusieurs !
-                    </p>
-                  </div>
+
+                  {/* Decorative background elements */}
+                  <div className="absolute z-0 w-32 h-32 rounded-full border border-[#22c55e]/20 -translate-x-20 translate-y-20 animate-[spin_10s_linear_infinite]" />
+                  <div className="absolute z-0 w-48 h-48 rounded-full border border-dashed border-[#22c55e]/20 translate-x-20 -translate-y-20 animate-[spin_15s_linear_infinite_reverse]" />
                 </div>
               </div>
             </div>

@@ -34,7 +34,7 @@ export function Hero() {
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </Link>
           <Link to="/login" className="btn btn-outline border-sphera-border text-white hover:bg-sphera-surface px-8 py-3.5 rounded-lg font-semibold w-full sm:w-auto">
-            Se connecter avec CampusSphere
+            Se connecter
           </Link>
         </div>
 

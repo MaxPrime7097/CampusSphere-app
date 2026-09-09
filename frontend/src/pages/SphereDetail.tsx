@@ -1,4 +1,7 @@
+import { ImageCropperModal } from "@/components/modals/ImageCropperModal";
+import { compressImageFile } from "@/lib/imageCompression";
 import { Suspense, lazy, useState, useEffect, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   getSphere, listSphereMembers, listSphereTasks, joinSphere,
@@ -15,7 +18,7 @@ import { Progress } from "@/components/ui/progress";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 import {
-  Users, FileText, Settings, Check, MoreVertical, Loader2, Plus, Shield, Crown, UserPlus, UserMinus, UserCheck, UserX, Camera, ExternalLink, Download, Info, X, Copy, Share, ArrowLeft, Share2, BadgeCheck, AlertCircle, Search
+  Users, FileText, Settings, Check, MoreVertical, Loader2, Plus, Shield, Crown, UserPlus, UserMinus, UserCheck, UserX, Camera, ExternalLink, Download, Info, X, Copy, Share, ArrowLeft, Share2, BadgeCheck, AlertCircle, Search, Target, Globe, Trophy, BookOpen
 } from "lucide-react";
 import { FaFacebook, FaTwitter, FaWhatsapp, FaLinkedin } from 'react-icons/fa';
 
@@ -24,7 +27,7 @@ import { renderMentionText } from "@/lib/mentions";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { getSphereFeatures, SPHERE_TYPE_LABELS, SPHERE_TYPE_COLORS, type SphereType } from "@/config/sphereFeatures";
+import { getSphereFeatures, SPHERE_TYPE_LABELS, SPHERE_TYPE_COLORS, SPHERE_TYPE_ICONS, type SphereType } from "@/config/sphereFeatures";
 import { SphereSpheraTab } from "@/components/sphere/SphereSpheraTab";
 import { AnnouncementsTab } from "@/components/sphere/AnnouncementsTab";
 
@@ -35,6 +38,7 @@ import { MiniChat } from "@/components/chat/MiniChat";
 import { KanbanBoard, type KanbanTask } from "@/components/kanban/KanbanBoard";
 import { SphereOverview } from "@/components/sphere/SphereOverview";
 import { OptimizedImage } from "@/components/ui/optimized-image";
+import { ImageUploadModal } from "@/components/modals/ImageUploadModal";
 import { ResourceCard } from "@/components/resources/ResourceCard";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ResourceSkeleton } from "@/components/ui/skeletons";
@@ -69,6 +73,7 @@ export function SphereDetail() {
   const [activeTab, setActiveTab] = useState("overview");
   const [isChatExpanded, setIsChatExpanded] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showBannerModal, setShowBannerModal] = useState(false);
   const [isCopyingLink, setIsCopyingLink] = useState(false);
   const [fileSearchQuery, setFileSearchQuery] = useState("");
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
@@ -152,89 +157,136 @@ export function SphereDetail() {
   });
 
   // ==================== DATA LOADING ====================
+  const sphereQuery = useQuery({
+    queryKey: ["sphere", id],
+    queryFn: () => getSphere(String(id)),
+    enabled: Boolean(id),
+    staleTime: 60 * 1000,
+  });
+
+  const membersQuery = useQuery({
+    queryKey: ["sphere-members", id],
+    queryFn: () => listSphereMembers(String(id)),
+    enabled: Boolean(id),
+    staleTime: 60 * 1000,
+  });
+
+  const tasksQuery = useQuery({
+    queryKey: ["sphere-tasks", id],
+    queryFn: () => listSphereTasks(String(id)),
+    enabled: Boolean(id),
+    staleTime: 60 * 1000,
+    retry: false,
+  });
+
+  const filesQuery = useQuery({
+    queryKey: ["sphere-files", id],
+    queryFn: () => getSphereFiles(String(id)),
+    enabled: Boolean(id),
+    staleTime: 60 * 1000,
+  });
+
   const loadSphereData = async () => {
-    try {
-      setLoading(true);
-      setLoadError(null);
-      setTaskState("ready");
-
-      const [sphereData, rawMembersData] = await Promise.all([
-        getSphere(String(id)),
-        listSphereMembers(String(id)),
-      ]);
-
-      setCurrentUserId(currentUser?.id ? String(currentUser.id) : null);
-      setSphere(sphereData);
-
-      // listSphereMembers retourne apiFetch<any[]> sans unwrap — normaliser ici
-      const membersData: any[] = Array.isArray(rawMembersData)
-        ? rawMembersData
-        : Array.isArray((rawMembersData as any)?.data)
-          ? (rawMembersData as any).data
-          : Array.isArray((rawMembersData as any)?.results)
-            ? (rawMembersData as any).results
-            : [];
-
-      setSphere(sphereData);
-
-      const mappedMembers = (membersData || []).map((m: any) => ({
-        id: String(m.id),           // ID de la ligne SphereMember (pour les actions API)
-        userId: String(m.user_info?.id ?? m.user ?? ""), // ID utilisateur (pour les comparaisons)
-        user_info: m.user_info,
-        role: normalizeRole(m.role || m.role_display || 'member'),
-        status: m.status || 'active',
-        name: m.user_info?.name || `${m.user_info?.first_name || ''} ${m.user_info?.last_name || ''}`.trim() || 'Unknown',
-        username: m.user_info?.username || 'unknown',
-        avatar: m.user_info?.avatar || '/placeholder-avatar.jpg',
-        isVerified: Boolean(m.user_info?.is_verified ?? m.user_info?.isVerified),
-        isCreator: String(sphereData?.created_by_info?.id) === String(m.user_info?.id ?? m.user ?? ""),
-      }));
-
-      setMembers(mappedMembers.filter((m: any) => m.status === 'active'));
-      setPendingMembers(mappedMembers.filter((m: any) => m.status === 'pending'));
-      setTasks([]);
-
-      // Membership state logic
-      const isMemberFromServer = sphereData?.is_member ?? sphereData?.isMember ?? false;
-      const membershipStatusFromServer = sphereData?.membership_status ?? sphereData?.membershipStatus ?? null;
-      const currentUserMember = mappedMembers.find(
-        (m: any) => m.userId && m.userId !== "" && String(m.userId) === String(currentUser?.id)
-      );
-
-      const resolvedIsMember =
-        isMemberFromServer ||
-        Boolean(currentUserMember && currentUserMember.status === 'active');
-
-      const resolvedIsPending =
-        membershipStatusFromServer === 'pending' ||
-        Boolean(currentUserMember && currentUserMember.status === 'pending');
-
-      setIsMember(resolvedIsMember);
-      setIsPendingRequest(!resolvedIsMember && resolvedIsPending);
-
-      try {
-        const tasksData = await listSphereTasks(String(id));
-        setTasks((tasksData || []).map(mapTask));
-        setTaskState("ready");
-      } catch (taskError: any) {
-        // ApiRequestError (apiFetch) expose .status directement, pas .response.status
-        const errStatus: number = Number(taskError?.status ?? taskError?.response?.status ?? 0);
-        setTasks([]);
-        setTaskState(errStatus === 403 ? "forbidden" : "server_error");
-      }
-
-      // Ressources de la sphère
-      getSphereFiles(String(id)).then(setResources).catch(() => setResources([]));
-    } catch (e: any) {
-      setLoadError(e?.message || "Erreur de chargement");
-    } finally {
-      setLoading(false);
-    }
+    // For manual refreshes after mutations
+    await Promise.all([
+      sphereQuery.refetch(),
+      membersQuery.refetch(),
+      tasksQuery.refetch(),
+      filesQuery.refetch(),
+    ]);
   };
 
   useEffect(() => {
-    if (id) void loadSphereData();
-  }, [id, currentUser?.id]);
+    if (!id) return;
+    
+    // We only consider the page fully "loaded" when the main sphere data and members are fetched or failed
+    const isFetchingMain = sphereQuery.isLoading || membersQuery.isLoading;
+    if (isFetchingMain) {
+      setLoading(true);
+      return;
+    }
+
+    if (sphereQuery.error) {
+      setLoadError((sphereQuery.error as any)?.message || "Erreur de chargement");
+      setLoading(false);
+      return;
+    }
+
+    setLoading(false);
+    setLoadError(null);
+
+    const sphereData = sphereQuery.data;
+    const rawMembersData = membersQuery.data;
+
+    setCurrentUserId(currentUser?.id ? String(currentUser.id) : null);
+    setSphere(sphereData);
+
+    const membersData: any[] = Array.isArray(rawMembersData)
+      ? rawMembersData
+      : Array.isArray((rawMembersData as any)?.data)
+        ? (rawMembersData as any).data
+        : Array.isArray((rawMembersData as any)?.results)
+          ? (rawMembersData as any).results
+          : [];
+
+    const mappedMembers = (membersData || []).map((m: any) => ({
+      id: String(m.id),           // ID de la ligne SphereMember (pour les actions API)
+      userId: String(m.user_info?.id ?? m.user ?? ""), // ID utilisateur (pour les comparaisons)
+      user_info: m.user_info,
+      role: normalizeRole(m.role || m.role_display || 'member'),
+      status: m.status || 'active',
+      name: m.user_info?.name || `${m.user_info?.first_name || ''} ${m.user_info?.last_name || ''}`.trim() || 'Unknown',
+      username: m.user_info?.username || 'unknown',
+      avatar: m.user_info?.avatar || '/placeholder-avatar.jpg',
+      isVerified: Boolean(m.user_info?.is_verified ?? m.user_info?.isVerified),
+      isCreator: String(sphereData?.created_by_info?.id) === String(m.user_info?.id ?? m.user ?? ""),
+    }));
+
+    setMembers(mappedMembers.filter((m: any) => m.status === 'active'));
+    setPendingMembers(mappedMembers.filter((m: any) => m.status === 'pending'));
+
+    // Membership state logic
+    const isMemberFromServer = sphereData?.is_member ?? sphereData?.isMember ?? false;
+    const membershipStatusFromServer = sphereData?.membership_status ?? sphereData?.membershipStatus ?? null;
+    const currentUserMember = mappedMembers.find(
+      (m: any) => m.userId && m.userId !== "" && String(m.userId) === String(currentUser?.id)
+    );
+
+    const resolvedIsMember =
+      isMemberFromServer ||
+      Boolean(currentUserMember && currentUserMember.status === 'active');
+
+    const resolvedIsPending =
+      membershipStatusFromServer === 'pending' ||
+      Boolean(currentUserMember && currentUserMember.status === 'pending');
+
+    setIsMember(resolvedIsMember);
+    setIsPendingRequest(!resolvedIsMember && resolvedIsPending);
+
+    // Tasks Sync
+    if (tasksQuery.data) {
+      setTasks((tasksQuery.data || []).map(mapTask));
+      setTaskState("ready");
+    } else if (tasksQuery.error) {
+      const errStatus: number = Number((tasksQuery.error as any)?.status ?? (tasksQuery.error as any)?.response?.status ?? 0);
+      setTasks([]);
+      setTaskState(errStatus === 403 ? "forbidden" : "server_error");
+    }
+
+    // Files Sync
+    if (filesQuery.data) {
+      setResources(filesQuery.data);
+    } else if (filesQuery.error) {
+      setResources([]);
+    }
+
+  }, [
+    id, currentUser?.id, 
+    sphereQuery.data, sphereQuery.isLoading, sphereQuery.error,
+    membersQuery.data, membersQuery.isLoading, membersQuery.error,
+    tasksQuery.data, tasksQuery.error,
+    filesQuery.data, filesQuery.error
+  ]);
 
   // ==================== COMPUTED ====================
   const sphereFallback = useMemo(() => sphere || {
@@ -373,6 +425,8 @@ export function SphereDetail() {
     }
   };
 
+    ;
+
   const handleRemoveMember = async (memberId: string) => {
     try {
       setProcessingMemberIds(p => ({ ...p, [memberId]: true }));
@@ -500,6 +554,10 @@ export function SphereDetail() {
     <>
       <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
 
+        
+
+        <ImageUploadModal isOpen={showBannerModal} onClose={() => setShowBannerModal(false)} onSave={async (file) => { if (!id) return; const res = await uploadSphereBanner(id, file); setSphere((prev: any) => prev ? { ...prev, banner_image_url: res.banner_image_url } : prev); toast({ title: "Bannière mise à jour !" }); }} title="Photo de couverture de la sphère" description="Téléchargez une nouvelle bannière pour cette sphère." currentImage={sphereFallback.banner_image_url} shape="rect" aspectRatio={16 / 5} />
+
         <div className="max-w-6xl mx-auto py-4 md:py-6 px-0 md:px-4 space-y-4 md:space-y-6">
           <div className="px-4 md:px-0">
             <Button variant="ghost" onClick={() => navigate("/spheres")} className="gap-2 -ml-2">
@@ -534,26 +592,10 @@ export function SphereDetail() {
               )}
               {/* Bouton upload bannière */}
               {canManageSphereSettings && (
-                <label className="absolute top-3 right-3 bg-black/50 hover:bg-black/70 text-white rounded-lg px-2 py-1.5 flex items-center gap-1.5 text-xs cursor-pointer transition-colors opacity-0 group-hover:opacity-100">
+                <label onClick={() => setShowBannerModal(true)} className="absolute top-3 right-3 bg-black/50 hover:bg-black/70 text-white rounded-lg px-2 py-1.5 flex items-center gap-1.5 text-xs cursor-pointer transition-colors opacity-0 group-hover:opacity-100">
                   <Camera className="h-3.5 w-3.5" />
                   Changer la bannière
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file || !id) return;
-                      try {
-                        const res = await uploadSphereBanner(id, file);
-                        setSphere((prev: any) => prev ? { ...prev, banner_image_url: res.banner_image_url } : prev);
-                        toast({ title: "Bannière mise à jour !" });
-                      } catch (err: any) {
-                        toast({ title: "Erreur", description: err?.message, variant: "destructive" });
-                      }
-                      e.target.value = "";
-                    }}
-                  />
+                  
                 </label>
               )}
             </div>
@@ -575,9 +617,17 @@ export function SphereDetail() {
               {/* Actions */}
               <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  {/* Badge de type */}
                   {sphere?.sphere_type && (
                     <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full border ${SPHERE_TYPE_COLORS[sphere.sphere_type as SphereType] ?? 'bg-muted text-muted-foreground border-border'}`}>
+                      {(() => {
+                        const iconName = SPHERE_TYPE_ICONS[sphere.sphere_type as SphereType];
+                        if (iconName === 'BookOpen') return <BookOpen className="h-3.5 w-3.5" />;
+                        if (iconName === 'Target') return <Target className="h-3.5 w-3.5" />;
+                        if (iconName === 'Globe') return <Globe className="h-3.5 w-3.5" />;
+                        if (iconName === 'Trophy') return <Trophy className="h-3.5 w-3.5" />;
+                        if (iconName === 'Pencil') return <FileText className="h-3.5 w-3.5" />;
+                        return null;
+                      })()}
                       {SPHERE_TYPE_LABELS[sphere.sphere_type as SphereType] ?? sphere.sphere_type}
                     </span>
                   )}
@@ -1097,4 +1147,13 @@ export function SphereDetail() {
     </>
   );
 }
+
+
+
+
+
+
+
+
+
 

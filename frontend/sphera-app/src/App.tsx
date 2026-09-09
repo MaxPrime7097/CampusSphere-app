@@ -1,6 +1,6 @@
 // Force Vite HMR reload
 import React, { useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, Outlet } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useSpheraAuth } from './contexts/SpheraAuthContext';
 import Landing from './pages/Landing';
@@ -17,6 +17,9 @@ import Blogs from './pages/Blogs';
 import BlogDetail from './pages/BlogDetail';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
+import QuizLiveHome from './pages/QuizLiveHome';
+import QuizLiveHost from './pages/QuizLiveHost';
+import QuizLiveJoin from './pages/QuizLiveJoin';
 import { SidebarLayout } from './components/layout/SidebarLayout';
 
 function SSOCatcher() {
@@ -108,7 +111,14 @@ export default function App() {
             <Route path="/create" element={<CreateSession />} />
             <Route path="/sessions/:id" element={<SessionDetail type="session" />} />
             <Route path="/annales/:id" element={<SessionDetail type="annale" />} />
+            <Route path="/live" element={<QuizLiveHome />} />
           </Route>
+          
+          {/* Sphera Live Fullscreen Routes */}
+          <Route element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
+            <Route path="/live/host" element={<QuizLiveHost />} />
+          </Route>
+          <Route path="/live/join" element={<QuizLiveJoin />} />
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

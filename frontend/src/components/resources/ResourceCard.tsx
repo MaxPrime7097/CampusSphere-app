@@ -1,15 +1,20 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
-  FileText, Download, Eye, Bookmark,
-  Video, FileCode, Archive, FileImage,
-  Loader2, Sparkles,
+  FileText,
+  Download,
+  Bookmark,
+  FileCode,
+  Archive,
+  Loader2,
+  BookOpen,
+  GraduationCap,
+  Sparkles,
 } from "lucide-react";
-import { getTypeLabel, getSubjectLabel } from "@/lib/resourceMetadata";
-import { formatFileSize, cn } from "@/lib/utils";
+import { SpheraIcon } from "@/components/ui/sphera-icon";
+import { formatFileSize, cn, getResourceUrl } from "@/lib/utils";
 import { StudyToolsModal } from "@/sphera/components/study/StudyToolsModal";
 
 interface ResourceCardProps {
@@ -22,154 +27,218 @@ interface ResourceCardProps {
   className?: string;
 }
 
-const TYPE_STYLES: Record<string, { icon: string; bg: string }> = {
-  notes:          { icon: "text-blue-500",   bg: "bg-blue-50 dark:bg-blue-950/40" },
-  resumes:        { icon: "text-sky-500",    bg: "bg-sky-50 dark:bg-sky-950/40" },
-  exercises:      { icon: "text-red-500",    bg: "bg-red-50 dark:bg-red-950/40" },
-  exam_papers:    { icon: "text-green-500", bg: "bg-green-50 dark:bg-green-950/40" },
-  annales:        { icon: "text-[#ff9800]", bg: "bg-orange-50 dark:bg-orange-950/40" },
-  projects:       { icon: "text-yellow-500",  bg: "bg-yellow-50 dark:bg-yellow-950/40" },
-  presentations:  { icon: "text-amber-500",  bg: "bg-amber-50 dark:bg-amber-950/40" },
-  cours:          { icon: "text-violet-500", bg: "bg-violet-50 dark:bg-violet-950/40" },
-  default:        { icon: "text-primary",    bg: "bg-primary/5" },
+const TYPE_STYLES: Record<string, { icon: string; bg: string; label: string }> = {
+  notes: {
+    icon: "text-blue-500",
+    bg: "bg-blue-500/10 border-blue-500/20",
+    label: "Notes",
+  },
+  resumes: {
+    icon: "text-sky-500",
+    bg: "bg-sky-500/10 border-sky-500/20",
+    label: "Fiche & Résumé",
+  },
+  exercises: {
+    icon: "text-red-500",
+    bg: "bg-red-500/10 border-red-500/20",
+    label: "Exercices",
+  },
+  exam_papers: {
+    icon: "text-emerald-500",
+    bg: "bg-emerald-500/10 border-emerald-500/20",
+    label: "Anciennes Épreuves",
+  },
+  annales: {
+    icon: "text-purple-500",
+    bg: "bg-purple-500/10 border-purple-500/20",
+    label: "Annale",
+  },
+  projects: {
+    icon: "text-pink-500",
+    bg: "bg-pink-500/10 border-pink-500/20",
+    label: "Projet",
+  },
+  presentations: {
+    icon: "text-indigo-500",
+    bg: "bg-indigo-500/10 border-indigo-500/20",
+    label: "Slides",
+  },
+  other: {
+    icon: "text-muted-foreground",
+    bg: "bg-muted/30 border-border/40",
+    label: "Document",
+  },
 };
 
-function getTypeStyle(type: string) {
-  const key = (type || "").toLowerCase().split("/")[0];
-  return TYPE_STYLES[key] ?? TYPE_STYLES.default;
+function getTypeStyle(type?: string) {
+  if (!type) return TYPE_STYLES.other;
+  const key = type.toLowerCase();
+  return TYPE_STYLES[key] || TYPE_STYLES.other;
 }
 
-function getFileIcon(type: string) {
-  const t = (type || "").toLowerCase();
-  if (t.includes("video"))   return <Video className="h-4 w-4 sm:h-6 sm:w-6" />;
-  if (t.includes("image"))   return <FileImage className="h-4 w-4 sm:h-6 sm:w-6" />;
-  if (t.includes("code") || t.includes("project")) return <FileCode className="h-4 w-4 sm:h-6 sm:w-6" />;
-  if (t.includes("archive") || t.includes("zip"))  return <Archive className="h-4 w-4 sm:h-6 sm:w-6" />;
-  return <FileText className="h-4 w-4 sm:h-6 sm:w-6" />;
+function getFileIcon(type?: string, className = "h-3.5 w-3.5") {
+  const key = (type || "").toLowerCase();
+  switch (key) {
+    case "notes":
+      return <BookOpen className={className} />;
+    case "resumes":
+      return <FileText className={className} />;
+    case "exercises":
+      return <FileCode className={className} />;
+    case "exam_papers":
+      return <GraduationCap className={className} />;
+    case "annales":
+      return <Sparkles className={className} />;
+    case "projects":
+      return <Archive className={className} />;
+    default:
+      return <FileText className={className} />;
+  }
 }
 
-export const ResourceCard = React.memo(({
-  resource, isDownloading, isSaved,
-  onDownload, onSave, onPreview, className
-}: ResourceCardProps) => {
-  const navigate = useNavigate();
-  const style = getTypeStyle(resource.type);
-  const [studyOpen, setStudyOpen] = React.useState(false);
+export const ResourceCard = React.memo(
+  ({
+    resource,
+    isDownloading = false,
+    isSaved = false,
+    onDownload,
+    onSave,
+    onPreview,
+    className,
+  }: ResourceCardProps) => {
+    const navigate = useNavigate();
+    const style = getTypeStyle(resource.type);
+    const [studyOpen, setStudyOpen] = React.useState(false);
 
-  return (
-    <>
-      <Card
-        className={cn(
-          "group overflow-hidden cursor-pointer border bg-card hover:shadow-md transition-shadow duration-200",
-          className
-        )}
-        onClick={() => navigate(`/resources/${resource.id}`)}
-      >
-        <CardContent className="p-0 max-w-[320px] mx-auto sm:max-w-none">
-          {/* Header — horizontal flat */}
-          <div className={cn("flex items-center gap-1.5 sm:gap-2.5 px-2 py-1.5 sm:px-3 sm:py-2.5", style.bg)}>
-            <div className={cn("flex-shrink-0", style.icon)}>
-              {getFileIcon(resource.type)}
-            </div>
-            <div className="min-w-0">
-              <h3 className="font-semibold text-[13px] sm:text-sm line-clamp-1 text-foreground">
-                {resource.title}
-              </h3>
-              <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                <Badge
-                  variant="secondary"
-                  className="text-[9px] py-0 h-4 px-1.5 font-semibold bg-background/70 border-none"
-                >
-                  {getSubjectLabel(resource.subject)}
-                </Badge>
-                {resource.type && (
-                  <span className="text-[9px] text-muted-foreground uppercase tracking-wide font-medium">
-                    {getTypeLabel(resource.type)}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="px-2 py-2 sm:px-3 sm:py-2.5 space-y-2 sm:space-y-2.5">
-            {/* Stats row */}
-            <div className="flex items-center justify-between text-[9px] sm:text-[10px] text-muted-foreground">
-              <span className="truncate max-w-[80px] sm:max-w-[90px]">Par {resource.authorName}</span>
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <span className="flex items-center gap-0.5">
-                  <Eye className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> {resource.viewCount || 0}
-                </span>
-                <span className="flex items-center gap-0.5">
-                  <Download className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> {resource.downloadCount || 0}
-                </span>
-                <span className="text-[8px] sm:text-[9px] text-muted-foreground/60">
-                  {formatFileSize(resource.fileSize)}
-                </span>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 w-7 sm:h-8 sm:w-8 p-0 rounded-lg border-muted hover:bg-muted/60"
-                onClick={onPreview}
-                title="Aperçu"
+    return (
+      <>
+        <div
+          onClick={(e) => {
+            if (onPreview) {
+              onPreview(e);
+            } else {
+              navigate(getResourceUrl(resource));
+            }
+          }}
+          className={cn(
+            "group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/70 bg-card text-card-foreground shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-md cursor-pointer",
+            className
+          )}
+        >
+          {/* TOP: Compact Thumbnail Area */}
+          <div
+            className={cn(
+              "relative h-20 w-full flex items-center justify-center transition-colors duration-300 border-b",
+              style.bg
+            )}
+          >
+            {/* Category / Type Badge (Top Left) */}
+            <div className="absolute left-2 top-2">
+              <Badge
+                variant="secondary"
+                className="flex items-center gap-1 backdrop-blur-md bg-background/90 text-foreground font-semibold px-2 py-0.5 text-[9px] shadow-xs border border-border/40"
               >
-                <Eye className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              </Button>
+                {getFileIcon(resource.type, cn("h-2.5 w-2.5", style.icon))}
+                <span>{style.label}</span>
+              </Badge>
+            </div>
+
+            {/* Central Soft Icon */}
+            <div className={cn("transition-transform duration-500 group-hover:scale-110", style.icon)}>
+              {getFileIcon(resource.type, "w-8 h-8 opacity-70")}
+            </div>
+
+            {/* Floating Action Buttons (Top Right) */}
+            <div
+              className="absolute top-1.5 right-1.5 flex items-center gap-1"
+              onClick={(e) => e.stopPropagation()}
+            >
               <Button
-                size="sm"
-                variant="outline"
+                size="icon"
+                variant="secondary"
                 className={cn(
-                  "h-7 w-7 sm:h-8 sm:w-8 p-0 rounded-lg border-muted",
-                  isSaved ? "text-primary bg-primary/5 border-primary/20" : "hover:bg-muted/60"
+                  "h-6 w-6 rounded-full shadow-xs bg-background/90 backdrop-blur-md hover:bg-background border border-border/40",
+                  isSaved ? "text-primary fill-primary" : "text-muted-foreground"
                 )}
                 onClick={onSave}
                 title="Sauvegarder"
               >
-                <Bookmark className={cn("h-3 w-3 sm:h-3.5 sm:w-3.5", isSaved ? "fill-current" : "")} />
+                <Bookmark className={cn("h-3 w-3", isSaved && "fill-current")} />
               </Button>
-              {/* Bouton Réviser avec l'IA */}
+
               <Button
-                size="sm"
-                variant="outline"
-                className="h-7 w-7 sm:h-8 sm:w-8 p-0 rounded-lg border-[#ff9800]/30 text-[#ff9800] hover:bg-[#ff9800]/10 hover:border-[#ff9800]"
-                onClick={(e) => { e.stopPropagation(); setStudyOpen(true); }}
+                size="icon"
+                variant="secondary"
+                className="h-6 w-6 rounded-full shadow-xs bg-background/90 backdrop-blur-md hover:bg-background text-primary border border-border/40"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setStudyOpen(true);
+                }}
                 title="Réviser avec l'IA"
               >
-                <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              </Button>
-              <Button
-                size="sm"
-                className="h-7 sm:h-8 flex-1 gap-1 campus-gradient text-white rounded-lg hover:opacity-90"
-                onClick={onDownload}
-                disabled={isDownloading}
-              >
-                {isDownloading ? (
-                  <Loader2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-spin" />
-                ) : (
-                  <>
-                    <Download className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                    <span className="text-[10px] sm:text-xs font-semibold hidden sm:inline">Télécharger</span>
-                  </>
-                )}
+                <SpheraIcon size="sm" />
               </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* StudyToolsModal */}
-      <StudyToolsModal
-        isOpen={studyOpen}
-        onClose={() => setStudyOpen(false)}
-        resourceId={resource.id}
-        resourceTitle={resource.title}
-      />
-    </>
-  );
-});
+          {/* MIDDLE: Information Content */}
+          <div className="p-2.5 flex-1 flex flex-col justify-between">
+            <div>
+              <h3 className="font-semibold text-xs leading-snug line-clamp-2 text-foreground group-hover:text-primary transition-colors">
+                {resource.title}
+              </h3>
+              {resource.description && (
+                <p className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5">
+                  {resource.description}
+                </p>
+              )}
+            </div>
+
+            {/* Micro details: Subject + File details */}
+            <div className="flex items-center justify-between text-[9px] sm:text-[10px] text-muted-foreground pt-2 mt-2 border-t border-border/40">
+              <span className="font-medium text-foreground/80 truncate max-w-[90px]">
+                {resource.subject || "Général"}
+              </span>
+              <span className="font-mono text-[9px]">{formatFileSize(resource.fileSize || resource.file_size)}</span>
+            </div>
+          </div>
+
+          {/* BOTTOM: Action Bar */}
+          <div
+            className="px-2.5 py-1.5 bg-muted/20 border-t border-border/40 flex items-center justify-between gap-1.5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span className="text-[9px] sm:text-[10px] text-muted-foreground truncate max-w-[80px]">
+              {resource.authorName || resource.author?.name || "Étudiant"}
+            </span>
+
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-6 text-[10px] px-2 gap-1 rounded-md border-border/80 hover:border-primary/50"
+              onClick={onDownload}
+              disabled={isDownloading}
+            >
+              {isDownloading ? (
+                <Loader2 className="h-2.5 w-2.5 animate-spin" />
+              ) : (
+                <Download className="h-2.5 w-2.5" />
+              )}
+              <span>Télécharger</span>
+            </Button>
+          </div>
+        </div>
+
+        {/* Modal Réviser avec l'IA */}
+        <StudyToolsModal
+          isOpen={studyOpen}
+          onClose={() => setStudyOpen(false)}
+          resourceId={resource.id}
+          resourceTitle={resource.title}
+        />
+      </>
+    );
+  }
+);
 
 ResourceCard.displayName = "ResourceCard";

@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,7 @@ import { FileUpload } from "@/components/upload/FileUpload";
 import { RESOURCE_TYPE_OPTIONS } from "@/constants/resourceTypes";
 import { ACCEPTED_RESOURCE_MIME_TYPES, ACCEPTED_RESOURCE_FILE_EXTENSIONS } from "@/constants/resourceUpload";
 import { listFolders, createResource } from "@/services/api";
+import { compressImageFile } from "@/lib/imageCompression";
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 const ACCEPTED_FILE_TYPES = [...ACCEPTED_RESOURCE_MIME_TYPES];
@@ -39,7 +41,6 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
   const [newTag, setNewTag] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [subject, setSubject] = useState("");
   const [type, setType] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -59,28 +60,9 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
       listFolders().then(setFolders).catch(() => null);
     }
   }, [open]);
-
-
-  const subjects = [
-    { value: "math", label: "Mathématiques" },
-    { value: "cs", label: "Informatique" },
-    { value: "electronics", label: "Électronique" },
-    { value: "mechanics", label: "Mécanique" },
-    { value: "physics", label: "Physique" },
-    { value: "chemistry", label: "Chimie" },
-    { value: "biology", label: "Biologie / Santé" },
-    { value: "economics", label: "Économie / Gestion" },
-    { value: "law", label: "Droit / Sc. Politiques" },
-    { value: "language", label: "Langues / Lettres" },
-    { value: "history", label: "Histoire / Géo" },
-    { value: "arts", label: "Arts / Design" },
-    { value: "other", label: "Autre" }
-  ];
-
   const resourceSchema = z.object({
     title: z.string().trim().min(3, { message: t('modals.uploadResource.titleRequired') }).max(100, { message: t('modals.uploadResource.titleTooLong') }),
     description: z.string().trim().min(10, { message: t('modals.uploadResource.descriptionRequired', { defaultValue: "La description est requise" }) }).max(500, { message: t('modals.uploadResource.descriptionTooLong') }),
-    subject: z.string().optional(),
     type: z.string().min(1, { message: t('modals.uploadResource.typeRequired') }),
     file: z.custom<File>((val) => val instanceof File, { message: t('modals.uploadResource.fileRequired') })
       .refine((file) => file.size <= MAX_FILE_SIZE, { message: t('modals.uploadResource.fileTooLarge') })
@@ -117,7 +99,10 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
     }
   };
 
-  const validateAndSetFile = (selectedFile: File) => {
+    const validateAndSetFile = async (selectedFile: File) => {
+    // Compress if it's an image
+    selectedFile = await compressImageFile(selectedFile);
+    
     if (selectedFile.size > MAX_FILE_SIZE) {
       toast({ 
         variant: "destructive", 
@@ -221,7 +206,6 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
       const formData = new FormData();
       formData.append('title', title);
       formData.append('description', description || "");
-      if (subject) formData.append('subject', subject);
       formData.append('type', type);
       formData.append('file', file);
       formData.append('tags', JSON.stringify(tags));
@@ -263,9 +247,7 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
 
   const resetForm = () => {
     setTitle(""); 
-    setDescription(""); 
-    setSubject(""); 
-    setType(""); 
+    setDescription("");setType(""); 
     setFile(null); 
     setTags([]);
     setVisibility("");
@@ -284,13 +266,14 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
             <Upload className="h-5 w-5" />
             {t('modals.uploadResource.title')}
           </DialogTitle>
+          <DialogDescription className="sr-only">Formulaire d'upload de ressource</DialogDescription>
         </DialogHeader>
         
-        <div className="space-y-4">
-          <div>
+        <div className="space-y-4 min-w-0">
+          <div className="min-w-0">
             <Label>{t('modals.uploadResource.file')} *</Label>
             <div 
-              className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+              className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors w-full min-w-0 overflow-hidden ${
                 isDragOver 
                   ? 'border-primary bg-primary/10' 
                   : 'border-border hover:border-primary/50'
@@ -300,7 +283,7 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
               onDrop={handleDrop}
             >
               {file ? (
-                <div className="space-y-3">
+                <div className="space-y-3 w-full min-w-0">
                   {file.type.startsWith('image/') && (
                     <div className="rounded-lg overflow-hidden border">
                       <img
@@ -310,11 +293,11 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
                       />
                     </div>
                   )}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-8 w-8 text-primary" />
-                      <div className="text-left">
-                        <p className="font-medium">{file.name}</p>
+                  <div className="flex items-center justify-between gap-4 w-full min-w-0 overflow-hidden">
+                    <div className="flex items-center gap-2 flex-1 min-w-0 overflow-hidden">
+                      <FileText className="h-8 w-8 shrink-0 text-primary" />
+                      <div className="text-left flex-1 min-w-0">
+                        <p className="font-medium truncate" title={file.name}>{file.name}</p>
                         <p className="text-xs text-muted-foreground">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
                       </div>
                     </div>
@@ -376,7 +359,7 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
             </div>
           </div>
 
-          <div>
+          <div className="min-w-0">
             <Label htmlFor="title">{t('modals.uploadResource.title_field')} *</Label>
             <Input id="title" placeholder={t('modals.uploadResource.titlePlaceholder', { defaultValue: "Ex : Notes complètes - Algèbre linéaire" })} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={100} className="mt-1.5" />
           </div>
@@ -397,21 +380,6 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
                   {types.map((type) => (
                     <SelectItem key={type.value} value={type.value}>
                       {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Matière <span className="text-muted-foreground font-normal text-xs">(optionnel)</span></Label>
-              <Select value={subject} onValueChange={setSubject}>
-                <SelectTrigger className="mt-1.5">
-                  <SelectValue placeholder="Sélectionner..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {subjects.map((subject) => (
-                    <SelectItem key={subject.value} value={subject.value}>
-                      {subject.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -543,3 +511,6 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
     </Dialog>
   );
 }
+
+
+

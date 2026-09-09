@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { createPost, searchUsers } from "@/services/api";
+import { createPost, searchUsers, uploadFile } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import { Plus, Image, MapPin, Users, X, Lock, Globe, Video, FileText, Smile, AtS
 import { useToast } from "@/hooks/use-toast";
 import { findInvalidMentions, getActiveMentionQuery, renderMentionText } from "@/lib/mentions";
 import { cn } from "@/lib/utils";
+import { compressImageFiles } from "@/lib/imageCompression";
 import { useQuery } from "@tanstack/react-query";
 
 interface PostDraftData {
@@ -209,11 +210,13 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
-      const newFiles = Array.from(files);
-      const totalSize = [...uploadedFiles, ...newFiles].reduce((acc, file) => acc + file.size, 0);
+      // Compress images before checking total size, so large images don't get falsely blocked if compression makes them fit
+      const compressedNewFiles = await compressImageFiles(files);
+      
+      const totalSize = [...uploadedFiles, ...compressedNewFiles].reduce((acc, file) => acc + file.size, 0);
       
       if (totalSize > 50 * 1024 * 1024) { // 50MB limit
         toast({
@@ -224,10 +227,10 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
         return;
       }
       
-      setUploadedFiles([...uploadedFiles, ...newFiles]);
+      setUploadedFiles([...uploadedFiles, ...compressedNewFiles]);
       toast({
         title: "Fichier ajouté",
-        description: `${newFiles.length} fichier(s) ajouté(s)`
+        description: `${compressedNewFiles.length} fichier(s) ajouté(s)`
       });
     }
   };
@@ -318,27 +321,41 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
     setIsSubmitting(true);
     
     try {
-      // Create post via API
-      const postPayload = new FormData();
-      postPayload.append('content', content);
-      postPayload.append('visibility', apiVisibility);
-
-      if (tags.length > 0) {
-        postPayload.append('tags', JSON.stringify(tags));
+      // Upload files first if any
+      const uploadedDescriptors = [];
+      if (uploadedFiles.length > 0) {
+        const uploads = await Promise.all(uploadedFiles.map(f => uploadFile(f, "post")));
+        for (const u of uploads) {
+          if (u.data) {
+            uploadedDescriptors.push(u.data);
+          } else {
+            uploadedDescriptors.push(u);
+          }
+        }
       }
 
-      uploadedFiles.forEach((file) => {
-        postPayload.append('files[]', file);
-      });
+      // Create post via API
+      const postPayload: Record<string, any> = {
+        content,
+        visibility: apiVisibility,
+        allow_comments: allowComments
+      };
 
-      if (category) postPayload.append('category', category);
-      if (subject) postPayload.append('subject', subject);
-      if (type) postPayload.append('type', type);
-      if (audience) postPayload.append('audience', audience);
-      if (location) postPayload.append('location', location);
-      postPayload.append('allow_comments', String(allowComments));
+      if (tags.length > 0) {
+        postPayload.tags = tags;
+      }
+
+      if (uploadedDescriptors.length > 0) {
+        postPayload.files = uploadedDescriptors;
+      }
+
+      if (category) postPayload.category = category;
+      if (subject) postPayload.subject = subject;
+      if (type) postPayload.type = type;
+      if (audience) postPayload.audience = audience;
+      if (location) postPayload.location = location;
       
-      const result = await createPost(postPayload);
+      const result = await createPost(postPayload as any);
       const createdPost = result?.data ?? result;
       
       const postData: PostDraftData = { 
@@ -715,3 +732,4 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
     </Dialog>
   );
 }
+

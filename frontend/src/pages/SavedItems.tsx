@@ -11,6 +11,7 @@ import { getSavedPosts, getSavedResources, savePost, saveResource, downloadResou
 import { normalizeResourceType, normalizeSubject } from "@/lib/resourceMetadata";
 import { PostSkeleton, ResourceSkeleton } from "@/components/ui/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
+import { getResourceUrl } from "@/lib/utils";
 
 export function SavedItems() {
   const [savedPosts, setSavedPosts] = useState<any[]>([]);
@@ -100,11 +101,16 @@ export function SavedItems() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
-      <div className="container max-w-4xl mx-auto py-6 px-4">
-        <h1 className="text-3xl font-bold bg-clip-text text-muted-foreground mb-6">
-          Éléments enregistrés
-        </h1>
+    <div className="min-h-screen bg-background">
+      <div className="container max-w-7xl mx-auto py-6 md:py-8 px-4 sm:px-6 space-y-6 animate-in fade-in duration-300">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold tracking-tight text-white">
+            Éléments enregistrés
+          </h1>
+          <p className="text-sm text-muted-foreground mt-2">
+            Retrouvez rapidement vos publications et ressources académiques mises de côté
+          </p>
+        </div>
 
         <Tabs defaultValue="posts" className="w-full">
           <SharedTabsList containerClassName="mb-6">
@@ -139,8 +145,8 @@ export function SavedItems() {
 
           <TabsContent value="resources">
             {loading ? (
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                {Array.from({ length: 6 }).map((_, i) => <ResourceSkeleton key={i} />)}
+              <div className="grid gap-3.5 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                {Array.from({ length: 12 }).map((_, i) => <ResourceSkeleton key={i} />)}
               </div>
             ) : savedResources.length === 0 ? (
               <EmptyState
@@ -151,7 +157,7 @@ export function SavedItems() {
                 onAction={() => navigate("/resources")}
               />
             ) : (
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="grid gap-3.5 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                 {savedResources.map((resource) => (
                   <ResourceCard
                     key={resource.id}
@@ -160,7 +166,7 @@ export function SavedItems() {
                     isSaved={true}
                     onDownload={(e) => handleDownload(e, resource.id)}
                     onSave={(e) => handleUnsaveResource(e, resource.id)}
-                    onPreview={(e) => { e.stopPropagation(); navigate(`/resources/${resource.id}?mode=preview`); }}
+                    onPreview={(e) => { e.stopPropagation(); navigate(getResourceUrl(resource)); }}
                   />
                 ))}
               </div>

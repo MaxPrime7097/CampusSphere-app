@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
 import { getUser, listNotifications, markNotificationRead, markAllNotificationsRead, deleteNotification as deleteNotificationApi } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -57,75 +59,74 @@ export function Notifications() {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  const notificationsQuery = useQuery({
+    queryKey: ["notifications"],
+    queryFn: listNotifications,
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  });
+
   useEffect(() => {
-    let isMounted = true;
-    (async () => {
-      try {
-        setLoading(true);
-        const data = await listNotifications();
-        if (isMounted) {
-          // Map backend notifications to frontend format
-          const safeNotifications = Array.isArray(data) ? data : [];
-          const mapped = safeNotifications.map((n: any) => {
-            const senderName =
-              n.sender?.name ||
-              n.data?.sender_name ||
-              n.data?.user_full_name ||
-              n.data?.user_name ||
-              n.data?.inviter_name ||
-              n.data?.assigner_name ||
-              n.data?.requester_name ||
-              n.data?.author_name ||
-              n.data?.sender_username ||
-              n.data?.requester_username ||
-              null;
-            const senderAvatar = n.sender?.avatar || n.data?.sender_avatar || n.data?.author_avatar || null;
+    if (notificationsQuery.data) {
+      const safeNotifications = Array.isArray(notificationsQuery.data) ? notificationsQuery.data : [];
+      const mapped = safeNotifications.map((n: any) => {
+        const senderName =
+          n.sender?.name ||
+          n.data?.sender_name ||
+          n.data?.user_full_name ||
+          n.data?.user_name ||
+          n.data?.inviter_name ||
+          n.data?.assigner_name ||
+          n.data?.requester_name ||
+          n.data?.author_name ||
+          n.data?.sender_username ||
+          n.data?.requester_username ||
+          null;
+        const senderAvatar = n.sender?.avatar || n.data?.sender_avatar || n.data?.author_avatar || null;
 
-            const notificationType = toCanonicalType(n.notification_type || n.type);
-            const normalizedData = normalizeNotificationData(n);
-            const actionUrl = buildActionUrl(notificationType, normalizedData);
+        const notificationType = toCanonicalType(n.notification_type || n.type);
+        const normalizedData = normalizeNotificationData(n);
+        const actionUrl = buildActionUrl(notificationType, normalizedData);
 
-            // Log for debugging if actionUrl is missing for clickable types
-            if (!actionUrl && CLICKABLE_NOTIFICATION_TYPES.has(notificationType)) {
-              console.debug("[Notifications] Missing actionUrl for clickable notification", {
-                notificationId: n.id,
-                notificationType,
-                normalizedData,
-              });
-            }
-
-            return {
-              id: String(n.id),
-              type: notificationType,
-              title: n.title || 'Notification',
-              message: n.message || n.content || '',
-              read: n.is_read || n.read || false,
-              createdAt: n.created_at || n.createdAt || new Date().toISOString(),
-              sender: {
-                name: senderName,
-                avatar: senderAvatar,
-                id: normalizedData.senderId,
-              },
-              profileUsername: normalizedData.profileUsername,
-              actionUrl,
-            };
+        if (!actionUrl && CLICKABLE_NOTIFICATION_TYPES.has(notificationType)) {
+          console.debug("[Notifications] Missing actionUrl for clickable notification", {
+            notificationId: n.id,
+            notificationType,
+            normalizedData,
           });
-          setNotifications(mapped);
         }
-      } catch (e: any) {
-        toast({
-          title: "Erreur",
-          description: e?.message || "Impossible de charger les notifications",
-          variant: "destructive",
-        });
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+
+        return {
+          id: String(n.id),
+          type: notificationType,
+          title: n.title || 'Notification',
+          message: n.message || n.content || '',
+          read: n.is_read || n.read || false,
+          createdAt: n.created_at || n.createdAt || new Date().toISOString(),
+          sender: {
+            name: senderName,
+            avatar: senderAvatar,
+            id: normalizedData.senderId,
+          },
+          profileUsername: normalizedData.profileUsername,
+          actionUrl,
+        };
+      });
+      setNotifications(mapped);
+      setLoading(false);
+    } else if (notificationsQuery.isLoading) {
+      setLoading(true);
+    } else if (notificationsQuery.error) {
+      toast({
+        title: "Erreur",
+        description: (notificationsQuery.error as any)?.message || "Impossible de charger les notifications",
+        variant: "destructive",
+      });
+      setLoading(false);
+    }
+  }, [notificationsQuery.data, notificationsQuery.isLoading, notificationsQuery.error, toast]);
 
   const getNotificationIcon = (type: CanonicalNotificationType) => {
     switch (type) {
@@ -246,14 +247,14 @@ export function Notifications() {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
-      <div className="max-w-4xl mx-auto py-4 px-4">
+    <div className="min-h-screen bg-background">
+      <div className="max-w-4xl mx-auto py-6 md:py-8 px-4 sm:px-6 space-y-6 animate-in fade-in duration-300">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-2">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-muted-foreground">Notifications</h1>
-            <p className="text-sm text-muted-foreground">
-              {unreadCount > 0 ? `${unreadCount} nouvelles notifications` : "Aucune nouvelle notification"}
+            <h1 className="text-3xl font-bold tracking-tight text-white">Notifications</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {unreadCount > 0 ? `${unreadCount} nouvelles notifications` : "Toutes vos notifications sont à jour"}
             </p>
             {statusText && <p className="text-xs text-muted-foreground mt-1">{statusText}</p>}
           </div>

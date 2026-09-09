@@ -1,13 +1,12 @@
-import { Suspense, lazy, useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
-import { ChevronLeft, ChevronRight, Upload, Check, Loader2, AlertCircle, Eye, EyeOff, X, ExternalLink, Plus, FileText, Mail, RefreshCw, Camera, Info } from "lucide-react";
-import { FaGoogle, FaFacebook } from "react-icons/fa";
+import { ChevronRight, Check, Loader2, AlertCircle, Eye, EyeOff, X, Mail, RefreshCw } from "lucide-react";
+import { FaFacebook } from "react-icons/fa";
+import { FcGoogle } from "react-icons/fc";
 import { Button } from "@/components/ui/button";
 import { Input, REGISTRATION_MAX_LENGTHS } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
@@ -19,30 +18,15 @@ import {
   supabaseSignInWithGoogle,
   supabaseSignInWithFacebook,
   exchangeSupabaseToken,
-  completeSupabaseProfile,
   getSupabaseRateLimitMetadata,
   supabaseResendSignupEmail,
   checkUserAvailability,
-  verifyStudentStatus,
 } from "@/services/api";
 import { supabase } from "@/lib/supabase";
-import { completeSupabaseProfilePayloadSchema, mapCompleteProfileErrors } from "@/schemas/completeProfilePayload";
-import { cn } from "@/lib/utils";
-import { openVerificationModal } from "@/lib/events";
-import { UniversityCombobox } from "@/components/forms/UniversityCombobox";
-import { FacultyCombobox } from "@/components/forms/FacultyCombobox";
-import { StudyLevelCombobox } from "@/components/forms/StudyLevelCombobox";
-import { SkillsCombobox } from "@/components/forms/SkillsCombobox";
-import { InterestsCombobox } from "@/components/forms/InterestsCombobox";
-import { LanguageCombobox } from "@/components/forms/LanguageCombobox";
 import { AuthSidePanel } from "@/components/auth/AuthSidePanel";
-import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
+import { useAuth } from "@/contexts/AuthContext";
 
-const AddEducationModal = lazy(() => import("@/components/modals/AddEducationModal").then((module) => ({ default: module.AddEducationModal })));
-const AddExperienceModal = lazy(() => import("@/components/modals/AddExperienceModal").then((module) => ({ default: module.AddExperienceModal })));
-
-// Étapes : 1=infos perso, "verify"=attente email, 2=académique, 3=compétences
-type Step = 1 | "verify" | 2 | 3;
+type Step = 1 | "verify";
 const MINIMUM_AGE = 16;
 const RESEND_COOLDOWN_SECONDS = 60;
 const SUBMIT_DEBOUNCE_MS = 1000;
@@ -84,36 +68,18 @@ export function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isAddEducationOpen, setIsAddEducationOpen] = useState(false);
-  const [isAddExperienceOpen, setIsAddExperienceOpen] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [availability, setAvailability] = useState({
     email: { checking: false, available: true, checkedValue: "" },
     username: { checking: false, available: true, checkedValue: "" },
   });
-  const avatarInputRef = useRef<HTMLInputElement>(null);
   const signupLastSubmitAtRef = useRef(0);
   const resendLastSubmitAtRef = useRef(0);
-  const cardInputRef = useRef<HTMLInputElement>(null);
-
-  const [cardImage, setCardImage] = useState<File | null>(null);
-  const [cardPreview, setCardPreview] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     firstName: "", lastName: "", username: "", email: "",
     phoneNumber: "", dateOfBirth: "", password: "", confirmPassword: "",
-    avatar: null as File | null, bio: "", town: "", languages: [] as string[],
-    university: "", faculty: "", studyYear: "", studentId: "", campus: "",
-    previousEducation: [] as Array<{degree: string; school: string; year: string}>,
-    experiences: [] as Array<{title: string; company: string; duration: string; description: string}>,
-    skills: [] as string[], interests: [] as string[],
-    portfolioLinks: [] as Array<{name: string; url: string}>,
   });
-
-  const [newLanguageInput, setNewLanguageInput] = useState("");
-  const [newSkillInput, setNewSkillInput] = useState("");
-  const [newInterestInput, setNewInterestInput] = useState("");
-  const [newLink, setNewLink] = useState({ name: "", url: "" });
 
   const getPasswordStrength = (password: string) => {
     if (!password) return { score: 0, label: "Faible", color: "text-muted-foreground" };
@@ -139,17 +105,18 @@ export function Register() {
   const passwordsMatch = !!formData.password && !!formData.confirmPassword && formData.password === formData.confirmPassword;
   const hasConfirmInput = formData.confirmPassword.length > 0;
 
-  // Vérifier si l'utilisateur revient après vérification email
+  const { refreshUser } = useAuth();
+
   useEffect(() => {
     const verified = searchParams.get('verified');
     if (verified === 'true') {
-      // L'utilisateur a vérifié son email, échanger le token et continuer
       (async () => {
         try {
           const { data: { session } } = await supabase.auth.getSession();
           if (session) {
             await exchangeSupabaseToken(session.access_token);
-            setStep(2);
+            await refreshUser();
+            navigate("/onboarding");
             toast({ title: "Email vérifié ✓", description: "Continuez votre inscription", duration: 3000 });
           }
         } catch (err: any) {
@@ -157,39 +124,17 @@ export function Register() {
         }
       })();
     }
-  }, [searchParams, toast]);
+  }, [searchParams, toast, navigate, refreshUser]);
 
-  const handleCardChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        toast({
-          title: "Fichier trop lourd",
-          description: "L'image ne doit pas dépasser 10 Mo.",
-          variant: "destructive",
-        });
-        return;
-      }
-      setCardImage(file);
-      const reader = new FileReader();
-      reader.onload = (e) => setCardPreview(e.target?.result as string);
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // Écouter la confirmation email Supabase
   useEffect(() => {
     if (step !== "verify") return;
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_IN" && session) {
-        // Email confirmé → échanger le token avec Django
         try {
-          const response = await exchangeSupabaseToken(session.access_token);
-          
-          // Pour l'inscription par email, on continue toujours avec les étapes 2-3
-          // car l'utilisateur a déjà rempli l'étape 1 avec ses infos
-          setStep(2);
+          await exchangeSupabaseToken(session.access_token);
+          await refreshUser();
+          navigate("/onboarding");
           toast({ title: "Email vérifié ✓", description: "Continuez votre inscription", duration: 3000 });
         } catch (err: any) {
           toast({ title: "Erreur", description: err?.message, variant: "destructive" });
@@ -198,7 +143,7 @@ export function Register() {
     });
 
     return () => subscription.unsubscribe();
-  }, [step, navigate, toast]);
+  }, [step, navigate, toast, refreshUser]);
 
   useEffect(() => {
     if (resendCooldownRemaining <= 0) return;
@@ -243,18 +188,18 @@ export function Register() {
     path: ["confirmPassword"],
   });
 
-  const step2Schema = z.object({
-    university: z.string().min(1, "Requis"),
-    faculty: z.string().min(1, "Requis"),
-    studyYear: z.string().min(1, "Requis"),
-    studentId: z.string().optional(),
-  });
-
   const handleInputChange = (field: string, value: string) => {
     const sensitiveFields = new Set(["username", "email", "phoneNumber"]);
     const sanitizedValue = sensitiveFields.has(field) ? value.trim() : value;
     setFormData(prev => ({ ...prev, [field]: sanitizedValue }));
-    if (errors[field]) setErrors(prev => ({ ...prev, [field]: "" }));
+    
+    if (errors[field]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
   };
 
   useEffect(() => {
@@ -270,7 +215,12 @@ export function Register() {
         const response = await checkUserAvailability({ username });
         const isAvailable = response?.data?.username?.available ?? true;
         setAvailability(prev => ({ ...prev, username: { checking: false, available: isAvailable, checkedValue: username } }));
-        setErrors(prev => ({ ...prev, username: isAvailable ? "" : "Ce nom d'utilisateur est déjà pris" }));
+        
+        if (!isAvailable) {
+          setErrors(prev => ({ ...prev, username: "Ce nom d'utilisateur est déjà pris" }));
+        } else if (errors.username === "Ce nom d'utilisateur est déjà pris") {
+          setErrors(prev => { const e = { ...prev }; delete e.username; return e; });
+        }
       } catch {
         setAvailability(prev => ({ ...prev, username: { ...prev.username, checking: false } }));
       }
@@ -292,7 +242,12 @@ export function Register() {
         const response = await checkUserAvailability({ email });
         const isAvailable = response?.data?.email?.available ?? true;
         setAvailability(prev => ({ ...prev, email: { checking: false, available: isAvailable, checkedValue: email } }));
-        setErrors(prev => ({ ...prev, email: isAvailable ? "" : "Cet email est déjà utilisé" }));
+        
+        if (!isAvailable) {
+          setErrors(prev => ({ ...prev, email: "Cet email est déjà utilisé" }));
+        } else if (errors.email === "Cet email est déjà utilisé") {
+          setErrors(prev => { const e = { ...prev }; delete e.email; return e; });
+        }
       } catch {
         setAvailability(prev => ({ ...prev, email: { ...prev.email, checking: false } }));
       }
@@ -305,15 +260,12 @@ export function Register() {
     setIsGoogleLoading(true);
     try {
       await supabaseSignInWithGoogle();
-      // On success, Supabase redirects to Google, so we don't strictly need to set loading to false.
-      // But we will handle errors if they happen immediately.
     } catch (err: any) {
-      toast({ title: "Erreur Google", description: err?.message, variant: "destructive" });
+      toast({ title: "Erreur", description: err?.message, variant: "destructive" });
       setIsGoogleLoading(false);
     }
   };
 
-  // Étape 1 → Supabase signUp → écran de vérification email
   const handleStep1Submit = async () => {
     const now = Date.now();
     if (now - signupLastSubmitAtRef.current < SUBMIT_DEBOUNCE_MS || isLoading) {
@@ -324,39 +276,44 @@ export function Register() {
     const validation = step1Schema.safeParse(formData);
     if (!validation.success) {
       const fieldErrors: Record<string, string> = {};
-      validation.error.errors.forEach(e => { if (e.path[0]) fieldErrors[e.path[0] as string] = e.message; });
+      validation.error.issues.forEach(issue => {
+        if (issue.path[0]) fieldErrors[issue.path[0].toString()] = issue.message;
+      });
       setErrors(fieldErrors);
       return;
     }
-    const normalizedUsername = formData.username.trim();
-    const normalizedEmail = formData.email.trim().toLowerCase();
-    const usernameUnavailable = availability.username.checkedValue === normalizedUsername && !availability.username.available;
-    const emailUnavailable = availability.email.checkedValue === normalizedEmail && !availability.email.available;
-    if (usernameUnavailable || emailUnavailable) {
-      setErrors(prev => ({
-        ...prev,
-        ...(usernameUnavailable ? { username: "Ce nom d'utilisateur est déjà pris" } : {}),
-        ...(emailUnavailable ? { email: "Cet email est déjà utilisé" } : {}),
-      }));
+
+    if (!availability.username.available) {
+      setErrors(prev => ({ ...prev, username: "Ce nom d'utilisateur est déjà pris" }));
       return;
     }
 
+    if (!availability.email.available) {
+      setErrors(prev => ({ ...prev, email: "Cet email est déjà utilisé" }));
+      return;
+    }
+
+    setErrors({});
     setIsLoading(true);
+
     try {
       await supabaseSignUp(formData.email, formData.password, {
         first_name: formData.firstName,
         last_name: formData.lastName,
         username: formData.username,
       });
-      setStep("verify");
+
       setResendCooldownRemaining(RESEND_COOLDOWN_SECONDS);
+      setStep("verify");
+      toast({ title: "Compte créé !", description: "Veuillez vérifier votre email.", duration: 3000 });
     } catch (err: any) {
       const rateLimit = getSupabaseRateLimitMetadata(err);
       if (rateLimit) {
         const waitSeconds = rateLimit.waitSeconds ?? RESEND_COOLDOWN_SECONDS;
+        setResendCooldownRemaining(waitSeconds);
         toast({
-          title: "Trop de tentatives",
-          description: `Supabase limite temporairement les inscriptions. Réessayez dans ${waitSeconds}s.`,
+          title: "Limite atteinte",
+          description: `Veuillez patienter ${waitSeconds}s avant de réessayer.`,
           variant: "destructive",
         });
       } else {
@@ -401,68 +358,6 @@ export function Register() {
     }
   };
 
-  // Étape 3 → compléter le profil Django
-  const handleFinalSubmit = async () => {
-    if (isLoading) return;
-
-    const normalizedPhoneNumber = formData.phoneNumber
-      ? `+237${formData.phoneNumber.replace(/^\+?237/, "")}`
-      : undefined;
-
-    const payload = {
-      username: formData.username,
-      first_name: formData.firstName,
-      last_name: formData.lastName,
-      phone_number: normalizedPhoneNumber,
-      date_of_birth: formData.dateOfBirth,
-      university: formData.university,
-      faculty: formData.faculty,
-      study_year: formData.studyYear,
-      student_id: formData.studentId,
-      campus: formData.campus,
-      town: formData.town,
-      language: formData.languages.length > 0 ? formData.languages : ["Français"],
-      bio: formData.bio,
-      skills: formData.skills,
-      interests: formData.interests,
-      previous_education: formData.previousEducation,
-      experiences: formData.experiences,
-      portfolio_links: formData.portfolioLinks,
-    };
-
-    const validation = completeSupabaseProfilePayloadSchema.safeParse(payload);
-    if (!validation.success) {
-      setErrors(mapCompleteProfileErrors(validation.error));
-      return;
-    }
-
-    setErrors({});
-    setIsLoading(true);
-    try {
-      await completeSupabaseProfile(payload);
-      
-      // Si une preuve a été fournie, envoyer la demande de vérification
-      if (cardImage) {
-        try {
-          await verifyStudentStatus(formData.studentId || "Inconnu", cardImage);
-        } catch (verifyErr) {
-          console.error("Erreur certification auto:", verifyErr);
-          // On ne bloque pas la fin de l'inscription si seule la certification échoue
-        }
-      }
-
-      toast({ title: "Inscription terminée ! 🎉", description: "Bienvenue sur CampusSphere! Connect. Share. Grow. 🚀", duration: 4000 });
-      navigate("/");
-    } catch (err: any) {
-      toast({ title: "Erreur", description: err?.message, variant: "destructive" });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const stepNumber = step === "verify" ? 1 : step === 1 ? 1 : step === 2 ? 2 : 3;
-  const progress = step === "verify" ? 33 : step === 1 ? 0 : step === 2 ? 33 : 66;
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5 grid lg:grid-cols-2 overflow-hidden">
       <Helmet>
@@ -475,17 +370,8 @@ export function Register() {
         <div className="text-center mb-8 cursor-pointer" onClick={() => navigate("/cs-inc")}>
           <span className="text-2xl font-bold font-automata text-primary">CampusSphere</span>
           <p className="text-muted-foreground mt-2">
-            {step === "verify" ? "Vérification de l'email" : `Étape ${stepNumber} sur 3`}
+            {step === "verify" ? "Vérification de l'email" : `Rejoignez CampusSphere !`}
           </p>
-        </div>
-
-        <div className="mb-8">
-          <Progress value={progress} className="h-2" />
-          <div className="flex justify-between mt-2 text-sm text-muted-foreground">
-            <span>Infos personnelles</span>
-            <span>Infos académiques</span>
-            <span>Compétences</span>
-          </div>
         </div>
 
         <div className="space-y-6 p-5 pt-0 mt-4">
@@ -499,15 +385,15 @@ export function Register() {
           {/* ── ÉTAPE 1 : Infos personnelles ── */}
           {step === 1 && (
             <div className="space-y-4">
-              <CardTitle>Créer votre compte</CardTitle>
+              <CardTitle className="text-center text-2xl">Créer votre compte</CardTitle>
 
               {/* Boutons OAuth */}
               <div className="space-y-2">
                 <Button variant="outline" className="w-full" onClick={handleGoogle} disabled={isGoogleLoading || isLoading} type="button">
-                  {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FaGoogle className="mr-2 h-4 w-4 text-red-500" />}
+                  {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FcGoogle className="mr-2 h-4 w-4" />}
                   Continuer avec Google
                 </Button>
-                <Button variant="outline" className="w-full disabled" onClick={() => supabaseSignInWithFacebook()} type="button">
+                <Button variant="outline" className="hidden w-full disabled" onClick={() => supabaseSignInWithFacebook()} type="button">
                   <FaFacebook className="mr-2 h-4 w-4 text-blue-600" />
                   Continuer avec Facebook
                 </Button>
@@ -606,6 +492,15 @@ export function Register() {
                   Suivant <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
+
+              <div className="text-center mt-8 text-sm text-muted-foreground">
+                <p>
+                  En continuant, vous acceptez nos{" "}
+                  <Button variant="link" className="px-0 h-auto text-primary" onClick={() => navigate("/cs-inc/policies/terms")}>Conditions d'utilisation</Button>
+                  {" "}et notre{" "}
+                  <Button variant="link" className="px-0 h-auto text-primary" onClick={() => navigate("/cs-inc/policies/privacy")}>Politique de confidentialité</Button>
+                </p>
+              </div>
             </div>
           )}
 
@@ -637,318 +532,17 @@ export function Register() {
               </div>
             </div>
           )}
-
-          {/* ── ÉTAPE 2 : Infos académiques ── */}
-          {step === 2 && (
-            <div className="space-y-4">
-              <CardTitle>Informations académiques</CardTitle>
-              <div>
-                <Label>Université/Institut *</Label>
-                <UniversityCombobox value={formData.university} onValueChange={v => handleInputChange("university", v)} className="mt-2" />
-                {errors.university && <p className="text-xs text-red-500 mt-1">{errors.university}</p>}
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label>Filière *</Label>
-                  <FacultyCombobox value={formData.faculty} onValueChange={v => handleInputChange("faculty", v)} className="mt-2" />
-                  {errors.faculty && <p className="text-xs text-red-500 mt-1">{errors.faculty}</p>}
-                </div>
-                <div>
-                  <Label>Niveau *</Label>
-                  <StudyLevelCombobox value={formData.studyYear} onValueChange={v => handleInputChange("studyYear", v)} className="mt-2" />
-                  {errors.studyYear && <p className="text-xs text-red-500 mt-1">{errors.studyYear}</p>}
-                </div>
-              </div>
-              <div>
-                <Label>Matricule <span className="text-muted-foreground">(optionnel)</span></Label>
-                <Input maxLength={REGISTRATION_MAX_LENGTHS.studentId} value={formData.studentId} onChange={e => handleInputChange("studentId", e.target.value)} placeholder="Ex: 21T2045" />
-                {errors.studentId && <p className="text-xs text-red-500 mt-1">{errors.studentId}</p>}
-              </div>
-
-              <div>
-                <Label>Preuve de statut étudiant <span className="text-muted-foreground">(carte, reçu, certificat... - optionnel pour certification)</span></Label>
-                <div 
-                  onClick={() => cardInputRef.current?.click()}
-                  className={cn(
-                    "mt-2 relative h-40 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden bg-muted/30 hover:bg-muted/50",
-                    cardPreview ? "border-primary/50" : "border-muted-foreground/30"
-                  )}
-                >
-                  {cardPreview ? (
-                    <div className="relative w-full h-full">
-                      <img src={cardPreview} alt="Aperçu preuve" className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                        <p className="text-white text-sm font-medium">Changer la photo</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="p-2 bg-primary/10 rounded-full mb-2">
-                        <Camera className="h-5 w-5 text-primary" />
-                      </div>
-                      <p className="text-xs font-medium">Uploader une preuve pour certification</p>
-                      <p className="text-[10px] text-muted-foreground mt-1">JPG, PNG (Max 10Mo)</p>
-                    </>
-                  )}
-                </div>
-                <input 
-                  type="file" 
-                  ref={cardInputRef} 
-                  className="hidden" 
-                  accept="image/*" 
-                  onChange={handleCardChange}
-                />
-                <div className="flex items-center gap-2 mt-2 p-2 bg-blue-500/5 text-blue-600 rounded-lg text-[10px]">
-                  <Info className="h-3 w-3 flex-shrink-0" />
-                  La certification est requise pour publier des posts ou rejoindre des sphères.
-                </div>
-              </div>
-              <div>
-                <Label>Campus</Label>
-                <Input maxLength={REGISTRATION_MAX_LENGTHS.campus} value={formData.campus} onChange={e => handleInputChange("campus", e.target.value)} placeholder="Si plusieurs campus" />
-              </div>
-              <div className="flex justify-between pt-4">
-                <Button variant="outline" onClick={() => setStep(1)}><ChevronLeft className="mr-2 h-4 w-4" />Précédent</Button>
-                <Button onClick={() => {
-                  const v = step2Schema.safeParse(formData);
-                  if (!v.success) {
-                    const fe: Record<string, string> = {};
-                    v.error.errors.forEach(e => { if (e.path[0]) fe[e.path[0] as string] = e.message; });
-                    setErrors(fe); return;
-                  }
-                  setErrors({}); setStep(3);
-                }} className="campus-gradient text-white hover:opacity-90">
-                  Suivant <ChevronRight className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* ── ÉTAPE 3 : Compétences & expériences ── */}
-          {step === 3 && (
-            <div className="space-y-6">
-              <CardTitle>Expérience & Compétences</CardTitle>
-
-              {/* Formations */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <Label>Formations précédentes</Label>
-                  <Button size="sm" variant="outline" onClick={() => setIsAddEducationOpen(true)}><Plus className="h-4 w-4 mr-1" />Ajouter</Button>
-                  {isAddEducationOpen && (
-                    <Suspense fallback={<ModalLoadingFallback />}>
-                      <AddEducationModal
-                        open={isAddEducationOpen}
-                        onOpenChange={setIsAddEducationOpen}
-                        existingEducations={formData.previousEducation}
-                        onEducationAdded={edu => setFormData(p => ({ ...p, previousEducation: [...p.previousEducation, edu] }))}
-                      />
-                    </Suspense>
-                  )}
-                </div>
-                {formData.previousEducation.length === 0 ? (
-                  <div className="text-center py-6 text-muted-foreground border-2 border-dashed rounded-lg text-sm">Aucune formation ajoutée</div>
-                ) : formData.previousEducation.map((edu, i) => (
-                  <div key={i} className="border-l-2 border-primary/50 pl-4 py-2 bg-muted/50 rounded-r-md mb-2 flex justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="font-semibold text-sm overflow-hidden text-ellipsis whitespace-nowrap">{edu.degree}</p>
-                      <p className="text-xs text-muted-foreground break-words">{edu.school} · {edu.year}</p>
-                    </div>
-                    <Button variant="ghost" size="sm" onClick={() => setFormData(p => ({ ...p, previousEducation: p.previousEducation.filter((_, j) => j !== i) }))}><X className="h-4 w-4" /></Button>
-                  </div>
-                ))}
-                {errors.previousEducation && <p className="text-xs text-red-500 mt-1">{errors.previousEducation}</p>}
-              </div>
-
-              {/* Expériences */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <Label>Expériences</Label>
-                  <Button size="sm" variant="outline" onClick={() => setIsAddExperienceOpen(true)}><Plus className="h-4 w-4 mr-1" />Ajouter</Button>
-                  {isAddExperienceOpen && (
-                    <Suspense fallback={<ModalLoadingFallback />}>
-                      <AddExperienceModal
-                        open={isAddExperienceOpen}
-                        onOpenChange={setIsAddExperienceOpen}
-                        existingExperiences={formData.experiences}
-                        onExperienceAdded={exp => setFormData(p => ({ ...p, experiences: [...p.experiences, exp] }))}
-                      />
-                    </Suspense>
-                  )}
-                </div>
-                {formData.experiences.length === 0 ? (
-                  <div className="text-center py-6 text-muted-foreground border-2 border-dashed rounded-lg text-sm">Aucune expérience ajoutée</div>
-                ) : formData.experiences.map((exp, i) => (
-                  <div key={i} className="border-l-2 border-primary/50 pl-4 py-2 bg-muted/50 rounded-r-md mb-2 flex justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="font-semibold text-sm overflow-hidden text-ellipsis whitespace-nowrap">{exp.title}</p>
-                      <p className="text-xs text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap">{exp.company} · {exp.duration}</p>
-                    </div>
-                    <Button variant="ghost" size="sm" onClick={() => setFormData(p => ({ ...p, experiences: p.experiences.filter((_, j) => j !== i) }))}><X className="h-4 w-4" /></Button>
-                  </div>
-                ))}
-                {errors.experiences && <p className="text-xs text-red-500 mt-1">{errors.experiences}</p>}
-              </div>
-
-              {/* Compétences */}
-              <div>
-                <Label>Compétences</Label>
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <SkillsCombobox
-                      value={newSkillInput}
-                      onValueChange={setNewSkillInput}
-                      onSearchValueChange={setNewSkillInput}
-                      onSkillAdd={(skill) => {
-                        if (!formData.skills.includes(skill)) {
-                          setFormData(p => ({ ...p, skills: [...p.skills, skill] }));
-                          setNewSkillInput("");
-                        }
-                      }}
-                    />
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    className="shrink-0"
-                    onClick={() => {
-                      if (newSkillInput.trim() && !formData.skills.includes(newSkillInput.trim())) {
-                        setFormData(p => ({ ...p, skills: [...p.skills, newSkillInput.trim()] }));
-                        setNewSkillInput("");
-                      }
-                    }}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {formData.skills.map(s => <Badge key={s} variant="secondary" className="cursor-pointer" onClick={() => setFormData(p => ({ ...p, skills: p.skills.filter(x => x !== s) }))}>{s} ×</Badge>)}
-                </div>
-              </div>
-
-              {/* Intérêts */}
-              <div>
-                <Label>Centres d'intérêt</Label>
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <InterestsCombobox
-                      value={newInterestInput}
-                      onValueChange={setNewInterestInput}
-                      onSearchValueChange={setNewInterestInput}
-                      onInterestAdd={(interest) => {
-                        if (!formData.interests.includes(interest)) {
-                          setFormData(p => ({ ...p, interests: [...p.interests, interest] }));
-                          setNewInterestInput("");
-                        }
-                      }}
-                    />
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    className="shrink-0"
-                    onClick={() => {
-                      if (newInterestInput.trim() && !formData.interests.includes(newInterestInput.trim())) {
-                        setFormData(p => ({ ...p, interests: [...p.interests, newInterestInput.trim()] }));
-                        setNewInterestInput("");
-                      }
-                    }}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {formData.interests.map(s => <Badge key={s} variant="outline" className="cursor-pointer" onClick={() => setFormData(p => ({ ...p, interests: p.interests.filter(x => x !== s) }))}>{s} ×</Badge>)}
-                </div>
-              </div>
-
-              {/* Langues */}
-              <div>
-                <Label>Langues parlées</Label>
-                <div className="flex gap-2 mt-2">
-                  <div className="flex-1">
-                    <LanguageCombobox
-                      value={newLanguageInput}
-                      onValueChange={setNewLanguageInput}
-                      onSearchValueChange={setNewLanguageInput}
-                      onLanguageAdd={(lang) => {
-                        if (!formData.languages.includes(lang)) {
-                          setFormData(p => ({ ...p, languages: [...p.languages, lang] }));
-                          setNewLanguageInput("");
-                        }
-                      }}
-                    />
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    className="shrink-0"
-                    onClick={() => {
-                      if (newLanguageInput.trim() && !formData.languages.includes(newLanguageInput.trim())) {
-                        setFormData(p => ({ ...p, languages: [...p.languages, newLanguageInput.trim()] }));
-                        setNewLanguageInput("");
-                      }
-                    }}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {formData.languages.map(l => (
-                    <Badge key={l} variant="outline" className="cursor-pointer border-primary/30 bg-primary/5" onClick={() => setFormData(p => ({ ...p, languages: p.languages.filter(x => x !== l) }))}>
-                      {l} ×
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-
-              {/* Portfolio */}
-              <div>
-                <Label>Portfolio / Liens</Label>
-                <div className="flex gap-2 mt-2 min-w-0 w-full">
-                  <Input maxLength={REGISTRATION_MAX_LENGTHS.portfolioName} placeholder="Nom (ex: GitHub)" value={newLink.name} onChange={e => setNewLink(p => ({ ...p, name: e.target.value }))} className="w-1/3 min-w-0" />
-                  <Input maxLength={REGISTRATION_MAX_LENGTHS.portfolioUrl} placeholder="URL" value={newLink.url} onChange={e => setNewLink(p => ({ ...p, url: e.target.value }))} className="w-full min-w-0" />
-                  <Button type="button" variant="outline" onClick={() => { if (newLink.name.trim() && newLink.url.trim()) { setFormData(p => ({ ...p, portfolioLinks: [...p.portfolioLinks, { name: newLink.name.trim(), url: newLink.url.trim() }] })); setNewLink({ name: "", url: "" }); } }}>+</Button>
-                </div>
-                {errors.portfolioLinks && <p className="text-xs text-red-500 mt-1">{errors.portfolioLinks}</p>}
-                {formData.portfolioLinks.map((l, i) => (
-                  <div key={i} className="flex items-center justify-between gap-2 p-2 border rounded-lg mt-2 bg-muted/50">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap">{l.name}</p>
-                      <p className="text-xs text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap" title={l.url}>{l.url}</p>
-                    </div>
-                    <Button variant="ghost" size="sm" onClick={() => setFormData(p => ({ ...p, portfolioLinks: p.portfolioLinks.filter((_, j) => j !== i) }))}><X className="h-4 w-4" /></Button>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex flex-col sm:flex-row justify-between gap-3 pt-4">
-                <Button variant="outline" onClick={() => setStep(2)} className="order-2 sm:order-1">
-                  <ChevronLeft className="mr-2 h-4 w-4" />Précédent
-                </Button>
-                <div className="flex flex-col sm:flex-row gap-2 order-1 sm:order-2">
-                  <Button variant="ghost" onClick={handleFinalSubmit} disabled={isLoading} className="text-muted-foreground">
-                    Passer pour l'instant
-                  </Button>
-                  <Button onClick={handleFinalSubmit} disabled={isLoading} className="campus-gradient text-white hover:opacity-90">
-                    {isLoading ? (
-                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Finalisation...</>
-                    ) : (
-                      <><Check className="mr-2 h-4 w-4" />Terminer l'inscription</>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {step !== "verify" && (
-            <div className="text-center mt-4 text-sm text-muted-foreground">
-              Déjà un compte ?{" "}
-              <Button variant="link" className="px-0 text-primary" onClick={() => navigate("/login")}>Se connecter</Button>
-            </div>
-          )}
         </div>
+
+        <div className="text-center mt-6">
+          <p className="text-muted-foreground text-sm">
+            Déjà un compte ?{" "}
+            <Button variant="link" className="p-0 text-primary" onClick={() => navigate("/login")}>
+              Se connecter
+            </Button>
+          </p>
         </div>
+      </div>
       </div>
       <AuthSidePanel />
     </div>

@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
 import { Card, CardContent } from "@/components/ui/card";
+import { NetflixCarousel } from "@/components/ui/netflix-carousel";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { ConnectionSkeleton } from "@/components/ui/skeletons";
@@ -32,6 +33,7 @@ export function Connections() {
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+    const [viewAllSection, setViewAllSection] = useState<string | null>(null);
   const [mutualCountStatus, setMutualCountStatus] = useState<string | null>(null);
   const suggestionsQuery = useQuery({
     queryKey: ["connections", "suggestions", currentUser?.id || "anon"],
@@ -44,105 +46,109 @@ export function Connections() {
   });
 
   // Load connections
+  const connectionsQuery = useQuery({
+    queryKey: ["user-connections", currentUser?.id],
+    queryFn: () => getUserConnections(currentUser!.id),
+    enabled: Boolean(currentUser?.id),
+    staleTime: 60 * 1000,
+  });
+
   useEffect(() => {
-    if (!currentUser?.id) return;
-    
-    let isMounted = true;
-    (async () => {
-      try {
-        setLoading(true);
-        // Load user's connections
-        const connectionsData = await getUserConnections(currentUser.id);
-        if (isMounted && connectionsData) {
-          const mapped = (connectionsData || []).map((conn: any) => ({
-            id: String(
-              conn.requester === currentUser.id
-                ? conn.recipient_info?.id || conn.recipient
-                : conn.requester_info?.id || conn.requester
-            ),
-            name:
-              (conn.requester === currentUser.id
-                ? conn.recipient_info?.full_name
-                : conn.requester_info?.full_name) || "Utilisateur",
-            username:
-              (conn.requester === currentUser.id
-                ? conn.recipient_info?.username
-                : conn.requester_info?.username) || "user",
-            avatar:
-              (conn.requester === currentUser.id
-                ? conn.recipient_info?.avatar
-                : conn.requester_info?.avatar) || '/placeholder-avatar.jpg',
-            university:
-              (conn.requester === currentUser.id
-                ? conn.recipient_info?.university
-                : conn.requester_info?.university) || '',
-            faculty:
-              (conn.requester === currentUser.id
-                ? conn.recipient_info?.faculty
-                : conn.requester_info?.faculty) || '',
-            field:
-              (conn.requester === currentUser.id
-                ? conn.recipient_info?.faculty
-                : conn.requester_info?.faculty) || '',
-            normalizedUniversity: normalizeUniversity(
-              conn.requester === currentUser.id
-                ? conn.recipient_info?.university
-                : conn.requester_info?.university
-            ),
-            normalizedFaculty: normalizeFaculty(
-              conn.requester === currentUser.id
-                ? conn.recipient_info?.faculty
-                : conn.requester_info?.faculty
-            ),
-            isVerified: false,
-            impactScore:
-              (conn.requester === currentUser.id
-                ? conn.recipient_info?.impact_score
-                : conn.requester_info?.impact_score) || 0,
-            mutualFriends: 0,
-            status: conn.status,
-            isIncomingRequest: conn.recipient === currentUser.id && conn.status === 'pending'
-          }));
-          setConnections(mapped.filter((c: any) => c.status === 'accepted'));
-          setPendingRequests(mapped.filter((c: any) => c.isIncomingRequest));
+    if (connectionsQuery.isLoading) {
+      setLoading(true);
+      return;
+    }
 
-          try {
-            setMutualCountStatus("Calcul des amis communs...");
-            const mutualCounts = await getMutualConnectionCounts({
-              currentUserId: currentUser.id,
-              connectionUserIds: mapped.map((connection: any) => connection.id),
+    if (connectionsQuery.data && currentUser?.id) {
+      const connectionsData = connectionsQuery.data;
+      const mapped = (connectionsData || []).map((conn: any) => ({
+        id: String(
+          conn.requester === currentUser.id
+            ? conn.recipient_info?.id || conn.recipient
+            : conn.requester_info?.id || conn.requester
+        ),
+        name:
+          (conn.requester === currentUser.id
+            ? conn.recipient_info?.full_name
+            : conn.requester_info?.full_name) || "Utilisateur",
+        username:
+          (conn.requester === currentUser.id
+            ? conn.recipient_info?.username
+            : conn.requester_info?.username) || "user",
+        avatar:
+          (conn.requester === currentUser.id
+            ? conn.recipient_info?.avatar
+            : conn.requester_info?.avatar) || "/placeholder-avatar.jpg",
+        university:
+          (conn.requester === currentUser.id
+            ? conn.recipient_info?.university
+            : conn.requester_info?.university) || "",
+        faculty:
+          (conn.requester === currentUser.id
+            ? conn.recipient_info?.faculty
+            : conn.requester_info?.faculty) || "",
+        field:
+          (conn.requester === currentUser.id
+            ? conn.recipient_info?.faculty
+            : conn.requester_info?.faculty) || "",
+        normalizedUniversity: normalizeUniversity(
+          conn.requester === currentUser.id
+            ? conn.recipient_info?.university
+            : conn.requester_info?.university
+        ),
+        normalizedFaculty: normalizeFaculty(
+          conn.requester === currentUser.id
+            ? conn.recipient_info?.faculty
+            : conn.requester_info?.faculty
+        ),
+        isVerified: false,
+        impactScore:
+          (conn.requester === currentUser.id
+            ? conn.recipient_info?.impact_score
+            : conn.requester_info?.impact_score) || 0,
+        mutualFriends: 0,
+        status: conn.status,
+        isIncomingRequest: conn.recipient === currentUser.id && conn.status === "pending"
+      }));
+
+      setConnections(mapped.filter((c: any) => c.status === "accepted"));
+      setPendingRequests(mapped.filter((c: any) => c.isIncomingRequest));
+
+      let isMounted = true;
+      (async () => {
+        try {
+          setMutualCountStatus("Calcul des amis communs...");
+          const mutualCounts = await getMutualConnectionCounts({
+            currentUserId: currentUser.id,
+            connectionUserIds: mapped.map((connection: any) => connection.id),
+          });
+
+          if (isMounted) {
+            setConnections((prev) =>
+              prev.map((connection) => ({
+                ...connection,
+                mutualFriends: mutualCounts.counts[String(connection.id)] ?? 0,
+              }))
+            );
+            setMutualCountStatus("Amis communs mis à jour.");
+          }
+        } catch {
+          if (isMounted) {
+            setMutualCountStatus(null);
+            toast({
+              title: "Information",
+              description: "Le calcul des amis communs n'est pas disponible pour le moment.",
+              duration: 2000,
             });
-
-            if (isMounted) {
-              setConnections((prev) =>
-                prev.map((connection) => ({
-                  ...connection,
-                  mutualFriends: mutualCounts.counts[String(connection.id)] ?? 0,
-                }))
-              );
-              setMutualCountStatus("Amis communs mis à jour.");
-            }
-          } catch {
-            if (isMounted) {
-              setMutualCountStatus(null);
-              toast({
-                title: "Information",
-                description: "Le calcul des amis communs n'est pas disponible pour le moment.",
-                duration: 2000,
-              });
-            }
           }
         }
-      } catch (e) {
-        // Error loading connections
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, [currentUser]);
+      })();
+      setLoading(false);
+      return () => { isMounted = false; };
+    } else {
+      setLoading(false);
+    }
+  }, [connectionsQuery.data, connectionsQuery.isLoading, currentUser, toast]);
 
   // Load suggestions
   useEffect(() => {
@@ -233,15 +239,15 @@ export function Connections() {
   const hasActiveFilters = normalizedQuery.length > 0 || activeFilter !== "all";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
-      <div className="container max-w-6xl mx-auto py-6 px-4">
+    <div className="min-h-screen bg-background">
+      <div className="container max-w-7xl mx-auto py-6 md:py-8 px-4 sm:px-6 space-y-6 animate-in fade-in duration-300">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6">
           <div>
-            <h1 className="text-3xl font-bold bg-clip-text text-muted-foreground">
+            <h1 className="text-3xl font-bold tracking-tight text-white">
               Connexions
             </h1>
-            <p className="text-sm md:text-base text-muted-foreground mt-1">
+            <p className="text-sm text-muted-foreground mt-2">
               Gérez vos connexions et découvrez de nouveaux étudiants
             </p>
           </div>
@@ -293,231 +299,505 @@ export function Connections() {
               </SelectContent>
             </Select>
           </div>
-        </div>
-
-        {/* Tabs */}
-        <Tabs defaultValue="all" className="space-y-6">
-          <SharedTabsList>
-            <SharedTabsTrigger value="all">
-              Mes Connexions ({filteredConnections.length})
-            </SharedTabsTrigger>
-            <SharedTabsTrigger value="requests">
-              Demandes ({pendingRequests.length})
-            </SharedTabsTrigger>
-            <SharedTabsTrigger value="suggestions">
-              Suggestions ({filteredSuggestions.length})
-            </SharedTabsTrigger>
-          </SharedTabsList>
-
-          {/* All Connections */}
-          <TabsContent value="all" className="space-y-3">
-            {loading ? (
-              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                {Array.from({ length: 6 }).map((_, i) => <ConnectionSkeleton key={i} />)}
-              </div>
-            ) : filteredConnections.length === 0 ? (
-              <EmptyState
-                icon={Users}
-                title={hasActiveFilters ? "Aucune connexion pour ces critères" : "Aucune connexion"}
-                description={hasActiveFilters ? "Essayez de changer les filtres." : "Commencez à vous connecter avec d'autres étudiants !"}
-                actionLabel={hasActiveFilters ? "Réinitialiser" : undefined}
-                onAction={hasActiveFilters ? () => { setSearchQuery(""); setActiveFilter("all"); } : undefined}
-              />
-            ) : (
-              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                {filteredConnections.map((connection) => (
-                  <Card key={connection.id} className="border bg-card hover:shadow-md transition-shadow duration-200 cursor-pointer" onClick={() => navigate(`/profile/${connection.username}`)}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-12 w-12 flex-shrink-0">
-                          <AvatarImage src={connection.avatar} />
-                          <AvatarFallback className="bg-input text-muted-foreground font-bold text-lg">
-                            {connection.name?.slice(0, 1).toUpperCase() || '...'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <h3 className="font-semibold text-sm truncate">{connection.name}</h3>
-                            {connection.isVerified && (
-                              <div className="w-3.5 h-3.5 campus-gradient rounded-full flex items-center justify-center flex-shrink-0">
-                                <span className="text-white text-[8px]">✓</span>
-                              </div>
-                            )}
+        </div>                {/* DASHBOARD OR SEARCH RESULTS */}
+        {hasActiveFilters ? (
+          <div className="mt-6 space-y-8">
+            {filteredConnections.length > 0 && (
+              <section>
+                <h2 className="text-lg font-semibold mb-4 px-1">Résultats de vos connexions</h2>
+                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 cursor-pointer">
+                  {filteredConnections.map((connection) => (
+                    <Card key={connection.id} className="border bg-card hover:shadow-md transition-shadow duration-200 cursor-pointer" onClick={() => navigate("/profile/" + connection.username)}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-12 w-12 flex-shrink-0">
+                            <AvatarImage src={connection.avatar} />
+                            <AvatarFallback className="bg-input text-muted-foreground font-bold text-lg">
+                              {connection.name?.slice(0, 1).toUpperCase() || '...'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <h3 className="font-semibold text-sm truncate">{connection.name}</h3>
+                              {connection.isVerified && (
+                                <div className="w-3.5 h-3.5 campus-gradient rounded-full flex items-center justify-center flex-shrink-0">
+                                  <span className="text-white text-[8px]">V</span>
+                                </div>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground">@{connection.username}</p>
+                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                              {connection.university && (
+                                <Badge variant="secondary" className="text-[9px] h-4 px-1.5 py-0 max-w-[100px] truncate" title={formatSlugToLabel(connection.university)}>
+                                  {truncate(formatSlugToLabel(connection.university), 15)}
+                                </Badge>
+                              )}
+                              <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                                <Zap className="h-2.5 w-2.5 text-primary" />{connection.impactScore}
+                              </span>
+                              <span className="text-[10px] text-muted-foreground hidden sm:inline">
+                                {connection.mutualFriends} communs
+                              </span>
+                            </div>
                           </div>
-                          <p className="text-xs text-muted-foreground">@{connection.username}</p>
-                          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                            {connection.university && (
-                              <Badge variant="secondary" className="text-[9px] h-4 px-1.5 py-0 max-w-[100px] truncate" title={formatSlugToLabel(connection.university)}>
-                                {truncate(formatSlugToLabel(connection.university), 15)}
-                              </Badge>
-                            )}
-                            <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                              <Zap className="h-2.5 w-2.5 text-primary" />{connection.impactScore}
-                            </span>
-                            <span className="text-[10px] text-muted-foreground hidden sm:inline">
-                              {connection.mutualFriends} communs
-                            </span>
-                          </div>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-shrink-0 h-8 w-8 sm:w-auto p-0 sm:px-3 text-xs"
-                          onClick={(e) => { e.stopPropagation(); navigate(`/profile/${connection.username}`); }}
-                        >
-                          <User className="h-4 w-4 sm:mr-2" />
-                          <span className="hidden sm:inline">Profil</span>
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          {/* Pending Requests */}
-          <TabsContent value="requests" className="space-y-3">
-            {loading ? (
-              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                {Array.from({ length: 3 }).map((_, i) => <ConnectionSkeleton key={i} />)}
-              </div>
-            ) : pendingRequests.length === 0 ? (
-              <EmptyState
-                icon={UserPlus}
-                title="Aucune demande en attente"
-                description="Vous n'avez pas de demandes de connexion pour le moment."
-              />
-            ) : (
-              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                {pendingRequests.map((request) => (
-                  <Card key={request.id} className="border bg-card">
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-12 w-12 flex-shrink-0 cursor-pointer" onClick={() => navigate(`/profile/${request.username}`)}>
-                          <AvatarImage src={request.avatar} />
-                          <AvatarFallback className="bg-input text-muted-foreground font-bold text-lg">
-                            {request.name?.slice(0, 1).toUpperCase() || '...'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-sm truncate cursor-pointer hover:underline" onClick={() => navigate(`/profile/${request.username}`)}>{request.name}</h3>
-                          <p className="text-xs text-muted-foreground">@{request.username}</p>
-                        </div>
-                        <div className="flex flex-col gap-2">
-                          <Button
-                            size="sm"
-                            className="h-8 w-8 sm:w-auto p-0 sm:px-3 text-xs campus-gradient text-white hover:opacity-90"
-                            onClick={async () => {
-                              try {
-                                
-                                await acceptConnection(request.id);
-                                toast({ title: "Connexion acceptée", description: `Vous êtes maintenant connecté(e) à ${request.name}` });
-                                setConnections(prev => [...prev, { ...request, status: 'accepted' }]);
-                                setPendingRequests(prev => prev.filter(r => r.id !== request.id));
-                              } catch (error: any) {
-                                toast({ title: "Erreur", description: error?.message || "Impossible d'accepter la demande", variant: "destructive" });
-                              }
-                            }}
-                          >
-                            <Check className="h-4 w-4 sm:mr-2" />
-                            <span className="hidden sm:inline">Accepter</span>
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-8 w-8 sm:w-auto p-0 sm:px-3 text-xs text-destructive hover:bg-destructive/10"
-                            onClick={async () => {
-                              try {
-                                await disconnectFromUser(request.id);
-                                toast({ title: "Demande refusée", description: `Vous avez refusé la demande de ${request.name}` });
-                                setPendingRequests(prev => prev.filter(r => r.id !== request.id));
-                              } catch (error: any) {
-                                toast({ title: "Erreur", description: error?.message || "Impossible de refuser la demande", variant: "destructive" });
-                              }
-                            }}
-                          >
-                            <X className="h-4 w-4 sm:mr-2" />
-                            <span className="hidden sm:inline">Refuser</span>
+                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); navigate("/messages/" + connection.id); }}>
+                            <span className="sr-only">Message</span>
+                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-colors">
+                              <UserCheck className="h-4 w-4" />
+                            </div>
                           </Button>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </section>
             )}
-          </TabsContent>
 
-          {/* Suggestions */}
-          <TabsContent value="suggestions" className="space-y-3">
-            {loading ? (
-              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                {Array.from({ length: 6 }).map((_, i) => <ConnectionSkeleton key={i} />)}
-              </div>
-            ) : filteredSuggestions.length === 0 ? (
-              <EmptyState
-                icon={UserPlus}
-                title={hasActiveFilters ? "Aucune suggestion pour ces critères" : "Aucune suggestion"}
-                description={hasActiveFilters ? "Essayez de changer les filtres." : "Revenez plus tard, de nouveaux étudiants rejoignent la plateforme."}
-                actionLabel={hasActiveFilters ? "Réinitialiser" : undefined}
-                onAction={hasActiveFilters ? () => { setSearchQuery(""); setActiveFilter("all"); } : undefined}
-              />
-            ) : (
-              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                {filteredSuggestions.map((suggestion) => (
-                  <Card key={suggestion.id} className="border bg-card hover:shadow-md transition-shadow duration-200" onClick={() => navigate(`/profile/${suggestion.username}`)}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-12 w-12 flex-shrink-0">
-                          <AvatarImage src={suggestion.avatar} />
-                          <AvatarFallback className="bg-input text-muted-foreground font-bold text-lg">
-                            {suggestion.name?.slice(0, 1).toUpperCase() || '...'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-sm truncate">{suggestion.name}</h3>
-                          <p className="text-xs text-muted-foreground">@{suggestion.username}</p>
-                          <p className="text-[10px] text-primary/80 italic mt-0.5 truncate w-full">
-                            {suggestion.reason}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1 flex-wrap">
-                            {suggestion.university && (
-                              <Badge variant="secondary" className="text-[9px] h-4 px-1.5 py-0 max-w-[100px] truncate" title={formatSlugToLabel(suggestion.university)}>
-                                {truncate(formatSlugToLabel(suggestion.university), 15)}
-                              </Badge>
-                            )}
-                            <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                              <Zap className="h-2.5 w-2.5 text-primary" />{suggestion.impactScore}
-                            </span>
+            {filteredSuggestions.length > 0 && (
+              <section>
+                <h2 className="text-lg font-semibold mb-4 px-1">Résultats des suggestions</h2>
+                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 cursor-pointer">
+                  {filteredSuggestions.map((suggestion) => (
+                    <Card key={suggestion.id} className="border bg-card hover:shadow-md transition-shadow duration-200" onClick={() => navigate("/profile/" + suggestion.username)}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-12 w-12 flex-shrink-0">
+                            <AvatarImage src={suggestion.avatar} />
+                            <AvatarFallback className="bg-input text-muted-foreground font-bold text-lg">
+                              {suggestion.name?.slice(0, 1).toUpperCase() || '...'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-sm truncate">{suggestion.name}</h3>
+                            <p className="text-xs text-muted-foreground">@{suggestion.username}</p>
+                            <p className="text-[10px] text-primary/80 italic mt-0.5 truncate w-full">
+                              {suggestion.reason}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              {suggestion.university && (
+                                <Badge variant="secondary" className="text-[9px] h-4 px-1.5 py-0 max-w-[100px] truncate" title={formatSlugToLabel(suggestion.university)}>
+                                  {truncate(formatSlugToLabel(suggestion.university), 15)}
+                                </Badge>
+                              )}
+                              <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                                <Zap className="h-2.5 w-2.5 text-primary" />{suggestion.impactScore}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                        <Button
-                          size="sm"
-                          className="flex-shrink-0 h-8 w-8 sm:w-auto p-0 sm:px-3 text-xs campus-gradient text-white hover:opacity-90"
-                          onClick={async () => {
+                          <Button size="sm" className="flex-shrink-0 h-8 w-8 sm:w-auto p-0 sm:px-3 text-xs campus-gradient text-white hover:opacity-90" onClick={async (e) => {
+                            e.stopPropagation();
                             try {
                               await createConnection(suggestion.id);
-                              toast({ title: "Demande envoyée", description: `Demande envoyée à ${suggestion.name}`, duration: 2000 });
+                              toast({ title: "Demande envoyée", description: "Demande envoyée à " + suggestion.name, duration: 2000 });
                               setConnections((prev) => [...prev, suggestion]);
                               setSuggestions((prev) => prev.filter((s) => s.id !== suggestion.id));
                             } catch (error: any) {
                               toast({ title: "Erreur", description: error?.message || "Impossible d'envoyer la demande", variant: "destructive" });
                             }
-                          }}
-                        >
-                          <Link className="h-4 w-4 sm:mr-1" />
-                          <span className="hidden sm:inline">Connecter</span>
+                          }}>
+                            <Link className="h-4 w-4 sm:mr-1" />
+                            <span className="hidden sm:inline">Connecter</span>
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {filteredConnections.length === 0 && filteredSuggestions.length === 0 && (
+              <EmptyState
+                icon={Search}
+                title="Aucun résultat"
+                description="Essayez de changer les filtres ou la recherche."
+                actionLabel="Réinitialiser"
+                onAction={() => { setSearchQuery(""); setActiveFilter("all"); }}
+              />
+            )}
+          </div>
+        ) : viewAllSection ? (
+          <div className="mt-6 space-y-4">
+            <div className="ml-2 flex items-center gap-4 mb-4">
+              <Button variant="outline" size="sm" onClick={() => setViewAllSection(null)}>
+                Retour
+              </Button>
+              <h2 className="text-lg font-semibold">
+                {viewAllSection === "requests" && ("Demandes en attente (" + pendingRequests.length + ")")}
+                {viewAllSection === "connections" && ("Mes Connexions (" + filteredConnections.length + ")")}
+                {viewAllSection === "suggestions" && ("Suggestions (" + filteredSuggestions.length + ")")}
+              </h2>
+            </div>
+            
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+              {viewAllSection === "requests" && pendingRequests.map((request) => (
+                <Card key={request.id} className="border bg-card hover:shadow-md transition-shadow duration-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-12 w-12 flex-shrink-0 cursor-pointer" onClick={() => navigate("/profile/" + request.username)}>
+                        <AvatarImage src={request.avatar} />
+                        <AvatarFallback className="bg-input text-muted-foreground font-bold text-lg">
+                          {request.name?.slice(0, 1).toUpperCase() || '...'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-sm truncate cursor-pointer hover:underline" onClick={() => navigate("/profile/" + request.username)}>{request.name}</h3>
+                        <p className="text-xs text-muted-foreground">@{request.username}</p>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Button size="sm" className="h-8 w-8 sm:w-auto p-0 sm:px-3 text-xs campus-gradient text-white hover:opacity-90" onClick={async () => {
+                          try {
+                            await acceptConnection(request.id);
+                            toast({ title: "Connexion acceptée", description: "Vous êtes maintenant connecté(e) à " + request.name });
+                            setConnections(prev => [...prev, { ...request, status: 'accepted' }]);
+                            setPendingRequests(prev => prev.filter(r => r.id !== request.id));
+                          } catch (error: any) {
+                            toast({ title: "Erreur", description: error?.message || "Impossible d'accepter la demande", variant: "destructive" });
+                          }
+                        }}>
+                          <Check className="h-4 w-4 sm:mr-2" />
+                          <span className="hidden sm:inline">Accepter</span>
+                        </Button>
+                        <Button variant="outline" size="sm" className="h-8 w-8 sm:w-auto p-0 sm:px-3 text-xs text-destructive hover:bg-destructive/10" onClick={async () => {
+                          try {
+                            await disconnectFromUser(request.id);
+                            toast({ title: "Demande refusée", description: "Vous avez refusé la demande de " + request.name });
+                            setPendingRequests(prev => prev.filter(r => r.id !== request.id));
+                          } catch (error: any) {
+                            toast({ title: "Erreur", description: error?.message || "Impossible de refuser la demande", variant: "destructive" });
+                          }
+                        }}>
+                          <X className="h-4 w-4 sm:mr-2" />
+                          <span className="hidden sm:inline">Refuser</span>
                         </Button>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+
+              {viewAllSection === "connections" && filteredConnections.map((connection) => (
+                <Card key={connection.id} className="border bg-card hover:shadow-md transition-shadow duration-200 cursor-pointer" onClick={() => navigate("/profile/" + connection.username)}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-12 w-12 flex-shrink-0">
+                        <AvatarImage src={connection.avatar} />
+                        <AvatarFallback className="bg-input text-muted-foreground font-bold text-lg">
+                          {connection.name?.slice(0, 1).toUpperCase() || '...'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <h3 className="font-semibold text-sm truncate">{connection.name}</h3>
+                          {connection.isVerified && (
+                            <div className="w-3.5 h-3.5 campus-gradient rounded-full flex items-center justify-center flex-shrink-0">
+                              <span className="text-white text-[8px]">V</span>
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">@{connection.username}</p>
+                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                          {connection.university && (
+                            <Badge variant="secondary" className="text-[9px] h-4 px-1.5 py-0 max-w-[100px] truncate" title={formatSlugToLabel(connection.university)}>
+                              {truncate(formatSlugToLabel(connection.university), 15)}
+                            </Badge>
+                          )}
+                          <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                            <Zap className="h-2.5 w-2.5 text-primary" />{connection.impactScore}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground hidden sm:inline">
+                            {connection.mutualFriends} communs
+                          </span>
+                        </div>
+                      </div>
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); navigate("/messages/" + connection.id); }}>
+                        <span className="sr-only">Message</span>
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-colors">
+                          <UserCheck className="h-4 w-4" />
+                        </div>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+
+              {viewAllSection === "suggestions" && filteredSuggestions.map((suggestion) => (
+                <Card key={suggestion.id} className="border bg-card hover:shadow-md transition-shadow duration-200" onClick={() => navigate("/profile/" + suggestion.username)}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-12 w-12 flex-shrink-0">
+                        <AvatarImage src={suggestion.avatar} />
+                        <AvatarFallback className="bg-input text-muted-foreground font-bold text-lg">
+                          {suggestion.name?.slice(0, 1).toUpperCase() || '...'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-sm truncate">{suggestion.name}</h3>
+                        <p className="text-xs text-muted-foreground">@{suggestion.username}</p>
+                        <p className="text-[10px] text-primary/80 italic mt-0.5 truncate w-full">
+                          {suggestion.reason}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          {suggestion.university && (
+                            <Badge variant="secondary" className="text-[9px] h-4 px-1.5 py-0 max-w-[100px] truncate" title={formatSlugToLabel(suggestion.university)}>
+                              {truncate(formatSlugToLabel(suggestion.university), 15)}
+                            </Badge>
+                          )}
+                          <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                            <Zap className="h-2.5 w-2.5 text-primary" />{suggestion.impactScore}
+                          </span>
+                        </div>
+                      </div>
+                      <Button size="sm" className="flex-shrink-0 h-8 w-8 sm:w-auto p-0 sm:px-3 text-xs campus-gradient text-white hover:opacity-90" onClick={async (e) => {
+                        e.stopPropagation();
+                        try {
+                          await createConnection(suggestion.id);
+                          toast({ title: "Demande envoyée", description: "Demande envoyée à " + suggestion.name, duration: 2000 });
+                          setConnections((prev) => [...prev, suggestion]);
+                          setSuggestions((prev) => prev.filter((s) => s.id !== suggestion.id));
+                        } catch (error: any) {
+                          toast({ title: "Erreur", description: error?.message || "Impossible d'envoyer la demande", variant: "destructive" });
+                        }
+                      }}>
+                        <Link className="h-4 w-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Connecter</span>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-10 mt-8 pb-12">
+            {/* Row 1: Demandes (Only if > 0) */}
+            {pendingRequests.length > 0 && (
+              <section>
+                <div className="flex justify-between items-center mb-4 px-1">
+                  <h2 className="text-lg font-semibold flex items-center gap-2">Demandes en attente ({pendingRequests.length})</h2>
+                  {pendingRequests.length > 4 && (
+                    <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => setViewAllSection("requests")}>
+                      Voir tout
+                    </Button>
+                  )}
+                </div>
+                <NetflixCarousel className="gap-3 pb-1">
+                  {loading ? (
+                    Array.from({ length: 3 }).map((_, i) => (
+                      <div key={i} className="cs-scroll-item w-[280px] sm:w-[320px]">
+                        <ConnectionSkeleton />
+                      </div>
+                    ))
+                  ) : (
+                    pendingRequests.map((request) => (
+                      <div key={request.id} className="cs-scroll-item w-[280px] sm:w-[320px]">
+                        <Card className="border bg-card hover:shadow-md transition-shadow duration-200">
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-12 w-12 flex-shrink-0 cursor-pointer" onClick={() => navigate("/profile/" + request.username)}>
+                                <AvatarImage src={request.avatar} />
+                                <AvatarFallback className="bg-input text-muted-foreground font-bold text-lg">
+                                  {request.name?.slice(0, 1).toUpperCase() || '...'}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold text-sm truncate cursor-pointer hover:underline" onClick={() => navigate("/profile/" + request.username)}>{request.name}</h3>
+                                <p className="text-xs text-muted-foreground">@{request.username}</p>
+                              </div>
+                              <div className="flex flex-col gap-2">
+                                <Button size="sm" className="h-8 w-8 sm:w-auto p-0 sm:px-3 text-xs campus-gradient text-white hover:opacity-90" onClick={async () => {
+                                  try {
+                                    await acceptConnection(request.id);
+                                    toast({ title: "Connexion acceptée", description: "Vous êtes maintenant connecté(e) à " + request.name });
+                                    setConnections(prev => [...prev, { ...request, status: 'accepted' }]);
+                                    setPendingRequests(prev => prev.filter(r => r.id !== request.id));
+                                  } catch (error: any) {
+                                    toast({ title: "Erreur", description: error?.message || "Impossible d'accepter la demande", variant: "destructive" });
+                                  }
+                                }}>
+                                  <Check className="h-4 w-4 sm:mr-2" />
+                                  <span className="hidden sm:inline">Accepter</span>
+                                </Button>
+                                <Button variant="outline" size="sm" className="h-8 w-8 sm:w-auto p-0 sm:px-3 text-xs text-destructive hover:bg-destructive/10" onClick={async () => {
+                                  try {
+                                    await disconnectFromUser(request.id);
+                                    toast({ title: "Demande refusée", description: "Vous avez refusé la demande de " + request.name });
+                                    setPendingRequests(prev => prev.filter(r => r.id !== request.id));
+                                  } catch (error: any) {
+                                    toast({ title: "Erreur", description: error?.message || "Impossible de refuser la demande", variant: "destructive" });
+                                  }
+                                }}>
+                                  <X className="h-4 w-4 sm:mr-2" />
+                                  <span className="hidden sm:inline">Refuser</span>
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    ))
+                  )}
+                </NetflixCarousel>
+              </section>
             )}
-          </TabsContent>
-        </Tabs>
-      </div>
+
+            {/* Row 2: Mes Connexions */}
+            <section>
+              <div className="flex justify-between items-center mb-4 px-1">
+                <h2 className="text-lg font-semibold flex items-center gap-2">Mes Connexions ({filteredConnections.length})</h2>
+                {filteredConnections.length > 4 && (
+                  <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => setViewAllSection("connections")}>
+                    Voir tout
+                  </Button>
+                )}
+              </div>
+              {loading ? (
+                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                  {Array.from({ length: 3 }).map((_, i) => <ConnectionSkeleton key={i} />)}
+                </div>
+              ) : filteredConnections.length === 0 ? (
+                <EmptyState
+                  icon={Users}
+                  title="Aucune connexion"
+                  description="Commencez à vous connecter avec d'autres étudiants !"
+                />
+              ) : (
+                <NetflixCarousel className="gap-3 pb-1">
+                  {filteredConnections.map((connection) => (
+                    <div key={connection.id} className="cs-scroll-item w-[280px] sm:w-[320px]">
+                      <Card className="border bg-card hover:shadow-md transition-shadow duration-200 cursor-pointer" onClick={() => navigate("/profile/" + connection.username)}>
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-12 w-12 flex-shrink-0">
+                              <AvatarImage src={connection.avatar} />
+                              <AvatarFallback className="bg-input text-muted-foreground font-bold text-lg">
+                                {connection.name?.slice(0, 1).toUpperCase() || '...'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <h3 className="font-semibold text-sm truncate">{connection.name}</h3>
+                                {connection.isVerified && (
+                                  <div className="w-3.5 h-3.5 campus-gradient rounded-full flex items-center justify-center flex-shrink-0">
+                                    <span className="text-white text-[8px]">V</span>
+                                  </div>
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground">@{connection.username}</p>
+                              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                {connection.university && (
+                                  <Badge variant="secondary" className="text-[9px] h-4 px-1.5 py-0 max-w-[100px] truncate" title={formatSlugToLabel(connection.university)}>
+                                    {truncate(formatSlugToLabel(connection.university), 15)}
+                                  </Badge>
+                                )}
+                                <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                                  <Zap className="h-2.5 w-2.5 text-primary" />{connection.impactScore}
+                                </span>
+                                <span className="text-[10px] text-muted-foreground hidden sm:inline">
+                                  {connection.mutualFriends} communs
+                                </span>
+                              </div>
+                            </div>
+                            <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); navigate("/messages/" + connection.id); }}>
+                              <span className="sr-only">Message</span>
+                              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-colors">
+                                <UserCheck className="h-4 w-4" />
+                              </div>
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  ))}
+                </NetflixCarousel>
+              )}
+            </section>
+
+            {/* Row 3: Suggestions */}
+            <section>
+              <div className="flex justify-between items-center mb-4 px-1">
+                <h2 className="text-lg font-semibold flex items-center gap-2">Suggestions ({filteredSuggestions.length})</h2>
+                {filteredSuggestions.length > 4 && (
+                  <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => setViewAllSection("suggestions")}>
+                    Voir tout
+                  </Button>
+                )}
+              </div>
+              {loading ? (
+                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                  {Array.from({ length: 3 }).map((_, i) => <ConnectionSkeleton key={i} />)}
+                </div>
+              ) : filteredSuggestions.length === 0 ? (
+                <EmptyState
+                  icon={UserPlus}
+                  title="Aucune suggestion"
+                  description="Revenez plus tard, de nouveaux étudiants rejoignent la plateforme."
+                />
+              ) : (
+                <NetflixCarousel className="gap-3 pb-1">
+                  {filteredSuggestions.map((suggestion) => (
+                    <div key={suggestion.id} className="cs-scroll-item w-[280px] sm:w-[320px]">
+                      <Card className="border bg-card hover:shadow-md transition-shadow duration-200" onClick={() => navigate("/profile/" + suggestion.username)}>
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-12 w-12 flex-shrink-0">
+                              <AvatarImage src={suggestion.avatar} />
+                              <AvatarFallback className="bg-input text-muted-foreground font-bold text-lg">
+                                {suggestion.name?.slice(0, 1).toUpperCase() || '...'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-sm truncate">{suggestion.name}</h3>
+                              <p className="text-xs text-muted-foreground">@{suggestion.username}</p>
+                              <p className="text-[10px] text-primary/80 italic mt-0.5 truncate w-full">
+                                {suggestion.reason}
+                              </p>
+                              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                {suggestion.university && (
+                                  <Badge variant="secondary" className="text-[9px] h-4 px-1.5 py-0 max-w-[100px] truncate" title={formatSlugToLabel(suggestion.university)}>
+                                    {truncate(formatSlugToLabel(suggestion.university), 15)}
+                                  </Badge>
+                                )}
+                                <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                                  <Zap className="h-2.5 w-2.5 text-primary" />{suggestion.impactScore}
+                                </span>
+                              </div>
+                            </div>
+                            <Button size="sm" className="flex-shrink-0 h-8 w-8 sm:w-auto p-0 sm:px-3 text-xs campus-gradient text-white hover:opacity-90" onClick={async (e) => {
+                              e.stopPropagation();
+                              try {
+                                await createConnection(suggestion.id);
+                                toast({ title: "Demande envoyée", description: "Demande envoyée à " + suggestion.name, duration: 2000 });
+                                setConnections((prev) => [...prev, suggestion]);
+                                setSuggestions((prev) => prev.filter((s) => s.id !== suggestion.id));
+                              } catch (error: any) {
+                                toast({ title: "Erreur", description: error?.message || "Impossible d'envoyer la demande", variant: "destructive" });
+                              }
+                            }}>
+                              <Link className="h-4 w-4 sm:mr-1" />
+                              <span className="hidden sm:inline">Connecter</span>
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  ))}
+                </NetflixCarousel>
+              )}
+            </section>
+          </div>
+        )}      </div>
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+

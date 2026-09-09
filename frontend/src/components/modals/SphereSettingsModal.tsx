@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +10,6 @@ import {
   Settings, 
   Save, 
   Loader2, 
-  Users,
   Globe,
   Shield,
   Trash2,
@@ -18,19 +17,18 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { deleteSphere, extendSphereDuration, updateSphere } from "@/services/api";
+import { cn } from "@/lib/utils";
 
 interface SphereSettings {
   name: string;
   description: string;
-  category: string;
   requireApproval: boolean;
-  allowMemberPosts: boolean;
-  allowResourceSharing: boolean;
-  allowTaskCreation: boolean;
-  maxMembers: number;
   objective?: string;
+  targetAudience?: string;
+  duration?: string;
+  autoDeleteOnExpiry?: boolean;
+  collaborationTypes?: string[];
 }
-
 
 interface SphereSettingsModalProps {
   children?: React.ReactNode;
@@ -38,7 +36,6 @@ interface SphereSettingsModalProps {
     id: string;
     name: string;
     description: string;
-    category: string;
     type?: string;
     isPrivate?: boolean;
     requireApproval: boolean;
@@ -48,10 +45,6 @@ interface SphereSettingsModalProps {
     expiresAt?: string | null;
     autoDeleteOnExpiry?: boolean;
     collaborationTypes?: string[];
-    allowMemberPosts: boolean;
-    allowResourceSharing: boolean;
-    allowTaskCreation: boolean;
-    maxMembers: number;
   };
   onSettingsUpdated?: (updatedSettings: SphereSettings) => void;
   onSphereDeleted?: (sphereId: string) => void;
@@ -73,59 +66,35 @@ export function SphereSettingsModal({
   const [isExtending, setIsExtending] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
-  // État des paramètres
-  const [settings, setSettings] = useState({
+  const [settings, setSettings] = useState<SphereSettings>({
     name: "",
     description: "",
-    category: "Général",
     requireApproval: false,
-    allowMemberPosts: true,
-    allowResourceSharing: true,
-    allowTaskCreation: true,
-    maxMembers: 100,
     duration: "Permanent",
     autoDeleteOnExpiry: false,
-    objective: ""
+    objective: "",
+    targetAudience: "Tous les étudiants",
+    collaborationTypes: []
   });
-
 
   const { toast } = useToast();
   const open = controlledOpen !== undefined ? controlledOpen : isOpen;
   const setOpen = setControlledOpen ?? setIsOpen;
 
-  // Initialiser les paramètres avec les données de la sphère
   useEffect(() => {
     if (sphereData) {
       setSettings({
         name: sphereData.name || "",
         description: sphereData.description || "",
-        category: sphereData.category || "",
         requireApproval: sphereData.requireApproval || false,
-        allowMemberPosts: sphereData.allowMemberPosts ?? true,
-        allowResourceSharing: sphereData.allowResourceSharing ?? true,
-        allowTaskCreation: sphereData.allowTaskCreation ?? true,
-        maxMembers: sphereData.maxMembers || 100,
         duration: sphereData.duration || "Permanent",
         autoDeleteOnExpiry: sphereData.autoDeleteOnExpiry ?? false,
-        objective: sphereData.objective || ""
+        objective: sphereData.objective || "",
+        targetAudience: sphereData.targetAudience || "Tous les étudiants",
+        collaborationTypes: sphereData.collaborationTypes || []
       });
-
     }
   }, [sphereData]);
-
-  const categories = [
-    { title: "Général", value: "Général" },
-    { title: "Académique", value: "Académique" },
-    { title: "Projet", value: "Projet" },
-    { title: "Événement", value: "Événement" },
-    { title: "Étude", value: "Étude" },
-    { title: "Social", value: "Social" },
-    { title: "Technologie", value: "Technologie" },
-    { title: "Art", value: "Art" },
-    { title: "Sport", value: "Sport" },
-    { title: "Autre", value: "Autre" }
-  ];
-
 
   const durationOptions = [
     "Court terme (1-3 mois)",
@@ -135,13 +104,44 @@ export function SphereSettingsModal({
     "Flexible"
   ];
 
-  const updateSetting = (key: string, value: string | boolean | number) => {
+  const targetAudienceOptions = [
+    "Tous les étudiants",
+    "Étudiants en informatique",
+    "Étudiants en business",
+    "Étudiants en sciences",
+    "Étudiants en arts",
+    "Étudiants en médecine",
+    "Étudiants en ingénierie",
+    "Étudiants en droit",
+    "Étudiants en économie",
+    "Autre",
+  ];
+
+  const collaborationTypesList = [
+    "Partage de ressources",
+    "Collaboration sur projets",
+    "Discussion et échanges",
+    "Mentorat",
+    "Études de groupe",
+    "Événements",
+    "Recherche collaborative",
+  ];
+
+  const updateSetting = (key: keyof SphereSettings, value: any) => {
     setSettings(prev => ({
       ...prev,
       [key]: value
     }));
   };
 
+  const toggleCollaborationType = (type: string) => {
+    const current = settings.collaborationTypes || [];
+    if (current.includes(type)) {
+      updateSetting("collaborationTypes", current.filter(t => t !== type));
+    } else {
+      updateSetting("collaborationTypes", [...current, type]);
+    }
+  };
 
   const handleSave = async () => {
     if (!settings.name.trim()) {
@@ -163,17 +163,14 @@ export function SphereSettingsModal({
       const payload = {
         name: settings.name.trim(),
         description: settings.description,
-        category: settings.category,
-        type: sphereData.type,
-        is_private: sphereData.isPrivate ?? false,
+        sphere_type: sphereData.type,
         require_approval: settings.requireApproval,
         objective: settings.objective,
-        target_audience: sphereData.targetAudience,
+        target_audience: settings.targetAudience,
         duration: settings.duration,
         auto_delete_on_expiry: settings.autoDeleteOnExpiry,
-        collaboration_types: sphereData.collaborationTypes,
+        collaboration_types: settings.collaborationTypes,
       };
-
 
       const response = await updateSphere(sphereData.id, payload);
       const isSuccess = response?.success ?? true;
@@ -204,16 +201,15 @@ export function SphereSettingsModal({
     }
   };
 
-
   const handleExtendDuration = async () => {
     if (!sphereData?.id) return;
 
     setIsExtending(true);
     try {
-      const updatedSphere = await extendSphereDuration(sphereData.id, settings.duration);
+      const updatedSphere = await extendSphereDuration(sphereData.id, settings.duration || "Permanent");
       toast({
         title: "Durée prolongée",
-        description: `Nouvelle expiration: ${updatedSphere?.expiresAt ? new Date(updatedSphere.expiresAt).toLocaleString() : "aucune"}`,
+        description: "Nouvelle expiration: " + (updatedSphere?.expiresAt ? new Date(updatedSphere.expiresAt).toLocaleString() : "aucune"),
       });
     } catch (error) {
       toast({
@@ -269,6 +265,8 @@ export function SphereSettingsModal({
     }
   };
 
+  const showAdvancedOptions = sphereData?.type !== 'cours' && sphereData?.type !== 'communaute';
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {children ? <DialogTrigger asChild>{children}</DialogTrigger> : null}
@@ -278,6 +276,7 @@ export function SphereSettingsModal({
             <Settings className="h-5 w-5" />
             Paramètres de la sphère
           </DialogTitle>
+          <DialogDescription className="sr-only">Modifier les paramètres de la sphère</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -288,8 +287,7 @@ export function SphereSettingsModal({
               Informations générales
             </h3>
             
-            <div className="grid grid-cols-2 gap-4">
-              <div>
+            <div>
                 <Label htmlFor="name">Nom de la sphère *</Label>
                 <Input
                   id="name"
@@ -298,22 +296,6 @@ export function SphereSettingsModal({
                   placeholder="Nom de votre sphère"
                   maxLength={50}
                 />
-              </div>
-              <div>
-                <Label htmlFor="category">Catégorie</Label>
-                <Select value={settings.category} onValueChange={(value) => updateSetting("category", value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.value} value={category.value}>
-                        {category.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
 
             <div>
@@ -322,30 +304,24 @@ export function SphereSettingsModal({
                 id="description"
                 value={settings.description}
                 onChange={(e) => updateSetting("description", e.target.value)}
-                placeholder="Décrivez votre sphère..."
+                placeholder="Description de la sphère"
                 rows={3}
-                maxLength={500}
               />
             </div>
 
             <div>
-              <Label htmlFor="objective">Objectif de la sphère *</Label>
+              <Label htmlFor="objective">Objectif</Label>
               <Textarea
                 id="objective"
                 value={settings.objective}
                 onChange={(e) => updateSetting("objective", e.target.value)}
-                placeholder="Quel est l'objectif principal ?"
+                placeholder="Objectif de la sphère (optionnel)"
                 rows={2}
-                maxLength={300}
               />
-              <p className="text-[10px] text-muted-foreground mt-1">
-                L'objectif s'affiche en haut de la vue d'ensemble.
-              </p>
             </div>
           </div>
 
-
-          {/* Paramètres de confidentialité */}
+          {/* Confidentialité et accès */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <Shield className="h-4 w-4" />
@@ -366,112 +342,104 @@ export function SphereSettingsModal({
                   onCheckedChange={(value) => updateSetting("requireApproval", value)}
                 />
               </div>
-
-              <div>
-                <Label htmlFor="maxMembers">Nombre maximum de membres</Label>
-                <Input
-                  id="maxMembers"
-                  type="number"
-                  value={settings.maxMembers}
-                  onChange={(e) => updateSetting("maxMembers", parseInt(e.target.value) || 100)}
-                  min="1"
-                  max="1000"
-                  className="w-32"
-                />
-              </div>
             </div>
           </div>
 
-          {/* Permissions des membres */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Permissions des membres
-            </h3>
-            
+          {/* Options Avancées (Public cible, Durée, Collaboration) */}
+          {showAdvancedOptions && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Clock3 className="h-4 w-4" />
+                Options avancées
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="allowResourceSharing">Partage de fichier</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Les membres peuvent partager des fichiers
-                  </p>
+                  <Label htmlFor="targetAudience">Public cible</Label>
+                  <Select value={settings.targetAudience} onValueChange={(value) => updateSetting("targetAudience", value)}>
+                    <SelectTrigger className="mt-2">
+                      <SelectValue placeholder="Tous les étudiants" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {targetAudienceOptions.map((audience) => (
+                        <SelectItem key={audience} value={audience}>{audience}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <Switch
-                  id="allowResourceSharing"
-                  checked={settings.allowResourceSharing}
-                  onCheckedChange={(value) => updateSetting("allowResourceSharing", value)}
-                />
-              </div>
 
-              <div className="flex items-center justify-between">
                 <div>
-                  <Label htmlFor="allowTaskCreation">Création de tâches</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Les membres peuvent créer des tâches
-                  </p>
+                  <Label htmlFor="duration">Durée</Label>
+                  <Select value={settings.duration} onValueChange={(value) => updateSetting("duration", value)}>
+                    <SelectTrigger className="mt-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {durationOptions.map((duration) => (
+                        <SelectItem key={duration} value={duration}>
+                          {duration}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <Switch
-                  id="allowTaskCreation"
-                  checked={settings.allowTaskCreation}
-                  onCheckedChange={(value) => updateSetting("allowTaskCreation", value)}
-                />
               </div>
-            </div>
-          </div>
-
-
-          {/* Expiration */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Clock3 className="h-4 w-4" />
-              Durée et expiration
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              
               <div>
-                <Label htmlFor="duration">Durée</Label>
-                <Select value={settings.duration} onValueChange={(value) => updateSetting("duration", value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {durationOptions.map((duration) => (
-                      <SelectItem key={duration} value={duration}>
-                        {duration}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-center justify-between rounded-md border p-3">
-                <div>
-                  <Label htmlFor="autoDeleteOnExpiry">Suppression auto à expiration</Label>
-                  <p className="text-xs text-muted-foreground">Supprime la sphère expirée automatiquement</p>
+                <Label>Collaboration</Label>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {collaborationTypesList.map((type) => (
+                    <Button
+                      key={type}
+                      type="button"
+                      variant={(settings.collaborationTypes || []).includes(type) ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => toggleCollaborationType(type)}
+                      className={cn(
+                        "text-[10px] h-7 py-0 px-2",
+                        (settings.collaborationTypes || []).includes(type)
+                          ? "campus-gradient text-white border-none"
+                          : "text-muted-foreground"
+                      )}
+                    >
+                      {type}
+                    </Button>
+                  ))}
                 </div>
-                <Switch
-                  id="autoDeleteOnExpiry"
-                  checked={settings.autoDeleteOnExpiry}
-                  onCheckedChange={(value) => updateSetting("autoDeleteOnExpiry", value)}
-                />
               </div>
-            </div>
 
-            <div className="text-sm text-muted-foreground">
-              Statut: {sphereData?.expiresAt ? (new Date(sphereData.expiresAt) < new Date() ? "Expirée" : "Active") : "Sans expiration"}
-              {sphereData?.expiresAt ? ` · Expire le ${new Date(sphereData.expiresAt).toLocaleString()}` : ""}
-            </div>
+              {settings.duration !== "Permanent" && (
+                <div className="flex items-center justify-between rounded-md border p-3 mt-4">
+                  <div>
+                    <Label htmlFor="autoDeleteOnExpiry">Suppression auto à expiration</Label>
+                    <p className="text-xs text-muted-foreground">Supprime la sphère expirée automatiquement</p>
+                  </div>
+                  <Switch
+                    id="autoDeleteOnExpiry"
+                    checked={settings.autoDeleteOnExpiry}
+                    onCheckedChange={(value) => updateSetting("autoDeleteOnExpiry", value)}
+                  />
+                </div>
+              )}
 
-            <Button
-              variant="secondary"
-              onClick={handleExtendDuration}
-              disabled={isExtending || isSaving || isDeleting}
-            >
-              {isExtending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Clock3 className="h-4 w-4 mr-2" />}
-              Prolonger la durée
-            </Button>
-          </div>
+              <div className="text-sm text-muted-foreground mt-2">
+                Statut: {sphereData?.expiresAt ? (new Date(sphereData.expiresAt) < new Date() ? "Expirée" : "Active") : "Sans expiration"}
+                {sphereData?.expiresAt ? ` - Expire le ${new Date(sphereData.expiresAt).toLocaleString()}` : ""}
+              </div>
+
+              {settings.duration !== "Permanent" && (
+                <Button
+                  variant="secondary"
+                  onClick={handleExtendDuration}
+                  disabled={isExtending || isSaving || isDeleting}
+                  className="mt-2"
+                >
+                  {isExtending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Clock3 className="h-4 w-4 mr-2" />}
+                  Prolonger la durée
+                </Button>
+              )}
+            </div>
+          )}
 
           {/* Zone de danger */}
           <div className="space-y-4 pt-4 border-t">
@@ -557,3 +525,5 @@ export function SphereSettingsModal({
     </Dialog>
   );
 }
+
+
