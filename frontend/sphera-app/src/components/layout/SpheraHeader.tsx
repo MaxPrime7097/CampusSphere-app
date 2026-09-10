@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useSpheraAuth } from '../../contexts/SpheraAuthContext'
 import { LogOut, Menu, X, Zap, ArrowRight } from 'lucide-react'
+import { QuotaIndicator } from '../app/QuotaIndicator'
 
 export function SpheraHeader() {
   const { user, isAuthenticated, logout } = useSpheraAuth()
@@ -40,13 +41,8 @@ export function SpheraHeader() {
 
         <div className="flex items-center gap-4 relative">
           {isAuthenticated && user ? (
-            <div className="hidden sm:flex items-center gap-5">
-              <Link 
-                to="/sphera-live" 
-                className="text-sm font-medium text-sphera-text-muted hover:text-sphera-green transition-colors flex items-center gap-1.5"
-              >
-                <Zap className="w-3.5 h-3.5 text-sphera-green" /> Sphera Live
-              </Link>
+            <div className="hidden sm:flex items-center gap-4">
+              <QuotaIndicator />
               <Link to="/dashboard" className="text-sm font-medium text-sphera-text-muted hover:text-white transition-colors">
                 Dashboard
               </Link>

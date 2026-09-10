@@ -305,6 +305,8 @@ model User {
   revokedTokens       RevokedToken[]
   quizLiveHosted      QuizLiveSession[]       @relation("QuizLiveSessionsHosted")
   quizLiveParticipations QuizLiveParticipant[] @relation("QuizLiveParticipations")
+  generationUsages    GenerationUsage[]
+  aiUsageLogs         AIUsageLog[]
 
   @@index([university])
   @@index([faculty])
@@ -1093,3 +1095,41 @@ model QuizLiveParticipant {
   @@index([sessionId, score])
   @@map("quiz_live_participants")
 }
+
+// ─────────────────────────────────────────────────────────────
+// Sphera Usage & AI Cost Tracking
+// ─────────────────────────────────────────────────────────────
+
+model GenerationUsage {
+  id            Int      @id @default(autoincrement())
+  userId        Int      @map("user_id")
+  weekStartDate DateTime @map("week_start_date") @db.Date
+  count         Int      @default(0)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, weekStartDate])
+  @@index([userId, weekStartDate])
+  @@map("generation_usages")
+}
+
+model AIUsageLog {
+  id                   Int      @id @default(autoincrement())
+  userId               Int?     @map("user_id")
+  provider             String
+  model                String   @default("")
+  toolType             String   @map("tool_type")
+  inputTokensEstimate  Int      @default(0) @map("input_tokens_estimate")
+  outputTokensEstimate Int      @default(0) @map("output_tokens_estimate")
+  estimatedCostUSD     Float    @default(0) @map("estimated_cost_usd")
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([provider, createdAt])
+  @@index([createdAt])
+  @@map("ai_usage_logs")
+}
+

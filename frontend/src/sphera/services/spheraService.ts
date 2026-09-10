@@ -237,3 +237,19 @@ export async function getSphereAnnaleSessions(
 ): Promise<{ success: boolean; data: AnnaleSessionListItem[] }> {
   return apiFetch(`api/sphera/sphere/${sphereId}/annales/`);
 }
+
+// ===========================================================================
+// Quota hebdomadaire
+// ===========================================================================
+
+export interface GenerationQuota {
+  used: number;
+  remaining: number;
+  limit: number;
+  resetsOn: string;
+}
+
+export async function getGenerationQuota(): Promise<{ success: boolean; data: GenerationQuota }> {
+  return apiFetch("api/sphera/quota/");
+}
+
