@@ -19,6 +19,7 @@ import {
 } from "@/services/api";
 import { canAdmin } from "@/lib/adminPermissions";
 import { useAuth } from "@/contexts/AuthContext";
+import { BedrockUsageWidget } from "@/admin/components/BedrockUsageWidget";
 
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -167,6 +168,10 @@ export function AdminDashboard() {
               </CardContent>
             </Card>
           ))}
+        </div>
+
+        <div className="mb-6">
+          <BedrockUsageWidget />
         </div>
 
         {adminError && (

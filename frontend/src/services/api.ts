@@ -2321,6 +2321,97 @@ export async function getAdminLogs(params?: { page?: number; search?: string }, 
   return apiFetch<any>(`api/admin/v1/logs/${suffix}`, { token: token || getAccessToken() });
 }
 
+export interface AdminAiUsageSummary {
+  totalBudget: number;
+  spent: number;
+  remaining: number;
+  percentUsed: number;
+  weeklyBurnRate: number;
+  estimatedWeeksRemaining: number | null;
+  totalGenerations: number;
+  recentGenerations7d: number;
+  model: string;
+  safetyThresholdPercent: number;
+  safetyThresholdUSD: number;
+  isThresholdExceeded: boolean;
+  breakdownByTool: Array<{
+    toolType: string;
+    count: number;
+    totalCostUSD: number;
+    inputTokens: number;
+    outputTokens: number;
+  }>;
+}
+
+export async function getAdminAiUsageSummary(token?: string): Promise<AdminAiUsageSummary> {
+  const response = await apiFetch<any>('api/admin/ai-usage-summary/', { token: token || getAccessToken() });
+  return unwrapItem<AdminAiUsageSummary>(response);
+}
+
+export interface AdminSpheraStats {
+  budget: {
+    totalBudget: number;
+    spent: number;
+    remaining: number;
+    percentUsed: number;
+    weeklyBurnRate: number;
+    estimatedWeeksRemaining: number | null;
+    totalBedrockGenerations: number;
+    totalGenerationsAllProviders: number;
+    model: string;
+    safetyThresholdPercent: number;
+    safetyThresholdUSD: number;
+    isThresholdExceeded: boolean;
+  };
+  quotas: {
+    activeStudentsThisWeek: number;
+    saturatedCount: number;
+    saturatedPercent: number;
+    totalWeeklyGenerations: number;
+    avgWeeklyGens: number;
+    distribution: Array<{ range: string; count: number }>;
+  };
+  tools: Array<{
+    toolType: string;
+    count: number;
+    totalCostUSD: number;
+    inputTokens: number;
+    outputTokens: number;
+    averageCostUSD: number;
+  }>;
+  providers: Array<{
+    provider: string;
+    count: number;
+    totalCostUSD: number;
+  }>;
+  timeline: Array<{
+    date: string;
+    count: number;
+    costUSD: number;
+    tokens: number;
+  }>;
+  demographics: {
+    topUniversities: Array<{ name: string; count: number }>;
+    topFaculties: Array<{ name: string; count: number }>;
+    topStudyYears: Array<{ name: string; count: number }>;
+  };
+  recentLogs: Array<{
+    id: string;
+    provider: string;
+    toolType: string | null;
+    inputTokensEstimate: number;
+    outputTokensEstimate: number;
+    estimatedCostUSD: number;
+    createdAt: string;
+  }>;
+}
+
+export async function getAdminSpheraStats(token?: string): Promise<AdminSpheraStats> {
+  const response = await apiFetch<any>('api/admin/sphera-stats/', { token: token || getAccessToken() });
+  return unwrapItem<AdminSpheraStats>(response);
+}
+
+
 
 export async function getAdminPermissions(token?: string): Promise<AdminPermissionsPayload> {
   const response = await apiFetch<any>("api/admin/permissions/", { token: token || getAccessToken() });

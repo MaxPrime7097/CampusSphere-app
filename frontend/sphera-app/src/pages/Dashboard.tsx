@@ -5,6 +5,7 @@ import { useSpheraAuth } from '../contexts/SpheraAuthContext'
 import { getSessions, getAnnales } from '../services/spheraApi'
 import { UploadZone } from '../components/app/UploadZone'
 import { setPendingUploadFile } from '../store/fileStore'
+import { QuotaIndicator } from '../components/app/QuotaIndicator'
 
 // Force Vite HMR reload
 export default function Dashboard() {
@@ -58,6 +59,9 @@ export default function Dashboard() {
           </h1>
           <p className="text-sphera-text-muted">Je suis Sphera, ton assistante de révision académique.</p>
           <p className="text-sphera-text-muted">Charge un document pour générer instantanément ton matériel de révision ou corrige tes annales.</p>
+          <div className="flex justify-center mt-4">
+            <QuotaIndicator />
+          </div>
         </div>
 
         {/* Upload Area (Simplified) */}

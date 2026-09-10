@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom'
 import { Plus, LogOut, FileText, ExternalLink, Zap, FilePenLine } from 'lucide-react'
 import { useSpheraAuth } from '../../contexts/SpheraAuthContext'
 import { getMyQuizSessions, getSessions, getAnnales } from '../../services/spheraApi'
+import { QuotaIndicator } from '../app/QuotaIndicator'
 
 export function SidebarLayout() {
   const { user, logout } = useSpheraAuth()
@@ -61,7 +62,7 @@ export function SidebarLayout() {
         {/* Navigation */}
         <div className="flex-1 overflow-y-auto py-6 px-4 flex flex-col gap-6">
           
-          <div className="space-y-1">
+          <div className="space-y-2">
             <Link 
               to="/dashboard"
               className="flex items-center gap-3 w-full px-4 py-3 bg-sphera-green text-black font-semibold rounded-xl text-sm hover:bg-sphera-green-hover transition-colors shadow-[0_0_15px_rgba(34,197,94,0.15)]"
@@ -72,6 +73,7 @@ export function SidebarLayout() {
               <Zap className="w-4 h-4" />
               Sphera Live
             </Link>
+            <QuotaIndicator className="mt-2" />
           </div>
 
           {/* Récents */}

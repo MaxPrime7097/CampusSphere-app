@@ -28,6 +28,7 @@ import { env } from "../config/env.js";
 import { prisma } from "../lib/prisma.js";
 import { badRequest, notFound } from "../lib/errors.js";
 import { currentUser, requireAdmin, requireAuth } from "../middleware/auth.js";
+import { getWeekStartDate } from "../lib/weekHelper.js";
 
 export const adminRouter: Router = Router();
 
@@ -773,5 +774,214 @@ async function aiUsageSummaryHandler(_req: Request, res: Response): Promise<void
   adminOk(res, data, {}, "Résumé de consommation IA Bedrock chargé.");
 }
 
+adminRouter.get("/ai-usage-summary", aiUsageSummaryHandler);
 adminRouter.get("/ai-usage-summary/", aiUsageSummaryHandler);
+adminRouter.get("/v1/ai-usage-summary", aiUsageSummaryHandler);
 adminRouter.get("/v1/ai-usage-summary/", aiUsageSummaryHandler);
+
+async function spheraDetailedStatsHandler(_req: Request, res: Response): Promise<void> {
+  const TOTAL_BUDGET_USD = env.ai.bedrock.budgetUsd || 90;
+  const weekStart = getWeekStartDate();
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+
+  // 1. Bedrock Budget & Totals
+  const [totalSpentResult, recentSpentResult, totalGenerationsAllProviders] = await Promise.all([
+    prisma.aIUsageLog.aggregate({
+      where: { provider: "bedrock" },
+      _sum: { estimatedCostUSD: true, inputTokensEstimate: true, outputTokensEstimate: true },
+      _count: true,
+    }),
+    prisma.aIUsageLog.aggregate({
+      where: { provider: "bedrock", createdAt: { gte: sevenDaysAgo } },
+      _sum: { estimatedCostUSD: true },
+      _count: true,
+    }),
+    prisma.aIUsageLog.count(),
+  ]);
+
+  const spent = totalSpentResult._sum.estimatedCostUSD ?? 0;
+  const totalBedrockGenerations = totalSpentResult._count;
+  const weeklyRate = recentSpentResult._sum.estimatedCostUSD ?? 0;
+  const remaining = Math.max(0, TOTAL_BUDGET_USD - spent);
+  const weeksRemaining = weeklyRate > 0 ? (remaining / weeklyRate).toFixed(1) : null;
+
+  // 2. Weekly Quota & Student Saturation
+  const weeklyUsages = await prisma.generationUsage.findMany({
+    where: { weekStartDate: weekStart },
+    include: {
+      user: {
+        select: {
+          id: true,
+          university: true,
+          faculty: true,
+          studyYear: true,
+        },
+      },
+    },
+  });
+
+  const activeStudentsThisWeek = weeklyUsages.length;
+  const saturatedCount = weeklyUsages.filter((u) => u.count >= 5).length;
+  const totalWeeklyGenerations = weeklyUsages.reduce((acc, u) => acc + u.count, 0);
+  const avgWeeklyGens = activeStudentsThisWeek > 0
+    ? Number((totalWeeklyGenerations / activeStudentsThisWeek).toFixed(1))
+    : 0;
+  const saturatedPercent = activeStudentsThisWeek > 0
+    ? Number(((saturatedCount / activeStudentsThisWeek) * 100).toFixed(1))
+    : 0;
+
+  // Quota distribution (0-1, 2-3, 4, 5)
+  const quotaDistribution = [
+    { range: "1-2 gén.", count: weeklyUsages.filter((u) => u.count >= 1 && u.count <= 2).length },
+    { range: "3-4 gén.", count: weeklyUsages.filter((u) => u.count >= 3 && u.count <= 4).length },
+    { range: "5/5 (Max)", count: saturatedCount },
+  ];
+
+  // 3. Demographics (Top Universities & Faculties)
+  const uniMap = new Map<string, number>();
+  const facultyMap = new Map<string, number>();
+  const yearMap = new Map<string, number>();
+
+  for (const u of weeklyUsages) {
+    if (u.user?.university) {
+      uniMap.set(u.user.university, (uniMap.get(u.user.university) || 0) + u.count);
+    }
+    if (u.user?.faculty) {
+      facultyMap.set(u.user.faculty, (facultyMap.get(u.user.faculty) || 0) + u.count);
+    }
+    if (u.user?.studyYear) {
+      yearMap.set(u.user.studyYear, (yearMap.get(u.user.studyYear) || 0) + u.count);
+    }
+  }
+
+  const topUniversities = Array.from(uniMap.entries())
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  const topFaculties = Array.from(facultyMap.entries())
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  const topStudyYears = Array.from(yearMap.entries())
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  // 4. Breakdown by tool
+  const toolBreakdown = await prisma.aIUsageLog.groupBy({
+    by: ["toolType"],
+    _sum: { estimatedCostUSD: true, inputTokensEstimate: true, outputTokensEstimate: true },
+    _count: true,
+  });
+
+  const tools = toolBreakdown.map((b) => ({
+    toolType: b.toolType || "inconnu",
+    count: b._count,
+    totalCostUSD: Number((b._sum.estimatedCostUSD ?? 0).toFixed(4)),
+    inputTokens: b._sum.inputTokensEstimate ?? 0,
+    outputTokens: b._sum.outputTokensEstimate ?? 0,
+    averageCostUSD: b._count > 0 ? Number(((b._sum.estimatedCostUSD ?? 0) / b._count).toFixed(4)) : 0,
+  })).sort((a, b) => b.count - a.count);
+
+  // 5. Providers breakdown
+  const providerBreakdown = await prisma.aIUsageLog.groupBy({
+    by: ["provider"],
+    _sum: { estimatedCostUSD: true },
+    _count: true,
+  });
+
+  const providers = providerBreakdown.map((p) => ({
+    provider: p.provider,
+    count: p._count,
+    totalCostUSD: Number((p._sum.estimatedCostUSD ?? 0).toFixed(4)),
+  }));
+
+  // 6. Timeline (Last 14 days)
+  const recentLogs14d = await prisma.aIUsageLog.findMany({
+    where: { createdAt: { gte: fourteenDaysAgo } },
+    select: { createdAt: true, estimatedCostUSD: true, inputTokensEstimate: true, outputTokensEstimate: true },
+    orderBy: { createdAt: "asc" },
+  });
+
+  const timelineMap = new Map<string, { date: string; count: number; costUSD: number; tokens: number }>();
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+    const key = d.toISOString().slice(0, 10);
+    timelineMap.set(key, { date: key, count: 0, costUSD: 0, tokens: 0 });
+  }
+
+  for (const log of recentLogs14d) {
+    const key = log.createdAt.toISOString().slice(0, 10);
+    const entry = timelineMap.get(key);
+    if (entry) {
+      entry.count += 1;
+      entry.costUSD += log.estimatedCostUSD;
+      entry.tokens += (log.inputTokensEstimate + log.outputTokensEstimate);
+    }
+  }
+
+  const timeline = Array.from(timelineMap.values()).map((t) => ({
+    ...t,
+    costUSD: Number(t.costUSD.toFixed(4)),
+  }));
+
+  // 7. Recent generation activity logs (last 20)
+  const recentLogs = await prisma.aIUsageLog.findMany({
+    take: 20,
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      provider: true,
+      toolType: true,
+      inputTokensEstimate: true,
+      outputTokensEstimate: true,
+      estimatedCostUSD: true,
+      createdAt: true,
+    },
+  });
+
+  const responseData = {
+    budget: {
+      totalBudget: TOTAL_BUDGET_USD,
+      spent: Number(spent.toFixed(4)),
+      remaining: Number(remaining.toFixed(4)),
+      percentUsed: Number(((spent / TOTAL_BUDGET_USD) * 100).toFixed(1)),
+      weeklyBurnRate: Number(weeklyRate.toFixed(4)),
+      estimatedWeeksRemaining: weeksRemaining ? Number(weeksRemaining) : null,
+      totalBedrockGenerations,
+      totalGenerationsAllProviders,
+      model: env.ai.bedrock.modelId,
+      safetyThresholdPercent: env.ai.bedrock.safetyThresholdPercent,
+      safetyThresholdUSD: Number(((TOTAL_BUDGET_USD * env.ai.bedrock.safetyThresholdPercent) / 100).toFixed(2)),
+      isThresholdExceeded: (spent / TOTAL_BUDGET_USD) * 100 >= env.ai.bedrock.safetyThresholdPercent,
+    },
+    quotas: {
+      activeStudentsThisWeek,
+      saturatedCount,
+      saturatedPercent,
+      totalWeeklyGenerations,
+      avgWeeklyGens,
+      distribution: quotaDistribution,
+    },
+    tools,
+    providers,
+    timeline,
+    demographics: {
+      topUniversities,
+      topFaculties,
+      topStudyYears,
+    },
+    recentLogs,
+  };
+
+  adminOk(res, responseData, {}, "Statistiques détaillées Sphera chargées.");
+}
+
+adminRouter.get("/sphera-stats", spheraDetailedStatsHandler);
+adminRouter.get("/sphera-stats/", spheraDetailedStatsHandler);
+adminRouter.get("/v1/sphera-stats", spheraDetailedStatsHandler);
+adminRouter.get("/v1/sphera-stats/", spheraDetailedStatsHandler);
+

@@ -23,6 +23,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { BedrockUsageWidget } from "../components/BedrockUsageWidget";
 import {
   getAdminStats,
   getAdminUserManagementSummary,
@@ -273,6 +274,9 @@ export function AdminDashboardPage() {
           </Link>
         ))}
       </div>
+
+      {/* Suivi Consommation AWS Bedrock */}
+      <BedrockUsageWidget />
 
       {/* Section Graphiques Analytiques */}
       <div className="grid gap-5 grid-cols-1 lg:grid-cols-3">
