@@ -193,17 +193,23 @@ export async function getBedrockUsageStats(): Promise<{
   const budget = env.ai.bedrock.budgetUsd;
   const thresholdPercent = env.ai.bedrock.safetyThresholdPercent;
 
-  const result = await prisma.aIUsageLog.aggregate({
-    where: { provider: "bedrock" },
-    _sum: { estimatedCostUSD: true },
-  });
+  try {
+    const result = await prisma.aIUsageLog.aggregate({
+      where: { provider: "bedrock" },
+      _sum: { estimatedCostUSD: true },
+    });
 
-  const spent = result._sum.estimatedCostUSD ?? 0;
-  const percentUsed = budget > 0 ? (spent / budget) * 100 : 0;
-  const isThresholdExceeded = percentUsed >= thresholdPercent;
+    const spent = result._sum.estimatedCostUSD ?? 0;
+    const percentUsed = budget > 0 ? (spent / budget) * 100 : 0;
+    const isThresholdExceeded = percentUsed >= thresholdPercent;
 
-  return { spent, budget, percentUsed, isThresholdExceeded };
+    return { spent, budget, percentUsed, isThresholdExceeded };
+  } catch (err) {
+    console.warn("[sphera-ai] getBedrockUsageStats query failed, assuming nominal budget:", err);
+    return { spent: 0, budget, percentUsed: 0, isThresholdExceeded: false };
+  }
 }
+
 
 /** Annale JSON is far larger than a fiche, so it gets a bigger budget. */
 export const TOKENS_DEFAULT = 3000;

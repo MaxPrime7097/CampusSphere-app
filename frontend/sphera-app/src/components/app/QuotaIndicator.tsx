@@ -15,10 +15,15 @@ export function QuotaIndicator({ className = '' }: { className?: string }) {
       .then((res) => {
         if (isMounted && res?.data) {
           setQuota(res.data)
+        } else if (isMounted) {
+          setQuota({ used: 0, remaining: 5, limit: 5, resetsOn: '' })
         }
       })
       .catch((err) => {
-        console.warn('[sphera] Impossible de charger le quota:', err)
+        console.warn('[sphera] Impossible de charger le quota, utilisation du quota nominal:', err)
+        if (isMounted) {
+          setQuota({ used: 0, remaining: 5, limit: 5, resetsOn: '' })
+        }
       })
 
     return () => {
@@ -26,11 +31,20 @@ export function QuotaIndicator({ className = '' }: { className?: string }) {
     }
   }, [isAuthenticated])
 
-  if (!isAuthenticated || !quota) {
-    return null
+  if (!isAuthenticated) {
+    return (
+      <div
+        className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-medium bg-sphera-surface border-sphera-border text-sphera-text-muted ${className}`}
+      >
+        <Sparkles className="w-4 h-4 text-sphera-green shrink-0" />
+        <span className="truncate">5 gén. offertes / semaine</span>
+      </div>
+    )
   }
 
-  const { used, remaining, limit } = quota
+  const effectiveQuota = quota || { used: 0, remaining: 5, limit: 5, resetsOn: '' }
+  const { used, remaining, limit } = effectiveQuota
+
   const percentUsed = Math.min(100, Math.round((used / limit) * 100))
   const isExhausted = remaining === 0
 
