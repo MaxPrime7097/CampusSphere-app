@@ -15,6 +15,7 @@ export function SpheraFooter() {
         </div>
 
         <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 md:gap-6 text-sm text-sphera-text-muted">
+          <Link to="/sphera-live" className="text-sphera-green hover:underline transition-colors font-medium">Sphera Live</Link>
           <Link to="/#faq" className="hover:text-white transition-colors">FAQ</Link>
           <Link to="/pricing" className="hover:text-white transition-colors">Tarifs</Link>
           <Link to="/blogs" className="hover:text-white transition-colors">Blog</Link>
