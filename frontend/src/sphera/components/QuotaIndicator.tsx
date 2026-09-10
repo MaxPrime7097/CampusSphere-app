@@ -12,13 +12,11 @@ export const QuotaIndicator: React.FC<{ className?: string }> = ({ className }) 
     retry: 1,
   });
 
-  if (isLoading || !response?.data) {
-    return null;
-  }
-
-  const { used, remaining, limit } = response.data;
+  const quotaData = response?.data || { used: 0, remaining: 5, limit: 5 };
+  const { used, remaining, limit } = quotaData;
   const percentUsed = Math.min(100, Math.round((used / limit) * 100));
   const isExhausted = remaining === 0;
+
 
   return (
     <div

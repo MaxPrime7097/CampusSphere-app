@@ -18,12 +18,21 @@ export function AdminPanelRouter() {
   const isRootRoute = pathname === "/admin" || pathname === "/admin/";
 
   if (!isV2Enabled) {
+    if (pathname === "/admin/sphera" || pathname === "/admin/sphera/") {
+      return (
+        <AdminLayout>
+          <AdminSpheraPage />
+        </AdminLayout>
+      );
+    }
+
     if (isRootRoute || pathname === "/admin/legacy") {
       return <AdminDashboard />;
     }
 
     return <Navigate to="/admin/legacy" replace />;
   }
+
 
   if (isRootRoute || pathname === "/admin/legacy") {
     return <Navigate to="/admin/dashboard" replace />;

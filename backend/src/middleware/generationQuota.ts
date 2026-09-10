@@ -22,50 +22,55 @@ export async function checkGenerationQuota(req: Request, res: Response, next: Ne
 
   const weekStart = getWeekStartDate();
 
-  let usage = await prisma.generationUsage.findUnique({
-    where: {
-      userId_weekStartDate: {
-        userId: user.id,
-        weekStartDate: weekStart,
-      },
-    },
-  });
-
-  if (!usage) {
-    try {
-      usage = await prisma.generationUsage.create({
-        data: {
+  try {
+    let usage = await prisma.generationUsage.findUnique({
+      where: {
+        userId_weekStartDate: {
           userId: user.id,
           weekStartDate: weekStart,
-          count: 0,
         },
-      });
-    } catch {
-      // If concurrent request created it first, fetch again
-      usage = await prisma.generationUsage.findUnique({
-        where: {
-          userId_weekStartDate: {
+      },
+    });
+
+    if (!usage) {
+      try {
+        usage = await prisma.generationUsage.create({
+          data: {
             userId: user.id,
             weekStartDate: weekStart,
+            count: 0,
           },
-        },
-      });
+        });
+      } catch {
+        // If concurrent request created it first, fetch again
+        usage = await prisma.generationUsage.findUnique({
+          where: {
+            userId_weekStartDate: {
+              userId: user.id,
+              weekStartDate: weekStart,
+            },
+          },
+        });
+      }
     }
-  }
 
-  const currentCount = usage?.count ?? 0;
-  if (currentCount >= WEEKLY_LIMIT) {
-    const nextMonday = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
-    res.status(429).json({
-      success: false,
-      error: "weekly_limit_reached",
-      message: `Tu as utilisé tes ${WEEKLY_LIMIT} générations Sphera cette semaine. Ça revient lundi prochain !`,
-      resetsOn: nextMonday.toISOString(),
-    });
-    return;
+    const currentCount = usage?.count ?? 0;
+    if (currentCount >= WEEKLY_LIMIT) {
+      const nextMonday = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+      res.status(429).json({
+        success: false,
+        error: "weekly_limit_reached",
+        message: `Tu as utilisé tes ${WEEKLY_LIMIT} générations Sphera cette semaine. Ça revient lundi prochain !`,
+        resetsOn: nextMonday.toISOString(),
+      });
+      return;
+    }
+  } catch (error) {
+    console.warn("[sphera-quota] Warning: checkGenerationQuota DB check failed, allowing generation:", error);
   }
 
   next();
+
 }
 
 /**

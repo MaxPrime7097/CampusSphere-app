@@ -19,7 +19,7 @@
  * @status ACTIVE   sphere/<id>/ sphere/<id>/annales/
  */
 
-import { Router, type Request } from "express";
+import { Router, type Request, type Response } from "express";
 import { z } from "zod";
 import { AnnaleMode as PrismaAnnaleMode, StudyToolType, type Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
@@ -218,27 +218,42 @@ spheraRouter.use(requireAuth);
  * GET /quota/ (accessible at /api/sphera/quota and /api/study/quota)
  * Returns the student's remaining weekly generation quota.
  */
-spheraRouter.get("/quota/", async (req, res) => {
+const quotaHandler = async (req: Request, res: Response) => {
   const me = currentUser(req);
   const weekStart = getWeekStartDate();
-  const usage = await prisma.generationUsage.findUnique({
-    where: {
-      userId_weekStartDate: {
-        userId: me.id,
-        weekStartDate: weekStart,
-      },
-    },
-  });
-  const used = usage?.count ?? 0;
   const resetsOn = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-  ok(res, {
-    used,
-    remaining: Math.max(0, WEEKLY_LIMIT - used),
-    limit: WEEKLY_LIMIT,
-    resetsOn: resetsOn.toISOString(),
-  });
-});
+  try {
+    const usage = await prisma.generationUsage.findUnique({
+      where: {
+        userId_weekStartDate: {
+          userId: me.id,
+          weekStartDate: weekStart,
+        },
+      },
+    });
+    const used = usage?.count ?? 0;
+
+    ok(res, {
+      used,
+      remaining: Math.max(0, WEEKLY_LIMIT - used),
+      limit: WEEKLY_LIMIT,
+      resetsOn: resetsOn.toISOString(),
+    });
+  } catch (error) {
+    console.warn("[sphera-quota] Warning: GenerationUsage lookup failed, returning default quota:", error);
+    ok(res, {
+      used: 0,
+      remaining: WEEKLY_LIMIT,
+      limit: WEEKLY_LIMIT,
+      resetsOn: resetsOn.toISOString(),
+    });
+  }
+};
+
+spheraRouter.get("/quota", quotaHandler);
+spheraRouter.get("/quota/", quotaHandler);
+
 
 // ── Generation ──────────────────────────────────────────────────────────────
 
