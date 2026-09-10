@@ -17,6 +17,7 @@ import Blogs from './pages/Blogs';
 import BlogDetail from './pages/BlogDetail';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
+import SpheraLiveShowcase from './pages/SpheraLiveShowcase';
 import QuizLiveHome from './pages/QuizLiveHome';
 import QuizLiveHost from './pages/QuizLiveHost';
 import QuizLiveJoin from './pages/QuizLiveJoin';
@@ -96,6 +97,7 @@ export default function App() {
         <Routes>
           {/* Public */}
           <Route path="/" element={<Landing />} />
+          <Route path="/sphera-live" element={<SpheraLiveShowcase />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/blogs" element={<Blogs />} />
           <Route path="/blogs/:id" element={<BlogDetail />} />
