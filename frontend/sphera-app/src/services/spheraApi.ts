@@ -359,3 +359,19 @@ export async function resetQuizSession(roomCode: string) {
     requireAuth: true,
   });
 }
+
+// ─── Quota ──────────────────────────────────────────────────────
+export interface GenerationQuota {
+  used: number;
+  remaining: number;
+  limit: number;
+  resetsOn: string;
+}
+
+export async function getQuota(): Promise<{ success: boolean; data: GenerationQuota }> {
+  return apiFetch<{ success: boolean; data: GenerationQuota }>('api/sphera/quota/', {
+    method: 'GET',
+    requireAuth: true,
+  });
+}
+

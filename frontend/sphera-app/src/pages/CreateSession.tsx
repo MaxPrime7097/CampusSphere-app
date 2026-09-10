@@ -11,6 +11,7 @@ import { Sparkles } from 'lucide-react'
 import { QuestionSuggestions } from '../components/app/QuestionSuggestions'
 import { normalizeAiResponse } from '../utils/normalizeAiResponse'
 import { CommandMenu, COMMANDS, type Command } from '../components/app/CommandMenu'
+import { QuotaIndicator } from '../components/app/QuotaIndicator'
 
 export default function CreateSession() {
   const navigate = useNavigate()
@@ -385,7 +386,8 @@ export default function CreateSession() {
                 </div>
               )}
 
-              <div className="mt-12">
+              <div className="mt-8 space-y-3">
+                <QuotaIndicator />
                 <GenerateButton 
                   onGenerate={handleGenerate}
                   disabled={generationMode === 'study' && selectedTools.length === 0}
