@@ -132,6 +132,20 @@ const Protected = ({ children, requireCompleteProfile = true }: { children: Reac
   return children;
 };
 
+const HomeOrLanding = () => {
+  const { isAuthenticated, isLoading } = useAuth();
+  if (isLoading) return <PageLoader />;
+  return isAuthenticated ? (
+    <Protected>
+      <AppLayout>
+        <Home />
+      </AppLayout>
+    </Protected>
+  ) : (
+    <Landing />
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -163,14 +177,8 @@ const App = () => (
             <Route path="/sso/bridge" element={<SSOBridge />} />
             <Route path="/sso/popup" element={<SSOPopup />} />
 
-            {/* Protected routes with layout */}
-            <Route path="/" element={
-              <Protected>
-                <AppLayout>
-                  <Home />
-                </AppLayout>
-              </Protected>
-            } />
+            {/* Root: Landing for guests/crawlers, Home for authenticated members */}
+            <Route path="/" element={<HomeOrLanding />} />
             <Route path="/profile" element={
               <Protected>
                 <AppLayout>
