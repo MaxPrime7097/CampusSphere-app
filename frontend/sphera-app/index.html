@@ -2,6 +2,29 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sphera — Assistante IA de Révision & Quiz par CampusSphere</title>
+    <meta name="description" content="Sphera génère instantanément des fiches de révision, quiz interactifs, flashcards et corrections d'annales grâce à l'IA. Jouez en multijoueur avec Sphera Live." />
+    <meta name="keywords" content="Sphera, CampusSphere, révision IA, quiz multijoueur, fiches de révision, flashcards, annales corrigées, intelligence artificielle études, active recall, répétition espacée, réviser partiels" />
+    <meta name="theme-color" content="#22c55e" />
+    <meta name="author" content="CampusSphere" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://sphera.campussphere.app/" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://sphera.campussphere.app/" />
+    <meta property="og:title" content="Sphera — Assistante IA de Révision & Quiz par CampusSphere" />
+    <meta property="og:description" content="Générez fiches, quiz, flashcards et corrections d'annales d'examen en quelques secondes grâce à l'IA. Défiez vos camarades sur Sphera Live." />
+    <meta property="og:image" content="https://sphera.campussphere.app/sphera-logo-dark.png" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://sphera.campussphere.app/" />
+    <meta name="twitter:title" content="Sphera — Assistante IA de Révision & Quiz par CampusSphere" />
+    <meta name="twitter:description" content="Générez fiches, quiz, flashcards et corrections d'annales d'examen en quelques secondes grâce à l'IA. Défiez vos camarades sur Sphera Live." />
+    <meta name="twitter:image" content="https://sphera.campussphere.app/sphera-logo-dark.png" />
+
     <link rel="icon" type="image/svg+xml" href="/sphera-icon.svg" />
     <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -9,15 +32,73 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-title" content="Sphera" />
     <link rel="manifest" href="/site.webmanifest" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Sphera — Génère des fiches, quiz, flashcards et corrections d'annales en quelques secondes grâce à l'IA. Par CampusSphere." />
-    <meta name="theme-color" content="#22c55e" />
-    <title>Sphera — Assistante de révision par CampusSphere</title>
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+    <!-- Schema.org JSON-LD Structured Data for AI & Search Engines -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "SoftwareApplication",
+          "@id": "https://sphera.campussphere.app/#software",
+          "name": "Sphera",
+          "applicationCategory": "EducationalApplication",
+          "operatingSystem": "Web, iOS, Android",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "EUR"
+          },
+          "description": "Plateforme d'intelligence artificielle pour étudiants générant des fiches de révision, quiz interactifs, flashcards et corrections d'annales d'examen.",
+          "url": "https://sphera.campussphere.app/",
+          "author": {
+            "@type": "Organization",
+            "name": "CampusSphere",
+            "url": "https://campussphere.app"
+          }
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://sphera.campussphere.app/#website",
+          "url": "https://sphera.campussphere.app/",
+          "name": "Sphera by CampusSphere",
+          "description": "Assistante IA académique pour réviser efficacement avec l'Active Recall et le quiz multijoueur Sphera Live."
+        }
+      ]
+    }
+    </script>
   </head>
   <body>
+    <!-- Fallback sémantique pour les robots d'indexation IA et navigateurs sans JavaScript -->
+    <noscript>
+      <header>
+        <h1>Sphera — L'assistante IA de révision par CampusSphere</h1>
+        <p>Transformez vos cours en fiches de synthèse, quiz de 20 questions, flashcards et corrections d'annales en quelques secondes.</p>
+      </header>
+      <main>
+        <section>
+          <h2>Fonctionnalités Clés</h2>
+          <ul>
+            <li><strong>Fiches de révision IA :</strong> Synthèse structurée, concepts clés et formules à partir de vos PDF.</li>
+            <li><strong>Quiz interactifs (20 questions) :</strong> Auto-évaluation avec explications immédiates.</li>
+            <li><strong>Flashcards intelligentes :</strong> Répétition espacée et mémorisation active.</li>
+            <li><strong>Correction d'annales :</strong> Corrigés détaillés pour réussir vos examens.</li>
+            <li><strong>Sphera Live :</strong> Quiz multijoueur en direct entre camarades.</li>
+          </ul>
+        </section>
+        <nav>
+          <a href="/pricing">Tarifs</a> |
+          <a href="/blogs">Blog et Conseils</a> |
+          <a href="/sphera-live">Sphera Live</a> |
+          <a href="https://campussphere.app">CampusSphere</a>
+        </nav>
+      </main>
+    </noscript>
+
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
