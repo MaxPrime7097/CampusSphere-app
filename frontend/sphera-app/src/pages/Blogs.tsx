@@ -175,16 +175,21 @@ export default function Blogs() {
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                 </div>
-                
-                <div className="p-6 flex flex-col flex-1">
-                  <div className="flex items-center gap-4 text-xs text-sphera-text-muted mb-4">
+                <h2 className="text-2xl md:text-4xl font-display font-bold text-white mb-4 leading-tight group-hover:text-sphera-green transition-colors">
+                  {featuredPost.title}
+                </h2>
+                <p className="text-sphera-text-muted text-base md:text-lg mb-8 line-clamp-3 leading-relaxed">
+                  {featuredPost.excerpt}
+                </p>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-5 text-sm text-sphera-text-muted">
                     <div className="flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5" />
-                      {post.date}
+                      <Calendar className="w-4 h-4" />
+                      {featuredPost.date}
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5" />
-                      {post.readTime}
+                      <Clock className="w-4 h-4" />
+                      {featuredPost.readTime}
                     </div>
                   </div>
                   
@@ -203,9 +208,81 @@ export default function Blogs() {
                     Lire l'article <ArrowRight className="w-4 h-4" />
                   </Link>
                 </div>
-              </article>
+              </div>
+            </div>
+          </Link>
+
+          {/* ── Filter Pills ────────────────────────────────── */}
+          <div className="flex flex-wrap items-center gap-3 mb-12">
+            {categories.map(cat => (
+              <button
+                key={cat}
+                onClick={() => setActiveFilter(cat)}
+                className={`px-5 py-2 rounded-full text-sm font-semibold border transition-all duration-200 ${
+                  activeFilter === cat
+                    ? 'bg-sphera-green text-black border-sphera-green shadow-md shadow-sphera-green/20'
+                    : 'bg-sphera-surface border-sphera-border text-sphera-text-muted hover:border-sphera-green/50 hover:text-white'
+                }`}
+              >
+                {cat}
+              </button>
             ))}
           </div>
+
+          {/* ── Articles Grid ───────────────────────────────── */}
+          {filteredPosts.length === 0 ? (
+            <div className="text-center py-20">
+              <p className="text-sphera-text-muted text-lg">Aucun article dans cette catégorie pour le moment.</p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredPosts.map((post) => (
+                <article 
+                  key={`${post.id}-${post.title}`} 
+                  className="bg-sphera-surface border border-sphera-border rounded-2xl overflow-hidden group hover:border-sphera-green/50 transition-colors flex flex-col h-full"
+                >
+                  <div className="h-48 overflow-hidden relative">
+                    <div className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-md border border-white/10 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                      {post.category}
+                    </div>
+                    <img 
+                      src={post.imageUrl} 
+                      alt={post.title} 
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                  
+                  <div className="p-6 flex flex-col flex-1">
+                    <div className="flex items-center gap-4 text-xs text-sphera-text-muted mb-4">
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5" />
+                        {post.date}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5" />
+                        {post.readTime}
+                      </div>
+                    </div>
+                    
+                    <h3 className="text-xl font-bold text-white mb-3 group-hover:text-sphera-green transition-colors line-clamp-2">
+                      {post.title}
+                    </h3>
+                    
+                    <p className="text-sphera-text-muted text-sm mb-6 line-clamp-3 flex-1">
+                      {post.excerpt}
+                    </p>
+                    
+                    <Link 
+                      to={`/blogs/${post.id}`} 
+                      className="inline-flex items-center gap-2 text-sm font-semibold text-white group-hover:text-sphera-green transition-colors mt-auto"
+                    >
+                      Lire l'article <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
         </div>
       </main>
 

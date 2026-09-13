@@ -21,6 +21,7 @@ import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { FicheRevision } from "./FicheRevision";
 import { QuizInteractif } from "./QuizInteractif";
 import { Flashcards } from "./Flashcards";
+import { QuotaIndicator } from "../QuotaIndicator";
 import {
   generateStudyTools,
   generateFromUpload,
@@ -248,6 +249,10 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
                     )}
                   </button>
                 ))}
+              </div>
+
+              <div className="flex justify-center pt-1">
+                <QuotaIndicator />
               </div>
 
               <Button

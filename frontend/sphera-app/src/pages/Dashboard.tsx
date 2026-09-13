@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { FileText, BrainCircuit, Columns, PenTool, Calendar, ArrowRight, LayoutDashboard, FilePenLine, Loader2 } from 'lucide-react'
+import { FileText, BrainCircuit, Columns, PenTool, Calendar, ArrowRight, LayoutDashboard, FilePenLine, Loader2, Zap, Plus, LogIn } from 'lucide-react'
 import { useSpheraAuth } from '../contexts/SpheraAuthContext'
 import { getSessions, getAnnales } from '../services/spheraApi'
 import { UploadZone } from '../components/app/UploadZone'
 import { setPendingUploadFile } from '../store/fileStore'
+import { QuotaIndicator } from '../components/app/QuotaIndicator'
 
 // Force Vite HMR reload
 export default function Dashboard() {
@@ -27,7 +28,7 @@ export default function Dashboard() {
   }, [])
 
   // Tabs State
-  const [activeTab, setActiveTab] = useState<'sessions' | 'annales'>('sessions')
+  const [activeTab, setActiveTab] = useState<'sessions' | 'annales' | 'live'>('sessions')
 
   const getIcon = (type: string) => {
     switch(type) {
@@ -58,6 +59,9 @@ export default function Dashboard() {
           </h1>
           <p className="text-sphera-text-muted">Je suis Sphera, ton assistante de révision académique.</p>
           <p className="text-sphera-text-muted">Charge un document pour générer instantanément ton matériel de révision ou corrige tes annales.</p>
+          <div className="flex justify-center mt-4">
+            <QuotaIndicator />
+          </div>
         </div>
 
         {/* Upload Area (Simplified) */}
@@ -74,10 +78,10 @@ export default function Dashboard() {
 
 
         {/* Tabs */}
-        <div className="flex items-center gap-2 mb-8 border-b border-sphera-border pb-px px-4 sm:px-0">
+        <div className="flex items-center w-full mb-8 border-b border-sphera-border px-4 sm:px-0">
           <button
             onClick={() => setActiveTab('sessions')}
-            className={`pb-3 px-2 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
+            className={`w-1/2 pb-3 text-sm font-medium transition-colors border-b-2 flex items-center justify-center gap-2 ${
               activeTab === 'sessions' 
                 ? 'border-sphera-green text-sphera-green' 
                 : 'border-transparent text-sphera-text-muted hover:text-white'
@@ -87,7 +91,7 @@ export default function Dashboard() {
           </button>
           <button
             onClick={() => setActiveTab('annales')}
-            className={`pb-3 px-2 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
+            className={`w-1/2 pb-3 text-sm font-medium transition-colors border-b-2 flex items-center justify-center gap-2 ${
               activeTab === 'annales' 
                 ? 'border-sphera-green text-sphera-green' 
                 : 'border-transparent text-sphera-text-muted hover:text-white'
@@ -97,47 +101,49 @@ export default function Dashboard() {
           </button>
         </div>
 
-        {/* Grid */}
-        {loadingSessions ? (
-          <div className="flex justify-center p-8 text-sphera-text-muted">
-            <Loader2 className="w-6 h-6 animate-spin" />
-          </div>
-        ) : displayedItems.length === 0 ? (
-          <div className="text-center p-12 bg-sphera-surface-2 rounded-2xl border border-sphera-border mx-4 sm:mx-0">
-            <FileText className="w-12 h-12 text-sphera-text-muted mx-auto mb-4 opacity-50" />
-            <p className="text-white font-medium mb-1">Aucune {activeTab === 'annales' ? 'annale' : 'session'} trouvée</p>
-            <p className="text-sm text-sphera-text-muted">Upload un document pour commencer à réviser.</p>
-          </div>
-        ) : (
-          <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-1 sm:gap-4">
-            {displayedItems.map(item => (
-              <Link 
-                key={item.id} 
-                to={`/${activeTab === 'annales' ? 'annales' : 'sessions'}/${item.id}`}
-                className="sphera-card p-5 group hover:-translate-y-1 hover:border-sphera-border/80 hover:bg-sphera-surface-2 transition-all block rounded-none sm:rounded-2xl border-x-0 sm:border-x"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-10 h-10 rounded-lg bg-sphera-bg border border-sphera-border flex items-center justify-center">
-                    {getIcon(item.tool_types?.[0] || 'fiche')}
-                  </div>
-                  <ArrowRight className="w-4 h-4 text-sphera-text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-                <h3 className="text-white font-medium mb-1 line-clamp-1">{item.resource_title || `Session #${item.id}`}</h3>
-                <p className="text-xs text-sphera-text-muted mb-4 line-clamp-1">Extrait de {item.source_filename || 'document inconnu'}</p>
-                
-                <div className="flex items-center justify-between text-xs text-sphera-text-muted">
-                  <span className="flex items-center gap-2">
-                    <Calendar className="w-3.5 h-3.5" />
-                    {new Date(item.created_at).toLocaleDateString('fr-FR')}
-                  </span>
-                  <span className="px-2 py-0.5 rounded bg-sphera-surface border border-sphera-border text-[10px] uppercase tracking-wider">
-                    {item.tool_types?.join(', ') || 'Document'}
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
+        {/* Grid content */}
+        <>
+            {loadingSessions ? (
+              <div className="flex justify-center p-8 text-sphera-text-muted">
+                <Loader2 className="w-6 h-6 animate-spin" />
+              </div>
+            ) : displayedItems.length === 0 ? (
+              <div className="text-center p-12 bg-sphera-surface-2 rounded-2xl border border-sphera-border mx-4 sm:mx-0">
+                <FileText className="w-12 h-12 text-sphera-text-muted mx-auto mb-4 opacity-50" />
+                <p className="text-white font-medium mb-1">Aucune {activeTab === 'annales' ? 'annale' : 'session'} trouvée</p>
+                <p className="text-sm text-sphera-text-muted">Upload un document pour commencer à réviser.</p>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-1 sm:gap-4">
+                {displayedItems.map(item => (
+                  <Link 
+                    key={item.id} 
+                    to={`/${activeTab === 'annales' ? 'annales' : 'sessions'}/${item.id}`}
+                    className="sphera-card p-5 group hover:-translate-y-1 hover:border-sphera-border/80 hover:bg-sphera-surface-2 transition-all block rounded-none sm:rounded-2xl border-x-0 sm:border-x"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="w-10 h-10 rounded-lg bg-sphera-bg border border-sphera-border flex items-center justify-center">
+                        {getIcon(item.tool_types?.[0] || 'fiche')}
+                      </div>
+                      <ArrowRight className="w-4 h-4 text-sphera-text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                    <h3 className="text-white font-medium mb-1 line-clamp-1">{item.resource_title || `Session #${item.id}`}</h3>
+                    <p className="text-xs text-sphera-text-muted mb-4 line-clamp-1">Extrait de {item.source_filename || 'document inconnu'}</p>
+                    
+                    <div className="flex items-center justify-between text-xs text-sphera-text-muted">
+                      <span className="flex items-center gap-2">
+                        <Calendar className="w-3.5 h-3.5" />
+                        {new Date(item.created_at).toLocaleDateString('fr-FR')}
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-sphera-surface border border-sphera-border text-[10px] uppercase tracking-wider">
+                        {item.tool_types?.join(', ') || 'Document'}
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </>
       </main>
     </div>
   )

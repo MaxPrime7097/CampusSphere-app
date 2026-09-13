@@ -1,6 +1,6 @@
 // Force Vite HMR reload
 import React, { useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useSpheraAuth } from './contexts/SpheraAuthContext';
 import Landing from './pages/Landing';
@@ -19,6 +19,10 @@ import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import LegalNotice from './pages/LegalNotice';
 import TermsOfSale from './pages/TermsOfSale';
+import SpheraLiveShowcase from './pages/SpheraLiveShowcase';
+import QuizLiveHome from './pages/QuizLiveHome';
+import QuizLiveHost from './pages/QuizLiveHost';
+import QuizLiveJoin from './pages/QuizLiveJoin';
 import { SidebarLayout } from './components/layout/SidebarLayout';
 
 function ScrollToTop() {
@@ -106,6 +110,7 @@ export default function App() {
         <Routes>
           {/* Public */}
           <Route path="/" element={<Landing />} />
+          <Route path="/sphera-live" element={<SpheraLiveShowcase />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/blogs" element={<Blogs />} />
           <Route path="/blogs/:slug" element={<BlogDetail />} />
@@ -126,7 +131,14 @@ export default function App() {
             <Route path="/create" element={<CreateSession />} />
             <Route path="/sessions/:id" element={<SessionDetail type="session" />} />
             <Route path="/annales/:id" element={<SessionDetail type="annale" />} />
+            <Route path="/live" element={<QuizLiveHome />} />
           </Route>
+          
+          {/* Sphera Live Fullscreen Routes */}
+          <Route element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
+            <Route path="/live/host" element={<QuizLiveHost />} />
+          </Route>
+          <Route path="/live/join" element={<QuizLiveJoin />} />
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

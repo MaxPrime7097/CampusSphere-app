@@ -38,6 +38,7 @@ export type ChannelKey = string & { readonly __brand: "ChannelKey" };
 
 export const conversationChannel = (conversationId: number): ChannelKey => `conv:${conversationId}` as ChannelKey;
 export const userChannel = (userId: number): ChannelKey => `user:${userId}` as ChannelKey;
+export const quizRoomChannel = (roomCode: string): ChannelKey => `quiz:${roomCode}` as ChannelKey;
 
 /**
  * Identifies this process. A frame carries its origin so the instance that

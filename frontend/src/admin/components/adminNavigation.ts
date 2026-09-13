@@ -8,6 +8,7 @@ import {
   ShieldAlert,
   Activity,
   Mail,
+  Sparkles,
 } from "lucide-react";
 
 export const ADMIN_NAVIGATION: AdminNavigationItem[] = [
@@ -50,6 +51,14 @@ export const ADMIN_NAVIGATION: AdminNavigationItem[] = [
     to: "/admin/resources",
     description: "Documents & cours partagés",
     icon: FileText,
+    group: "Communauté & Contenu",
+  },
+  {
+    key: "sphera",
+    label: "Sphera IA",
+    to: "/admin/sphera",
+    description: "AWS Bedrock & Quotas",
+    icon: Sparkles,
     group: "Communauté & Contenu",
   },
   {

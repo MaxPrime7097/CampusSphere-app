@@ -303,6 +303,10 @@ model User {
   uploads             UploadedFile[]
   auditLogs           AdminAuditLog[]
   revokedTokens       RevokedToken[]
+  quizLiveHosted      QuizLiveSession[]       @relation("QuizLiveSessionsHosted")
+  quizLiveParticipations QuizLiveParticipant[] @relation("QuizLiveParticipations")
+  generationUsages    GenerationUsage[]
+  aiUsageLogs         AIUsageLog[]
 
   @@index([university])
   @@index([faculty])
@@ -1042,5 +1046,90 @@ model EventAttendee {
   @@index([eventId, status])
   @@index([ticketCode])
   @@map("event_attendees")
+}
+
+
+// ─────────────────────────────────────────────────────────────
+// Quiz Live (Sphera Live — multiplayer quiz sessions)
+// ─────────────────────────────────────────────────────────────
+
+enum QuizLiveStatus {
+  WAITING
+  ACTIVE
+  QUESTION_ACTIVE
+  QUESTION_RESULTS
+  FINISHED
+}
+
+model QuizLiveSession {
+  id                   Int             @id @default(autoincrement())
+  roomCode             String          @unique @map("room_code")
+  hostId               Int             @map("host_id")
+  title                String          @default("")
+  questions            Json            @default("[]")
+  status               QuizLiveStatus  @default(WAITING)
+  currentQuestionIndex Int             @default(-1) @map("current_question_index")
+  createdAt            DateTime        @default(now()) @map("created_at")
+
+  host                 User            @relation("QuizLiveSessionsHosted", fields: [hostId], references: [id], onDelete: Cascade)
+  participants         QuizLiveParticipant[]
+
+  @@index([roomCode])
+  @@index([hostId])
+  @@map("quiz_live_sessions")
+}
+
+model QuizLiveParticipant {
+  id          Int      @id @default(autoincrement())
+  sessionId   Int      @map("session_id")
+  userId      Int?     @map("user_id")
+  displayName String   @map("display_name")
+  score       Int      @default(0)
+  answers     Json     @default("[]")
+  joinedAt    DateTime @default(now()) @map("joined_at")
+
+  session     QuizLiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user        User?           @relation("QuizLiveParticipations", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([sessionId, userId])
+  @@index([sessionId, score])
+  @@map("quiz_live_participants")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Sphera Usage & AI Cost Tracking
+// ─────────────────────────────────────────────────────────────
+
+model GenerationUsage {
+  id            Int      @id @default(autoincrement())
+  userId        Int      @map("user_id")
+  weekStartDate DateTime @map("week_start_date") @db.Date
+  count         Int      @default(0)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, weekStartDate])
+  @@index([userId, weekStartDate])
+  @@map("generation_usages")
+}
+
+model AIUsageLog {
+  id                   Int      @id @default(autoincrement())
+  userId               Int?     @map("user_id")
+  provider             String
+  model                String   @default("")
+  toolType             String   @map("tool_type")
+  inputTokensEstimate  Int      @default(0) @map("input_tokens_estimate")
+  outputTokensEstimate Int      @default(0) @map("output_tokens_estimate")
+  estimatedCostUSD     Float    @default(0) @map("estimated_cost_usd")
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([provider, createdAt])
+  @@index([createdAt])
+  @@map("ai_usage_logs")
 }
 
