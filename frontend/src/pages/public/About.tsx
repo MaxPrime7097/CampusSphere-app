@@ -92,9 +92,16 @@ export function About(): JSX.Element {
         <title>À Propos - Notre Histoire & Vision | CampusSphere</title>
         <meta name="description" content="Découvrez l'histoire de CampusSphere, l'équipe fondatrice et notre mission : révolutionner la vie étudiante et l'entraide académique." />
         <link rel="canonical" href="https://campussphere.app/cs-inc/about" />
+        <meta property="og:type" content="website" />
         <meta property="og:title" content="À Propos de CampusSphere - Notre Équipe et Vision" />
         <meta property="og:description" content="Découvrez les coulisses de CampusSphere, la plateforme qui connecte et dynamise les étudiants dans leur quotidien académique." />
         <meta property="og:url" content="https://campussphere.app/cs-inc/about" />
+        <meta property="og:image" content="https://campussphere.app/CS.svg" />
+        <meta property="og:site_name" content="CampusSphere" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="À Propos de CampusSphere - Notre Équipe et Vision" />
+        <meta name="twitter:description" content="Découvrez les coulisses de CampusSphere, la plateforme qui connecte et dynamise les étudiants dans leur quotidien académique." />
+        <meta name="twitter:image" content="https://campussphere.app/CS.svg" />
         <script type="application/ld+json">
           {JSON.stringify(teamSchema)}
         </script>

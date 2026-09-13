@@ -163,7 +163,7 @@ export function CookiePolicy(): JSX.Element {
                     support@campussphere.app
                   </a>
                 </p></li>
-                  <li>Adresse : Douala, République du Cameroun</li>
+                  <li>Adresse : Douala, Cameroun</li>
                 </ul>
               </div>
             </div>

@@ -66,9 +66,25 @@ export function Contact(): JSX.Element {
         <title>Contactez l'Équipe CampusSphere | Support & Partenariats</title>
         <meta name="description" content="Une question, une idée de partenariat ou besoin d'aide sur CampusSphere ? Contactez notre équipe via notre formulaire ou par email." />
         <link rel="canonical" href="https://campussphere.app/cs-inc/contact" />
+        <meta property="og:type" content="website" />
         <meta property="og:title" content="Contact - CampusSphere" />
         <meta property="og:description" content="Contactez l'équipe CampusSphere pour toute question, retour ou proposition de partenariat campus." />
         <meta property="og:url" content="https://campussphere.app/cs-inc/contact" />
+        <meta property="og:image" content="https://campussphere.app/CS.svg" />
+        <meta property="og:site_name" content="CampusSphere" />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content="Contact - CampusSphere" />
+        <meta name="twitter:description" content="Contactez l'équipe CampusSphere pour toute question, retour ou proposition de partenariat campus." />
+        <meta name="twitter:image" content="https://campussphere.app/CS.svg" />
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "ContactPage",
+            "name": "Contactez l'Équipe CampusSphere",
+            "url": "https://campussphere.app/cs-inc/contact",
+            "description": "Une question, une idée de partenariat ou besoin d'aide sur CampusSphere ? Contactez notre équipe via notre formulaire ou par email."
+          })}
+        </script>
       </Helmet>
       {/* Navigation: brand + links + CTA */}
       <Header />

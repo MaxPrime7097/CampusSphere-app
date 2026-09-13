@@ -97,8 +97,8 @@ export function LegalNotice(): JSX.Element {
                   Le service numérique <strong>CampusSphere</strong> (accessible via le domaine <code>campussphere.app</code>) et son module d'intelligence artificielle académique <strong>Sphera</strong> (accessible via <code>sphera.campussphere.app</code>) sont édités par l'équipe fondatrice CampusSphere.
                 </p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
-                  <li><strong>Nom du projet / Éditeur :</strong> CampusSphere Inc. (Équipe fondatrice & développement)</li>
-                  <li><strong>Siège d'exploitation :</strong> Douala, Région du Littoral, République du Cameroun</li>
+                  <li><strong>Nom du projet / Éditeur :</strong> CampusSphere (Équipe fondatrice & développement)</li>
+                  <li><strong>Siège d'exploitation :</strong> Douala, Région du Littoral, Cameroun</li>
                   <li><strong>Partenariats, investisseurs & contact général :</strong> <a href="mailto:contact@campussphere.app" className="text-primary hover:underline">contact@campussphere.app</a></li>
                   <li><strong>Support technique & étudiants :</strong> <a href="mailto:support@campussphere.app" className="text-primary hover:underline">support@campussphere.app</a></li>
                   <li><strong>Affaires juridiques, données & politiques :</strong> <a href="mailto:policies@campussphere.app" className="text-primary hover:underline">policies@campussphere.app</a></li>
@@ -181,7 +181,7 @@ export function LegalNotice(): JSX.Element {
                 </p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
                   <li>Email : <a href="mailto:policies@campussphere.app" className="text-primary hover:underline">policies@campussphere.app</a> ou <a href="mailto:support@campussphere.app" className="text-primary hover:underline">support@campussphere.app</a></li>
-                  <li>Localisation : Douala, République du Cameroun</li>
+                  <li>Localisation : Douala, Cameroun</li>
                 </ul>
               </div>
             </div>

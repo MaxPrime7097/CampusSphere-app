@@ -178,7 +178,7 @@ export function DataDeletion(): JSX.Element {
                 <ul className="list-disc list-inside space-y-2 ml-4">
                   <li>Protection des Données & Politiques : <a href="mailto:policies@campussphere.app" className="text-primary hover:underline">policies@campussphere.app</a></li>
                   <li>Support Technique : <a href="mailto:support@campussphere.app" className="text-primary hover:underline">support@campussphere.app</a></li>
-                  <li>Localisation : Douala, République du Cameroun</li>
+                  <li>Localisation : Douala, Cameroun</li>
                 </ul>
               </div>
             </div>

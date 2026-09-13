@@ -99,11 +99,49 @@ export function Landing() {
     <div className="min-h-screen p-0 bg-gradient-to-br from-background via-accent/5 to-primary/5">
       <Helmet>
         <title>CampusSphere - Le réseau social qui connecte les étudiants</title>
-        <meta name="description" content="Découvrez CampusSphere, le réseau social qui révolutionne la vie étudiante. Sphères collaboratives, partage de ressources et feed intelligent." />
+        <meta name="description" content="Découvrez CampusSphere, le réseau social qui révolutionne la vie étudiante : sphères collaboratives, partage de cours et ressources universitaires, feed intelligent et révisions avec Sphera IA." />
         <link rel="canonical" href={canonicalUrl} />
+        <meta property="og:type" content="website" />
         <meta property="og:title" content="CampusSphere - Le réseau social qui connecte les étudiants" />
-        <meta property="og:description" content="Rejoignez la sphère, partagez, collaborez et grandissez avec vos camarades sur CampusSphere." />
+        <meta property="og:description" content="Rejoignez la communauté étudiante, partagez vos cours, collaborez en groupes d'étude et révisez vos examens avec CampusSphere." />
         <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:image" content="https://campussphere.app/CS.svg" />
+        <meta property="og:site_name" content="CampusSphere" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="CampusSphere - Le réseau social qui connecte les étudiants" />
+        <meta name="twitter:description" content="Rejoignez la communauté étudiante, partagez vos cours, collaborez en groupes d'étude et révisez vos examens avec CampusSphere." />
+        <meta name="twitter:image" content="https://campussphere.app/CS.svg" />
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@graph": [
+              {
+                "@type": "WebSite",
+                "@id": "https://campussphere.app/#website",
+                "name": "CampusSphere",
+                "url": "https://campussphere.app",
+                "description": "Le réseau social étudiant qui connecte la communauté universitaire.",
+                "potentialAction": {
+                  "@type": "SearchAction",
+                  "target": "https://campussphere.app/search?q={search_term_string}",
+                  "query-input": "required name=search_term_string"
+                }
+              },
+              {
+                "@type": "EducationalOrganization",
+                "@id": "https://campussphere.app/#organization",
+                "name": "CampusSphere",
+                "url": "https://campussphere.app",
+                "logo": "https://campussphere.app/CS.svg",
+                "sameAs": [
+                  "https://web.facebook.com/campussphereofficial",
+                  "https://www.linkedin.com/company/campussphere",
+                  "https://www.instagram.com/campussphere"
+                ]
+              }
+            ]
+          })}
+        </script>
       </Helmet>
       {/* Navigation */}
       <Header />

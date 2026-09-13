@@ -250,9 +250,16 @@ export function FAQ(): JSX.Element {
         <title>Foire Aux Questions (FAQ) | CampusSphere</title>
         <meta name="description" content="Toutes les réponses à vos questions sur CampusSphere et Sphera IA : création de compte, sphères d'études, révisions IA, paiements Mobile Money Campay et sécurité des données." />
         <link rel="canonical" href="https://campussphere.app/cs-inc/faq" />
+        <meta property="og:type" content="website" />
         <meta property="og:title" content="Foire Aux Questions (FAQ) - CampusSphere" />
         <meta property="og:description" content="Découvrez les réponses aux questions les plus fréquentes sur CampusSphere, Sphera IA et son fonctionnement." />
         <meta property="og:url" content="https://campussphere.app/cs-inc/faq" />
+        <meta property="og:image" content="https://campussphere.app/CS.svg" />
+        <meta property="og:site_name" content="CampusSphere" />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content="Foire Aux Questions (FAQ) - CampusSphere" />
+        <meta name="twitter:description" content="Découvrez les réponses aux questions les plus fréquentes sur CampusSphere, Sphera IA et son fonctionnement." />
+        <meta name="twitter:image" content="https://campussphere.app/CS.svg" />
         <script type="application/ld+json">
           {JSON.stringify(faqSchema)}
         </script>
