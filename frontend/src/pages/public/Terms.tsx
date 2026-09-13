@@ -1,4 +1,5 @@
 import React from "react";
+import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
 import { ScrollText, AlertCircle, CheckCircle, XCircle, Shield, Heart, Facebook, Twitter, Linkedin, Instagram, Youtube, ChevronDown, User, BookLock, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,14 @@ export function Terms(): JSX.Element {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5">
+      <Helmet>
+        <title>Conditions Générales d'Utilisation (CGU) | CampusSphere</title>
+        <meta name="description" content="Conditions Générales d'Utilisation de CampusSphere régissant l'accès à la plateforme, les droits et devoirs des étudiants et des sphères." />
+        <link rel="canonical" href="https://campussphere.app/cs-inc/policies/terms" />
+        <meta property="og:title" content="Conditions Générales d'Utilisation - CampusSphere" />
+        <meta property="og:description" content="Prenez connaissance des conditions d'utilisation et des règles d'engagement sur le réseau CampusSphere." />
+        <meta property="og:url" content="https://campussphere.app/cs-inc/policies/terms" />
+      </Helmet>
       {/* Navigation: brand + links + CTA */}
       <Header />
 
@@ -74,7 +83,7 @@ export function Terms(): JSX.Element {
         <div className="container mx-auto max-w-5xl">
           <div className="text-center mb-12">
             <p className="font-nunito font-semibold text-muted-foreground">
-              Dernière mise à jour : 05/04/2026
+              Dernière mise à jour : 13/09/2026
             </p>
           </div>
 
@@ -87,8 +96,8 @@ export function Terms(): JSX.Element {
               </div>
               <div className="font-nunito font-semibold text-muted-foreground space-y-4 mt-4">
                 <p>
-                  En utilisant CampusSphere, vous acceptez les présentes conditions d'utilisation.
-                  Si vous n'acceptez pas ces conditions, veuillez ne pas utiliser notre plateforme.
+                  En créant un compte ou en naviguant sur CampusSphere (et son module d'assistance IA Sphera), vous acceptez sans réserve les présentes Conditions Générales d'Utilisation.
+                  Si vous n'adhérez pas à ces conditions, vous devez cesser toute utilisation de la plateforme.
                 </p>
               </div>
             </div>
@@ -96,16 +105,17 @@ export function Terms(): JSX.Element {
             <div className="campus-animate-slide-up">
               <div className="p-0">
                 <CardTitle className="font-poppins flex items-center gap-3 p-0">
-                  Inscription et Compte
+                  Inscription, Âge Minimum & Compte
                 </CardTitle>
               </div>
               <div className="font-nunito font-semibold text-muted-foreground space-y-4 mt-4">
                 <ul className="list-disc list-inside space-y-2 ml-4">
-                  <li>CampusSphere est destiné en priorité aux étudiants en établissement d'enseignement supérieur</li>
-                  <li>Vous devez fournir des informations exactes et à jour</li>
-                  <li>Vous êtes responsable de la confidentialité de votre compte</li>
-                  <li>Vous devez nous informer immédiatement de toute utilisation non autorisée</li>
-                  <li>Il est recommandé de n'utiliser qu'un seul compte par personne</li>
+                  <li><strong>Âge minimum requis :</strong> L'accès à CampusSphere est strictement réservé aux personnes âgées d'au moins <strong>16 ans révolus</strong>. Si vous avez entre 16 et 18 ans, vous déclarez disposer de l'autorisation préalable de vos parents ou tuteurs légaux.</li>
+                  <li>CampusSphere est destiné en priorité aux étudiants inscrits en enseignement supérieur ou secondaire avancé.</li>
+                  <li>Vous devez fournir une identité sincère et des informations exactes lors de votre inscription.</li>
+                  <li>Vous êtes seul responsable du maintien de la confidentialité de vos identifiants d'accès.</li>
+                  <li>Vous devez nous signaler sans délai toute connexion suspecte ou faille de sécurité constatée.</li>
+                  <li>La création de comptes multiples automatisés (bots, faux profils) est formellement interdite.</li>
                 </ul>
               </div>
             </div>
@@ -113,24 +123,21 @@ export function Terms(): JSX.Element {
             <div className="campus-animate-slide-up">
               <div className="p-0">
                 <CardTitle className="font-poppins flex items-center gap-3 p-0">
-                  Utilisation de la Plateforme
+                  Utilisation de la Plateforme & Assistant IA Sphera
                 </CardTitle>
               </div>
               <div className="font-nunito font-semibold text-muted-foreground space-y-4 mt-4">
                 <p>Vous vous engagez à :</p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
-                  <li>Utiliser la plateforme de manière légale et respectueuse</li>
-                  <li>Respecter les droits de propriété intellectuelle</li>
-                  <li>Ne pas publier de contenu offensant, diffamatoire ou illégal</li>
-                  <li>Ne pas harceler ou menacer d'autres utilisateurs</li>
-                  <li>Ne pas utiliser la plateforme à des fins commerciales sans autorisation</li>
-                  <li>Ne pas tenter de contourner les mesures de sécurité</li>
+                  <li>Utiliser la plateforme de manière légale, bienveillante et conforme aux lois camerounaises et internationales</li>
+                  <li>Respecter scrupuleusement la propriété intellectuelle des auteurs, enseignants et tiers</li>
+                  <li>Ne pas publier de contenu injurieux, diffamatoire, violent ou illicite</li>
+                  <li>Ne pas utiliser les services pour frauder lors d'épreuves officielles d'examen</li>
+                  <li>Ne pas tenter d'altérer ou d'extraire frauduleusement les données des serveurs</li>
                 </ul>
                 <p>
-                  CampusSphere inclut également l’assistante IA Sphera. En utilisant cette fonctionnalité,
-                  vous acceptez que les documents uploadés soient traités par l’IA pour générer des fiches,
-                  quiz, flashcards et corrections d'annales.
-                  Ces documents ne sont pas utilisés pour entraîner des modèles publics.
+                  CampusSphere intègre également l'assistante IA Sphera (alimentée par AWS Bedrock, Google AI et Groq). 
+                  Les documents soumis sont traités exclusivement pour générer vos fiches, flashcards et quiz, et <strong>ne sont en aucun cas utilisés pour entraîner des modèles publics</strong>.
                 </p>
               </div>
             </div>
@@ -138,17 +145,33 @@ export function Terms(): JSX.Element {
             <div className="campus-animate-slide-up">
               <div className="p-0">
                 <CardTitle className="font-poppins flex items-center gap-3 p-0">
-                  Contenu Utilisateur
+                  Contenu Utilisateur & Licence Technique d'Hébergement
                 </CardTitle>
               </div>
               <div className="font-nunito font-semibold text-muted-foreground space-y-4 mt-4">
-                <p>Concernant le contenu que vous publiez :</p>
+                <p>Concernant les documents, résumés et publications que vous partagez :</p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
-                  <li>Vous conservez la propriété de votre contenu</li>
-                  <li>Vous accordez à CampusSphere une licence d'utilisation</li>
-                  <li>Vous garantissez avoir les droits sur le contenu partagé</li>
-                  <li>Nous pouvons supprimer du contenu inapproprié</li>
-                  <li>Vous êtes responsable du contenu que vous partagez</li>
+                  <li><strong>Propriété préservée :</strong> Vous conservez l'entière propriété intellectuelle de vos contenus et documents originaux.</li>
+                  <li><strong>Licence technique :</strong> Pour nous permettre d'opérer le service, vous concédez à CampusSphere une licence mondiale, gratuite et non-exclusive pour héberger, stocker sur nos serveurs sécurisés (Amazon Web Services S3), répliquer techniquement, indexer et afficher vos contenus dans le cadre exclusif du fonctionnement de la communauté et de l'assistant Sphera.</li>
+                  <li><strong>Garantie de légalité :</strong> Vous certifiez détenir les droits ou autorisations nécessaires sur les supports que vous téléversez.</li>
+                  <li>CampusSphere se réserve le droit de modérer ou supprimer sans préavis tout contenu contrevenant aux lois ou aux règles communautaires.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="campus-animate-slide-up">
+              <div className="p-0">
+                <CardTitle className="font-poppins flex items-center gap-3 p-0">
+                  Services Payants, Abonnements & Paiements Mobile Money
+                </CardTitle>
+              </div>
+              <div className="font-nunito font-semibold text-muted-foreground space-y-4 mt-4">
+                <p>
+                  L'accès à certaines options avancées (crédits IA étendus de Sphera, Pass Examen, packs premium) peut faire l'objet d'une tarification en Francs CFA (XAF).
+                </p>
+                <ul className="list-disc list-inside space-y-2 ml-4">
+                  <li>Les paiements s'opèrent par <strong>Mobile Money (MTN MoMo, Orange Money)</strong> via des passerelles agréées chiffrées.</li>
+                  <li>Les conditions de commande, d'exécution immédiate du service numérique et de résiliation sont définies dans nos <a href="/cs-inc/policies/terms-of-sale" className="text-primary hover:underline">Conditions Générales de Vente (CGV)</a>.</li>
                 </ul>
               </div>
             </div>
@@ -239,16 +262,20 @@ export function Terms(): JSX.Element {
               </div>
               <div className="font-nunito font-semibold text-muted-foreground mt-4">
                 <p>
-                  Pour toute question concernant ces conditions d'utilisation, contactez-nous :
+                  Pour toute question relative aux présentes conditions générales d'utilisation, contactez :
                 </p>
                 <ul className="mt-4 space-y-2">
                   <li><p className="mt-4">
                   {" "}
                   <a href="mailto:policies@campussphere.app" className="text-primary hover:underline">
                     policies@campussphere.app
+                  </a>{" "}
+                  ou{" "}
+                  <a href="mailto:support@campussphere.app" className="text-primary hover:underline">
+                    support@campussphere.app
                   </a>
                 </p></li>
-                  <li>Adresse: Douala, Cameroun</li>
+                  <li>Adresse : Douala, République du Cameroun</li>
                 </ul>
               </div>
             </div>

@@ -20,7 +20,9 @@ export function SpheraFooter() {
           <Link to="/pricing" className="hover:text-white transition-colors">Tarifs</Link>
           <Link to="/blogs" className="hover:text-white transition-colors">Blog</Link>
           <Link to="/privacy" className="hover:text-white transition-colors">Confidentialité</Link>
-          <Link to="/terms" className="hover:text-white transition-colors">Conditions</Link>
+          <Link to="/terms" className="hover:text-white transition-colors">CGU</Link>
+          <Link to="/terms-of-sale" className="hover:text-white transition-colors">CGV</Link>
+          <Link to="/legal-notice" className="hover:text-white transition-colors">Mentions Légales</Link>
         </div>
 
         <div className="flex items-center gap-2 text-sm text-sphera-text-muted">

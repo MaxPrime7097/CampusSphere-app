@@ -1,4 +1,5 @@
 import React from "react";
+import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
 import { ScrollText, AlertCircle, CheckCircle, XCircle, Shield, Heart, Facebook, Twitter, Linkedin, Instagram, Youtube, ChevronDown, User, BookLock, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,14 @@ export function Copyright(): JSX.Element {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5">
+      <Helmet>
+        <title>Propriété Intellectuelle & Droits d'Auteur | CampusSphere</title>
+        <meta name="description" content="Consultez la politique de respect du droit d'auteur, de la propriété intellectuelle et les procédures de signalement DMCA sur CampusSphere." />
+        <link rel="canonical" href="https://campussphere.app/cs-inc/policies/copyright" />
+        <meta property="og:title" content="Droits d'Auteur & Propriété Intellectuelle - CampusSphere" />
+        <meta property="og:description" content="Protection des auteurs, respect des droits intellectuels et signalement de contenus sur CampusSphere." />
+        <meta property="og:url" content="https://campussphere.app/cs-inc/policies/copyright" />
+      </Helmet>
       {/* Navigation: brand + links + CTA */}
       <Header />
 

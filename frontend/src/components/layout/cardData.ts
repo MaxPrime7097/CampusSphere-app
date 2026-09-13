@@ -11,6 +11,12 @@ export const sectionTwoCard: CardData = [
     ["/Illustrations/Upload-amico.svg", 51, 28],
 ]
 
+// Section 3 Data
 export const sectionThreeCard: CardData = [
     ["/Illustrations/Feed-amico.svg", 38, 356],
+]
+
+// Section 4 Data (Événements)
+export const sectionFourCard: CardData = [
+    ["/Illustrations/Events-amico.svg", 30, 68],
 ]
