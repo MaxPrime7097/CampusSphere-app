@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
 import { Mail, MapPin, Clock, Send, Sparkles, Heart, CheckCircle, ChevronDown, Loader2 } from "lucide-react";
 import { FaFacebook, FaInstagram, FaLinkedin, FaTiktok } from "react-icons/fa";
@@ -61,6 +62,14 @@ export function Contact(): JSX.Element {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5">
+      <Helmet>
+        <title>Contactez l'Équipe CampusSphere | Support & Partenariats</title>
+        <meta name="description" content="Une question, une idée de partenariat ou besoin d'aide sur CampusSphere ? Contactez notre équipe via notre formulaire ou par email." />
+        <link rel="canonical" href="https://campussphere.app/cs-inc/contact" />
+        <meta property="og:title" content="Contact - CampusSphere" />
+        <meta property="og:description" content="Contactez l'équipe CampusSphere pour toute question, retour ou proposition de partenariat campus." />
+        <meta property="og:url" content="https://campussphere.app/cs-inc/contact" />
+      </Helmet>
       {/* Navigation: brand + links + CTA */}
       <Header />
 
@@ -271,16 +280,18 @@ export function Contact(): JSX.Element {
 
 
       {/* FAQ Link Section */}
-      <section className="py-20 px-4">
-        <div className="container mx-auto max-w-4xl text-center">
-          <div className="campus-card p-8 campus-animate-fade-in">
-            <h2 className="font-raleway text-3xl font-bold mb-4">Questions <span className="campus-gradient bg-clip-text text-transparent">fréquentes ?</span></h2>
-            <p className="font-nunito font-semibold text-lg text-muted-foreground mb-8">
+      <section className="py-12 md:py-20 px-0">
+        <div className="container mx-auto max-w-9xl px-4 sm:px-6 lg:px-8 text-center">
+          <div className="campus-card p-6 sm:p-10 md:p-12 rounded-3xl border border-border/60 campus-animate-fade-in">
+            <h2 className="font-raleway text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
+              Questions <span className="campus-gradient bg-clip-text text-transparent">fréquentes ?</span>
+            </h2>
+            <p className="font-nunito font-semibold text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
               Consultez notre FAQ pour trouver rapidement des réponses aux questions les plus courantes.
             </p>
             <Button
               onClick={() => navigate('/cs-inc/faq')}
-              className="font-poppins campus-gradient text-white hover:opacity-90 text-lg px-8 py-8 transition-all duration-300 hover:scale-105 gap-2"
+              className="font-poppins campus-gradient text-white hover:opacity-90 text-base sm:text-lg px-8 py-6 rounded-lg transition-all duration-300 hover:scale-105 gap-2"
             >
               Voir la FAQ
             </Button>

@@ -3,7 +3,7 @@ import { Helmet } from "react-helmet-async";
 import { ArrowRight, Users, Calendar, BookOpen, Shield, Star, UserPlus, LogIn, Sparkles, Zap, Heart, FolderOpen, MessageSquare, Dot, Circle, FileDown, Bot, FilePenLine, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { CookieBanner } from "@/components/layout/CookieBanner";
@@ -11,10 +11,12 @@ import { FaBullseye } from "react-icons/fa";
 import Countdown from "@/components/layout/Countdown"
 import { lazy, Suspense } from "react"
 const ScrollTriggered = lazy(() => import("@/components/layout/ScrollTriggered"))
-import { sectionOneCard, sectionTwoCard, sectionThreeCard } from "@/components/layout/cardData"
+import { sectionOneCard, sectionTwoCard, sectionThreeCard, sectionFourCard } from "@/components/layout/cardData"
 
 export function Landing() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const canonicalUrl = location.pathname.startsWith("/cs-inc") ? "https://campussphere.app/cs-inc" : "https://campussphere.app/";
 
   const getSpheraUrl = () => {
     const envUrl = (import.meta.env.VITE_SPHERA_STANDALONE_URL as string)?.trim();
@@ -98,9 +100,10 @@ export function Landing() {
       <Helmet>
         <title>CampusSphere - Le réseau social qui connecte les étudiants</title>
         <meta name="description" content="Découvrez CampusSphere, le réseau social qui révolutionne la vie étudiante. Sphères collaboratives, partage de ressources et feed intelligent." />
-        <link rel="canonical" href="https://campussphere.app/cs-inc" />
+        <link rel="canonical" href={canonicalUrl} />
         <meta property="og:title" content="CampusSphere - Le réseau social qui connecte les étudiants" />
         <meta property="og:description" content="Rejoignez la sphère, partagez, collaborez et grandissez avec vos camarades sur CampusSphere." />
+        <meta property="og:url" content={canonicalUrl} />
       </Helmet>
       {/* Navigation */}
       <Header />
@@ -305,6 +308,36 @@ export function Landing() {
             </div>
           </div>
 
+          {/* Événements Section */}
+          <div className="flex grid lg:grid-cols-2 gap-12 items-center mb-20">
+            {/* Illustration Événements */}
+            <div className="order-2 lg:relative items-center justify-center">
+              <Suspense fallback={<div>Loading animation...</div>}><ScrollTriggered cardData={sectionFourCard} /></Suspense>
+            </div>
+
+            {/* Événements & Vie de Campus */}
+            <div className="space-y-6 order-1 lg:order-2">
+              <div className="flex items-center gap-4">
+                <img src="/icons/evenement.png" alt="Événements" className="w-16 h-16" />
+                <div>
+                  <h3 className="text-2xl font-poppins font-semibold">Événements & Vie de Campus</h3>
+                  <p className="text-muted-foreground font-nunito font-semibold">Ne manque aucun temps fort associatif ou académique de ton université</p>
+                </div>
+              </div>
+              <div className="space-y-4 font-nunito text-lg">
+                <div className="flex items-start gap-3">
+                  <p><strong>Calendrier centralisé</strong> : <br />Découvre en un coup d'œil les conférences, soirées d'intégration, hackathons, tournois et ateliers organisés sur ton campus</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <p><strong>Création & Billetterie en 1 clic</strong> : <br />Organise un événement associatif ou étudiant, définis le lieu, la date, la jauge limite et gère facilement les inscriptions</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <p><strong>Gestion des participants & Rappels</strong> : <br />Suis la liste des participants en direct, reçois des rappels automatiques avant le début et échange avec la communauté</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* ── Sphera Section ─────────────────────────────────── */}
           <div className="relative mb-20">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl h-[400px] bg-[radial-gradient(circle,rgba(34,197,94,0.03)_0%,transparent_70%)] blur-3xl -z-10 pointer-events-none" />
@@ -392,16 +425,7 @@ export function Landing() {
             <h2 className="font-raleway text-4xl md:text-5xl font-bold mb-6">
               ...Et beaucoup d'autres <span className="campus-gradient bg-clip-text text-transparent">fonctionnalités à venir</span>
             </h2>
-            <div className="grid md:grid-cols-2 gap-8 lg:grid-cols-3">
-              <div className="bg-white/50 dark:bg-gray-800/50 rounded-2xl p-6 border-2 border-dashed border-primary/30">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-12 rounded-lg flex items-center justify-center group-hover:animate-pulse-glow">
-                    <img src="/icons/evenement.png" alt="Evenements" />
-                  </div>
-                  <h3 className="font-semibold font-poppins text-xl">Événements</h3>
-                </div>
-                <p className="text-muted-foreground font-nunito font-semibold">Découvrez, créez et rejoignez des événements étudiants : conférences, concours, soirées, hackathons ou ateliers. Restez connecté à la vie de campus.</p>
-              </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="bg-white/50 dark:bg-gray-800/50 rounded-2xl p-6 border-2 border-dashed border-primary/30">
                 <div className="flex items-center gap-4 mb-4">
                   <div className="w-12 h-12 rounded-lg flex items-center justify-center group-hover:animate-pulse-glow">
