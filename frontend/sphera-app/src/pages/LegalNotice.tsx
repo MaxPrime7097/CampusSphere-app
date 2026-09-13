@@ -31,11 +31,11 @@ export default function LegalNotice() {
             <section>
               <h2 className="text-xl font-bold text-white mb-4">1. Éditeur du service</h2>
               <p>
-                L'application d'assistance académique <strong>Sphera</strong> est un service conçu, développé et opéré par l'équipe fondatrice <strong>CampusSphere Inc.</strong>
+                L'application d'assistance académique <strong>Sphera</strong> est un service conçu, développé et opéré par l'équipe fondatrice <strong>CampusSphere</strong>
               </p>
               <ul className="list-disc pl-5 space-y-2 mt-2">
-                <li><strong>Service :</strong> Sphera AI (intégré à la plateforme CampusSphere)</li>
-                <li><strong>Localisation :</strong> Douala, République du Cameroun</li>
+                <li><strong>Service :</strong> Sphera (intégré à la plateforme CampusSphere)</li>
+                <li><strong>Localisation :</strong> Douala, Cameroun</li>
                 <li><strong>Partenariats & investisseurs :</strong> <a href="mailto:contact@campussphere.app" className="text-sphera-green hover:underline">contact@campussphere.app</a></li>
                 <li><strong>Support technique & académique :</strong> <a href="mailto:support@campussphere.app" className="text-sphera-green hover:underline">support@campussphere.app</a></li>
                 <li><strong>Affaires juridiques & politiques :</strong> <a href="mailto:policies@campussphere.app" className="text-sphera-green hover:underline">policies@campussphere.app</a></li>

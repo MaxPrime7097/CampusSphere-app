@@ -35,7 +35,7 @@ export function Policies(): JSX.Element {
     {
       title: "Mentions Légales",
       slug: "/cs-inc/policies/legal-notice",
-      description: "Informations juridiques sur l'éditeur CampusSphere Inc., nos hébergeurs cloud et nos partenaires d'infrastructure.",
+      description: "Informations juridiques sur l'éditeur CampusSphere, nos hébergeurs cloud et nos partenaires d'infrastructure.",
     },
     {
       title: "Suppression de Compte & des Données",

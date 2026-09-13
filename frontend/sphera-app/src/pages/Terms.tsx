@@ -72,7 +72,7 @@ export default function Terms() {
               <p>
                 Vous conservez tous les droits d'auteur sur vos documents de cours originaux. 
                 Les fiches de révision et quiz générés vous appartiennent pour votre usage personnel d'étude. 
-                Toutefois, le code source, le design, les algorithmes de prompt et la marque Sphera restent la propriété exclusive de CampusSphere Inc.
+                Toutefois, le code source, le design, les algorithmes de prompt et la marque Sphera restent la propriété exclusive de CampusSphere.
               </p>
             </section>
 
@@ -87,7 +87,7 @@ export default function Terms() {
             <section>
               <h2 className="text-xl font-bold text-white mb-4">7. Modification des conditions & Juridiction</h2>
               <p>
-                CampusSphere se réserve le droit de faire évoluer les présentes conditions à tout moment. Les présentes CGU sont soumises à la législation de la République du Cameroun. Tout litige non résolu à l'amiable sera soumis aux juridictions compétentes de Douala.
+                CampusSphere se réserve le droit de faire évoluer les présentes conditions à tout moment. Les présentes CGU sont soumises à la législation de la Cameroun. Tout litige non résolu à l'amiable sera soumis aux juridictions compétentes de Douala.
               </p>
             </section>
 

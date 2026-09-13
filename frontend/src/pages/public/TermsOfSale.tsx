@@ -192,7 +192,7 @@ export function TermsOfSale(): JSX.Element {
               </div>
               <div className="font-nunito font-semibold text-muted-foreground space-y-4 mt-4">
                 <p>
-                  Les présentes CGV sont soumises à la législation de la République du Cameroun et aux règles régissant le commerce électronique dans l'espace CEMAC.
+                  Les présentes CGV sont soumises à la législation de la Cameroun et aux règles régissant le commerce électronique dans l'espace CEMAC.
                 </p>
                 <p>
                   En cas de différend, une solution amiable est privilégiée. À défaut d'accord amiable sous trente (30) jours, tout litige sera soumis aux tribunaux compétents du ressort de Douala, Cameroun.

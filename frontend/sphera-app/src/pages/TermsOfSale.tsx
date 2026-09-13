@@ -31,7 +31,7 @@ export default function TermsOfSale() {
             <section>
               <h2 className="text-xl font-bold text-white mb-4">1. Objet & Éligibilité</h2>
               <p>
-                Les présentes Conditions Générales de Vente (CGV) régissent les souscriptions aux offres payantes, Pass Révision / Examen et abonnements de l'assistant d'étude <strong>Sphera</strong>, édité par CampusSphere Inc.
+                Les présentes Conditions Générales de Vente (CGV) régissent les souscriptions aux offres payantes, Pass Révision / Examen et abonnements de l'assistant d'étude <strong>Sphera</strong>, édité par CampusSphere.
               </p>
               <p className="mt-2">
                 L'utilisateur doit être âgé d'au moins <strong>16 ans révolus</strong> et avoir la capacité juridique requise pour contracter (avec accord préalable des parents ou tuteurs légaux pour les étudiants mineurs de 16 à 18 ans).

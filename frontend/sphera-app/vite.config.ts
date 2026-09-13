@@ -285,7 +285,7 @@ function prerenderBlogsPlugin(): Plugin {
         .replace(/<link rel="canonical" href=".*?" \/>/, `<link rel="canonical" href="https://sphera.campussphere.app/legal-notice" />`)
         .replace(/<div id="root"><\/div>/, `<div id="root"><main style="max-width: 800px; margin: 0 auto; padding: 6rem 1.5rem; color: #e4e4e7;">
           <h1 style="font-size: 2rem; color: #ffffff;">Mentions Légales</h1>
-          <p style="color: #a1a1aa; line-height: 1.6;">Informations légales, éditeur CampusSphere Inc. et hébergement cloud (Render, Azure, AWS).</p>
+          <p style="color: #a1a1aa; line-height: 1.6;">Informations légales, éditeur CampusSphere et hébergement cloud (Render, Azure, AWS).</p>
         </main></div>`);
       fs.writeFileSync(path.join(legalDir, 'index.html'), legalHtml, 'utf-8');
       console.log('✓ [prerender-pages] Generated /dist/legal-notice/index.html');
