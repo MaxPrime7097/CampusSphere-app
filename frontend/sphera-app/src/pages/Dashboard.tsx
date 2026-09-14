@@ -6,6 +6,7 @@ import { getSessions, getAnnales } from '../services/spheraApi'
 import { UploadZone } from '../components/app/UploadZone'
 import { setPendingUploadFile } from '../store/fileStore'
 import { QuotaIndicator } from '../components/app/QuotaIndicator'
+import { PasteTextModal } from '../components/app/PasteTextModal'
 
 // Force Vite HMR reload
 export default function Dashboard() {
@@ -14,6 +15,7 @@ export default function Dashboard() {
   
   // Upload State
   const [error, setError] = useState<string | null>(null)
+  const [isPasteModalOpen, setIsPasteModalOpen] = useState(false)
 
   // Sessions State
   const [sessions, setSessions] = useState<any[]>([])
@@ -48,6 +50,17 @@ export default function Dashboard() {
     navigate('/create')
   }
 
+  const handlePasteConfirm = (text: string, title: string) => {
+    setIsPasteModalOpen(false)
+    const safeTitle = title.replace(/[/\\?%*:|"<>]/g, '-').trim() || 'Notes-de-cours'
+    const virtualFile = new File([text], `${safeTitle}.md`, {
+      type: 'text/markdown',
+      lastModified: Date.now(),
+    })
+    setPendingUploadFile(virtualFile)
+    navigate('/create')
+  }
+
   return (
     <div className="flex flex-col h-full overflow-y-auto pb-12">
       <main className="flex-1 w-full max-w-5xl mx-auto py-8 px-0 sm:px-4">
@@ -72,8 +85,33 @@ export default function Dashboard() {
               onFileSelect={handleFileSelect} 
               selectedFile={null} 
             />
+
+            {/* Divider with "OU" */}
+            <div className="relative my-4 flex items-center justify-center">
+              <div className="border-t border-sphera-border w-full" />
+              <span className="bg-sphera-surface-2 px-3 text-xs text-sphera-text-muted uppercase tracking-wider font-semibold">
+                ou
+              </span>
+            </div>
+
+            {/* Paste Text Button */}
+            <button
+              type="button"
+              onClick={() => setIsPasteModalOpen(true)}
+              className="w-full py-3 px-4 rounded-xl bg-sphera-surface hover:bg-sphera-bg border border-sphera-border hover:border-sphera-green/50 text-white transition-all flex items-center justify-center gap-2.5 text-sm font-semibold group shadow-sm"
+            >
+              <FileText className="w-4 h-4 text-sphera-green group-hover:scale-110 transition-transform" />
+              <span>Coller ou rédiger un cours / des notes</span>
+            </button>
           </div>
         </div>
+
+        {/* Paste Text Modal */}
+        <PasteTextModal
+          isOpen={isPasteModalOpen}
+          onClose={() => setIsPasteModalOpen(false)}
+          onConfirm={handlePasteConfirm}
+        />
 
 
 

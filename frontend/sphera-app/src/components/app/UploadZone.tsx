@@ -46,7 +46,7 @@ export function UploadZone({ onFileSelect, selectedFile }: UploadZoneProps) {
       <input 
         id="sphera-file-upload" 
         type="file" 
-        accept=".pdf,.docx,.txt,.png,.jpg,.jpeg,.webp,application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
+        accept=".pdf,.docx,.txt,.md,.markdown,text/markdown,text/plain,.png,.jpg,.jpeg,.webp,application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
         className="hidden" 
         onChange={handleFileInput}
       />
@@ -78,7 +78,7 @@ export function UploadZone({ onFileSelect, selectedFile }: UploadZoneProps) {
           <h3 className="text-white font-medium text-lg mb-2">Glisse ton cours ou ton annale ici</h3>
           <p className="text-sphera-text-muted text-sm mb-4">ou clique pour choisir un fichier</p>
           <div className="text-xs text-sphera-text-muted bg-sphera-surface px-3 py-1.5 rounded-md border border-sphera-border">
-            PDF, DOCX, TXT, Images (PNG, JPG, WEBP) · Max 50MB
+            PDF, DOCX, TXT, MD, Images (PNG, JPG, WEBP) · Max 50MB
           </div>
         </div>
       )}

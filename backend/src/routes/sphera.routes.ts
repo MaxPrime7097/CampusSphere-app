@@ -659,6 +659,23 @@ spheraRouter.post("/sessions/:id/ask/", async (req, res) => {
   ok(res, entry);
 });
 
+const updateTextSchema = z.object({
+  text: z.string().trim().min(10, "Le texte doit contenir au moins 10 caractères."),
+});
+
+spheraRouter.patch("/sessions/:id/text/", async (req, res) => {
+  const me = currentUser(req);
+  const session = await ownStudySession(idParam(req), me.id);
+  const { text } = updateTextSchema.parse(req.body ?? {});
+
+  const updated = await prisma.studySession.update({
+    where: { id: session.id },
+    data: { extractedText: text },
+  });
+
+  ok(res, { extracted_text: updated.extractedText }, "Texte du cours mis à jour.");
+});
+
 const shareSchema = z.object({ sphere_id: z.coerce.number().int().positive().optional() });
 
 spheraRouter.post("/sessions/:id/share/", async (req, res) => {
