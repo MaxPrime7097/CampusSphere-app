@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from "react";
 import { Send, MessageCircleQuestion, AlertCircle, Loader2 } from "lucide-react";
 import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { useQAChat } from "../hooks/useQAChat";
+import { CommandMenu, CHAT_COMMANDS, type ChatCommand } from "./CommandMenu";
 import type { QAMessage } from "../types/sphera.types";
 
 interface QAChatProps {
@@ -15,17 +16,106 @@ export function QAChat({ sessionId, initialHistory = [] }: QAChatProps) {
     initialHistory,
   });
   const [input, setInput] = useState("");
+  const [showCommandMenu, setShowCommandMenu] = useState(false);
+  const [commandFilter, setCommandFilter] = useState("");
+  const [commandActiveIdx, setCommandActiveIdx] = useState(0);
+
   const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
+  const handleInputChange = (val: string) => {
+    setInput(val);
+    const atIdx = val.lastIndexOf("@");
+    if (atIdx !== -1) {
+      const after = val.slice(atIdx + 1);
+      if (!after.includes(" ")) {
+        setShowCommandMenu(true);
+        setCommandFilter("@" + after);
+        setCommandActiveIdx(0);
+        return;
+      }
+    }
+    setShowCommandMenu(false);
+  };
+
+  const handleCommandSelect = (cmd: ChatCommand) => {
+    setShowCommandMenu(false);
+    setInput((prev) => {
+      const atIdx = prev.lastIndexOf("@");
+      if (atIdx !== -1) {
+        return prev.slice(0, atIdx) + cmd.template;
+      }
+      return cmd.template;
+    });
+    inputRef.current?.focus();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (showCommandMenu) {
+      const search = commandFilter.toLowerCase().trim();
+      const filtered = CHAT_COMMANDS.filter(
+        (c) =>
+          c.trigger.toLowerCase().includes(search) ||
+          c.label.toLowerCase().includes(search) ||
+          c.description.toLowerCase().includes(search)
+      );
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setCommandActiveIdx((i) => Math.min(i + 1, filtered.length - 1));
+        return;
+      }
+
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setCommandActiveIdx((i) => Math.max(i - 1, 0));
+        return;
+      }
+
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (filtered[commandActiveIdx]) {
+          handleCommandSelect(filtered[commandActiveIdx]);
+        }
+        return;
+      }
+
+      if (e.key === "Escape") {
+        setShowCommandMenu(false);
+        return;
+      }
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
-    sendQuestion(input);
+    const raw = input.trim();
+    if (!raw || isLoading) return;
+
+    // Smart @ command processing
+    let queryForAi = raw;
+    const match = raw.match(/^@(\w+)\s*(.*)$/);
+    if (match) {
+      const cmdTrigger = `@${match[1].toLowerCase()}`;
+      const rest = match[2].trim();
+      const foundCmd = CHAT_COMMANDS.find((c) => c.trigger.toLowerCase() === cmdTrigger);
+
+      if (foundCmd && foundCmd.prefix) {
+        queryForAi = rest
+          ? `${foundCmd.prefix}${rest}`
+          : `Explique-moi les concepts essentiels du cours de manière pédagogique.`;
+      } else {
+        queryForAi = rest || raw;
+      }
+    }
+
+    sendQuestion(queryForAi);
     setInput("");
+    setShowCommandMenu(false);
   };
 
   return (
@@ -37,7 +127,7 @@ export function QAChat({ sessionId, initialHistory = [] }: QAChatProps) {
         </div>
         <div>
           <p className="text-sm font-semibold text-foreground">Q&A -- Assistante Sphera</p>
-          <p className="text-[10px] sm:text-xs text-muted-foreground">Réponses basées uniquement sur ton cours</p>
+          <p className="text-[10px] sm:text-xs text-muted-foreground">Réponses basées uniquement sur ton cours • Tape @ pour des raccourcis</p>
         </div>
         <span className="ml-auto flex items-center gap-1.5 text-xs text-primary bg-primary/10 px-2.5 py-1 rounded-full border border-primary/20">
           <SpheraIcon size="xs" />
@@ -53,9 +143,9 @@ export function QAChat({ sessionId, initialHistory = [] }: QAChatProps) {
               <MessageCircleQuestion className="w-6 h-6 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-sm font-medium text-foreground">Pose ta premiere question</p>
-              <p className="text-xs text-muted-foreground mt-1 max-w-[240px]">
-                Je reponds en me basant exclusivement sur le contenu de ton cours.
+              <p className="text-sm font-medium text-foreground">Pose ta première question</p>
+              <p className="text-xs text-muted-foreground mt-1 max-w-[280px]">
+                Je réponds en me basant exclusivement sur le contenu de ton cours. Tape <strong className="text-primary">@</strong> pour accéder aux commandes rapides.
               </p>
             </div>
           </div>
@@ -74,7 +164,7 @@ export function QAChat({ sessionId, initialHistory = [] }: QAChatProps) {
               <div className="flex-shrink-0 w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center mt-0.5">
                 <SpheraIcon size="sm" />
               </div>
-              <div className="max-w-[80%] bg-accent/60 border border-border/30 rounded-2xl rounded-tl-sm px-4 py-3 text-sm leading-relaxed">
+              <div className="max-w-[80%] bg-accent/60 border border-border/30 rounded-2xl rounded-tl-sm px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap">
                 {msg.answer}
               </div>
             </div>
@@ -116,28 +206,39 @@ export function QAChat({ sessionId, initialHistory = [] }: QAChatProps) {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
-      <form onSubmit={handleSubmit} className="flex gap-2.5 px-3 sm:px-5 py-3 sm:py-4 border-t border-border/40 bg-background/40">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Pose ta question sur le cours..."
-          disabled={isLoading}
-          className="flex-1 bg-accent/40 border border-border/40 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all disabled:opacity-50"
+      {/* Input Form with CommandMenu */}
+      <div className="relative">
+        <CommandMenu
+          isVisible={showCommandMenu}
+          filter={commandFilter}
+          activeIndex={commandActiveIdx}
+          onSelect={handleCommandSelect}
+          onClose={() => setShowCommandMenu(false)}
         />
-        <button
-          type="submit"
-          disabled={!input.trim() || isLoading}
-          className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95 shadow-sm"
-        >
-          {isLoading ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Send className="w-4 h-4" />
-          )}
-        </button>
-      </form>
+        <form onSubmit={handleSubmit} className="flex gap-2.5 px-3 sm:px-5 py-3 sm:py-4 border-t border-border/40 bg-background/40">
+          <input
+            ref={inputRef}
+            type="text"
+            value={input}
+            onChange={(e) => handleInputChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Pose ta question sur le cours... (ex: @expliquer le théorème de Bayes)"
+            disabled={isLoading}
+            className="flex-1 bg-accent/40 border border-border/40 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all disabled:opacity-50"
+          />
+          <button
+            type="submit"
+            disabled={!input.trim() || isLoading}
+            className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95 shadow-sm"
+          >
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

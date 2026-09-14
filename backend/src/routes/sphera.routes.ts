@@ -103,7 +103,7 @@ const hasSupportedExtension = (filename: string): boolean =>
 
 function assertSupportedUpload(filename: string): void {
   if (!hasSupportedExtension(filename)) {
-    throw badRequest("Seuls les fichiers PDF, DOCX et TXT sont acceptés.");
+    throw badRequest("Seuls les fichiers PDF, DOCX, TXT et images (PNG, JPG, WEBP) sont acceptés.");
   }
 }
 
