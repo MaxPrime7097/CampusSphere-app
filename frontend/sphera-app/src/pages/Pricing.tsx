@@ -60,8 +60,8 @@ export default function Pricing() {
               <span className="text-sphera-green">toute la bêta</span>
             </h1>
             <p className="text-xl text-sphera-text-muted max-w-2xl mx-auto leading-relaxed">
-              Sphera est en bêta ouverte. Toutes les fonctionnalités sont disponibles sans limite, sans carte bancaire, sans conditions.
-              Le premium viendra plus tard — et tu seras le premier prévenu.
+              Sphera est en bêta ouverte. Profitez de 5 générations complètes offertes chaque semaine (Fiches, Quiz, Flashcards, Annales) et du Q&A IA illimité, sans carte bancaire.
+              Le plan illimité complet viendra très prochainement.
             </p>
           </div>
 
@@ -79,11 +79,11 @@ export default function Pricing() {
 
               <ul className="text-left space-y-3 mb-8">
                 {[
-                  "Générations illimitées",
-                  "Tous les outils — Fiche, Quiz, Flashcards, Annales",
-                  "Q&A illimité avec l'IA sur tes cours",
-                  "Partage de sessions",
-                  "Support pour PDFs scannés (OCR)",
+                  "5 générations complètes offertes / semaine (Bêta)",
+                  "Q&A illimité avec l'IA sur tous tes cours",
+                  "Tous les outils — Fiches, Quiz, Flashcards, Annales",
+                  "Partage public de sessions et export PDF",
+                  "Support pour PDFs scannés et photos (OCR)",
                   "Aucune carte bancaire requise",
                 ].map((f, i) => (
                   <li key={i} className="flex items-center gap-3">

@@ -4,7 +4,7 @@ import { FileText, ArrowLeft } from 'lucide-react'
 import { ToolSelector, type ToolType } from '../components/app/ToolSelector'
 import { GenerateButton } from '../components/app/GenerateButton'
 import { pendingUploadFile } from '../store/fileStore'
-import { Maximize2, Minimize2, Send, MessageSquare, Bot, User } from 'lucide-react'
+import { Maximize2, Minimize2, Send, MessageSquare, Bot, User, AtSign } from 'lucide-react'
 import { FicheView, QuizView, FlashcardsView, AnnaleView } from '../components/app/ResultViews'
 import { generateFromUpload, generateAnnale, askQuestion } from '../services/spheraApi'
 import { Sparkles } from 'lucide-react'
@@ -45,6 +45,7 @@ export default function CreateSession() {
   const [showCommandMenu, setShowCommandMenu] = useState(false)
   const [commandFilter, setCommandFilter] = useState('')
   const [commandActiveIdx, setCommandActiveIdx] = useState(0)
+  const [mobileActiveView, setMobileActiveView] = useState<'doc' | 'workspace'>('workspace')
   const chatInputRef = React.useRef<HTMLInputElement>(null)
 
   const isImage = currentFile ? (currentFile.type.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|svg)$/i.test(currentFile.name)) : false;
@@ -206,17 +207,25 @@ export default function CreateSession() {
 
   const handleChatInputChange = (val: string) => {
     setChatMessage(val)
-    const atIdx = val.lastIndexOf('@')
-    if (atIdx !== -1) {
-      const after = val.slice(atIdx + 1)
-      if (!after.includes(' ')) {
-        setShowCommandMenu(true)
-        setCommandFilter('@' + after)
-        setCommandActiveIdx(0)
-        return
-      }
+    const match = val.match(/@([a-zA-Z0-9_-]*)$/)
+    if (match) {
+      setShowCommandMenu(true)
+      setCommandFilter('@' + match[1])
+      setCommandActiveIdx(0)
+    } else if (!val.includes('@') && showCommandMenu) {
+      setShowCommandMenu(false)
     }
-    setShowCommandMenu(false)
+  }
+
+  const handleToggleCommandMenu = () => {
+    if (showCommandMenu) {
+      setShowCommandMenu(false)
+    } else {
+      setShowCommandMenu(true)
+      setCommandFilter('')
+      setCommandActiveIdx(0)
+      chatInputRef.current?.focus()
+    }
   }
 
   const handleCommandSelect = async (cmd: Command) => {
@@ -291,9 +300,45 @@ export default function CreateSession() {
 
   return (
     <div className="flex h-full overflow-hidden flex-col md:flex-row bg-sphera-bg">
+      {/* Mobile Top Bar with Segmented View Switcher */}
+      <div className="md:hidden flex items-center justify-between px-3 py-2 bg-sphera-surface-2 border-b border-sphera-border shrink-0 z-30">
+        <button 
+          onClick={() => navigate('/dashboard')} 
+          title="Retour au tableau de bord"
+          aria-label="Retour au tableau de bord"
+          className="p-1.5 text-sphera-text-muted hover:bg-sphera-surface hover:text-white rounded-md transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+
+        <div className="flex items-center bg-sphera-surface p-1 rounded-lg border border-sphera-border gap-1">
+          <button
+            type="button"
+            onClick={() => setMobileActiveView('doc')}
+            className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
+              mobileActiveView === 'doc'
+                ? 'bg-sphera-green text-black shadow-sm'
+                : 'text-sphera-text-muted hover:text-white'
+            }`}
+          >
+            {isImage ? 'Image' : isPdf ? 'PDF' : 'Document'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileActiveView('workspace')}
+            className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
+              mobileActiveView === 'workspace'
+                ? 'bg-sphera-green text-black shadow-sm'
+                : 'text-sphera-text-muted hover:text-white'
+            }`}
+          >
+            Espace d'étude
+          </button>
+        </div>
+      </div>
       
       {/* Left Column: PDF Preview */}
-      <div className={`${isPdfExpanded ? 'w-full md:w-1/2 flex' : 'hidden'} border-r border-sphera-border flex-col bg-sphera-surface-2 overflow-hidden transition-all duration-300`}>
+      <div className={`${mobileActiveView === 'doc' ? 'flex flex-1 w-full' : 'hidden'} ${isPdfExpanded ? 'md:flex md:w-1/2' : 'md:hidden'} border-r border-sphera-border flex-col bg-sphera-surface-2 overflow-hidden transition-all duration-300`}>
         <div className="h-14 border-b border-sphera-border flex items-center px-4 gap-4 bg-sphera-bg">
           <button 
             onClick={() => navigate('/dashboard')} 
@@ -340,7 +385,7 @@ export default function CreateSession() {
       </div>
 
       {/* Right Column: Configuration & Results Workspace */}
-      <div className={`${isPdfExpanded ? 'w-full md:w-1/2' : 'w-full'} flex flex-col h-full bg-sphera-bg relative shadow-[-10px_0_30px_rgba(0,0,0,0.5)] transition-all duration-300`}>
+      <div className={`${mobileActiveView === 'workspace' ? 'flex flex-1 w-full' : 'hidden'} ${isPdfExpanded ? 'md:flex md:w-1/2' : 'md:flex md:w-full'} flex-col h-full bg-sphera-bg relative shadow-[-10px_0_30px_rgba(0,0,0,0.5)] transition-all duration-300`}>
         
         {/* Workspace Toolbar */}
         <div className="h-14 border-b border-sphera-border flex items-center justify-between px-4 bg-sphera-surface-2/80 backdrop-blur-md sticky top-0 z-20">
@@ -580,8 +625,20 @@ export default function CreateSession() {
               onSelect={handleCommandSelect}
               onClose={() => setShowCommandMenu(false)}
             />
-            <div className="flex items-center gap-3 bg-sphera-surface-2 border border-sphera-border rounded-full p-2 pl-5 shadow-[0_0_30px_rgba(0,0,0,0.5)] focus-within:border-sphera-green/50 transition-colors">
-              <MessageSquare className="w-4 h-4 text-sphera-text-muted hidden sm:block" />
+            <div className="flex items-center gap-2 bg-sphera-surface-2 border border-sphera-border rounded-full p-2 pl-3 sm:pl-4 shadow-[0_0_30px_rgba(0,0,0,0.5)] focus-within:border-sphera-green/50 transition-colors">
+              <button
+                type="button"
+                onClick={handleToggleCommandMenu}
+                title="Commandes (@)"
+                aria-label="Ouvrir les commandes (@)"
+                className={`p-1.5 rounded-full transition-colors shrink-0 ${
+                  showCommandMenu 
+                    ? 'bg-sphera-green text-black' 
+                    : 'text-sphera-text-muted hover:text-sphera-green hover:bg-sphera-surface'
+                }`}
+              >
+                <AtSign className="w-4 h-4" />
+              </button>
               <input 
                 ref={chatInputRef}
                 type="text" 
@@ -591,9 +648,6 @@ export default function CreateSession() {
                 onKeyDown={handleChatKeyDown}
                 className="flex-1 bg-transparent border-none text-sm text-white placeholder-sphera-text-muted outline-none focus:ring-0"
               />
-              {!chatMessage && (
-                <span className="text-[10px] text-sphera-green/40 font-mono shrink-0 hidden sm:block">@commandes</span>
-              )}
               <button 
                 onClick={handleSendChat}
                 disabled={!chatMessage.trim() || isChatting || !sessionId}
