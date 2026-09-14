@@ -8,7 +8,7 @@
 
 import { badRequest, serviceUnavailable } from "../../lib/errors.js";
 import { parseJsonWithFallback, UnparseableModelOutputError } from "./json.js";
-import { annalePrompt, qaPrompt, suggestionsPrompt, toolPrompt, type AnnaleMode, type ToolType } from "./prompts.js";
+import { annalePrompt, qaPrompt, suggestionsPrompt, toolPrompt, quizFromSelectionPrompt, flashcardFromSelectionPrompt, type AnnaleMode, type ToolType } from "./prompts.js";
 import { AllProvidersFailedError, callWithFallback, TOKENS_ANNALE, TOKENS_DEFAULT, TOKENS_FLASHCARDS, TOKENS_QUIZ } from "./providers.js";
 import { buildContextPrefix, getUserAcademicContext } from "./userContext.js";
 
@@ -175,6 +175,24 @@ export async function generateSuggestions(text: string, userId?: number): Promis
   } catch (error) {
     console.warn("[sphera] suggestion generation failed:", error);
     return [];
+  }
+/**
+ * Generate 1 targeted item (quiz or flashcard) based strictly on a user selection.
+ */
+export async function generateFromSelection(
+  selectedText: string,
+  toolType: "quiz" | "flashcards",
+  userId?: number,
+): Promise<Record<string, unknown>> {
+  assertUsableSource(selectedText, "Le passage sélectionné");
+  const prefix = await resolveContextPrefix(userId);
+  const prompt = prefix + (toolType === "quiz" ? quizFromSelectionPrompt(selectedText) : flashcardFromSelectionPrompt(selectedText));
+  const maxTokens = 2000;
+  try {
+    const raw = await callWithFallback(prompt, maxTokens, { toolType, userId });
+    return validateToolOutput(toolType, parseJsonWithFallback(raw));
+  } catch (error) {
+    throw asApiError(error);
   }
 }
 

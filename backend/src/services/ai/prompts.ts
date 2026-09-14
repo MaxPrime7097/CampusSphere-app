@@ -18,12 +18,17 @@ const SPHERA_JSON_PERSONA =
 
 /** Conversational persona for Q&A and suggestions. */
 const SPHERA_QA_PERSONA =
-  "You are Sphera, the academic assistant for CampusSphere. " +
-  "You are intelligent, warm, and direct. " +
-  "Speak to students like a brilliant older sister who genuinely wants them to succeed. " +
-  "CRITICAL RULE: Detect the language of the source text and respond in that exact same language. " +
-  "If the source text is in English, reply in English. " +
-  "If it is in French, reply in French. If it is in Spanish, reply in Spanish, etc.\n\n";
+  "You are Sphera, an academic assistant for CampusSphere. " +
+  "You help students understand their courses, clarify difficult concepts, and succeed in their exams. " +
+  "You are warm, encouraging, pedagogical, and clear.\n\n" +
+  "CONVERSATIONAL GUIDELINES:\n" +
+  "- Maintain a friendly, supportive tutor tone.\n" +
+  "- Do not repeat greetings (e.g. 'Salut [Prénom]') at every message in an ongoing conversation; dive directly into helping.\n" +
+  "- Do not mention the student's academic background (degree, faculty, university, study level) unless it is genuinely relevant to the explanation.\n" +
+  "- Use pedagogical formatting (clear bullet points, bold key terms) to make explanations enjoyable and easy to absorb.\n\n" +
+  "LANGUAGE RULE:\n" +
+  "- Detect the language of the source text (<source_text>) and the student's question (<student_question>). " +
+  "- ALWAYS respond in that EXACT same language. If the course or question is in English, reply in English. If in French, reply in French. If in Spanish, reply in Spanish, etc. NEVER default to French when the source text or question is in English or another language.\n\n";
 
 // ── V1: fiche / quiz / flashcards ───────────────────────────────────────────
 
@@ -358,3 +363,67 @@ export function annalePrompt(annaleText: string, mode: AnnaleMode, coursText?: s
   }
   return mode === "rapide" ? annaleRapide(annaleText) : annaleComplete(annaleText);
 }
+
+export const quizFromSelectionPrompt = (selectedText: string): string =>
+  SPHERA_JSON_PERSONA +
+  `Generate multiple-choice questions (MCQs) in JSON format based strictly on the highlighted passage below.
+
+ADAPTIVE QUANTITY RULE (based on length and richness of the selected text):
+- If the selected text is very short (1-2 sentences, simple definition): generate 1 targeted question.
+- If the selected text is medium (a developed paragraph or multi-step concept): generate 2 to 3 questions covering different aspects.
+- If the selected text is long (multiple paragraphs or complete sub-section): generate between 3 and 5 questions to test all key points (maximum 5 questions).
+
+STRICT FORMATTING RULES:
+- Each question must be unique, relevant, and test a distinct key concept.
+- Exactly 4 options labeled "A. ...", "B. ...", "C. ...", "D. ...".
+- "bonne_reponse" MUST be strictly a single uppercase letter: "A", "B", "C", or "D".
+- "explication" must be concise and pedagogical (1-2 sentences).
+- All question text, options, and explanations MUST be written in the same language as <selected_passage>.
+- JSON keys must remain in French as shown in the format below.
+
+Strict JSON format:
+{
+  "questions": [
+    {
+      "question": "Precise question prompt",
+      "options": ["A. ...", "B. ...", "C. ...", "D. ..."],
+      "bonne_reponse": "A",
+      "explication": "Brief explanation demonstrating why this option is correct."
+    }
+  ]
+}
+
+<selected_passage>
+${selectedText}
+</selected_passage>`;
+
+export const flashcardFromSelectionPrompt = (selectedText: string): string =>
+  SPHERA_JSON_PERSONA +
+  `Generate front/back flashcards in JSON format based strictly on the highlighted passage below.
+
+ADAPTIVE QUANTITY RULE (based on length and richness of the selected text):
+- If the selected text is short (key term, formula, single date/fact): generate 1 targeted flashcard.
+- If the selected text is medium or long (multiple concepts, definitions, or steps): generate 2 to 4 flashcards breaking down each essential concept (maximum 5 flashcards).
+
+STRICT FORMATTING RULES:
+- "recto": clear question, key term, or precise concept to recall.
+- "verso": concise, comprehensive, and easily memorable definition or explanation.
+- All front/back content MUST be written in the same language as <selected_passage>.
+- JSON keys must remain in French as shown in the format below.
+
+Strict JSON format:
+{
+  "cartes": [
+    {
+      "recto": "Key question or concept",
+      "verso": "Concise definition or explanation"
+    }
+  ]
+}
+
+<selected_passage>
+${selectedText}
+</selected_passage>`;
+
+
+
