@@ -59,25 +59,16 @@ export async function getUserAcademicContext(userId: number): Promise<AcademicCo
 export function buildContextPrefix(context: AcademicContext | null): string {
   if (!context) return "";
 
-  // Include context as long as at least one meaningful field is present
+  // Include context as long as at least one meaningful academic field is present
   if (!context.university && !context.faculty && !context.studyYear) {
     return "";
   }
 
-  const isFrench = !context.language || context.language === "fr";
-
   const parts: string[] = [];
-  if (isFrench) {
-    if (context.firstName) parts.push(`l'étudiant(e) ${context.firstName}`);
-    if (context.faculty) parts.push(`en ${context.faculty}`);
-    if (context.studyYear) parts.push(`niveau ${context.studyYear}`);
-    if (context.university) parts.push(`à ${context.university}`);
-    return `Contexte : tu aides ${parts.join(", ")}. Adapte ton vocabulaire et tes exemples à ce niveau d'études.\n\n`;
-  } else {
-    if (context.firstName) parts.push(`student ${context.firstName}`);
-    if (context.faculty) parts.push(`studying ${context.faculty}`);
-    if (context.studyYear) parts.push(`level: ${context.studyYear}`);
-    if (context.university) parts.push(`at ${context.university}`);
-    return `Context: you are helping ${parts.join(", ")}. Adapt your vocabulary and examples to this study level.\n\n`;
-  }
+  if (context.faculty) parts.push(`studying ${context.faculty}`);
+  if (context.studyYear) parts.push(`level: ${context.studyYear}`);
+  if (context.university) parts.push(`at ${context.university}`);
+
+  const namePart = context.firstName ? `Student name: ${context.firstName}, ` : "";
+  return `[STUDENT PROFILE: ${namePart}${parts.join(", ")}. Use this background to calibrate pedagogical depth and keep explanations accessible. Do not repeat greetings at every turn, and do not recite academic profile details unless genuinely relevant.]\n\n`;
 }

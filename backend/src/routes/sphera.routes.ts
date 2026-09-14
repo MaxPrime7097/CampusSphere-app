@@ -34,6 +34,7 @@ import { checkGenerationQuota, incrementGenerationQuota, WEEKLY_LIMIT } from "..
 import { getWeekStartDate } from "../lib/weekHelper.js";
 import {
   generateAnnale,
+  generateFromSelection,
   generateQaAnswer,
   generateSuggestions,
   generateTool,
@@ -590,6 +591,80 @@ spheraRouter.patch("/sessions/:id/add-tool/", checkGenerationQuota, async (req, 
   await incrementGenerationQuota(me.id, 1);
 
   ok(res, serializeStudySession(updated as SerializableStudySession));
+});
+
+const createFromSelectionSchema = z.object({
+  tool_type: z.enum(["quiz", "flashcards"]),
+  selected_text: z.string().trim().min(3, "Le passage sélectionné doit contenir au moins 3 caractères."),
+});
+
+/**
+ * POST /sessions/<id>/create-from-selection/
+ *
+ * Generates an interactive quiz question or flashcard from highlighted text
+ * and appends it directly to session.content[tool_type].
+ */
+spheraRouter.post("/sessions/:id/create-from-selection/", async (req, res) => {
+  const me = currentUser(req);
+  const session = await ownStudySession(idParam(req), me.id);
+  const { tool_type, selected_text } = createFromSelectionSchema.parse(req.body ?? {});
+
+  const generated = await generateFromSelection(selected_text, tool_type, me.id);
+  const currentContent = (session.content ?? {}) as Record<string, any>;
+
+  let updatedToolContent: any;
+  let createdItem: any;
+
+  if (tool_type === "quiz") {
+    const existingQuestions = Array.isArray(currentContent.quiz?.questions)
+      ? currentContent.quiz.questions
+      : [];
+    const newQuestions = Array.isArray(generated.questions) ? generated.questions : [];
+    createdItem = newQuestions[0] || null;
+    updatedToolContent = {
+      ...(currentContent.quiz ?? {}),
+      titre: currentContent.quiz?.titre || session.resourceTitle || "Quiz",
+      questions: [...existingQuestions, ...newQuestions],
+    };
+  } else {
+    const existingCartes = Array.isArray(currentContent.flashcards?.cartes)
+      ? currentContent.flashcards.cartes
+      : [];
+    const newCartes = Array.isArray(generated.cartes) ? generated.cartes : [];
+    createdItem = newCartes[0] || null;
+    updatedToolContent = {
+      ...(currentContent.flashcards ?? {}),
+      titre: currentContent.flashcards?.titre || session.resourceTitle || "Flashcards",
+      cartes: [...existingCartes, ...newCartes],
+    };
+  }
+
+  const prismaTool = toPrismaTool(tool_type);
+  const updatedToolTypes = session.toolTypes.includes(prismaTool)
+    ? session.toolTypes
+    : [...session.toolTypes, prismaTool];
+
+  const updatedSession = await prisma.studySession.update({
+    where: { id: session.id },
+    data: {
+      content: {
+        ...currentContent,
+        [tool_type]: updatedToolContent,
+      } as Prisma.InputJsonObject,
+      toolTypes: updatedToolTypes,
+    },
+    include: studySessionInclude,
+  });
+
+  const count = tool_type === "quiz" ? newQuestions.length : newCartes.length;
+
+  ok(res, {
+    created_items: tool_type === "quiz" ? newQuestions : newCartes,
+    created_item: createdItem,
+    count,
+    tool_type,
+    session: serializeStudySession(updatedSession as SerializableStudySession),
+  });
 });
 
 /**
