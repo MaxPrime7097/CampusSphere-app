@@ -176,6 +176,8 @@ export async function generateSuggestions(text: string, userId?: number): Promis
     console.warn("[sphera] suggestion generation failed:", error);
     return [];
   }
+}
+
 /**
  * Generate 1 targeted item (quiz or flashcard) based strictly on a user selection.
  */
