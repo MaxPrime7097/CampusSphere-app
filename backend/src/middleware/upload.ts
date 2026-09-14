@@ -41,6 +41,8 @@ export const RESOURCE_MIME_TYPES = [
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "text/csv",
   "text/plain",
+  "text/markdown",
+  "text/x-markdown",
   "text/x-python",
   "application/javascript",
   "application/zip",
