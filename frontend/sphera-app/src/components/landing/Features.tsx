@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { FileText, BrainCircuit, Layers, PenTool, Zap, ArrowRight } from 'lucide-react'
+import { FileText, BrainCircuit, Layers, Zap, ArrowRight, FilePenLine } from 'lucide-react'
 
 export function Features() {
   const features = [
@@ -30,7 +30,7 @@ export function Features() {
     {
       title: "Correction d'annales",
       desc: "Mode complet ou rapide selon ton timing pour t'entraîner sur les vrais sujets des années précédentes.",
-      icon: <PenTool className="w-6 h-6 text-sphera-green" />,
+      icon: <FilePenLine className="w-6 h-6 text-sphera-green" />,
     }
   ]
 

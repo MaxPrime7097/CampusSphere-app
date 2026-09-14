@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Copy, Check, ThumbsUp, ThumbsDown, Pencil } from 'lucide-react'
+import { Copy, Check, ThumbsUp, ThumbsDown, Pencil, RotateCcw } from 'lucide-react'
 import { MarkdownRenderer } from './MarkdownRenderer'
 
 interface AiMessageItemProps {
@@ -7,10 +7,11 @@ interface AiMessageItemProps {
   answer: string
   index?: number
   onEdit?: (index: number, newQuestion: string) => void
+  onRegenerate?: (index: number) => void
   disabled?: boolean
 }
 
-export function AiMessageItem({ question, answer, index, onEdit, disabled }: AiMessageItemProps) {
+export function AiMessageItem({ question, answer, index, onEdit, onRegenerate, disabled }: AiMessageItemProps) {
   const [copied, setCopied] = useState(false)
   const [feedback, setFeedback] = useState<'up' | 'down' | null>(null)
   const [isEditing, setIsEditing] = useState(false)
@@ -168,6 +169,22 @@ export function AiMessageItem({ question, answer, index, onEdit, disabled }: AiM
               >
                 <ThumbsDown className="w-3.5 h-3.5" />
               </button>
+
+              {onRegenerate && index !== undefined && !disabled && (
+                <>
+                  <span className="text-sphera-border px-1">•</span>
+                  <button
+                    type="button"
+                    onClick={() => onRegenerate(index)}
+                    title="Régénérer la réponse"
+                    aria-label="Régénérer la réponse"
+                    className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2 transition-colors active:scale-95"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span className="text-[11px] hidden sm:inline">Régénérer</span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}
