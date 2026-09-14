@@ -639,30 +639,32 @@ spheraRouter.post("/sessions/:id/create-from-selection/", async (req, res) => {
   const generated = await generateFromSelection(selected_text, tool_type, me.id);
   const currentContent = (session.content ?? {}) as Record<string, any>;
 
+  const defaultTitle = session.resource?.title ?? session.sourceFilename ?? (tool_type === "quiz" ? "Quiz" : "Flashcards");
   let updatedToolContent: any;
   let createdItem: any;
+  let newItems: any[] = [];
 
   if (tool_type === "quiz") {
     const existingQuestions = Array.isArray(currentContent.quiz?.questions)
       ? currentContent.quiz.questions
       : [];
-    const newQuestions = Array.isArray(generated.questions) ? generated.questions : [];
-    createdItem = newQuestions[0] || null;
+    newItems = Array.isArray(generated.questions) ? generated.questions : [];
+    createdItem = newItems[0] || null;
     updatedToolContent = {
       ...(currentContent.quiz ?? {}),
-      titre: currentContent.quiz?.titre || session.resourceTitle || "Quiz",
-      questions: [...existingQuestions, ...newQuestions],
+      titre: currentContent.quiz?.titre || defaultTitle,
+      questions: [...existingQuestions, ...newItems],
     };
   } else {
     const existingCartes = Array.isArray(currentContent.flashcards?.cartes)
       ? currentContent.flashcards.cartes
       : [];
-    const newCartes = Array.isArray(generated.cartes) ? generated.cartes : [];
-    createdItem = newCartes[0] || null;
+    newItems = Array.isArray(generated.cartes) ? generated.cartes : [];
+    createdItem = newItems[0] || null;
     updatedToolContent = {
       ...(currentContent.flashcards ?? {}),
-      titre: currentContent.flashcards?.titre || session.resourceTitle || "Flashcards",
-      cartes: [...existingCartes, ...newCartes],
+      titre: currentContent.flashcards?.titre || defaultTitle,
+      cartes: [...existingCartes, ...newItems],
     };
   }
 
@@ -683,10 +685,10 @@ spheraRouter.post("/sessions/:id/create-from-selection/", async (req, res) => {
     include: studySessionInclude,
   });
 
-  const count = tool_type === "quiz" ? newQuestions.length : newCartes.length;
+  const count = newItems.length;
 
   ok(res, {
-    created_items: tool_type === "quiz" ? newQuestions : newCartes,
+    created_items: newItems,
     created_item: createdItem,
     count,
     tool_type,
