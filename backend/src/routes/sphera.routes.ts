@@ -103,7 +103,7 @@ const hasSupportedExtension = (filename: string): boolean =>
 
 function assertSupportedUpload(filename: string): void {
   if (!hasSupportedExtension(filename)) {
-    throw badRequest("Seuls les fichiers PDF, DOCX et TXT sont acceptés.");
+    throw badRequest("Seuls les fichiers PDF, DOCX, TXT et images (PNG, JPG, WEBP) sont acceptés.");
   }
 }
 
@@ -336,6 +336,15 @@ spheraRouter.post("/generate/from-resource/", checkGenerationQuota, async (req, 
     return;
   }
 
+  if (typeof res.locals.remainingQuota === "number" && tools.length > res.locals.remainingQuota) {
+    res.status(429).json({
+      success: false,
+      error: "insufficient_quota",
+      message: `Il ne te reste que ${res.locals.remainingQuota} génération(s) cette semaine, mais tu as sélectionné ${tools.length} outil(s).`,
+    });
+    return;
+  }
+
   const text = await extractText(await readStoredFile(source), sourceFilename);
   assertUsableText(text);
 
@@ -376,6 +385,14 @@ spheraRouter.post("/generate/from-upload/", checkGenerationQuota, singleUpload("
   if (!file) throw badRequest("Un fichier est requis.");
 
   const tools = parseToolTypes((req.body as { tool_types?: unknown }).tool_types);
+  if (typeof res.locals.remainingQuota === "number" && tools.length > res.locals.remainingQuota) {
+    res.status(429).json({
+      success: false,
+      error: "insufficient_quota",
+      message: `Il ne te reste que ${res.locals.remainingQuota} génération(s) cette semaine, mais tu as sélectionné ${tools.length} outil(s).`,
+    });
+    return;
+  }
   assertSupportedUpload(file.originalname);
 
   // Extract before persisting anything: a document with no text should not leave a

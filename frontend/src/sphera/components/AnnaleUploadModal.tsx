@@ -116,7 +116,7 @@ export function AnnaleUploadModal({ open, onClose }: AnnaleUploadModalProps) {
             <input
               ref={inputRef}
               type="file"
-              accept=".pdf,.docx,.txt"
+              accept=".pdf,.docx,.txt,.png,.jpg,.jpeg,.webp"
               className="hidden"
               onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
             />
@@ -126,7 +126,7 @@ export function AnnaleUploadModal({ open, onClose }: AnnaleUploadModalProps) {
             <div className="text-center">
               <p className="text-sm font-semibold text-foreground">Glisse ton annale ici</p>
               <p className="text-xs text-muted-foreground mt-1">ou clique pour choisir un fichier</p>
-              <p className="text-xs text-muted-foreground/60 mt-2">PDF, DOCX, TXT · max 50 MB</p>
+              <p className="text-xs text-muted-foreground/60 mt-2">PDF, DOCX, TXT, Images (PNG, JPG) · max 50 MB</p>
             </div>
           </div>
         ) : (

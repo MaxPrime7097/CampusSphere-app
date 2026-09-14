@@ -1,6 +1,6 @@
-import React from "react";
-import { CheckCircle2, BookOpen, Key, Calculator, Lightbulb } from "lucide-react";
+import { CheckCircle2, BookOpen, Key, Calculator, Lightbulb, Download, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useDownloadPDF } from "../../hooks/useDownloadPDF";
 
 interface FicheData {
   titre: string;
@@ -17,13 +17,29 @@ interface FicheRevisionProps {
 
 export const FicheRevision: React.FC<FicheRevisionProps> = ({ data }) => {
   const [openDef, setOpenDef] = React.useState<number | null>(null);
+  const { isDownloading, generateFiche } = useDownloadPDF();
 
   return (
     <div className="space-y-5 text-sm">
-      {/* Titre */}
-      <div className="flex items-center gap-2 pb-2 border-b border-border">
-        <BookOpen className="h-5 w-5 text-[#ff9800] flex-shrink-0" />
-        <h2 className="font-bold text-base text-foreground leading-snug">{data.titre}</h2>
+      {/* Titre & Export PDF */}
+      <div className="flex items-center justify-between gap-3 pb-2 border-b border-border flex-wrap">
+        <div className="flex items-center gap-2">
+          <BookOpen className="h-5 w-5 text-[#ff9800] flex-shrink-0" />
+          <h2 className="font-bold text-base text-foreground leading-snug">{data.titre}</h2>
+        </div>
+        <button
+          type="button"
+          onClick={() => generateFiche(data, data.titre)}
+          disabled={isDownloading}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#ff9800]/10 text-[#ff9800] hover:bg-[#ff9800]/20 border border-[#ff9800]/30 transition-all disabled:opacity-50"
+        >
+          {isDownloading ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Download className="w-3.5 h-3.5" />
+          )}
+          Télécharger PDF
+        </button>
       </div>
 
       {/* Résumé */}
