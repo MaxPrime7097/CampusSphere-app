@@ -196,10 +196,10 @@ export async function guestGenerate(params: {
 
 export type ToolType = 'fiche' | 'quiz' | 'flashcards'
 
-export async function generateFromUpload(params: { file: File; tool_types: ToolType[] }) {
+export async function generateFromUpload(params: { file: File; tool_types?: ToolType[] }) {
   const formData = new FormData()
   formData.append('file', params.file)
-  formData.append('tool_types', JSON.stringify(params.tool_types))
+  formData.append('tool_types', JSON.stringify(params.tool_types || []))
   return apiFetch<{ success: boolean; data: any; cached: boolean }>('api/sphera/generate/from-upload/', {
     method: 'POST',
     body: formData,

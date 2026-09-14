@@ -1,13 +1,26 @@
 import React, { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { FileText, ArrowLeft } from 'lucide-react'
+import {
+  FileText,
+  ArrowLeft,
+  Maximize2,
+  Minimize2,
+  Send,
+  MessageSquare,
+  Bot,
+  User,
+  AtSign,
+  Sparkles,
+  BookOpen,
+  Zap,
+  Loader2,
+  Plus
+} from 'lucide-react'
 import { ToolSelector, type ToolType } from '../components/app/ToolSelector'
 import { GenerateButton } from '../components/app/GenerateButton'
 import { pendingUploadFile } from '../store/fileStore'
-import { Maximize2, Minimize2, Send, MessageSquare, Bot, User, AtSign } from 'lucide-react'
 import { FicheView, QuizView, FlashcardsView, AnnaleView } from '../components/app/ResultViews'
-import { generateFromUpload, generateAnnale, askQuestion } from '../services/spheraApi'
-import { Sparkles } from 'lucide-react'
+import { generateFromUpload, generateAnnale, askQuestion, addToolToSession } from '../services/spheraApi'
 import { QuestionSuggestions } from '../components/app/QuestionSuggestions'
 import { normalizeAiResponse } from '../utils/normalizeAiResponse'
 import { CommandMenu, COMMANDS, type Command } from '../components/app/CommandMenu'
@@ -79,14 +92,33 @@ export default function CreateSession() {
 
   if (!file) return null
 
+  const handleStartDirectQa = async () => {
+    setGenerating(true)
+    setError(null)
+    try {
+      const result = await generateFromUpload({ file, tool_types: [] })
+      const payload = result?.data ?? result
+      setGeneratedContent(payload.content || {})
+      if (payload.id) setSessionId(payload.id)
+      if (payload.qa_history) setChatHistory(payload.qa_history)
+      setActiveTab('chat')
+    } catch (e: any) {
+      setError(e.message || "Erreur lors de l'initialisation de la session Q&A.")
+    } finally {
+      setGenerating(false)
+    }
+  }
+
   const handleGenerate = async () => {
+    if (generationMode === 'study' && selectedTools.length === 0) {
+      return handleStartDirectQa()
+    }
     setGenerating(true)
     setError(null)
     try {
       let result;
       if (generationMode === 'study') {
-        const types = selectedTools.length > 0 ? selectedTools : ['fiche'];
-        result = await generateFromUpload({ file, tool_types: types as ('fiche' | 'quiz' | 'flashcards')[] });
+        result = await generateFromUpload({ file, tool_types: selectedTools as ('fiche' | 'quiz' | 'flashcards')[] });
       } else {
         result = await generateAnnale({ file, mode: annaleMode });
       }
@@ -101,7 +133,7 @@ export default function CreateSession() {
       if (generatedTypes && generatedTypes.length > 0) {
         setActiveTab(generatedTypes[0]);
       } else {
-        setActiveTab(generationMode === 'study' ? selectedTools[0] || 'fiche' : 'annale');
+        setActiveTab('chat');
       }
       
     } catch (e: any) {
@@ -113,19 +145,35 @@ export default function CreateSession() {
 
   const handleSendChat = async () => {
     const raw = chatMessage.trim();
-    if (!raw || !sessionId) return;
+    if (!raw) return;
     
     setChatMessage('');
 
     // 1. Bare tool command -> switch tab or generate without sending raw prompt
     const lower = raw.toLowerCase();
     if (lower === '@fiche' || lower === '@quiz' || lower === '@flashcards') {
-      const tool = lower.replace('@', '') as ToolType;
-      if (generatedContent && generatedContent[tool] !== undefined) {
-        setActiveTab(tool);
+      const tool = lower.replace('@', '') as 'fiche' | 'quiz' | 'flashcards';
+      if (sessionId) {
+        if (generatedContent && generatedContent[tool] !== undefined) {
+          setActiveTab(tool);
+        } else {
+          await handleAddTool(tool);
+          setActiveTab(tool);
+        }
       } else {
-        await handleAddTool(tool);
-        setActiveTab(tool);
+        setSelectedTools([tool]);
+        setGenerating(true);
+        try {
+          const result = await generateFromUpload({ file, tool_types: [tool] });
+          const payload = result?.data ?? result;
+          setGeneratedContent(payload.content || payload);
+          if (payload.id) setSessionId(payload.id);
+          setActiveTab(tool);
+        } catch (e: any) {
+          setError(e.message);
+        } finally {
+          setGenerating(false);
+        }
       }
       return;
     }
@@ -158,11 +206,29 @@ export default function CreateSession() {
     setIsChatting(true);
     setActiveTab('chat');
     
-    setChatHistory(prev => [...prev, { question: displayQuestion, answer: '...' }]);
-    
+    let activeSessionId = sessionId;
+
+    if (!activeSessionId) {
+      // First message before session creation: initialize session on the fly
+      setGeneratedContent({});
+      setChatHistory([{ question: displayQuestion, answer: '...' }]);
+      try {
+        const result = await generateFromUpload({ file, tool_types: [] });
+        const payload = result?.data ?? result;
+        activeSessionId = payload.id;
+        setSessionId(payload.id);
+      } catch (err: any) {
+        setChatHistory([{ question: displayQuestion, answer: err.message || "Erreur lors de la création de la session." }]);
+        setIsChatting(false);
+        return;
+      }
+    } else {
+      setChatHistory(prev => [...prev, { question: displayQuestion, answer: '...' }]);
+    }
+
     try {
       const res = await askQuestion(
-        sessionId,
+        activeSessionId,
         queryForAi,
         generationMode === 'annale' ? 'annale' : 'session'
       );
@@ -188,10 +254,7 @@ export default function CreateSession() {
     setIsGeneratingTool(true);
     setToolError(null);
     try {
-      // Import this from spheraApi.ts at the top if needed (we'll assume it's imported or we'll add it)
-      const { addToolToSession } = await import('../services/spheraApi');
       const res = await addToolToSession(sessionId, tool as 'fiche' | 'quiz' | 'flashcards');
-      
       const payload = res.data;
       setGeneratedContent(payload.content);
       // Selected tools will be implicitly updated because generatedContent now has it
@@ -442,10 +505,10 @@ export default function CreateSession() {
         </div>
 
         {/* Scrollable Content Area */}
-        <div className="flex-1 overflow-y-auto relative pb-24">
+        <div className="flex-1 overflow-y-auto min-h-0 relative">
           {!generatedContent ? (
             /* Settings View */
-            <div className="p-8 max-w-xl mx-auto w-full">
+            <div className="p-6 sm:p-8 max-w-xl mx-auto w-full pb-8">
               <h2 className="font-display text-2xl font-bold text-white mb-6">Paramétrer la session</h2>
               
               {error && <div className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">{error}</div>}
@@ -483,69 +546,131 @@ export default function CreateSession() {
                 </div>
               ) : (
                 <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <h3 className="text-white font-medium text-lg px-1">Mode de correction</h3>
-                  <div className="p-5 rounded-2xl bg-sphera-surface-2 border border-sphera-border">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <button
-                        onClick={() => setAnnaleMode('complete')}
-                        className={`py-4 px-4 rounded-xl text-left transition-all border relative overflow-hidden ${
-                          annaleMode === 'complete'
-                            ? 'bg-sphera-green/10 border-sphera-green shadow-[0_0_15px_rgba(34,197,94,0.15)]'
-                            : 'bg-sphera-bg border-sphera-border hover:bg-sphera-surface hover:border-sphera-border/80'
-                        }`}
-                      >
-                        <span className={`block font-semibold text-sm mb-1 ${annaleMode === 'complete' ? 'text-sphera-green' : 'text-white'}`}>
-                          Complète
-                        </span>
-                        <span className="block text-xs text-sphera-text-muted">Réponse + explication + chapitre</span>
-                      </button>
-                      <button
-                        onClick={() => setAnnaleMode('rapide')}
-                        className={`py-4 px-4 rounded-xl text-left transition-all border relative overflow-hidden ${
-                          annaleMode === 'rapide'
-                            ? 'bg-sphera-green/10 border-sphera-green shadow-[0_0_15px_rgba(34,197,94,0.15)]'
-                            : 'bg-sphera-bg border-sphera-border hover:bg-sphera-surface hover:border-sphera-border/80'
-                        }`}
-                      >
-                        <span className={`block font-semibold text-sm mb-1 ${annaleMode === 'rapide' ? 'text-sphera-green' : 'text-white'}`}>
-                          Rapide
-                        </span>
-                        <span className="block text-xs text-sphera-text-muted">Réponses directes, zéro blabla</span>
-                      </button>
-                    </div>
+                  <label className="text-sm font-medium text-sphera-text-muted">Type de correction</label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      onClick={() => setAnnaleMode('complete')}
+                      className={`p-4 rounded-xl border text-left flex flex-col justify-between transition-all ${
+                        annaleMode === 'complete'
+                          ? 'bg-sphera-surface-2 border-sphera-green text-white shadow-sm'
+                          : 'bg-sphera-surface border-sphera-border text-sphera-text-muted hover:border-sphera-text-muted'
+                      }`}
+                    >
+                      <div>
+                        <div className="font-semibold text-white mb-1">Complète</div>
+                        <div className="text-xs text-sphera-text-muted">Correction détaillée étape par étape</div>
+                      </div>
+                      <div className="mt-4 flex items-center gap-1.5 text-xs text-sphera-green">
+                        <BookOpen className="w-4 h-4" /> Recommandé
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => setAnnaleMode('rapide')}
+                      className={`p-4 rounded-xl border text-left flex flex-col justify-between transition-all ${
+                        annaleMode === 'rapide'
+                          ? 'bg-sphera-surface-2 border-sphera-green text-white shadow-sm'
+                          : 'bg-sphera-surface border-sphera-border text-sphera-text-muted hover:border-sphera-text-muted'
+                      }`}
+                    >
+                      <div>
+                        <div className="font-semibold text-white mb-1">Rapide</div>
+                        <div className="text-xs text-sphera-text-muted">Réponses synthétiques directes</div>
+                      </div>
+                      <div className="mt-4 flex items-center gap-1.5 text-xs text-[#ff9800]">
+                        <Zap className="w-4 h-4" /> Express
+                      </div>
+                    </button>
                   </div>
                 </div>
               )}
 
-              <div className="mt-8 space-y-3">
-                <QuotaIndicator />
-                <GenerateButton 
-                  onGenerate={handleGenerate}
-                  disabled={generationMode === 'study' && selectedTools.length === 0}
-                  isGenerating={generating}
-                />
-              </div>
+              {generationMode === 'study' && selectedTools.length === 0 ? (
+                <button
+                  onClick={handleStartDirectQa}
+                  disabled={generating}
+                  className="sphera-primary-btn w-full mt-8 py-3.5 text-sm font-bold flex items-center justify-center gap-2 shadow-lg"
+                >
+                  {generating ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Initialisation de la session...</span>
+                    </>
+                  ) : (
+                    <>
+                      <MessageSquare className="w-5 h-5" />
+                      <span>Démarrer en mode Q&A direct</span>
+                    </>
+                  )}
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={handleGenerate}
+                    disabled={generating}
+                    className="sphera-primary-btn w-full mt-8 py-3.5 text-sm font-bold flex items-center justify-center gap-2 shadow-lg"
+                  >
+                    {generating ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>Génération en cours...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-5 h-5" />
+                        <span>
+                          {generationMode === 'study'
+                            ? `Générer ${selectedTools.length} outil${selectedTools.length > 1 ? 's' : ''}`
+                            : 'Lancer la correction'}
+                        </span>
+                      </>
+                    )}
+                  </button>
+
+                  {generationMode === 'study' && (
+                    <button
+                      type="button"
+                      onClick={handleStartDirectQa}
+                      disabled={generating}
+                      className="w-full mt-3 py-2.5 px-4 text-xs font-semibold text-sphera-text-muted hover:text-white hover:bg-sphera-surface rounded-xl border border-sphera-border/60 hover:border-sphera-border transition-all flex items-center justify-center gap-2"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5 text-sphera-green" />
+                      <span>Ou démarrer directement par le Q&A (sans générer d'outils)</span>
+                    </button>
+                  )}
+                </>
+              )}
             </div>
           ) : (
             /* Results View */
-            <div className="p-6 md:p-8 max-w-3xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
-              {['fiche', 'quiz', 'flashcards'].includes(activeTab) && !generatedContent[activeTab] ? (
-                <div className="flex flex-col items-center justify-center p-12 text-center bg-sphera-surface-2 rounded-2xl border border-sphera-border">
-                  <Bot className="w-12 h-12 text-sphera-text-muted mx-auto mb-4 opacity-50" />
-                  <h3 className="text-xl font-bold text-white mb-2">Cet outil n'a pas encore été généré</h3>
-                  <p className="text-sm text-sphera-text-muted mb-8 max-w-sm">
-                    Génère ce contenu instantanément en utilisant l'analyse déjà effectuée sur ton document.
-                  </p>
-                  <button 
+            <div className="p-4 sm:p-6 md:p-8 max-w-3xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500 pb-6">
+              {activeTab !== 'chat' && (
+                <div className="flex items-center justify-between mb-6 pb-4 border-b border-sphera-border">
+                  <div>
+                    <h2 className="text-lg font-bold text-white capitalize">{activeTab}</h2>
+                    <p className="text-xs text-sphera-text-muted">Généré depuis {file.name}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => navigate('/dashboard')}
+                      className="px-3 py-1.5 rounded-lg bg-sphera-surface hover:bg-sphera-surface-2 border border-sphera-border text-xs font-semibold text-white transition-colors"
+                    >
+                      Voir dans le dashboard
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Tool specific renders */}
+              {activeTab !== 'chat' && generatedContent[activeTab] === undefined ? (
+                <div className="p-8 text-center bg-sphera-surface-2 rounded-2xl border border-sphera-border">
+                  <p className="text-sphera-text-muted mb-4">Cet outil n'a pas encore été généré pour ce cours.</p>
+                  <button
                     onClick={() => handleAddTool(activeTab as ToolType)}
                     disabled={isGeneratingTool}
-                    className="sphera-primary-btn text-sm px-6 py-2.5 flex items-center gap-2"
+                    className="sphera-primary-btn py-2 px-4 text-xs inline-flex items-center gap-2"
                   >
-                    {isGeneratingTool ? (
-                      <>Génération en cours...</>
-                    ) : (
-                      <><Sparkles className="w-4 h-4"/> Générer {activeTab === 'flashcards' ? 'les' : 'le'} {activeTab}</>
-                    )}
+                    {isGeneratingTool ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                    <span>Générer {activeTab}</span>
                   </button>
                   {toolError && <p className="text-red-400 text-sm mt-4 bg-red-500/10 p-3 rounded-lg border border-red-500/20">{toolError}</p>}
                 </div>
@@ -558,7 +683,7 @@ export default function CreateSession() {
                 </>
               )}
               {activeTab === 'chat' && (
-                <div className="flex flex-col gap-6 pb-8">
+                <div className="flex flex-col gap-6 pb-6">
                   {chatHistory.length === 0 ? (
                     <div className="text-center p-12 bg-sphera-surface-2 rounded-2xl border border-sphera-border">
                       <MessageSquare className="w-10 h-10 text-sphera-text-muted mx-auto mb-4 opacity-50" />
@@ -603,17 +728,19 @@ export default function CreateSession() {
           )}
         </div>
 
-        {/* Q&A Chat Input (Fixed Bottom) */}
-        <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-sphera-bg via-sphera-bg/90 to-transparent p-4 pt-8 z-30">
+        {/* Q&A Chat Input (Pinned Bottom Bar) */}
+        <div className="shrink-0 w-full bg-sphera-surface-2/95 border-t border-sphera-border px-3 py-2 sm:px-4 sm:py-3 z-30 backdrop-blur-md">
           {/* Suggestions de questions */}
           {sessionId && activeTab === 'chat' && (
-            <QuestionSuggestions
-              sessionId={sessionId}
-              onSelect={(q) => {
-                setChatMessage(q)
-                chatInputRef.current?.focus()
-              }}
-            />
+            <div className="max-w-3xl mx-auto mb-2">
+              <QuestionSuggestions
+                sessionId={sessionId}
+                onSelect={(q) => {
+                  setChatMessage(q)
+                  chatInputRef.current?.focus()
+                }}
+              />
+            </div>
           )}
 
           {/* Chat input with @ command detection */}
@@ -625,7 +752,7 @@ export default function CreateSession() {
               onSelect={handleCommandSelect}
               onClose={() => setShowCommandMenu(false)}
             />
-            <div className="flex items-center gap-2 bg-sphera-surface-2 border border-sphera-border rounded-full p-2 pl-3 sm:pl-4 shadow-[0_0_30px_rgba(0,0,0,0.5)] focus-within:border-sphera-green/50 transition-colors">
+            <div className="flex items-center gap-2 bg-sphera-surface border border-sphera-border rounded-full p-1.5 pl-3 sm:pl-4 shadow-[0_0_20px_rgba(0,0,0,0.3)] focus-within:border-sphera-green/50 transition-colors">
               <button
                 type="button"
                 onClick={handleToggleCommandMenu}
@@ -634,7 +761,7 @@ export default function CreateSession() {
                 className={`p-1.5 rounded-full transition-colors shrink-0 ${
                   showCommandMenu 
                     ? 'bg-sphera-green text-black' 
-                    : 'text-sphera-text-muted hover:text-sphera-green hover:bg-sphera-surface'
+                    : 'text-sphera-text-muted hover:text-sphera-green hover:bg-sphera-surface-2'
                 }`}
               >
                 <AtSign className="w-4 h-4" />
@@ -642,20 +769,21 @@ export default function CreateSession() {
               <input 
                 ref={chatInputRef}
                 type="text" 
-                placeholder={sessionId ? "Demandez n'importe quoi... ou @ pour les commandes" : "Génère d'abord une session"}
+                placeholder="Posez une question sur ce document... ou @ pour les commandes"
                 value={chatMessage}
                 onChange={e => handleChatInputChange(e.target.value)}
                 onKeyDown={handleChatKeyDown}
+                disabled={isChatting || generating}
                 className="flex-1 bg-transparent border-none text-sm text-white placeholder-sphera-text-muted outline-none focus:ring-0"
               />
               <button 
                 onClick={handleSendChat}
-                disabled={!chatMessage.trim() || isChatting || !sessionId}
+                disabled={!chatMessage.trim() || isChatting || generating}
                 title="Envoyer le message"
                 aria-label="Envoyer le message"
-                className="w-9 h-9 rounded-full bg-sphera-green text-black flex items-center justify-center hover:bg-green-400 disabled:opacity-50 disabled:hover:bg-sphera-green transition-colors flex-shrink-0 shadow-[0_0_15px_rgba(34,197,94,0.3)]"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-sphera-green text-black flex items-center justify-center hover:bg-green-400 disabled:opacity-50 disabled:hover:bg-sphera-green transition-colors flex-shrink-0 shadow-[0_0_15px_rgba(34,197,94,0.3)]"
               >
-                <Send className="w-4 h-4 ml-0.5" />
+                <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-0.5" />
               </button>
             </div>
           </div>

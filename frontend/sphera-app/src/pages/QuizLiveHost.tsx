@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { QuizSetupForm } from '../components/quiz-live/QuizSetupForm';
 import { useQuizSocket } from '../hooks/useQuizSocket';
 import { TimerBar } from '../components/quiz-live/TimerBar';
@@ -9,7 +9,7 @@ import { Helmet } from 'react-helmet-async';
 import { useSpheraAuth } from '../contexts/SpheraAuthContext';
 import confetti from 'canvas-confetti';
 import { playSound, preloadSounds, toggleMute, getMuteState } from '../utils/audioManager';
-import { Volume2, VolumeX, Zap, Eye } from 'lucide-react';
+import { Volume2, VolumeX, Zap, Eye, ArrowLeft } from 'lucide-react';
 import { getQuizSessionByCode, getQuizSessionHostDetails, resetQuizSession } from '../services/spheraApi';
 import { QuizQuestionsDrawer } from '../components/quiz-live/QuizQuestionsDrawer';
 
@@ -210,6 +210,18 @@ export default function QuizLiveHost() {
         <title>Héberger un Quiz · Sphera Live</title>
       </Helmet>
 
+      {/* Back to Sphera Live Home button (Visible during setup and waiting lobby, hidden during active quiz) */}
+      {(phase === 'setup' || phase === 'waiting') && (
+        <Link
+          to="/live"
+          className="absolute top-6 left-6 z-50 inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-sphera-surface-2/90 backdrop-blur border border-sphera-border text-sphera-text-muted hover:text-white hover:border-sphera-green/50 transition-all text-xs font-semibold shadow-lg group"
+          title="Retour à Sphera Live"
+        >
+          <ArrowLeft className="w-4 h-4 text-sphera-green group-hover:-translate-x-0.5 transition-transform" />
+          <span>Sphera Live</span>
+        </Link>
+      )}
+
       {/* Mute Button */}
       <button 
         onClick={toggleSound}
@@ -361,7 +373,7 @@ export default function QuizLiveHost() {
             </div>
             <Leaderboard entries={leaderboard} />
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/live')}
               className="mt-12 sphera-primary-btn"
             >
               Retour au dashboard

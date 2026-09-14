@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getSession, getAnnale, askQuestion, deleteSession, deleteAnnale, shareSession, shareAnnale, updateSessionText, API_BASE } from '../services/spheraApi'
+import { getSession, getAnnale, askQuestion, deleteSession, deleteAnnale, shareSession, shareAnnale, updateSessionText, addToolToSession, API_BASE } from '../services/spheraApi'
 import { normalizeAiResponse } from '../utils/normalizeAiResponse'
-import { FileText, ArrowLeft, Maximize2, Minimize2, Send, MessageSquare, Bot, User, BrainCircuit, Columns, PenTool, Share2, Trash2, Check, AtSign } from 'lucide-react'
+import { FileText, ArrowLeft, Maximize2, Minimize2, Send, MessageSquare, Bot, User, BrainCircuit, Columns, PenTool, Share2, Trash2, Check, AtSign, Plus, Loader2 } from 'lucide-react'
 import { FicheView, QuizView, FlashcardsView, AnnaleView } from '../components/app/ResultViews'
 import { ShareModal } from '../components/app/ShareModal'
 import { DeleteConfirmModal } from '../components/app/DeleteConfirmModal'
@@ -17,6 +17,9 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
   const [session, setSession] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<string>('')
+
+  const [isGeneratingTool, setIsGeneratingTool] = useState(false)
+  const [toolError, setToolError] = useState<string | null>(null)
 
   // Workspace State
   const [isPdfExpanded, setIsPdfExpanded] = useState(true)
@@ -35,6 +38,22 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
   const [showCopied, setShowCopied] = useState(false)
   const [isShareModalOpen, setIsShareModalOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+
+  const handleAddTool = async (tool: 'fiche' | 'quiz' | 'flashcards') => {
+    if (!session?.id) return
+    setIsGeneratingTool(true)
+    setToolError(null)
+    try {
+      const res = await addToolToSession(session.id, tool)
+      const payload = res.data
+      setSession(payload)
+      setActiveTab(tool)
+    } catch (e: any) {
+      setToolError(e.message || `Erreur lors de la génération de ${tool}.`)
+    } finally {
+      setIsGeneratingTool(false)
+    }
+  }
 
   const handleDelete = async () => {
     try {
@@ -68,6 +87,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
         const payload = r?.data ?? r;
         const types = payload.tool_types || (type === 'annale' ? ['annale'] : [])
         if (types.length) setActiveTab(types[0])
+        else setActiveTab('chat')
         if (payload.qa_history) setChatHistory(payload.qa_history)
       })
       .catch(() => navigate('/dashboard'))
@@ -115,8 +135,9 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
 
     if (cmd.category === 'tool' && cmd.toolType) {
       setChatMessage('')
-      if (toolTypes.includes(cmd.toolType)) {
-        setActiveTab(cmd.toolType)
+      setActiveTab(cmd.toolType)
+      if (type === 'session' && (!content || content[cmd.toolType] === undefined)) {
+        handleAddTool(cmd.toolType as any)
       }
       return
     }
@@ -390,19 +411,28 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="flex gap-1 bg-sphera-bg p-1 rounded-md">
-              {toolTypes.map(t => (
-                <button
-                  key={t}
-                  onClick={() => setActiveTab(t)}
-                  className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors ${activeTab === t
-                      ? 'bg-sphera-surface text-white'
-                      : 'text-sphera-text-muted hover:text-white'
+            <div className="flex gap-1 bg-sphera-bg p-1 rounded-md overflow-x-auto">
+              {(type === 'session' ? ['fiche', 'quiz', 'flashcards'] : ['annale']).map(t => {
+                const isGenerated = content[t] !== undefined;
+                return (
+                  <button
+                    key={t}
+                    onClick={() => setActiveTab(t)}
+                    className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors flex items-center gap-1.5 whitespace-nowrap ${
+                      activeTab === t
+                        ? 'bg-sphera-surface text-white shadow-sm'
+                        : isGenerated
+                          ? 'text-sphera-text-muted hover:text-white'
+                          : 'text-sphera-text-muted/50 hover:text-sphera-text-muted/90'
                     }`}
-                >
-                  {t.charAt(0).toUpperCase() + t.slice(1)}
-                </button>
-              ))}
+                  >
+                    {t.charAt(0).toUpperCase() + t.slice(1)}
+                    {!isGenerated && type === 'session' && (
+                      <span className="text-[9px] bg-sphera-surface-2 px-1.5 rounded-full border border-sphera-border text-sphera-text-muted">+</span>
+                    )}
+                  </button>
+                )
+              })}
               <button
                 onClick={() => setActiveTab('chat')}
                 className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors flex items-center gap-1.5 ${activeTab === 'chat' ? 'bg-sphera-surface text-white' : 'text-sphera-text-muted hover:text-white'
@@ -432,19 +462,31 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
         </div>
 
         {/* Generated Content Area */}
-        <div className="flex-1 overflow-y-auto relative pb-24">
-          <div className="p-6 md:p-8 max-w-3xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {activeTab === 'fiche' ? (
-              <FicheView content={content.fiche} />
-            ) : activeTab === 'quiz' ? (
-              <QuizView content={content.quiz} />
-            ) : activeTab === 'flashcards' ? (
-              <FlashcardsView content={content.flashcards} />
-            ) : activeTab === 'annale' ? (
-              <AnnaleView annale={session} />
-            ) : null}
+        <div className="flex-1 overflow-y-auto min-h-0 relative">
+          <div className="p-4 sm:p-6 md:p-8 max-w-3xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500 pb-6">
+            {activeTab !== 'chat' && content[activeTab] === undefined ? (
+              <div className="p-8 text-center bg-sphera-surface-2 rounded-2xl border border-sphera-border">
+                <p className="text-sphera-text-muted mb-4">Cet outil n'a pas encore été généré pour ce cours.</p>
+                <button
+                  onClick={() => handleAddTool(activeTab as any)}
+                  disabled={isGeneratingTool}
+                  className="sphera-primary-btn py-2 px-4 text-xs inline-flex items-center gap-2"
+                >
+                  {isGeneratingTool ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                  <span>Générer {activeTab}</span>
+                </button>
+                {toolError && <p className="text-red-400 text-sm mt-4 bg-red-500/10 p-3 rounded-lg border border-red-500/20">{toolError}</p>}
+              </div>
+            ) : (
+              <>
+                {activeTab === 'fiche' && <FicheView content={content.fiche} />}
+                {activeTab === 'quiz' && <QuizView content={content.quiz} />}
+                {activeTab === 'flashcards' && <FlashcardsView content={content.flashcards} />}
+                {activeTab === 'annale' && <AnnaleView annale={session} />}
+              </>
+            )}
             {activeTab === 'chat' && (
-              <div className="flex flex-col gap-6 pb-8">
+              <div className="flex flex-col gap-6 pb-6">
                 {chatHistory.length === 0 ? (
                   <div className="text-center p-12 bg-sphera-surface-2 rounded-2xl border border-sphera-border">
                     <MessageSquare className="w-10 h-10 text-sphera-text-muted mx-auto mb-4 opacity-50" />
@@ -488,16 +530,18 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
           </div>
         </div>
 
-        {/* Q&A Chat Input (Fixed Bottom) */}
-        <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-sphera-bg via-sphera-bg/90 to-transparent p-4 pt-12 z-30">
+        {/* Q&A Chat Input (Pinned at Bottom) */}
+        <div className="shrink-0 w-full bg-sphera-surface-2/95 border-t border-sphera-border px-3 py-2 sm:px-4 sm:py-3 z-30 backdrop-blur-md">
           {activeTab === 'chat' && (
-            <QuestionSuggestions
-              sessionId={id}
-              onSelect={(q) => {
-                setChatMessage(q)
-                chatInputRef.current?.focus()
-              }}
-            />
+            <div className="max-w-3xl mx-auto mb-2">
+              <QuestionSuggestions
+                sessionId={id}
+                onSelect={(q) => {
+                  setChatMessage(q)
+                  chatInputRef.current?.focus()
+                }}
+              />
+            </div>
           )}
 
           <div className="max-w-3xl mx-auto relative">
@@ -508,7 +552,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
               onSelect={handleCommandSelect}
               onClose={() => setShowCommandMenu(false)}
             />
-            <div className="flex items-center gap-2 bg-sphera-surface-2 border border-sphera-border rounded-full p-2 pl-3 sm:pl-4 shadow-[0_0_30px_rgba(0,0,0,0.5)] focus-within:border-sphera-green/50 transition-colors">
+            <div className="flex items-center gap-2 bg-sphera-surface border border-sphera-border rounded-full p-1.5 pl-3 sm:pl-4 shadow-[0_0_20px_rgba(0,0,0,0.3)] focus-within:border-sphera-green/50 transition-colors">
               <button
                 type="button"
                 onClick={handleToggleCommandMenu}
@@ -517,7 +561,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
                 className={`p-1.5 rounded-full transition-colors shrink-0 ${
                   showCommandMenu 
                     ? 'bg-sphera-green text-black' 
-                    : 'text-sphera-text-muted hover:text-sphera-green hover:bg-sphera-surface'
+                    : 'text-sphera-text-muted hover:text-sphera-green hover:bg-sphera-surface-2'
                 }`}
               >
                 <AtSign className="w-4 h-4" />
@@ -536,9 +580,9 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
                 disabled={!chatMessage.trim() || isChatting || !id}
                 title="Envoyer le message"
                 aria-label="Envoyer le message"
-                className="w-9 h-9 rounded-full bg-sphera-green text-black flex items-center justify-center hover:bg-green-400 disabled:opacity-50 disabled:hover:bg-sphera-green transition-colors flex-shrink-0 shadow-[0_0_15px_rgba(34,197,94,0.3)]"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-sphera-green text-black flex items-center justify-center hover:bg-green-400 disabled:opacity-50 disabled:hover:bg-sphera-green transition-colors flex-shrink-0 shadow-[0_0_15px_rgba(34,197,94,0.3)]"
               >
-                <Send className="w-4 h-4 ml-0.5" />
+                <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-0.5" />
               </button>
             </div>
           </div>

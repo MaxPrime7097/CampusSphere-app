@@ -1,5 +1,5 @@
 import React from 'react'
-import { FileText, BrainCircuit, Columns, CheckCircle2 } from 'lucide-react'
+import { FileText, BrainCircuit, Columns, CheckCircle2, MessageSquare } from 'lucide-react'
 
 export type ToolType = 'fiche' | 'quiz' | 'flashcards' | 'annale'
 
@@ -35,10 +35,7 @@ export function ToolSelector({ selectedTools, onToolSelect }: ToolSelectorProps)
 
   const toggleTool = (toolId: ToolType) => {
     if (selectedTools.includes(toolId)) {
-      // Don't allow deselecting if it's the only one selected
-      if (selectedTools.length > 1) {
-        onToolSelect(selectedTools.filter(id => id !== toolId))
-      }
+      onToolSelect(selectedTools.filter(id => id !== toolId))
     } else {
       onToolSelect([...selectedTools, toolId])
     }
@@ -46,7 +43,26 @@ export function ToolSelector({ selectedTools, onToolSelect }: ToolSelectorProps)
 
   return (
     <div className="flex flex-col gap-4">
-      <h3 className="text-white font-medium text-lg px-1">Choisir les outils à générer</h3>
+      <div className="flex items-center justify-between px-1">
+        <h3 className="text-white font-medium text-lg">Choisir les outils à générer</h3>
+        {selectedTools.length > 0 ? (
+          <button
+            type="button"
+            onClick={() => onToolSelect([])}
+            className="text-xs text-sphera-text-muted hover:text-white transition-colors"
+          >
+            Tout désélectionner (Q&A direct)
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => onToolSelect(['fiche'])}
+            className="text-xs text-sphera-green hover:underline transition-colors"
+          >
+            Sélectionner Fiche
+          </button>
+        )}
+      </div>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {tools.map((tool) => {
@@ -79,6 +95,18 @@ export function ToolSelector({ selectedTools, onToolSelect }: ToolSelectorProps)
           )
         })}
       </div>
+
+      {selectedTools.length === 0 && (
+        <div className="p-3.5 rounded-xl bg-sphera-surface border border-sphera-green/30 text-xs text-sphera-text-muted flex items-center gap-3 animate-in fade-in duration-300">
+          <div className="w-8 h-8 rounded-lg bg-sphera-green/10 flex items-center justify-center shrink-0 text-sphera-green">
+            <MessageSquare className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="text-white font-medium mb-0.5">Mode Q&A direct sélectionné</div>
+            <span>La session sera créée immédiatement sans générer de fiches ni quiz (0 quota consommé). Vous pourrez les générer à la demande plus tard !</span>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

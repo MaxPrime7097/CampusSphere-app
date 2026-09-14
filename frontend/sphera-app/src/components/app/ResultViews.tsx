@@ -758,30 +758,36 @@ export function AnnaleView({ annale, sourceName }: { annale: any; sourceName?: s
       : (content?.corrections?.length ?? 0);
 
   return (
-    <div className="space-y-6">
-      {/* Header with download */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-sphera-surface-2 p-6 rounded-2xl border border-sphera-border">
-        <div>
-          <h2 className="text-xl font-bold text-white mb-1">{content?.titre || "Correction d'annale"}</h2>
-          <p className="text-sm text-sphera-text-muted">
-            {totalQuestions} question{totalQuestions > 1 ? "s" : ""} corrigée{totalQuestions > 1 ? "s" : ""}
-          </p>
+    <div className="flex flex-col gap-6">
+      {/* Download button */}
+      <div className="flex justify-end">
+        <DownloadPDFButton
+          onDownload={() => generateAnnale(annale, sourceName)}
+          isDownloading={isDownloading}
+          label="Télécharger la correction"
+        />
+      </div>
+
+      {/* Sober Header like FicheView */}
+      <div className="flex flex-col gap-4 p-4 rounded-2xl bg-sphera-bg">
+        <div className="flex items-center justify-between pb-4 border-b border-sphera-border">
+          <div className="flex items-center gap-3">
+            <div>
+              <p className="text-xs text-orange-400 font-semibold flex items-center gap-2">
+                <span>Correction d'annale</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-sphera-surface border border-sphera-border text-sphera-text-muted font-normal">
+                  {mode === 'complete' ? 'Mode complet' : 'Mode rapide'}
+                </span>
+              </p>
+              <p className="text-xs text-sphera-text-muted mt-0.5">
+                {totalQuestions} question{totalQuestions > 1 ? 's' : ''} corrigée{totalQuestions > 1 ? 's' : ''}
+              </p>
+            </div>
+          </div>
+          <span className="text-xs text-sphera-text-muted/60">sphera.campussphere.app</span>
         </div>
-        <div className="flex items-center gap-3 flex-wrap">
-          {hasSections && (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20">
-              <Layers className="w-3 h-3" /> Structurée
-            </span>
-          )}
-          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ring-1 ${mode === 'complete' ? 'bg-blue-500/10 text-blue-400 ring-blue-500/20' : 'bg-[#ff9800]/10 text-[#ff9800] ring-[#ff9800]/20'}`}>
-            {mode === 'complete' ? <><BookOpen className="w-3 h-3" /> Complète</> : <><Zap className="w-3 h-3" /> Rapide</>}
-          </span>
-          <DownloadPDFButton
-            onDownload={() => generateAnnale(annale, sourceName)}
-            isDownloading={isDownloading}
-            label="Télécharger la correction"
-          />
-        </div>
+
+        <h2 className="text-xl font-bold text-white">{content?.titre || "Correction d'annale"}</h2>
       </div>
 
       {/* Sections Structurées */}
