@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Edit3, Eye, Copy, Check, Save, Loader2, FileText, Clock, Sparkles } from 'lucide-react';
+import { TextSelectionToolbar, type SelectionActionType } from './TextSelectionToolbar';
 
 interface CourseTextReaderProps {
   initialText: string;
   title?: string;
   isEditable?: boolean;
   onSave?: (newText: string) => Promise<void> | void;
+  onSelectionAction?: (action: SelectionActionType, text: string) => void;
 }
 
 export function CourseTextReader({
@@ -13,12 +15,14 @@ export function CourseTextReader({
   title,
   isEditable = false,
   onSave,
+  onSelectionAction,
 }: CourseTextReaderProps) {
   const [text, setText] = useState(initialText || '');
   const [mode, setMode] = useState<'view' | 'edit'>('view');
   const [isSaving, setIsSaving] = useState(false);
   const [copied, setCopied] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [selectionToolbar, setSelectionToolbar] = useState<{ coords: { x: number; y: number }; text: string } | null>(null);
 
   useEffect(() => {
     setText(initialText || '');
@@ -138,8 +142,52 @@ export function CourseTextReader({
     return elements;
   };
 
+  const handleTextSelection = () => {
+    if (mode !== 'view') {
+      setSelectionToolbar(null)
+      return
+    }
+    // Small timeout to ensure browser finishes selection highlight
+    setTimeout(() => {
+      const selection = window.getSelection()
+      const selected = selection?.toString().trim()
+      if (selected && selected.length >= 3) {
+        try {
+          const range = selection?.getRangeAt(0)
+          const rect = range?.getBoundingClientRect()
+          if (rect && (rect.width > 0 || rect.height > 0)) {
+            setSelectionToolbar({
+              coords: { x: rect.left + rect.width / 2, y: rect.top },
+              text: selected,
+            })
+            return
+          }
+        } catch {
+          // ignore
+        }
+      }
+      setSelectionToolbar(null)
+    }, 10)
+  }
+
+  const handleAction = (action: SelectionActionType, selectedText: string) => {
+    setSelectionToolbar(null)
+    window.getSelection()?.removeAllRanges()
+    onSelectionAction?.(action, selectedText)
+  }
+
   return (
     <div className="flex flex-col h-full bg-[#1A1A1A] relative">
+      {/* Floating Action Toolbar on Selected Text */}
+      {selectionToolbar && (
+        <TextSelectionToolbar
+          coords={selectionToolbar.coords}
+          selectedText={selectionToolbar.text}
+          onAction={handleAction}
+          onClose={() => setSelectionToolbar(null)}
+        />
+      )}
+
       {/* Reader Toolbar */}
       <div className="h-12 border-b border-sphera-border bg-sphera-surface-2/80 px-4 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3 text-xs text-sphera-text-muted">
@@ -158,14 +206,14 @@ export function CourseTextReader({
           {saveSuccess && (
             <span className="flex items-center gap-1 text-xs text-sphera-green animate-fade-in font-medium mr-1">
               <Check className="w-3.5 h-3.5" />
-              Enregistré
+              Enregistré !
             </span>
           )}
 
           <button
             type="button"
             onClick={handleCopy}
-            className="p-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-bg transition-colors"
+            className="p-1.5 rounded-md text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors"
             title="Copier le texte"
           >
             {copied ? <Check className="w-4 h-4 text-sphera-green" /> : <Copy className="w-4 h-4" />}
@@ -176,26 +224,28 @@ export function CourseTextReader({
               <button
                 type="button"
                 onClick={() => setMode('edit')}
-                className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-sphera-bg border border-sphera-border text-sphera-text-muted hover:text-white hover:border-sphera-green/50 text-xs font-semibold transition-colors"
+                className="px-2.5 py-1 rounded-md text-xs font-semibold bg-sphera-surface hover:bg-sphera-surface-2 text-white border border-sphera-border transition-colors flex items-center gap-1.5"
               >
-                <Edit3 className="w-3.5 h-3.5 text-sphera-green" />
+                <Edit3 className="w-3.5 h-3.5" />
                 <span>Modifier</span>
               </button>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <button
                   type="button"
-                  onClick={() => setMode('view')}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-sphera-text-muted hover:text-white text-xs font-semibold transition-colors"
+                  onClick={() => {
+                    setText(initialText || '');
+                    setMode('view');
+                  }}
+                  className="px-2.5 py-1 rounded-md text-xs font-medium text-sphera-text-muted hover:text-white transition-colors"
                 >
-                  <Eye className="w-3.5 h-3.5" />
-                  <span>Aperçu</span>
+                  Annuler
                 </button>
                 <button
                   type="button"
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-sphera-green text-black text-xs font-bold hover:bg-sphera-green/90 transition-all disabled:opacity-50"
+                  className="px-2.5 py-1 rounded-md text-xs font-semibold bg-sphera-green text-black hover:bg-green-400 transition-colors flex items-center gap-1.5 disabled:opacity-50"
                 >
                   {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                   <span>Enregistrer</span>
@@ -207,7 +257,11 @@ export function CourseTextReader({
       </div>
 
       {/* Content View or Edit Textarea */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
+      <div 
+        className="flex-1 overflow-y-auto custom-scrollbar p-6"
+        onMouseUp={handleTextSelection}
+        onTouchEnd={handleTextSelection}
+      >
         {mode === 'view' ? (
           <div className="max-w-prose mx-auto">
             {title && (

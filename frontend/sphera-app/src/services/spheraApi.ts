@@ -58,9 +58,9 @@ async function performRefreshRaw(refresh: string): Promise<string | null> {
 // ─── Core fetch ─────────────────────────────────────────────────
 async function apiFetch<T>(
   path: string,
-  options: { method?: string; body?: unknown | FormData; requireAuth?: boolean; _retry?: boolean } = {}
+  options: { method?: string; body?: unknown | FormData; requireAuth?: boolean; _retry?: boolean; signal?: AbortSignal } = {}
 ): Promise<T> {
-  const { method = 'GET', body, requireAuth = false, _retry = false } = options
+  const { method = 'GET', body, requireAuth = false, _retry = false, signal } = options
   const url = `${API_BASE.replace(/\/$/, '')}/${path.replace(/^\//, '')}`
   const token = getToken()
 
@@ -77,6 +77,7 @@ async function apiFetch<T>(
     headers,
     body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
     credentials: 'include',
+    signal,
   })
 
   // Rate limit
@@ -196,10 +197,10 @@ export async function guestGenerate(params: {
 
 export type ToolType = 'fiche' | 'quiz' | 'flashcards'
 
-export async function generateFromUpload(params: { file: File; tool_types: ToolType[] }) {
+export async function generateFromUpload(params: { file: File; tool_types?: ToolType[] }) {
   const formData = new FormData()
   formData.append('file', params.file)
-  formData.append('tool_types', JSON.stringify(params.tool_types))
+  formData.append('tool_types', JSON.stringify(params.tool_types || []))
   return apiFetch<{ success: boolean; data: any; cached: boolean }>('api/sphera/generate/from-upload/', {
     method: 'POST',
     body: formData,
@@ -263,11 +264,11 @@ export async function updateSessionText(id: number | string, text: string) {
   });
 }
 
-export async function askQuestion(id: number | string, question: string, type: 'session' | 'annale' = 'session') {
+export async function askQuestion(id: number | string, question: string, type: 'session' | 'annale' = 'session', signal?: AbortSignal) {
   const endpoint = type === 'annale' ? `api/sphera/annales/${id}/ask/` : `api/sphera/sessions/${id}/ask/`;
   return apiFetch<{ success: boolean; data: any }>(
     endpoint,
-    { method: 'POST', body: { question }, requireAuth: true }
+    { method: 'POST', body: { question }, requireAuth: true, signal }
   )
 }
 

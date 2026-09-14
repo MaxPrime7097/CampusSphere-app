@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getSession, getAnnale, askQuestion, deleteSession, deleteAnnale, shareSession, shareAnnale, updateSessionText, API_BASE } from '../services/spheraApi'
+import { getSession, getAnnale, askQuestion, deleteSession, deleteAnnale, shareSession, shareAnnale, updateSessionText, addToolToSession, API_BASE } from '../services/spheraApi'
 import { normalizeAiResponse } from '../utils/normalizeAiResponse'
-import { FileText, ArrowLeft, Maximize2, Minimize2, Send, MessageSquare, Bot, User, BrainCircuit, Columns, PenTool, Share2, Trash2, Check, AtSign } from 'lucide-react'
+import { FileText, ArrowLeft, Maximize2, Minimize2, Send, Square, MessageSquare, Bot, User, BrainCircuit, Columns, PenTool, Share2, Trash2, Check, AtSign, Plus, Loader2 } from 'lucide-react'
 import { FicheView, QuizView, FlashcardsView, AnnaleView } from '../components/app/ResultViews'
 import { ShareModal } from '../components/app/ShareModal'
 import { DeleteConfirmModal } from '../components/app/DeleteConfirmModal'
@@ -10,6 +10,8 @@ import { CourseTextReader } from '../components/app/CourseTextReader'
 import { DocumentImageViewer } from '../components/app/DocumentImageViewer'
 import { CommandMenu, COMMANDS, type Command } from '../components/app/CommandMenu'
 import { QuestionSuggestions } from '../components/app/QuestionSuggestions'
+import { AiMessageItem } from '../components/app/AiMessageItem'
+import type { SelectionActionType } from '../components/app/TextSelectionToolbar'
 
 export default function SessionDetail({ type = 'session' }: { type?: 'session' | 'annale' }) {
   const { id } = useParams<{ id: string }>()
@@ -17,6 +19,9 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
   const [session, setSession] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<string>('')
+
+  const [isGeneratingTool, setIsGeneratingTool] = useState(false)
+  const [toolError, setToolError] = useState<string | null>(null)
 
   // Workspace State
   const [isPdfExpanded, setIsPdfExpanded] = useState(true)
@@ -30,11 +35,36 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
   const [showCommandMenu, setShowCommandMenu] = useState(false)
   const [commandFilter, setCommandFilter] = useState('')
   const [commandActiveIdx, setCommandActiveIdx] = useState(0)
-  const chatInputRef = React.useRef<HTMLInputElement>(null)
+  const chatInputRef = useRef<HTMLInputElement>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
+  }, [])
   
   const [showCopied, setShowCopied] = useState(false)
   const [isShareModalOpen, setIsShareModalOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+
+  const handleAddTool = async (tool: 'fiche' | 'quiz' | 'flashcards') => {
+    if (!session?.id) return
+    setIsGeneratingTool(true)
+    setToolError(null)
+    try {
+      const res = await addToolToSession(session.id, tool)
+      const payload = res.data
+      setSession(payload)
+      setActiveTab(tool)
+    } catch (e: any) {
+      setToolError(e.message || `Erreur lors de la génération de ${tool}.`)
+    } finally {
+      setIsGeneratingTool(false)
+    }
+  }
 
   const handleDelete = async () => {
     try {
@@ -68,6 +98,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
         const payload = r?.data ?? r;
         const types = payload.tool_types || (type === 'annale' ? ['annale'] : [])
         if (types.length) setActiveTab(types[0])
+        else setActiveTab('chat')
         if (payload.qa_history) setChatHistory(payload.qa_history)
       })
       .catch(() => navigate('/dashboard'))
@@ -115,8 +146,9 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
 
     if (cmd.category === 'tool' && cmd.toolType) {
       setChatMessage('')
-      if (toolTypes.includes(cmd.toolType)) {
-        setActiveTab(cmd.toolType)
+      setActiveTab(cmd.toolType)
+      if (type === 'session' && (!content || content[cmd.toolType] === undefined)) {
+        handleAddTool(cmd.toolType as any)
       }
       return
     }
@@ -177,6 +209,76 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
     }
   }
 
+  const handleStopChat = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsChatting(false);
+    setChatHistory(prev => {
+      if (prev.length === 0) return prev;
+      const newHist = [...prev];
+      for (let i = newHist.length - 1; i >= 0; i--) {
+        if (newHist[i].answer === '...') {
+          newHist[i].answer = "*(Génération interrompue)*";
+          break;
+        }
+      }
+      return newHist;
+    });
+  };
+
+  const handleEditMessage = async (index: number, newQuestion: string) => {
+    if (!newQuestion.trim() || !id) return;
+
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+
+    setIsChatting(true);
+    setActiveTab('chat');
+
+    setChatHistory(prev => {
+      const newHist = [...prev];
+      if (newHist[index]) {
+        newHist[index] = { question: newQuestion, answer: '...' };
+      }
+      return newHist;
+    });
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    try {
+      const res = await askQuestion(id, newQuestion, type, controller.signal);
+      const normalized = normalizeAiResponse(res?.data?.answer);
+      setChatHistory(prev => {
+        const newHist = [...prev];
+        if (newHist[index] && newHist[index].answer === '...') {
+          newHist[index].answer = normalized;
+        }
+        return newHist;
+      });
+    } catch (e: any) {
+      if (e?.name === 'AbortError' || controller.signal.aborted) {
+        return;
+      }
+      setChatHistory(prev => {
+        const newHist = [...prev];
+        if (newHist[index] && newHist[index].answer === '...') {
+          newHist[index].answer = "Erreur de connexion avec l'assistant.";
+        }
+        return newHist;
+      });
+    } finally {
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null;
+        setIsChatting(false);
+      }
+    }
+  };
+
   const handleSendChat = async () => {
     const raw = chatMessage.trim();
     if (!raw || !id) return;
@@ -218,22 +320,94 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
 
     setChatHistory(prev => [...prev, { question: displayQuestion, answer: '...' }]);
 
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     try {
-      const res = await askQuestion(id, queryForAi, type);
+      const res = await askQuestion(id, queryForAi, type, controller.signal);
       const normalized = normalizeAiResponse(res?.data?.answer);
       setChatHistory(prev => {
         const newHist = [...prev];
-        newHist[newHist.length - 1].answer = normalized;
+        if (newHist.length > 0 && newHist[newHist.length - 1].answer === '...') {
+          newHist[newHist.length - 1].answer = normalized;
+        }
         return newHist;
       });
-    } catch (e) {
+    } catch (e: any) {
+      if (e?.name === 'AbortError' || controller.signal.aborted) {
+        return;
+      }
       setChatHistory(prev => {
         const newHist = [...prev];
-        newHist[newHist.length - 1].answer = "Erreur de connexion avec l'assistant.";
+        if (newHist.length > 0 && newHist[newHist.length - 1].answer === '...') {
+          newHist[newHist.length - 1].answer = "Erreur de connexion avec l'assistant.";
+        }
         return newHist;
       });
     } finally {
-      setIsChatting(false);
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null;
+        setIsChatting(false);
+      }
+    }
+  }
+
+  const handleSelectionAction = async (action: SelectionActionType, selectedText: string) => {
+    let prompt = ''
+    let display = ''
+
+    if (action === 'expliquer') {
+      display = `Expliquer : "${selectedText}"`
+      prompt = `Explique-moi ce passage de cours de manière claire, concise et pédagogique :\n\n> "${selectedText}"`
+    } else if (action === 'resumer') {
+      display = `Résumer : "${selectedText}"`
+      prompt = `Résume les points essentiels de ce passage en quelques puces claires :\n\n> "${selectedText}"`
+    } else if (action === 'exemple') {
+      display = `Exemple pour : "${selectedText}"`
+      prompt = `Donne-moi un exemple concret ou une mise en situation pratique illustrant ce concept :\n\n> "${selectedText}"`
+    } else if (action === 'quiz') {
+      display = `Quiz sur : "${selectedText}"`
+      prompt = `Génère une question de quiz à choix multiples (avec 4 options A, B, C, D, la bonne réponse et une brève explication) basée sur ce passage :\n\n> "${selectedText}"`
+    } else if (action === 'flashcards') {
+      display = `Flashcard pour : "${selectedText}"`
+      prompt = `Crée une flashcard recto/verso (Question clé au recto, Réponse synthétique au verso) basée sur ce concept :\n\n> "${selectedText}"`
+    }
+
+    setMobileActiveView('workspace')
+    setActiveTab('chat')
+    setIsChatting(true)
+
+    setChatHistory(prev => [...prev, { question: display, answer: '...' }])
+
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+
+    try {
+      const res = await askQuestion(id!, prompt, type, controller.signal)
+      const normalized = normalizeAiResponse(res?.data?.answer)
+      setChatHistory(prev => {
+        const newHist = [...prev]
+        if (newHist.length > 0 && newHist[newHist.length - 1].answer === '...') {
+          newHist[newHist.length - 1].answer = normalized
+        }
+        return newHist
+      })
+    } catch (e: any) {
+      if (e?.name === 'AbortError' || controller.signal.aborted) {
+        return
+      }
+      setChatHistory(prev => {
+        const newHist = [...prev]
+        if (newHist.length > 0 && newHist[newHist.length - 1].answer === '...') {
+          newHist[newHist.length - 1].answer = "Erreur de connexion avec l'assistant."
+        }
+        return newHist
+      })
+    } finally {
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null
+        setIsChatting(false)
+      }
     }
   }
 
@@ -344,6 +518,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
               initialText={session.extracted_text}
               title={session.resource_title || session.source_filename}
               isEditable={type === 'session'}
+              onSelectionAction={handleSelectionAction}
               onSave={async (newText) => {
                 if (id) {
                   await updateSessionText(id, newText);
@@ -390,19 +565,28 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="flex gap-1 bg-sphera-bg p-1 rounded-md">
-              {toolTypes.map(t => (
-                <button
-                  key={t}
-                  onClick={() => setActiveTab(t)}
-                  className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors ${activeTab === t
-                      ? 'bg-sphera-surface text-white'
-                      : 'text-sphera-text-muted hover:text-white'
+            <div className="flex gap-1 bg-sphera-bg p-1 rounded-md overflow-x-auto">
+              {(type === 'session' ? ['fiche', 'quiz', 'flashcards'] : ['annale']).map(t => {
+                const isGenerated = content[t] !== undefined;
+                return (
+                  <button
+                    key={t}
+                    onClick={() => setActiveTab(t)}
+                    className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors flex items-center gap-1.5 whitespace-nowrap ${
+                      activeTab === t
+                        ? 'bg-sphera-surface text-white shadow-sm'
+                        : isGenerated
+                          ? 'text-sphera-text-muted hover:text-white'
+                          : 'text-sphera-text-muted/50 hover:text-sphera-text-muted/90'
                     }`}
-                >
-                  {t.charAt(0).toUpperCase() + t.slice(1)}
-                </button>
-              ))}
+                  >
+                    {t.charAt(0).toUpperCase() + t.slice(1)}
+                    {!isGenerated && type === 'session' && (
+                      <span className="text-[9px] bg-sphera-surface-2 px-1.5 rounded-full border border-sphera-border text-sphera-text-muted">+</span>
+                    )}
+                  </button>
+                )
+              })}
               <button
                 onClick={() => setActiveTab('chat')}
                 className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors flex items-center gap-1.5 ${activeTab === 'chat' ? 'bg-sphera-surface text-white' : 'text-sphera-text-muted hover:text-white'
@@ -432,19 +616,31 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
         </div>
 
         {/* Generated Content Area */}
-        <div className="flex-1 overflow-y-auto relative pb-24">
-          <div className="p-6 md:p-8 max-w-3xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {activeTab === 'fiche' ? (
-              <FicheView content={content.fiche} />
-            ) : activeTab === 'quiz' ? (
-              <QuizView content={content.quiz} />
-            ) : activeTab === 'flashcards' ? (
-              <FlashcardsView content={content.flashcards} />
-            ) : activeTab === 'annale' ? (
-              <AnnaleView annale={session} />
-            ) : null}
+        <div className="flex-1 overflow-y-auto min-h-0 relative">
+          <div className="p-4 sm:p-6 md:p-8 max-w-3xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500 pb-6">
+            {activeTab !== 'chat' && content[activeTab] === undefined ? (
+              <div className="p-8 text-center bg-sphera-surface-2 rounded-2xl border border-sphera-border">
+                <p className="text-sphera-text-muted mb-4">Cet outil n'a pas encore été généré pour ce cours.</p>
+                <button
+                  onClick={() => handleAddTool(activeTab as any)}
+                  disabled={isGeneratingTool}
+                  className="sphera-primary-btn py-2 px-4 text-xs inline-flex items-center gap-2"
+                >
+                  {isGeneratingTool ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                  <span>Générer {activeTab}</span>
+                </button>
+                {toolError && <p className="text-red-400 text-sm mt-4 bg-red-500/10 p-3 rounded-lg border border-red-500/20">{toolError}</p>}
+              </div>
+            ) : (
+              <>
+                {activeTab === 'fiche' && <FicheView content={content.fiche} />}
+                {activeTab === 'quiz' && <QuizView content={content.quiz} />}
+                {activeTab === 'flashcards' && <FlashcardsView content={content.flashcards} />}
+                {activeTab === 'annale' && <AnnaleView annale={session} />}
+              </>
+            )}
             {activeTab === 'chat' && (
-              <div className="flex flex-col gap-6 pb-8">
+              <div className="flex flex-col gap-2 pb-6">
                 {chatHistory.length === 0 ? (
                   <div className="text-center p-12 bg-sphera-surface-2 rounded-2xl border border-sphera-border">
                     <MessageSquare className="w-10 h-10 text-sphera-text-muted mx-auto mb-4 opacity-50" />
@@ -453,34 +649,14 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
                   </div>
                 ) : (
                   chatHistory.map((msg, i) => (
-                    <div key={i} className="flex flex-col gap-4">
-                      {/* User Message */}
-                      <div className="flex items-start justify-end gap-3">
-                        <div className="bg-sphera-green/10 border border-sphera-green/20 text-white p-4 rounded-2xl rounded-tr-sm max-w-[85%]">
-                          <p className="text-sm leading-relaxed">{msg.question}</p>
-                        </div>
-                        <div className="w-8 h-8 rounded-full bg-sphera-surface-2 border border-sphera-border flex items-center justify-center shrink-0">
-                          <User className="w-4 h-4 text-sphera-text-muted" />
-                        </div>
-                      </div>
-                      {/* AI Response */}
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-full bg-sphera-surface-2 border border-sphera-border flex items-center justify-center shrink-0">
-                          <Bot className="w-4 h-4 text-sphera-green" />
-                        </div>
-                        <div className="bg-sphera-surface-2 border border-sphera-border text-sphera-text-muted p-4 rounded-2xl rounded-tl-sm max-w-[85%]">
-                          {msg.answer === '...' ? (
-                            <div className="flex gap-1 py-1">
-                              <div className="w-1.5 h-1.5 rounded-full bg-sphera-text-muted animate-bounce" />
-                              <div className="w-1.5 h-1.5 rounded-full bg-sphera-text-muted animate-bounce [animation-delay:0.2s]" />
-                              <div className="w-1.5 h-1.5 rounded-full bg-sphera-text-muted animate-bounce [animation-delay:0.4s]" />
-                            </div>
-                          ) : (
-                            <p className="text-sm leading-relaxed text-white whitespace-pre-wrap">{msg.answer}</p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                    <AiMessageItem
+                      key={i}
+                      index={i}
+                      question={msg.question}
+                      answer={msg.answer}
+                      onEdit={handleEditMessage}
+                      disabled={isChatting}
+                    />
                   ))
                 )}
               </div>
@@ -488,16 +664,18 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
           </div>
         </div>
 
-        {/* Q&A Chat Input (Fixed Bottom) */}
-        <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-sphera-bg via-sphera-bg/90 to-transparent p-4 pt-12 z-30">
+        {/* Q&A Chat Input (Pinned at Bottom) */}
+        <div className="shrink-0 w-full bg-sphera-surface-2/95 border-t border-sphera-border px-3 py-2 sm:px-4 sm:py-3 z-30 backdrop-blur-md">
           {activeTab === 'chat' && (
-            <QuestionSuggestions
-              sessionId={id}
-              onSelect={(q) => {
-                setChatMessage(q)
-                chatInputRef.current?.focus()
-              }}
-            />
+            <div className="max-w-3xl mx-auto mb-2">
+              <QuestionSuggestions
+                sessionId={id}
+                onSelect={(q) => {
+                  setChatMessage(q)
+                  chatInputRef.current?.focus()
+                }}
+              />
+            </div>
           )}
 
           <div className="max-w-3xl mx-auto relative">
@@ -508,7 +686,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
               onSelect={handleCommandSelect}
               onClose={() => setShowCommandMenu(false)}
             />
-            <div className="flex items-center gap-2 bg-sphera-surface-2 border border-sphera-border rounded-full p-2 pl-3 sm:pl-4 shadow-[0_0_30px_rgba(0,0,0,0.5)] focus-within:border-sphera-green/50 transition-colors">
+            <div className="flex items-center gap-2 bg-sphera-surface border border-sphera-border rounded-full p-1.5 pl-3 sm:pl-4 shadow-[0_0_20px_rgba(0,0,0,0.3)] focus-within:border-sphera-green/50 transition-colors">
               <button
                 type="button"
                 onClick={handleToggleCommandMenu}
@@ -517,7 +695,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
                 className={`p-1.5 rounded-full transition-colors shrink-0 ${
                   showCommandMenu 
                     ? 'bg-sphera-green text-black' 
-                    : 'text-sphera-text-muted hover:text-sphera-green hover:bg-sphera-surface'
+                    : 'text-sphera-text-muted hover:text-sphera-green hover:bg-sphera-surface-2'
                 }`}
               >
                 <AtSign className="w-4 h-4" />
@@ -531,15 +709,28 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
                 onKeyDown={handleChatKeyDown}
                 className="flex-1 bg-transparent border-none text-sm text-white placeholder-sphera-text-muted outline-none focus:ring-0"
               />
-              <button
-                onClick={handleSendChat}
-                disabled={!chatMessage.trim() || isChatting || !id}
-                title="Envoyer le message"
-                aria-label="Envoyer le message"
-                className="w-9 h-9 rounded-full bg-sphera-green text-black flex items-center justify-center hover:bg-green-400 disabled:opacity-50 disabled:hover:bg-sphera-green transition-colors flex-shrink-0 shadow-[0_0_15px_rgba(34,197,94,0.3)]"
-              >
-                <Send className="w-4 h-4 ml-0.5" />
-              </button>
+              {isChatting ? (
+                <button
+                  type="button"
+                  onClick={handleStopChat}
+                  title="Arrêter la réponse"
+                  aria-label="Arrêter la réponse"
+                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-sphera-green text-black flex items-center justify-center transition-all flex-shrink-0 shadow-[0_0_15px_rgba(34,197,94,0.3)] animate-in fade-in"
+                >
+                  <Square className="w-3.5 h-3.5 fill-current" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleSendChat}
+                  disabled={!chatMessage.trim() || !id}
+                  title="Envoyer le message"
+                  aria-label="Envoyer le message"
+                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-sphera-green text-black flex items-center justify-center hover:bg-green-400 disabled:opacity-50 disabled:hover:bg-sphera-green transition-colors flex-shrink-0 shadow-[0_0_15px_rgba(34,197,94,0.3)]"
+                >
+                  <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-0.5" />
+                </button>
+              )}
             </div>
           </div>
         </div>

@@ -16,12 +16,14 @@ import {
 import { useSpheraAuth } from '../../contexts/SpheraAuthContext'
 import { getMyQuizSessions, getSessions, getAnnales } from '../../services/spheraApi'
 import { QuotaIndicator } from '../app/QuotaIndicator'
+import { SearchModal } from '../app/SearchModal'
 
 export function SidebarLayout() {
   const { user, logout } = useSpheraAuth()
   const location = useLocation()
   const [recentSessions, setRecentSessions] = useState<any[]>([])
-  const [searchQuery, setSearchQuery] = useState('')
+  const [allSearchItems, setAllSearchItems] = useState<any[]>([])
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
     return localStorage.getItem('sphera_sidebar_collapsed') === 'true'
   })
@@ -37,43 +39,48 @@ export function SidebarLayout() {
     })
   }
 
+  // Keyboard shortcut Ctrl+K / Cmd+K
   useEffect(() => {
-    if (isLivePage) {
-      getMyQuizSessions()
-        .then((res) => {
-          const sess = res?.data || (Array.isArray(res) ? res : [])
-          const all = [...sess].sort((a, b) => {
-            const da = new Date(a.createdAt || 0).getTime()
-            const db = new Date(b.createdAt || 0).getTime()
-            return db - da
-          })
-          setRecentSessions(all)
-        })
-        .catch(() => setRecentSessions([]))
-    } else {
-      Promise.all([
-        getSessions().catch(() => ({ data: [] })),
-        getAnnales().catch(() => ({ data: [] })),
-      ]).then(([sessRes, annRes]) => {
-        const sess = (sessRes?.data || (Array.isArray(sessRes) ? sessRes : [])).map((s: any) => ({ ...s, _type: 'session' }))
-        const ann = (annRes?.data || (Array.isArray(annRes) ? annRes : [])).map((a: any) => ({ ...a, _type: 'annale' }))
-        const all = [...sess, ...ann].sort((a, b) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setIsSearchModalOpen(prev => !prev)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  useEffect(() => {
+    Promise.all([
+      getSessions().catch(() => ({ data: [] })),
+      getAnnales().catch(() => ({ data: [] })),
+      getMyQuizSessions().catch(() => ({ data: [] })),
+    ]).then(([sessRes, annRes, quizRes]) => {
+      const sess = (sessRes?.data || (Array.isArray(sessRes) ? sessRes : [])).map((s: any) => ({ ...s, _type: 'session' }))
+      const ann = (annRes?.data || (Array.isArray(annRes) ? annRes : [])).map((a: any) => ({ ...a, _type: 'annale' }))
+      const quiz = (quizRes?.data || (Array.isArray(quizRes) ? quizRes : [])).map((q: any) => ({ ...q, _type: 'quiz' }))
+
+      // Combined items for search modal
+      const combined = [...sess, ...ann, ...quiz].sort((a, b) => {
+        const da = new Date(a.created_at || a.createdAt || 0).getTime()
+        const db = new Date(b.created_at || b.createdAt || 0).getTime()
+        return db - da
+      })
+      setAllSearchItems(combined)
+
+      if (isLivePage) {
+        setRecentSessions(quiz)
+      } else {
+        const standard = [...sess, ...ann].sort((a, b) => {
           const da = new Date(a.created_at || 0).getTime()
           const db = new Date(b.created_at || 0).getTime()
           return db - da
         })
-        setRecentSessions(all)
-      })
-    }
+        setRecentSessions(standard)
+      }
+    })
   }, [location.pathname, isLivePage])
-
-  // Filter recents by search query
-  const filteredSessions = recentSessions.filter((s) => {
-    if (!searchQuery.trim()) return true
-    const term = searchQuery.toLowerCase().trim()
-    const title = (s.source_filename || s.source_title || s.title || s.resource_title || '').toLowerCase()
-    return title.includes(term)
-  })
 
   // Close mobile drawer when route changes
   useEffect(() => {
@@ -81,7 +88,7 @@ export function SidebarLayout() {
   }, [location.pathname, location.search])
 
   return (
-    <div className="flex h-screen bg-sphera-bg overflow-hidden font-sans">
+    <div className="flex h-[100dvh] bg-sphera-bg overflow-hidden font-sans">
       {/* Mobile Top Header (Screens < md) */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-sphera-surface-2 border-b border-sphera-border px-4 flex items-center justify-between z-30">
         <Link to="/dashboard" className="flex items-center gap-2.5">
@@ -130,25 +137,23 @@ export function SidebarLayout() {
 
         {/* Mobile Drawer Content */}
         <div className="p-4 border-b border-sphera-border shrink-0 space-y-3">
-          {/* Search */}
-          <div className="relative">
-            <Search className="w-4 h-4 text-sphera-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Rechercher un document..."
-              className="w-full bg-sphera-surface border border-sphera-border rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-sphera-text-muted outline-none focus:border-sphera-green/50 transition-colors"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-sphera-text-muted hover:text-white"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
+          {/* Search Button */}
+          <button
+            type="button"
+            onClick={() => {
+              setMobileDrawerOpen(false)
+              setIsSearchModalOpen(true)
+            }}
+            className="w-full bg-sphera-surface hover:bg-sphera-surface-2 border border-sphera-border rounded-xl px-3.5 py-2 text-xs text-sphera-text-muted hover:text-white transition-all flex items-center justify-between group shadow-sm"
+          >
+            <span className="flex items-center gap-2">
+              <Search className="w-3.5 h-3.5 text-sphera-text-muted group-hover:text-sphera-green transition-colors" />
+              <span>Rechercher...</span>
+            </span>
+            <kbd className="px-1.5 py-0.5 bg-sphera-bg border border-sphera-border rounded text-[9px] font-mono text-sphera-text-muted">
+              ⌘K
+            </kbd>
+          </button>
 
           <Link
             to="/dashboard"
@@ -171,16 +176,17 @@ export function SidebarLayout() {
         <div className="flex-1 overflow-y-auto px-3 py-3 min-h-0 custom-scrollbar">
           <div className="px-2 mb-2 flex items-center justify-between text-[11px] font-semibold text-sphera-text-muted uppercase tracking-wider">
             <span>{isLivePage ? 'Quiz Récents' : 'Récents'}</span>
-            {filteredSessions.length > 0 && <span className="text-[10px] lowercase font-normal">{filteredSessions.length}</span>}
+            {recentSessions.length > 0 && <span className="text-[10px] lowercase font-normal">{recentSessions.length}</span>}
           </div>
 
           <div className="space-y-1">
-            {filteredSessions.length === 0 ? (
+            {recentSessions.length === 0 ? (
               <div className="px-3 py-4 text-xs text-sphera-text-muted italic text-center">
-                {searchQuery ? 'Aucun résultat' : 'Aucun document'}
+                Aucun document
               </div>
             ) : (
-              filteredSessions.map(session => {
+              recentSessions.map(session => {
+                const title = session.resource_title || session.title || session.source_filename || session.source_title || (session._type === 'annale' ? `Annale #${session.id}` : `Session #${session.id}`)
                 if (isLivePage) {
                   return (
                     <Link
@@ -192,8 +198,8 @@ export function SidebarLayout() {
                           : 'text-sphera-text-muted hover:bg-sphera-surface hover:text-white'
                       }`}
                     >
-                      <FileText className="w-3.5 h-3.5 shrink-0 text-sphera-green" />
-                      <span className="truncate">{session.title || `Quiz #${session.id}`}</span>
+                      <Zap className="w-3.5 h-3.5 shrink-0 text-sphera-green" />
+                      <span className="truncate">{session.title || `Quiz #${session.roomCode}`}</span>
                     </Link>
                   )
                 } else {
@@ -212,9 +218,7 @@ export function SidebarLayout() {
                       ) : (
                         <FileText className="w-3.5 h-3.5 shrink-0 text-blue-400" />
                       )}
-                      <span className="truncate">
-                        {session.source_filename || session.source_title || `Session #${session.id}`}
-                      </span>
+                      <span className="truncate">{title}</span>
                     </Link>
                   )
                 }
@@ -313,26 +317,20 @@ export function SidebarLayout() {
         <div className={`p-3 border-b border-sphera-border/50 shrink-0 ${isCollapsed ? 'space-y-2' : 'space-y-2.5'}`}>
           {!isCollapsed ? (
             <>
-              {/* Search Bar */}
-              <div className="relative">
-                <Search className="w-3.5 h-3.5 text-sphera-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="Rechercher..."
-                  className="w-full bg-sphera-surface border border-sphera-border rounded-xl pl-8 pr-7 py-1.5 text-xs text-white placeholder-sphera-text-muted outline-none focus:border-sphera-green/50 transition-colors"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-sphera-text-muted hover:text-white"
-                    title="Effacer"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                )}
-              </div>
+              {/* Search Button */}
+              <button
+                type="button"
+                onClick={() => setIsSearchModalOpen(true)}
+                className="w-full bg-sphera-surface hover:bg-sphera-surface-2 border border-sphera-border hover:border-sphera-green/50 rounded-xl px-3 py-2 text-xs text-sphera-text-muted hover:text-white transition-all flex items-center justify-between group shadow-sm"
+              >
+                <span className="flex items-center gap-2">
+                  <Search className="w-3.5 h-3.5 text-sphera-text-muted group-hover:text-sphera-green transition-colors" />
+                  <span>Rechercher...</span>
+                </span>
+                <kbd className="inline-block px-1.5 py-0.5 bg-sphera-bg border border-sphera-border rounded text-[9px] font-mono text-sphera-text-muted group-hover:text-white">
+                  ⌘K
+                </kbd>
+              </button>
 
               {/* Action Buttons (Compact height) */}
               <Link
@@ -357,9 +355,9 @@ export function SidebarLayout() {
             <div className="flex flex-col items-center gap-2">
               <button
                 type="button"
-                onClick={toggleCollapse}
+                onClick={() => setIsSearchModalOpen(true)}
                 className="w-10 h-10 rounded-xl bg-sphera-surface hover:bg-sphera-surface-2 border border-sphera-border flex items-center justify-center text-sphera-text-muted hover:text-white transition-colors"
-                title="Rechercher"
+                title="Rechercher (Ctrl+K)"
               >
                 <Search className="w-4 h-4" />
               </button>
@@ -389,16 +387,17 @@ export function SidebarLayout() {
             <>
               <div className="px-2 mb-2 flex items-center justify-between text-[10px] font-semibold text-sphera-text-muted uppercase tracking-wider">
                 <span>{isLivePage ? 'Quiz Récents' : 'Récents'}</span>
-                {filteredSessions.length > 0 && <span className="text-[10px] lowercase font-normal">{filteredSessions.length}</span>}
+                {recentSessions.length > 0 && <span className="text-[10px] lowercase font-normal">{recentSessions.length}</span>}
               </div>
 
               <div className="space-y-1">
-                {filteredSessions.length === 0 ? (
+                {recentSessions.length === 0 ? (
                   <div className="px-2 py-4 text-xs text-sphera-text-muted italic text-center">
-                    {searchQuery ? 'Aucun résultat' : 'Aucun document'}
+                    Aucun document
                   </div>
                 ) : (
-                  filteredSessions.map(session => {
+                  recentSessions.map(session => {
+                    const title = session.resource_title || session.title || session.source_filename || session.source_title || (session._type === 'annale' ? `Annale #${session.id}` : `Session #${session.id}`)
                     if (isLivePage) {
                       return (
                         <Link
@@ -409,10 +408,10 @@ export function SidebarLayout() {
                               ? 'bg-sphera-surface text-white'
                               : 'text-sphera-text-muted hover:bg-sphera-surface hover:text-white'
                           }`}
-                          title={session.title || `Quiz #${session.id}`}
+                          title={session.title || `Quiz #${session.roomCode}`}
                         >
-                          <FileText className="w-3.5 h-3.5 shrink-0 text-sphera-green" />
-                          <span className="truncate">{session.title || `Quiz #${session.id}`}</span>
+                          <Zap className="w-3.5 h-3.5 shrink-0 text-sphera-green" />
+                          <span className="truncate">{session.title || `Quiz #${session.roomCode}`}</span>
                         </Link>
                       )
                     } else {
@@ -425,16 +424,14 @@ export function SidebarLayout() {
                               ? 'bg-sphera-surface text-white'
                               : 'text-sphera-text-muted hover:bg-sphera-surface hover:text-white'
                           }`}
-                          title={session.source_filename || session.source_title || `Session #${session.id}`}
+                          title={title}
                         >
                           {session._type === 'annale' ? (
                             <FilePenLine className="w-3.5 h-3.5 shrink-0 text-orange-400" />
                           ) : (
                             <FileText className="w-3.5 h-3.5 shrink-0 text-blue-400" />
                           )}
-                          <span className="truncate">
-                            {session.source_filename || session.source_title || `Session #${session.id}`}
-                          </span>
+                          <span className="truncate">{title}</span>
                         </Link>
                       )
                     }
@@ -444,14 +441,14 @@ export function SidebarLayout() {
             </>
           ) : (
             <div className="flex flex-col items-center gap-2">
-              {filteredSessions.slice(0, 7).map(session => {
+              {recentSessions.slice(0, 10).map(session => {
                 const isCurrent = isLivePage
                   ? location.search.includes(`code=${session.roomCode}`)
                   : location.pathname === `/${session._type === 'annale' ? 'annales' : 'sessions'}/${session.id}`
                 const link = isLivePage
                   ? `/live/host?code=${session.roomCode}&reset=1`
                   : `/${session._type === 'annale' ? 'annales' : 'sessions'}/${session.id}`
-                const title = session.title || session.source_filename || session.source_title || `Doc #${session.id}`
+                const title = session.resource_title || session.title || session.source_filename || session.source_title || `Doc #${session.id}`
 
                 return (
                   <Link
@@ -543,6 +540,13 @@ export function SidebarLayout() {
       <main className="flex-1 overflow-y-auto bg-sphera-bg relative pt-14 md:pt-0">
         <Outlet />
       </main>
+
+      {/* Global Search Modal */}
+      <SearchModal
+        isOpen={isSearchModalOpen}
+        onClose={() => setIsSearchModalOpen(false)}
+        items={allSearchItems}
+      />
     </div>
   )
 }
