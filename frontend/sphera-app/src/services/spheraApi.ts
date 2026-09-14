@@ -216,6 +216,27 @@ export async function addToolToSession(sessionId: number | string, toolType: Too
   })
 }
 
+export async function createFromSelection(
+  sessionId: number | string,
+  toolType: 'quiz' | 'flashcards',
+  selectedText: string,
+) {
+  return apiFetch<{
+    success: boolean
+    data: {
+      created_item: any
+      created_items?: any[]
+      count?: number
+      tool_type: 'quiz' | 'flashcards'
+      session: any
+    }
+  }>(`api/sphera/sessions/${sessionId}/create-from-selection/`, {
+    method: 'POST',
+    body: { tool_type: toolType, selected_text: selectedText },
+    requireAuth: true,
+  })
+}
+
 export async function getSuggestions(sessionId: number | string): Promise<string[]> {
   try {
     const res = await apiFetch<{ success: boolean; data: { suggestions: string[] } }>(

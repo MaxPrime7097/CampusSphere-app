@@ -15,13 +15,15 @@ import {
   BookOpen,
   Zap,
   Loader2,
-  Plus
+  Plus,
+  AlertCircle,
+  Check
 } from 'lucide-react'
 import { ToolSelector, type ToolType } from '../components/app/ToolSelector'
 import { GenerateButton } from '../components/app/GenerateButton'
 import { pendingUploadFile } from '../store/fileStore'
 import { FicheView, QuizView, FlashcardsView, AnnaleView } from '../components/app/ResultViews'
-import { generateFromUpload, generateAnnale, askQuestion, addToolToSession } from '../services/spheraApi'
+import { generateFromUpload, generateAnnale, askQuestion, addToolToSession, createFromSelection } from '../services/spheraApi'
 import { QuestionSuggestions } from '../components/app/QuestionSuggestions'
 import { normalizeAiResponse } from '../utils/normalizeAiResponse'
 import { CommandMenu, COMMANDS, type Command } from '../components/app/CommandMenu'
@@ -29,7 +31,7 @@ import { QuotaIndicator } from '../components/app/QuotaIndicator'
 import { CourseTextReader } from '../components/app/CourseTextReader'
 import { DocumentImageViewer } from '../components/app/DocumentImageViewer'
 import { AiMessageItem } from '../components/app/AiMessageItem'
-import type { SelectionActionType } from '../components/app/TextSelectionToolbar'
+import { TextSelectionToolbar, type SelectionActionType } from '../components/app/TextSelectionToolbar'
 
 export default function CreateSession() {
   const navigate = useNavigate()
@@ -72,6 +74,38 @@ export default function CreateSession() {
       }
     }
   }, [])
+
+  const [selectionToolbar, setSelectionToolbar] = useState<{ coords: { x: number; y: number }; text: string } | null>(null)
+  const [actionFeedback, setActionFeedback] = useState<{ message: string; type: 'loading' | 'success' | 'error' } | null>(null)
+
+  const handleWorkspaceSelection = () => {
+    setTimeout(() => {
+      const selection = window.getSelection()
+      const selected = selection?.toString().trim()
+      if (selected && selected.length >= 3) {
+        try {
+          const range = selection?.getRangeAt(0)
+          const rect = range?.getBoundingClientRect()
+          if (rect && (rect.width > 0 || rect.height > 0)) {
+            setSelectionToolbar({
+              coords: { x: rect.left + rect.width / 2, y: rect.top },
+              text: selected,
+            })
+            return
+          }
+        } catch {
+          // ignore
+        }
+      }
+      setSelectionToolbar(null)
+    }, 10)
+  }
+
+  const handleToolbarAction = (action: SelectionActionType, selectedText: string) => {
+    setSelectionToolbar(null)
+    window.getSelection()?.removeAllRanges()
+    handleSelectionAction(action, selectedText)
+  }
 
   const isImage = currentFile ? (currentFile.type.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|svg)$/i.test(currentFile.name)) : false;
   const isPdf = currentFile ? (currentFile.type === 'application/pdf' || /\.pdf$/i.test(currentFile.name)) : false;
@@ -252,6 +286,84 @@ export default function CreateSession() {
     }
   };
 
+  const handleRegenerateResponse = async (index: number) => {
+    const item = chatHistory[index];
+    if (!item || !item.question) return;
+
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+
+    setIsChatting(true);
+    setActiveTab('chat');
+
+    setChatHistory(prev => {
+      const newHist = [...prev];
+      if (newHist[index]) {
+        newHist[index] = { ...newHist[index], answer: '...' };
+      }
+      return newHist;
+    });
+
+    let activeSessionId = sessionId;
+    if (!activeSessionId) {
+      setGeneratedContent({});
+      try {
+        const result = await generateFromUpload({ file, tool_types: [] });
+        const payload = result?.data ?? result;
+        activeSessionId = payload.id;
+        setSessionId(payload.id);
+      } catch (err: any) {
+        setChatHistory(prev => {
+          const newHist = [...prev];
+          if (newHist[index]) {
+            newHist[index].answer = err.message || "Erreur lors de la création de la session.";
+          }
+          return newHist;
+        });
+        setIsChatting(false);
+        return;
+      }
+    }
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    try {
+      const res = await askQuestion(
+        activeSessionId,
+        item.question,
+        generationMode === 'annale' ? 'annale' : 'session',
+        controller.signal
+      );
+      const normalized = normalizeAiResponse(res?.data?.answer);
+      setChatHistory(prev => {
+        const newHist = [...prev];
+        if (newHist[index] && newHist[index].answer === '...') {
+          newHist[index].answer = normalized;
+        }
+        return newHist;
+      });
+    } catch (e: any) {
+      if (e?.name === 'AbortError' || controller.signal.aborted) {
+        return;
+      }
+      setChatHistory(prev => {
+        const newHist = [...prev];
+        if (newHist[index] && newHist[index].answer === '...') {
+          newHist[index].answer = "Erreur de connexion avec l'assistant.";
+        }
+        return newHist;
+      });
+    } finally {
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null;
+        setIsChatting(false);
+      }
+    }
+  };
+
   const handleSendChat = async () => {
     const raw = chatMessage.trim();
     if (!raw) return;
@@ -373,6 +485,59 @@ export default function CreateSession() {
   }
 
   const handleSelectionAction = async (action: SelectionActionType, selectedText: string) => {
+    if (action === 'quiz' || action === 'flashcards') {
+      setMobileActiveView('workspace');
+      setActionFeedback({
+        message: action === 'quiz' ? 'Génération du quiz sur la sélection...' : 'Génération des flashcards...',
+        type: 'loading',
+      });
+      try {
+        let activeSessionId = sessionId;
+        if (!activeSessionId) {
+          const result = await generateFromUpload({ file, tool_types: [] });
+          const payload = result?.data ?? result;
+          activeSessionId = payload.id;
+          setSessionId(payload.id);
+        }
+
+        const res = await createFromSelection(activeSessionId, action, selectedText);
+        const updatedSession = res?.data?.session;
+        if (updatedSession) {
+          setGeneratedContent(updatedSession.content || {});
+        } else if (res?.data?.created_items || res?.data?.created_item) {
+          const itemsToAdd = Array.isArray(res.data.created_items) ? res.data.created_items : [res.data.created_item];
+          setGeneratedContent((prev: any) => {
+            const copy = { ...(prev || {}) };
+            if (action === 'quiz') {
+              const currentQ = Array.isArray(copy.quiz?.questions) ? copy.quiz.questions : [];
+              copy.quiz = { ...(copy.quiz || {}), questions: [...currentQ, ...itemsToAdd] };
+            } else {
+              const currentC = Array.isArray(copy.flashcards?.cartes) ? copy.flashcards.cartes : [];
+              copy.flashcards = { ...(copy.flashcards || {}), cartes: [...currentC, ...itemsToAdd] };
+            }
+            return copy;
+          });
+        }
+        setActiveTab(action);
+        const count = res?.data?.count || (res?.data?.created_items?.length) || 1;
+        setActionFeedback({
+          message: action === 'quiz' 
+            ? `✨ ${count} question${count > 1 ? 's' : ''} ajoutée${count > 1 ? 's' : ''} avec succès au Quiz !` 
+            : `✨ ${count} flashcard${count > 1 ? 's' : ''} ajoutée${count > 1 ? 's' : ''} avec succès au paquet !`,
+          type: 'success',
+        });
+        setTimeout(() => setActionFeedback(null), 4000);
+        return;
+      } catch (err: any) {
+        setActionFeedback({
+          message: err?.message || 'Erreur lors de la création de l\'élément.',
+          type: 'error',
+        });
+        setTimeout(() => setActionFeedback(null), 4000);
+        return;
+      }
+    }
+
     let prompt = ''
     let display = ''
 
@@ -709,7 +874,11 @@ export default function CreateSession() {
         </div>
 
         {/* Scrollable Content Area */}
-        <div className="flex-1 overflow-y-auto min-h-0 relative">
+        <div 
+          className="flex-1 overflow-y-auto min-h-0 relative select-text"
+          onMouseUp={handleWorkspaceSelection}
+          onTouchEnd={handleWorkspaceSelection}
+        >
           {!generatedContent ? (
             /* Settings View */
             <div className="p-6 sm:p-8 max-w-xl mx-auto w-full pb-8">
@@ -902,6 +1071,7 @@ export default function CreateSession() {
                         question={msg.question}
                         answer={msg.answer}
                         onEdit={handleEditMessage}
+                        onRegenerate={handleRegenerateResponse}
                         disabled={isChatting}
                       />
                     ))
@@ -919,6 +1089,7 @@ export default function CreateSession() {
             <div className="max-w-3xl mx-auto mb-2">
               <QuestionSuggestions
                 sessionId={sessionId}
+                askedQuestions={chatHistory.map(m => m.question)}
                 onSelect={(q) => {
                   setChatMessage(q)
                   chatInputRef.current?.focus()
@@ -986,6 +1157,24 @@ export default function CreateSession() {
           </div>
         </div>
       </div>
+
+      {selectionToolbar && (
+        <TextSelectionToolbar
+          coords={selectionToolbar.coords}
+          selectedText={selectionToolbar.text}
+          onAction={handleToolbarAction}
+          onClose={() => setSelectionToolbar(null)}
+        />
+      )}
+
+      {actionFeedback && (
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-sphera-surface-2/95 border border-sphera-border shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-top-3">
+          {actionFeedback.type === 'loading' && <Loader2 className="w-4 h-4 text-sphera-green animate-spin shrink-0" />}
+          {actionFeedback.type === 'success' && <Check className="w-4 h-4 text-sphera-green shrink-0" />}
+          {actionFeedback.type === 'error' && <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />}
+          <span className="text-xs font-medium text-white">{actionFeedback.message}</span>
+        </div>
+      )}
     </div>
   )
 }
