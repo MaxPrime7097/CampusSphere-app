@@ -166,7 +166,7 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
                   <input 
                     type="file" 
                     className="hidden" 
-                    accept=".pdf,.docx,.txt"
+                    accept=".pdf,.docx,.txt,.png,.jpg,.jpeg,.webp"
                     onChange={e => setGenerateFile(e.target.files?.[0] || null)}
                   />
                 </label>
