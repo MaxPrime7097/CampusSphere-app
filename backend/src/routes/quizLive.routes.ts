@@ -5,6 +5,7 @@ import { created, ok, list } from "../lib/envelope.js";
 import { badRequest, notFound } from "../lib/errors.js";
 import { currentUser, requireAuth } from "../middleware/auth.js";
 import { singleUpload } from "../middleware/upload.js";
+import { checkGenerationQuota, incrementGenerationQuota } from "../middleware/generationQuota.js";
 import { extractText } from "../services/extraction.js";
 import { generateTool } from "../services/ai/index.js";
 import { storage } from "../services/storage.js";
@@ -73,7 +74,7 @@ quizLiveRouter.post("/create-manual/", requireAuth, async (req, res) => {
   return created(res, session);
 });
 
-quizLiveRouter.post("/generate-and-create/", requireAuth, async (req, res) => {
+quizLiveRouter.post("/generate-and-create/", requireAuth, checkGenerationQuota, async (req, res) => {
   const data = GenerateSchema.parse(req.body);
   const user = currentUser(req);
 
@@ -97,7 +98,7 @@ quizLiveRouter.post("/generate-and-create/", requireAuth, async (req, res) => {
       throw badRequest("Could not extract text from resource");
   }
 
-  const generated = await generateTool(textToExtract, "quiz");
+  const generated = await generateTool(textToExtract, "quiz", user.id);
   
   if (!generated || !Array.isArray(generated.questions)) {
       throw badRequest("Failed to generate quiz");
@@ -105,10 +106,14 @@ quizLiveRouter.post("/generate-and-create/", requireAuth, async (req, res) => {
 
   const mappedQuestions = generated.questions.map((q: any) => {
       let correctIndex = 0;
-      if (q.bonne_reponse === "A") correctIndex = 0;
-      else if (q.bonne_reponse === "B") correctIndex = 1;
-      else if (q.bonne_reponse === "C") correctIndex = 2;
-      else if (q.bonne_reponse === "D") correctIndex = 3;
+      const letter = typeof q.bonne_reponse === "string" ? q.bonne_reponse.trim().toUpperCase()[0] : "";
+      if (letter === "A") correctIndex = 0;
+      else if (letter === "B") correctIndex = 1;
+      else if (letter === "C") correctIndex = 2;
+      else if (letter === "D") correctIndex = 3;
+      else if (typeof q.bonne_reponse === "number" && q.bonne_reponse >= 0 && q.bonne_reponse <= 3) {
+        correctIndex = q.bonne_reponse;
+      }
 
       return {
           question: q.question,
@@ -119,10 +124,11 @@ quizLiveRouter.post("/generate-and-create/", requireAuth, async (req, res) => {
   });
 
   const session = await createSessionWithQuestions(user.id, data.title, mappedQuestions);
+  await incrementGenerationQuota(user.id, 1);
   return created(res, session);
 });
 
-quizLiveRouter.post("/generate-from-upload/", requireAuth, singleUpload("file", "other"), async (req, res) => {
+quizLiveRouter.post("/generate-from-upload/", requireAuth, singleUpload("file", "other"), checkGenerationQuota, async (req, res) => {
     const user = currentUser(req);
     const title = req.body.title || "Quiz Généré";
 
@@ -135,17 +141,21 @@ quizLiveRouter.post("/generate-from-upload/", requireAuth, singleUpload("file", 
         throw badRequest("Could not extract text from file");
     }
 
-    const generated = await generateTool(textToExtract, "quiz");
+    const generated = await generateTool(textToExtract, "quiz", user.id);
     if (!generated || !Array.isArray(generated.questions)) {
         throw badRequest("Failed to generate quiz");
     }
 
     const mappedQuestions = generated.questions.map((q: any) => {
         let correctIndex = 0;
-        if (q.bonne_reponse === "A") correctIndex = 0;
-        else if (q.bonne_reponse === "B") correctIndex = 1;
-        else if (q.bonne_reponse === "C") correctIndex = 2;
-        else if (q.bonne_reponse === "D") correctIndex = 3;
+        const letter = typeof q.bonne_reponse === "string" ? q.bonne_reponse.trim().toUpperCase()[0] : "";
+        if (letter === "A") correctIndex = 0;
+        else if (letter === "B") correctIndex = 1;
+        else if (letter === "C") correctIndex = 2;
+        else if (letter === "D") correctIndex = 3;
+        else if (typeof q.bonne_reponse === "number" && q.bonne_reponse >= 0 && q.bonne_reponse <= 3) {
+          correctIndex = q.bonne_reponse;
+        }
 
         return {
             question: q.question,
@@ -156,6 +166,7 @@ quizLiveRouter.post("/generate-from-upload/", requireAuth, singleUpload("file", 
     });
 
     const session = await createSessionWithQuestions(user.id, title, mappedQuestions);
+    await incrementGenerationQuota(user.id, 1);
     return created(res, session);
 });
 

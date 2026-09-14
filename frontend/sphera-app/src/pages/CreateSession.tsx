@@ -91,21 +91,61 @@ export default function CreateSession() {
   }
 
   const handleSendChat = async () => {
-    if (!chatMessage.trim() || !sessionId) return;
+    const raw = chatMessage.trim();
+    if (!raw || !sessionId) return;
     
-    const msg = chatMessage;
     setChatMessage('');
+
+    // 1. Bare tool command -> switch tab or generate without sending raw prompt
+    const lower = raw.toLowerCase();
+    if (lower === '@fiche' || lower === '@quiz' || lower === '@flashcards') {
+      const tool = lower.replace('@', '') as ToolType;
+      if (generatedContent && generatedContent[tool] !== undefined) {
+        setActiveTab(tool);
+      } else {
+        await handleAddTool(tool);
+        setActiveTab(tool);
+      }
+      return;
+    }
+
+    // 2. Parse smart commands with text
+    let displayQuestion = raw;
+    let queryForAi = raw;
+
+    const match = raw.match(/^@(\w+)\s*(.*)$/);
+    if (match) {
+      const cmdTrigger = `@${match[1].toLowerCase()}`;
+      const rest = match[2].trim();
+      const foundCmd = COMMANDS.find(c => c.trigger.toLowerCase() === cmdTrigger);
+
+      if (foundCmd && foundCmd.category === 'action' && foundCmd.prefix) {
+        displayQuestion = raw;
+        queryForAi = rest 
+          ? `${foundCmd.prefix}${rest}` 
+          : `Explique-moi les concepts essentiels du cours de manière pédagogique.`;
+      } else if (foundCmd && foundCmd.category === 'tool') {
+        displayQuestion = raw;
+        queryForAi = rest 
+          ? `En lien avec le cours, donne-moi les éléments nécessaires sur "${rest}".` 
+          : `Résume les points essentiels du cours.`;
+      } else {
+        queryForAi = rest || raw;
+      }
+    }
+
     setIsChatting(true);
     setActiveTab('chat');
     
-    setChatHistory(prev => [...prev, { question: msg, answer: '...' }]);
+    setChatHistory(prev => [...prev, { question: displayQuestion, answer: '...' }]);
     
     try {
-      // [BE-MIGRATION FE-07] askQuestion defaults to type 'session', so when generationMode is
-      // 'annale' this posts an AnnaleSession id to /sphera/sessions/<id>/ask/ — wrong resource.
-      // Pass generationMode === 'annale' ? 'annale' : 'session'. — documentation/FRONTEND_CHANGES.md
-      const res = await askQuestion(sessionId, msg);
-      const normalized = normalizeAiResponse(res?.data?.answer)
+      const res = await askQuestion(
+        sessionId,
+        queryForAi,
+        generationMode === 'annale' ? 'annale' : 'session'
+      );
+      const normalized = normalizeAiResponse(res?.data?.answer);
       setChatHistory(prev => {
         const newHist = [...prev];
         newHist[newHist.length - 1].answer = normalized;
@@ -160,25 +200,38 @@ export default function CreateSession() {
   }
 
   const handleCommandSelect = async (cmd: Command) => {
-    // Nettoyer le @... du message
-    // preserve a single '@' so the token stays visible for the user
-    setChatMessage(prev => prev.replace(/@\w*$/, '@'))
     setShowCommandMenu(false)
-    // Si l'outil est déjà généré → naviguer directement
-    if (generatedContent && generatedContent[cmd.toolType] !== undefined) {
-      setActiveTab(cmd.toolType)
-    } else {
-      // Sinon lancer la génération
-      await handleAddTool(cmd.toolType)
-      setActiveTab(cmd.toolType)
+
+    if (cmd.category === 'tool' && cmd.toolType) {
+      setChatMessage('')
+      if (generatedContent && generatedContent[cmd.toolType] !== undefined) {
+        setActiveTab(cmd.toolType)
+      } else {
+        await handleAddTool(cmd.toolType)
+        setActiveTab(cmd.toolType)
+      }
+      return
+    }
+
+    // Action command (e.g. @expliquer, @résumer, @exemple)
+    if (cmd.template) {
+      setChatMessage(prev => {
+        const atIdx = prev.lastIndexOf('@')
+        if (atIdx !== -1) {
+          return prev.slice(0, atIdx) + cmd.template
+        }
+        return cmd.template || ''
+      })
     }
   }
 
   const handleChatKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (showCommandMenu) {
+      const search = commandFilter.toLowerCase().trim()
       const filtered = COMMANDS.filter(c =>
-        c.trigger.includes(commandFilter.toLowerCase()) ||
-        c.label.toLowerCase().includes(commandFilter.toLowerCase())
+        c.trigger.toLowerCase().includes(search) ||
+        c.label.toLowerCase().includes(search) ||
+        c.description.toLowerCase().includes(search)
       )
 
       if (e.key === 'ArrowDown') {

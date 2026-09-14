@@ -65,6 +65,8 @@ export async function checkGenerationQuota(req: Request, res: Response, next: Ne
       });
       return;
     }
+
+    res.locals.remainingQuota = Math.max(0, WEEKLY_LIMIT - currentCount);
   } catch (error) {
     console.warn("[sphera-quota] Warning: checkGenerationQuota DB check failed, allowing generation:", error);
   }
