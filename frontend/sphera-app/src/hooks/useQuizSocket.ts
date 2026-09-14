@@ -13,6 +13,7 @@ export interface CurrentQuestionData {
   questionIndex: number;
   totalQuestions: number;
   timeLimit: number;
+  points?: number;
   startTime: number;
 }
 

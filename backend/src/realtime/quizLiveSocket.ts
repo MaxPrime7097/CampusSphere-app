@@ -51,7 +51,8 @@ function sendToClient(ws: WebSocket, message: any) {
 async function sendNextQuestion(roomCode: string, session: any, questionIndex: number) {
     const questions = session.questions as any[];
     const q = questions[questionIndex];
-    const timeLimit = q.timeLimit || 30;
+    const timeLimit = typeof q.timeLimit === "number" && q.timeLimit > 0 ? q.timeLimit : 30;
+    const points = typeof q.points === "number" && q.points > 0 ? q.points : 1000;
     
     broadcastToRoom(roomCode, {
         type: "new_question",
@@ -60,6 +61,7 @@ async function sendNextQuestion(roomCode: string, session: any, questionIndex: n
             question: q.question,
             options: q.options,
             timeLimit: timeLimit,
+            points: points,
             totalQuestions: questions.length
         }
     });
@@ -205,7 +207,10 @@ quizLiveWss.on("connection", (ws: WebSocket, _request: IncomingMessage, roomCode
                 
                 let points = 0;
                 if (isCorrect) {
-                     points = 1000 + Math.max(0, Math.floor(500 - (timeToAnswer * 1000) / 10));
+                     const basePoints = typeof q.points === "number" && q.points > 0 ? q.points : 1000;
+                     const qTimeLimit = typeof q.timeLimit === "number" && q.timeLimit > 0 ? q.timeLimit : 30;
+                     const speedFactor = Math.max(0, 1 - (timeToAnswer / qTimeLimit));
+                     points = Math.round(basePoints * (0.5 + 0.5 * speedFactor));
                 }
 
                 if (participantId) {

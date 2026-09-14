@@ -255,6 +255,14 @@ export async function shareSession(id: number | string) {
   return apiFetch<{ success: boolean; data: any }>(`api/sphera/sessions/${id}/share/`, { method: 'POST', body: {}, requireAuth: true })
 }
 
+export async function updateSessionText(id: number | string, text: string) {
+  return apiFetch<{ success: boolean; data: { extracted_text: string } }>(`api/sphera/sessions/${id}/text/`, {
+    method: 'PATCH',
+    body: { text },
+    requireAuth: true,
+  });
+}
+
 export async function askQuestion(id: number | string, question: string, type: 'session' | 'annale' = 'session') {
   const endpoint = type === 'annale' ? `api/sphera/annales/${id}/ask/` : `api/sphera/sessions/${id}/ask/`;
   return apiFetch<{ success: boolean; data: any }>(
@@ -291,17 +299,61 @@ export async function createQuizManual(title: string, questions: { question: str
   });
 }
 
-export async function createQuizFromResource(resourceId: number, title: string) {
-  return apiFetch<{ success: boolean; data: any }>('api/quiz-live/generate-and-create/', {
+export async function generateQuizQuestionsFromResource(
+  resourceId: number | string,
+  title?: string,
+  timeLimit = 30,
+  points = 1000
+) {
+  return apiFetch<{ success: boolean; data: { title: string; questions: any[] } }>('api/quiz-live/generate-questions/', {
     method: 'POST',
-    body: { resource_id: resourceId, title },
+    body: { resource_id: resourceId, resourceId, title, timeLimit, points },
     requireAuth: true,
   });
 }
 
-export async function createQuizFromUpload(file: File, title: string) {
+export async function generateQuizQuestionsFromUpload(
+  file: File,
+  title?: string,
+  timeLimit = 30,
+  points = 1000
+) {
+  const formData = new FormData();
+  if (title) formData.append('title', title);
+  formData.append('timeLimit', String(timeLimit));
+  formData.append('points', String(points));
+  formData.append('file', file);
+
+  return apiFetch<{ success: boolean; data: { title: string; questions: any[] } }>('api/quiz-live/generate-questions/', {
+    method: 'POST',
+    body: formData,
+    requireAuth: true,
+  });
+}
+
+export async function createQuizFromResource(
+  resourceId: number | string,
+  title: string,
+  timeLimit = 30,
+  points = 1000
+) {
+  return apiFetch<{ success: boolean; data: any }>('api/quiz-live/generate-and-create/', {
+    method: 'POST',
+    body: { resource_id: resourceId, resourceId, title, timeLimit, points },
+    requireAuth: true,
+  });
+}
+
+export async function createQuizFromUpload(
+  file: File,
+  title: string,
+  timeLimit = 30,
+  points = 1000
+) {
   const formData = new FormData();
   formData.append('title', title);
+  formData.append('timeLimit', String(timeLimit));
+  formData.append('points', String(points));
   formData.append('file', file);
   return apiFetch<{ success: boolean; data: any }>('api/quiz-live/generate-from-upload/', {
     method: 'POST',
@@ -356,6 +408,40 @@ export async function deleteQuizSession(roomCode: string) {
 export async function resetQuizSession(roomCode: string) {
   return apiFetch<{ success: boolean }>(`api/quiz-live/${roomCode}/reset/`, {
     method: 'PATCH',
+    requireAuth: true,
+  });
+}
+
+export async function getQuizSessionHostDetails(roomCode: string) {
+  return apiFetch<{
+    success: boolean;
+    data: {
+      id: number;
+      roomCode: string;
+      title: string;
+      status: string;
+      questions: any[];
+      participantCount: number;
+    };
+  }>(`api/quiz-live/${roomCode}/host/`, {
+    method: 'GET',
+    requireAuth: true,
+  });
+}
+
+export async function updateQuizQuestions(roomCode: string, questions: any[], title?: string) {
+  return apiFetch<{
+    success: boolean;
+    data: {
+      id: number;
+      roomCode: string;
+      title: string;
+      questions: any[];
+      status: string;
+    };
+  }>(`api/quiz-live/${roomCode}/questions/`, {
+    method: 'PATCH',
+    body: { questions, title },
     requireAuth: true,
   });
 }

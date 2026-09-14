@@ -12,10 +12,13 @@ import { QuestionSuggestions } from '../components/app/QuestionSuggestions'
 import { normalizeAiResponse } from '../utils/normalizeAiResponse'
 import { CommandMenu, COMMANDS, type Command } from '../components/app/CommandMenu'
 import { QuotaIndicator } from '../components/app/QuotaIndicator'
+import { CourseTextReader } from '../components/app/CourseTextReader'
+import { DocumentImageViewer } from '../components/app/DocumentImageViewer'
 
 export default function CreateSession() {
   const navigate = useNavigate()
-  const file = pendingUploadFile
+  const [currentFile, setCurrentFile] = useState<File | null>(pendingUploadFile)
+  const file = currentFile
 
   const [generationMode, setGenerationMode] = useState<'study' | 'annale'>('study')
   const [selectedTools, setSelectedTools] = useState<ToolType[]>(['fiche'])
@@ -23,6 +26,7 @@ export default function CreateSession() {
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fileUrl, setFileUrl] = useState<string | null>(null)
+  const [textSource, setTextSource] = useState<string | null>(null)
   
   // Workspace State
   const [generatedContent, setGeneratedContent] = useState<any>(null)
@@ -43,18 +47,34 @@ export default function CreateSession() {
   const [commandActiveIdx, setCommandActiveIdx] = useState(0)
   const chatInputRef = React.useRef<HTMLInputElement>(null)
 
+  const isImage = currentFile ? (currentFile.type.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|svg)$/i.test(currentFile.name)) : false;
+  const isPdf = currentFile ? (currentFile.type === 'application/pdf' || /\.pdf$/i.test(currentFile.name)) : false;
+  const isText = currentFile ? (currentFile.name.endsWith('.md') || currentFile.name.endsWith('.txt') || currentFile.name.endsWith('.markdown') || currentFile.type.startsWith('text/')) : false;
+
   useEffect(() => {
-    if (!file) {
+    if (!currentFile) {
       navigate('/dashboard', { replace: true })
       return
     }
 
-    if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
-      const url = URL.createObjectURL(file)
+    if (isPdf || isImage) {
+      const url = URL.createObjectURL(currentFile)
       setFileUrl(url)
       return () => URL.revokeObjectURL(url)
+    } else if (isText) {
+      currentFile.text().then(txt => setTextSource(txt)).catch(console.error)
     }
-  }, [file, navigate])
+  }, [currentFile, navigate, isPdf, isImage, isText])
+
+  const handleTextSave = (newText: string) => {
+    if (!currentFile) return
+    setTextSource(newText)
+    const updatedFile = new File([newText], currentFile.name, {
+      type: currentFile.type || 'text/markdown',
+      lastModified: Date.now(),
+    })
+    setCurrentFile(updatedFile)
+  }
 
   if (!file) return null
 
@@ -289,11 +309,24 @@ export default function CreateSession() {
         </div>
 
         <div className="flex-1 overflow-hidden relative bg-[#1E1E1E]">
-          {fileUrl ? (
+          {isImage && fileUrl ? (
+            <DocumentImageViewer
+              src={fileUrl}
+              alt={file.name}
+              title={file.name}
+            />
+          ) : isPdf && fileUrl ? (
             <iframe 
               src={`${fileUrl}#toolbar=0&navpanes=0&scrollbar=0`} 
               className="w-full h-full border-none custom-scrollbar"
               title="Aperçu du PDF"
+            />
+          ) : textSource !== null ? (
+            <CourseTextReader
+              initialText={textSource}
+              title={file.name.replace(/\.[^/.]+$/, '')}
+              isEditable={true}
+              onSave={handleTextSave}
             />
           ) : (
             <div className="flex-1 p-8 flex flex-col items-center justify-center text-center opacity-60 h-full">
