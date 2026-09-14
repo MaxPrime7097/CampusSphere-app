@@ -4,7 +4,7 @@ import { FileText, ArrowLeft } from 'lucide-react'
 import { ToolSelector, type ToolType } from '../components/app/ToolSelector'
 import { GenerateButton } from '../components/app/GenerateButton'
 import { pendingUploadFile } from '../store/fileStore'
-import { Maximize2, Minimize2, Send, MessageSquare, Bot, User } from 'lucide-react'
+import { Maximize2, Minimize2, Send, MessageSquare, Bot, User, AtSign } from 'lucide-react'
 import { FicheView, QuizView, FlashcardsView, AnnaleView } from '../components/app/ResultViews'
 import { generateFromUpload, generateAnnale, askQuestion } from '../services/spheraApi'
 import { Sparkles } from 'lucide-react'
@@ -146,17 +146,25 @@ export default function CreateSession() {
 
   const handleChatInputChange = (val: string) => {
     setChatMessage(val)
-    const atIdx = val.lastIndexOf('@')
-    if (atIdx !== -1) {
-      const after = val.slice(atIdx + 1)
-      if (!after.includes(' ')) {
-        setShowCommandMenu(true)
-        setCommandFilter('@' + after)
-        setCommandActiveIdx(0)
-        return
-      }
+    const match = val.match(/@([a-zA-Z0-9_-]*)$/)
+    if (match) {
+      setShowCommandMenu(true)
+      setCommandFilter('@' + match[1])
+      setCommandActiveIdx(0)
+    } else if (!val.includes('@') && showCommandMenu) {
+      setShowCommandMenu(false)
     }
-    setShowCommandMenu(false)
+  }
+
+  const handleToggleCommandMenu = () => {
+    if (showCommandMenu) {
+      setShowCommandMenu(false)
+    } else {
+      setShowCommandMenu(true)
+      setCommandFilter('')
+      setCommandActiveIdx(0)
+      chatInputRef.current?.focus()
+    }
   }
 
   const handleCommandSelect = async (cmd: Command) => {
@@ -164,13 +172,27 @@ export default function CreateSession() {
     // preserve a single '@' so the token stays visible for the user
     setChatMessage(prev => prev.replace(/@\w*$/, '@'))
     setShowCommandMenu(false)
-    // Si l'outil est déjà généré → naviguer directement
-    if (generatedContent && generatedContent[cmd.toolType] !== undefined) {
-      setActiveTab(cmd.toolType)
-    } else {
-      // Sinon lancer la génération
-      await handleAddTool(cmd.toolType)
-      setActiveTab(cmd.toolType)
+
+    if (cmd.category === 'tool' && cmd.toolType) {
+      setChatMessage('')
+      if (generatedContent && generatedContent[cmd.toolType] !== undefined) {
+        setActiveTab(cmd.toolType)
+      } else {
+        await handleAddTool(cmd.toolType)
+        setActiveTab(cmd.toolType)
+      }
+      return
+    }
+
+    // Action command (e.g. @expliquer, @résumer, @exemple)
+    if (cmd.template) {
+      setChatMessage(prev => {
+        if (prev.match(/@([a-zA-Z0-9_-]*)$/)) {
+          return prev.replace(/@([a-zA-Z0-9_-]*)$/, cmd.template || '')
+        }
+        return prev ? `${prev} ${cmd.template}` : (cmd.template || '')
+      })
+      setTimeout(() => chatInputRef.current?.focus(), 50)
     }
   }
 
@@ -494,8 +516,20 @@ export default function CreateSession() {
               onSelect={handleCommandSelect}
               onClose={() => setShowCommandMenu(false)}
             />
-            <div className="flex items-center gap-3 bg-sphera-surface-2 border border-sphera-border rounded-full p-2 pl-5 shadow-[0_0_30px_rgba(0,0,0,0.5)] focus-within:border-sphera-green/50 transition-colors">
-              <MessageSquare className="w-4 h-4 text-sphera-text-muted hidden sm:block" />
+            <div className="flex items-center gap-2 bg-sphera-surface-2 border border-sphera-border rounded-full p-2 pl-3 sm:pl-4 shadow-[0_0_30px_rgba(0,0,0,0.5)] focus-within:border-sphera-green/50 transition-colors">
+              <button
+                type="button"
+                onClick={handleToggleCommandMenu}
+                title="Commandes (@)"
+                aria-label="Ouvrir les commandes (@)"
+                className={`p-1.5 rounded-full transition-colors shrink-0 ${
+                  showCommandMenu 
+                    ? 'bg-sphera-green text-black' 
+                    : 'text-sphera-text-muted hover:text-sphera-green hover:bg-sphera-surface'
+                }`}
+              >
+                <AtSign className="w-4 h-4" />
+              </button>
               <input 
                 ref={chatInputRef}
                 type="text" 
@@ -505,9 +539,6 @@ export default function CreateSession() {
                 onKeyDown={handleChatKeyDown}
                 className="flex-1 bg-transparent border-none text-sm text-white placeholder-sphera-text-muted outline-none focus:ring-0"
               />
-              {!chatMessage && (
-                <span className="text-[10px] text-sphera-green/40 font-mono shrink-0 hidden sm:block">@commandes</span>
-              )}
               <button 
                 onClick={handleSendChat}
                 disabled={!chatMessage.trim() || isChatting || !sessionId}

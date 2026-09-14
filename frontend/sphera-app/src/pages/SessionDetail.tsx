@@ -2,10 +2,14 @@ import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getSession, getAnnale, askQuestion, deleteSession, deleteAnnale, shareSession, shareAnnale, API_BASE } from '../services/spheraApi'
 import { normalizeAiResponse } from '../utils/normalizeAiResponse'
-import { FileText, ArrowLeft, Maximize2, Minimize2, Send, MessageSquare, Bot, User, BrainCircuit, Columns, PenTool, Share2, Trash2, Check } from 'lucide-react'
+import { FileText, ArrowLeft, Maximize2, Minimize2, Send, MessageSquare, Bot, User, BrainCircuit, Columns, PenTool, Share2, Trash2, Check, AtSign } from 'lucide-react'
 import { FicheView, QuizView, FlashcardsView, AnnaleView } from '../components/app/ResultViews'
 import { ShareModal } from '../components/app/ShareModal'
 import { DeleteConfirmModal } from '../components/app/DeleteConfirmModal'
+import { CourseTextReader } from '../components/app/CourseTextReader'
+import { DocumentImageViewer } from '../components/app/DocumentImageViewer'
+import { CommandMenu, COMMANDS, type Command } from '../components/app/CommandMenu'
+import { QuestionSuggestions } from '../components/app/QuestionSuggestions'
 
 export default function SessionDetail({ type = 'session' }: { type?: 'session' | 'annale' }) {
   const { id } = useParams<{ id: string }>()
@@ -19,6 +23,12 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
   const [chatMessage, setChatMessage] = useState('')
   const [chatHistory, setChatHistory] = useState<any[]>([])
   const [isChatting, setIsChatting] = useState(false)
+
+  // Command Menu State
+  const [showCommandMenu, setShowCommandMenu] = useState(false)
+  const [commandFilter, setCommandFilter] = useState('')
+  const [commandActiveIdx, setCommandActiveIdx] = useState(0)
+  const chatInputRef = React.useRef<HTMLInputElement>(null)
   
   const [showCopied, setShowCopied] = useState(false)
   const [isShareModalOpen, setIsShareModalOpen] = useState(false)
@@ -47,47 +57,140 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
     }
   }
 
-  useEffect(() => {
-    if (!id) return
-    const fetchFn = type === 'annale' ? getAnnale : getSession;
-    fetchFn(id)
-      .then(r => {
-        setSession(r?.data ?? r)
-        const payload = r?.data ?? r;
-        const types = payload.tool_types || (type === 'annale' ? ['annale'] : [])
-        if (types.length) setActiveTab(types[0])
-        if (payload.qa_history) setChatHistory(payload.qa_history)
+  const handleChatInputChange = (val: string) => {
+    setChatMessage(val)
+    const match = val.match(/@([a-zA-Z0-9_-]*)$/)
+    if (match) {
+      setShowCommandMenu(true)
+      setCommandFilter('@' + match[1])
+      setCommandActiveIdx(0)
+    } else if (!val.includes('@') && showCommandMenu) {
+      setShowCommandMenu(false)
+    }
+  }
+
+  const handleToggleCommandMenu = () => {
+    if (showCommandMenu) {
+      setShowCommandMenu(false)
+    } else {
+      setShowCommandMenu(true)
+      setCommandFilter('')
+      setCommandActiveIdx(0)
+      chatInputRef.current?.focus()
+    }
+  }
+
+  const handleCommandSelect = (cmd: Command) => {
+    setShowCommandMenu(false)
+
+    if (cmd.category === 'tool' && cmd.toolType) {
+      setChatMessage('')
+      if (toolTypes.includes(cmd.toolType)) {
+        setActiveTab(cmd.toolType)
+      }
+      return
+    }
+
+    if (cmd.template) {
+      setChatMessage(prev => {
+        if (prev.match(/@([a-zA-Z0-9_-]*)$/)) {
+          return prev.replace(/@([a-zA-Z0-9_-]*)$/, cmd.template || '')
+        }
+        return prev ? `${prev} ${cmd.template}` : (cmd.template || '')
       })
-      .catch(() => navigate('/dashboard'))
-      .finally(() => setLoading(false))
-  }, [id, type])
+      setTimeout(() => chatInputRef.current?.focus(), 50)
+    }
+  }
 
-  if (loading) return (
-    <div className="p-8 max-w-4xl mx-auto flex flex-col gap-4">
-      <div className="h-24 bg-sphera-surface rounded-xl animate-pulse" />
-      <div className="h-40 bg-sphera-surface rounded-xl animate-pulse" />
-      <div className="h-40 bg-sphera-surface rounded-xl animate-pulse" />
-    </div>
-  )
+  const handleChatKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (showCommandMenu) {
+      const search = commandFilter.replace(/^@/, '').toLowerCase().trim()
+      const filtered = COMMANDS.filter(c => {
+        if (!search) return true
+        return (
+          c.trigger.toLowerCase().includes(search) ||
+          c.label.toLowerCase().includes(search) ||
+          c.description.toLowerCase().includes(search)
+        )
+      })
 
-  if (!session) return null
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setCommandActiveIdx(i => Math.min(i + 1, filtered.length - 1))
+        return
+      }
 
-  const toolTypes: string[] = session.tool_types || (type === 'annale' ? ['annale'] : [])
-  const content = session.content || {}
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setCommandActiveIdx(i => Math.max(i - 1, 0))
+        return
+      }
+
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        if (filtered[commandActiveIdx]) {
+          handleCommandSelect(filtered[commandActiveIdx])
+        }
+        return
+      }
+
+      if (e.key === 'Escape') {
+        setShowCommandMenu(false)
+        return
+      }
+
+      return
+    }
+
+    if (e.key === 'Enter') {
+      handleSendChat()
+    }
+  }
 
   const handleSendChat = async () => {
-    if (!chatMessage.trim() || !id) return;
+    const raw = chatMessage.trim();
+    if (!raw || !id) return;
 
-    const msg = chatMessage;
+    // Bare tool command -> switch tab
+    const lower = raw.toLowerCase();
+    if (lower === '@fiche' || lower === '@quiz' || lower === '@flashcards') {
+      const tool = lower.replace('@', '');
+      if (toolTypes.includes(tool)) {
+        setActiveTab(tool);
+        setChatMessage('');
+        return;
+      }
+    }
+
+    let displayQuestion = raw;
+    let queryForAi = raw;
+
+    const match = raw.match(/^@(\w+)\s*(.*)$/);
+    if (match) {
+      const cmdTrigger = `@${match[1].toLowerCase()}`;
+      const rest = match[2].trim();
+      const foundCmd = COMMANDS.find(c => c.trigger.toLowerCase() === cmdTrigger);
+      if (foundCmd && foundCmd.prefix) {
+        queryForAi = foundCmd.prefix + (rest || 'les points essentiels.');
+        displayQuestion = rest || foundCmd.label;
+      } else if (foundCmd && foundCmd.toolType) {
+        queryForAi = rest 
+          ? `En lien avec le cours, donne-moi les éléments nécessaires sur "${rest}".` 
+          : `Résume les points essentiels du cours.`;
+      } else {
+        queryForAi = rest || raw;
+      }
+    }
+
     setChatMessage('');
     setIsChatting(true);
     setActiveTab('chat');
 
-    setChatHistory(prev => [...prev, { question: msg, answer: '...' }]);
+    setChatHistory(prev => [...prev, { question: displayQuestion, answer: '...' }]);
 
     try {
-      const res = await askQuestion(id, msg, type);
-      const normalized = normalizeAiResponse(res?.data?.answer)
+      const res = await askQuestion(id, queryForAi, type);
+      const normalized = normalizeAiResponse(res?.data?.answer);
       setChatHistory(prev => {
         const newHist = [...prev];
         newHist[newHist.length - 1].answer = normalized;
