@@ -8,6 +8,8 @@ import { ShareModal } from '../components/app/ShareModal'
 import { DeleteConfirmModal } from '../components/app/DeleteConfirmModal'
 import { CourseTextReader } from '../components/app/CourseTextReader'
 import { DocumentImageViewer } from '../components/app/DocumentImageViewer'
+import { CommandMenu, COMMANDS, type Command } from '../components/app/CommandMenu'
+import { QuestionSuggestions } from '../components/app/QuestionSuggestions'
 
 export default function SessionDetail({ type = 'session' }: { type?: 'session' | 'annale' }) {
   const { id } = useParams<{ id: string }>()
@@ -19,6 +21,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
   // Workspace State
   const [isPdfExpanded, setIsPdfExpanded] = useState(true)
   const [docViewMode, setDocViewMode] = useState<'doc' | 'text'>('doc')
+  const [mobileActiveView, setMobileActiveView] = useState<'doc' | 'workspace'>('workspace')
   const [chatMessage, setChatMessage] = useState('')
   const [chatHistory, setChatHistory] = useState<any[]>([])
   const [isChatting, setIsChatting] = useState(false)
@@ -55,6 +58,34 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
       alert("Impossible d'ouvrir le partage.");
     }
   }
+
+  useEffect(() => {
+    if (!id) return
+    const fetchFn = type === 'annale' ? getAnnale : getSession;
+    fetchFn(id)
+      .then(r => {
+        setSession(r?.data ?? r)
+        const payload = r?.data ?? r;
+        const types = payload.tool_types || (type === 'annale' ? ['annale'] : [])
+        if (types.length) setActiveTab(types[0])
+        if (payload.qa_history) setChatHistory(payload.qa_history)
+      })
+      .catch(() => navigate('/dashboard'))
+      .finally(() => setLoading(false))
+  }, [id, type, navigate])
+
+  if (loading) return (
+    <div className="p-8 max-w-4xl mx-auto flex flex-col gap-4">
+      <div className="h-24 bg-sphera-surface rounded-xl animate-pulse" />
+      <div className="h-40 bg-sphera-surface rounded-xl animate-pulse" />
+      <div className="h-40 bg-sphera-surface rounded-xl animate-pulse" />
+    </div>
+  )
+
+  if (!session) return null
+
+  const toolTypes: string[] = session.tool_types || (type === 'annale' ? ['annale'] : [])
+  const content = session.content || {}
 
   const handleChatInputChange = (val: string) => {
     setChatMessage(val)
@@ -217,9 +248,44 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
 
   return (
     <div className="flex h-full overflow-hidden flex-col md:flex-row bg-sphera-bg">
+      {/* Mobile Top Bar with Segmented View Switcher */}
+      <div className="md:hidden flex items-center justify-between px-3 py-2 bg-sphera-surface-2 border-b border-sphera-border shrink-0 z-30">
+        <button
+          onClick={() => navigate('/dashboard')}
+          className="p-1.5 text-sphera-text-muted hover:bg-sphera-surface hover:text-white rounded-md transition-colors shrink-0"
+          title="Retour au tableau de bord"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+
+        <div className="flex items-center bg-sphera-surface p-1 rounded-lg border border-sphera-border gap-1">
+          <button
+            type="button"
+            onClick={() => setMobileActiveView('doc')}
+            className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
+              mobileActiveView === 'doc'
+                ? 'bg-sphera-green text-black shadow-sm'
+                : 'text-sphera-text-muted hover:text-white'
+            }`}
+          >
+            {isImage ? 'Image' : isPdf ? 'PDF' : 'Document'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileActiveView('workspace')}
+            className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
+              mobileActiveView === 'workspace'
+                ? 'bg-sphera-green text-black shadow-sm'
+                : 'text-sphera-text-muted hover:text-white'
+            }`}
+          >
+            Espace d'étude
+          </button>
+        </div>
+      </div>
 
       {/* Left Column: Source Document */}
-      <div className={`${isPdfExpanded ? 'w-full md:w-1/2 flex' : 'hidden'} border-r border-sphera-border flex-col bg-sphera-surface-2 overflow-hidden transition-all duration-300`}>
+      <div className={`${mobileActiveView === 'doc' ? 'flex flex-1 w-full' : 'hidden'} ${isPdfExpanded ? 'md:flex md:w-1/2' : 'md:hidden'} border-r border-sphera-border flex-col bg-sphera-surface-2 overflow-hidden transition-all duration-300`}>
         <div className="h-14 border-b border-sphera-border flex items-center justify-between px-4 bg-sphera-bg">
           <div className="flex items-center gap-3 min-w-0">
             <button
@@ -234,8 +300,8 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
             </span>
           </div>
 
-          {/* Toggle between Image and OCR Text if both are available */}
-          {isImage && session.extracted_text && (
+          {/* Toggle between Document and Text if both are available */}
+          {(isImage || isPdf) && session.extracted_text && (
             <div className="flex items-center gap-1 bg-sphera-surface p-1 rounded-lg border border-sphera-border shrink-0 ml-2">
               <button
                 type="button"
@@ -244,7 +310,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
                   docViewMode === 'doc' ? 'bg-sphera-green text-black shadow-sm' : 'text-sphera-text-muted hover:text-white'
                 }`}
               >
-                Image
+                {isImage ? 'Image' : 'PDF'}
               </button>
               <button
                 type="button"
@@ -253,7 +319,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
                   docViewMode === 'text' ? 'bg-sphera-green text-black shadow-sm' : 'text-sphera-text-muted hover:text-white'
                 }`}
               >
-                Texte OCR
+                Texte extrait
               </button>
             </div>
           )}
@@ -261,13 +327,13 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
 
         {/* Document Viewer */}
         <div className="flex-1 overflow-hidden relative bg-[#1E1E1E]">
-          {isImage && fileUrl && docViewMode === 'doc' ? (
+          {docViewMode === 'doc' && isImage && fileUrl ? (
             <DocumentImageViewer
               src={fileUrl}
               alt={session.resource_title || 'Document'}
               title={session.resource_title || session.source_filename}
             />
-          ) : isPdf && fileUrl ? (
+          ) : docViewMode === 'doc' && isPdf && fileUrl ? (
             <iframe 
               src={`${fileUrl}#toolbar=0&navpanes=0&scrollbar=0`} 
               className="w-full h-full border-none custom-scrollbar" 
@@ -304,7 +370,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
       </div>
 
       {/* Right Column: Generated Tools & Workspace */}
-      <div className={`${isPdfExpanded ? 'w-full md:w-1/2' : 'w-full'} flex flex-col h-full bg-sphera-bg relative shadow-[-10px_0_30px_rgba(0,0,0,0.5)] transition-all duration-300`}>
+      <div className={`${mobileActiveView === 'workspace' ? 'flex flex-1 w-full' : 'hidden'} ${isPdfExpanded ? 'md:flex md:w-1/2' : 'md:flex md:w-full'} flex-col h-full bg-sphera-bg relative shadow-[-10px_0_30px_rgba(0,0,0,0.5)] transition-all duration-300`}>
 
         {/* Workspace Toolbar */}
         <div className="h-14 border-b border-sphera-border flex items-center justify-between px-4 bg-sphera-surface-2/80 backdrop-blur-md sticky top-0 z-20">
@@ -424,27 +490,57 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
 
         {/* Q&A Chat Input (Fixed Bottom) */}
         <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-sphera-bg via-sphera-bg/90 to-transparent p-4 pt-12 z-30">
-          <div className="max-w-3xl mx-auto flex items-center gap-3 bg-sphera-surface-2 border border-sphera-border rounded-full p-2 pl-5 shadow-[0_0_30px_rgba(0,0,0,0.5)] focus-within:border-sphera-green/50 transition-colors">
-            <MessageSquare className="w-4 h-4 text-sphera-text-muted hidden sm:block" />
-            <input
-              type="text"
-              placeholder="Demandez n'importe quoi sur ce cours..."
-              value={chatMessage}
-              onChange={e => setChatMessage(e.target.value)}
-              className="flex-1 bg-transparent border-none text-sm text-white placeholder-sphera-text-muted outline-none focus:ring-0"
-              onKeyDown={e => {
-                if (e.key === 'Enter') {
-                  handleSendChat()
-                }
+          {activeTab === 'chat' && (
+            <QuestionSuggestions
+              sessionId={id}
+              onSelect={(q) => {
+                setChatMessage(q)
+                chatInputRef.current?.focus()
               }}
             />
-            <button
-              onClick={handleSendChat}
-              disabled={!chatMessage.trim() || isChatting || !id}
-              className="w-9 h-9 rounded-full bg-sphera-green text-black flex items-center justify-center hover:bg-green-400 disabled:opacity-50 disabled:hover:bg-sphera-green transition-colors flex-shrink-0 shadow-[0_0_15px_rgba(34,197,94,0.3)]"
-            >
-              <Send className="w-4 h-4 ml-0.5" />
-            </button>
+          )}
+
+          <div className="max-w-3xl mx-auto relative">
+            <CommandMenu
+              isVisible={showCommandMenu}
+              filter={commandFilter}
+              activeIndex={commandActiveIdx}
+              onSelect={handleCommandSelect}
+              onClose={() => setShowCommandMenu(false)}
+            />
+            <div className="flex items-center gap-2 bg-sphera-surface-2 border border-sphera-border rounded-full p-2 pl-3 sm:pl-4 shadow-[0_0_30px_rgba(0,0,0,0.5)] focus-within:border-sphera-green/50 transition-colors">
+              <button
+                type="button"
+                onClick={handleToggleCommandMenu}
+                title="Commandes (@)"
+                aria-label="Ouvrir les commandes (@)"
+                className={`p-1.5 rounded-full transition-colors shrink-0 ${
+                  showCommandMenu 
+                    ? 'bg-sphera-green text-black' 
+                    : 'text-sphera-text-muted hover:text-sphera-green hover:bg-sphera-surface'
+                }`}
+              >
+                <AtSign className="w-4 h-4" />
+              </button>
+              <input
+                ref={chatInputRef}
+                type="text"
+                placeholder="Demandez n'importe quoi sur ce cours... ou @ pour les commandes"
+                value={chatMessage}
+                onChange={e => handleChatInputChange(e.target.value)}
+                onKeyDown={handleChatKeyDown}
+                className="flex-1 bg-transparent border-none text-sm text-white placeholder-sphera-text-muted outline-none focus:ring-0"
+              />
+              <button
+                onClick={handleSendChat}
+                disabled={!chatMessage.trim() || isChatting || !id}
+                title="Envoyer le message"
+                aria-label="Envoyer le message"
+                className="w-9 h-9 rounded-full bg-sphera-green text-black flex items-center justify-center hover:bg-green-400 disabled:opacity-50 disabled:hover:bg-sphera-green transition-colors flex-shrink-0 shadow-[0_0_15px_rgba(34,197,94,0.3)]"
+              >
+                <Send className="w-4 h-4 ml-0.5" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
