@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getSession, getAnnale, askQuestion, deleteSession, deleteAnnale, shareSession, shareAnnale, API_BASE } from '../services/spheraApi'
+import { getSession, getAnnale, askQuestion, deleteSession, deleteAnnale, shareSession, shareAnnale, updateSessionText, API_BASE } from '../services/spheraApi'
 import { normalizeAiResponse } from '../utils/normalizeAiResponse'
 import { FileText, ArrowLeft, Maximize2, Minimize2, Send, MessageSquare, Bot, User, BrainCircuit, Columns, PenTool, Share2, Trash2, Check, AtSign } from 'lucide-react'
 import { FicheView, QuizView, FlashcardsView, AnnaleView } from '../components/app/ResultViews'
@@ -8,8 +8,6 @@ import { ShareModal } from '../components/app/ShareModal'
 import { DeleteConfirmModal } from '../components/app/DeleteConfirmModal'
 import { CourseTextReader } from '../components/app/CourseTextReader'
 import { DocumentImageViewer } from '../components/app/DocumentImageViewer'
-import { CommandMenu, COMMANDS, type Command } from '../components/app/CommandMenu'
-import { QuestionSuggestions } from '../components/app/QuestionSuggestions'
 
 export default function SessionDetail({ type = 'session' }: { type?: 'session' | 'annale' }) {
   const { id } = useParams<{ id: string }>()
@@ -20,6 +18,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
 
   // Workspace State
   const [isPdfExpanded, setIsPdfExpanded] = useState(true)
+  const [docViewMode, setDocViewMode] = useState<'doc' | 'text'>('doc')
   const [chatMessage, setChatMessage] = useState('')
   const [chatHistory, setChatHistory] = useState<any[]>([])
   const [isChatting, setIsChatting] = useState(false)
@@ -207,30 +206,88 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
     }
   }
 
+  const rawFileUrl = session?.resource_file_url;
+  const fileUrl = rawFileUrl
+    ? (rawFileUrl.startsWith('/') ? `${API_BASE.replace(/\/$/, '')}${rawFileUrl}` : rawFileUrl)
+    : null;
+
+  const filename = (session?.source_filename || session?.resource_title || '').toLowerCase();
+  const isPdf = Boolean(fileUrl?.toLowerCase().endsWith('.pdf') || filename.endsWith('.pdf'));
+  const isImage = Boolean(/\.(png|jpe?g|webp|gif|bmp|svg)$/i.test(fileUrl || '') || /\.(png|jpe?g|webp|gif|bmp|svg)$/i.test(filename));
+
   return (
     <div className="flex h-full overflow-hidden flex-col md:flex-row bg-sphera-bg">
 
       {/* Left Column: Source Document */}
       <div className={`${isPdfExpanded ? 'w-full md:w-1/2 flex' : 'hidden'} border-r border-sphera-border flex-col bg-sphera-surface-2 overflow-hidden transition-all duration-300`}>
-        <div className="h-14 border-b border-sphera-border flex items-center px-4 gap-4 bg-sphera-bg">
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="p-1.5 text-sphera-text-muted hover:bg-sphera-surface hover:text-white rounded-md transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="flex flex-col min-w-0">
+        <div className="h-14 border-b border-sphera-border flex items-center justify-between px-4 bg-sphera-bg">
+          <div className="flex items-center gap-3 min-w-0">
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="p-1.5 text-sphera-text-muted hover:bg-sphera-surface hover:text-white rounded-md transition-colors shrink-0"
+              title="Retour au tableau de bord"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
             <span className="text-sm font-semibold text-white truncate">
               {session.resource_title || session.source_filename || `Session #${session.id}`}
             </span>
           </div>
+
+          {/* Toggle between Image and OCR Text if both are available */}
+          {isImage && session.extracted_text && (
+            <div className="flex items-center gap-1 bg-sphera-surface p-1 rounded-lg border border-sphera-border shrink-0 ml-2">
+              <button
+                type="button"
+                onClick={() => setDocViewMode('doc')}
+                className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors ${
+                  docViewMode === 'doc' ? 'bg-sphera-green text-black shadow-sm' : 'text-sphera-text-muted hover:text-white'
+                }`}
+              >
+                Image
+              </button>
+              <button
+                type="button"
+                onClick={() => setDocViewMode('text')}
+                className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors ${
+                  docViewMode === 'text' ? 'bg-sphera-green text-black shadow-sm' : 'text-sphera-text-muted hover:text-white'
+                }`}
+              >
+                Texte OCR
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Document Viewer */}
         <div className="flex-1 overflow-hidden relative bg-[#1E1E1E]">
-          {session.resource_file_url ? (
+          {isImage && fileUrl && docViewMode === 'doc' ? (
+            <DocumentImageViewer
+              src={fileUrl}
+              alt={session.resource_title || 'Document'}
+              title={session.resource_title || session.source_filename}
+            />
+          ) : isPdf && fileUrl ? (
             <iframe 
-              src={session.resource_file_url.startsWith('/') ? `${API_BASE.replace(/\/$/, '')}${session.resource_file_url}#toolbar=0&navpanes=0&scrollbar=0` : `${session.resource_file_url}#toolbar=0&navpanes=0&scrollbar=0`} 
+              src={`${fileUrl}#toolbar=0&navpanes=0&scrollbar=0`} 
+              className="w-full h-full border-none custom-scrollbar" 
+              title="Aperçu du document"
+            />
+          ) : session.extracted_text ? (
+            <CourseTextReader
+              initialText={session.extracted_text}
+              title={session.resource_title || session.source_filename}
+              isEditable={type === 'session'}
+              onSave={async (newText) => {
+                if (id) {
+                  await updateSessionText(id, newText);
+                  setSession((prev: any) => ({ ...prev, extracted_text: newText }));
+                }
+              }}
+            />
+          ) : fileUrl ? (
+            <iframe 
+              src={`${fileUrl}#toolbar=0&navpanes=0&scrollbar=0`} 
               className="w-full h-full border-none custom-scrollbar" 
               title="Aperçu du document"
             />

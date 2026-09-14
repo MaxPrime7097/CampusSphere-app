@@ -7,6 +7,7 @@ interface QuestionDisplayProps {
   totalQuestions: number;
   selectedAnswer: number | null;
   correctIndex: number | null;
+  points?: number;
   onAnswer?: (index: number) => void;
   isHost?: boolean;
 }
@@ -18,6 +19,7 @@ export function QuestionDisplay({
   totalQuestions,
   selectedAnswer,
   correctIndex,
+  points,
   onAnswer,
   isHost = false
 }: QuestionDisplayProps) {
@@ -31,10 +33,15 @@ export function QuestionDisplay({
 
   return (
     <div className="w-full max-w-4xl mx-auto flex flex-col gap-6">
-      <div className="text-center">
+      <div className="text-center flex items-center justify-center gap-3">
         <span className="text-sphera-text-muted text-sm font-medium uppercase tracking-wider">
           Question {questionIndex + 1} / {totalQuestions}
         </span>
+        {points !== undefined && (
+          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sphera-green/10 text-sphera-green border border-sphera-green/30">
+            {points} pts
+          </span>
+        )}
       </div>
       
       <div className="bg-sphera-surface-2 border border-sphera-border rounded-2xl p-8 text-center shadow-lg">

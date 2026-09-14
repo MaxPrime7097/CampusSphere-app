@@ -12,10 +12,13 @@ import { QuestionSuggestions } from '../components/app/QuestionSuggestions'
 import { normalizeAiResponse } from '../utils/normalizeAiResponse'
 import { CommandMenu, COMMANDS, type Command } from '../components/app/CommandMenu'
 import { QuotaIndicator } from '../components/app/QuotaIndicator'
+import { CourseTextReader } from '../components/app/CourseTextReader'
+import { DocumentImageViewer } from '../components/app/DocumentImageViewer'
 
 export default function CreateSession() {
   const navigate = useNavigate()
-  const file = pendingUploadFile
+  const [currentFile, setCurrentFile] = useState<File | null>(pendingUploadFile)
+  const file = currentFile
 
   const [generationMode, setGenerationMode] = useState<'study' | 'annale'>('study')
   const [selectedTools, setSelectedTools] = useState<ToolType[]>(['fiche'])
@@ -23,6 +26,7 @@ export default function CreateSession() {
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fileUrl, setFileUrl] = useState<string | null>(null)
+  const [textSource, setTextSource] = useState<string | null>(null)
   
   // Workspace State
   const [generatedContent, setGeneratedContent] = useState<any>(null)
@@ -43,18 +47,34 @@ export default function CreateSession() {
   const [commandActiveIdx, setCommandActiveIdx] = useState(0)
   const chatInputRef = React.useRef<HTMLInputElement>(null)
 
+  const isImage = currentFile ? (currentFile.type.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|svg)$/i.test(currentFile.name)) : false;
+  const isPdf = currentFile ? (currentFile.type === 'application/pdf' || /\.pdf$/i.test(currentFile.name)) : false;
+  const isText = currentFile ? (currentFile.name.endsWith('.md') || currentFile.name.endsWith('.txt') || currentFile.name.endsWith('.markdown') || currentFile.type.startsWith('text/')) : false;
+
   useEffect(() => {
-    if (!file) {
+    if (!currentFile) {
       navigate('/dashboard', { replace: true })
       return
     }
 
-    if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
-      const url = URL.createObjectURL(file)
+    if (isPdf || isImage) {
+      const url = URL.createObjectURL(currentFile)
       setFileUrl(url)
       return () => URL.revokeObjectURL(url)
+    } else if (isText) {
+      currentFile.text().then(txt => setTextSource(txt)).catch(console.error)
     }
-  }, [file, navigate])
+  }, [currentFile, navigate, isPdf, isImage, isText])
+
+  const handleTextSave = (newText: string) => {
+    if (!currentFile) return
+    setTextSource(newText)
+    const updatedFile = new File([newText], currentFile.name, {
+      type: currentFile.type || 'text/markdown',
+      lastModified: Date.now(),
+    })
+    setCurrentFile(updatedFile)
+  }
 
   if (!file) return null
 
@@ -91,21 +111,61 @@ export default function CreateSession() {
   }
 
   const handleSendChat = async () => {
-    if (!chatMessage.trim() || !sessionId) return;
+    const raw = chatMessage.trim();
+    if (!raw || !sessionId) return;
     
-    const msg = chatMessage;
     setChatMessage('');
+
+    // 1. Bare tool command -> switch tab or generate without sending raw prompt
+    const lower = raw.toLowerCase();
+    if (lower === '@fiche' || lower === '@quiz' || lower === '@flashcards') {
+      const tool = lower.replace('@', '') as ToolType;
+      if (generatedContent && generatedContent[tool] !== undefined) {
+        setActiveTab(tool);
+      } else {
+        await handleAddTool(tool);
+        setActiveTab(tool);
+      }
+      return;
+    }
+
+    // 2. Parse smart commands with text
+    let displayQuestion = raw;
+    let queryForAi = raw;
+
+    const match = raw.match(/^@(\w+)\s*(.*)$/);
+    if (match) {
+      const cmdTrigger = `@${match[1].toLowerCase()}`;
+      const rest = match[2].trim();
+      const foundCmd = COMMANDS.find(c => c.trigger.toLowerCase() === cmdTrigger);
+
+      if (foundCmd && foundCmd.category === 'action' && foundCmd.prefix) {
+        displayQuestion = raw;
+        queryForAi = rest 
+          ? `${foundCmd.prefix}${rest}` 
+          : `Explique-moi les concepts essentiels du cours de manière pédagogique.`;
+      } else if (foundCmd && foundCmd.category === 'tool') {
+        displayQuestion = raw;
+        queryForAi = rest 
+          ? `En lien avec le cours, donne-moi les éléments nécessaires sur "${rest}".` 
+          : `Résume les points essentiels du cours.`;
+      } else {
+        queryForAi = rest || raw;
+      }
+    }
+
     setIsChatting(true);
     setActiveTab('chat');
     
-    setChatHistory(prev => [...prev, { question: msg, answer: '...' }]);
+    setChatHistory(prev => [...prev, { question: displayQuestion, answer: '...' }]);
     
     try {
-      // [BE-MIGRATION FE-07] askQuestion defaults to type 'session', so when generationMode is
-      // 'annale' this posts an AnnaleSession id to /sphera/sessions/<id>/ask/ — wrong resource.
-      // Pass generationMode === 'annale' ? 'annale' : 'session'. — documentation/FRONTEND_CHANGES.md
-      const res = await askQuestion(sessionId, msg);
-      const normalized = normalizeAiResponse(res?.data?.answer)
+      const res = await askQuestion(
+        sessionId,
+        queryForAi,
+        generationMode === 'annale' ? 'annale' : 'session'
+      );
+      const normalized = normalizeAiResponse(res?.data?.answer);
       setChatHistory(prev => {
         const newHist = [...prev];
         newHist[newHist.length - 1].answer = normalized;
@@ -168,9 +228,6 @@ export default function CreateSession() {
   }
 
   const handleCommandSelect = async (cmd: Command) => {
-    // Nettoyer le @... du message
-    // preserve a single '@' so the token stays visible for the user
-    setChatMessage(prev => prev.replace(/@\w*$/, '@'))
     setShowCommandMenu(false)
 
     if (cmd.category === 'tool' && cmd.toolType) {
@@ -187,20 +244,22 @@ export default function CreateSession() {
     // Action command (e.g. @expliquer, @résumer, @exemple)
     if (cmd.template) {
       setChatMessage(prev => {
-        if (prev.match(/@([a-zA-Z0-9_-]*)$/)) {
-          return prev.replace(/@([a-zA-Z0-9_-]*)$/, cmd.template || '')
+        const atIdx = prev.lastIndexOf('@')
+        if (atIdx !== -1) {
+          return prev.slice(0, atIdx) + cmd.template
         }
-        return prev ? `${prev} ${cmd.template}` : (cmd.template || '')
+        return cmd.template || ''
       })
-      setTimeout(() => chatInputRef.current?.focus(), 50)
     }
   }
 
   const handleChatKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (showCommandMenu) {
+      const search = commandFilter.toLowerCase().trim()
       const filtered = COMMANDS.filter(c =>
-        c.trigger.includes(commandFilter.toLowerCase()) ||
-        c.label.toLowerCase().includes(commandFilter.toLowerCase())
+        c.trigger.toLowerCase().includes(search) ||
+        c.label.toLowerCase().includes(search) ||
+        c.description.toLowerCase().includes(search)
       )
 
       if (e.key === 'ArrowDown') {
@@ -258,11 +317,24 @@ export default function CreateSession() {
         </div>
 
         <div className="flex-1 overflow-hidden relative bg-[#1E1E1E]">
-          {fileUrl ? (
+          {isImage && fileUrl ? (
+            <DocumentImageViewer
+              src={fileUrl}
+              alt={file.name}
+              title={file.name}
+            />
+          ) : isPdf && fileUrl ? (
             <iframe 
               src={`${fileUrl}#toolbar=0&navpanes=0&scrollbar=0`} 
               className="w-full h-full border-none custom-scrollbar"
               title="Aperçu du PDF"
+            />
+          ) : textSource !== null ? (
+            <CourseTextReader
+              initialText={textSource}
+              title={file.name.replace(/\.[^/.]+$/, '')}
+              isEditable={true}
+              onSave={handleTextSave}
             />
           ) : (
             <div className="flex-1 p-8 flex flex-col items-center justify-center text-center opacity-60 h-full">
