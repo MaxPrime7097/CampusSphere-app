@@ -1,4 +1,5 @@
 import React from "react";
+import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
 import { Cookie, AlertCircle, CheckCircle, XCircle, Shield, Heart, Facebook, Twitter, Linkedin, Instagram, Youtube, ChevronDown, User, BookLock, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,14 @@ export function CookiePolicy(): JSX.Element {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5">
+      <Helmet>
+        <title>Politique des Cookies & Traceurs | CampusSphere</title>
+        <meta name="description" content="Informations relatives aux cookies techniques, de session et d'analyse utilisés sur la plateforme CampusSphere." />
+        <link rel="canonical" href="https://campussphere.app/cs-inc/policies/cookiepolicy" />
+        <meta property="og:title" content="Politique des Cookies - CampusSphere" />
+        <meta property="og:description" content="Gestion du consentement et utilisation des traceurs sur CampusSphere." />
+        <meta property="og:url" content="https://campussphere.app/cs-inc/policies/cookiepolicy" />
+      </Helmet>
       {/* Navigation: brand + links + CTA */}
       <Header />
 
@@ -73,7 +82,7 @@ export function CookiePolicy(): JSX.Element {
         <div className="container mx-auto max-w-5xl">
           <div className="text-center mb-12">
             <p className="font-nunito font-semibold text-muted-foreground">
-              Dernière mise à jour : 05/04/2026
+              Dernière mise à jour : 13/09/2026
             </p>
           </div>
 
@@ -86,8 +95,8 @@ export function CookiePolicy(): JSX.Element {
               </div>
               <div className="font-nunito font-semibold text-muted-foreground space-y-4 mt-4">
                 <p>
-                Un cookie est un petit fichier texte déposé sur votre appareil lors de votre visite sur CampusSphere. 
-                Il nous permet de reconnaître votre navigateur et de personnaliser votre expérience.
+                Un cookie est un petit fichier texte ou traceur déposé sur votre terminal lors de votre visite sur CampusSphere. 
+                Il permet d'assurer le bon fonctionnement de nos services, de maintenir votre session active et d'optimiser les performances de navigation.
                 </p>
               </div>
             </div>
@@ -95,22 +104,22 @@ export function CookiePolicy(): JSX.Element {
             <div className="campus-animate-slide-up">
               <div className="p-0">
                 <CardTitle className="font-poppins flex items-center gap-3 p-0">
-                  Types de cookies utilisés
+                  Types de traceurs et cookies utilisés
                 </CardTitle>
               </div>
               <div className="font-nunito font-semibold text-muted-foreground space-y-4 mt-4">
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div>
-                  <h3 className="font-semibold text-foreground mb-2">Cookies essentiels</h3>
-                  <p>Nécessaires au fonctionnement de la plateforme (authentification, sécurité)</p>
+                  <h3 className="font-semibold text-foreground mb-1">1. Cookies strictement nécessaires & authentification</h3>
+                  <p>Indispensables au fonctionnement de la plateforme (maintien sécurisé de votre session utilisateur, mémorisation des préférences de sécurité).</p>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground mb-2">Cookies de personnalisation</h3>
-                  <p>Mémorisent vos préférences (langue, thème, notifications)</p>
+                  <h3 className="font-semibold text-foreground mb-1">2. Mesure de performance technique (Vercel Speed Insights)</h3>
+                  <p>Nous utilisons un système de métriques de performance technique anonymisées (temps de chargement des pages, réactivité des composants). Cet outil ne dépose aucun cookie de profilage commercial, ne collecte aucune donnée nominative et n'établit aucun historique publicitaire inter-sites.</p>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground mb-2">Pas de cookies de tracking tiers</h3>
-                  <p>CampusSphere n'utilise pas de cookies de suivi publicitaire ou d'analyse tiers (pas de Google Analytics, Hotjar ou similaires)</p>
+                  <h3 className="font-semibold text-foreground mb-1">3. Zéro cookie de ciblage publicitaire tiers</h3>
+                  <p>CampusSphere refuse catégoriquement les traceurs publicitaires intrusifs (pas de Google AdSense, pas de pixel Meta/Facebook, pas de régie tierce de monétisation de vos données).</p>
                 </div>
               </div>
               </div>
@@ -124,15 +133,11 @@ export function CookiePolicy(): JSX.Element {
               </div>
               <div className="font-nunito font-semibold text-muted-foreground space-y-4 mt-4">
               <p>
-                Vous pouvez contrôler et gérer les cookies dans les paramètres de votre navigateur. 
-                Notez que bloquer certains cookies peut affecter le fonctionnement de CampusSphere.
+                Vous pouvez à tout moment configurer votre navigateur pour refuser ou supprimer les cookies. 
+                Veuillez noter que la désactivation totale des cookies essentiels vous empêchera de vous connecter à votre compte CampusSphere.
               </p>
               <p className="mt-4">
-                Pour gérer vos préférences de cookies personnelles, rendez-vous dans {" "}
-                <a className="text-primary hover:underline">
-                  Paramètres → Confidentialité 
-                </a>
-                 ,en fonction de votre navigateur. Vous pouvez y voir les cookies actifs et les supprimer si vous le souhaitez.
+                Pour gérer vos préférences, rendez-vous dans les options de confidentialité de votre navigateur (Chrome, Firefox, Safari, Edge).
               </p>
               </div>
             </div>
@@ -145,16 +150,20 @@ export function CookiePolicy(): JSX.Element {
               </div>
               <div className="font-nunito font-semibold text-muted-foreground mt-4">
                 <p>
-                  Pour toute question concernant notre utilisation des cookies, contactez-nous :
+                  Pour toute question relative à l'utilisation des cookies et traceurs sur CampusSphere, contactez :
                 </p>
                 <ul className="mt-4 space-y-2">
                   <li><p className="mt-4">
                   {" "}
                   <a href="mailto:policies@campussphere.app" className="text-primary hover:underline">
                     policies@campussphere.app
+                  </a>{" "}
+                  ou{" "}
+                  <a href="mailto:support@campussphere.app" className="text-primary hover:underline">
+                    support@campussphere.app
                   </a>
                 </p></li>
-                  <li>Adresse: Douala, Cameroun</li>
+                  <li>Adresse : Douala, Cameroun</li>
                 </ul>
               </div>
             </div>

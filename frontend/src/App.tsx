@@ -1,10 +1,10 @@
-import React, { lazy, Suspense } from "react";
+import React, { lazy, Suspense, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
 import { RequireAdminRole } from "./components/auth/RequireAdminRole";
 import { AdminLayout } from "./admin/components/AdminLayout";
@@ -56,6 +56,8 @@ const CommunityGuidelines = lazy(() => import("./pages/public/CommunityGuideline
 const Copyright = lazy(() => import("./pages/public/Copyright").then(m => ({ default: m.Copyright })));
 const CookiePolicy = lazy(() => import("./pages/public/CookiePolicy").then(m => ({ default: m.CookiePolicy })));
 const DataDeletion = lazy(() => import("./pages/public/DataDeletion").then(m => ({ default: m.DataDeletion })));
+const LegalNotice = lazy(() => import("./pages/public/LegalNotice").then(m => ({ default: m.LegalNotice })));
+const TermsOfSale = lazy(() => import("./pages/public/TermsOfSale").then(m => ({ default: m.TermsOfSale })));
 const Waitinglist = lazy(() => import("./pages/public/Waitinglist").then(m => ({ default: m.Waitinglist })));
 const Policies = lazy(() => import("./pages/public/Policies").then(m => ({ default: m.Policies })));
 const Forbidden = lazy(() => import("./pages/public/Forbidden"));
@@ -132,6 +134,28 @@ const Protected = ({ children, requireCompleteProfile = true }: { children: Reac
   return children;
 };
 
+const HomeOrLanding = () => {
+  const { isAuthenticated, isLoading } = useAuth();
+  if (isLoading) return <PageLoader />;
+  return isAuthenticated ? (
+    <Protected>
+      <AppLayout>
+        <Home />
+      </AppLayout>
+    </Protected>
+  ) : (
+    <Landing />
+  );
+};
+
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [pathname]);
+  return null;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -144,6 +168,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <ScrollToTop />
           <Suspense fallback={<PageLoader />}>
             <Routes>
               {/* Auth routes */}
@@ -163,14 +188,8 @@ const App = () => (
             <Route path="/sso/bridge" element={<SSOBridge />} />
             <Route path="/sso/popup" element={<SSOPopup />} />
 
-            {/* Protected routes with layout */}
-            <Route path="/" element={
-              <Protected>
-                <AppLayout>
-                  <Home />
-                </AppLayout>
-              </Protected>
-            } />
+            {/* Root: Landing for guests/crawlers, Home for authenticated members */}
+            <Route path="/" element={<HomeOrLanding />} />
             <Route path="/profile" element={
               <Protected>
                 <AppLayout>
@@ -379,7 +398,12 @@ const App = () => (
             <Route path="/cs-inc/policies/community-guidelines" element={<CommunityGuidelines />} />
             <Route path="/cs-inc/policies/copyright" element={<Copyright />} />
             <Route path="/cs-inc/policies/cookiepolicy" element={<CookiePolicy />} />
+            <Route path="/cs-inc/policies/cookie-policy" element={<Navigate to="/cs-inc/policies/cookiepolicy" replace />} />
             <Route path="/cs-inc/policies/datadeletion" element={<DataDeletion />} />
+            <Route path="/cs-inc/policies/legal-notice" element={<LegalNotice />} />
+            <Route path="/cs-inc/policies/mentions-legales" element={<LegalNotice />} />
+            <Route path="/cs-inc/policies/terms-of-sale" element={<TermsOfSale />} />
+            <Route path="/cs-inc/policies/cgv" element={<TermsOfSale />} />
             <Route path="/cs-inc/waitlist" element={<Waitinglist />} />
             <Route path="/403" element={<Forbidden />} />
 

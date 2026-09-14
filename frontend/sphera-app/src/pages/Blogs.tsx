@@ -1,31 +1,90 @@
-import React, { useState, useMemo } from 'react'
-import { Link } from 'react-router-dom'
-import { SpheraHeader } from '../components/layout/SpheraHeader'
-import { SpheraFooter } from '../components/layout/SpheraFooter'
-import { Calendar, Clock, ArrowRight, Sparkles } from 'lucide-react'
-import { blogPosts } from '../data/blogs'
+import React, { useState, useMemo, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
+import { SpheraHeader } from '../components/layout/SpheraHeader';
+import { SpheraFooter } from '../components/layout/SpheraFooter';
+import { Calendar, Clock, ArrowRight, Sparkles } from 'lucide-react';
+import { blogPosts } from '../data/blogs';
 
-export default function Blogs() {
-  const [activeFilter, setActiveFilter] = useState<string>('Tous')
+export default function Blogs(): JSX.Element {
+  const [activeCategory, setActiveCategory] = useState<string>('Tous');
 
-  // Extract unique categories
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+  }, []);
+
   const categories = useMemo(() => {
-    const cats = Array.from(new Set(blogPosts.map(p => p.category)))
-    return ['Tous', ...cats]
-  }, [])
+    const cats = Array.from(new Set(blogPosts.map(p => p.category)));
+    return ['Tous', ...cats];
+  }, []);
 
-  // Featured post (first one marked as featured, or first post)
-  const featuredPost = useMemo(() => blogPosts.find(p => p.isFeatured) || blogPosts[0], [])
+  const featuredPost = useMemo(() => {
+    return blogPosts.find(p => p.isFeatured) || blogPosts[0];
+  }, []);
 
-  // Filter non-featured posts
   const filteredPosts = useMemo(() => {
-    const nonFeatured = blogPosts.filter(p => p.id !== featuredPost.id)
-    if (activeFilter === 'Tous') return nonFeatured
-    return nonFeatured.filter(p => p.category === activeFilter)
-  }, [activeFilter, featuredPost.id])
+    if (activeCategory === 'Tous') {
+      return blogPosts.filter(p => p.id !== featuredPost?.id);
+    }
+    return blogPosts.filter(p => p.category === activeCategory);
+  }, [activeCategory, featuredPost]);
+
+  const collectionJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: 'Le Blog Sphera — Méthodes de révision & Réussite Universitaire',
+    description: 'Guides pratiques, sciences de la mémorisation (Active Recall, Pomodoro), stratégies d\'examen et utilisation de l\'IA pour les étudiants.',
+    url: 'https://sphera.campussphere.app/blogs',
+    publisher: {
+      '@type': 'Organization',
+      name: 'CampusSphere',
+      url: 'https://campussphere.app',
+      logo: 'https://sphera.campussphere.app/sphera-logo-dark.png',
+    },
+    hasPart: blogPosts.map(post => ({
+      '@type': 'BlogPosting',
+      headline: post.title,
+      description: post.excerpt,
+      url: `https://sphera.campussphere.app/blogs/${post.slug}`,
+      image: post.imageUrl,
+      datePublished: post.isoDate || '2026-09-12T08:00:00+01:00',
+    })),
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-sphera-bg font-sans selection:bg-sphera-green/30">
+      <Helmet>
+        <title>Le Blog Sphera — Méthodes de Révision, IA & Réussite Étudiante</title>
+        <meta
+          name="description"
+          content="Découvrez nos guides complets pour réviser efficacement vos examens : Active Recall, répétition espacée, révisions de partiels et utilisation intelligente de l'IA."
+        />
+        <link rel="canonical" href="https://sphera.campussphere.app/blogs" />
+
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://sphera.campussphere.app/blogs" />
+        <meta property="og:title" content="Le Blog Sphera — Méthodes de Révision & Réussite Étudiante" />
+        <meta
+          property="og:description"
+          content="Guides, méthodologies et astuces cognitives pour valider ses examens et réviser sans stress."
+        />
+        <meta property="og:image" content="https://sphera.campussphere.app/sphera-logo-dark.png" />
+
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:url" content="https://sphera.campussphere.app/blogs" />
+        <meta name="twitter:title" content="Le Blog Sphera — Méthodes de Révision & Réussite Étudiante" />
+        <meta
+          name="twitter:description"
+          content="Guides, méthodologies et astuces cognitives pour valider ses examens et réviser sans stress."
+        />
+        <meta name="twitter:image" content="https://sphera.campussphere.app/sphera-logo-dark.png" />
+
+        {/* Schema.org CollectionPage */}
+        <script type="application/ld+json">
+          {JSON.stringify(collectionJsonLd)}
+        </script>
+      </Helmet>
+
       <SpheraHeader />
       
       <main className="flex-1 pt-32 pb-24 relative overflow-hidden">
@@ -33,78 +92,65 @@ export default function Blogs() {
         
         <div className="container mx-auto px-4 max-w-7xl relative z-10">
           {/* Header */}
-          <div className="text-center mb-16">
+          <div className="text-center mb-12">
             <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-6">
               Le Blog Sphera
             </h1>
             <p className="text-xl text-sphera-text-muted max-w-2xl mx-auto">
-              Découvre nos derniers articles sur la méthodologie, l'IA dans l'éducation et la vie étudiante.
+              Des guides complets et des méthodes prouvées par les sciences cognitives pour réussir vos partiels et réviser plus efficacement.
             </p>
           </div>
 
-          {/* ── Featured Article ─────────────────────────────── */}
-          <Link 
-            to={`/blogs/${featuredPost.id}`}
-            className="group block mb-16 relative overflow-hidden rounded-3xl border border-sphera-border hover:border-sphera-green/50 transition-all duration-500"
-          >
-            {/* Badge */}
-            <div className="absolute top-6 left-6 z-20 flex items-center gap-2 bg-sphera-green text-black text-xs font-bold px-4 py-2 rounded-full shadow-lg shadow-sphera-green/30">
-              <Sparkles className="w-3.5 h-3.5" />
-              A la une
-            </div>
-
-            <div className="grid md:grid-cols-2 min-h-[380px]">
-              {/* Image */}
-              <div className="relative h-64 md:h-auto overflow-hidden">
-                <img 
-                  src={featuredPost.imageUrl} 
-                  alt={featuredPost.title} 
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent to-sphera-surface/90 hidden md:block" />
-                <div className="absolute inset-0 bg-gradient-to-t from-sphera-surface to-transparent md:hidden" />
-              </div>
-
-              {/* Content */}
-              <div className="relative bg-sphera-surface p-8 md:p-12 flex flex-col justify-center">
-                <div className="inline-block bg-sphera-surface-2 border border-sphera-border text-sphera-text-muted text-xs font-semibold px-3 py-1 rounded-full mb-6 w-fit">
-                  {featuredPost.category}
-                </div>
-                <h2 className="text-2xl md:text-4xl font-display font-bold text-white mb-4 leading-tight group-hover:text-sphera-green transition-colors">
-                  {featuredPost.title}
-                </h2>
-                <p className="text-sphera-text-muted text-base md:text-lg mb-8 line-clamp-3 leading-relaxed">
-                  {featuredPost.excerpt}
-                </p>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-5 text-sm text-sphera-text-muted">
-                    <div className="flex items-center gap-1.5">
-                      <Calendar className="w-4 h-4" />
-                      {featuredPost.date}
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Clock className="w-4 h-4" />
-                      {featuredPost.readTime}
-                    </div>
+          {/* Featured Article */}
+          {featuredPost && (
+            <Link
+              to={`/blogs/${featuredPost.slug}`}
+              className="group block mb-14 rounded-3xl overflow-hidden bg-sphera-surface border border-sphera-border hover:border-sphera-green/50 transition-all duration-300 shadow-xl"
+            >
+              <div className="grid md:grid-cols-2">
+                <div className="h-64 md:h-auto overflow-hidden relative">
+                  <div className="absolute top-4 left-4 z-10 flex items-center gap-1.5 bg-sphera-green text-black text-xs font-bold px-3.5 py-1.5 rounded-full shadow-lg">
+                    <Sparkles className="w-3.5 h-3.5" /> À la une
                   </div>
-                  <span className="inline-flex items-center gap-2 text-sm font-bold text-sphera-green group-hover:gap-3 transition-all">
-                    Lire <ArrowRight className="w-4 h-4" />
-                  </span>
+                  <img
+                    src={featuredPost.imageUrl}
+                    alt={featuredPost.title}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                </div>
+                <div className="p-8 md:p-12 flex flex-col justify-center">
+                  <div className="text-xs text-sphera-green font-semibold uppercase tracking-wider mb-3">
+                    {featuredPost.category}
+                  </div>
+                  <h2 className="text-2xl md:text-3xl font-display font-bold text-white mb-4 group-hover:text-sphera-green transition-colors">
+                    {featuredPost.title}
+                  </h2>
+                  <p className="text-sphera-text-muted text-sm md:text-base leading-relaxed mb-6 line-clamp-3">
+                    {featuredPost.excerpt}
+                  </p>
+                  <div className="flex items-center gap-4 text-xs text-sphera-text-muted">
+                    <span className="flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5" /> {featuredPost.date}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5" /> {featuredPost.readTime}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          </Link>
+            </Link>
+          )}
 
-          {/* ── Filter Pills ────────────────────────────────── */}
-          <div className="flex flex-wrap items-center gap-3 mb-12">
+          {/* Category Filter Pills */}
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-12">
             {categories.map(cat => (
               <button
                 key={cat}
-                onClick={() => setActiveFilter(cat)}
-                className={`px-5 py-2 rounded-full text-sm font-semibold border transition-all duration-200 ${
-                  activeFilter === cat
-                    ? 'bg-sphera-green text-black border-sphera-green shadow-md shadow-sphera-green/20'
-                    : 'bg-sphera-surface border-sphera-border text-sphera-text-muted hover:border-sphera-green/50 hover:text-white'
+                onClick={() => setActiveCategory(cat)}
+                className={`px-4 py-2 rounded-xl text-xs md:text-sm font-semibold transition-all ${
+                  activeCategory === cat
+                    ? 'bg-sphera-green text-black shadow-md shadow-sphera-green/20'
+                    : 'bg-sphera-surface border border-sphera-border text-sphera-text-muted hover:text-white hover:border-sphera-green/30'
                 }`}
               >
                 {cat}
@@ -112,7 +158,7 @@ export default function Blogs() {
             ))}
           </div>
 
-          {/* ── Articles Grid ───────────────────────────────── */}
+          {/* Articles Grid */}
           {filteredPosts.length === 0 ? (
             <div className="text-center py-20">
               <p className="text-sphera-text-muted text-lg">Aucun article dans cette catégorie pour le moment.</p>
@@ -121,8 +167,8 @@ export default function Blogs() {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredPosts.map((post) => (
                 <article 
-                  key={`${post.id}-${post.title}`} 
-                  className="bg-sphera-surface border border-sphera-border rounded-2xl overflow-hidden group hover:border-sphera-green/50 transition-colors flex flex-col h-full"
+                  key={post.id} 
+                  className="bg-sphera-surface border border-sphera-border rounded-2xl overflow-hidden group hover:border-sphera-green/50 transition-colors flex flex-col h-full shadow-lg"
                 >
                   <div className="h-48 overflow-hidden relative">
                     <div className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-md border border-white/10 text-white text-xs font-semibold px-3 py-1 rounded-full">
@@ -156,7 +202,7 @@ export default function Blogs() {
                     </p>
                     
                     <Link 
-                      to={`/blogs/${post.id}`} 
+                      to={`/blogs/${post.slug}`} 
                       className="inline-flex items-center gap-2 text-sm font-semibold text-white group-hover:text-sphera-green transition-colors mt-auto"
                     >
                       Lire l'article <ArrowRight className="w-4 h-4" />
@@ -171,5 +217,5 @@ export default function Blogs() {
 
       <SpheraFooter />
     </div>
-  )
+  );
 }

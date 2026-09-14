@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { fileURLToPath } from "url";
 import { VitePWA } from "vite-plugin-pwa";
+import { prerenderPublicPagesPlugin } from "./src/utils/prerenderPlugin";
 
 // https://vitejs.dev/config/
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
@@ -61,6 +62,7 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
+    prerenderPublicPagesPlugin(),
     VitePWA({
       registerType: "autoUpdate",
       workbox: {
