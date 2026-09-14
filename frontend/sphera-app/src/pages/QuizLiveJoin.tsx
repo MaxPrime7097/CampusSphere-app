@@ -263,6 +263,7 @@ export default function QuizLiveJoin() {
               totalQuestions={currentQuestion.totalQuestions}
               selectedAnswer={selectedOption}
               correctIndex={null}
+              points={currentQuestion.points}
               onAnswer={handleAnswer}
             />
           </div>
@@ -289,6 +290,7 @@ export default function QuizLiveJoin() {
               totalQuestions={currentQuestion.totalQuestions}
               selectedAnswer={selectedOption}
               correctIndex={questionResults.correctIndex}
+              points={currentQuestion.points}
             />
             
             <div className="w-full max-w-4xl mt-12">

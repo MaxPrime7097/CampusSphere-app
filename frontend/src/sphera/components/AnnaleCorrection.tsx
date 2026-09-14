@@ -2,8 +2,9 @@ import React, { useState } from "react";
 import {
   ChevronDown, ChevronUp, BookOpen, Lightbulb, Target,
   BookMarked, Zap, Award, Code2, Calculator, AlignLeft,
-  CheckCircle2, Layers,
+  CheckCircle2, Layers, Download, Loader2,
 } from "lucide-react";
+import { useDownloadPDF } from "../hooks/useDownloadPDF";
 import type {
   AnnaleSession, AnnaleCorrection, AnnaleQuestion, AnnaleSection,
 } from "../types/sphera.types";
@@ -381,6 +382,7 @@ interface AnnaleCorrectionProps {
 
 export function AnnaleCorrection({ annale }: AnnaleCorrectionProps) {
   const { content, mode } = annale;
+  const { isDownloading, generateAnnale } = useDownloadPDF();
 
   const hasSections = Array.isArray(content?.sections) && content.sections.length > 0;
   const hasLegacy   = Array.isArray(content?.corrections) && content.corrections.length > 0;
@@ -406,7 +408,7 @@ export function AnnaleCorrection({ annale }: AnnaleCorrectionProps) {
             }
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {hasSections && (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/20">
               <Layers className="w-3 h-3" />
@@ -425,6 +427,19 @@ export function AnnaleCorrection({ annale }: AnnaleCorrectionProps) {
               : <><Zap className="w-3.5 h-3.5" /> Correction rapide</>
             }
           </span>
+          <button
+            type="button"
+            onClick={() => generateAnnale(content, content?.titre || "Correction d'annale")}
+            disabled={isDownloading}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-[#ff9800]/10 text-[#ff9800] hover:bg-[#ff9800]/20 border border-[#ff9800]/30 transition-all disabled:opacity-50"
+          >
+            {isDownloading ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Download className="w-3.5 h-3.5" />
+            )}
+            Télécharger PDF
+          </button>
         </div>
       </div>
 
