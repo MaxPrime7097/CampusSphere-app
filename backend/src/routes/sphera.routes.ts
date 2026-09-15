@@ -73,7 +73,7 @@ const toPrismaTool = (t: ToolType): StudyToolType => t.toUpperCase() as StudyToo
  * string — all three shapes the two frontends send, depending on whether the call
  * is JSON or multipart.
  */
-function parseToolTypes(raw: unknown): ToolType[] {
+function parseToolTypes(raw: unknown, allowEmpty = false): ToolType[] {
   let candidates: unknown[] = [];
 
   if (Array.isArray(raw)) candidates = raw;
@@ -96,7 +96,7 @@ function parseToolTypes(raw: unknown): ToolType[] {
     if (!tools.includes(value)) tools.push(value);
   }
 
-  if (tools.length === 0) throw badRequest("tool_types doit être une liste non vide.");
+  if (!allowEmpty && tools.length === 0) throw badRequest("tool_types doit être une liste non vide.");
   return tools;
 }
 
@@ -410,20 +410,45 @@ spheraRouter.post("/generate/from-resource/", checkGenerationQuota, async (req, 
  * re-open the original from the session. Visibility is `friends`, matching Django:
  * an implicitly-created resource must not become public without being asked.
  */
-spheraRouter.post("/generate/from-upload/", checkGenerationQuota, singleUpload("file", "resource"), async (req, res) => {
+spheraRouter.post("/generate/from-upload/", singleUpload("file", "resource"), async (req, res) => {
   const me = currentUser(req);
   const file = req.file;
   if (!file) throw badRequest("Un fichier est requis.");
 
-  const tools = parseToolTypes((req.body as { tool_types?: unknown }).tool_types);
-  if (typeof res.locals.remainingQuota === "number" && tools.length > res.locals.remainingQuota) {
-    res.status(429).json({
-      success: false,
-      error: "insufficient_quota",
-      message: `Il ne te reste que ${res.locals.remainingQuota} génération(s) cette semaine, mais tu as sélectionné ${tools.length} outil(s).`,
+  const tools = parseToolTypes((req.body as { tool_types?: unknown }).tool_types, true);
+
+  if (tools.length > 0) {
+    const weekStart = getWeekStartDate();
+    let usage = await prisma.generationUsage.findUnique({
+      where: {
+        userId_weekStartDate: {
+          userId: me.id,
+          weekStartDate: weekStart,
+        },
+      },
     });
-    return;
+    const currentCount = usage?.count ?? 0;
+    const remainingQuota = Math.max(0, WEEKLY_LIMIT - currentCount);
+    if (currentCount >= WEEKLY_LIMIT) {
+      const nextMonday = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+      res.status(429).json({
+        success: false,
+        error: "weekly_limit_reached",
+        message: `Tu as utilisé tes ${WEEKLY_LIMIT} générations Sphera cette semaine. Ça revient lundi prochain !`,
+        resetsOn: nextMonday.toISOString(),
+      });
+      return;
+    }
+    if (tools.length > remainingQuota) {
+      res.status(429).json({
+        success: false,
+        error: "insufficient_quota",
+        message: `Il ne te reste que ${remainingQuota} génération(s) cette semaine, mais tu as sélectionné ${tools.length} outil(s).`,
+      });
+      return;
+    }
   }
+
   assertSupportedUpload(file.originalname);
 
   // Extract before persisting anything: a document with no text should not leave a
@@ -458,13 +483,15 @@ spheraRouter.post("/generate/from-upload/", checkGenerationQuota, singleUpload("
       resourceId: resource.id,
       sourceFilename: file.originalname,
       toolTypes: tools.map(toPrismaTool),
-      content: (await generateAll(text, tools, me.id)) as Prisma.InputJsonObject,
+      content: (tools.length > 0 ? await generateAll(text, tools, me.id) : {}) as Prisma.InputJsonObject,
       extractedText: text,
     },
     include: studySessionInclude,
   });
 
-  await incrementGenerationQuota(me.id, tools.length);
+  if (tools.length > 0) {
+    await incrementGenerationQuota(me.id, tools.length);
+  }
 
   created(res, serializeStudySession(session as SerializableStudySession));
 });

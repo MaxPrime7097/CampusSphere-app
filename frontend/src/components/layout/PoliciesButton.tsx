@@ -25,6 +25,12 @@ export function PoliciesButton(){
           <DropdownMenuItem onClick={() => navigate('/cs-inc/policies/terms')}>
             Conditions d'Utilisation
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => navigate('/cs-inc/policies/terms-of-sale')}>
+            Conditions de Vente (CGV)
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => navigate('/cs-inc/policies/legal-notice')}>
+            Mentions Légales
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={() => navigate('/cs-inc/policies/community-guidelines')}>
             Règles de la Communauté
           </DropdownMenuItem>
@@ -33,6 +39,9 @@ export function PoliciesButton(){
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => navigate('/cs-inc/policies/copyright')}>
             Politique de Droits d'auteur
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => navigate('/cs-inc/policies/datadeletion')}>
+            Suppression des Données
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

@@ -2,11 +2,13 @@ import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { FileText, BrainCircuit, Columns, PenTool, Calendar, ArrowRight, LayoutDashboard, FilePenLine, Loader2, Zap, Plus, LogIn, GitFork, Headphones } from 'lucide-react'
 import { useSpheraAuth } from '../contexts/SpheraAuthContext'
-import { getSessions, getAnnales } from '../services/spheraApi'
+import { getSessions, getAnnales, deleteSession, deleteAnnale, shareSession, shareAnnale } from '../services/spheraApi'
 import { UploadZone } from '../components/app/UploadZone'
 import { setPendingUploadFile } from '../store/fileStore'
 import { QuotaIndicator } from '../components/app/QuotaIndicator'
 import { PasteTextModal } from '../components/app/PasteTextModal'
+import { DeleteConfirmModal } from '../components/app/DeleteConfirmModal'
+import { ShareModal } from '../components/app/ShareModal'
 
 // Force Vite HMR reload
 export default function Dashboard() {
@@ -16,6 +18,10 @@ export default function Dashboard() {
   // Upload State
   const [error, setError] = useState<string | null>(null)
   const [isPasteModalOpen, setIsPasteModalOpen] = useState(false)
+
+  // Quick Action Modals State
+  const [itemToDelete, setItemToDelete] = useState<{ id: string | number; type: 'session' | 'annale'; title: string } | null>(null)
+  const [shareModalData, setShareModalData] = useState<{ url: string; title: string } | null>(null)
 
   // Sessions State
   const [sessions, setSessions] = useState<any[]>([])
@@ -61,6 +67,43 @@ export default function Dashboard() {
     })
     setPendingUploadFile(virtualFile)
     navigate('/create')
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!itemToDelete) return
+    try {
+      if (itemToDelete.type === 'annale') {
+        await deleteAnnale(itemToDelete.id)
+        setAnnales(prev => prev.filter(a => a.id !== itemToDelete.id))
+      } else {
+        await deleteSession(itemToDelete.id)
+        setSessions(prev => prev.filter(s => s.id !== itemToDelete.id))
+      }
+    } catch (e) {
+      console.error("Erreur lors de la suppression:", e)
+    } finally {
+      setItemToDelete(null)
+    }
+  }
+
+  const handleShareClick = async (e: React.MouseEvent, item: any) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const isAnnale = activeTab === 'annales'
+    try {
+      if (!item.is_shared) {
+        if (isAnnale) await shareAnnale(item.id)
+        else await shareSession(item.id)
+      }
+      const sharePath = isAnnale ? `/annales/${item.id}` : `/sessions/${item.id}`
+      const url = `${window.location.origin}${sharePath}`
+      setShareModalData({
+        url,
+        title: item.resource_title || (isAnnale ? 'Annale partagée' : 'Session partagée')
+      })
+    } catch (e) {
+      console.error("Erreur partage:", e)
+    }
   }
 
   return (
@@ -115,8 +158,6 @@ export default function Dashboard() {
           onConfirm={handlePasteConfirm}
         />
 
-
-
         {/* Tabs */}
         <div className="flex items-center w-full mb-8 border-b border-sphera-border px-4 sm:px-0">
           <button
@@ -163,9 +204,35 @@ export default function Dashboard() {
                   >
                     <div className="flex items-center justify-between mb-4">
                       <div className="w-10 h-10 rounded-lg bg-sphera-bg border border-sphera-border flex items-center justify-center">
-                        {getIcon(item.tool_types?.[0] || 'fiche')}
+                        {getIcon(item.tool_types?.[0] || (activeTab === 'annales' ? 'annale' : 'fiche'))}
                       </div>
-                      <ArrowRight className="w-4 h-4 text-sphera-text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={(e) => handleShareClick(e, item)}
+                          className="p-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors"
+                          title="Partager"
+                        >
+                          <Share2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setItemToDelete({
+                              id: item.id,
+                              type: activeTab === 'annales' ? 'annale' : 'session',
+                              title: item.resource_title || `Session #${item.id}`
+                            });
+                          }}
+                          className="p-1.5 rounded-lg text-sphera-text-muted hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                          title="Supprimer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                        <ArrowRight className="w-4 h-4 text-sphera-text-muted opacity-0 group-hover:opacity-100 transition-opacity ml-1" />
+                      </div>
                     </div>
                     <h3 className="text-white font-medium mb-1 line-clamp-1">{item.resource_title || `Session #${item.id}`}</h3>
                     <p className="text-xs text-sphera-text-muted mb-4 line-clamp-1">Extrait de {item.source_filename || 'document inconnu'}</p>
@@ -185,6 +252,25 @@ export default function Dashboard() {
             )}
           </>
       </main>
+
+      <DeleteConfirmModal
+        isOpen={Boolean(itemToDelete)}
+        setIsOpen={(open) => {
+          if (!open) setItemToDelete(null)
+        }}
+        onConfirm={handleDeleteConfirm}
+        title={itemToDelete?.type === 'annale' ? "Supprimer l'annale ?" : "Supprimer la session ?"}
+        description="Cette action est irréversible. Toutes les données associées seront définitivement supprimées."
+      />
+
+      <ShareModal
+        isOpen={Boolean(shareModalData)}
+        setIsOpen={(open) => {
+          if (!open) setShareModalData(null)
+        }}
+        url={shareModalData?.url || ''}
+        title={shareModalData?.title || 'Lien public'}
+      />
     </div>
   )
 }

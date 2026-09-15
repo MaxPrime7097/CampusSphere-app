@@ -1,5 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { SpheraHeader } from '../components/layout/SpheraHeader'
 import { SpheraFooter } from '../components/layout/SpheraFooter'
 import { Sparkles, Check, BrainCircuit, FileText, Layers, MessageSquare, Zap, Bell } from 'lucide-react'
@@ -16,6 +17,30 @@ const features = [
 export default function Pricing() {
   return (
     <div className="flex flex-col min-h-screen bg-sphera-bg font-sans selection:bg-sphera-green/30">
+      <Helmet>
+        <title>Tarifs Sphera — Accès 100% Gratuit Bêta & Outils de Révision IA</title>
+        <meta
+          name="description"
+          content="Sphera est actuellement 100% gratuit pendant toute la période de bêta ouverte. Profitez de générations illimitées de fiches, quiz interactifs et flashcards par IA."
+        />
+        <link rel="canonical" href="https://sphera.campussphere.app/pricing" />
+        <meta property="og:title" content="Tarifs Sphera — Accès Gratuit Bêta Ouverte" />
+        <meta
+          property="og:description"
+          content="Accédez gratuitement à tous les outils de révision IA : fiches, quiz, flashcards et corrections d'annales sans limite."
+        />
+        <meta property="og:url" content="https://sphera.campussphere.app/pricing" />
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content="https://sphera.campussphere.app/sphera-logo-dark.png" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Tarifs Sphera — Accès 100% Gratuit Bêta" />
+        <meta
+          name="twitter:description"
+          content="Générez vos fiches de révision, quiz et flashcards gratuitement avec Sphera pendant la bêta."
+        />
+        <meta name="twitter:image" content="https://sphera.campussphere.app/sphera-logo-dark.png" />
+      </Helmet>
+
       <SpheraHeader />
 
       <main className="flex-1 pt-32 pb-24 relative overflow-hidden">
@@ -35,8 +60,8 @@ export default function Pricing() {
               <span className="text-sphera-green">toute la bêta</span>
             </h1>
             <p className="text-xl text-sphera-text-muted max-w-2xl mx-auto leading-relaxed">
-              Sphera est en bêta ouverte. Toutes les fonctionnalités sont disponibles sans limite, sans carte bancaire, sans conditions.
-              Le premium viendra plus tard — et tu seras le premier prévenu.
+              Sphera est en bêta ouverte. Profitez de 5 générations complètes offertes chaque semaine (Fiches, Quiz, Flashcards, Annales) et du Q&A IA illimité, sans carte bancaire.
+              Le plan illimité complet viendra très prochainement.
             </p>
           </div>
 
@@ -54,11 +79,11 @@ export default function Pricing() {
 
               <ul className="text-left space-y-3 mb-8">
                 {[
-                  "Générations illimitées",
-                  "Tous les outils — Fiche, Quiz, Flashcards, Annales",
-                  "Q&A illimité avec l'IA sur tes cours",
-                  "Partage de sessions",
-                  "Support pour PDFs scannés (OCR)",
+                  "5 générations complètes offertes / semaine (Bêta)",
+                  "Q&A illimité avec l'IA sur tous tes cours",
+                  "Tous les outils — Fiches, Quiz, Flashcards, Annales",
+                  "Partage public de sessions et export PDF",
+                  "Support pour PDFs scannés et photos (OCR)",
                   "Aucune carte bancaire requise",
                 ].map((f, i) => (
                   <li key={i} className="flex items-center gap-3">

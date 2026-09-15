@@ -1,0 +1,48 @@
+# Sphera - Assistante IA Académique pour Étudiants
+
+> Sphera (par CampusSphere) est une plateforme d'intelligence artificielle dédiée à la réussite académique des étudiants universitaires et du supérieur. Elle permet de générer instantanément des fiches de synthèse, 20 questions de quiz interactifs, 20 flashcards recto/verso, des corrections d'annales d'examen et d'affronter ses camarades en direct via Sphera Live.
+
+## À propos de Sphera
+
+Sphera est développée par l'écosystème CampusSphere (https://campussphere.app). Elle résout le problème de l'apprentissage passif en appliquant les neurosciences de l'apprentissage : l'Active Recall (rappel actif) et la répétition espacée, en automatisant la création de matériel de révision à partir des cours réels des étudiants.
+
+- Site officiel : https://sphera.campussphere.app
+- Plateforme parente : https://campussphere.app
+- Tarifs : https://sphera.campussphere.app/pricing
+- Blog & Méthodologie : https://sphera.campussphere.app/blogs
+- Sphera Live (Quiz multijoueur) : https://sphera.campussphere.app/sphera-live
+
+## Fonctionnalités Principales
+
+### 1. Génération Automatique depuis vos Documents
+- Formats acceptés : PDF, DOCX, TXT, polycopiés de cours, diaporamas ou liens de ressources partagées sur CampusSphere.
+- Sorties générées en quelques secondes :
+  - **Fiche de Révision Structurée** : Résumé hiérarchisé, définitions des concepts fondamentaux, formules clés, exemples concrets, pièges classiques d'examen.
+  - **Quiz d'Évaluation (20 questions)** : Questions à choix multiples avec explications détaillées pour chaque bonne et mauvaise réponse.
+  - **Jeu de 20 Flashcards** : Cartes recto/verso ciblées pour la mémorisation rapide et la répétition espacée.
+  - **Chat Q&A IA contextuel** : Posez des questions directement sur le document source pour éclaircir les points d'ombre.
+
+### 2. Correction et Analyse d'Annales d'Examen
+- Importez une annale d'examen précédente ou un sujet d'examen blanc.
+- Sphera analyse le sujet, produit un corrigé pas à pas, détaille le barème attendu et fournit des conseils méthodologiques pour maximiser ses points.
+
+### 3. Sphera Live : Quiz Multijoueur en Temps Réel
+- Un mode multijoueur inspiré de Kahoot adapté aux étudiants du supérieur.
+- L'hôte génère ou sélectionne un quiz, un code PIN à 6 caractères est partagé.
+- Les participants rejoignent instantanément depuis leur smartphone ou ordinateur sans installation.
+- Timer visuel, classement en direct (leaderboard), podium de fin de partie avec effets sonores et confettis.
+
+### 4. Synergie avec CampusSphere
+- Compte unique via authentification unique SSO (Single Sign-On).
+- Les documents et ressources partagés dans les « Sphères » académiques de CampusSphere peuvent être ouverts et transformés directement en sessions de révision dans Sphera.
+
+## Tarification
+- **Gratuit** : Accès aux fonctionnalités essentielles, participation illimitée à Sphera Live, quotas mensuels de génération IA.
+- **Formule Pro** : Générations illimitées de fiches, quiz et flashcards, traitement de documents volumineux jusqu'à 50 Mo, priorité sur les modèles IA haute performance (Claude, GPT, Gemini), hébergement illimité de sessions Sphera Live.
+
+## Liens Clés
+- Accueil & Démonstration : https://sphera.campussphere.app/
+- Découvrir Sphera Live : https://sphera.campussphere.app/sphera-live
+- Tarifs et Abonnements : https://sphera.campussphere.app/pricing
+- Blog & Conseils de révision : https://sphera.campussphere.app/blogs
+- Réseau social CampusSphere : https://campussphere.app/

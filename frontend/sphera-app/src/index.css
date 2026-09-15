@@ -115,6 +115,19 @@
   background: #333333; 
 }
 
+/* Hide scrollbar utility (especially for mobile touch swipe) */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* 3D Flip Utilities */
 .perspective-1000 {
   perspective: 1000px;

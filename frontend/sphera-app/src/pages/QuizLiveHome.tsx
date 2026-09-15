@@ -2,33 +2,28 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Zap, Plus, LogIn, Loader2, ArrowRight, Trash2 } from 'lucide-react';
 import { getMyQuizSessions, deleteQuizSession } from '../services/spheraApi';
+import { DeleteConfirmModal } from '../components/app/DeleteConfirmModal';
 import { Helmet } from 'react-helmet-async';
 
 export default function QuizLiveHome() {
   const [liveSessions, setLiveSessions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isTransitioning, setIsTransitioning] = useState(true);
+  const [quizToDelete, setQuizToDelete] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const handleDelete = async (e: React.MouseEvent, roomCode: string) => {
-    e.stopPropagation();
-    if (window.confirm('Voulez-vous vraiment supprimer ce quiz ?')) {
-      try {
-        await deleteQuizSession(roomCode);
-        setLiveSessions(prev => prev.filter(s => s.roomCode !== roomCode));
-      } catch (err) {
-        console.error("Erreur suppression:", err);
-        alert("Erreur lors de la suppression.");
-      }
+  const handleConfirmDelete = async () => {
+    if (!quizToDelete) return;
+    try {
+      await deleteQuizSession(quizToDelete);
+      setLiveSessions(prev => prev.filter(s => s.roomCode !== quizToDelete));
+    } catch (err) {
+      console.error("Erreur suppression:", err);
+    } finally {
+      setQuizToDelete(null);
     }
   };
 
   useEffect(() => {
-    // Fake transition delay for the cool Sphera Live effect
-    const timer = setTimeout(() => {
-      setIsTransitioning(false);
-    }, 1200);
-
     getMyQuizSessions()
       .then(res => {
         const d = (res as any)?.data;
@@ -36,34 +31,7 @@ export default function QuizLiveHome() {
       })
       .catch(err => console.error("Erreur chargement live sessions:", err))
       .finally(() => setLoading(false));
-
-    return () => clearTimeout(timer);
   }, []);
-
-  if (isTransitioning) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-sphera-bg font-live relative overflow-hidden">
-        {/* Dynamic Grid Background with Glow */}
-        <div className="absolute inset-0 z-0 pointer-events-none opacity-40" style={{
-          backgroundImage: `radial-gradient(circle at center, rgba(34, 197, 94, 0.2) 0%, transparent 60%), linear-gradient(rgba(34, 197, 94, 0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 197, 94, 0.15) 1px, transparent 1px)`,
-          backgroundSize: '100% 100%, 40px 40px, 40px 40px'
-        }}></div>
-        <div className="relative z-10 flex flex-col items-center animate-pulse">
-          <div className="w-20 h-20 bg-sphera-green/20 rounded-3xl flex items-center justify-center mb-6 border-2 border-sphera-green/50 shadow-[0_0_50px_rgba(34,197,94,0.3)] rotate-12">
-            <Zap className="w-10 h-10 text-sphera-green -rotate-12" />
-          </div>
-          <h1 className="font-display text-4xl font-bold text-white tracking-widest uppercase">
-            Connexion...
-          </h1>
-          <div className="mt-8 flex gap-2">
-            <div className="w-2 h-2 bg-sphera-green rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-            <div className="w-2 h-2 bg-sphera-green rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-            <div className="w-2 h-2 bg-sphera-green rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col h-full overflow-y-auto pb-12 font-live relative">
@@ -141,7 +109,10 @@ export default function QuizLiveHome() {
                     </div>
                     <div className="flex items-center gap-2">
                       <button 
-                        onClick={(e) => handleDelete(e, session.roomCode)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setQuizToDelete(session.roomCode);
+                        }}
                         className="p-1.5 rounded-lg text-sphera-text-muted hover:text-red-500 hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100"
                         title="Supprimer la session"
                       >
@@ -162,6 +133,16 @@ export default function QuizLiveHome() {
           )}
         </div>
       </main>
+
+      <DeleteConfirmModal
+        isOpen={Boolean(quizToDelete)}
+        setIsOpen={(open) => {
+          if (!open) setQuizToDelete(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        title="Supprimer le quiz ?"
+        description="Cette action est irréversible. Les scores et questions de cette session live seront définitivement supprimés."
+      />
     </div>
   );
 }

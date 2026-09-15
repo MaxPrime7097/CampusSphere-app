@@ -1,4 +1,5 @@
 import React from "react";
+import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
 import { BookLock, Lock, Eye, Database, UserCheck, Shield, Heart, Facebook, Twitter, Linkedin, Instagram, Youtube, ChevronDown, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,14 @@ export function Privacy(): JSX.Element {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5">
+      <Helmet>
+        <title>Politique de Confidentialité (RGPD) | CampusSphere</title>
+        <meta name="description" content="Politique de protection de la vie privée et conformité RGPD de CampusSphere : collecte, utilisation et sécurisation de vos données personnelles." />
+        <link rel="canonical" href="https://campussphere.app/cs-inc/policies/privacy" />
+        <meta property="og:title" content="Politique de Confidentialité - CampusSphere" />
+        <meta property="og:description" content="Découvrez comment CampusSphere protège vos données personnelles et respecte votre vie privée." />
+        <meta property="og:url" content="https://campussphere.app/cs-inc/policies/privacy" />
+      </Helmet>
       {/* Navigation: brand + links + CTA */}
       <Header />
 
@@ -74,7 +83,7 @@ export function Privacy(): JSX.Element {
         <div className="container mx-auto max-w-5xl">
           <div className="text-center mb-12">
             <p className="font-nunito font-semibold text-muted-foreground">
-              Dernière mise à jour : 27/05/2026
+              Dernière mise à jour : 13/09/2026
             </p>
           </div>
 
@@ -82,18 +91,19 @@ export function Privacy(): JSX.Element {
             <div className="campus-animate-slide-up">
               <div className="p-0">
                 <CardTitle className="font-poppins flex items-center gap-3 p-0">
-                  Collecte des Données
+                  Collecte des Données & Âge Minimum
                 </CardTitle>
               </div>
               <div className="font-nunito font-semibold space-y-4 text-muted-foreground mt-4">
                 <p>
-                  CampusSphere collecte les informations suivantes :
+                  CampusSphere collecte uniquement les informations nécessaires au fonctionnement de la plateforme et à l'accompagnement pédagogique :
                 </p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
-                  <li>Informations personnelles (nom, prénom, email universitaire)</li>
-                  <li>Informations académiques (université, filière, niveau d'études)</li>
-                  <li>Données d'utilisation de la plateforme</li>
-                  <li>Contenu partagé (posts, commentaires, ressources)</li>
+                  <li><strong>Informations personnelles :</strong> Nom, prénom, adresse email étudiante ou personnelle.</li>
+                  <li><strong>Âge minimum requis (16 ans) :</strong> L'inscription est réservée aux personnes de 16 ans et plus. Pour les mineurs de 16 à 18 ans, l'autorisation d'un parent ou représentant légal est requise.</li>
+                  <li><strong>Informations académiques :</strong> Université ou établissement scolaire, faculté, filière et niveau d'études.</li>
+                  <li><strong>Données de contenu :</strong> Publications, résumés, commentaires et documents académiques partagés.</li>
+                  <li><strong>Données de performance technique :</strong> Métriques d'affichage anonymisées via Vercel Speed Insights (sans aucun profilage publicitaire).</li>
                 </ul>
               </div>
             </div>
@@ -101,38 +111,36 @@ export function Privacy(): JSX.Element {
             <div className="campus-animate-slide-up">
               <div className="p-0">
                 <CardTitle className="font-poppins flex items-center gap-3 p-0">
-                  Utilisation des Données
+                  Utilisation des Données & Écosystème Unifié Sphera
                 </CardTitle>
               </div>
-              <div className=" font-nunito font-semibold space-y-4 text-muted-foreground mt-4">
-                <p>Vos données sont utilisées pour :</p>
+              <div className="font-nunito font-semibold space-y-4 text-muted-foreground mt-4">
+                <p>Vos données sont exploitées pour :</p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
-                  <li>Fournir et améliorer nos services</li>
-                  <li>Personnaliser votre expérience</li>
-                  <li>Communiquer avec vous sur la plateforme</li>
-                  <li>Assurer la sécurité de la communauté</li>
-                  <li>Analyser l'utilisation de la plateforme</li>
+                  <li>Fournir, sécuriser et améliorer les fonctionnalités du réseau social étudiant CampusSphere</li>
+                  <li>Alimenter l'assistant académique <strong>Sphera</strong> via un compte unifié (Single Sign-On / SSO)</li>
+                  <li>Attribuer vos crédits de révision, vos pass d'étude et synchroniser vos cours et sessions</li>
+                  <li>Assurer la sécurité de la communauté et modérer les comportements frauduleux ou toxiques</li>
                 </ul>
-                <p>
-                  Nous utilisons également des outils d'IA, notamment Sphera, pour analyser les documents que vous téléchargez afin de générer des fiches, quiz, flashcards et corrections d'annales.
-                  Les documents PDF uploadés sont traités pour ce service et ne sont pas utilisés pour entraîner des modèles publics.
-                </p>
               </div>
             </div>
 
             <div className="campus-animate-slide-up">
               <div className="p-0">
                 <CardTitle className="font-poppins flex items-center gap-3 p-0">
-                  Partage des Données
+                  Sous-Traitants Cloud & Infrastructure Sécurisée
                 </CardTitle>
               </div>
               <div className="font-nunito font-semibold space-y-4 text-muted-foreground mt-4">
                 <p>
-                  Nous ne vendons jamais vos données personnelles. Vos informations peuvent être partagées :
+                  Nous ne commercialisons ni ne louons jamais vos données personnelles à des tiers. Les partages techniques indispensables s'opèrent avec des partenaires de référence assurant un haut niveau de chiffrement :
                 </p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
-                  <li>Avec votre consentement explicite</li>
-                  <li>Pour respecter nos obligations légales</li>
+                  <li><strong>Hébergement Frontend & CDN :</strong> Vercel Inc. (distribution sécurisée TLS 1.3).</li>
+                  <li><strong>Serveurs d'application Backend :</strong> Render Services, Inc. (avec transition programmée vers Microsoft Azure pour l'évolutivité des serveurs).</li>
+                  <li><strong>Stockage Sécurisé des Documents :</strong> Amazon Web Services (AWS) - Amazon S3 (fichiers chiffrés au repos AES-256).</li>
+                  <li><strong>Moteurs d'IA (Sphera) :</strong> Amazon Web Services (AWS Bedrock), Google AI (Gemini) et Groq Inc.</li>
+                  <li><strong>Paiements Mobile Money :</strong> Passerelles agréées sécurisées (MTN MoMo, Orange Money) sans conservation de code PIN secret.</li>
                 </ul>
               </div>
             </div>
@@ -144,11 +152,11 @@ export function Privacy(): JSX.Element {
                 </CardTitle>
               </div>
               <div className="font-nunito font-semibold space-y-4 text-muted-foreground mt-4">
-                <p>Dans le cadre de l'utilisation de notre assistante académique Sphera :</p>
+                <p>Dans le cadre de l'utilisation de Sphera :</p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
-                  <li>Les documents soumis (PDF, images, textes) sont analysés uniquement pour générer vos fiches de révision, quiz ou corrections.</li>
-                  <li>Vos documents personnels <strong>ne sont jamais</strong> utilisés pour entraîner des modèles d'intelligence artificielle publics.</li>
-                  <li>Les données extraites sont sécurisées et peuvent être supprimées de nos serveurs à tout moment sur votre demande.</li>
+                  <li>Les documents soumis (PDF, scans de cours, notes) sont analysés uniquement pour produire vos fiches de révision, quiz ou corrections.</li>
+                  <li><strong>Zéro entraînement public :</strong> Vos documents personnels ne sont jamais réutilisés pour entraîner les modèles d'IA publics généraux de nos fournisseurs (AWS Bedrock, Google, Groq).</li>
+                  <li>Vos documents et sessions sont stockés sur AWS S3 sous votre contrôle et peuvent être supprimés en un clic depuis votre espace personnel.</li>
                 </ul>
               </div>
             </div>
@@ -196,21 +204,25 @@ export function Privacy(): JSX.Element {
             <div className="campus-animate-slide-up">
               <div className="p-0">
                 <CardTitle className="font-poppins flex items-center gap-3 p-0">
-                  Contact
+                  Contact & Délégué à la Protection des Données (DPO)
                 </CardTitle>
               </div>
               <div className="font-nunito font-semibold text-muted-foreground mt-4">
                 <p>
-                  Pour toute question concernant cette politique de confidentialité, contactez-nous :
+                  Pour toute question concernant cette politique de confidentialité ou pour exercer vos droits sur vos données :
                 </p>
                 <ul className="mt-4 space-y-2">
                   <li><p className="mt-4">
-                    Pour exercer ces droits, contactez-nous à{" "}
+                    Courriel :{" "}
                     <a href="mailto:policies@campussphere.app" className="text-primary hover:underline">
                       policies@campussphere.app
+                    </a>{" "}
+                    ou{" "}
+                    <a href="mailto:support@campussphere.app" className="text-primary hover:underline">
+                      support@campussphere.app
                     </a>
                   </p></li>
-                  <li>Adresse: Douala, Cameroun</li>
+                  <li>Adresse : Douala, Cameroun</li>
                 </ul>
               </div>
             </div>

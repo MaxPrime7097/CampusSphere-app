@@ -5,27 +5,35 @@ import { ChevronDown } from 'lucide-react';
 const faqs = [
   {
     question: "Qu'est-ce que Sphera ?",
-    answer: "Sphera est une assistante d'apprentissage intelligente basé sur l'intelligence artificielle. Elle analyse tes cours et documents pour générer automatiquement des fiches de révision structurées, des quiz interactifs et des flashcards, le tout conçu pour maximiser ta rétention d'information."
+    answer: "Sphera est une assistante d'apprentissage intelligente basée sur l'intelligence artificielle. Elle analyse tes cours et documents pour générer automatiquement des fiches de révision structurées, des quiz interactifs et des flashcards, le tout conçu pour maximiser ta rétention d'information."
   },
   {
-    question: "Comment fonctionne la génération de fiches ?",
-    answer: "Il suffit de téléverser ton document (PDF, DOCX) ou de coller ton texte. Sphera va l'analyser, extraire les concepts clés, formater les définitions et te proposer une fiche de révision claire et prête à être étudiée, ainsi qu'un quiz sur mesure pour te tester accompagné de flashcards."
+    question: "Qu'est-ce que Sphera Live et comment ça marche ?",
+    answer: "Sphera Live est notre mode multijoueur en direct. Un hôte crée ou génère un quiz (à partir d'un PDF, d'un lien CampusSphere ou manuellement), puis lance une salle d'attente. Les participants entrent le code à 6 lettres sur leur téléphone ou ordinateur pour répondre en direct. Les questions défilent avec un timer synchronisé, un classement instantané et un podium final avec confettis."
+  },
+  {
+    question: "Faut-il un compte pour utiliser Sphera et Sphera Live ?",
+    answer: "Oui, un compte est nécessaire pour accéder à Sphera. Si tu es déjà inscrit sur CampusSphere, ton compte est directement synchronisé grâce au SSO en 1 clic (aucune réinscription requise). L'hôte comme les participants se connectent avec leur compte pour créer les sessions, rejoindre les parties en direct et retrouver leur historique."
+  },
+  {
+    question: "Comment fonctionne la génération de fiches et quiz ?",
+    answer: "Il suffit de téléverser ton document (PDF, DOCX, TXT) ou de coller un lien CampusSphere. Sphera l'analyse, extrait les concepts clés, formate les définitions et te propose une fiche de révision claire, un quiz ciblé et des flashcards recto/verso prêtes à être étudiées."
   },
   {
     question: "Est-ce que je peux partager mes fiches de révision ?",
-    answer: "Oui, absolument ! Sphera te permet de créer des espaces de revision avec tout les outils necessaires. Tu peux également générer un lien public pour partager une session de révision spécifique avec n'importe qui."
+    answer: "Oui, absolument ! Sphera te permet de créer des espaces de révision avec tous les outils nécessaires. Tu peux également générer un lien public pour partager une session de révision spécifique avec tes camarades de promotion."
   },
   {
     question: "Combien coûte l'utilisation de Sphera ?",
-    answer: "Sphera propose une version gratuite qui te permet d'explorer les fonctionnalités de base. Pour ceux qui veulent aller plus loin (génération illimitée, intégration avancée d'annales, modèles d'IA plus puissants), nous proposerons bientôt un plan Premium très accessible. Plus d'informations sur notre page Tarifs."
+    answer: "Sphera propose un accès gratuit complet pour démarrer et tester tous les outils, y compris Sphera Live. Des formules premium avancées seront proposées pour les étudiants souhaitant des quotas illimités et des fonctionnalités analytiques poussées."
   },
   {
     question: "Mes documents sont-ils en sécurité ?",
-    answer: "La sécurité de tes données est notre priorité. Tes documents sont chiffrés et ne sont utilisés que pour générer ton matériel de révision. Ils ne sont jamais revendus ni utilisés pour entraîner des modèles publics sans ton consentement."
+    answer: "La sécurité et la confidentialité de tes données sont notre priorité absolue. Tes documents sont chiffrés et ne sont utilisés que pour générer ton matériel pédagogique personnel. Ils ne sont jamais revendus ni partagés avec des tiers."
   },
   {
     question: "Sphera fonctionne-t-il pour toutes les filières ?",
-    answer: "Oui ! L'IA de Sphera s'adapte au contexte de tes documents, que tu étudies le droit, la médecine, l'ingénierie, ou les lettres. Sphera détecte automatiquement la structure de ton cours pour s'y adapter."
+    answer: "Oui ! L'IA de Sphera s'adapte à tous les domaines d'études : droit, médecine, ingénierie, sciences économiques, lettres ou prépas. Elle comprend le vocabulaire technique propre à chaque discipline."
   }
 ];
 
@@ -40,7 +48,7 @@ export function FAQ() {
             Questions fréquentes
           </h2>
           <p className="text-xl text-sphera-text-muted">
-            Tout ce que tu as besoin de savoir sur Sphera.
+            Tout ce que tu as besoin de savoir sur Sphera et Sphera Live.
           </p>
         </div>
 
