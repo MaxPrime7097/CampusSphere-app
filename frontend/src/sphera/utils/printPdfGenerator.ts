@@ -159,8 +159,7 @@ function buildBaseStyle(): string {
       font-size: 9pt;
       font-weight: 800;
       letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: #ea580c;
+      color: #22c55e;
     }
 
     .doc-meta-badge {
@@ -453,7 +452,6 @@ function buildBaseStyle(): string {
 export function generateFicheHtml(options: GenerateFicheOptions): string {
   const f = options.fiche?.fiche || options.fiche || {};
   const title = f.titre || "Fiche de Révision";
-  const sourceName = options.sourceName || "Cours universitaire";
   const dateStr = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 
   let html = `<!DOCTYPE html>
@@ -468,8 +466,8 @@ export function generateFicheHtml(options: GenerateFicheOptions): string {
     <div class="doc-container">
       <div class="doc-header">
         <div>
-          <div class="doc-brand">SPHERA • CAMPUSSPHERE</div>
-          <span class="doc-meta-badge">Fiche de Révision • ${escapeHtml(sourceName)}</span>
+          <div class="doc-brand">Sphera by CampusSphere</div>
+          <span class="doc-meta-badge">Fiche de Révision</span>
         </div>
         <div class="doc-date">
           <div>Généré le ${escapeHtml(dateStr)}</div>
@@ -639,7 +637,6 @@ export function generateFicheHtml(options: GenerateFicheOptions): string {
 export function generateAnnaleHtml(options: GenerateAnnaleOptions): string {
   const a = options.annale || {};
   const title = a.titre || "Correction d'Annale d'Examen";
-  const sourceName = options.sourceName || "Sujet d'examen";
   const dateStr = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
   const hasSections = Array.isArray(a.sections) && a.sections.length > 0;
 
@@ -655,8 +652,8 @@ export function generateAnnaleHtml(options: GenerateAnnaleOptions): string {
     <div class="doc-container">
       <div class="doc-header">
         <div>
-          <div class="doc-brand">SPHERA • CORRECTION D'EXAMEN</div>
-          <span class="doc-meta-badge">Corrigé Officiel • ${escapeHtml(sourceName)}</span>
+          <div class="doc-brand">Sphera by CampusSphere</div>
+          <span class="doc-meta-badge">Corrigé d'annale</span>
         </div>
         <div class="doc-date">
           <div>Édité le ${escapeHtml(dateStr)}</div>

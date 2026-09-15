@@ -102,9 +102,10 @@ async function recordUsageLog(
 export function resolveBedrockClaudeModelId(rawId: string, region: string): string {
   let modelId = (rawId || "").trim();
 
-  // Normalize legacy placeholder
-  if (!modelId || modelId.includes("claude-haiku-4-5")) {
-    modelId = "anthropic.claude-3-5-haiku-20241022-v1:0";
+  // If unset, default to Haiku 4.5 inference profile
+  if (!modelId) {
+    const prefix = region.startsWith("eu-") ? "eu." : region.startsWith("ap-") ? "apac." : "us.";
+    return `${prefix}anthropic.claude-haiku-4-5-20251001-v1:0`;
   }
 
   // Already an inference profile or full ARN
@@ -118,8 +119,8 @@ export function resolveBedrockClaudeModelId(rawId: string, region: string): stri
     return modelId;
   }
 
-  // Claude 3.5 & newer models require inference profile on-demand invocation
-  if (modelId.startsWith("anthropic.claude-3-5-") || modelId.startsWith("anthropic.claude-3-7-")) {
+  // Bedrock on-demand throughput requires an inference profile ID (e.g. us. or eu.)
+  if (modelId.startsWith("anthropic.claude-")) {
     const prefix = region.startsWith("eu-") ? "eu." : region.startsWith("ap-") ? "apac." : "us.";
     return `${prefix}${modelId}`;
   }

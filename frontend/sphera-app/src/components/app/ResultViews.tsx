@@ -92,7 +92,14 @@ export function FicheView({ content, sourceName }: { content: any; sourceName?: 
               <p className="text-xs text-sphera-text-muted">Généré le {new Date().toLocaleDateString('fr-FR')}</p>
             </div>
           </div>
-          <span className="text-xs text-sphera-text-muted/60">sphera.campussphere.app</span>
+          <a
+            href="https://sphera.campussphere.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-sphera-text-muted/60 hover:text-sphera-green transition-colors underline-offset-2 hover:underline"
+          >
+            sphera.campussphere.app
+          </a>
         </div>
 
         {f.titre && <h2 className="text-xl font-bold text-white">{f.titre}</h2>}
@@ -165,8 +172,9 @@ export function FicheView({ content, sourceName }: { content: any; sourceName?: 
             </h3>
             <ul className="flex flex-wrap gap-2">
               {f.a_retenir.map((p: string, i: number) => (
-                <li key={i} className="bg-yellow-400/10 text-yellow-400 text-sm px-4 py-2 rounded-xl border border-yellow-400/20 leading-relaxed">
-                  <span className="mr-2">💡</span> {formatText(p)}
+                <li key={i} className="bg-yellow-400/10 text-yellow-400 text-sm px-4 py-2 rounded-xl border border-yellow-400/20 leading-relaxed flex items-center gap-2">
+                  <Lightbulb className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                  <span>{formatText(p)}</span>
                 </li>
               ))}
             </ul>
