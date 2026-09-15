@@ -1,5 +1,5 @@
 import React from 'react'
-import { Sparkles, FileText, Lightbulb, BrainCircuit, Columns } from 'lucide-react'
+import { Sparkles, FileText, Lightbulb, BrainCircuit, SquareStack } from 'lucide-react'
 
 export type SelectionActionType = 'expliquer' | 'resumer' | 'exemple' | 'quiz' | 'flashcards'
 
@@ -45,7 +45,7 @@ export function TextSelectionToolbar({ coords, selectedText, onAction, onClose }
     {
       id: 'flashcards',
       label: 'Flashcard',
-      icon: <Columns className="w-3.5 h-3.5" />,
+      icon: <SquareStack className="w-3.5 h-3.5" />,
       color: 'hover:text-emerald-400 hover:bg-emerald-400/10',
     },
   ]

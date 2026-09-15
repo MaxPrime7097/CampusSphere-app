@@ -172,7 +172,7 @@ L'écosystème est composé de deux parties principales qui interagissent :
   - **Lecteur Audio Podcast (`AudioPlayerView.tsx`)** : Lecteur audio avec timeline / scrubber dynamique, contrôle play/pause, bouton de téléchargement MP3, et accordéon dépliable de la transcription synchronisée avec badges de locuteurs distincts (Étudiant A / Étudiant B).
   - **Intégration navigation & sessions (`StudySessionDetail.tsx`, `StudyToolsModal.tsx`)** : Ajout des onglets et sélecteurs pour les 5 outils d'étude (Fiche, Quiz, Flashcards, Carte mentale, Résumé audio) avec gestion du chargement et de la génération incrémentale.
   - **Harmonisation App Standalone (`sphera-app`)** : Mise à jour des types, de `ToolSelector.tsx`, de `Dashboard.tsx` et du client API `spheraApi.ts`.
-  - **Politique Zéro Emoji** : Remplacement systématique par des icônes SVG Lucide (`GitFork`, `Headphones`, `LocateFixed`, `Play`, `Pause`, `Download`).
+  - **Politique Zéro Emoji** : Remplacement systématique par des icônes SVG Lucide (`GitFork`, `AudioLines`, `LocateFixed`, `Play`, `Pause`, `Download`).
 
 
 

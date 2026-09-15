@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import {
-  BookOpen, BrainCircuit, Columns, Upload, Loader2,
+  BookOpen, BrainCircuit, SquareStack, Upload, Loader2,
   FileText, Plus, Scroll,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,7 @@ const FILTER_OPTIONS: { value: ToolFilter; label: string; icon: React.ReactNode 
   { value: "all",        label: "Toutes",      icon: <SpheraIcon size="sm" variant="white"/> },
   { value: "fiche",      label: "Fiches",      icon: <BookOpen className="h-3.5 w-3.5" /> },
   { value: "quiz",       label: "Quiz",        icon: <BrainCircuit className="h-3.5 w-3.5" /> },
-  { value: "flashcards", label: "Flashcards",  icon: <Columns className="h-3.5 w-3.5" /> },
+  { value: "flashcards", label: "Flashcards",  icon: <SquareStack className="h-3.5 w-3.5" /> },
 ];
 
 const getSpheraStandaloneUrl = () => {

@@ -10,7 +10,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Share2, AlertCircle, Loader2, Check, MessageCircleQuestion, BookOpen, BrainCircuit, Columns, GitFork, AudioLines } from "lucide-react";
+import { ArrowLeft, Share2, AlertCircle, Loader2, Check, MessageCircleQuestion, BookOpen, BrainCircuit, SquareStack, GitFork, AudioLines } from "lucide-react";
 import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -221,7 +221,7 @@ export const StudySessionDetail: React.FC = () => {
                   <div className="flex items-center">
                     {t === "fiche" && <BookOpen className="h-4 w-4 mr-2 hidden sm:block" />}
                     {t === "quiz" && <BrainCircuit className="h-4 w-4 mr-2 hidden sm:block" />}
-                    {t === "flashcards" && <Columns className="h-4 w-4 mr-2 hidden sm:block" />}
+                    {t === "flashcards" && <SquareStack className="h-4 w-4 mr-2 hidden sm:block" />}
                     {t === "mindmap" && <GitFork className="h-4 w-4 mr-2 hidden sm:block text-emerald-500" />}
                     {t === "audio" && <AudioLines className="h-4 w-4 mr-2 hidden sm:block text-emerald-500" />}
                     {label}

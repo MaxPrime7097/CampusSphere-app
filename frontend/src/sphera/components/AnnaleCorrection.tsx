@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import {
   ChevronDown, ChevronUp, BookOpen, Lightbulb, Target,
   BookMarked, Zap, Award, Code2, Calculator, AlignLeft,
-  CheckCircle2, Layers, Download, Loader2,
+  CheckCircle2, SquareStack, Download, Loader2,
 } from "lucide-react";
 import { useDownloadPDF } from "../hooks/useDownloadPDF";
 import type {
@@ -411,7 +411,7 @@ export function AnnaleCorrection({ annale }: AnnaleCorrectionProps) {
         <div className="flex items-center gap-2 flex-wrap">
           {hasSections && (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/20">
-              <Layers className="w-3 h-3" />
+              <SquareStack className="w-3 h-3" />
               Structurée
             </span>
           )}

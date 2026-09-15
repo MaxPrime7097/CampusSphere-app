@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { useNavigate } from 'react-router-dom'
-import { Search, X, FileText, BrainCircuit, Columns, FilePenLine, Zap, Calendar, ArrowRight } from 'lucide-react'
+import { Search, X, FileText, BrainCircuit, FilePenLine, Zap, Calendar, ArrowRight, SquareStack } from 'lucide-react'
 
 interface SearchModalProps {
   isOpen: boolean
@@ -46,7 +46,7 @@ export function SearchModal({ isOpen, onClose, items }: SearchModalProps) {
     if (item._type === 'annale') return <FilePenLine className="w-4 h-4 text-orange-400" />
     const primaryTool = item.tool_types?.[0]
     if (primaryTool === 'quiz') return <BrainCircuit className="w-4 h-4 text-purple-400" />
-    if (primaryTool === 'flashcards') return <Columns className="w-4 h-4 text-sphera-green" />
+    if (primaryTool === 'flashcards') return <SquareStack className="w-4 h-4 text-sphera-green" />
     return <FileText className="w-4 h-4 text-blue-400" />
   }
 

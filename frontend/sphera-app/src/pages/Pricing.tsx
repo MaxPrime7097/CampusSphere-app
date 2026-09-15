@@ -3,15 +3,15 @@ import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { SpheraHeader } from '../components/layout/SpheraHeader'
 import { SpheraFooter } from '../components/layout/SpheraFooter'
-import { Sparkles, Check, BrainCircuit, FileText, Layers, MessageSquare, Zap, Bell } from 'lucide-react'
+import { Sparkles, Check, BrainCircuit, FileText, SquareStack, MessageSquare, Bell, ScanEye, FilePenLine } from 'lucide-react'
 
 const features = [
   { icon: FileText, label: "Fiches de révision", desc: "Résumé structuré + points clés + définitions générés automatiquement." },
-  { icon: BrainCircuit, label: "Quiz interactif", desc: "20 QCM avec explications pour te tester avant l'examen." },
-  { icon: Layers, label: "Flashcards", desc: "Cartes recto/verso pour mémoriser en mode actif." },
+  { icon: BrainCircuit, label: "Quiz interactif", desc: "Des QCM avec explications pour te tester avant l'examen." },
+  { icon: SquareStack, label: "Flashcards", desc: "Cartes recto/verso pour mémoriser en mode actif." },
   { icon: MessageSquare, label: "Q&A avec l'IA", desc: "Pose n'importe quelle question sur ton cours, Sphera répond depuis le document." },
-  { icon: Zap, label: "Correction d'annales", desc: "Upload ton épreuve, Sphera la corrige section par section avec explications." },
-  { icon: Sparkles, label: "OCR pour scans", desc: "Sphera lit même les PDFs scannés et photos de cours." },
+  { icon: FilePenLine, label: "Correction d'annales", desc: "Upload ton épreuve, Sphera la corrige section par section avec explications." },
+  { icon: ScanEye, label: "OCR pour scans", desc: "Sphera lit même les PDFs scannés et photos de cours." },
 ]
 
 export default function Pricing() {
