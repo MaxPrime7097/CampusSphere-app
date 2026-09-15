@@ -1,5 +1,5 @@
 import React from 'react'
-import { FileText, BrainCircuit, CheckCircle2, Layers, GitFork, Headphones, MessageSquare } from 'lucide-react'
+import { FileText, BrainCircuit, CheckCircle2, SquareStack, GitFork, AudioLines, MessageSquare } from 'lucide-react'
 
 export type ToolType = 'fiche' | 'quiz' | 'flashcards' | 'annale' | 'mindmap' | 'audio'
 
@@ -28,13 +28,13 @@ export function ToolSelector({ selectedTools, onToolSelect }: ToolSelectorProps)
       id: 'flashcards' as ToolType,
       title: "Flashcards",
       desc: "Cartes recto/verso pour mémoriser",
-      icon: <Layers className="w-5 h-5" />,
+      icon: <SquareStack className="w-5 h-5" />,
       colorClass: "text-green-400"
     },
     {
       id: 'mindmap' as ToolType,
       title: "Carte mentale",
-      desc: "Arborescence visuelle des concepts clés",
+      desc: "Représentation visuelle des concepts clés",
       icon: <GitFork className="w-5 h-5" />,
       colorClass: "text-emerald-400"
     },
@@ -42,7 +42,7 @@ export function ToolSelector({ selectedTools, onToolSelect }: ToolSelectorProps)
       id: 'audio' as ToolType,
       title: "Résumé audio",
       desc: "Dialogue podcast pour réviser",
-      icon: <Headphones className="w-5 h-5" />,
+      icon: <AudioLines className="w-5 h-5" />,
       colorClass: "text-teal-400"
     }
   ]

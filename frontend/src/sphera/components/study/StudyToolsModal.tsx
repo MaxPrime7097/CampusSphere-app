@@ -14,11 +14,10 @@ import {
   AlertCircle,
   ChevronLeft,
   Check,
-  Columns,
   BrainCircuit,
   GitFork,
   AudioLines,
-  Layers,
+  SquareStack,
 } from "lucide-react";
 import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { FicheRevision } from "./FicheRevision";
@@ -78,7 +77,7 @@ const TOOLS: { type: ToolType; icon: React.ReactNode; label: string; desc: strin
   },
   {
     type: "flashcards",
-    icon: <Layers className="h-6 w-6" />,
+    icon: <SquareStack className="h-6 w-6" />,
     label: "Flashcards",
     desc: "Des cartes recto/verso pour mémoriser",
     color: "text-purple-500",
@@ -88,7 +87,7 @@ const TOOLS: { type: ToolType; icon: React.ReactNode; label: string; desc: strin
     type: "mindmap",
     icon: <GitFork className="h-6 w-6" />,
     label: "Carte mentale",
-    desc: "Arborescence navigable des concepts clés",
+    desc: "Représentation visuelle des concepts clés",
     color: "text-emerald-500",
     bg: "bg-emerald-500/10 border-emerald-500/30 hover:border-emerald-500",
   },

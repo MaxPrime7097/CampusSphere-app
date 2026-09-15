@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { FileText, BrainCircuit, List, CheckCircle2, HelpCircle, CircleSmall, Lightbulb, ChevronDown, ChevronRight, Timer, Trophy, XCircle, RotateCcw, RefreshCcw, Code2, Calculator, AlignLeft, Target, BookOpen, BookMarked, Award, Layers, Zap } from 'lucide-react'
+import { FileText, BrainCircuit, List, CheckCircle2, HelpCircle, CircleSmall, Lightbulb, ChevronDown, ChevronRight, Timer, Trophy, XCircle, RotateCcw, RefreshCcw, Code2, Calculator, AlignLeft, Target, BookOpen, BookMarked, Award, SquareStack, Zap } from 'lucide-react'
 import DownloadPDFButton from '../shared/DownloadPDFButton'
 import { useDownloadPDF } from '../../hooks/useDownloadPDF'
 
