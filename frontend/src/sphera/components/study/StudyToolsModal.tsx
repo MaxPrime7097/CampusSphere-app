@@ -16,11 +16,16 @@ import {
   Check,
   Columns,
   BrainCircuit,
+  GitFork,
+  AudioLines,
+  Layers,
 } from "lucide-react";
 import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { FicheRevision } from "./FicheRevision";
 import { QuizInteractif } from "./QuizInteractif";
 import { Flashcards } from "./Flashcards";
+import { MindMapView } from "./MindMapView";
+import { AudioPlayerView } from "./AudioPlayerView";
 import { QuotaIndicator } from "../QuotaIndicator";
 import {
   generateStudyTools,
@@ -40,7 +45,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 
-type ToolType = "fiche" | "quiz" | "flashcards";
+type ToolType = "fiche" | "quiz" | "flashcards" | "mindmap" | "audio";
 type Step = "choose" | "loading" | "result" | "error";
 
 // [BE-MIGRATION FE-02] Needs a `sphereFileId?: string | number | null` prop forwarded to
@@ -67,17 +72,33 @@ const TOOLS: { type: ToolType; icon: React.ReactNode; label: string; desc: strin
     type: "quiz",
     icon: <BrainCircuit className="h-6 w-6" />,
     label: "Quiz interactif",
-    desc: "20 questions QCM avec timer et score",
+    desc: "QCM avec timer et score",
     color: "text-[#ff9800]",
     bg: "bg-[#ff9800]/10 border-[#ff9800]/30 hover:border-[#ff9800]",
   },
   {
     type: "flashcards",
-    icon: <Columns className="h-6 w-6" />,
+    icon: <Layers className="h-6 w-6" />,
     label: "Flashcards",
-    desc: "20 cartes recto/verso pour mémoriser",
+    desc: "Cartes recto/verso pour mémoriser",
     color: "text-purple-500",
     bg: "bg-purple-500/10 border-purple-500/30 hover:border-purple-500",
+  },
+  {
+    type: "mindmap",
+    icon: <GitFork className="h-6 w-6" />,
+    label: "Carte mentale",
+    desc: "Arborescence navigable des concepts clés",
+    color: "text-emerald-500",
+    bg: "bg-emerald-500/10 border-emerald-500/30 hover:border-emerald-500",
+  },
+  {
+    type: "audio",
+    icon: <AudioLines className="h-6 w-6" />,
+    label: "Résumé audio",
+    desc: "Dialogue podcast pour réviser",
+    color: "text-teal-500",
+    bg: "bg-teal-500/10 border-teal-500/30 hover:border-teal-500",
   },
 ];
 
@@ -302,10 +323,10 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
               {/* Composants résultat avec Tabs si multiple */}
               {Object.keys(sessionData).length > 1 ? (
                 <Tabs defaultValue={Object.keys(sessionData)[0]} className="w-full">
-                  <TabsList className="w-full grid grid-cols-3 mb-4">
+                  <TabsList className="w-full flex overflow-x-auto gap-2 mb-4 no-scrollbar">
                     {Object.keys(sessionData).map((type) => (
                       <TabsTrigger key={type} value={type} className="capitalize">
-                        {type}
+                        {type === "mindmap" ? "Carte mentale" : type === "audio" ? "Résumé audio" : type}
                       </TabsTrigger>
                     ))}
                   </TabsList>
@@ -314,6 +335,8 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
                       {type === "fiche" && <FicheRevision data={sessionData[type]} />}
                       {type === "quiz" && <QuizInteractif data={sessionData[type]} />}
                       {type === "flashcards" && <Flashcards data={sessionData[type]} />}
+                      {type === "mindmap" && <MindMapView data={sessionData[type]} />}
+                      {type === "audio" && <AudioPlayerView data={sessionData[type]} />}
                     </TabsContent>
                   ))}
                 </Tabs>
@@ -323,6 +346,8 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
                     {type === "fiche" && <FicheRevision data={sessionData[type]} />}
                     {type === "quiz" && <QuizInteractif data={sessionData[type]} />}
                     {type === "flashcards" && <Flashcards data={sessionData[type]} />}
+                    {type === "mindmap" && <MindMapView data={sessionData[type]} />}
+                    {type === "audio" && <AudioPlayerView data={sessionData[type]} />}
                   </div>
                 ))
               )}

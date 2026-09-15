@@ -18,7 +18,7 @@ export const MIN_SOURCE_CHARS = 50;
 /** Above this, we reject to prevent budget explosion and context window overflow. */
 export const MAX_SOURCE_CHARS = 40_000;
 
-export const VALID_TOOL_TYPES: readonly ToolType[] = ["fiche", "quiz", "flashcards"];
+export const VALID_TOOL_TYPES: readonly ToolType[] = ["fiche", "quiz", "flashcards", "mindmap", "audio"];
 
 export const isToolType = (value: string): value is ToolType =>
   (VALID_TOOL_TYPES as readonly string[]).includes(value);
@@ -28,6 +28,8 @@ const TOOL_TOKENS: Record<ToolType, number> = {
   fiche: TOKENS_DEFAULT,
   quiz: TOKENS_QUIZ,
   flashcards: TOKENS_FLASHCARDS,
+  mindmap: 4000,
+  audio: 4000,
 };
 
 /**
@@ -89,6 +91,14 @@ function validateToolOutput(toolType: ToolType, data: Record<string, unknown>): 
   } else if (toolType === "fiche") {
     if (typeof data.resume !== "string" && !Array.isArray(data.points_cles)) {
       throw new UnparseableModelOutputError("Le modèle n'a pas retourné de résumé ou points clés valides.");
+    }
+  } else if (toolType === "mindmap") {
+    if (typeof data.noeud_central !== "string" || !Array.isArray(data.branches)) {
+      throw new UnparseableModelOutputError("Le modèle n'a pas retourné de carte mentale valide (noeud_central ou branches manquants).");
+    }
+  } else if (toolType === "audio") {
+    if (!Array.isArray(data.dialogue) || data.dialogue.length === 0) {
+      throw new UnparseableModelOutputError("Le modèle n'a pas retourné de script de dialogue audio valide.");
     }
   }
   return data;

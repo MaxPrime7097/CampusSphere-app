@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { FileText, BrainCircuit, Columns, PenTool, Calendar, ArrowRight, LayoutDashboard, FilePenLine, Loader2, Zap, Plus, LogIn } from 'lucide-react'
+import { FileText, BrainCircuit, Columns, PenTool, Calendar, ArrowRight, LayoutDashboard, FilePenLine, Loader2, Zap, Plus, LogIn, GitFork, Headphones } from 'lucide-react'
 import { useSpheraAuth } from '../contexts/SpheraAuthContext'
 import { getSessions, getAnnales } from '../services/spheraApi'
 import { UploadZone } from '../components/app/UploadZone'
@@ -38,6 +38,8 @@ export default function Dashboard() {
       case 'quiz': return <BrainCircuit className="w-5 h-5 text-purple-400" />
       case 'flashcards': return <Columns className="w-5 h-5 text-sphera-green" />
       case 'annale': return <PenTool className="w-5 h-5 text-orange-400" />
+      case 'mindmap': return <GitFork className="w-5 h-5 text-emerald-400" />
+      case 'audio': return <Headphones className="w-5 h-5 text-teal-400" />
       default: return <FileText className="w-5 h-5 text-sphera-text-muted" />
     }
   }

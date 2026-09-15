@@ -119,16 +119,80 @@ Strict JSON format:
 ${text}
 </source_text>`;
 
-export type ToolType = "fiche" | "quiz" | "flashcards";
+export const mindmapPrompt = (text: string): string =>
+  SPHERA_JSON_PERSONA +
+  `Generate a hierarchical mind map in JSON format based on the provided course text.
 
-const V1_PROMPTS: Record<ToolType, (text: string) => string> = {
+RULES:
+- A central node ("noeud_central") representing the core concept in 2 to 4 words.
+- Main branches ("branches") representing key themes or chapters.
+- Maximum 10 main branches from the central node.
+- Maximum 6 sub-branches ("sous_branches") per main branch. Maximum 4 levels of depth overall.
+- Adapt to the course length: do not force branches if content does not justify it.
+- Assign a color ("couleur") for each main branch strictly among: "vert", "bleu", "orange", "violet", "rose".
+- All values must be in the same language as the source text.
+- JSON keys must remain in French exactly as specified.
+
+Strict JSON format:
+{
+  "titre": "Course Title",
+  "noeud_central": "Central concept in 2-4 words",
+  "branches": [
+    {
+      "label": "Main theme 1",
+      "couleur": "vert",
+      "sous_branches": [
+        { "label": "Sub-point 1" },
+        { "label": "Sub-point 2" }
+      ]
+    }
+  ]
+}
+
+<source_text>
+${text}
+</source_text>`;
+
+export const audioDialoguePrompt = (text: string): string =>
+  SPHERA_JSON_PERSONA +
+  `Generate a 2-person dialogue script in JSON format between two students discussing the course naturally and engagingly, like an educational podcast episode.
+
+RULES:
+- Student A teaches and explains clearly with concrete examples, not just abstract theory.
+- Student B asks relevant questions, seeks clarifications, and rephrases concepts (Student B must ask at least 3 to 4 real questions during the conversation).
+- Conversational, natural tone with short, spoken phrases (no robotic speech, sound like two smart peer students studying together).
+- Balance speaking turns evenly between A and B.
+- Target duration: 4 to 6 minutes of spoken conversation (approx. 600 to 900 words total).
+- Conclude with a quick, dynamic recap of the key takeaways to remember for exams.
+- The dialogue speaker must strictly be either "A" or "B".
+- All spoken dialogue text must be in the same language as the source text.
+- JSON keys must remain in French exactly as specified.
+
+Strict JSON format:
+{
+  "titre": "Course Title",
+  "dialogue": [
+    { "speaker": "A", "text": "..." },
+    { "speaker": "B", "text": "..." }
+  ]
+}
+
+<source_text>
+${text}
+</source_text>`;
+
+export type ToolType = "fiche" | "quiz" | "flashcards" | "mindmap" | "audio";
+
+const TOOL_PROMPTS: Record<ToolType, (text: string) => string> = {
   fiche: fichePrompt,
   quiz: quizPrompt,
   flashcards: flashcardsPrompt,
+  mindmap: mindmapPrompt,
+  audio: audioDialoguePrompt,
 };
 
 export function toolPrompt(toolType: ToolType, text: string): string {
-  const build = V1_PROMPTS[toolType];
+  const build = TOOL_PROMPTS[toolType];
   if (!build) throw new Error(`Unknown tool type: ${toolType}`);
   return build(text);
 }

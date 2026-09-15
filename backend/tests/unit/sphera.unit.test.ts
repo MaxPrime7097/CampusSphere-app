@@ -44,6 +44,8 @@ describe("prompt construction", () => {
     expect(toolPrompt("fiche", SOURCE)).toContain(SOURCE);
     expect(toolPrompt("quiz", SOURCE)).toContain(SOURCE);
     expect(toolPrompt("flashcards", SOURCE)).toContain(SOURCE);
+    expect(toolPrompt("mindmap", SOURCE)).toContain(SOURCE);
+    expect(toolPrompt("audio", SOURCE)).toContain(SOURCE);
     expect(annalePrompt(SOURCE, "complete")).toContain(SOURCE);
     expect(suggestionsPrompt(SOURCE)).toContain(SOURCE);
     expect(qaPrompt(SOURCE, "Qu'est-ce que l'enthalpie ?")).toContain("Qu'est-ce que l'enthalpie ?");

@@ -1,7 +1,7 @@
 import React from 'react'
-import { FileText, BrainCircuit, Columns, CheckCircle2 } from 'lucide-react'
+import { FileText, BrainCircuit, CheckCircle2, Layers, GitFork, Headphones } from 'lucide-react'
 
-export type ToolType = 'fiche' | 'quiz' | 'flashcards' | 'annale'
+export type ToolType = 'fiche' | 'quiz' | 'flashcards' | 'annale' | 'mindmap' | 'audio'
 
 interface ToolSelectorProps {
   selectedTools: ToolType[];
@@ -20,16 +20,30 @@ export function ToolSelector({ selectedTools, onToolSelect }: ToolSelectorProps)
     {
       id: 'quiz',
       title: "Quiz interactif",
-      desc: "10 QCM avec timer et score",
+      desc: "QCM avec timer et score",
       icon: <BrainCircuit className="w-5 h-5" />,
       colorClass: "text-purple-400"
     },
     {
       id: 'flashcards' as ToolType,
       title: "Flashcards",
-      desc: "10 cartes recto/verso pour mémoriser",
-      icon: <Columns className="w-5 h-5" />,
+      desc: "Cartes recto/verso pour mémoriser",
+      icon: <Layers className="w-5 h-5" />,
       colorClass: "text-green-400"
+    },
+    {
+      id: 'mindmap' as ToolType,
+      title: "Carte mentale",
+      desc: "Arborescence visuelle des concepts clés",
+      icon: <GitFork className="w-5 h-5" />,
+      colorClass: "text-emerald-400"
+    },
+    {
+      id: 'audio' as ToolType,
+      title: "Résumé audio",
+      desc: "Dialogue podcast pour réviser",
+      icon: <Headphones className="w-5 h-5" />,
+      colorClass: "text-teal-400"
     }
   ]
 
