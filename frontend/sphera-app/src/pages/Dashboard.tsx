@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { FileText, BrainCircuit, Columns, PenTool, Calendar, ArrowRight, LayoutDashboard, FilePenLine, Loader2, Zap, Plus, LogIn, GitFork, Headphones } from 'lucide-react'
+import { FileText, BrainCircuit, Columns, PenTool, Calendar, ArrowRight, LayoutDashboard, FilePenLine, Loader2, Share2, Trash2, GitFork, Headphones } from 'lucide-react'
 import { useSpheraAuth } from '../contexts/SpheraAuthContext'
 import { getSessions, getAnnales, deleteSession, deleteAnnale, shareSession, shareAnnale } from '../services/spheraApi'
 import { UploadZone } from '../components/app/UploadZone'

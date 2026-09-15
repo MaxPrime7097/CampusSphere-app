@@ -1,5 +1,5 @@
 import React from 'react'
-import { FileText, BrainCircuit, CheckCircle2, Layers, GitFork, Headphones } from 'lucide-react'
+import { FileText, BrainCircuit, CheckCircle2, Layers, GitFork, Headphones, MessageSquare } from 'lucide-react'
 
 export type ToolType = 'fiche' | 'quiz' | 'flashcards' | 'annale' | 'mindmap' | 'audio'
 
