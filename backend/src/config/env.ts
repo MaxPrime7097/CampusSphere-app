@@ -113,6 +113,10 @@ export const env = {
       budgetUsd: Number(process.env.BEDROCK_TOTAL_BUDGET_USD || "90"),
       safetyThresholdPercent: Number(process.env.BEDROCK_SAFETY_THRESHOLD_PERCENT || "90"),
     },
+    azureSpeech: {
+      key: process.env.AZURE_SPEECH_KEY || "",
+      region: process.env.AZURE_SPEECH_REGION || "westeurope",
+    },
   },
 
   storage: {
