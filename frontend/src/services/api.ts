@@ -2482,9 +2482,11 @@ export async function apiInfo() {
 // [BE-MIGRATION FE-02] Node backend accepts `resource_id` OR `sphere_file_id` (exactly one).
 // Add an optional sphereFileId arg and send it instead of resource_id when the source is a
 // sphere file. — documentation/FRONTEND_CHANGES.md
+export type ApiStudyToolType = "fiche" | "quiz" | "flashcards" | "mindmap" | "audio";
+
 export async function generateStudyTools(
   resourceId: string | number,
-  toolTypes: ("fiche" | "quiz" | "flashcards")[]
+  toolTypes: ApiStudyToolType[]
 ) {
   const response = await apiFetch<any>("api/study/generate/from-resource/", {
     method: "POST",
@@ -2495,7 +2497,7 @@ export async function generateStudyTools(
 
 export async function generateFromUpload(
   file: File,
-  toolTypes: ("fiche" | "quiz" | "flashcards")[]
+  toolTypes: ApiStudyToolType[]
 ) {
   const formData = new FormData();
   formData.append("file", file);
@@ -2507,7 +2509,7 @@ export async function generateFromUpload(
   return response;
 }
 
-export async function getStudySessions(toolType?: "fiche" | "quiz" | "flashcards") {
+export async function getStudySessions(toolType?: ApiStudyToolType) {
   const query = toolType ? `?tool_type=${toolType}` : "";
   const response = await apiFetch<any>(`api/study/sessions/${query}`);
   return response;

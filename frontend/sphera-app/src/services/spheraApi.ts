@@ -195,13 +195,33 @@ export async function guestGenerate(params: {
 
 // ─── Authenticated Generate ──────────────────────────────────────
 
-export type ToolType = 'fiche' | 'quiz' | 'flashcards'
+export type ToolType = 'fiche' | 'quiz' | 'flashcards' | 'mindmap' | 'audio'
 
 export async function generateFromUpload(params: { file: File; tool_types?: ToolType[] }) {
   const formData = new FormData()
   formData.append('file', params.file)
   formData.append('tool_types', JSON.stringify(params.tool_types || []))
   return apiFetch<{ success: boolean; data: any; cached: boolean }>('api/sphera/generate/from-upload/', {
+    method: 'POST',
+    body: formData,
+    requireAuth: true,
+  })
+}
+
+export async function generateMindmap(file: File) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return apiFetch<{ success: boolean; data: any }>('api/sphera/generate/mindmap/', {
+    method: 'POST',
+    body: formData,
+    requireAuth: true,
+  })
+}
+
+export async function generateAudioSummary(file: File) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return apiFetch<{ success: boolean; data: any }>('api/sphera/generate/audio/', {
     method: 'POST',
     body: formData,
     requireAuth: true,

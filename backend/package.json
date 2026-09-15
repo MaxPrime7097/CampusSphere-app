@@ -48,6 +48,7 @@
     "ioredis": "^6.0.0",
     "jose": "^6.2.8",
     "jsonwebtoken": "^9.0.2",
+    "microsoft-cognitiveservices-speech-sdk": "^1.51.0",
     "multer": "^2.2.0",
     "nodemailer": "^9.0.5",
     "pdf-parse": "^2.4.5",

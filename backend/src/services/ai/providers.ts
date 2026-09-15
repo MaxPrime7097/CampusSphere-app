@@ -91,11 +91,49 @@ async function recordUsageLog(
   }
 }
 
-/** Call Claude Haiku 4.5 via AWS Bedrock (Anthropic payload format). */
+/**
+ * Resolves a Claude model ID for AWS Bedrock.
+ *
+ * Modern Anthropic models (Claude 3.5 Haiku, Claude 3.5 Sonnet, etc.) cannot be
+ * invoked on-demand using their raw foundation model ID; AWS Bedrock requires an
+ * Inference Profile ID (e.g. `us.anthropic.claude-3-5-haiku-20241022-v1:0` or
+ * `eu.anthropic.claude-3-5-haiku-20241022-v1:0`).
+ */
+export function resolveBedrockClaudeModelId(rawId: string, region: string): string {
+  let modelId = (rawId || "").trim();
+
+  // If unset, default to Haiku 4.5 inference profile
+  if (!modelId) {
+    const prefix = region.startsWith("eu-") ? "eu." : region.startsWith("ap-") ? "apac." : "us.";
+    return `${prefix}anthropic.claude-haiku-4-5-20251001-v1:0`;
+  }
+
+  // Already an inference profile or full ARN
+  if (
+    modelId.startsWith("arn:aws:bedrock:") ||
+    modelId.startsWith("us.") ||
+    modelId.startsWith("eu.") ||
+    modelId.startsWith("apac.") ||
+    modelId.startsWith("cr.")
+  ) {
+    return modelId;
+  }
+
+  // Bedrock on-demand throughput requires an inference profile ID (e.g. us. or eu.)
+  if (modelId.startsWith("anthropic.claude-")) {
+    const prefix = region.startsWith("eu-") ? "eu." : region.startsWith("ap-") ? "apac." : "us.";
+    return `${prefix}${modelId}`;
+  }
+
+  return modelId;
+}
+
+/** Call Claude via AWS Bedrock (Anthropic payload format). */
 async function callBedrockClaude(prompt: string, maxTokens: number, meta?: CallMeta): Promise<string> {
   const region = env.ai.bedrock.region;
   const client = getBedrockClient(region);
-  const modelId = env.ai.bedrock.claudeModelId;
+  const rawModelId = env.ai.bedrock.claudeModelId;
+  let modelId = resolveBedrockClaudeModelId(rawModelId, region);
 
   const payload = {
     anthropic_version: "bedrock-2023-05-31",
@@ -111,7 +149,34 @@ async function callBedrockClaude(prompt: string, maxTokens: number, meta?: CallM
     body: JSON.stringify(payload),
   });
 
-  const response = await client.send(command);
+  let response;
+  try {
+    response = await client.send(command);
+  } catch (err: any) {
+    const errName = err?.name || "";
+    const isAccessOrNotFound =
+      errName === "ResourceNotFoundException" ||
+      errName === "AccessDeniedException" ||
+      err?.message?.includes("not authorized to perform: bedrock:InvokeModel") ||
+      err?.message?.includes("Model not found");
+
+    if (isAccessOrNotFound && !modelId.includes("claude-3-haiku")) {
+      const fallbackModelId = region.startsWith("eu-")
+        ? "eu.anthropic.claude-3-haiku-20240307-v1:0"
+        : "us.anthropic.claude-3-haiku-20240307-v1:0";
+      console.warn(`[sphera-ai] Claude ${modelId} inaccessible (${err?.message}). Trying fallback ${fallbackModelId}...`);
+      const fallbackCmd = new InvokeModelCommand({
+        modelId: fallbackModelId,
+        contentType: "application/json",
+        accept: "application/json",
+        body: JSON.stringify(payload),
+      });
+      response = await client.send(fallbackCmd);
+      modelId = fallbackModelId;
+    } else {
+      throw err;
+    }
+  }
   const responseBody = JSON.parse(new TextDecoder().decode(response.body)) as {
     content?: Array<{ type: string; text?: string }>;
     usage?: { input_tokens?: number; output_tokens?: number };

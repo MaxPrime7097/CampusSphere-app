@@ -32,8 +32,10 @@ import { keyFromUrl, storage } from "../services/storage.js";
 import { extractText, SUPPORTED_EXTENSIONS } from "../services/extraction.js";
 import { checkGenerationQuota, incrementGenerationQuota, WEEKLY_LIMIT } from "../middleware/generationQuota.js";
 import { getWeekStartDate } from "../lib/weekHelper.js";
+import { synthesizeDialogue, type DialogueTurn } from "../services/audioGeneration.js";
 import {
   generateAnnale,
+  generateFromSelection,
   generateQaAnswer,
   generateSuggestions,
   generateTool,
@@ -191,10 +193,39 @@ async function readableAnnaleSession(id: number, userId: number): Promise<Serial
   return session as SerializableAnnaleSession;
 }
 
+/** Generate tool content and synthesize audio if requested. */
+async function processToolContent(text: string, tool: ToolType, userId?: number): Promise<Record<string, unknown>> {
+  const result = await generateTool(text, tool, userId);
+  if (tool === "audio") {
+    const audioData = result as { titre?: string; dialogue?: DialogueTurn[] };
+    if (Array.isArray(audioData.dialogue) && audioData.dialogue.length > 0) {
+      try {
+        const audioBuffer = await synthesizeDialogue(audioData.dialogue, "fr");
+        if (audioBuffer) {
+          const stored = await storage.put({
+            buffer: audioBuffer,
+            originalName: `podcast_${Date.now()}.mp3`,
+            contentType: "audio/mpeg",
+            prefix: "audio-dialogues",
+          });
+          return {
+            ...audioData,
+            audioUrl: stored.url,
+            audioKey: stored.key,
+          };
+        }
+      } catch (err) {
+        console.warn("[sphera] dialogue synthesis failed, returning dialogue script only:", err);
+      }
+    }
+  }
+  return result;
+}
+
 /** Run the requested tools over one source text. */
 async function generateAll(text: string, tools: ToolType[], userId?: number): Promise<Record<string, unknown>> {
   const content: Record<string, unknown> = {};
-  for (const tool of tools) content[tool] = await generateTool(text, tool, userId);
+  for (const tool of tools) content[tool] = await processToolContent(text, tool, userId);
   return content;
 }
 
@@ -549,6 +580,110 @@ spheraRouter.post("/generate/annale/", checkGenerationQuota, singleUpload("file"
   created(res, serializeAnnaleSession(session as SerializableAnnaleSession));
 });
 
+// ── V3: Dedicated Mind Map & Audio Summary endpoints ─────────────────────────
+
+async function handleSingleToolGeneration(
+  req: Request,
+  res: Response,
+  tool: "mindmap" | "audio",
+): Promise<void> {
+  const me = currentUser(req);
+  const file = req.file;
+  const rawResourceId = req.body?.resource_id ?? req.body?.resourceId;
+  const rawSphereFileId = req.body?.sphere_file_id ?? req.body?.sphereFileId;
+  const resourceId = rawResourceId ? Number(rawResourceId) : undefined;
+  const sphereFileId = rawSphereFileId ? Number(rawSphereFileId) : undefined;
+
+  let text: string;
+  let sourceFilename: string;
+  let link: { resourceId?: number; sphereFileId?: number } = {};
+
+  if (file) {
+    assertSupportedUpload(file.originalname);
+    text = await extractText(file.buffer, file.originalname);
+    assertUsableText(text);
+
+    const stored = await storage.put({
+      buffer: file.buffer,
+      originalName: file.originalname,
+      contentType: file.mimetype,
+      prefix: "resources",
+    });
+
+    const resource = await prisma.resource.create({
+      data: {
+        title: file.originalname,
+        authorId: me.id,
+        fileUrl: stored.url,
+        storageKey: stored.key,
+        fileSize: file.size,
+        fileType: file.mimetype || "application/octet-stream",
+        type: "COURS",
+        visibility: "FRIENDS",
+      },
+      select: { id: true },
+    });
+
+    link = { resourceId: resource.id };
+    sourceFilename = file.originalname;
+  } else if (resourceId) {
+    const resource = await prisma.resource.findUnique({
+      where: { id: resourceId },
+      select: { id: true, title: true, fileUrl: true, storageKey: true },
+    });
+    if (!resource) throw notFound("Ressource introuvable.");
+    if (!resource.fileUrl) throw badRequest("Cette ressource n'a pas de fichier associé.");
+    text = await extractText(await readStoredFile(resource), resource.title);
+    assertUsableText(text);
+    link = { resourceId: resource.id };
+    sourceFilename = resource.title;
+  } else if (sphereFileId) {
+    const sphereFile = await prisma.sphereFile.findUnique({
+      where: { id: sphereFileId },
+      select: { id: true, title: true, fileUrl: true, storageKey: true, sphereId: true },
+    });
+    if (!sphereFile) throw notFound("Fichier de sphère introuvable.");
+    await assertSphereAccess(sphereFile.sphereId, me.id);
+    text = await extractText(await readStoredFile(sphereFile), sphereFile.title);
+    assertUsableText(text);
+    link = { sphereFileId: sphereFile.id };
+    sourceFilename = sphereFile.title;
+  } else {
+    throw badRequest("Fournis un fichier ou un resource_id.");
+  }
+
+  const result = await processToolContent(text, tool, me.id);
+  const prismaTool = toPrismaTool(tool);
+
+  const session = await prisma.studySession.create({
+    data: {
+      ownerId: me.id,
+      ...link,
+      sourceFilename,
+      toolTypes: [prismaTool],
+      content: { [tool]: result } as Prisma.InputJsonObject,
+      extractedText: text,
+    },
+    include: studySessionInclude,
+  });
+
+  await incrementGenerationQuota(me.id, 1);
+  created(res, serializeStudySession(session as SerializableStudySession));
+}
+
+spheraRouter.post("/generate/mindmap/", checkGenerationQuota, singleUpload("file", "resource"), (req, res) =>
+  handleSingleToolGeneration(req, res, "mindmap"),
+);
+spheraRouter.post("/generate/mindmap", checkGenerationQuota, singleUpload("file", "resource"), (req, res) =>
+  handleSingleToolGeneration(req, res, "mindmap"),
+);
+spheraRouter.post("/generate/audio/", checkGenerationQuota, singleUpload("file", "resource"), (req, res) =>
+  handleSingleToolGeneration(req, res, "audio"),
+);
+spheraRouter.post("/generate/audio", checkGenerationQuota, singleUpload("file", "resource"), (req, res) =>
+  handleSingleToolGeneration(req, res, "audio"),
+);
+
 // ── Study sessions ──────────────────────────────────────────────────────────
 
 spheraRouter.get("/sessions/", async (req, res) => {
@@ -606,7 +741,7 @@ spheraRouter.patch("/sessions/:id/add-tool/", checkGenerationQuota, async (req, 
   const updated = await prisma.studySession.update({
     where: { id: session.id },
     data: {
-      content: { ...content, [raw]: await generateTool(session.extractedText, raw, me.id) } as Prisma.InputJsonObject,
+      content: { ...content, [raw]: await processToolContent(session.extractedText, raw, me.id) } as Prisma.InputJsonObject,
       toolTypes: session.toolTypes.includes(toPrismaTool(raw))
         ? session.toolTypes
         : [...session.toolTypes, toPrismaTool(raw)],
@@ -617,6 +752,82 @@ spheraRouter.patch("/sessions/:id/add-tool/", checkGenerationQuota, async (req, 
   await incrementGenerationQuota(me.id, 1);
 
   ok(res, serializeStudySession(updated as SerializableStudySession));
+});
+
+const createFromSelectionSchema = z.object({
+  tool_type: z.enum(["quiz", "flashcards"]),
+  selected_text: z.string().trim().min(3, "Le passage sélectionné doit contenir au moins 3 caractères."),
+});
+
+/**
+ * POST /sessions/<id>/create-from-selection/
+ *
+ * Generates an interactive quiz question or flashcard from highlighted text
+ * and appends it directly to session.content[tool_type].
+ */
+spheraRouter.post("/sessions/:id/create-from-selection/", async (req, res) => {
+  const me = currentUser(req);
+  const session = await ownStudySession(idParam(req), me.id);
+  const { tool_type, selected_text } = createFromSelectionSchema.parse(req.body ?? {});
+
+  const generated = await generateFromSelection(selected_text, tool_type, me.id);
+  const currentContent = (session.content ?? {}) as Record<string, any>;
+
+  const defaultTitle = session.resource?.title ?? session.sourceFilename ?? (tool_type === "quiz" ? "Quiz" : "Flashcards");
+  let updatedToolContent: any;
+  let createdItem: any;
+  let newItems: any[] = [];
+
+  if (tool_type === "quiz") {
+    const existingQuestions = Array.isArray(currentContent.quiz?.questions)
+      ? currentContent.quiz.questions
+      : [];
+    newItems = Array.isArray(generated.questions) ? generated.questions : [];
+    createdItem = newItems[0] || null;
+    updatedToolContent = {
+      ...(currentContent.quiz ?? {}),
+      titre: currentContent.quiz?.titre || defaultTitle,
+      questions: [...existingQuestions, ...newItems],
+    };
+  } else {
+    const existingCartes = Array.isArray(currentContent.flashcards?.cartes)
+      ? currentContent.flashcards.cartes
+      : [];
+    newItems = Array.isArray(generated.cartes) ? generated.cartes : [];
+    createdItem = newItems[0] || null;
+    updatedToolContent = {
+      ...(currentContent.flashcards ?? {}),
+      titre: currentContent.flashcards?.titre || defaultTitle,
+      cartes: [...existingCartes, ...newItems],
+    };
+  }
+
+  const prismaTool = toPrismaTool(tool_type);
+  const updatedToolTypes = session.toolTypes.includes(prismaTool)
+    ? session.toolTypes
+    : [...session.toolTypes, prismaTool];
+
+  const updatedSession = await prisma.studySession.update({
+    where: { id: session.id },
+    data: {
+      content: {
+        ...currentContent,
+        [tool_type]: updatedToolContent,
+      } as Prisma.InputJsonObject,
+      toolTypes: updatedToolTypes,
+    },
+    include: studySessionInclude,
+  });
+
+  const count = newItems.length;
+
+  ok(res, {
+    created_items: newItems,
+    created_item: createdItem,
+    count,
+    tool_type,
+    session: serializeStudySession(updatedSession as SerializableStudySession),
+  });
 });
 
 /**

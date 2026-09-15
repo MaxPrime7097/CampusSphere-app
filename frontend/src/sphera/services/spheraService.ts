@@ -114,6 +114,50 @@ export async function generateStudyToolsFromUpload(params: {
   return apiFetch("api/sphera/generate/from-upload/", { method: "POST", body: formData });
 }
 
+/**
+ * Génère une carte mentale (Mind Map) depuis un fichier ou une ressource.
+ */
+export async function generateMindmap(params: {
+  file?: File;
+  resource_id?: string | number;
+  sphere_file_id?: string | number;
+}): Promise<{ success: boolean; data: StudySession }> {
+  if (params.file) {
+    const formData = new FormData();
+    formData.append("file", params.file);
+    return apiFetch("api/sphera/generate/mindmap/", { method: "POST", body: formData });
+  }
+  return apiFetch("api/sphera/generate/mindmap/", {
+    method: "POST",
+    body: {
+      resource_id: params.resource_id,
+      sphere_file_id: params.sphere_file_id,
+    } as any,
+  });
+}
+
+/**
+ * Génère un résumé audio podcast (2 voix) depuis un fichier ou une ressource.
+ */
+export async function generateAudioSummary(params: {
+  file?: File;
+  resource_id?: string | number;
+  sphere_file_id?: string | number;
+}): Promise<{ success: boolean; data: StudySession }> {
+  if (params.file) {
+    const formData = new FormData();
+    formData.append("file", params.file);
+    return apiFetch("api/sphera/generate/audio/", { method: "POST", body: formData });
+  }
+  return apiFetch("api/sphera/generate/audio/", {
+    method: "POST",
+    body: {
+      resource_id: params.resource_id,
+      sphere_file_id: params.sphere_file_id,
+    } as any,
+  });
+}
+
 // ===========================================================================
 // V1 — StudySessions : CRUD
 // ===========================================================================
