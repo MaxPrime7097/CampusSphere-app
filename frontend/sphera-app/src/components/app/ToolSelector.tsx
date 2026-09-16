@@ -1,5 +1,5 @@
 import React from 'react'
-import { FileText, BrainCircuit, CheckCircle2, Layers, GitFork, AudioLines, MessageSquare } from 'lucide-react'
+import { FileText, SquareStack, BrainCircuit, CheckCircle2, Layers, GitFork, AudioLines, MessageSquare } from 'lucide-react'
 import type { ToolType } from '../../services/spheraApi'
 export type { ToolType }
 
