@@ -15,6 +15,7 @@ import { describe, it, expect } from "vitest";
 import { annalePrompt, qaPrompt, suggestionsPrompt, toolPrompt } from "../../src/services/ai/prompts.js";
 import { cleanJson, parseJsonWithFallback, UnparseableModelOutputError } from "../../src/services/ai/json.js";
 import { correctionsCount } from "../../src/serializers/sphera.js";
+import { escapeXml, buildSSML } from "../../src/services/ttsProvider.js";
 
 describe("prompt construction", () => {
   const SOURCE = "Chapitre 1. La thermodynamique étudie les échanges d'énergie.";
@@ -116,5 +117,31 @@ describe("corrections_count", () => {
     expect(correctionsCount(null)).toBe(0);
     expect(correctionsCount({ sections: "not an array" })).toBe(0);
     expect(correctionsCount({ sections: [{ nom: "A" }] })).toBe(0);
+  });
+});
+
+describe("tts provider & ssml", () => {
+  it("escapes XML special characters safely", () => {
+    expect(escapeXml("Tom & Jerry <friends> 'yes' \"no\"")).toBe(
+      "Tom &amp; Jerry &lt;friends&gt; &apos;yes&apos; &quot;no&quot;"
+    );
+  });
+
+  it("builds SSML with multi-speaker voices and chat style", () => {
+    const dialogue = [
+      { speaker: "A", text: "Bienvenue dans ce cours & révision." },
+      { speaker: "B", text: "Peux-tu m'expliquer le premier point ?" },
+    ];
+    const ssmlFr = buildSSML(dialogue, "fr");
+    expect(ssmlFr).toContain('xml:lang="fr-FR"');
+    expect(ssmlFr).toContain("fr-FR-HenriNeural");
+    expect(ssmlFr).toContain("fr-FR-DeniseNeural");
+    expect(ssmlFr).toContain("Bienvenue dans ce cours &amp; révision.");
+    expect(ssmlFr).toContain('<mstts:express-as style="chat">');
+
+    const ssmlEn = buildSSML(dialogue, "en");
+    expect(ssmlEn).toContain('xml:lang="en-US"');
+    expect(ssmlEn).toContain("en-US-GuyNeural");
+    expect(ssmlEn).toContain("en-US-JennyNeural");
   });
 });

@@ -164,8 +164,9 @@ L'écosystème est composé de deux parties principales qui interagissent :
   - Régénération du client Prisma via `prisma generate`.
 - **Backend & Routage IA** :
   - `prompts.ts` : Ajout de `mindmapPrompt` (JSON arborescent avec `noeud_central`, `branches` colorées et `sous_branches`) et `audioDialoguePrompt` (script de podcast à 2 voix entre un tuteur A et un étudiant B).
-  - `index.ts` : Extension de `VALID_TOOL_TYPES` et `TOOL_TOKENS` (budget de 4 000 tokens) avec validation structurée des sorties.
-  - `audioGeneration.ts` : Service dédié avec Microsoft Cognitive Services Speech SDK (`microsoft-cognitiveservices-speech-sdk`), génération SSML multi-voix (`fr-FR-HenriNeural` / `fr-FR-DeniseNeural` et `en-US-GuyNeural` / `en-US-JennyNeural`), et téléversement direct du buffer MP3 dans le service de stockage (`storage.put`).
+  - `ttsProvider.ts` & `audioGeneration.ts` : Architecture de provider TTS interchangeable avec bascule dynamique via la variable `TTS_PROVIDER` (`polly` par défaut ou `azure`).
+    - **Amazon Polly** : Activé par défaut via `@aws-sdk/client-polly` en utilisant les identifiants AWS existants (Bedrock/S3) sans nouvelle configuration de compte. Synthèse segmentée par tour de parole (voix neuronales `Mathieu` / `Lea` en français, `Matthew` / `Joanna` en anglais) avec concaténation MP3 fluide.
+    - **Azure Speech** : Code conservé intact (`microsoft-cognitiveservices-speech-sdk`, SSML natif multi-voix `Henri` / `Denise`), prêt à être réactivé sans retouche de code dès déblocage du compte Microsoft.
   - `sphera.routes.ts` : Endpoints dédiés `POST /generate/mindmap` et `POST /generate/audio`, prise en charge transparente dans `POST /generate/from-resource/`, `POST /generate/from-upload/`, et synthèse automatique lors du `PATCH /sessions/:id/add-tool/`.
 - **Frontend & Composants UI** :
   - **Cartes Mentales (`MindMapView.tsx`)** : Intégration de `reactflow` pour une navigation 2D interactive (pan libre, zoom pincement/molette adapté au mobile, recentrage de vue `fitView`), disposition radiale géométrique et nœuds stylisés selon les thèmes.
