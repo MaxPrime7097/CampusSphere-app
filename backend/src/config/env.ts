@@ -132,6 +132,10 @@ export const env = {
       key: process.env.AZURE_SPEECH_KEY || "",
       region: process.env.AZURE_SPEECH_REGION || "westeurope",
     },
+    tts: {
+      provider: (process.env.TTS_PROVIDER || "polly").toLowerCase() as "polly" | "azure",
+      pollyRegion: process.env.POLLY_AWS_REGION || process.env.AWS_REGION || "eu-west-1",
+    },
   },
 
   storage: {

@@ -32,7 +32,7 @@ import { keyFromUrl, storage } from "../services/storage.js";
 import { extractText, SUPPORTED_EXTENSIONS } from "../services/extraction.js";
 import { checkGenerationQuota, incrementGenerationQuota, WEEKLY_LIMIT } from "../middleware/generationQuota.js";
 import { getWeekStartDate } from "../lib/weekHelper.js";
-import { synthesizeDialogue, type DialogueTurn } from "../services/audioGeneration.js";
+import { synthesizeSpeech, type DialogueTurn } from "../services/ttsProvider.js";
 import {
   generateAnnale,
   generateFromSelection,
@@ -200,7 +200,7 @@ async function processToolContent(text: string, tool: ToolType, userId?: number)
     const audioData = result as { titre?: string; dialogue?: DialogueTurn[] };
     if (Array.isArray(audioData.dialogue) && audioData.dialogue.length > 0) {
       try {
-        const audioBuffer = await synthesizeDialogue(audioData.dialogue, "fr");
+        const { buffer: audioBuffer, provider } = await synthesizeSpeech(audioData.dialogue, "fr");
         if (audioBuffer) {
           const stored = await storage.put({
             buffer: audioBuffer,
@@ -212,6 +212,7 @@ async function processToolContent(text: string, tool: ToolType, userId?: number)
             ...audioData,
             audioUrl: stored.url,
             audioKey: stored.key,
+            ttsProvider: provider,
           };
         }
       } catch (err) {
