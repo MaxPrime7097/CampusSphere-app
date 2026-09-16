@@ -533,6 +533,32 @@ spheraRouter.post("/generate/annale/", checkGenerationQuota, singleUpload("file"
     assertSupportedUpload(file.originalname);
     annaleBuffer = file.buffer;
     sourceFilename = file.originalname;
+
+    try {
+      const stored = await storage.put({
+        buffer: file.buffer,
+        originalName: file.originalname,
+        contentType: file.mimetype,
+        prefix: "resources",
+      });
+
+      const resource = await prisma.resource.create({
+        data: {
+          title: file.originalname,
+          authorId: me.id,
+          fileUrl: stored.url,
+          storageKey: stored.key,
+          fileSize: file.size,
+          fileType: file.mimetype || "application/octet-stream",
+          type: "EXAM_PAPERS",
+          visibility: "FRIENDS",
+        },
+        select: { id: true },
+      });
+      annaleResourceId = resource.id;
+    } catch (storageErr) {
+      console.warn("[sphera] Could not persist annale file to storage:", storageErr);
+    }
   } else {
     throw badRequest("Un fichier ou resource_id est requis.");
   }
@@ -704,7 +730,15 @@ spheraRouter.get("/sessions/", async (req, res) => {
 
 spheraRouter.get("/sessions/:id/", async (req, res) => {
   const me = currentUser(req);
-  ok(res, serializeStudySession(await readableStudySession(idParam(req), me.id)));
+  try {
+    ok(res, serializeStudySession(await readableStudySession(idParam(req), me.id)));
+  } catch (err) {
+    try {
+      ok(res, serializeAnnaleSession(await readableAnnaleSession(idParam(req), me.id)));
+    } catch {
+      throw err;
+    }
+  }
 });
 
 spheraRouter.delete("/sessions/:id/", async (req, res) => {
@@ -965,7 +999,15 @@ spheraRouter.get("/annales/", async (req, res) => {
 
 spheraRouter.get("/annales/:id/", async (req, res) => {
   const me = currentUser(req);
-  ok(res, serializeAnnaleSession(await readableAnnaleSession(idParam(req), me.id)));
+  try {
+    ok(res, serializeAnnaleSession(await readableAnnaleSession(idParam(req), me.id)));
+  } catch (err) {
+    try {
+      ok(res, serializeStudySession(await readableStudySession(idParam(req), me.id)));
+    } catch {
+      throw err;
+    }
+  }
 });
 
 spheraRouter.delete("/annales/:id/", async (req, res) => {

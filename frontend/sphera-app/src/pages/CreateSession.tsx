@@ -22,7 +22,7 @@ import {
 import { ToolSelector, type ToolType } from '../components/app/ToolSelector'
 import { GenerateButton } from '../components/app/GenerateButton'
 import { pendingUploadFile } from '../store/fileStore'
-import { FicheView, QuizView, FlashcardsView, AnnaleView } from '../components/app/ResultViews'
+import { FicheView, QuizView, FlashcardsView, AnnaleView, MindmapView, AudioSummaryView } from '../components/app/ResultViews'
 import { generateFromUpload, generateAnnale, askQuestion, addToolToSession, createFromSelection } from '../services/spheraApi'
 import { QuestionSuggestions } from '../components/app/QuestionSuggestions'
 import { normalizeAiResponse } from '../utils/normalizeAiResponse'
@@ -49,6 +49,7 @@ export default function CreateSession() {
   // Workspace State
   const [generatedContent, setGeneratedContent] = useState<any>(null)
   const [isPdfExpanded, setIsPdfExpanded] = useState(true)
+  const [docViewMode, setDocViewMode] = useState<'doc' | 'text'>('doc')
   const [activeTab, setActiveTab] = useState<string>('fiche')
   const [isGeneratingTool, setIsGeneratingTool] = useState(false)
   const [toolError, setToolError] = useState<string | null>(null)
@@ -145,6 +146,9 @@ export default function CreateSession() {
       const result = await generateFromUpload({ file, tool_types: [] })
       const payload = result?.data ?? result
       setGeneratedContent(payload.content || {})
+      if (payload.extracted_text) {
+        setTextSource(payload.extracted_text)
+      }
       if (payload.id) setSessionId(payload.id)
       if (payload.qa_history) setChatHistory(payload.qa_history)
       setActiveTab('chat')
@@ -164,13 +168,16 @@ export default function CreateSession() {
     try {
       let result;
       if (generationMode === 'study') {
-        result = await generateFromUpload({ file, tool_types: selectedTools as ('fiche' | 'quiz' | 'flashcards')[] });
+        result = await generateFromUpload({ file, tool_types: selectedTools });
       } else {
         result = await generateAnnale({ file, mode: annaleMode });
       }
 
       const payload = result?.data ?? result;
       setGeneratedContent(payload.content || payload);
+      if (payload.extracted_text) {
+        setTextSource(payload.extracted_text);
+      }
       if (payload.id) setSessionId(payload.id);
       if (payload.qa_history) setChatHistory(payload.qa_history);
       
@@ -622,10 +629,10 @@ export default function CreateSession() {
     setIsGeneratingTool(true);
     setToolError(null);
     try {
-      const res = await addToolToSession(sessionId, tool as 'fiche' | 'quiz' | 'flashcards');
+      const res = await addToolToSession(sessionId, tool);
       const payload = res.data;
-      setGeneratedContent(payload.content);
-      // Selected tools will be implicitly updated because generatedContent now has it
+      setGeneratedContent(payload.content || payload);
+      setActiveTab(tool);
       if (!selectedTools.includes(tool)) {
         setSelectedTools(prev => [...prev, tool]);
       }
@@ -727,7 +734,22 @@ export default function CreateSession() {
     }
   }
 
-  const STUDY_TABS = ['fiche', 'quiz', 'flashcards']
+  const STUDY_TABS: ToolType[] = ['fiche', 'quiz', 'flashcards', 'mindmap', 'audio']
+  const TOOL_LABELS: Record<string, string> = {
+    fiche: 'Fiche',
+    quiz: 'Quiz',
+    flashcards: 'Flashcards',
+    mindmap: 'Carte mentale',
+    audio: 'Résumé audio',
+    annale: 'Annale',
+  }
+
+  const isToolGenerated = (t: string) => {
+    if (t === 'annale') {
+      return Boolean(generatedContent && (generatedContent.sections || generatedContent.corrections || Object.keys(generatedContent).length > 0))
+    }
+    return generatedContent && generatedContent[t] !== undefined
+  }
 
   return (
     <div className="flex h-full overflow-hidden flex-col md:flex-row bg-sphera-bg">
@@ -770,28 +792,55 @@ export default function CreateSession() {
       
       {/* Left Column: PDF Preview */}
       <div className={`${mobileActiveView === 'doc' ? 'flex flex-1 w-full' : 'hidden'} ${isPdfExpanded ? 'md:flex md:w-1/2' : 'md:hidden'} border-r border-sphera-border flex-col bg-sphera-surface-2 overflow-hidden transition-all duration-300`}>
-        <div className="h-14 border-b border-sphera-border flex items-center px-4 gap-4 bg-sphera-bg">
-          <button 
-            onClick={() => navigate('/dashboard')} 
-            title="Retour au tableau de bord"
-            aria-label="Retour au tableau de bord"
-            className="p-1.5 text-sphera-text-muted hover:bg-sphera-surface hover:text-white rounded-md transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="flex flex-col min-w-0">
-            <span className="text-sm font-semibold text-white truncate">{file.name}</span>
+        <div className="h-14 border-b border-sphera-border flex items-center justify-between px-4 bg-sphera-bg">
+          <div className="flex items-center gap-3 min-w-0">
+            <button 
+              onClick={() => navigate('/dashboard')} 
+              title="Retour au tableau de bord"
+              aria-label="Retour au tableau de bord"
+              className="p-1.5 text-sphera-text-muted hover:bg-sphera-surface hover:text-white rounded-md transition-colors shrink-0"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div className="flex flex-col min-w-0">
+              <span className="text-sm font-semibold text-white truncate">{file.name}</span>
+            </div>
           </div>
+
+          {(isImage || isPdf) && textSource && (
+            <div className="flex items-center gap-1 bg-sphera-surface p-1 rounded-lg border border-sphera-border shrink-0 ml-2">
+              <button
+                type="button"
+                onClick={() => setDocViewMode('doc')}
+                className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors ${
+                  docViewMode === 'doc' ? 'bg-sphera-green text-black shadow-sm' : 'text-sphera-text-muted hover:text-white'
+                }`}
+              >
+                {isImage ? 'Image' : 'PDF'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setDocViewMode('text')}
+                title="Texte extrait interactif (surlignage et IA)"
+                className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors flex items-center gap-1.5 ${
+                  docViewMode === 'text' ? 'bg-sphera-green text-black shadow-sm' : 'text-sphera-text-muted hover:text-white'
+                }`}
+              >
+                <Sparkles className="w-3 h-3" />
+                <span>Texte interactif</span>
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="flex-1 overflow-hidden relative bg-[#1E1E1E]">
-          {isImage && fileUrl ? (
+          {docViewMode === 'doc' && isImage && fileUrl ? (
             <DocumentImageViewer
               src={fileUrl}
               alt={file.name}
               title={file.name}
             />
-          ) : isPdf && fileUrl ? (
+          ) : docViewMode === 'doc' && isPdf && fileUrl ? (
             <iframe 
               src={`${fileUrl}#toolbar=0&navpanes=0&scrollbar=0`} 
               className="w-full h-full border-none custom-scrollbar"
@@ -839,7 +888,7 @@ export default function CreateSession() {
           {generatedContent && (
             <div className="flex gap-1 bg-sphera-bg p-1 rounded-md overflow-x-auto">
               {(generationMode === 'study' ? STUDY_TABS : ['annale']).map(t => {
-                const isGenerated = generatedContent[t] !== undefined;
+                const isGenerated = isToolGenerated(t);
                 return (
                   <button 
                     key={t}
@@ -852,7 +901,7 @@ export default function CreateSession() {
                           : 'text-sphera-text-muted/50 hover:text-sphera-text-muted/90'
                     }`}
                   >
-                    {t.charAt(0).toUpperCase() + t.slice(1)}
+                    {TOOL_LABELS[t] || (t.charAt(0).toUpperCase() + t.slice(1))}
                     {!isGenerated && generationMode === 'study' && (
                       <span className="text-[9px] bg-sphera-surface-2 px-1.5 rounded-full border border-sphera-border text-sphera-text-muted">+</span>
                     )}
@@ -1034,7 +1083,7 @@ export default function CreateSession() {
               )}
 
               {/* Tool specific renders */}
-              {activeTab !== 'chat' && generatedContent[activeTab] === undefined ? (
+              {activeTab !== 'chat' && !isToolGenerated(activeTab) ? (
                 <div className="p-8 text-center bg-sphera-surface-2 rounded-2xl border border-sphera-border">
                   <p className="text-sphera-text-muted mb-4">Cet outil n'a pas encore été généré pour ce cours.</p>
                   <button
@@ -1043,7 +1092,7 @@ export default function CreateSession() {
                     className="sphera-primary-btn py-2 px-4 text-xs inline-flex items-center gap-2"
                   >
                     {isGeneratingTool ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                    <span>Générer {activeTab}</span>
+                    <span>Générer {TOOL_LABELS[activeTab] || activeTab}</span>
                   </button>
                   {toolError && <p className="text-red-400 text-sm mt-4 bg-red-500/10 p-3 rounded-lg border border-red-500/20">{toolError}</p>}
                 </div>
@@ -1052,6 +1101,8 @@ export default function CreateSession() {
                   {activeTab === 'fiche' && <FicheView content={generatedContent.fiche} />}
                   {activeTab === 'quiz' && <QuizView content={generatedContent.quiz} />}
                   {activeTab === 'flashcards' && <FlashcardsView content={generatedContent.flashcards} />}
+                  {activeTab === 'mindmap' && <MindmapView content={generatedContent.mindmap || generatedContent} />}
+                  {activeTab === 'audio' && <AudioSummaryView content={generatedContent.audio || generatedContent} />}
                   {activeTab === 'annale' && <AnnaleView annale={{ content: generatedContent, mode: annaleMode }} />}
                 </>
               )}

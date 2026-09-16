@@ -76,17 +76,17 @@ async function postJson(url: string, init: RequestInit): Promise<unknown> {
   }
 }
 
-/** Record token consumption and estimated cost across all providers into AIUsageLog. */
-async function recordUsageLog(
+/** Record token consumption and estimated cost across all providers into AIUsageLog (non-blocking). */
+function recordUsageLog(
   provider: string,
   model: string,
   meta: CallMeta | undefined,
   inputTokens: number,
   outputTokens: number,
   costUsd: number,
-): Promise<void> {
-  try {
-    await prisma.aIUsageLog.create({
+): void {
+  prisma.aIUsageLog
+    .create({
       data: {
         userId: meta?.userId ?? null,
         provider,
@@ -96,10 +96,10 @@ async function recordUsageLog(
         outputTokensEstimate: outputTokens,
         estimatedCostUSD: costUsd,
       },
+    })
+    .catch((logError: any) => {
+      console.warn(`[sphera-ai] Failed to save AIUsageLog for ${provider}:`, logError?.message || logError);
     });
-  } catch (logError) {
-    console.warn(`[sphera-ai] Failed to save AIUsageLog for ${provider}:`, logError);
-  }
 }
 
 /**
@@ -301,7 +301,7 @@ export async function callMantleModel(
     Math.ceil(text.length / 4);
   const cost = inputTokens * inputPrice + outputTokens * outputPrice;
 
-  await recordUsageLog(providerName, modelId, meta, inputTokens, outputTokens, cost);
+  recordUsageLog(providerName, modelId, meta, inputTokens, outputTokens, cost);
   return text;
 }
 
@@ -413,7 +413,7 @@ export async function callMantleClaude(prompt: string, maxTokens: number, meta?:
   const outputTokens = responseBody.usage?.output_tokens ?? Math.ceil(text.length / 4);
   const cost = inputTokens * claudeInputPrice + outputTokens * claudeOutputPrice;
 
-  await recordUsageLog("bedrock-mantle-claude", modelId, meta, inputTokens, outputTokens, cost);
+  recordUsageLog("bedrock-mantle-claude", modelId, meta, inputTokens, outputTokens, cost);
   return text;
 }
 
@@ -485,7 +485,7 @@ async function callBedrockClaude(prompt: string, maxTokens: number, meta?: CallM
   const outputTokens = responseBody.usage?.output_tokens ?? 0;
   const cost = inputTokens * CLAUDE_INPUT_PRICE + outputTokens * CLAUDE_OUTPUT_PRICE;
 
-  await recordUsageLog("bedrock-claude", modelId, meta, inputTokens, outputTokens, cost);
+  recordUsageLog("bedrock-claude", modelId, meta, inputTokens, outputTokens, cost);
   return text;
 }
 
@@ -542,7 +542,7 @@ async function callBedrockDeepSeek(prompt: string, maxTokens: number, meta?: Cal
     Math.ceil(text.length / 4);
   const cost = inputTokens * DEEPSEEK_INPUT_PRICE + outputTokens * DEEPSEEK_OUTPUT_PRICE;
 
-  await recordUsageLog("bedrock-deepseek", modelId, meta, inputTokens, outputTokens, cost);
+  recordUsageLog("bedrock-deepseek", modelId, meta, inputTokens, outputTokens, cost);
   return text;
 }
 
@@ -573,7 +573,7 @@ async function callGemini(prompt: string, maxTokens: number, meta?: CallMeta): P
   const outputTokens = data.usageMetadata?.candidatesTokenCount ?? Math.ceil(text.length / 4);
   const cost = inputTokens * (0.075 / 1_000_000) + outputTokens * (0.30 / 1_000_000);
 
-  await recordUsageLog("gemini", modelId, meta, inputTokens, outputTokens, cost);
+  recordUsageLog("gemini", modelId, meta, inputTokens, outputTokens, cost);
   return text;
 }
 
@@ -602,7 +602,7 @@ async function callGroq(prompt: string, maxTokens: number, meta?: CallMeta): Pro
   const inputTokens = data.usage?.prompt_tokens ?? Math.ceil(prompt.length / 4);
   const outputTokens = data.usage?.completion_tokens ?? Math.ceil(text.length / 4);
 
-  await recordUsageLog("groq", modelId, meta, inputTokens, outputTokens, 0);
+  recordUsageLog("groq", modelId, meta, inputTokens, outputTokens, 0);
   return text;
 }
 

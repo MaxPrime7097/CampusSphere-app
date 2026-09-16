@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react'
-import { FileText, BrainCircuit, List, CheckCircle2, HelpCircle, CircleSmall, Lightbulb, ChevronDown, ChevronRight, Timer, Trophy, XCircle, RotateCcw, RefreshCcw, Code2, Calculator, AlignLeft, Target, BookOpen, BookMarked, Award, Layers, Zap } from 'lucide-react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
+import { FileText, BrainCircuit, List, CheckCircle2, HelpCircle, CircleSmall, Lightbulb, ChevronDown, ChevronRight, Timer, Trophy, XCircle, RotateCcw, RefreshCcw, Code2, Calculator, AlignLeft, Target, BookOpen, BookMarked, Award, Layers, Zap, GitFork, Headphones, Play, Pause, Volume2, Download } from 'lucide-react'
 import DownloadPDFButton from '../shared/DownloadPDFButton'
 import { useDownloadPDF } from '../../hooks/useDownloadPDF'
 
@@ -752,7 +752,9 @@ function QuestionCard({ question, mode }: { question: any, mode?: 'complete' | '
 }
 
 export function AnnaleView({ annale, sourceName }: { annale: any; sourceName?: string }) {
-  const { content, mode } = annale;
+  const rawAnnale = annale || {};
+  const content = rawAnnale.content !== undefined ? rawAnnale.content : rawAnnale;
+  const mode = rawAnnale.mode || 'complete';
   const isRawArray = Array.isArray(content);
   const hasSections = !isRawArray && Array.isArray(content?.sections) && content.sections.length > 0;
   const hasLegacy = !isRawArray && Array.isArray(content?.corrections) && content.corrections.length > 0;
@@ -858,3 +860,456 @@ export function AnnaleView({ annale, sourceName }: { annale: any; sourceName?: s
     </div>
   );
 }
+
+export function MindmapView({ content }: { content: any }) {
+  const mapData = content?.mindmap || content || {};
+  const centralNode = mapData?.noeud_central || mapData?.titre || "Concept Central";
+  const branches: any[] = Array.isArray(mapData?.branches) ? mapData.branches : [];
+  const [expandedBranches, setExpandedBranches] = useState<Record<number, boolean>>({});
+  const [viewMode, setViewMode] = useState<'cards' | 'tree'>('tree');
+
+  const toggleBranch = (idx: number) => {
+    setExpandedBranches(prev => ({ ...prev, [idx]: !prev[idx] }));
+  };
+
+  const expandAll = () => {
+    const all: Record<number, boolean> = {};
+    branches.forEach((_, i) => { all[i] = true; });
+    setExpandedBranches(all);
+  };
+
+  const collapseAll = () => {
+    setExpandedBranches({});
+  };
+
+  const getColorStyles = (colorStr: string) => {
+    const c = (colorStr || '').toLowerCase();
+    if (c.includes('vert') || c === 'green') {
+      return {
+        badge: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+        border: 'border-emerald-500/40',
+        text: 'text-emerald-400',
+        bg: 'bg-emerald-500/5',
+        dot: 'bg-emerald-400',
+      };
+    }
+    if (c.includes('bleu') || c === 'blue') {
+      return {
+        badge: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+        border: 'border-blue-500/40',
+        text: 'text-blue-400',
+        bg: 'bg-blue-500/5',
+        dot: 'bg-blue-400',
+      };
+    }
+    if (c.includes('orange')) {
+      return {
+        badge: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+        border: 'border-orange-500/40',
+        text: 'text-orange-400',
+        bg: 'bg-orange-500/5',
+        dot: 'bg-orange-400',
+      };
+    }
+    if (c.includes('violet') || c === 'purple') {
+      return {
+        badge: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+        border: 'border-purple-500/40',
+        text: 'text-purple-400',
+        bg: 'bg-purple-500/5',
+        dot: 'bg-purple-400',
+      };
+    }
+    if (c.includes('rose') || c === 'pink') {
+      return {
+        badge: 'bg-pink-500/20 text-pink-400 border-pink-500/30',
+        border: 'border-pink-500/40',
+        text: 'text-pink-400',
+        bg: 'bg-pink-500/5',
+        dot: 'bg-pink-400',
+      };
+    }
+    return {
+      badge: 'bg-sphera-green/20 text-sphera-green border-sphera-green/30',
+      border: 'border-sphera-green/40',
+      text: 'text-sphera-green',
+      bg: 'bg-sphera-green/5',
+      dot: 'bg-sphera-green',
+    };
+  };
+
+  const renderSubBranches = (subList: any[], level = 1) => {
+    if (!Array.isArray(subList) || subList.length === 0) return null;
+    return (
+      <ul className={`space-y-2 ${level > 1 ? 'ml-4 pl-3 border-l border-sphera-border/60' : 'mt-2'}`}>
+        {subList.map((item, idx) => {
+          const label = typeof item === 'string' ? item : (item.label || item.nom || item.texte || JSON.stringify(item));
+          const hasChildren = Array.isArray(item?.sous_branches) && item.sous_branches.length > 0;
+          return (
+            <li key={idx} className="text-sm">
+              <div className="flex items-start gap-2 text-white/90">
+                <span className="text-sphera-text-muted mt-1 text-xs">•</span>
+                <span className="leading-snug">{formatText(label)}</span>
+              </div>
+              {hasChildren && renderSubBranches(item.sous_branches, level + 1)}
+            </li>
+          );
+        })}
+      </ul>
+    );
+  };
+
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Top Header */}
+      <div className="p-5 rounded-2xl bg-sphera-bg border border-sphera-border">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-sphera-border">
+          <div>
+            <div className="flex items-center gap-2">
+              <GitFork className="w-5 h-5 text-emerald-400" />
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">Carte Mentale</span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-sphera-surface border border-sphera-border text-sphera-text-muted">
+                {branches.length} thèmes
+              </span>
+            </div>
+            {mapData?.titre && <h2 className="text-xl font-bold text-white mt-1">{mapData.titre}</h2>}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={expandAll}
+              className="px-2.5 py-1 text-xs font-medium rounded-lg bg-sphera-surface text-sphera-text-muted hover:text-white border border-sphera-border transition-colors"
+            >
+              Tout déplier
+            </button>
+            <button
+              onClick={collapseAll}
+              className="px-2.5 py-1 text-xs font-medium rounded-lg bg-sphera-surface text-sphera-text-muted hover:text-white border border-sphera-border transition-colors"
+            >
+              Tout replier
+            </button>
+            <div className="h-4 w-px bg-sphera-border mx-1" />
+            <button
+              onClick={() => setViewMode(v => v === 'tree' ? 'cards' : 'tree')}
+              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-sphera-surface-2 text-white border border-sphera-border hover:border-sphera-green/50 transition-colors"
+            >
+              {viewMode === 'tree' ? 'Vue Grille' : 'Vue Arbre'}
+            </button>
+          </div>
+        </div>
+
+        {/* Central Core Concept Banner */}
+        <div className="mt-4 p-4 rounded-xl bg-gradient-to-r from-emerald-500/10 via-sphera-surface-2 to-teal-500/10 border border-emerald-500/30 text-center relative overflow-hidden">
+          <span className="text-[10px] uppercase tracking-widest text-emerald-400 font-bold">Noyau Conceptuel</span>
+          <h3 className="text-lg md:text-xl font-extrabold text-white mt-0.5 tracking-tight">
+            {centralNode}
+          </h3>
+        </div>
+      </div>
+
+      {/* Branches Display */}
+      {branches.length === 0 ? (
+        <div className="p-8 text-center bg-sphera-surface-2 rounded-2xl border border-sphera-border opacity-60">
+          <GitFork className="w-12 h-12 text-sphera-text-muted mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-white mb-1">Carte mentale en cours de structuration</h3>
+          <p className="text-sm text-sphera-text-muted max-w-md mx-auto">
+            Les branches de la carte mentale n'ont pas pu être extraites au format attendu.
+          </p>
+        </div>
+      ) : viewMode === 'tree' ? (
+        /* Tree / Hierarchical View */
+        <div className="space-y-4">
+          {branches.map((b: any, i: number) => {
+            const styles = getColorStyles(b.couleur);
+            const isExpanded = expandedBranches[i] ?? true;
+            const subCount = Array.isArray(b.sous_branches) ? b.sous_branches.length : 0;
+
+            return (
+              <div
+                key={i}
+                className={`rounded-2xl border transition-all duration-200 overflow-hidden ${styles.border} ${styles.bg}`}
+              >
+                <button
+                  type="button"
+                  onClick={() => toggleBranch(i)}
+                  className="w-full p-4 sm:p-5 flex items-center justify-between text-left hover:bg-white/[0.02] transition-colors"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className={`w-3 h-3 rounded-full shrink-0 ${styles.dot}`} />
+                    <span className="font-bold text-white text-base sm:text-lg truncate">
+                      {b.label}
+                    </span>
+                    {b.couleur && (
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full border uppercase tracking-wider font-semibold ${styles.badge}`}>
+                        {b.couleur}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0 ml-2">
+                    <span className="text-xs text-sphera-text-muted">
+                      {subCount} sous-point{subCount > 1 ? 's' : ''}
+                    </span>
+                    {isExpanded ? (
+                      <ChevronDown className="w-4 h-4 text-sphera-text-muted" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-sphera-text-muted" />
+                    )}
+                  </div>
+                </button>
+
+                {isExpanded && (
+                  <div className="px-5 pb-5 pt-1 border-t border-sphera-border/40">
+                    {subCount > 0 ? (
+                      renderSubBranches(b.sous_branches)
+                    ) : (
+                      <p className="text-xs text-sphera-text-muted italic">Aucun sous-concept détaillé</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        /* Grid Cards View */
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {branches.map((b: any, i: number) => {
+            const styles = getColorStyles(b.couleur);
+            return (
+              <div key={i} className={`sphera-card p-5 border ${styles.border} ${styles.bg}`}>
+                <div className="flex items-center justify-between mb-3">
+                  <span className={`w-2.5 h-2.5 rounded-full ${styles.dot}`} />
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full border uppercase tracking-wider font-semibold ${styles.badge}`}>
+                    {b.couleur || 'Thème'}
+                  </span>
+                </div>
+                <h4 className="font-bold text-white text-base mb-3 leading-snug">{b.label}</h4>
+                {Array.isArray(b.sous_branches) && b.sous_branches.length > 0 ? (
+                  renderSubBranches(b.sous_branches)
+                ) : (
+                  <p className="text-xs text-sphera-text-muted italic">Sous-branches intégrées</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function AudioSummaryView({ content }: { content: any }) {
+  const audioData = content?.audio || content || {};
+  const dialogue: Array<{ speaker: string; text: string }> = Array.isArray(audioData?.dialogue) ? audioData.dialogue : [];
+  const audioUrl: string | undefined = audioData?.audioUrl;
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isSpeakingWebSpeech, setIsSpeakingWebSpeech] = useState(false);
+
+  const toggleAudioPlay = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      audioRef.current.play().then(() => setIsPlaying(true)).catch(console.error);
+    }
+  };
+
+  const handleSpeedChange = () => {
+    const speeds = [1, 1.25, 1.5, 2];
+    const nextIdx = (speeds.indexOf(playbackSpeed) + 1) % speeds.length;
+    const nextSpeed = speeds[nextIdx];
+    setPlaybackSpeed(nextSpeed);
+    if (audioRef.current) {
+      audioRef.current.playbackRate = nextSpeed;
+    }
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const time = Number(e.target.value);
+    setCurrentTime(time);
+    if (audioRef.current) {
+      audioRef.current.currentTime = time;
+    }
+  };
+
+  const formatTime = (secs: number) => {
+    if (isNaN(secs) || secs < 0) return '0:00';
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
+
+  const toggleWebSpeech = () => {
+    if (!window.speechSynthesis) return;
+    if (isSpeakingWebSpeech) {
+      window.speechSynthesis.cancel();
+      setIsSpeakingWebSpeech(false);
+      return;
+    }
+
+    const fullScript = dialogue.map(d => `${d.speaker === 'A' ? 'Étudiant 1 : ' : 'Étudiant 2 : '} ${d.text}`).join('\n\n');
+    const utterance = new SpeechSynthesisUtterance(fullScript);
+    utterance.lang = 'fr-FR';
+    utterance.rate = playbackSpeed;
+    utterance.onend = () => setIsSpeakingWebSpeech(false);
+    utterance.onerror = () => setIsSpeakingWebSpeech(false);
+
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+    setIsSpeakingWebSpeech(true);
+  };
+
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Audio Player Card */}
+      <div className="p-6 rounded-2xl bg-sphera-surface-2 border border-sphera-border relative overflow-hidden shadow-xl">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Headphones className="w-5 h-5 text-teal-400" />
+            <span className="text-xs font-bold uppercase tracking-wider text-teal-400">Podcast & Résumé Audio</span>
+          </div>
+          {audioUrl && (
+            <a
+              href={audioUrl}
+              download="podcast-revision.mp3"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors"
+              title="Télécharger l'audio MP3"
+            >
+              <Download className="w-4 h-4" />
+            </a>
+          )}
+        </div>
+
+        {audioData?.titre && (
+          <h2 className="text-xl font-bold text-white mb-4">{audioData.titre}</h2>
+        )}
+
+        {/* Audio Element or Web Speech Fallback */}
+        {audioUrl ? (
+          <div className="space-y-3 bg-sphera-bg p-4 rounded-xl border border-sphera-border">
+            <audio
+              ref={audioRef}
+              src={audioUrl}
+              onTimeUpdate={() => audioRef.current && setCurrentTime(audioRef.current.currentTime)}
+              onLoadedMetadata={() => audioRef.current && setDuration(audioRef.current.duration)}
+              onEnded={() => setIsPlaying(false)}
+            />
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={toggleAudioPlay}
+                className="w-10 h-10 rounded-full bg-sphera-green text-black flex items-center justify-center font-bold shadow-lg hover:brightness-110 transition-all shrink-0"
+              >
+                {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+              </button>
+
+              <div className="flex-1">
+                <input
+                  type="range"
+                  min={0}
+                  max={duration || 100}
+                  value={currentTime}
+                  onChange={handleSeek}
+                  className="w-full accent-sphera-green cursor-pointer h-1.5 bg-sphera-surface rounded-lg"
+                />
+                <div className="flex justify-between text-[11px] text-sphera-text-muted font-mono mt-1">
+                  <span>{formatTime(currentTime)}</span>
+                  <span>{formatTime(duration)}</span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleSpeedChange}
+                className="px-2 py-1 rounded bg-sphera-surface border border-sphera-border text-xs font-mono text-sphera-text-muted hover:text-white transition-colors"
+              >
+                {playbackSpeed}x
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between p-4 rounded-xl bg-sphera-bg border border-sphera-border">
+            <div className="flex items-center gap-3">
+              <Volume2 className="w-5 h-5 text-teal-400" />
+              <div>
+                <p className="text-sm font-semibold text-white">Lecture audio du dialogue</p>
+                <p className="text-xs text-sphera-text-muted">Écouter la synthèse vocale des 2 étudiants</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={toggleWebSpeech}
+              className="sphera-primary-btn py-2 px-4 text-xs inline-flex items-center gap-2"
+            >
+              {isSpeakingWebSpeech ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+              <span>{isSpeakingWebSpeech ? 'Arrêter la lecture' : 'Lancer la voix'}</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Dialogue Script */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between px-1">
+          <h3 className="font-bold text-white text-base">Script du dialogue ({dialogue.length} répliques)</h3>
+          <span className="text-xs text-sphera-text-muted">~{Math.max(1, Math.round(dialogue.length * 0.4))} min de discussion</span>
+        </div>
+
+        {dialogue.length === 0 ? (
+          <div className="p-8 text-center bg-sphera-surface-2 rounded-2xl border border-sphera-border opacity-60">
+            <Headphones className="w-12 h-12 text-sphera-text-muted mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-white mb-1">Aucun dialogue audio</h3>
+            <p className="text-sm text-sphera-text-muted max-w-md mx-auto">
+              Le script de discussion n'a pas été généré pour ce cours.
+            </p>
+          </div>
+        ) : (
+          dialogue.map((turn, idx) => {
+            const isSpeakerA = turn.speaker === 'A' || turn.speaker === '1';
+            return (
+              <div
+                key={idx}
+                className={`flex gap-3 sm:gap-4 p-4 rounded-2xl border transition-all ${
+                  isSpeakerA
+                    ? 'bg-sphera-surface border-sphera-green/30'
+                    : 'bg-sphera-surface-2 border-purple-500/30 ml-4 sm:ml-8'
+                }`}
+              >
+                <div
+                  className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
+                    isSpeakerA
+                      ? 'bg-sphera-green/20 text-sphera-green border border-sphera-green/40'
+                      : 'bg-purple-500/20 text-purple-400 border border-purple-500/40'
+                  }`}
+                >
+                  {isSpeakerA ? 'A' : 'B'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-bold text-white">
+                      {isSpeakerA ? 'Étudiant A (Explicateur)' : 'Étudiant B (Curieux)'}
+                    </span>
+                    <span className="text-[10px] text-sphera-text-muted font-mono">#{idx + 1}</span>
+                  </div>
+                  <div className="text-sm text-white/90 leading-relaxed">
+                    {formatText(turn.text)}
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
