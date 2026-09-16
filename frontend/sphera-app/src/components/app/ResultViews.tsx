@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { FileText, BrainCircuit, List, CheckCircle2, HelpCircle, CircleSmall, Lightbulb, ChevronDown, ChevronRight, Timer, Trophy, XCircle, RotateCcw, RefreshCcw, Code2, Calculator, AlignLeft, Target, BookOpen, BookMarked, Award, Layers, Zap, GitFork, Headphones, Play, Pause, Volume2, Download } from 'lucide-react'
+import { FileText, BrainCircuit, List, CheckCircle2, HelpCircle, CircleSmall, Lightbulb, ChevronDown, ChevronRight, Timer, Trophy, XCircle, RotateCcw, RefreshCcw, Code2, Calculator, AlignLeft, Target, BookOpen, BookMarked, Award, Layers, Zap, GitFork, AudioLines, Play, Pause, Volume2, Download } from 'lucide-react'
 import DownloadPDFButton from '../shared/DownloadPDFButton'
 import { useDownloadPDF } from '../../hooks/useDownloadPDF'
 
@@ -1171,7 +1171,7 @@ export function AudioSummaryView({ content }: { content: any }) {
       <div className="p-6 rounded-2xl bg-sphera-surface-2 border border-sphera-border relative overflow-hidden shadow-xl">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Headphones className="w-5 h-5 text-teal-400" />
+            <AudioLines className="w-5 h-5 text-teal-400" />
             <span className="text-xs font-bold uppercase tracking-wider text-teal-400">Podcast & Résumé Audio</span>
           </div>
           {audioUrl && (
@@ -1266,7 +1266,7 @@ export function AudioSummaryView({ content }: { content: any }) {
 
         {dialogue.length === 0 ? (
           <div className="p-8 text-center bg-sphera-surface-2 rounded-2xl border border-sphera-border opacity-60">
-            <Headphones className="w-12 h-12 text-sphera-text-muted mx-auto mb-4" />
+            <AudioLines className="w-12 h-12 text-sphera-text-muted mx-auto mb-4" />
             <h3 className="text-lg font-medium text-white mb-1">Aucun dialogue audio</h3>
             <p className="text-sm text-sphera-text-muted max-w-md mx-auto">
               Le script de discussion n'a pas été généré pour ce cours.

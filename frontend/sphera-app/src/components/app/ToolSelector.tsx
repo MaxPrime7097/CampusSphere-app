@@ -1,5 +1,5 @@
 import React from 'react'
-import { FileText, BrainCircuit, CheckCircle2, Layers, GitFork, Headphones, MessageSquare } from 'lucide-react'
+import { FileText, BrainCircuit, CheckCircle2, Layers, GitFork, AudioLines, MessageSquare } from 'lucide-react'
 import type { ToolType } from '../../services/spheraApi'
 export type { ToolType }
 
@@ -42,7 +42,7 @@ export function ToolSelector({ selectedTools, onToolSelect }: ToolSelectorProps)
       id: 'audio' as ToolType,
       title: "Résumé audio",
       desc: "Dialogue podcast pour réviser",
-      icon: <Headphones className="w-5 h-5" />,
+      icon: <AudioLines className="w-5 h-5" />,
       colorClass: "text-teal-400"
     }
   ]
