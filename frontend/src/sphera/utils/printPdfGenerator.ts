@@ -158,7 +158,6 @@ function buildBaseStyle(): string {
     .doc-brand {
       font-size: 9pt;
       font-weight: 800;
-      letter-spacing: 0.12em;
       color: #22c55e;
     }
 

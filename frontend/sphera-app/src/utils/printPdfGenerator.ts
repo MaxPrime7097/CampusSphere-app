@@ -174,7 +174,6 @@ function buildBaseStyle(): string {
     .doc-brand {
       font-size: 9pt;
       font-weight: 800;
-      letter-spacing: 0.12em;
       color: #22c55e;
     }
 
@@ -767,7 +766,7 @@ export function generateFicheHtml(options: GenerateFicheOptions): string {
   html += `
       <!-- Pied de page -->
       <div class="doc-footer">
-        <div>Sphera • Assistant d'apprentissage académique</div>
+        <div>Sphera • Upload. Revise. Succeed.</div>
         <div><a href="https://sphera.campussphere.app" target="_blank" rel="noopener noreferrer">sphera.campussphere.app</a></div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import React from 'react'
-import { FileText, BrainCircuit, Layers, HelpCircle, AlignLeft, Sparkles, type LucideIcon } from 'lucide-react'
+import { FileText, BrainCircuit, SquareStack, HelpCircle, AlignLeft, Sparkles, type LucideIcon } from 'lucide-react'
 
 export interface Command {
   trigger: string
@@ -32,7 +32,7 @@ export const COMMANDS: Command[] = [
   {
     trigger: '@flashcards',
     label: 'Flashcards',
-    icon: Layers,
+    icon: SquareStack,
     description: 'Afficher ou réviser tes flashcards',
     category: 'tool',
     toolType: 'flashcards',

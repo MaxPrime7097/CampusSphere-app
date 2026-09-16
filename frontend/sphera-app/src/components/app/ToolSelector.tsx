@@ -28,13 +28,13 @@ export function ToolSelector({ selectedTools, onToolSelect }: ToolSelectorProps)
       id: 'flashcards' as ToolType,
       title: "Flashcards",
       desc: "Cartes recto/verso pour mémoriser",
-      icon: <Layers className="w-5 h-5" />,
+      icon: <SquareStack className="w-5 h-5" />,
       colorClass: "text-green-400"
     },
     {
       id: 'mindmap' as ToolType,
       title: "Carte mentale",
-      desc: "Arborescence visuelle des concepts clés",
+      desc: "Représentation visuelle des concepts clés",
       icon: <GitFork className="w-5 h-5" />,
       colorClass: "text-emerald-400"
     },
