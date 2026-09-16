@@ -124,6 +124,8 @@ export function serializeAnnaleSession(session: SerializableAnnaleSession): Reco
     content: session.content ?? {},
     qa_history: session.qaHistory ?? [],
     has_qa: Boolean(session.extractedText),
+    extracted_text: session.extractedText ?? "",
+    tool_types: ["annale"],
     is_shared: session.isShared,
     shared_in_sphere: session.sharedSphereId,
     sphere_name: session.sharedSphere?.name ?? null,

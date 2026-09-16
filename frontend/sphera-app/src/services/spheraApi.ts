@@ -197,43 +197,57 @@ export async function guestGenerate(params: {
 
 export type ToolType = 'fiche' | 'quiz' | 'flashcards' | 'mindmap' | 'audio'
 
+export function notifyQuotaUpdated() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('sphera:quota-updated'))
+  }
+}
+
 export async function generateFromUpload(params: { file: File; tool_types?: ToolType[] }) {
   const formData = new FormData()
   formData.append('file', params.file)
   formData.append('tool_types', JSON.stringify(params.tool_types || []))
-  return apiFetch<{ success: boolean; data: any; cached: boolean }>('api/sphera/generate/from-upload/', {
+  const res = await apiFetch<{ success: boolean; data: any; cached: boolean }>('api/sphera/generate/from-upload/', {
     method: 'POST',
     body: formData,
     requireAuth: true,
   })
+  notifyQuotaUpdated()
+  return res
 }
 
 export async function generateMindmap(file: File) {
   const formData = new FormData()
   formData.append('file', file)
-  return apiFetch<{ success: boolean; data: any }>('api/sphera/generate/mindmap/', {
+  const res = await apiFetch<{ success: boolean; data: any }>('api/sphera/generate/mindmap/', {
     method: 'POST',
     body: formData,
     requireAuth: true,
   })
+  notifyQuotaUpdated()
+  return res
 }
 
 export async function generateAudioSummary(file: File) {
   const formData = new FormData()
   formData.append('file', file)
-  return apiFetch<{ success: boolean; data: any }>('api/sphera/generate/audio/', {
+  const res = await apiFetch<{ success: boolean; data: any }>('api/sphera/generate/audio/', {
     method: 'POST',
     body: formData,
     requireAuth: true,
   })
+  notifyQuotaUpdated()
+  return res
 }
 
 export async function addToolToSession(sessionId: number | string, toolType: ToolType) {
-  return apiFetch<{ success: boolean; data: any }>(`api/sphera/sessions/${sessionId}/add-tool/`, {
+  const res = await apiFetch<{ success: boolean; data: any }>(`api/sphera/sessions/${sessionId}/add-tool/`, {
     method: 'PATCH',
     body: { tool_type: toolType },
     requireAuth: true,
   })
+  notifyQuotaUpdated()
+  return res
 }
 
 export async function createFromSelection(
@@ -273,10 +287,12 @@ export async function generateAnnale(params: { file: File; mode: 'complete' | 'r
   const formData = new FormData()
   formData.append('file', params.file)
   formData.append('mode', params.mode)
-  return apiFetch<{ success: boolean; data: any }>(
+  const res = await apiFetch<{ success: boolean; data: any }>(
     'api/sphera/generate/annale/',
     { method: 'POST', body: formData, requireAuth: true }
   )
+  notifyQuotaUpdated()
+  return res
 }
 
 // ─── Sessions (auth requis) ──────────────────────────────────────

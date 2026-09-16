@@ -11,23 +11,35 @@ export function QuotaIndicator({ className = '' }: { className?: string }) {
     if (!isAuthenticated) return
 
     let isMounted = true
-    getQuota()
-      .then((res) => {
-        if (isMounted && res?.data) {
-          setQuota(res.data)
-        } else if (isMounted) {
-          setQuota({ used: 0, remaining: 5, limit: 5, resetsOn: '' })
-        }
-      })
-      .catch((err) => {
-        console.warn('[sphera] Impossible de charger le quota, utilisation du quota nominal:', err)
-        if (isMounted) {
-          setQuota({ used: 0, remaining: 5, limit: 5, resetsOn: '' })
-        }
-      })
+
+    const fetchQuota = () => {
+      getQuota()
+        .then((res) => {
+          if (isMounted && res?.data) {
+            setQuota(res.data)
+          } else if (isMounted) {
+            setQuota({ used: 0, remaining: 5, limit: 5, resetsOn: '' })
+          }
+        })
+        .catch((err) => {
+          console.warn('[sphera] Impossible de charger le quota, utilisation du quota nominal:', err)
+          if (isMounted) {
+            setQuota({ used: 0, remaining: 5, limit: 5, resetsOn: '' })
+          }
+        })
+    }
+
+    fetchQuota()
+
+    const handleQuotaUpdate = () => {
+      fetchQuota()
+    }
+
+    window.addEventListener('sphera:quota-updated', handleQuotaUpdate)
 
     return () => {
       isMounted = false
+      window.removeEventListener('sphera:quota-updated', handleQuotaUpdate)
     }
   }, [isAuthenticated])
 

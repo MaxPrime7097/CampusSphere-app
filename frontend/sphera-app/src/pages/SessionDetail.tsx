@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getSession, getAnnale, askQuestion, deleteSession, deleteAnnale, shareSession, shareAnnale, updateSessionText, addToolToSession, createFromSelection, API_BASE } from '../services/spheraApi'
+import { getSession, getAnnale, askQuestion, deleteSession, deleteAnnale, shareSession, shareAnnale, updateSessionText, addToolToSession, createFromSelection, API_BASE, type ToolType } from '../services/spheraApi'
 import { normalizeAiResponse } from '../utils/normalizeAiResponse'
-import { FileText, ArrowLeft, Maximize2, Minimize2, Send, Square, MessageSquare, Share2, Trash2, Check, AtSign, Plus, Loader2, AlertCircle, Sparkles } from 'lucide-react'
-import { FicheView, QuizView, FlashcardsView, AnnaleView } from '../components/app/ResultViews'
+import { FileText, ArrowLeft, Maximize2, Minimize2, Send, Square, MessageSquare, Bot, User, BrainCircuit, Columns, Share2, Trash2, Check, AtSign, Plus, Loader2, AlertCircle, Sparkles, GitFork, AudioLines } from 'lucide-react'
+import { FicheView, QuizView, FlashcardsView, AnnaleView, MindmapView, AudioSummaryView } from '../components/app/ResultViews'
 import { ShareModal } from '../components/app/ShareModal'
 import { DeleteConfirmModal } from '../components/app/DeleteConfirmModal'
 import { CourseTextReader } from '../components/app/CourseTextReader'
@@ -81,7 +81,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
     handleSelectionAction(action, selectedText)
   }
 
-  const handleAddTool = async (tool: 'fiche' | 'quiz' | 'flashcards') => {
+  const handleAddTool = async (tool: ToolType) => {
     if (!session?.id) return
     setIsGeneratingTool(true)
     setToolError(null)
@@ -125,16 +125,31 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
     const fetchFn = type === 'annale' ? getAnnale : getSession;
     fetchFn(id)
       .then(r => {
-        setSession(r?.data ?? r)
         const payload = r?.data ?? r;
-        const types = payload.tool_types || (type === 'annale' ? ['annale'] : [])
-        if (types.length) setActiveTab(types[0])
-        else setActiveTab('chat')
-        if (payload.qa_history) setChatHistory(payload.qa_history)
+        setSession(payload);
+        const isAnnaleSession = type === 'annale' || payload.mode !== undefined || payload.sections !== undefined;
+        const types = payload.tool_types || (isAnnaleSession ? ['annale'] : ['fiche']);
+        if (types.length) setActiveTab(types[0]);
+        else setActiveTab(isAnnaleSession ? 'annale' : 'fiche');
+        if (payload.qa_history) setChatHistory(payload.qa_history);
       })
-      .catch(() => navigate('/dashboard'))
-      .finally(() => setLoading(false))
-  }, [id, type, navigate])
+      .catch(async () => {
+        try {
+          const fallbackFn = type === 'annale' ? getSession : getAnnale;
+          const r = await fallbackFn(id);
+          const payload = r?.data ?? r;
+          setSession(payload);
+          const isAnnaleSession = type === 'annale' || payload.mode !== undefined || payload.sections !== undefined;
+          const types = payload.tool_types || (isAnnaleSession ? ['annale'] : ['fiche']);
+          if (types.length) setActiveTab(types[0]);
+          else setActiveTab(isAnnaleSession ? 'annale' : 'fiche');
+          if (payload.qa_history) setChatHistory(payload.qa_history);
+        } catch {
+          navigate('/dashboard');
+        }
+      })
+      .finally(() => setLoading(false));
+  }, [id, type, navigate]);
 
   if (loading) return (
     <div className="p-8 max-w-4xl mx-auto flex flex-col gap-4">
@@ -146,8 +161,25 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
 
   if (!session) return null
 
-  const toolTypes: string[] = session.tool_types || (type === 'annale' ? ['annale'] : [])
+  const isAnnale = type === 'annale' || session.mode !== undefined || session.sections !== undefined
+  const STUDY_TOOLS: ToolType[] = ['fiche', 'quiz', 'flashcards', 'mindmap', 'audio']
+  const TOOL_LABELS: Record<string, string> = {
+    fiche: 'Fiche',
+    quiz: 'Quiz',
+    flashcards: 'Flashcards',
+    mindmap: 'Carte mentale',
+    audio: 'Résumé audio',
+    annale: 'Annale',
+  }
+  const tabList = isAnnale ? ['annale'] : STUDY_TOOLS
   const content = session.content || {}
+
+  const isToolGenerated = (t: string) => {
+    if (t === 'annale') {
+      return Boolean(content && (content.sections || content.corrections || Object.keys(content).length > 0))
+    }
+    return content && content[t] !== undefined
+  }
 
   const handleChatInputChange = (val: string) => {
     setChatMessage(val)
@@ -368,9 +400,10 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
 
     // Bare tool command -> switch tab
     const lower = raw.toLowerCase();
-    if (lower === '@fiche' || lower === '@quiz' || lower === '@flashcards') {
+    if (lower === '@fiche' || lower === '@quiz' || lower === '@flashcards' || lower === '@mindmap' || lower === '@audio') {
       const tool = lower.replace('@', '');
-      if (toolTypes.includes(tool)) {
+      const availableTools = (session?.tool_types as string[]) || (session?.content ? Object.keys(session.content) : []);
+      if (availableTools.includes(tool)) {
         setActiveTab(tool);
         setChatMessage('');
         return;
@@ -683,8 +716,8 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
 
           <div className="flex items-center gap-4">
             <div className="flex gap-1 bg-sphera-bg p-1 rounded-md overflow-x-auto">
-              {(type === 'session' ? ['fiche', 'quiz', 'flashcards'] : ['annale']).map(t => {
-                const isGenerated = content[t] !== undefined;
+              {tabList.map(t => {
+                const isGenerated = isToolGenerated(t);
                 return (
                   <button
                     key={t}
@@ -697,8 +730,8 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
                           : 'text-sphera-text-muted/50 hover:text-sphera-text-muted/90'
                     }`}
                   >
-                    {t.charAt(0).toUpperCase() + t.slice(1)}
-                    {!isGenerated && type === 'session' && (
+                    {TOOL_LABELS[t] || (t.charAt(0).toUpperCase() + t.slice(1))}
+                    {!isGenerated && !isAnnale && (
                       <span className="text-[9px] bg-sphera-surface-2 px-1.5 rounded-full border border-sphera-border text-sphera-text-muted">+</span>
                     )}
                   </button>
@@ -739,16 +772,16 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
           onTouchEnd={handleWorkspaceSelection}
         >
           <div className="p-4 sm:p-6 md:p-8 max-w-3xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500 pb-6">
-            {activeTab !== 'chat' && content[activeTab] === undefined ? (
+            {activeTab !== 'chat' && !isToolGenerated(activeTab) ? (
               <div className="p-8 text-center bg-sphera-surface-2 rounded-2xl border border-sphera-border">
                 <p className="text-sphera-text-muted mb-4">Cet outil n'a pas encore été généré pour ce cours.</p>
                 <button
-                  onClick={() => handleAddTool(activeTab as any)}
+                  onClick={() => handleAddTool(activeTab as ToolType)}
                   disabled={isGeneratingTool}
                   className="sphera-primary-btn py-2 px-4 text-xs inline-flex items-center gap-2"
                 >
                   {isGeneratingTool ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                  <span>Générer {activeTab}</span>
+                  <span>Générer {TOOL_LABELS[activeTab] || activeTab}</span>
                 </button>
                 {toolError && <p className="text-red-400 text-sm mt-4 bg-red-500/10 p-3 rounded-lg border border-red-500/20">{toolError}</p>}
               </div>
@@ -757,6 +790,8 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
                 {activeTab === 'fiche' && <FicheView content={content.fiche} />}
                 {activeTab === 'quiz' && <QuizView content={content.quiz} />}
                 {activeTab === 'flashcards' && <FlashcardsView content={content.flashcards} />}
+                {activeTab === 'mindmap' && <MindmapView content={content.mindmap || content} />}
+                {activeTab === 'audio' && <AudioSummaryView content={content.audio || content} />}
                 {activeTab === 'annale' && <AnnaleView annale={session} />}
               </>
             )}
