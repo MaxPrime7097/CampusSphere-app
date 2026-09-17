@@ -84,6 +84,7 @@ async function findRelation(a: number, b: number): Promise<ConnectionWithUsers |
 async function createConnectionRequest(req: Request, res: Response, targetId: number): Promise<void> {
   const me = currentUser(req);
 
+  if (!Number.isInteger(targetId) || targetId <= 0) throw notFound("User not found.");
   if (targetId === me.id) throw badRequest("Cannot connect to yourself.");
 
   const target = await prisma.user.findUnique({ where: { id: targetId }, select: { id: true } });
@@ -96,18 +97,29 @@ async function createConnectionRequest(req: Request, res: Response, targetId: nu
     return;
   }
 
-  const connection = await prisma.connection.create({
-    data: { requesterId: me.id, recipientId: targetId, status: "PENDING" },
-    include: { requester: { select: userSelect }, recipient: { select: userSelect } },
-  });
+  try {
+    const connection = await prisma.connection.create({
+      data: { requesterId: me.id, recipientId: targetId, status: "PENDING" },
+      include: { requester: { select: userSelect }, recipient: { select: userSelect } },
+    });
 
-  await notifyConnectionRequested(
-    { id: me.id, username: me.username, firstName: connection.requester.firstName, lastName: connection.requester.lastName, avatar: connection.requester.avatar },
-    targetId,
-    connection.id,
-  );
+    await notifyConnectionRequested(
+      { id: me.id, username: me.username, firstName: connection.requester.firstName, lastName: connection.requester.lastName, avatar: connection.requester.avatar },
+      targetId,
+      connection.id,
+    );
 
-  created(res, serializeConnection(connection, me.id), "Connection created successfully.");
+    created(res, serializeConnection(connection, me.id), "Connection created successfully.");
+  } catch (err: any) {
+    if (err?.code === "P2002") {
+      const concurrent = await findRelation(me.id, targetId);
+      if (concurrent) {
+        ok(res, serializeConnection(concurrent, me.id), "Connection already exists.");
+        return;
+      }
+    }
+    throw err;
+  }
 }
 
 export const usersRouter: Router = Router();
@@ -654,6 +666,7 @@ usersRouter.post("/blocks/", requireAuth, async (req, res) => {
 
 usersRouter.delete("/blocks/:id/", requireAuth, async (req, res) => {
   const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) throw notFound("Block not found.");
   const block = await prisma.userBlock.findFirst({ where: { id, blockerId: currentUser(req).id } });
   if (!block) throw notFound("Block not found.");
 
@@ -801,6 +814,7 @@ usersRouter.delete("/admin/contact-messages/:id/", requireAuth, requireAdmin, as
 
 usersRouter.get("/:id/connections/", requireAuth, async (req, res) => {
   const targetId = Number(req.params.id);
+  if (!Number.isInteger(targetId) || targetId <= 0) throw notFound("User not found.");
   const me = currentUser(req);
 
   if (targetId !== me.id && env.connectionListVisibility !== "public_profile") {
@@ -825,6 +839,7 @@ usersRouter.post("/:id/connections/", requireAuth, async (req, res) => {
 
 usersRouter.delete("/:id/connections/:connectionId/", requireAuth, async (req, res) => {
   const connectionId = Number(req.params.connectionId);
+  if (!Number.isInteger(connectionId) || connectionId <= 0) throw notFound("Connection not found.");
   const me = currentUser(req);
 
   const connection = await prisma.connection.findUnique({ where: { id: connectionId } });
@@ -839,6 +854,7 @@ usersRouter.delete("/:id/connections/:connectionId/", requireAuth, async (req, r
 
 usersRouter.get("/:id/connection-relation/", requireAuth, async (req, res) => {
   const targetId = Number(req.params.id);
+  if (!Number.isInteger(targetId) || targetId <= 0) throw notFound("User not found.");
   const me = currentUser(req);
 
   if (targetId === me.id) {
@@ -877,6 +893,7 @@ usersRouter.post("/:id/connection-relation/", requireAuth, async (req, res) => {
 
 usersRouter.patch("/:id/connection-relation/", requireAuth, async (req, res) => {
   const targetId = Number(req.params.id);
+  if (!Number.isInteger(targetId) || targetId <= 0) throw notFound("User not found.");
   const me = currentUser(req);
 
   const connection = await findRelation(me.id, targetId);
@@ -901,6 +918,7 @@ usersRouter.patch("/:id/connection-relation/", requireAuth, async (req, res) => 
 
 usersRouter.delete("/:id/connection-relation/", requireAuth, async (req, res) => {
   const targetId = Number(req.params.id);
+  if (!Number.isInteger(targetId) || targetId <= 0) throw notFound("User not found.");
   const me = currentUser(req);
 
   if (targetId === me.id) throw badRequest("Cannot disconnect from yourself.");

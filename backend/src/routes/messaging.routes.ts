@@ -338,8 +338,11 @@ function canModerateMessage(
 
 messagingRouter.patch("/:id/messages/:messageId/", async (req, res) => {
   const { conversation, me } = await loadConversation(req);
+  const messageId = Number(req.params.messageId);
+  if (!Number.isInteger(messageId) || messageId <= 0) throw notFound("Message not found.");
+
   const message = await prisma.message.findFirst({
-    where: { id: Number(req.params.messageId), conversationId: conversation.id },
+    where: { id: messageId, conversationId: conversation.id },
   });
   if (!message) throw notFound("Message not found.");
   if (!canModerateMessage(message, conversation, me)) throw forbidden("You cannot modify this message.");
@@ -358,8 +361,11 @@ messagingRouter.patch("/:id/messages/:messageId/", async (req, res) => {
 
 messagingRouter.delete("/:id/messages/:messageId/", async (req, res) => {
   const { conversation, me } = await loadConversation(req);
+  const messageId = Number(req.params.messageId);
+  if (!Number.isInteger(messageId) || messageId <= 0) throw notFound("Message not found.");
+
   const message = await prisma.message.findFirst({
-    where: { id: Number(req.params.messageId), conversationId: conversation.id },
+    where: { id: messageId, conversationId: conversation.id },
   });
   if (!message) throw notFound("Message not found.");
   if (!canModerateMessage(message, conversation, me)) throw forbidden("You cannot delete this message.");

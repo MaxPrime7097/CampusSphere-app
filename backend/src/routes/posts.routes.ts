@@ -18,6 +18,7 @@ import { prisma } from "../lib/prisma.js";
 import { postInclude, commentInclude, serializeComment, serializePost } from "../serializers/post.js";
 import { ok, created, list, paginate, paginationParams } from "../lib/envelope.js";
 import { badRequest, forbidden, notFound } from "../lib/errors.js";
+import { resolveSphereId } from "../lib/sphereLookup.js";
 import { currentUser, requireAuth } from "../middleware/auth.js";
 import { adjustPostImpact, applyImpactDelta, applyImpactEvent } from "../services/impact.js";
 import { createNotification } from "../services/notifications.js";
@@ -240,7 +241,7 @@ postsRouter.get("/saved/", requireAuth, async (req, res) => {
 
 postsRouter.get("/sphere/:sphereId/", requireAuth, async (req, res) => {
   const me = currentUser(req);
-  const sphereId = Number(req.params.sphereId);
+  const sphereId = await resolveSphereId(req.params.sphereId);
 
   const membership = await prisma.sphereMember.findFirst({
     where: { sphereId, userId: me.id, status: "ACTIVE" },
@@ -279,6 +280,7 @@ postsRouter.get("/sphere/:sphereId/", requireAuth, async (req, res) => {
 postsRouter.get("/user/:userId/", requireAuth, async (req, res) => {
   const me = currentUser(req);
   const userId = Number(req.params.userId);
+  if (!Number.isInteger(userId) || userId <= 0) throw notFound("User not found.");
   const { page, pageSize, skip } = paginationParams(req.query as Record<string, unknown>);
 
   const where: Prisma.PostWhereInput = { AND: [{ authorId: userId }, await visibleToUser(me.id)] };
@@ -306,10 +308,16 @@ postsRouter.get("/user/:userId/", requireAuth, async (req, res) => {
 
 // ── Comment detail (before /:id/ so `comments` is not read as an id) ────────
 
+function commentIdOf(req: Request): number {
+  const id = Number(req.params.commentId);
+  if (!Number.isInteger(id) || id <= 0) throw notFound("Comment not found.");
+  return id;
+}
+
 postsRouter.get("/comments/:commentId/", requireAuth, async (req, res) => {
   const me = currentUser(req);
   const comment = await prisma.comment.findUnique({
-    where: { id: Number(req.params.commentId) },
+    where: { id: commentIdOf(req) },
     include: commentInclude,
   });
   if (!comment) throw notFound("Comment not found.");
@@ -322,7 +330,7 @@ const commentUpdateSchema = z.object({ content: z.string().min(1) });
 
 async function updateComment(req: Request, res: import("express").Response) {
   const me = currentUser(req);
-  const comment = await prisma.comment.findUnique({ where: { id: Number(req.params.commentId) } });
+  const comment = await prisma.comment.findUnique({ where: { id: commentIdOf(req) } });
   if (!comment) throw notFound("Comment not found.");
   if (comment.authorId !== me.id) throw forbidden("You can only edit your own comments.");
 
@@ -340,7 +348,7 @@ postsRouter.patch("/comments/:commentId/", requireAuth, updateComment);
 
 postsRouter.delete("/comments/:commentId/", requireAuth, async (req, res) => {
   const me = currentUser(req);
-  const comment = await prisma.comment.findUnique({ where: { id: Number(req.params.commentId) } });
+  const comment = await prisma.comment.findUnique({ where: { id: commentIdOf(req) } });
   if (!comment) throw notFound("Comment not found.");
   if (comment.authorId !== me.id) throw forbidden("You can only delete your own comments.");
 
@@ -356,7 +364,7 @@ postsRouter.delete("/comments/:commentId/", requireAuth, async (req, res) => {
 
 postsRouter.post("/comments/:commentId/like/", requireAuth, async (req, res) => {
   const me = currentUser(req);
-  const commentId = Number(req.params.commentId);
+  const commentId = commentIdOf(req);
 
   const comment = await prisma.comment.findUnique({ where: { id: commentId } });
   if (!comment) throw notFound("Comment not found.");
@@ -366,20 +374,33 @@ postsRouter.post("/comments/:commentId/like/", requireAuth, async (req, res) => 
     where: { commentId_userId: { commentId, userId: me.id } },
   });
 
+  let liked = !existing;
   if (existing) {
-    await prisma.$transaction([
-      prisma.commentLike.delete({ where: { commentId_userId: { commentId, userId: me.id } } }),
-      prisma.comment.update({ where: { id: commentId }, data: { likesCount: { decrement: 1 } } }),
-    ]);
+    try {
+      await prisma.$transaction([
+        prisma.commentLike.delete({ where: { commentId_userId: { commentId, userId: me.id } } }),
+        prisma.comment.update({ where: { id: commentId }, data: { likesCount: { decrement: 1 } } }),
+      ]);
+      liked = false;
+    } catch (error: any) {
+      if (error?.code === "P2025") liked = false;
+      else throw error;
+    }
   } else {
-    await prisma.$transaction([
-      prisma.commentLike.create({ data: { commentId, userId: me.id } }),
-      prisma.comment.update({ where: { id: commentId }, data: { likesCount: { increment: 1 } } }),
-    ]);
+    try {
+      await prisma.$transaction([
+        prisma.commentLike.create({ data: { commentId, userId: me.id } }),
+        prisma.comment.update({ where: { id: commentId }, data: { likesCount: { increment: 1 } } }),
+      ]);
+      liked = true;
+    } catch (error: any) {
+      if (error?.code === "P2002") liked = true;
+      else throw error;
+    }
   }
 
   const fresh = await prisma.comment.findUniqueOrThrow({ where: { id: commentId }, select: { likesCount: true } });
-  ok(res, { liked: !existing, likesCount: fresh.likesCount });
+  ok(res, { liked, likesCount: Math.max(0, fresh.likesCount) });
 });
 
 // ── Post detail ─────────────────────────────────────────────────────────────
@@ -456,33 +477,46 @@ postsRouter.post("/:id/like/", requireAuth, async (req, res) => {
     where: { postId_userId: { postId: post.id, userId: me.id } },
   });
 
+  let liked = !existing;
   if (existing) {
-    await prisma.$transaction([
-      prisma.postLike.delete({ where: { postId_userId: { postId: post.id, userId: me.id } } }),
-      prisma.post.update({ where: { id: post.id }, data: { likesCount: { decrement: 1 } } }),
-    ]);
+    try {
+      await prisma.$transaction([
+        prisma.postLike.delete({ where: { postId_userId: { postId: post.id, userId: me.id } } }),
+        prisma.post.update({ where: { id: post.id }, data: { likesCount: { decrement: 1 } } }),
+      ]);
+      liked = false;
+    } catch (error: any) {
+      if (error?.code === "P2025") liked = false;
+      else throw error;
+    }
   } else {
-    await prisma.$transaction([
-      prisma.postLike.create({ data: { postId: post.id, userId: me.id } }),
-      prisma.post.update({ where: { id: post.id }, data: { likesCount: { increment: 1 } } }),
-    ]);
+    try {
+      await prisma.$transaction([
+        prisma.postLike.create({ data: { postId: post.id, userId: me.id } }),
+        prisma.post.update({ where: { id: post.id }, data: { likesCount: { increment: 1 } } }),
+      ]);
+      liked = true;
 
-    const liker = await prisma.user.findUniqueOrThrow({
-      where: { id: me.id },
-      select: { id: true, username: true, firstName: true, lastName: true, avatar: true },
-    });
-    await createNotification({
-      type: NotificationType.POST_LIKE,
-      title: "Nouveau like sur votre post",
-      message: `${liker.firstName} ${liker.lastName}`.trim() + " a aimé votre post",
-      recipientId: post.authorId,
-      sender: liker,
-      data: { post_id: String(post.id) },
-    });
+      const liker = await prisma.user.findUniqueOrThrow({
+        where: { id: me.id },
+        select: { id: true, username: true, firstName: true, lastName: true, avatar: true },
+      });
+      await createNotification({
+        type: NotificationType.POST_LIKE,
+        title: "Nouveau like sur votre post",
+        message: `${liker.firstName} ${liker.lastName}`.trim() + " a aimé votre post",
+        recipientId: post.authorId,
+        sender: liker,
+        data: { post_id: String(post.id) },
+      });
+    } catch (error: any) {
+      if (error?.code === "P2002") liked = true;
+      else throw error;
+    }
   }
 
   const fresh = await prisma.post.findUniqueOrThrow({ where: { id: post.id }, select: { likesCount: true } });
-  ok(res, { liked: !existing, likesCount: fresh.likesCount });
+  ok(res, { liked, likesCount: Math.max(0, fresh.likesCount) });
 });
 
 postsRouter.post("/:id/save/", requireAuth, async (req, res) => {
@@ -493,10 +527,26 @@ postsRouter.post("/:id/save/", requireAuth, async (req, res) => {
     where: { postId_userId: { postId: post.id, userId: me.id } },
   });
 
-  if (existing) await prisma.postSave.delete({ where: { postId_userId: { postId: post.id, userId: me.id } } });
-  else await prisma.postSave.create({ data: { postId: post.id, userId: me.id } });
+  let saved = !existing;
+  if (existing) {
+    try {
+      await prisma.postSave.delete({ where: { postId_userId: { postId: post.id, userId: me.id } } });
+      saved = false;
+    } catch (error: any) {
+      if (error?.code === "P2025") saved = false;
+      else throw error;
+    }
+  } else {
+    try {
+      await prisma.postSave.create({ data: { postId: post.id, userId: me.id } });
+      saved = true;
+    } catch (error: any) {
+      if (error?.code === "P2002") saved = true;
+      else throw error;
+    }
+  }
 
-  ok(res, { saved: !existing });
+  ok(res, { saved });
 });
 
 const reportSchema = z.object({
