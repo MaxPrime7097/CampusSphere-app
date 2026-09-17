@@ -32,7 +32,7 @@ import { keyFromUrl, storage } from "../services/storage.js";
 import { extractText, SUPPORTED_EXTENSIONS } from "../services/extraction.js";
 import { checkGenerationQuota, incrementGenerationQuota, WEEKLY_LIMIT } from "../middleware/generationQuota.js";
 import { getWeekStartDate } from "../lib/weekHelper.js";
-import { synthesizeSpeech, type DialogueTurn } from "../services/ttsProvider.js";
+import { synthesizeSpeech, sanitizeDialogueTurns, type DialogueTurn } from "../services/ttsProvider.js";
 import {
   generateAnnale,
   generateFromSelection,
@@ -199,8 +199,9 @@ async function processToolContent(text: string, tool: ToolType, userId?: number)
   if (tool === "audio") {
     const audioData = result as { titre?: string; dialogue?: DialogueTurn[] };
     if (Array.isArray(audioData.dialogue) && audioData.dialogue.length > 0) {
+      const cleanDialogue = sanitizeDialogueTurns(audioData.dialogue);
       try {
-        const { buffer: audioBuffer, provider } = await synthesizeSpeech(audioData.dialogue, "fr");
+        const { buffer: audioBuffer, provider, lang } = await synthesizeSpeech(cleanDialogue);
         if (audioBuffer) {
           const stored = await storage.put({
             buffer: audioBuffer,
@@ -210,14 +211,20 @@ async function processToolContent(text: string, tool: ToolType, userId?: number)
           });
           return {
             ...audioData,
+            dialogue: cleanDialogue,
             audioUrl: stored.url,
             audioKey: stored.key,
             ttsProvider: provider,
+            lang,
           };
         }
       } catch (err) {
         console.warn("[sphera] dialogue synthesis failed, returning dialogue script only:", err);
       }
+      return {
+        ...audioData,
+        dialogue: cleanDialogue,
+      };
     }
   }
   return result;
