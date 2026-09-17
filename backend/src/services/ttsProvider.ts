@@ -26,6 +26,131 @@ export interface AudioToolContent {
   audioUrl?: string;
   audioKey?: string;
   ttsProvider?: string;
+  lang?: string;
+}
+
+// ─── Text Cleaning & Language Detection ─────────────────────────────────────
+
+/**
+ * Strips speaker labels/prefixes (e.g. "Étudiant 1 :", "Speaker A:", "A :")
+ * from dialogue turns so TTS engines do not read them out loud.
+ */
+export function cleanSpokenText(text: string): string {
+  if (!text) return "";
+  return text
+    .replace(/^(?:(?:étudiant|etudiant|student|speaker|locuteur)\s*[ab12]\s*[:\-–—]\s*)/i, "")
+    .replace(/^[AB12]\s*[:\-–—]\s*/i, "")
+    .trim();
+}
+
+/**
+ * Detects whether the dialogue is primarily French or English based on common stop words.
+ */
+export function detectLanguage(text: string): "fr" | "en" {
+  if (!text) return "fr";
+  const sample = text.toLowerCase();
+  const frenchWords = [
+    " le ", " la ", " les ", " un ", " une ", " des ", " et ", " est ",
+    " pour ", " dans ", " avec ", " qui ", " que ", " ce ", " cette ", " mais ",
+    " donc ", " nous ", " vous ", " c'est ", " d'un ", " d'une ",
+  ];
+  const englishWords = [
+    " the ", " is ", " are ", " and ", " to ", " in ", " with ", " for ",
+    " that ", " this ", " which ", " of ", " you ", " but ", " so ", " we ",
+    " have ", " what ", " how ", " it's ", " there ",
+  ];
+
+  let frScore = 0;
+  let enScore = 0;
+  for (const w of frenchWords) {
+    if (sample.includes(w)) frScore++;
+  }
+  for (const w of englishWords) {
+    if (sample.includes(w)) enScore++;
+  }
+  return enScore > frScore ? "en" : "fr";
+}
+
+/**
+ * Normalizes a speaker identifier into "A" or "B".
+ * Robust against "Étudiant A", "Student B", "locuteur 2", numbers, etc.
+ * Falls back to alternating index if ambiguous.
+ */
+export function normalizeSpeaker(rawSpeaker: unknown, index: number = 0): "A" | "B" {
+  if (typeof rawSpeaker === "number") {
+    if (rawSpeaker === 2) return "B";
+    if (rawSpeaker === 1) return "A";
+  }
+
+  const s = String(rawSpeaker || "").trim().toLowerCase();
+  if (!s) {
+    return index % 2 === 0 ? "A" : "B";
+  }
+
+  if (s === "b" || s === "2") return "B";
+  if (s === "a" || s === "1") return "A";
+
+  if (
+    /\b[b2]\b/i.test(s) ||
+    s.includes("étudiant b") ||
+    s.includes("etudiant b") ||
+    s.includes("student b") ||
+    s.includes("speaker b") ||
+    s.includes("étudiant 2") ||
+    s.includes("etudiant 2") ||
+    s.includes("student 2") ||
+    s.includes("speaker 2") ||
+    s.includes("curieux") ||
+    s.includes("interrog") ||
+    s.endsWith("b") ||
+    s.endsWith("2")
+  ) {
+    return "B";
+  }
+
+  if (
+    /\b[a1]\b/i.test(s) ||
+    s.includes("étudiant a") ||
+    s.includes("etudiant a") ||
+    s.includes("student a") ||
+    s.includes("speaker a") ||
+    s.includes("étudiant 1") ||
+    s.includes("etudiant 1") ||
+    s.includes("student 1") ||
+    s.includes("speaker 1") ||
+    s.includes("explicateur") ||
+    s.includes("tuteur") ||
+    s.endsWith("a") ||
+    s.endsWith("1")
+  ) {
+    return "A";
+  }
+
+  return index % 2 === 0 ? "A" : "B";
+}
+
+/**
+ * Cleans all turns in a dialogue script to guarantee no speaker prefixes survive
+ * and ensures both speakers alternate.
+ */
+export function sanitizeDialogueTurns(dialogue: DialogueTurn[]): DialogueTurn[] {
+  const mapped = dialogue.map((turn, idx) => ({
+    speaker: normalizeSpeaker(turn.speaker, idx),
+    text: cleanSpokenText(turn.text || ""),
+  }));
+
+  // Safeguard: If the LLM returned only one speaker for all turns (e.g. all A or all B),
+  // enforce strict alternation so that BOTH students speak in the podcast!
+  const hasA = mapped.some((t) => t.speaker === "A");
+  const hasB = mapped.some((t) => t.speaker === "B");
+  if (!hasA || !hasB) {
+    return mapped.map((turn, idx) => ({
+      speaker: (idx % 2 === 0 ? "A" : "B") as "A" | "B",
+      text: turn.text,
+    }));
+  }
+
+  return mapped;
 }
 
 // ─── XML / SSML Escaping ───────────────────────────────────────────────────
@@ -42,7 +167,7 @@ export function escapeXml(unsafe: string): string {
 // ─── Amazon Polly Provider ──────────────────────────────────────────────────
 
 const POLLY_VOICES: Record<string, { A: VoiceId; B: VoiceId }> = {
-  fr: { A: "Mathieu", B: "Lea" },
+  fr: { A: "Remi", B: "Lea" },
   en: { A: "Matthew", B: "Joanna" },
 };
 
@@ -80,7 +205,7 @@ async function synthesizePollySegment(
   text: string,
   voiceId: VoiceId,
 ): Promise<Buffer> {
-  const safeText = escapeXml(text);
+  const safeText = escapeXml(cleanSpokenText(text));
   const ssml = `<speak>${safeText}<break time="400ms"/></speak>`;
 
   // Try neural engine first for high quality, fallback to standard if unavailable
@@ -141,9 +266,10 @@ export async function synthesizeWithPolly(
 
   try {
     const segmentBuffers: Buffer[] = [];
-    for (const turn of dialogue) {
-      const speakerKey = turn.speaker?.toUpperCase() === "B" ? "B" : "A";
-      const voiceId = voices[speakerKey] || voices.A;
+    for (let i = 0; i < dialogue.length; i++) {
+      const turn = dialogue[i];
+      const speakerKey = normalizeSpeaker(turn.speaker, i);
+      const voiceId = voices[speakerKey] || (i % 2 === 0 ? voices.A : voices.B);
       const turnBuffer = await synthesizePollySegment(client, turn.text || "", voiceId);
       segmentBuffers.push(turnBuffer);
     }
@@ -168,10 +294,10 @@ export function buildSSML(dialogue: DialogueTurn[], lang: string = "fr"): string
   const xmlLang = normalizedLang === "en" ? "en-US" : "fr-FR";
 
   const turns = dialogue
-    .map((turn) => {
-      const speakerKey = turn.speaker?.toUpperCase() === "B" ? "B" : "A";
-      const voiceName = voices[speakerKey] || voices.A;
-      const safeText = escapeXml(turn.text || "");
+    .map((turn, i) => {
+      const speakerKey = normalizeSpeaker(turn.speaker, i);
+      const voiceName = voices[speakerKey] || (i % 2 === 0 ? voices.A : voices.B);
+      const safeText = escapeXml(cleanSpokenText(turn.text || ""));
       return `<voice name="${voiceName}"><mstts:express-as style="chat">${safeText}</mstts:express-as></voice><break time="400ms"/>`;
     })
     .join("\n");
@@ -243,28 +369,32 @@ export async function synthesizeWithAzure(
 /**
  * Synthesizes speech dialogue using the configured TTS provider (Polly or Azure).
  * Defaults to Amazon Polly while Azure account is being resolved.
+ * Automatically detects language if not explicitly provided.
  */
 export async function synthesizeSpeech(
   dialogue: DialogueTurn[],
-  lang: string = "fr",
-): Promise<{ buffer: Buffer | null; provider: "polly" | "azure" }> {
+  lang?: string,
+): Promise<{ buffer: Buffer | null; provider: "polly" | "azure"; lang: string }> {
+  const fullText = dialogue.map((d) => d.text).join(" ");
+  const detected = detectLanguage(fullText);
+  const effectiveLang = lang && lang.trim().length > 0 ? (lang.toLowerCase().startsWith("en") ? "en" : "fr") : detected;
   const preferredProvider = env.ai.tts.provider || "polly";
 
   if (preferredProvider === "azure") {
-    const azureResult = await synthesizeWithAzure(dialogue, lang);
-    if (azureResult) return { buffer: azureResult, provider: "azure" };
+    const azureResult = await synthesizeWithAzure(dialogue, effectiveLang);
+    if (azureResult) return { buffer: azureResult, provider: "azure", lang: effectiveLang };
 
     // Fallback to Polly if Azure fails
     console.warn("[sphera-tts] Azure Speech failed or unconfigured, falling back to Amazon Polly.");
-    const pollyResult = await synthesizeWithPolly(dialogue, lang);
-    return { buffer: pollyResult, provider: "polly" };
+    const pollyResult = await synthesizeWithPolly(dialogue, effectiveLang);
+    return { buffer: pollyResult, provider: "polly", lang: effectiveLang };
   } else {
-    const pollyResult = await synthesizeWithPolly(dialogue, lang);
-    if (pollyResult) return { buffer: pollyResult, provider: "polly" };
+    const pollyResult = await synthesizeWithPolly(dialogue, effectiveLang);
+    if (pollyResult) return { buffer: pollyResult, provider: "polly", lang: effectiveLang };
 
     // Fallback to Azure if Polly fails
     console.warn("[sphera-tts] Amazon Polly failed or unconfigured, attempting Azure Speech.");
-    const azureResult = await synthesizeWithAzure(dialogue, lang);
-    return { buffer: azureResult, provider: "azure" };
+    const azureResult = await synthesizeWithAzure(dialogue, effectiveLang);
+    return { buffer: azureResult, provider: "azure", lang: effectiveLang };
   }
 }

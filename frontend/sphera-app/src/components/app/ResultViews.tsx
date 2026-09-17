@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { FileText, BrainCircuit, List, CheckCircle2, HelpCircle, CircleSmall, Lightbulb, ChevronDown, ChevronRight, Timer, Trophy, XCircle, RotateCcw, RefreshCcw, Code2, Calculator, AlignLeft, Target, BookOpen, BookMarked, Award, Layers, Zap, GitFork, AudioLines, Play, Pause, Volume2, Download } from 'lucide-react'
 import DownloadPDFButton from '../shared/DownloadPDFButton'
 import { useDownloadPDF } from '../../hooks/useDownloadPDF'
@@ -1098,17 +1098,86 @@ export function MindmapView({ content }: { content: any }) {
   );
 }
 
+function cleanSpokenText(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/^(?:(?:étudiant|etudiant|student|speaker|locuteur)\s*[ab12]\s*[:\-–—]\s*)/i, '')
+    .replace(/^[AB12]\s*[:\-–—]\s*/i, '')
+    .trim();
+}
+
+function normalizeSpeaker(rawSpeaker: unknown, index: number = 0): 'A' | 'B' {
+  if (typeof rawSpeaker === 'number') {
+    return rawSpeaker === 2 ? 'B' : 'A';
+  }
+  const s = String(rawSpeaker || '').trim().toLowerCase();
+  if (!s) return index % 2 === 0 ? 'A' : 'B';
+  if (s === 'b' || s === '2') return 'B';
+  if (s === 'a' || s === '1') return 'A';
+  if (
+    /\b[b2]\b/i.test(s) ||
+    s.includes('étudiant b') ||
+    s.includes('etudiant b') ||
+    s.includes('student b') ||
+    s.includes('speaker b') ||
+    s.includes('curieux') ||
+    s.includes('interrog') ||
+    s.endsWith('b') ||
+    s.endsWith('2')
+  ) {
+    return 'B';
+  }
+  if (
+    /\b[a1]\b/i.test(s) ||
+    s.includes('étudiant a') ||
+    s.includes('etudiant a') ||
+    s.includes('student a') ||
+    s.includes('speaker a') ||
+    s.includes('explicateur') ||
+    s.includes('tuteur') ||
+    s.endsWith('a') ||
+    s.endsWith('1')
+  ) {
+    return 'A';
+  }
+  return index % 2 === 0 ? 'A' : 'B';
+}
+
 export function AudioSummaryView({ content }: { content: any }) {
   const audioData = content?.audio || content || {};
   const dialogue: Array<{ speaker: string; text: string }> = Array.isArray(audioData?.dialogue) ? audioData.dialogue : [];
   const audioUrl: string | undefined = audioData?.audioUrl;
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  const normalizedDialogue = useMemo(() => {
+    const raw = dialogue.map((turn, idx) => ({
+      ...turn,
+      speaker: normalizeSpeaker(turn.speaker, idx),
+    }));
+    const hasA = raw.some((t) => t.speaker === 'A');
+    const hasB = raw.some((t) => t.speaker === 'B');
+    if (!hasA || !hasB) {
+      return raw.map((t, idx) => ({
+        ...t,
+        speaker: (idx % 2 === 0 ? 'A' : 'B') as 'A' | 'B',
+      }));
+    }
+    return raw;
+  }, [dialogue]);
+
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isSpeakingWebSpeech, setIsSpeakingWebSpeech] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
 
   const toggleAudioPlay = () => {
     if (!audioRef.current) return;
@@ -1146,23 +1215,48 @@ export function AudioSummaryView({ content }: { content: any }) {
   };
 
   const toggleWebSpeech = () => {
-    if (!window.speechSynthesis) return;
+    if (typeof window === 'undefined' || !window.speechSynthesis) return;
     if (isSpeakingWebSpeech) {
       window.speechSynthesis.cancel();
       setIsSpeakingWebSpeech(false);
       return;
     }
 
-    const fullScript = dialogue.map(d => `${d.speaker === 'A' ? 'Étudiant 1 : ' : 'Étudiant 2 : '} ${d.text}`).join('\n\n');
-    const utterance = new SpeechSynthesisUtterance(fullScript);
-    utterance.lang = 'fr-FR';
-    utterance.rate = playbackSpeed;
-    utterance.onend = () => setIsSpeakingWebSpeech(false);
-    utterance.onerror = () => setIsSpeakingWebSpeech(false);
+    const langCode = audioData?.lang?.toLowerCase().startsWith('en') ? 'en-US' : 'fr-FR';
 
     window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utterance);
+
+    let currentTurnIndex = 0;
+
+    const speakNextTurn = () => {
+      if (!window.speechSynthesis) return;
+      if (currentTurnIndex >= normalizedDialogue.length) {
+        setIsSpeakingWebSpeech(false);
+        return;
+      }
+
+      const turn = normalizedDialogue[currentTurnIndex];
+      const isSpeakerA = turn.speaker === 'A';
+      const cleaned = cleanSpokenText(turn.text);
+
+      const utterance = new SpeechSynthesisUtterance(cleaned);
+      utterance.lang = langCode;
+      utterance.rate = playbackSpeed;
+      utterance.pitch = isSpeakerA ? 1.0 : 1.15;
+
+      utterance.onend = () => {
+        currentTurnIndex++;
+        speakNextTurn();
+      };
+      utterance.onerror = () => {
+        setIsSpeakingWebSpeech(false);
+      };
+
+      window.speechSynthesis.speak(utterance);
+    };
+
     setIsSpeakingWebSpeech(true);
+    speakNextTurn();
   };
 
   return (
@@ -1264,7 +1358,7 @@ export function AudioSummaryView({ content }: { content: any }) {
           <span className="text-xs text-sphera-text-muted">~{Math.max(1, Math.round(dialogue.length * 0.4))} min de discussion</span>
         </div>
 
-        {dialogue.length === 0 ? (
+        {normalizedDialogue.length === 0 ? (
           <div className="p-8 text-center bg-sphera-surface-2 rounded-2xl border border-sphera-border opacity-60">
             <AudioLines className="w-12 h-12 text-sphera-text-muted mx-auto mb-4" />
             <h3 className="text-lg font-medium text-white mb-1">Aucun dialogue audio</h3>
@@ -1273,8 +1367,8 @@ export function AudioSummaryView({ content }: { content: any }) {
             </p>
           </div>
         ) : (
-          dialogue.map((turn, idx) => {
-            const isSpeakerA = turn.speaker === 'A' || turn.speaker === '1';
+          normalizedDialogue.map((turn, idx) => {
+            const isSpeakerA = turn.speaker === 'A';
             return (
               <div
                 key={idx}
@@ -1301,7 +1395,7 @@ export function AudioSummaryView({ content }: { content: any }) {
                     <span className="text-[10px] text-sphera-text-muted font-mono">#{idx + 1}</span>
                   </div>
                   <div className="text-sm text-white/90 leading-relaxed">
-                    {formatText(turn.text)}
+                    {formatText(cleanSpokenText(turn.text))}
                   </div>
                 </div>
               </div>

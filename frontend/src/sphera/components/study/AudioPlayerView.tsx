@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
   Play,
   Pause,
@@ -24,6 +24,51 @@ function formatTime(seconds: number): string {
   return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
 }
 
+function cleanSpokenText(text: string): string {
+  if (!text) return "";
+  return text
+    .replace(/^(?:(?:étudiant|etudiant|student|speaker|locuteur)\s*[ab12]\s*[:\-–—]\s*)/i, "")
+    .replace(/^[AB12]\s*[:\-–—]\s*/i, "")
+    .trim();
+}
+
+function normalizeSpeaker(rawSpeaker: unknown, index: number = 0): "A" | "B" {
+  if (typeof rawSpeaker === "number") {
+    return rawSpeaker === 2 ? "B" : "A";
+  }
+  const s = String(rawSpeaker || "").trim().toLowerCase();
+  if (!s) return index % 2 === 0 ? "A" : "B";
+  if (s === "b" || s === "2") return "B";
+  if (s === "a" || s === "1") return "A";
+  if (
+    /\b[b2]\b/i.test(s) ||
+    s.includes("étudiant b") ||
+    s.includes("etudiant b") ||
+    s.includes("student b") ||
+    s.includes("speaker b") ||
+    s.includes("curieux") ||
+    s.includes("interrog") ||
+    s.endsWith("b") ||
+    s.endsWith("2")
+  ) {
+    return "B";
+  }
+  if (
+    /\b[a1]\b/i.test(s) ||
+    s.includes("étudiant a") ||
+    s.includes("etudiant a") ||
+    s.includes("student a") ||
+    s.includes("speaker a") ||
+    s.includes("explicateur") ||
+    s.includes("tuteur") ||
+    s.endsWith("a") ||
+    s.endsWith("1")
+  ) {
+    return "A";
+  }
+  return index % 2 === 0 ? "A" : "B";
+}
+
 export const AudioPlayerView: React.FC<AudioPlayerViewProps> = ({ data }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -35,6 +80,22 @@ export const AudioPlayerView: React.FC<AudioPlayerViewProps> = ({ data }) => {
   const audioUrl = data.audioUrl;
   const dialogue: DialogueTurn[] = data.dialogue || [];
   const titre = data.titre || "Résumé audio";
+
+  const normalizedDialogue = useMemo(() => {
+    const raw = dialogue.map((turn, idx) => ({
+      ...turn,
+      speaker: normalizeSpeaker(turn.speaker, idx),
+    }));
+    const hasA = raw.some((t) => t.speaker === "A");
+    const hasB = raw.some((t) => t.speaker === "B");
+    if (!hasA || !hasB) {
+      return raw.map((t, idx) => ({
+        ...t,
+        speaker: (idx % 2 === 0 ? "A" : "B") as "A" | "B",
+      }));
+    }
+    return raw;
+  }, [dialogue]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -208,8 +269,8 @@ export const AudioPlayerView: React.FC<AudioPlayerViewProps> = ({ data }) => {
 
         {showTranscript && (
           <div className="mt-6 pt-6 border-t border-border space-y-4 animate-in fade-in duration-300">
-            {dialogue.map((turn, i) => {
-              const isSpeakerA = turn.speaker?.toUpperCase() === "A";
+            {normalizedDialogue.map((turn, i) => {
+              const isSpeakerA = turn.speaker === "A";
               return (
                 <div
                   key={i}
@@ -231,7 +292,7 @@ export const AudioPlayerView: React.FC<AudioPlayerViewProps> = ({ data }) => {
                     </span>
                   </div>
                   <p className="text-sm sm:text-base text-foreground leading-relaxed">
-                    {turn.text}
+                    {cleanSpokenText(turn.text)}
                   </p>
                 </div>
               );

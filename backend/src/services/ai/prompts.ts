@@ -157,23 +157,34 @@ export const audioDialoguePrompt = (text: string): string =>
   SPHERA_JSON_PERSONA +
   `Generate a 2-person dialogue script in JSON format between two students discussing the course naturally and engagingly, like an educational podcast episode.
 
-RULES:
-- Student A teaches and explains clearly with concrete examples, not just abstract theory.
-- Student B asks relevant questions, seeks clarifications, and rephrases concepts (Student B must ask at least 3 to 4 real questions during the conversation).
-- Conversational, natural tone with short, spoken phrases (no robotic speech, sound like two smart peer students studying together).
-- Balance speaking turns evenly between A and B.
-- Target duration: 4 to 6 minutes of spoken conversation (approx. 600 to 900 words total).
+CRITICAL LANGUAGE RULE:
+- Detect the language of <source_text>.
+- The ENTIRE dialogue (every line spoken by A and B) and the "titre" MUST be written in that EXACT SAME LANGUAGE.
+- If the course is in English, write the dialogue in 100% natural, fluent English.
+- If the course is in French, write in French. If in Spanish, write in Spanish, etc.
+- NEVER generate a French dialogue for an English course.
+
+STRICT SPOKEN TEXT RULES:
+- The "text" field must contain ONLY what the student speaks out loud.
+- NEVER write speaker prefixes or names like "Étudiant A:", "Student A:", "Speaker A:", "A:", "Étudiant 1:", etc. inside the "text" value. The "speaker" field already identifies who speaks.
+CRITICAL TWO-SPEAKER DIALOGUE RULES:
+- This MUST be a true 2-person dialogue strictly alternating between Student A and Student B throughout the whole podcast: A speaks, then B speaks, then A replies, then B asks, etc.
+- NEVER generate a monologue! Both Student A and Student B must speak balanced turns from beginning to end.
+- Student A is the explainer/tutor who teaches key concepts clearly with real-world analogies.
+- Student B is the active peer who asks questions, seeks clarifications, rephrases difficult points, and tests understanding.
+- The "speaker" value must strictly alternate between "A" and "B" (literal single letter "A" or "B"). Do NOT use "Étudiant A" or any other name as the speaker property value.
+- Target duration: 4 to 6 minutes of spoken conversation (approx. 600 to 900 words total across 10 to 16 alternating turns).
 - Conclude with a quick, dynamic recap of the key takeaways to remember for exams.
-- The dialogue speaker must strictly be either "A" or "B".
-- All spoken dialogue text must be in the same language as the source text.
-- JSON keys must remain in French exactly as specified.
+- JSON keys must remain in French exactly as specified below.
 
 Strict JSON format:
 {
-  "titre": "Course Title",
+  "titre": "Course Title in same language as source",
   "dialogue": [
-    { "speaker": "A", "text": "..." },
-    { "speaker": "B", "text": "..." }
+    { "speaker": "A", "text": "First explanation directly without any name or prefix..." },
+    { "speaker": "B", "text": "Curious reaction or question directly without prefix..." },
+    { "speaker": "A", "text": "Follow-up explanation with a concrete example..." },
+    { "speaker": "B", "text": "Synthesis of understanding and next question..." }
   ]
 }
 
