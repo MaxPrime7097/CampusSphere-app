@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { FileText, BrainCircuit, List, CheckCircle2, HelpCircle, CircleSmall, Lightbulb, ChevronDown, ChevronRight, Timer, Trophy, XCircle, RotateCcw, RefreshCcw, Code2, Calculator, AlignLeft, Target, BookOpen, BookMarked, Award, Layers, Zap, GitFork, AudioLines, Play, Pause, Volume2, Download } from 'lucide-react'
+import { FileText, BrainCircuit, List, CheckCircle2, HelpCircle, CircleSmall, Lightbulb, ChevronDown, ChevronRight, Timer, Trophy, XCircle, RotateCcw, RefreshCcw, Code2, Calculator, AlignLeft, Target, BookOpen, BookMarked, Award, Layers, Zap, GitFork, AudioLines, Play, Pause, Volume2, Download, LocateFixed, Sparkles, Maximize2, Minimize2, Network, Eye } from 'lucide-react'
+import ReactFlow, { Background, Controls, type Node, type Edge, type ReactFlowInstance } from 'reactflow'
+import 'reactflow/dist/style.css'
 import DownloadPDFButton from '../shared/DownloadPDFButton'
 import { useDownloadPDF } from '../../hooks/useDownloadPDF'
 
@@ -861,12 +863,41 @@ export function AnnaleView({ annale, sourceName }: { annale: any; sourceName?: s
   );
 }
 
+interface FlowData {
+  nodes: Node[];
+  edges: Edge[];
+}
+
+const MINDMAP_COULEURS: Record<string, { hex: string; bg: string; border: string; glow: string; text: string }> = {
+  vert: { hex: '#10B981', bg: 'rgba(6, 78, 59, 0.45)', border: '#10b981', glow: 'rgba(16, 185, 129, 0.35)', text: '#34d399' },
+  bleu: { hex: '#3B82F6', bg: 'rgba(30, 58, 138, 0.45)', border: '#3b82f6', glow: 'rgba(59, 130, 246, 0.35)', text: '#60a5fa' },
+  orange: { hex: '#F59E0B', bg: 'rgba(120, 53, 15, 0.45)', border: '#f59e0b', glow: 'rgba(245, 158, 11, 0.35)', text: '#fbbf24' },
+  violet: { hex: '#A855F7', bg: 'rgba(88, 28, 135, 0.45)', border: '#a855f7', glow: 'rgba(168, 85, 247, 0.35)', text: '#c084fc' },
+  rose: { hex: '#EC4899', bg: 'rgba(131, 24, 67, 0.45)', border: '#ec4899', glow: 'rgba(236, 72, 153, 0.35)', text: '#f472b6' },
+  cyan: { hex: '#06B6D4', bg: 'rgba(22, 78, 99, 0.45)', border: '#06b6d4', glow: 'rgba(6, 182, 212, 0.35)', text: '#22d3ee' },
+};
+
+function getBranchColor(couleurStr?: string, index: number = 0) {
+  const c = String(couleurStr || '').toLowerCase();
+  if (c.includes('vert') || c === 'green') return MINDMAP_COULEURS.vert;
+  if (c.includes('bleu') || c === 'blue') return MINDMAP_COULEURS.bleu;
+  if (c.includes('orange')) return MINDMAP_COULEURS.orange;
+  if (c.includes('violet') || c === 'purple') return MINDMAP_COULEURS.violet;
+  if (c.includes('rose') || c === 'pink') return MINDMAP_COULEURS.rose;
+  if (c.includes('cyan')) return MINDMAP_COULEURS.cyan;
+  const palette = [MINDMAP_COULEURS.vert, MINDMAP_COULEURS.bleu, MINDMAP_COULEURS.orange, MINDMAP_COULEURS.violet, MINDMAP_COULEURS.rose, MINDMAP_COULEURS.cyan];
+  return palette[index % palette.length];
+}
+
 export function MindmapView({ content }: { content: any }) {
   const mapData = content?.mindmap || content || {};
   const centralNode = mapData?.noeud_central || mapData?.titre || "Concept Central";
   const branches: any[] = Array.isArray(mapData?.branches) ? mapData.branches : [];
+
+  const [viewMode, setViewMode] = useState<'canvas' | 'tree'>('canvas');
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [expandedBranches, setExpandedBranches] = useState<Record<number, boolean>>({});
-  const [viewMode, setViewMode] = useState<'cards' | 'tree'>('tree');
+  const reactFlowInstance = useRef<ReactFlowInstance | null>(null);
 
   const toggleBranch = (idx: number) => {
     setExpandedBranches(prev => ({ ...prev, [idx]: !prev[idx] }));
@@ -882,61 +913,155 @@ export function MindmapView({ content }: { content: any }) {
     setExpandedBranches({});
   };
 
-  const getColorStyles = (colorStr: string) => {
-    const c = (colorStr || '').toLowerCase();
-    if (c.includes('vert') || c === 'green') {
-      return {
-        badge: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
-        border: 'border-emerald-500/40',
-        text: 'text-emerald-400',
-        bg: 'bg-emerald-500/5',
-        dot: 'bg-emerald-400',
-      };
-    }
-    if (c.includes('bleu') || c === 'blue') {
-      return {
-        badge: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-        border: 'border-blue-500/40',
-        text: 'text-blue-400',
-        bg: 'bg-blue-500/5',
-        dot: 'bg-blue-400',
-      };
-    }
-    if (c.includes('orange')) {
-      return {
-        badge: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
-        border: 'border-orange-500/40',
-        text: 'text-orange-400',
-        bg: 'bg-orange-500/5',
-        dot: 'bg-orange-400',
-      };
-    }
-    if (c.includes('violet') || c === 'purple') {
-      return {
-        badge: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-        border: 'border-purple-500/40',
-        text: 'text-purple-400',
-        bg: 'bg-purple-500/5',
-        dot: 'bg-purple-400',
-      };
-    }
-    if (c.includes('rose') || c === 'pink') {
-      return {
-        badge: 'bg-pink-500/20 text-pink-400 border-pink-500/30',
-        border: 'border-pink-500/40',
-        text: 'text-pink-400',
-        bg: 'bg-pink-500/5',
-        dot: 'bg-pink-400',
-      };
-    }
-    return {
-      badge: 'bg-sphera-green/20 text-sphera-green border-sphera-green/30',
-      border: 'border-sphera-green/40',
-      text: 'text-sphera-green',
-      bg: 'bg-sphera-green/5',
-      dot: 'bg-sphera-green',
-    };
+  const handleRecenter = () => {
+    reactFlowInstance.current?.fitView({ padding: 0.2, duration: 400 });
   };
+
+  // Build the radial node-link structure for ReactFlow
+  const { nodes, edges } = useMemo<FlowData>(() => {
+    const nodesList: Node[] = [];
+    const edgesList: Edge[] = [];
+
+    const centerX = 650;
+    const centerY = 450;
+
+    // Central core node
+    nodesList.push({
+      id: 'central',
+      data: {
+        label: (
+          <div className="flex flex-col items-center justify-center p-3 text-center select-none">
+            <div className="flex items-center gap-1.5 mb-1 text-[10px] font-extrabold uppercase tracking-widest text-emerald-400">
+              <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+              <span>Noyau Central</span>
+            </div>
+            <span className="font-extrabold text-sm sm:text-base text-white leading-snug">
+              {centralNode}
+            </span>
+          </div>
+        ),
+      },
+      position: { x: centerX, y: centerY },
+      style: {
+        background: 'rgba(15, 23, 42, 0.95)',
+        border: '2.5px solid #10B981',
+        borderRadius: '18px',
+        boxShadow: '0 0 35px rgba(16, 185, 129, 0.35), inset 0 0 15px rgba(16, 185, 129, 0.15)',
+        color: '#fff',
+        minWidth: 180,
+        maxWidth: 260,
+        zIndex: 10,
+      },
+    });
+
+    const branchCount = branches.length;
+    if (branchCount === 0) return { nodes: nodesList, edges: edgesList };
+
+    // Radial layout around center
+    const radius = Math.max(300, 240 + branchCount * 12);
+    const angleStep = (2 * Math.PI) / branchCount;
+
+    branches.forEach((b: any, i: number) => {
+      const angle = i * angleStep - Math.PI / 2;
+      const bx = centerX + radius * Math.cos(angle);
+      const by = centerY + radius * Math.sin(angle);
+      const branchId = `branch-${i}`;
+      const color = getBranchColor(b.couleur, i);
+
+      const subBranches: any[] = Array.isArray(b.sous_branches) ? b.sous_branches : [];
+      const subCount = subBranches.length;
+
+      nodesList.push({
+        id: branchId,
+        data: {
+          label: (
+            <div className="flex flex-col gap-1 p-2 text-left select-none">
+              <div className="flex items-center gap-2">
+                <span
+                  className="w-2.5 h-2.5 rounded-full shrink-0"
+                  style={{ backgroundColor: color.hex, boxShadow: `0 0 8px ${color.hex}` }}
+                />
+                <span className="font-bold text-xs sm:text-sm text-white leading-tight">
+                  {b.label}
+                </span>
+              </div>
+              {subCount > 0 && (
+                <span className="text-[10px] text-white/50 pl-4 font-mono">
+                  {subCount} sous-concept{subCount > 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+          ),
+        },
+        position: { x: bx, y: by },
+        style: {
+          background: 'rgba(15, 23, 42, 0.92)',
+          border: `2px solid ${color.hex}`,
+          borderRadius: '12px',
+          boxShadow: `0 0 20px ${color.glow}`,
+          color: '#fff',
+          minWidth: 160,
+          maxWidth: 240,
+          zIndex: 5,
+        },
+      });
+
+      edgesList.push({
+        id: `e-central-${branchId}`,
+        source: 'central',
+        target: branchId,
+        type: 'default',
+        animated: true,
+        style: { stroke: color.hex, strokeWidth: 2.5 },
+      });
+
+      // Sub-branches radiating outward
+      if (subCount > 0) {
+        const subRadius = radius + 175;
+        const spreadStep = 0.32;
+
+        subBranches.forEach((sb: any, j: number) => {
+          const subId = `${branchId}-sub-${j}`;
+          const subLabel = typeof sb === 'string' ? sb : (sb.label || sb.nom || sb.texte || JSON.stringify(sb));
+          const subAngle = angle + (j - (subCount - 1) / 2) * spreadStep;
+          const sx = centerX + subRadius * Math.cos(subAngle);
+          const sy = centerY + subRadius * Math.sin(subAngle);
+
+          nodesList.push({
+            id: subId,
+            data: {
+              label: (
+                <div className="p-1 text-xs text-white/90 leading-snug select-none">
+                  {subLabel}
+                </div>
+              ),
+            },
+            position: { x: sx, y: sy },
+            style: {
+              background: 'rgba(30, 41, 59, 0.88)',
+              border: `1.5px solid ${color.hex}99`,
+              borderRadius: '10px',
+              boxShadow: '0 2px 10px rgba(0, 0, 0, 0.5)',
+              color: '#e2e8f0',
+              maxWidth: 190,
+              fontSize: '11px',
+              zIndex: 2,
+            },
+          });
+
+          edgesList.push({
+            id: `e-${branchId}-${subId}`,
+            source: branchId,
+            target: subId,
+            type: 'default',
+            style: { stroke: `${color.hex}88`, strokeWidth: 1.5 },
+          });
+        });
+      }
+    });
+
+    return { nodes: nodesList, edges: edgesList };
+  }, [centralNode, branches]);
 
   const renderSubBranches = (subList: any[], level = 1) => {
     if (!Array.isArray(subList) || subList.length === 0) return null;
@@ -959,88 +1084,177 @@ export function MindmapView({ content }: { content: any }) {
     );
   };
 
+  const totalSubBranches = branches.reduce((acc, b) => acc + (Array.isArray(b.sous_branches) ? b.sous_branches.length : 0), 0);
+
   return (
-    <div className="flex flex-col gap-6">
-      {/* Top Header */}
-      <div className="p-5 rounded-2xl bg-sphera-bg border border-sphera-border">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-sphera-border">
+    <div className={`flex flex-col gap-6 ${isFullscreen ? 'fixed inset-0 z-50 bg-[#070b14] p-4 sm:p-6 overflow-hidden' : ''}`}>
+      {/* Mindmap Toolbar */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-sphera-bg border border-sphera-border shadow-md">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <GitFork className="w-5 h-5 text-emerald-400" />
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">Carte Mentale</span>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-sphera-surface border border-sphera-border text-sphera-text-muted">
-                {branches.length} thèmes
+              <Network className="w-5 h-5 text-emerald-400" />
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">Carte Mentale Interactive</span>
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-sphera-surface border border-sphera-border text-sphera-text-muted">
+                {branches.length} branches · {totalSubBranches} sous-points
               </span>
             </div>
-            {mapData?.titre && <h2 className="text-xl font-bold text-white mt-1">{mapData.titre}</h2>}
+            {mapData?.titre && (
+              <h2 className="text-lg sm:text-xl font-bold text-white mt-1">
+                {mapData.titre}
+              </h2>
+            )}
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={expandAll}
-              className="px-2.5 py-1 text-xs font-medium rounded-lg bg-sphera-surface text-sphera-text-muted hover:text-white border border-sphera-border transition-colors"
-            >
-              Tout déplier
-            </button>
-            <button
-              onClick={collapseAll}
-              className="px-2.5 py-1 text-xs font-medium rounded-lg bg-sphera-surface text-sphera-text-muted hover:text-white border border-sphera-border transition-colors"
-            >
-              Tout replier
-            </button>
-            <div className="h-4 w-px bg-sphera-border mx-1" />
-            <button
-              onClick={() => setViewMode(v => v === 'tree' ? 'cards' : 'tree')}
-              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-sphera-surface-2 text-white border border-sphera-border hover:border-sphera-green/50 transition-colors"
-            >
-              {viewMode === 'tree' ? 'Vue Grille' : 'Vue Arbre'}
-            </button>
-          </div>
-        </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* View switcher */}
+            <div className="flex items-center rounded-lg bg-sphera-surface p-1 border border-sphera-border">
+              <button
+                type="button"
+                onClick={() => setViewMode('canvas')}
+                className={`px-3 py-1 text-xs font-semibold rounded-md flex items-center gap-1.5 transition-colors ${
+                  viewMode === 'canvas'
+                    ? 'bg-emerald-500 text-black shadow'
+                    : 'text-sphera-text-muted hover:text-white'
+                }`}
+              >
+                <Network className="w-3.5 h-3.5" />
+                <span>Carte Visuelle</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('tree')}
+                className={`px-3 py-1 text-xs font-semibold rounded-md flex items-center gap-1.5 transition-colors ${
+                  viewMode === 'tree'
+                    ? 'bg-emerald-500 text-black shadow'
+                    : 'text-sphera-text-muted hover:text-white'
+                }`}
+              >
+                <List className="w-3.5 h-3.5" />
+                <span>Plan Structuré</span>
+              </button>
+            </div>
 
-        {/* Central Core Concept Banner */}
-        <div className="mt-4 p-4 rounded-xl bg-gradient-to-r from-emerald-500/10 via-sphera-surface-2 to-teal-500/10 border border-emerald-500/30 text-center relative overflow-hidden">
-          <span className="text-[10px] uppercase tracking-widest text-emerald-400 font-bold">Noyau Conceptuel</span>
-          <h3 className="text-lg md:text-xl font-extrabold text-white mt-0.5 tracking-tight">
-            {centralNode}
-          </h3>
+            {viewMode === 'canvas' && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleRecenter}
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-sphera-surface text-emerald-400 hover:bg-emerald-500/10 border border-emerald-500/30 transition-colors inline-flex items-center gap-1.5"
+                  title="Centrer la carte mentale"
+                >
+                  <LocateFixed className="w-3.5 h-3.5" />
+                  <span>Centrer</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsFullscreen(prev => !prev)}
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-sphera-surface text-sphera-text-muted hover:text-white border border-sphera-border transition-colors inline-flex items-center gap-1.5"
+                  title={isFullscreen ? "Quitter plein écran" : "Plein écran"}
+                >
+                  {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                  <span>{isFullscreen ? 'Réduire' : 'Plein écran'}</span>
+                </button>
+              </>
+            )}
+
+            {viewMode === 'tree' && (
+              <>
+                <button
+                  type="button"
+                  onClick={expandAll}
+                  className="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-sphera-surface text-sphera-text-muted hover:text-white border border-sphera-border transition-colors"
+                >
+                  Tout déplier
+                </button>
+                <button
+                  type="button"
+                  onClick={collapseAll}
+                  className="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-sphera-surface text-sphera-text-muted hover:text-white border border-sphera-border transition-colors"
+                >
+                  Tout replier
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Branches Display */}
+      {/* Main View Area */}
       {branches.length === 0 ? (
-        <div className="p-8 text-center bg-sphera-surface-2 rounded-2xl border border-sphera-border opacity-60">
+        <div className="p-12 text-center bg-sphera-surface-2 rounded-2xl border border-sphera-border opacity-60">
           <GitFork className="w-12 h-12 text-sphera-text-muted mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-white mb-1">Carte mentale en cours de structuration</h3>
+          <h3 className="text-lg font-medium text-white mb-1">Carte mentale en cours de génération</h3>
           <p className="text-sm text-sphera-text-muted max-w-md mx-auto">
-            Les branches de la carte mentale n'ont pas pu être extraites au format attendu.
+            Les branches de la carte mentale n'ont pas pu être extraites pour ce document.
           </p>
         </div>
-      ) : viewMode === 'tree' ? (
-        /* Tree / Hierarchical View */
+      ) : viewMode === 'canvas' ? (
+        /* Real Interactive Radial ReactFlow Mind Map Canvas */
+        <div className={`relative w-full rounded-2xl border border-sphera-border bg-[#070b14] overflow-hidden shadow-2xl ${isFullscreen ? 'flex-1 h-full' : 'h-[650px]'}`}>
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            fitView
+            onInit={(instance) => {
+              reactFlowInstance.current = instance;
+            }}
+            panOnDrag={true}
+            zoomOnPinch={true}
+            zoomOnScroll={true}
+            zoomOnDoubleClick={true}
+            minZoom={0.2}
+            maxZoom={2.5}
+            preventScrolling={true}
+          >
+            <Background color="#334155" gap={20} size={1} />
+            <Controls showInteractive={false} className="bg-sphera-surface-2 border border-sphera-border rounded-xl text-white shadow-2xl" />
+          </ReactFlow>
+
+          <div className="absolute bottom-4 left-4 z-10 pointer-events-none text-[11px] text-white/40 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-white/10">
+            Glisser pour déplacer · Molette ou pincement pour zoomer
+          </div>
+        </div>
+      ) : (
+        /* Hierarchical Outline / Tree View */
         <div className="space-y-4">
+          <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-500/10 via-sphera-surface-2 to-teal-500/10 border border-emerald-500/30 text-center">
+            <span className="text-[10px] uppercase tracking-widest text-emerald-400 font-bold">Noyau Conceptuel</span>
+            <h3 className="text-lg md:text-xl font-extrabold text-white mt-0.5 tracking-tight">
+              {centralNode}
+            </h3>
+          </div>
+
           {branches.map((b: any, i: number) => {
-            const styles = getColorStyles(b.couleur);
+            const color = getBranchColor(b.couleur, i);
             const isExpanded = expandedBranches[i] ?? true;
             const subCount = Array.isArray(b.sous_branches) ? b.sous_branches.length : 0;
 
             return (
               <div
                 key={i}
-                className={`rounded-2xl border transition-all duration-200 overflow-hidden ${styles.border} ${styles.bg}`}
+                className="rounded-2xl border transition-all duration-200 overflow-hidden"
+                style={{ borderColor: `${color.hex}55`, backgroundColor: color.bg }}
               >
                 <button
                   type="button"
                   onClick={() => toggleBranch(i)}
-                  className="w-full p-4 sm:p-5 flex items-center justify-between text-left hover:bg-white/[0.02] transition-colors"
+                  className="w-full p-4 sm:p-5 flex items-center justify-between text-left hover:bg-white/[0.03] transition-colors"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className={`w-3 h-3 rounded-full shrink-0 ${styles.dot}`} />
+                    <span
+                      className="w-3 h-3 rounded-full shrink-0"
+                      style={{ backgroundColor: color.hex, boxShadow: `0 0 8px ${color.hex}` }}
+                    />
                     <span className="font-bold text-white text-base sm:text-lg truncate">
                       {b.label}
                     </span>
                     {b.couleur && (
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full border uppercase tracking-wider font-semibold ${styles.badge}`}>
+                      <span
+                        className="text-[10px] px-2 py-0.5 rounded-full border uppercase tracking-wider font-semibold"
+                        style={{ color: color.text, borderColor: `${color.hex}66`, backgroundColor: `${color.hex}22` }}
+                      >
                         {b.couleur}
                       </span>
                     )}
@@ -1065,29 +1279,6 @@ export function MindmapView({ content }: { content: any }) {
                       <p className="text-xs text-sphera-text-muted italic">Aucun sous-concept détaillé</p>
                     )}
                   </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        /* Grid Cards View */
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {branches.map((b: any, i: number) => {
-            const styles = getColorStyles(b.couleur);
-            return (
-              <div key={i} className={`sphera-card p-5 border ${styles.border} ${styles.bg}`}>
-                <div className="flex items-center justify-between mb-3">
-                  <span className={`w-2.5 h-2.5 rounded-full ${styles.dot}`} />
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full border uppercase tracking-wider font-semibold ${styles.badge}`}>
-                    {b.couleur || 'Thème'}
-                  </span>
-                </div>
-                <h4 className="font-bold text-white text-base mb-3 leading-snug">{b.label}</h4>
-                {Array.isArray(b.sous_branches) && b.sous_branches.length > 0 ? (
-                  renderSubBranches(b.sous_branches)
-                ) : (
-                  <p className="text-xs text-sphera-text-muted italic">Sous-branches intégrées</p>
                 )}
               </div>
             );
