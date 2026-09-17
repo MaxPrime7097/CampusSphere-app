@@ -1,3 +1,5 @@
+import { ImageCropperModal } from "@/components/modals/ImageCropperModal";
+import { compressImageFile } from "@/lib/imageCompression";
 import { Suspense, lazy, useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
@@ -16,7 +18,7 @@ import { Progress } from "@/components/ui/progress";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 import {
-  Users, FileText, Settings, Check, MoreVertical, Loader2, Plus, Shield, Crown, UserPlus, UserMinus, UserCheck, UserX, Camera, ExternalLink, Download, Info, X, Copy, Share, ArrowLeft, Share2, BadgeCheck, AlertCircle, Search
+  Users, FileText, Settings, Check, MoreVertical, Loader2, Plus, Shield, Crown, UserPlus, UserMinus, UserCheck, UserX, Camera, ExternalLink, Download, Info, X, Copy, Share, ArrowLeft, Share2, BadgeCheck, AlertCircle, Search, Target, Globe, Trophy, BookOpen
 } from "lucide-react";
 import { FaFacebook, FaTwitter, FaWhatsapp, FaLinkedin } from 'react-icons/fa';
 
@@ -25,7 +27,7 @@ import { renderMentionText } from "@/lib/mentions";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { getSphereFeatures, SPHERE_TYPE_LABELS, SPHERE_TYPE_COLORS, type SphereType } from "@/config/sphereFeatures";
+import { getSphereFeatures, SPHERE_TYPE_LABELS, SPHERE_TYPE_COLORS, SPHERE_TYPE_ICONS, type SphereType } from "@/config/sphereFeatures";
 import { SphereSpheraTab } from "@/components/sphere/SphereSpheraTab";
 import { AnnouncementsTab } from "@/components/sphere/AnnouncementsTab";
 
@@ -36,6 +38,7 @@ import { MiniChat } from "@/components/chat/MiniChat";
 import { KanbanBoard, type KanbanTask } from "@/components/kanban/KanbanBoard";
 import { SphereOverview } from "@/components/sphere/SphereOverview";
 import { OptimizedImage } from "@/components/ui/optimized-image";
+import { ImageUploadModal } from "@/components/modals/ImageUploadModal";
 import { ResourceCard } from "@/components/resources/ResourceCard";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ResourceSkeleton } from "@/components/ui/skeletons";
@@ -70,6 +73,7 @@ export function SphereDetail() {
   const [activeTab, setActiveTab] = useState("overview");
   const [isChatExpanded, setIsChatExpanded] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showBannerModal, setShowBannerModal] = useState(false);
   const [isCopyingLink, setIsCopyingLink] = useState(false);
   const [fileSearchQuery, setFileSearchQuery] = useState("");
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
@@ -421,6 +425,8 @@ export function SphereDetail() {
     }
   };
 
+    ;
+
   const handleRemoveMember = async (memberId: string) => {
     try {
       setProcessingMemberIds(p => ({ ...p, [memberId]: true }));
@@ -548,6 +554,10 @@ export function SphereDetail() {
     <>
       <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
 
+        
+
+        <ImageUploadModal isOpen={showBannerModal} onClose={() => setShowBannerModal(false)} onSave={async (file) => { if (!id) return; const res = await uploadSphereBanner(id, file); setSphere((prev: any) => prev ? { ...prev, banner_image_url: res.banner_image_url } : prev); toast({ title: "Bannière mise à jour !" }); }} title="Photo de couverture de la sphère" description="Téléchargez une nouvelle bannière pour cette sphère." currentImage={sphereFallback.banner_image_url} shape="rect" aspectRatio={16 / 5} />
+
         <div className="max-w-6xl mx-auto py-4 md:py-6 px-0 md:px-4 space-y-4 md:space-y-6">
           <div className="px-4 md:px-0">
             <Button variant="ghost" onClick={() => navigate("/spheres")} className="gap-2 -ml-2">
@@ -582,26 +592,10 @@ export function SphereDetail() {
               )}
               {/* Bouton upload bannière */}
               {canManageSphereSettings && (
-                <label className="absolute top-3 right-3 bg-black/50 hover:bg-black/70 text-white rounded-lg px-2 py-1.5 flex items-center gap-1.5 text-xs cursor-pointer transition-colors opacity-0 group-hover:opacity-100">
+                <label onClick={() => setShowBannerModal(true)} className="absolute top-3 right-3 bg-black/50 hover:bg-black/70 text-white rounded-lg px-2 py-1.5 flex items-center gap-1.5 text-xs cursor-pointer transition-colors opacity-0 group-hover:opacity-100">
                   <Camera className="h-3.5 w-3.5" />
                   Changer la bannière
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file || !id) return;
-                      try {
-                        const res = await uploadSphereBanner(id, file);
-                        setSphere((prev: any) => prev ? { ...prev, banner_image_url: res.banner_image_url } : prev);
-                        toast({ title: "Bannière mise à jour !" });
-                      } catch (err: any) {
-                        toast({ title: "Erreur", description: err?.message, variant: "destructive" });
-                      }
-                      e.target.value = "";
-                    }}
-                  />
+                  
                 </label>
               )}
             </div>
@@ -623,9 +617,17 @@ export function SphereDetail() {
               {/* Actions */}
               <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  {/* Badge de type */}
                   {sphere?.sphere_type && (
                     <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full border ${SPHERE_TYPE_COLORS[sphere.sphere_type as SphereType] ?? 'bg-muted text-muted-foreground border-border'}`}>
+                      {(() => {
+                        const iconName = SPHERE_TYPE_ICONS[sphere.sphere_type as SphereType];
+                        if (iconName === 'BookOpen') return <BookOpen className="h-3.5 w-3.5" />;
+                        if (iconName === 'Target') return <Target className="h-3.5 w-3.5" />;
+                        if (iconName === 'Globe') return <Globe className="h-3.5 w-3.5" />;
+                        if (iconName === 'Trophy') return <Trophy className="h-3.5 w-3.5" />;
+                        if (iconName === 'Pencil') return <FileText className="h-3.5 w-3.5" />;
+                        return null;
+                      })()}
                       {SPHERE_TYPE_LABELS[sphere.sphere_type as SphereType] ?? sphere.sphere_type}
                     </span>
                   )}
@@ -1145,4 +1147,13 @@ export function SphereDetail() {
     </>
   );
 }
+
+
+
+
+
+
+
+
+
 

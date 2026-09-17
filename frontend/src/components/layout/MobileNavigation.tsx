@@ -25,26 +25,28 @@ export function MobileNavigation({ user: externalUser }: { user?: NavigationUser
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-100 bg-card border-t border-border md:hidden">
-      <div className="flex justify-around items-center py-2 px-4">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border md:hidden pb-safe">
+      <div className="flex justify-around items-center h-16 px-2">
         {mobileItems.map((item) => {
           const badge = getBadge(item.url);
-          const baseStyles = "flex flex-col items-center gap-1 py-2 px-3 rounded-lg transition-colors";
-          const inactiveStyles = "text-muted-foreground hover:text-foreground hover:bg-accent";
+          const baseStyles = "flex flex-col items-center justify-center w-full h-full transition-colors";
+          const inactiveStyles = "text-muted-foreground hover:text-foreground";
 
           const isVerified = (user as any)?.isVerified;
 
           if (item.url === "#create-post") {
             return isVerified ? (
               <Fragment key={item.title}>
-                <button
-                  type="button"
-                  className="py-2 px-3 rounded-lg text-primary bg-primary/10"
-                  aria-label={item.title}
-                  onClick={() => setIsCreatePostModalOpen(true)}
-                >
-                  <item.icon className="h-5 w-5" />
-                </button>
+                <div className="flex items-center justify-center w-full h-full relative">
+                  <button
+                    type="button"
+                    className="absolute bottom-3 flex items-center justify-center h-12 w-12 rounded-full campus-gradient text-white shadow-lg hover:shadow-xl transition-all active:scale-95"
+                    aria-label={item.title}
+                    onClick={() => setIsCreatePostModalOpen(true)}
+                  >
+                    <item.icon className="h-6 w-6" />
+                  </button>
+                </div>
                 {isCreatePostModalOpen && (
                   <Suspense fallback={<ModalLoadingFallback />}>
                     <CreatePostModal
@@ -55,24 +57,25 @@ export function MobileNavigation({ user: externalUser }: { user?: NavigationUser
                 )}
               </Fragment>
             ) : (
-              <button 
-                key={item.title}
-                type="button" 
-                className="py-2 px-3 rounded-lg text-primary bg-primary/10 opacity-60" 
-                aria-label={item.title}
-                onClick={() => {
-                  toast({
-                    title: "Compte non vérifié",
-                    description: "Vous devez certifier votre compte pour publier.",
-                    variant: "destructive",
-                    action: (
-                      <button className="text-xs font-bold underline" onClick={() => openVerificationModal()}>Vérifier</button>
-                    )
-                  });
-                }}
-              >
-                <item.icon className="h-5 w-5" />
-              </button>
+              <div key={item.title} className="flex items-center justify-center w-full h-full relative">
+                <button 
+                  type="button" 
+                  className="absolute bottom-3 flex items-center justify-center h-12 w-12 rounded-full bg-muted text-muted-foreground shadow-sm opacity-80" 
+                  aria-label={item.title}
+                  onClick={() => {
+                    toast({
+                      title: "Compte non vérifié",
+                      description: "Vous devez certifier votre compte pour publier.",
+                      variant: "destructive",
+                      action: (
+                        <button className="text-xs font-bold underline" onClick={() => openVerificationModal()}>Vérifier</button>
+                      )
+                    });
+                  }}
+                >
+                  <item.icon className="h-6 w-6" />
+                </button>
+              </div>
             );
           }
 
@@ -81,16 +84,19 @@ export function MobileNavigation({ user: externalUser }: { user?: NavigationUser
               key={item.title}
               to={item.url}
               aria-label={item.title}
-              className={({ isActive }) => cn(baseStyles, isActive ? "text-primary bg-primary/10" : inactiveStyles)}
+              className={({ isActive }) => cn(baseStyles, isActive ? "text-primary" : inactiveStyles)}
             >
-              <div className="relative">
-                <item.icon className="h-5 w-5" />
-                {badge !== null && (
-                  <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-0.5">
-                    {badge > 99 ? "99+" : badge}
-                  </span>
-                )}
-              </div>
+              {({ isActive }) => (
+                <div className="relative flex flex-col items-center">
+                  <item.icon className={cn("h-6 w-6 mb-0.5", isActive ? "fill-primary/20" : "")} />
+                  <span className="text-[10px] font-medium leading-none">{item.title}</span>
+                  {badge !== null && (
+                    <span className="absolute -top-1 -right-2 min-w-[16px] h-4 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-0.5">
+                      {badge > 99 ? "99+" : badge}
+                    </span>
+                  )}
+                </div>
+              )}
             </NavLink>
           );
         })}

@@ -1,0 +1,46 @@
+# CampusSphere - Le Réseau Social Étudiant & Collaboratif
+
+> CampusSphere (https://campussphere.app) est le réseau social nouvelle génération conçu pour connecter les étudiants au sein de leur université, école ou campus. Il réunit la vie sociale étudiante, la collaboration académique en groupes (« Sphères »), le partage de ressources de cours vérifiées, la gestion d'événements et l'intelligence artificielle d'aide aux révisions (Sphera).
+
+## À propos de CampusSphere
+
+CampusSphere facilite la transition et la vie quotidienne des étudiants du supérieur. La plateforme élimine la dispersion de l'information entre de multiples canaux non officiels en centralisant les discussions de promotion, les événements de campus et les documents d'études.
+
+- Site officiel : https://campussphere.app
+- Landing page publique : https://campussphere.app/cs-inc
+- Assistante IA de révision : https://sphera.campussphere.app
+- Inscription : https://campussphere.app/register
+- Connexion : https://campussphere.app/login
+- À propos : https://campussphere.app/cs-inc/about
+- FAQ : https://campussphere.app/cs-inc/faq
+- Contact : https://campussphere.app/cs-inc/contact
+
+## Fonctionnalités Principales
+
+### 1. Les Sphères (Communautés & Groupes)
+- Espaces collaboratifs dédiés par promotion, filière, campus, association ou centre d'intérêt.
+- Discussions thématiques, entraide entre étudiants, partage de conseils et entraide académique.
+
+### 2. Partage de Ressources Académiques
+- Bibliothèque collaborative de supports de cours : polycopiés, fiches de TD, résumés, diaporamas et annales d'examens.
+- Système de vote et modération pour garantir la pertinence des documents.
+- Connexion directe avec Sphera pour générer des quiz et fiches IA en 1 clic à partir de toute ressource.
+
+### 3. Vie de Campus & Événements
+- Calendrier des événements étudiants, soirées d'intégration, conférences, ateliers et rencontres associatives.
+- Inscriptions, rappels et billetterie intégrée.
+
+### 4. Messagerie & Réseau
+- Messagerie instantanée privée et de groupe.
+- Profil étudiant avec bio, établissement, domaine d'études, compétences et liens réseaux.
+
+### 5. Synergie avec Sphera (L'IA de révision)
+- Accès unifié avec le compte CampusSphere (SSO en un clic).
+- Possibilité d'envoyer n'importe quelle ressource partagée sur CampusSphere directement vers Sphera pour créer des quiz, fiches de synthèse et sessions de révision multijoueur.
+
+## Liens Utiles
+- Page d'accueil : https://campussphere.app/
+- Découvrir l'écosystème : https://campussphere.app/cs-inc
+- Sphera IA : https://sphera.campussphere.app/
+- Foire aux questions (FAQ) : https://campussphere.app/cs-inc/faq
+- Contact de l'équipe : https://campussphere.app/cs-inc/contact

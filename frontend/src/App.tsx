@@ -1,10 +1,10 @@
-import React, { lazy, Suspense } from "react";
+import React, { lazy, Suspense, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
 import { RequireAdminRole } from "./components/auth/RequireAdminRole";
 import { AdminLayout } from "./admin/components/AdminLayout";
@@ -30,6 +30,10 @@ const ResourceDetailRoute = lazy(() => import("./pages/ResourceDetailRoute").the
 const PostDetail = lazy(() => import("./pages/PostDetail").then(m => ({ default: m.PostDetail })));
 const Spheres = lazy(() => import("./pages/Spheres").then(m => ({ default: m.Spheres })));
 const SphereDetail = lazy(() => import("./pages/SphereDetail").then(m => ({ default: m.SphereDetail })));
+const Events = lazy(() => import("./pages/Events").then(m => ({ default: m.Events })));
+const EventDetail = lazy(() => import("./pages/EventDetail").then(m => ({ default: m.EventDetail })));
+const EventCreate = lazy(() => import("./pages/EventCreate").then(m => ({ default: m.EventCreate })));
+const EventEdit = lazy(() => import("./pages/EventEdit").then(m => ({ default: m.EventEdit })));
 const AdminPanelRouter = lazy(() => import("./pages/admin/AdminPanelRouter").then(m => ({ default: m.AdminPanelRouter })));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard").then(m => ({ default: m.AdminDashboard })));
 const About = lazy(() => import("./pages/public/About").then(m => ({ default: m.About })));
@@ -38,16 +42,22 @@ const FAQ = lazy(() => import("./pages/public/FAQ").then(m => ({ default: m.FAQ 
 const ForgotPassword = lazy(() => import("./pages/public/ForgotPassword").then(m => ({ default: m.ForgotPassword })));
 const AuthCallback = lazy(() => import("./pages/public/AuthCallback").then(m => ({ default: m.AuthCallback })));
 const CompleteProfile = lazy(() => import("./pages/public/CompleteProfile").then(m => ({ default: m.CompleteProfile })));
+const Onboarding = lazy(() => import("./pages/public/Onboarding").then(m => ({ default: m.Onboarding })));
 const Privacy = lazy(() => import("./pages/public/Privacy").then(m => ({ default: m.Privacy })));
 const Terms = lazy(() => import("./pages/public/Terms").then(m => ({ default: m.Terms })));
 const Connections = lazy(() => import("./pages/Connections").then(m => ({ default: m.Connections })));
 const SpheraHome = lazy(() => import("./sphera/pages/SpheraHome").then(m => ({ default: m.SpheraHome })));
+const SpheraSSORedirect = lazy(() => import("./sphera/pages/SpheraSSORedirect").then(m => ({ default: m.SpheraSSORedirect })));
+const SSOBridge = lazy(() => import("./pages/sso/SSOBridge").then(m => ({ default: m.SSOBridge })));
+const SSOPopup = lazy(() => import("./pages/sso/SSOPopup").then(m => ({ default: m.SSOPopup })));
 const StudySessionDetail = lazy(() => import("./sphera/pages/StudySessionDetail").then(m => ({ default: m.StudySessionDetail })));
 const AnnaleDetail = lazy(() => import("./sphera/pages/AnnaleDetail").then(m => ({ default: m.AnnaleDetail })));
 const CommunityGuidelines = lazy(() => import("./pages/public/CommunityGuidelines").then(m => ({ default: m.CommunityGuidelines })));
 const Copyright = lazy(() => import("./pages/public/Copyright").then(m => ({ default: m.Copyright })));
 const CookiePolicy = lazy(() => import("./pages/public/CookiePolicy").then(m => ({ default: m.CookiePolicy })));
 const DataDeletion = lazy(() => import("./pages/public/DataDeletion").then(m => ({ default: m.DataDeletion })));
+const LegalNotice = lazy(() => import("./pages/public/LegalNotice").then(m => ({ default: m.LegalNotice })));
+const TermsOfSale = lazy(() => import("./pages/public/TermsOfSale").then(m => ({ default: m.TermsOfSale })));
 const Waitinglist = lazy(() => import("./pages/public/Waitinglist").then(m => ({ default: m.Waitinglist })));
 const Policies = lazy(() => import("./pages/public/Policies").then(m => ({ default: m.Policies })));
 const Forbidden = lazy(() => import("./pages/public/Forbidden"));
@@ -57,6 +67,7 @@ const AdminSpheresPage = lazy(() => import("./admin/pages/AdminSpheresPage").the
 const AdminModerationPage = lazy(() => import("./admin/pages/AdminModerationPage").then(m => ({ default: m.AdminModerationPage })));
 const AdminResourcesPage = lazy(() => import("./admin/pages/AdminResourcesPage").then(m => ({ default: m.AdminResourcesPage })));
 const AdminLogsPage = lazy(() => import("./admin/pages/AdminLogsPage").then(m => ({ default: m.AdminLogsPage })));
+const AdminVerificationPage = lazy(() => import("./admin/pages/AdminVerificationPage").then(m => ({ default: m.AdminVerificationPage })));
 const AdminContactMessagesPage = lazy(() => import("./admin/pages/AdminContactMessagesPage").then(m => ({ default: m.AdminContactMessagesPage })));
 
 const PageLoader = () => (
@@ -77,7 +88,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 60 * 1000,
-      gcTime: 5 * 60 * 1000,
+      gcTime: 30 * 60 * 1000,
       refetchOnWindowFocus: false,
       refetchOnMount: false,
       retry: 1,
@@ -85,8 +96,8 @@ const queryClient = new QueryClient({
   },
 });
 
-const Protected = ({ children }: { children: ReactNode }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+const Protected = ({ children, requireCompleteProfile = true }: { children: ReactNode, requireCompleteProfile?: boolean }) => {
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -116,7 +127,33 @@ const Protected = ({ children }: { children: ReactNode }) => {
   }
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (requireCompleteProfile && user && user.is_profile_complete === false) {
+    return <Navigate to="/onboarding" replace />;
+  }
+  
   return children;
+};
+
+const HomeOrLanding = () => {
+  const { isAuthenticated, isLoading } = useAuth();
+  if (isLoading) return <PageLoader />;
+  return isAuthenticated ? (
+    <Protected>
+      <AppLayout>
+        <Home />
+      </AppLayout>
+    </Protected>
+  ) : (
+    <Landing />
+  );
+};
+
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [pathname]);
+  return null;
 };
 
 const App = () => (
@@ -131,6 +168,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <ScrollToTop />
           <Suspense fallback={<PageLoader />}>
             <Routes>
               {/* Auth routes */}
@@ -139,16 +177,19 @@ const App = () => (
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/register/complete" element={<CompleteProfile />} />
             <Route path="/complete-profile" element={<CompleteProfile />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-
-            {/* Protected routes with layout */}
-            <Route path="/" element={
-              <Protected>
-                <AppLayout>
-                  <Home />
-                </AppLayout>
+            <Route path="/onboarding" element={
+              <Protected requireCompleteProfile={false}>
+                <Onboarding />
               </Protected>
             } />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+
+            {/* SSO endpoints for Sphera cross-app authentication */}
+            <Route path="/sso/bridge" element={<SSOBridge />} />
+            <Route path="/sso/popup" element={<SSOPopup />} />
+
+            {/* Root: Landing for guests/crawlers, Home for authenticated members */}
+            <Route path="/" element={<HomeOrLanding />} />
             <Route path="/profile" element={
               <Protected>
                 <AppLayout>
@@ -243,6 +284,34 @@ const App = () => (
                 </AppLayout>
               </Protected>
             } />
+            <Route path="/events" element={
+              <Protected>
+                <AppLayout>
+                  <Events />
+                </AppLayout>
+              </Protected>
+            } />
+            <Route path="/events/create" element={
+              <Protected>
+                <AppLayout>
+                  <EventCreate />
+                </AppLayout>
+              </Protected>
+            } />
+            <Route path="/events/:id" element={
+              <Protected>
+                <AppLayout>
+                  <EventDetail />
+                </AppLayout>
+              </Protected>
+            } />
+            <Route path="/events/:id/edit" element={
+              <Protected>
+                <AppLayout>
+                  <EventEdit />
+                </AppLayout>
+              </Protected>
+            } />
             <Route path="/connections" element={
               <Protected>
                 <AppLayout>
@@ -256,6 +325,11 @@ const App = () => (
                 <AppLayout>
                   <SpheraHome />
                 </AppLayout>
+              </Protected>
+            } />
+            <Route path="/sphera/sso" element={
+              <Protected>
+                <SpheraSSORedirect />
               </Protected>
             } />
             <Route path="/sphera/sessions/:id" element={
@@ -294,6 +368,7 @@ const App = () => (
             }>
               <Route path="dashboard" element={<AdminDashboardPage />} />
               <Route path="users" element={<AdminUsersPage />} />
+              <Route path="verification" element={<AdminVerificationPage />} />
               <Route path="spheres" element={<AdminSpheresPage />} />
               <Route path="moderation" element={<AdminModerationPage />} />
               <Route path="resources" element={<AdminResourcesPage />} />
@@ -314,6 +389,7 @@ const App = () => (
             {/* Public pages */}
             <Route path="/cs-inc" element={<Landing />} />
             <Route path="/cs-inc/about" element={<About />} />
+            <Route path="/contact" element={<Navigate to="/cs-inc/contact" replace />} />
             <Route path="/cs-inc/contact" element={<Contact />} />
             <Route path="/cs-inc/faq" element={<FAQ />} />
             <Route path="/cs-inc/policies" element={<Policies />} />
@@ -322,7 +398,12 @@ const App = () => (
             <Route path="/cs-inc/policies/community-guidelines" element={<CommunityGuidelines />} />
             <Route path="/cs-inc/policies/copyright" element={<Copyright />} />
             <Route path="/cs-inc/policies/cookiepolicy" element={<CookiePolicy />} />
+            <Route path="/cs-inc/policies/cookie-policy" element={<Navigate to="/cs-inc/policies/cookiepolicy" replace />} />
             <Route path="/cs-inc/policies/datadeletion" element={<DataDeletion />} />
+            <Route path="/cs-inc/policies/legal-notice" element={<LegalNotice />} />
+            <Route path="/cs-inc/policies/mentions-legales" element={<LegalNotice />} />
+            <Route path="/cs-inc/policies/terms-of-sale" element={<TermsOfSale />} />
+            <Route path="/cs-inc/policies/cgv" element={<TermsOfSale />} />
             <Route path="/cs-inc/waitlist" element={<Waitinglist />} />
             <Route path="/403" element={<Forbidden />} />
 

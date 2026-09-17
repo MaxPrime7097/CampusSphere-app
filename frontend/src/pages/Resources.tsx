@@ -1,34 +1,38 @@
-import { Suspense, lazy, useState, useEffect } from "react";
+import { useState, useMemo, Suspense, lazy, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   listResources,
+  listFolders,
+  getFolderDetail,
   downloadResource,
   saveResource,
   getSavedResources,
-  listFolders,
   deleteFolder,
   downloadFolderZip,
-  type ResourceFolder,
-  getFolderDetail,
 } from "@/services/api";
 import {
   Search,
   Upload,
-  Download,
   FileText,
-  Eye,
   Bookmark,
   Loader2,
   RefreshCw,
-  Filter,
-  FolderPlus,
   Folder,
   FolderOpen,
+  Plus,
+  X,
+  Filter,
+  BookOpen,
+  FileSpreadsheet,
+  GraduationCap,
+  FolderGit2,
+  Presentation,
+  Archive,
+  Layers,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { openVerificationModal } from "@/lib/events";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -40,34 +44,50 @@ import {
 } from "@/components/ui/select";
 import { ResourceCard } from "@/components/resources/ResourceCard";
 import { FolderCard } from "@/components/resources/FolderCard";
-import { cn, formatFileSize } from "@/lib/utils";
+import { NetflixCarousel } from "@/components/ui/netflix-carousel";
+import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { RESOURCE_TYPE_OPTIONS, normalizeResourceType } from "@/constants/resourceTypes";
-import { getSubjectLabel, getTypeLabel, normalizeSubject } from "@/lib/resourceMetadata";
 import {
   DEFAULT_SORT,
-  RESOURCE_SORT_KEYS,
   type ResourceSortKey,
-  ensureValidSortKey,
 } from "@/constants/defaultSort";
 import { ResourceSkeleton } from "@/components/ui/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-const UploadResourceModal = lazy(() => import("@/components/modals/UploadResourceModal").then((module) => ({ default: module.UploadResourceModal })));
-const CreateFolderModal = lazy(() => import("@/components/modals/CreateFolderModal").then((module) => ({ default: module.CreateFolderModal })));
+const UploadResourceModal = lazy(() =>
+  import("@/components/modals/UploadResourceModal").then((module) => ({
+    default: module.UploadResourceModal,
+  }))
+);
+const CreateFolderModal = lazy(() =>
+  import("@/components/modals/CreateFolderModal").then((module) => ({
+    default: module.CreateFolderModal,
+  }))
+);
+
+const RESOURCE_CHIPS = [
+  { value: "all", label: "Toutes les ressources", icon: Layers },
+  { value: "notes", label: "Notes de cours", icon: BookOpen },
+  { value: "resumes", label: "Résumés & Fiches", icon: FileText },
+  { value: "exercises", label: "Exercices & TD", icon: FileSpreadsheet },
+  { value: "exam_papers", label: "Épreuves d'examen", icon: GraduationCap },
+  { value: "annales", label: "Annales corrigées", icon: Archive },
+  { value: "projects", label: "Projets & Rapports", icon: FolderGit2 },
+  { value: "presentations", label: "Présentations / Slides", icon: Presentation },
+] as const;
 
 function mapResourceCard(r: any) {
   return {
     id: String(r.id),
     title: r.title,
     description: r.description || "",
-    subject: normalizeSubject(r.subject),
     type: normalizeResourceType(r.type),
     authorId: r.authorId || r.author || r.created_by,
-    authorName: r.author?.name || r.author_info?.name || r.author_name || "Unknown",
+    authorName: r.author?.name || r.author_info?.name || r.author_name || "Membre CampusSphere",
     visibility: r.visibility || "public",
     fileUrl: r.fileUrl || r.file_url || r.file || "",
     fileSize: r.fileSize || r.file_size || "0 MB",
@@ -85,31 +105,29 @@ export function Resources() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { user: currentUser, isLoading: isAuthLoading } = useAuth();
+  const queryClient = useQueryClient();
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedSubject, setSelectedSubject] = useState("all");
-  const [selectedType, setSelectedType] = useState("all");
+  const [selectedType, setSelectedType] = useState<string>("all");
+  const [selectedFileFormat, setSelectedFileFormat] = useState<string>("all");
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [isUploadResourceOpen, setIsUploadResourceOpen] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<ResourceSortKey>(DEFAULT_SORT.resources);
   const [viewAllCategory, setViewAllCategory] = useState<string | null>(null);
-
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Folder states
+  const [showCreateFolder, setShowCreateFolder] = useState(false);
+  const [editingFolder, setEditingFolder] = useState<any>(null);
+  const [selectedFolder, setSelectedFolder] = useState<any>(null);
+  const [folderResources, setFolderResources] = useState<any[]>([]);
+
+  // Action states
   const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
   const [savedResources, setSavedResources] = useState<Set<string>>(new Set());
-
   const [resources, setResources] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  // Folders state
-  const [showFoldersTab, setShowFoldersTab] = useState(false);
-  const [folders, setFolders] = useState<ResourceFolder[]>([]);
-  const [foldersLoading, setFoldersLoading] = useState(false);
-  const [selectedFolder, setSelectedFolder] = useState<ResourceFolder | null>(null);
-  const [folderResources, setFolderResources] = useState<any[]>([]);
-  const [showCreateFolder, setShowCreateFolder] = useState(false);
-  const [editingFolder, setEditingFolder] = useState<ResourceFolder | null>(null);
+  // Fetch Resources
   const resourcesQuery = useQuery({
     queryKey: ["resources"],
     queryFn: listResources,
@@ -119,85 +137,24 @@ export function Resources() {
     refetchOnMount: false,
   });
 
-  useEffect(() => {
-    if (Array.isArray(resourcesQuery.data)) {
-      setResources(resourcesQuery.data.map(mapResourceCard));
-      setLoading(false);
-      return;
-    }
+  // Fetch Folders
+  const foldersQuery = useQuery({
+    queryKey: ["resource-folders"],
+    queryFn: listFolders,
+    enabled: Boolean(currentUser?.id),
+    retry: false,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  });
 
-    if (resourcesQuery.isLoading) {
-      setLoading(true);
-      return;
-    }
-
-    if (resourcesQuery.error) {
-      setLoading(false);
-      toast({
-        title: "Erreur",
-        description: (resourcesQuery.error as any)?.message || "Impossible de charger les ressources",
-        variant: "destructive",
-      });
-    }
-  }, [resourcesQuery.data, resourcesQuery.error, resourcesQuery.isLoading, toast]);
-
-  const loadFolders = async () => {
-    setFoldersLoading(true);
-    try {
-      const data = await listFolders();
-      setFolders(data);
-    } catch (e) {
-      // silently fail if not authenticated or no folders yet
-    } finally {
-      setFoldersLoading(false);
-    }
-  };
-
-  const handleOpenFolder = async (folder: ResourceFolder) => {
-    if (selectedFolder?.id === folder.id) {
-      setSelectedFolder(null);
-      setFolderResources([]);
-      return;
-    }
-    setSelectedFolder(folder);
-    try {
-      
-      const detail = await getFolderDetail(folder.id);
-      setFolderResources((detail.resources || []).map(mapResourceCard));
-    } catch {
-      setFolderResources([]);
-    }
-  };
-
-  const handleDeleteFolder = async (folder: ResourceFolder) => {
-    if (!confirm(`Supprimer le dossier "${folder.name}" ? Les fichiers resteront accessibles.`)) return;
-    try {
-      await deleteFolder(folder.id);
-      setFolders(prev => prev.filter(f => f.id !== folder.id));
-      if (selectedFolder?.id === folder.id) {
-        setSelectedFolder(null);
-        setFolderResources([]);
-      }
-      toast({ title: 'Dossier supprimé' });
-    } catch (e: any) {
-      toast({ title: 'Erreur', description: e?.message, variant: 'destructive' });
-    }
-  };
-
-  const subjects = [
-    { value: "all", label: "Toutes matières" },
-    { value: "math", label: "Mathématiques" },
-    { value: "cs", label: "Informatique" },
-    { value: "physics", label: "Physique" },
-    { value: "economics", label: "Économie" },
-    { value: "language", label: "Langues" },
-  ];
-
-  const types = [{ value: "all", label: "Tous types" }, ...RESOURCE_TYPE_OPTIONS];
-
+  // Fetch Saved Resources
   const savedResourcesQuery = useQuery({
     queryKey: ["saved-resources"],
     queryFn: getSavedResources,
+    enabled: Boolean(currentUser?.id),
+    retry: false,
     staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -205,80 +162,48 @@ export function Resources() {
   });
 
   useEffect(() => {
+    if (resourcesQuery.data) {
+      const raw = Array.isArray(resourcesQuery.data)
+        ? resourcesQuery.data
+        : (resourcesQuery.data as any)?.data || [];
+      setResources(raw.map(mapResourceCard));
+    }
+  }, [resourcesQuery.data]);
+
+  useEffect(() => {
     if (savedResourcesQuery.data) {
-      const savedIds = new Set(savedResourcesQuery.data.map((r: any) => String(r.id || r.resource_id)));
-      setSavedResources(savedIds);
+      const raw = Array.isArray(savedResourcesQuery.data)
+        ? savedResourcesQuery.data
+        : (savedResourcesQuery.data as any)?.data || [];
+      setSavedResources(new Set(raw.map((r: any) => String(r.id))));
     }
   }, [savedResourcesQuery.data]);
 
-  const filteredResources = resources.filter((resource) => {
-    const matchesSearch =
-      resource.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      resource.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      resource.tags.some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+  const folders = foldersQuery.data || [];
+  const foldersLoading = foldersQuery.isLoading;
 
-    const matchesSubject = selectedSubject === "all" || resource.subject === selectedSubject;
-    const matchesType = selectedType === "all" || resource.type === selectedType;
-
-    return matchesSearch && matchesSubject && matchesType;
-  });
-
-  const resolvedResourceSort = ensureValidSortKey(activeTab, RESOURCE_SORT_KEYS, DEFAULT_SORT.resources);
-
-  const getSortedResources = () => {
-    const sorted = [...filteredResources];
-
-    switch (resolvedResourceSort) {
-      case "all":
-        return sorted;
-      case "suggestions":
-        return sorted.sort((a, b) => b.impactScore - a.impactScore);
-      case "recent":
-        return sorted.sort(
-          (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
-        );
+  const handleOpenFolder = async (folder: any) => {
+    setSelectedFolder(folder);
+    try {
+      const res = await getFolderDetail(folder.id);
+      const items = Array.isArray(res) ? res : (res as any)?.resources || (res as any)?.data || [];
+      setFolderResources(items.map(mapResourceCard));
+    } catch {
+      setFolderResources([]);
     }
   };
 
-  const handleSave = async (e: React.MouseEvent, resourceId: string) => {
-    e.stopPropagation();
-
+  const handleDeleteFolder = async (folderId: string) => {
     try {
-      const newSavedResources = new Set(savedResources);
-      const response = await saveResource(resourceId);
-      const saved = Boolean(response?.data?.saved);
-
-      if (saved) {
-        newSavedResources.add(resourceId);
-      } else {
-        newSavedResources.delete(resourceId);
+      await deleteFolder(folderId);
+      await queryClient.invalidateQueries({ queryKey: ["resource-folders"] });
+      if (selectedFolder?.id === folderId) {
+        setSelectedFolder(null);
+        setFolderResources([]);
       }
-
-      setSavedResources(newSavedResources);
-      setResources((prev) =>
-        prev.map((resource) =>
-          resource.id === resourceId
-            ? {
-                ...resource,
-                isSaved: saved,
-              }
-            : resource
-        )
-      );
-
-      toast({
-        title: saved ? "Ressource sauvegardée !" : "Ressource retirée",
-        description: saved
-          ? "Cette ressource a été ajoutée à vos sauvegardes"
-          : "Cette ressource a été retirée de vos sauvegardes",
-        duration: 2000,
-      });
-    } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: error?.message || "Impossible de sauvegarder la ressource",
-        variant: "destructive",
-      });
+      toast({ title: "Dossier supprimé", description: "Le dossier a bien été supprimé." });
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e?.message || "Impossible de supprimer le dossier", variant: "destructive" });
     }
   };
 
@@ -287,51 +212,23 @@ export function Resources() {
     if (!currentUser?.isVerified) {
       toast({
         title: "Compte non certifié",
-        description: "Vérifiez votre compte pour télécharger des ressources.",
+        description: "Certifiez votre compte pour télécharger des ressources.",
         variant: "destructive",
         action: (
-          <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>Vérifier</Button>
-        )
+          <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>
+            Vérifier
+          </Button>
+        ),
       });
       return;
     }
-    if (downloadingIds.has(resourceId)) return;
-    setDownloadingIds((prev) => {
-      const next = new Set(prev);
-      next.add(resourceId);
-      return next;
-    });
 
+    setDownloadingIds((prev) => new Set(prev).add(resourceId));
     try {
-      const result = await downloadResource(resourceId);
-      const objectUrl = window.URL.createObjectURL(result.blob);
-      const link = document.createElement("a");
-      link.href = objectUrl;
-      link.download = result.filename;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(objectUrl);
-
-      setResources((prev) =>
-        prev.map((resource) =>
-          resource.id === resourceId
-            ? { ...resource, downloadCount: Number(resource.downloadCount || 0) + 1 }
-            : resource
-        )
-      );
-
-      toast({
-        title: "Téléchargement démarré !",
-        description: "Votre fichier va être téléchargé dans quelques instants",
-        duration: 3000,
-      });
+      await downloadResource(resourceId);
+      toast({ title: "Téléchargement réussi", description: "La ressource a été téléchargée." });
     } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: error?.message || "Impossible de télécharger la ressource",
-        variant: "destructive",
-      });
+      toast({ title: "Erreur", description: error?.message || "Impossible de télécharger la ressource", variant: "destructive" });
     } finally {
       setDownloadingIds((prev) => {
         const next = new Set(prev);
@@ -341,95 +238,127 @@ export function Resources() {
     }
   };
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-
+  const handleSave = async (e: React.MouseEvent, resourceId: string) => {
+    e.stopPropagation();
     try {
-      const result = await resourcesQuery.refetch();
-      const mapped = (result.data || []).map(mapResourceCard);
-      setResources(mapped);
-
+      const newSaved = new Set(savedResources);
+      const res = await saveResource(resourceId);
+      const isSaved = Boolean(res?.data?.saved);
+      if (isSaved) {
+        newSaved.add(resourceId);
+      } else {
+        newSaved.delete(resourceId);
+      }
+      setSavedResources(newSaved);
+      setResources((prev) =>
+        prev.map((r) => (r.id === resourceId ? { ...r, isSaved } : r))
+      );
       toast({
-        title: "Ressources actualisées",
-        description: "La liste des ressources a été mise à jour",
-        duration: 2000,
+        title: isSaved ? "Ressource enregistrée" : "Ressource retirée",
+        description: isSaved ? "Ajoutée à vos favoris." : "Retirée de vos favoris.",
       });
     } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: error?.message || "Impossible de rafraichir les ressources",
-        variant: "destructive",
-      });
+      toast({ title: "Erreur", description: error?.message || "Action impossible", variant: "destructive" });
+    }
+  };
+
+  const handlePreview = (e: React.MouseEvent, resourceId: string) => {
+    e.stopPropagation();
+    navigate(`/resources/${resourceId}`);
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        resourcesQuery.refetch(),
+        foldersQuery.refetch(),
+        savedResourcesQuery.refetch(),
+      ]);
+      toast({ title: "Ressources actualisées", description: "La bibliothèque est à jour." });
+    } catch {
+      toast({ title: "Erreur", description: "Impossible d'actualiser", variant: "destructive" });
     } finally {
       setIsRefreshing(false);
     }
   };
 
-  const cardClasses = cn(
-    "transition-all duration-300",
-    isMobile
-      ? "rounded-none border-x-0 border-t-0 shadow-none bg-card"
-      : "campus-card hover:campus-glow"
-  );
-
-  const handleResourceUploaded = (resource?: unknown) => {
-    if (!resource) {
-      void resourcesQuery.refetch();
-      return;
-    }
-
-    const mapped = mapResourceCard(resource as Record<string, unknown>);
-    setResources((prev) => [mapped, ...prev.filter((item) => item.id !== mapped.id)]);
+  const handleResourceUploaded = () => {
+    resourcesQuery.refetch();
   };
 
-  const handlePreview = (e: React.MouseEvent, resourceId: string) => {
-    e.stopPropagation();
-    navigate(`/resources/${resourceId}?mode=preview`);
-  };
+  // Filtered resources based on search, type chip and file format
+  const filteredResources = useMemo(() => {
+    return resources.filter((r) => {
+      const term = searchTerm.toLowerCase().trim();
+      const matchesSearch =
+        !term ||
+        r.title?.toLowerCase().includes(term) ||
+        r.description?.toLowerCase().includes(term) ||
+        r.tags?.some((t: string) => t.toLowerCase().includes(term));
+
+      const matchesType =
+        selectedType === "all" ||
+        r.type === selectedType ||
+        (selectedType === "notes" && (r.type === "notes" || r.type === "resumes")) ||
+        (selectedType === "annales" && (r.type === "annales" || r.type === "exam_papers"));
+
+      const ext = r.fileUrl?.split(".").pop()?.toLowerCase() || "";
+      const matchesFormat =
+        selectedFileFormat === "all" ||
+        (selectedFileFormat === "pdf" && ext === "pdf") ||
+        (selectedFileFormat === "doc" && (ext === "doc" || ext === "docx")) ||
+        (selectedFileFormat === "image" && ["jpg", "jpeg", "png", "webp"].includes(ext));
+
+      return matchesSearch && matchesType && matchesFormat;
+    });
+  }, [resources, searchTerm, selectedType, selectedFileFormat]);
+
+  const fileFormats = [
+    { value: "all", label: "Tous les formats" },
+    { value: "pdf", label: "Documents PDF" },
+    { value: "doc", label: "Word (.docx)" },
+    { value: "image", label: "Images" },
+  ];
+
+  const isFiltering =
+    searchTerm.trim() !== "" || selectedType !== "all" || selectedFileFormat !== "all";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
-      <div className="container max-w-6xl mx-auto py-4 md:py-6 px-0">
-        {/* Header */}
-        <div className="flex flex-col px-4 sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 campus-animate-fade-in px-0">
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8 space-y-6 animate-in fade-in duration-300">
+        {/* ─── Top Header (Standardisé & Harmonisé) ─── */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2 campus-animate-fade-in">
           <div>
-            <h1 className="text-3xl font-bold bg-clip-text text-muted-foreground">
-              Ressources Étudiantes
+            <h1 className="text-3xl font-bold tracking-tight text-white">
+              Ressources Académiques
             </h1>
-            <p className="text-sm md:text-base text-muted-foreground mt-1">
-              Partagez et accédez aux ressources partagées par la communautés
+            <p className="text-muted-foreground mt-2 text-sm">
+              Consultez, partagez et téléchargez les cours, annales corrigées, fiches et TD du campus
             </p>
           </div>
-          <div className="flex gap-2">
+
+          <div className="flex w-full sm:w-auto gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={handleRefresh}
-              disabled={isRefreshing}
+              disabled={isRefreshing || resourcesQuery.isLoading}
               className="gap-2"
             >
-              {isRefreshing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
+              <RefreshCw className={cn("h-4 w-4", (isRefreshing || resourcesQuery.isFetching) && "animate-spin")} />
               <span className="hidden sm:inline">Actualiser</span>
-
             </Button>
-            {isAuthLoading ? (
-              <Button size="sm" variant="outline" className="gap-2 w-full sm:w-auto opacity-70" disabled>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="hidden sm:inline">Chargement...</span>
-              </Button>
-            ) : currentUser?.isVerified ? (
+
+            {currentUser?.isVerified ? (
               <>
                 <Button
                   size="sm"
-                  className="campus-gradient text-white hover:opacity-90 gap-2 w-full sm:w-auto"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 flex-1 sm:flex-none font-semibold"
                   onClick={() => setIsUploadResourceOpen(true)}
                 >
                   <Upload className="h-4 w-4" />
-                  <span className="hidden sm:inline">Uploader</span>
+                  <span>Uploader</span>
                 </Button>
                 {isUploadResourceOpen && (
                   <Suspense fallback={<ModalLoadingFallback />}>
@@ -444,338 +373,431 @@ export function Resources() {
             ) : (
               <Button
                 size="sm"
-                className="campus-gradient text-white hover:opacity-90 gap-2 w-full sm:w-auto"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 flex-1 sm:flex-none font-semibold"
                 onClick={() => {
                   toast({
-                    title: "Compte non vérifié",
-                    description: "Vérifiez votre compte pour uploader des ressources.",
+                    title: "Compte non certifié",
+                    description: "Certifiez votre compte pour partager des ressources.",
                     variant: "destructive",
                     action: (
-                      <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>Vérifier</Button>
-                    )
+                      <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>
+                        Vérifier
+                      </Button>
+                    ),
                   });
                 }}
               >
                 <Upload className="h-4 w-4" />
-                <span className="hidden sm:inline">Uploader</span>
+                <span>Uploader</span>
               </Button>
             )}
           </div>
         </div>
 
-        {/* Recherche/Filtre */}
-        <Card className={cardClasses}>
-          <CardContent className="p-3 md:p-4">
-            {/* Mobile: recherche + bouton filtre */}
-            <div className="flex gap-2 sm:hidden">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Rechercher..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
-              </div>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setShowMobileFilters((v) => !v)}
-                className={showMobileFilters ? "border-primary text-primary" : ""}
-              >
-                <Filter className="h-4 w-4" />
-              </Button>
+        {/* ─── Search & Filters Bar (Épuré sans boîte de carte) ─── */}
+        <div className="space-y-3">
+          {/* Top Row: Search Input + Format Select */}
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher par matière, mot-clé, cours ou auteur..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 pr-9 text-xs rounded-xl h-10 border-border/80 bg-card focus-visible:ring-primary shadow-xs"
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
-            {showMobileFilters && (
-              <div className="flex flex-col gap-2 mt-2 sm:hidden">
-                <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                  <SelectTrigger><SelectValue placeholder="Matière" /></SelectTrigger>
-                  <SelectContent>
-                    {subjects.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <Select value={selectedType} onValueChange={setSelectedType}>
-                  <SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger>
-                  <SelectContent>
-                    {types.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            {/* Desktop */}
-            <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Rechercher..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
-              </div>
-              <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                <SelectTrigger><SelectValue placeholder="Matière" /></SelectTrigger>
-                <SelectContent>
-                  {subjects.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <Select value={selectedType} onValueChange={setSelectedType}>
-                <SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger>
-                <SelectContent>
-                  {types.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Tab Navigation */}
-        <div>
-        <ul className="grid grid-flow-col text-center border-b border-gray-200 text-gray-500 mb-6">
-          {[
-            { id: "all", label: "Toutes" },
-            { id: "suggestions", label: "Suggestions" },
-          ].map((tab) => (
-            <li key={tab.id}>
-              <button
-                onClick={() => { setActiveTab(tab.id as ResourceSortKey); setShowFoldersTab(false); }}
-                className={cn(
-                  "w-full flex justify-center border-b-4 py-4 transition-all duration-200 text-sm font-medium",
-                  !showFoldersTab && resolvedResourceSort === tab.id
-                    ? "border-primary text-primary"
-                    : "border-transparent hover:text-primary hover:border-primary"
-                )}
-              >
-                {tab.label}
-              </button>
-            </li>
-          ))}
-          {(currentUser || localStorage.getItem('access')) && (
-            <li>
-              <button
-                onClick={() => { setShowFoldersTab(true); loadFolders(); }}
-                className={cn(
-                  "w-full flex justify-center border-b-4 py-4 transition-all duration-200 text-sm font-medium",
-                  showFoldersTab
-                    ? "border-primary text-primary"
-                    : "border-transparent hover:text-primary hover:border-primary"
-                )}
-              >
-                Dossiers
-              </button>
-            </li>
+            {/* Mobile Filter Toggle */}
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setShowMobileFilters((v) => !v)}
+              className={cn(
+                "sm:hidden h-10 w-10 rounded-xl shrink-0 border-border/80",
+                showMobileFilters || selectedFileFormat !== "all"
+                  ? "border-primary text-primary bg-primary/5"
+                  : ""
+              )}
+              title="Filtres"
+            >
+              <Filter className="h-4 w-4" />
+            </Button>
+
+            {/* Desktop Format Select */}
+            <div className="hidden sm:flex items-center gap-2 shrink-0">
+              <Select value={selectedFileFormat} onValueChange={setSelectedFileFormat}>
+                <SelectTrigger className="w-52 h-10 rounded-xl text-xs border-border/80 bg-card">
+                  <SelectValue placeholder="Format" />
+                </SelectTrigger>
+                <SelectContent>
+                  {fileFormats.map((f) => (
+                    <SelectItem key={f.value} value={f.value} className="text-xs">
+                      {f.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {isFiltering && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSearchTerm("");
+                    setSelectedType("all");
+                    setSelectedFileFormat("all");
+                  }}
+                  className="rounded-xl text-xs h-10 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5 mr-1" />
+                  Réinitialiser
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Mobile Collapsible Filters */}
+          {showMobileFilters && (
+            <div className="flex items-center gap-2 sm:hidden animate-in fade-in duration-200">
+              <Select value={selectedFileFormat} onValueChange={setSelectedFileFormat}>
+                <SelectTrigger className="w-full h-10 rounded-xl text-xs border-border/80 bg-card">
+                  <SelectValue placeholder="Format" />
+                </SelectTrigger>
+                <SelectContent>
+                  {fileFormats.map((f) => (
+                    <SelectItem key={f.value} value={f.value} className="text-xs">
+                      {f.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {isFiltering && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSearchTerm("");
+                    setSelectedType("all");
+                    setSelectedFileFormat("all");
+                  }}
+                  className="text-xs text-muted-foreground hover:text-foreground shrink-0 h-10"
+                >
+                  <X className="h-3.5 w-3.5 mr-1" />
+                  Effacer
+                </Button>
+              )}
+            </div>
           )}
-        </ul>
+
+          {/* Bottom Row: Horizontal Type Chips (Sans scrollbar visible) */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pt-1 border-t border-border/40">
+            {RESOURCE_CHIPS.map((chip) => {
+              const isSelected = selectedType === chip.value;
+              return (
+                <button
+                  key={chip.value}
+                  type="button"
+                  onClick={() => setSelectedType(chip.value)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer",
+                    isSelected
+                      ? "bg-primary text-primary-foreground shadow-xs"
+                      : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  <span>{chip.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* ======= FOLDERS TAB ======= */}
-        {showFoldersTab ? (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-bold text-lg">
-                Mes dossiers ({folders.length}/4)
-              </h2>
-              <button
-                className={cn(
-                  "text-sm font-medium px-3 py-1.5 rounded-lg transition-all",
-                  folders.length >= 4
-                    ? "text-muted-foreground cursor-not-allowed"
-                    : "text-primary hover:bg-primary/10"
-                )}
-                onClick={() => { setEditingFolder(null); setShowCreateFolder(true); }}
-                disabled={folders.length >= 4}
-              >
-                + Nouveau dossier
-              </button>
+        {/* ─── Main Content (Filtered Grid or Dashboard Carousels) ─── */}
+        {isFiltering ? (
+          <div className="space-y-4 pt-2">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-xs font-bold text-muted-foreground">
+                {filteredResources.length}{" "}
+                {filteredResources.length > 1 ? "ressources trouvées" : "ressource trouvée"}
+              </span>
             </div>
 
-            {foldersLoading ? (
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="h-32 bg-muted/40 rounded-xl animate-pulse" />
+            {resourcesQuery.isLoading ? (
+              <div className="grid gap-3.5 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <ResourceSkeleton key={i} />
                 ))}
               </div>
-            ) : folders.length === 0 ? (
+            ) : filteredResources.length === 0 ? (
               <EmptyState
-                icon={Folder}
-                title="Aucun dossier"
-                description="Créez jusqu'à 4 dossiers pour organiser vos ressources."
-                actionLabel="Créer un dossier"
-                onAction={() => setShowCreateFolder(true)}
+                icon={FileText}
+                title="Aucune ressource trouvée"
+                description="Essayez d'ajuster vos filtres ou effectuez une recherche avec d'autres termes."
+                actionLabel="Tout réinitialiser"
+                onAction={() => {
+                  setSearchTerm("");
+                  setSelectedType("all");
+                  setSelectedFileFormat("all");
+                }}
               />
             ) : (
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                {folders.map(folder => (
-                  <FolderCard
-                    key={folder.id}
-                    folder={folder}
-                    isSelected={selectedFolder?.id === folder.id}
-                    onOpen={handleOpenFolder}
-                    onDownloadZip={async (f) => {
-                      if (!currentUser?.isVerified) {
-                        toast({
-                          title: "Compte non certifié",
-                          description: "Vérifiez votre compte pour télécharger des dossiers.",
-                          variant: "destructive",
-                          action: (
-                            <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>Vérifier</Button>
-                          )
-                        });
-                        return;
-                      }
-                      await downloadFolderZip(f.id, f.name);
-                      toast({ title: 'Téléchargement du ZIP en cours...' });
-                    }}
-                    onEdit={(f) => { setEditingFolder(f); setShowCreateFolder(true); }}
-                    onDelete={handleDeleteFolder}
+              <div className="grid gap-3.5 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                {filteredResources.map((resource) => (
+                  <ResourceCard
+                    key={resource.id}
+                    resource={resource}
+                    isDownloading={downloadingIds.has(resource.id)}
+                    isSaved={savedResources.has(resource.id)}
+                    onDownload={(e) => handleDownload(e, resource.id)}
+                    onSave={(e) => handleSave(e, resource.id)}
+                    onPreview={(e) => handlePreview(e, resource.id)}
                   />
                 ))}
               </div>
             )}
-
-            {selectedFolder && (
-              <div className="mt-6 space-y-3">
-                <div className="flex items-center gap-2 border-b pb-2">
-                  <FolderOpen className="h-4 w-4 text-primary" />
-                  <h3 className="font-semibold">{selectedFolder.name}</h3>
-                  <span className="text-xs text-muted-foreground ml-auto">{folderResources.length} fichier{folderResources.length !== 1 ? 's' : ''}</span>
-                </div>
-                {folderResources.length === 0 ? (
-                  <EmptyState
-                    icon={FolderOpen}
-                    title="Dossier vide"
-                    description="Ce dossier ne contient pas encore de ressources."
+          </div>
+        ) : viewAllCategory ? (
+          <div className="space-y-4 pt-2">
+            <div className="flex items-center gap-4 mb-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setViewAllCategory(null)}
+                className="rounded-xl text-xs"
+              >
+                Retour
+              </Button>
+              <h2 className="text-lg font-bold text-foreground capitalize">
+                {RESOURCE_TYPE_OPTIONS.find((opt) => opt.value === viewAllCategory)?.label ||
+                  viewAllCategory}
+              </h2>
+            </div>
+            <div className="grid gap-3.5 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+              {filteredResources
+                .filter((r) => r.type === viewAllCategory)
+                .map((resource) => (
+                  <ResourceCard
+                    key={resource.id}
+                    resource={resource}
+                    isDownloading={downloadingIds.has(resource.id)}
+                    isSaved={savedResources.has(resource.id)}
+                    onDownload={(e) => handleDownload(e, resource.id)}
+                    onSave={(e) => handleSave(e, resource.id)}
+                    onPreview={(e) => handlePreview(e, resource.id)}
                   />
-                ) : (
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                    {folderResources.map((resource) => (
-                      <ResourceCard
-                        key={resource.id}
-                        resource={resource}
-                        isDownloading={downloadingIds.has(resource.id)}
-                        isSaved={savedResources.has(resource.id)}
-                        onDownload={(e) => handleDownload(e, resource.id)}
-                        onSave={(e) => handleSave(e, resource.id)}
-                        onPreview={(e) => handlePreview(e, resource.id)}
+                ))}
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-10 mt-6 pb-12">
+            {/* Row 1: Mes Dossiers */}
+            {(currentUser || localStorage.getItem("access")) && (
+              <section className="flex flex-col w-full max-w-full overflow-hidden">
+                <div className="flex justify-between items-center mb-3 px-1">
+                  <h2 className="text-base sm:text-lg font-bold text-foreground">
+                    Mes Dossiers ({folders.length}/4)
+                  </h2>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "text-xs text-muted-foreground hover:text-foreground font-semibold",
+                      folders.length >= 4 && "opacity-50 cursor-not-allowed"
+                    )}
+                    onClick={() => {
+                      setEditingFolder(null);
+                      setShowCreateFolder(true);
+                    }}
+                    disabled={folders.length >= 4}
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1" />
+                    Nouveau dossier
+                  </Button>
+                </div>
+
+                <NetflixCarousel className="gap-4 pb-1">
+                  {foldersLoading ? (
+                    Array.from({ length: 4 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="cs-scroll-item w-[220px] sm:w-[260px] h-32 bg-muted/40 rounded-2xl animate-pulse"
                       />
-                    ))}
+                    ))
+                  ) : folders.length === 0 ? (
+                    <div
+                      className="cs-scroll-item w-[220px] sm:w-[260px] h-32 border border-border/70 rounded-2xl flex flex-col items-center justify-center text-muted-foreground hover:bg-muted/30 hover:border-primary/40 cursor-pointer transition-all bg-card/50"
+                      onClick={() => setShowCreateFolder(true)}
+                    >
+                      <Folder className="h-6 w-6 mb-2 text-primary/70" />
+                      <span className="text-xs font-semibold">Créer un dossier</span>
+                    </div>
+                  ) : (
+                    folders.map((folder) => (
+                      <div key={folder.id} className="cs-scroll-item w-[220px] sm:w-[260px]">
+                        <FolderCard
+                          folder={folder}
+                          isSelected={selectedFolder?.id === folder.id}
+                          onOpen={handleOpenFolder}
+                          onDownloadZip={async (f) => {
+                            if (!currentUser?.isVerified) {
+                              toast({
+                                title: "Compte non certifié",
+                                description: "Certifiez votre compte pour télécharger des dossiers ZIP.",
+                                variant: "destructive",
+                                action: (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openVerificationModal()}
+                                  >
+                                    Vérifier
+                                  </Button>
+                                ),
+                              });
+                              return;
+                            }
+                            await downloadFolderZip(f.id, f.name);
+                            toast({ title: "Téléchargement en cours..." });
+                          }}
+                          onEdit={(f) => {
+                            setEditingFolder(f);
+                            setShowCreateFolder(true);
+                          }}
+                          onDelete={handleDeleteFolder}
+                        />
+                      </div>
+                    ))
+                  )}
+                </NetflixCarousel>
+
+                {/* Expanded Selected Folder */}
+                {selectedFolder && (
+                  <div className="mt-4 bg-muted/30 p-4 rounded-2xl border border-border/60 space-y-3">
+                    <div className="flex items-center justify-between border-b border-border/50 pb-2">
+                      <div className="flex items-center gap-2">
+                        <FolderOpen className="h-4 w-4 text-primary" />
+                        <h3 className="font-bold text-sm text-foreground">{selectedFolder.name}</h3>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs px-2"
+                        onClick={() => setSelectedFolder(null)}
+                      >
+                        Fermer
+                      </Button>
+                    </div>
+                    {folderResources.length === 0 ? (
+                      <div className="py-6 text-center text-muted-foreground text-xs">
+                        Ce dossier est actuellement vide.
+                      </div>
+                    ) : (
+                      <NetflixCarousel className="gap-3 pb-1">
+                        {folderResources.map((resource) => (
+                          <div key={resource.id} className="cs-scroll-item w-[160px] sm:w-[185px] md:w-[200px]">
+                            <ResourceCard
+                              resource={resource}
+                              isDownloading={downloadingIds.has(resource.id)}
+                              isSaved={savedResources.has(resource.id)}
+                              onDownload={(e) => handleDownload(e, resource.id)}
+                              onSave={(e) => handleSave(e, resource.id)}
+                              onPreview={(e) => handlePreview(e, resource.id)}
+                            />
+                          </div>
+                        ))}
+                      </NetflixCarousel>
+                    )}
                   </div>
                 )}
-              </div>
+              </section>
             )}
-          </div>
-        ) : (
-        <>
-        {loading || resourcesQuery.isLoading ? (
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <ResourceSkeleton key={i} />
-            ))}
-          </div>
-        ) : getSortedResources().length === 0 ? (
-          <EmptyState
-            icon={FileText}
-            title="Aucune ressource trouvée"
-            description="Soyez le premier à partager une ressource dans cette catégorie !"
-            actionLabel={currentUser?.isVerified ? "Partager une ressource" : "Se certifier"}
-            onAction={() => {
-              if (currentUser?.isVerified) {
-                window.location.reload();
-              } else {
-                openVerificationModal();
-              }
-            }}
-          />
-        ) : (
-          (() => {
-            const isSearchOrFilterActive = searchTerm !== "" || selectedSubject !== "all" || selectedType !== "all";
-
-            // Mode Recherche ou Filtres : On affiche la grille standard
-            if (isSearchOrFilterActive) {
+            {/* Row 2: Suggestions Populaires */}
+            {(() => {
+              const suggestions = [...filteredResources]
+                .sort((a, b) => (b.impactScore || 0) - (a.impactScore || 0))
+                .slice(0, 10);
+              if (suggestions.length === 0 || resourcesQuery.isLoading) return null;
               return (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                  {getSortedResources().map((resource) => (
-                    <ResourceCard
-                      key={resource.id}
-                      resource={resource}
-                      isDownloading={downloadingIds.has(resource.id)}
-                      isSaved={savedResources.has(resource.id)}
-                      onDownload={(e) => handleDownload(e, resource.id)}
-                      onSave={(e) => handleSave(e, resource.id)}
-                      onPreview={(e) => handlePreview(e, resource.id)}
-                    />
-                  ))}
-                </div>
-              );
-            }
-
-            // Mode "Voir Tout" pour une catégorie spécifique
-            if (viewAllCategory) {
-              const categoryLabel = RESOURCE_TYPE_OPTIONS.find(opt => opt.value === viewAllCategory)?.label || "Catégorie";
-              const categoryResources = getSortedResources().filter(r => r.type === viewAllCategory);
-              
-              return (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4 mb-4">
-                    <Button variant="outline" size="sm" onClick={() => setViewAllCategory(null)}>
-                      ← Retour aux catégories
-                    </Button>
-                    <h2 className="text-xl font-medium">{categoryLabel}</h2>
-                  </div>
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                    {categoryResources.map((resource) => (
-                      <ResourceCard
-                        key={resource.id}
-                        resource={resource}
-                        isDownloading={downloadingIds.has(resource.id)}
-                        isSaved={savedResources.has(resource.id)}
-                        onDownload={(e) => handleDownload(e, resource.id)}
-                        onSave={(e) => handleSave(e, resource.id)}
-                        onPreview={(e) => handlePreview(e, resource.id)}
-                      />
+                <section>
+                  <h2 className="text-base sm:text-lg font-bold mb-3 px-1 text-foreground">
+                    Ressources Recommandées & Populaires
+                  </h2>
+                  <NetflixCarousel className="gap-3 pb-1">
+                    {suggestions.map((resource) => (
+                      <div key={resource.id} className="cs-scroll-item w-[160px] sm:w-[185px] md:w-[200px]">
+                        <ResourceCard
+                          resource={resource}
+                          isDownloading={downloadingIds.has(resource.id)}
+                          isSaved={savedResources.has(resource.id)}
+                          onDownload={(e) => handleDownload(e, resource.id)}
+                          onSave={(e) => handleSave(e, resource.id)}
+                          onPreview={(e) => handlePreview(e, resource.id)}
+                        />
+                      </div>
                     ))}
-                  </div>
-                </div>
+                  </NetflixCarousel>
+                </section>
               );
-            }
+            })()}
 
-            // Mode "Netflix" : Affichage horizontal par catégories
-            return (
-              <div className="space-y-8">
-                {RESOURCE_TYPE_OPTIONS.map((opt) => {
-                  const categoryResources = getSortedResources().filter(r => r.type === opt.value);
-                  if (categoryResources.length === 0) return null;
+            {/* Rows 3+: Par Catégorie / Type */}
+            {RESOURCE_TYPE_OPTIONS.map((opt) => {
+              const categoryResources = filteredResources.filter((r) => r.type === opt.value);
+              if (categoryResources.length === 0 && !resourcesQuery.isLoading) return null;
 
-                  return (
-                    <div key={opt.value} className="flex flex-col w-full max-w-full overflow-hidden">
-                      <div className="flex justify-between items-center mb-2">
-                        <h2 className="text-xl font-medium text-foreground">{opt.label}</h2>
-                        {categoryResources.length > 4 && (
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="text-primary hover:bg-primary/10"
-                            onClick={() => setViewAllCategory(opt.value)}
-                          >
-                            Voir tout ({categoryResources.length})
-                          </Button>
-                        )}
-                      </div>
-                      <div className="w-full overflow-x-auto scrollbar-hide">
-                        <div className="flex gap-3 pb-3 min-w-max">
-                          {categoryResources.map((resource) => (
-                            <div key={resource.id} className="w-[165px] sm:w-[250px] shrink-0">
-                              <ResourceCard
-                                resource={resource}
-                                isDownloading={downloadingIds.has(resource.id)}
-                                isSaved={savedResources.has(resource.id)}
-                                onDownload={(e) => handleDownload(e, resource.id)}
-                                onSave={(e) => handleSave(e, resource.id)}
-                                onPreview={(e) => handlePreview(e, resource.id)}
-                              />
-                            </div>
-                          ))}
+              return (
+                <section key={opt.value}>
+                  <div className="flex justify-between items-center mb-3 px-1">
+                    <h2 className="text-base sm:text-lg font-bold text-foreground">{opt.label}</h2>
+                    {categoryResources.length > 4 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs text-muted-foreground hover:text-foreground font-semibold"
+                        onClick={() => setViewAllCategory(opt.value)}
+                      >
+                        Voir tout ({categoryResources.length})
+                      </Button>
+                    )}
+                  </div>
+                  <NetflixCarousel className="gap-3 pb-1">
+                    {resourcesQuery.isLoading ? (
+                      Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i} className="cs-scroll-item w-[160px] sm:w-[185px] md:w-[200px]">
+                          <ResourceSkeleton />
                         </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })()
-        )}
-        </>
+                      ))
+                    ) : (
+                      categoryResources.map((resource) => (
+                        <div key={resource.id} className="cs-scroll-item w-[160px] sm:w-[185px] md:w-[200px]">
+                          <ResourceCard
+                            resource={resource}
+                            isDownloading={downloadingIds.has(resource.id)}
+                            isSaved={savedResources.has(resource.id)}
+                            onDownload={(e) => handleDownload(e, resource.id)}
+                            onSave={(e) => handleSave(e, resource.id)}
+                            onPreview={(e) => handlePreview(e, resource.id)}
+                          />
+                        </div>
+                      ))
+                    )}
+                  </NetflixCarousel>
+                </section>
+              );
+            })}
+          </div>
         )}
 
         {showCreateFolder && (
@@ -785,12 +807,10 @@ export function Resources() {
               onOpenChange={setShowCreateFolder}
               existingCount={folders.length}
               folder={editingFolder}
-              onSuccess={(folder) => {
-                if (editingFolder) {
-                  setFolders(prev => prev.map(f => f.id === folder.id ? folder : f));
-                  if (selectedFolder?.id === folder.id) setSelectedFolder(folder);
-                } else {
-                  setFolders(prev => [...prev, folder]);
+              onSuccess={async (folder) => {
+                await queryClient.invalidateQueries({ queryKey: ["resource-folders"] });
+                if (editingFolder && selectedFolder?.id === folder.id) {
+                  setSelectedFolder(folder);
                 }
                 setEditingFolder(null);
               }}

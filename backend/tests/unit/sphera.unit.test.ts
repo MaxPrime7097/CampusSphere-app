@@ -15,6 +15,14 @@ import { describe, it, expect } from "vitest";
 import { annalePrompt, qaPrompt, suggestionsPrompt, toolPrompt } from "../../src/services/ai/prompts.js";
 import { cleanJson, parseJsonWithFallback, UnparseableModelOutputError } from "../../src/services/ai/json.js";
 import { correctionsCount } from "../../src/serializers/sphera.js";
+import {
+  escapeXml,
+  buildSSML,
+  cleanSpokenText,
+  detectLanguage,
+  normalizeSpeaker,
+  sanitizeDialogueTurns,
+} from "../../src/services/ttsProvider.js";
 
 describe("prompt construction", () => {
   const SOURCE = "Chapitre 1. La thermodynamique étudie les échanges d'énergie.";
@@ -44,6 +52,8 @@ describe("prompt construction", () => {
     expect(toolPrompt("fiche", SOURCE)).toContain(SOURCE);
     expect(toolPrompt("quiz", SOURCE)).toContain(SOURCE);
     expect(toolPrompt("flashcards", SOURCE)).toContain(SOURCE);
+    expect(toolPrompt("mindmap", SOURCE)).toContain(SOURCE);
+    expect(toolPrompt("audio", SOURCE)).toContain(SOURCE);
     expect(annalePrompt(SOURCE, "complete")).toContain(SOURCE);
     expect(suggestionsPrompt(SOURCE)).toContain(SOURCE);
     expect(qaPrompt(SOURCE, "Qu'est-ce que l'enthalpie ?")).toContain("Qu'est-ce que l'enthalpie ?");
@@ -114,5 +124,95 @@ describe("corrections_count", () => {
     expect(correctionsCount(null)).toBe(0);
     expect(correctionsCount({ sections: "not an array" })).toBe(0);
     expect(correctionsCount({ sections: [{ nom: "A" }] })).toBe(0);
+  });
+});
+
+describe("tts provider & ssml", () => {
+  it("escapes XML special characters safely", () => {
+    expect(escapeXml("Tom & Jerry <friends> 'yes' \"no\"")).toBe(
+      "Tom &amp; Jerry &lt;friends&gt; &apos;yes&apos; &quot;no&quot;"
+    );
+  });
+
+  it("builds SSML with multi-speaker voices and chat style", () => {
+    const dialogue = [
+      { speaker: "A", text: "Bienvenue dans ce cours & révision." },
+      { speaker: "B", text: "Peux-tu m'expliquer le premier point ?" },
+    ];
+    const ssmlFr = buildSSML(dialogue, "fr");
+    expect(ssmlFr).toContain('xml:lang="fr-FR"');
+    expect(ssmlFr).toContain("fr-FR-HenriNeural");
+    expect(ssmlFr).toContain("fr-FR-DeniseNeural");
+    expect(ssmlFr).toContain("Bienvenue dans ce cours &amp; révision.");
+    expect(ssmlFr).toContain('<mstts:express-as style="chat">');
+
+    const ssmlEn = buildSSML(dialogue, "en");
+    expect(ssmlEn).toContain('xml:lang="en-US"');
+    expect(ssmlEn).toContain("en-US-GuyNeural");
+    expect(ssmlEn).toContain("en-US-JennyNeural");
+  });
+
+  it("strips speaker labels like Étudiant 1: from dialogue text", () => {
+    expect(cleanSpokenText("Étudiant 1 : Bonjour à tous !")).toBe("Bonjour à tous !");
+    expect(cleanSpokenText("etudiant 2: Exactement, continuons.")).toBe("Exactement, continuons.");
+    expect(cleanSpokenText("Student 1 - Hello everyone")).toBe("Hello everyone");
+    expect(cleanSpokenText("Speaker A: Let's discuss this.")).toBe("Let's discuss this.");
+    expect(cleanSpokenText("Locuteur B — C'est vrai.")).toBe("C'est vrai.");
+    expect(cleanSpokenText("A : Première question.")).toBe("Première question.");
+    expect(cleanSpokenText("B: Deuxième réponse.")).toBe("Deuxième réponse.");
+    expect(cleanSpokenText("Texte normal sans préfixe.")).toBe("Texte normal sans préfixe.");
+  });
+
+  it("detects French vs English text accurately", () => {
+    const frText = "Dans ce cours nous allons étudier le principe de conservation de l'énergie et la thermodynamique.";
+    const enText = "In this course we will study the conservation of energy and thermodynamics with examples.";
+    expect(detectLanguage(frText)).toBe("fr");
+    expect(detectLanguage(enText)).toBe("en");
+  });
+
+  it("sanitizes dialogue turns and normalizes speaker keys", () => {
+    const rawDialogue = [
+      { speaker: "1", text: "Étudiant 1 : Premier point." },
+      { speaker: "2", text: "Étudiant 2 : Deuxième point." },
+      { speaker: "B", text: "B : Troisième point." },
+    ];
+    const cleaned = sanitizeDialogueTurns(rawDialogue);
+    expect(cleaned).toEqual([
+      { speaker: "A", text: "Premier point." },
+      { speaker: "B", text: "Deuxième point." },
+      { speaker: "B", text: "Troisième point." },
+    ]);
+  });
+
+  it("normalizes diverse speaker representations accurately", () => {
+    expect(normalizeSpeaker("Étudiant A", 0)).toBe("A");
+    expect(normalizeSpeaker("Étudiant B", 1)).toBe("B");
+    expect(normalizeSpeaker("Student 1", 0)).toBe("A");
+    expect(normalizeSpeaker("Student 2", 1)).toBe("B");
+    expect(normalizeSpeaker("locuteur b", 1)).toBe("B");
+    expect(normalizeSpeaker("speaker a", 0)).toBe("A");
+    expect(normalizeSpeaker("explicateur", 0)).toBe("A");
+    expect(normalizeSpeaker("curieux", 1)).toBe("B");
+    expect(normalizeSpeaker(1, 0)).toBe("A");
+    expect(normalizeSpeaker(2, 1)).toBe("B");
+    expect(normalizeSpeaker("", 0)).toBe("A");
+    expect(normalizeSpeaker("", 1)).toBe("B");
+  });
+
+  it("safeguards against single-speaker output by enforcing alternation", () => {
+    // When a model erroneously marks all turns as 'A', strict alternation is enforced
+    const monologue = [
+      { speaker: "A", text: "Premier point." },
+      { speaker: "A", text: "Deuxième point." },
+      { speaker: "A", text: "Troisième point." },
+      { speaker: "A", text: "Quatrième point." },
+    ];
+    const cleaned = sanitizeDialogueTurns(monologue);
+    expect(cleaned).toEqual([
+      { speaker: "A", text: "Premier point." },
+      { speaker: "B", text: "Deuxième point." },
+      { speaker: "A", text: "Troisième point." },
+      { speaker: "B", text: "Quatrième point." },
+    ]);
   });
 });

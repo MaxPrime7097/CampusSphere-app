@@ -1,31 +1,36 @@
 import React from 'react'
-import { FileText, BrainCircuit, Columns, PenTool } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { FileText, BrainCircuit, Zap, ArrowRight, FilePenLine, SquareStack } from 'lucide-react'
 
 export function Features() {
   const features = [
     {
-      title: "Fiche de révision",
-      desc: "Points clés, définitions, formules extraits automatiquement",
-      icon: <FileText className="w-6 h-6 text-[#F5F5F5]" />,
-      emoji: "✨"
+      title: "Sphera Live (Multijoueur)",
+      desc: "Lance des parties en direct avec tes camarades. Rejoins avec un code PIN, affronte le timer et monte sur le podium en temps réel.",
+      icon: <Zap className="w-6 h-6 text-sphera-green" />,
+      badge: "Nouveau",
+      link: "/sphera-live",
+      highlight: true
     },
     {
-      title: "Quiz interactif",
-      desc: "Questions avec timer, score et explications",
-      icon: <BrainCircuit className="w-6 h-6 text-[#F5F5F5]" />,
-      emoji: "🎯"
+      title: "Fiches de révision structurées",
+      desc: "Points clés, définitions, théorèmes et formules extraits automatiquement de tes PDFs en quelques secondes.",
+      icon: <FileText className="w-6 h-6 text-sphera-green" />,
     },
     {
-      title: "Flashcards",
-      desc: "Cartes recto/verso style pour mémoriser",
-      icon: <Columns className="w-6 h-6 text-[#F5F5F5]" />,
-      emoji: "📚"
+      title: "Quiz interactifs solo",
+      desc: "Questions ciblées avec timer, score immédiat et explications détaillées pour combler chaque lacune.",
+      icon: <BrainCircuit className="w-6 h-6 text-sphera-green" />,
+    },
+    {
+      title: "Flashcards intelligentes",
+      desc: "Cartes recto/verso optimisées pour l'Active Recall et la répétition espacée, prêtes à être révisées.",
+      icon: <SquareStack className="w-6 h-6 text-sphera-green" />,
     },
     {
       title: "Correction d'annales",
-      desc: "Mode complet ou rapide selon ton besoin",
-      icon: <PenTool className="w-6 h-6 text-[#F5F5F5]" />,
-      emoji: "📝"
+      desc: "Mode complet ou rapide selon ton timing pour t'entraîner sur les vrais sujets des années précédentes.",
+      icon: <FilePenLine className="w-6 h-6 text-sphera-green" />,
     }
   ]
 
@@ -39,25 +44,50 @@ export function Features() {
             Tout ce dont tu as besoin
           </h2>
           <p className="text-sphera-text-muted text-lg max-w-2xl mx-auto">
-            Génère exactement le format d'apprentissage qui correspond à ta méthode.
+            Génère exactement le format d'apprentissage qui correspond à tes besoins, seul ou en équipe.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {features.map((feat, idx) => (
-            <div key={idx} className="sphera-card p-8 group hover:border-sphera-green/50 cursor-default">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-sphera-surface-2 border border-sphera-border flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                  <span className="text-xl">{feat.emoji}</span>
+            <div 
+              key={idx} 
+              className={`sphera-card p-8 group transition-all duration-300 ${
+                feat.highlight 
+                  ? 'md:col-span-2 border-sphera-green/40 bg-gradient-to-br from-sphera-surface-2 to-sphera-surface hover:border-sphera-green shadow-[0_0_30px_rgba(34,197,94,0.08)]' 
+                  : 'hover:border-sphera-green/50'
+              }`}
+            >
+              <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-sphera-surface-2 border border-sphera-border flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:border-sphera-green/50 transition-all">
+                    {feat.icon}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="font-display text-xl font-bold text-white group-hover:text-sphera-green transition-colors">
+                        {feat.title}
+                      </h3>
+                      {feat.badge && (
+                        <span className="bg-sphera-green text-black font-bold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                          {feat.badge}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sphera-text-muted leading-relaxed text-sm md:text-base">
+                      {feat.desc}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-display text-xl font-bold text-white mb-2 group-hover:text-sphera-green transition-colors">
-                    {feat.title}
-                  </h3>
-                  <p className="text-sphera-text-muted leading-relaxed">
-                    {feat.desc}
-                  </p>
-                </div>
+
+                {feat.link && (
+                  <Link 
+                    to={feat.link}
+                    className="self-end sm:self-center shrink-0 inline-flex items-center gap-1.5 text-xs font-bold text-sphera-green hover:underline uppercase tracking-wider group-hover:translate-x-1 transition-transform"
+                  >
+                    Explorer <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                )}
               </div>
             </div>
           ))}

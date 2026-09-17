@@ -47,6 +47,23 @@ export async function pruneRevokedTokens(): Promise<number> {
   return count;
 }
 
+import { getBedrockUsageStats } from "../services/ai/providers.js";
+
+const ALERT_THRESHOLDS = [50, 75, 90];
+let lastAlertSent = 0;
+
+export async function checkBedrockBudgetAlert(): Promise<void> {
+  const stats = await getBedrockUsageStats();
+  for (const threshold of ALERT_THRESHOLDS) {
+    if (stats.percentUsed >= threshold && lastAlertSent < threshold) {
+      lastAlertSent = threshold;
+      console.warn(
+        `[jobs][BUDGET-ALERT] Alerte consommation Bedrock : ${threshold}% du budget atteint (${stats.spent.toFixed(2)}$ / ${stats.budget.toFixed(2)}$) !`,
+      );
+    }
+  }
+}
+
 interface ScheduledJob {
   name: string;
   periodSeconds: number;
@@ -57,6 +74,7 @@ const JOBS: ScheduledJob[] = [
   { name: "cleanup-expired-spheres", periodSeconds: 3600, run: cleanupExpiredSpheres },
   { name: "prune-revoked-tokens", periodSeconds: 86_400, run: pruneRevokedTokens },
   { name: "send-event-reminders", periodSeconds: 3600, run: sendEventReminders },
+  { name: "check-bedrock-budget", periodSeconds: 3600, run: checkBedrockBudgetAlert },
 ];
 
 const timers: NodeJS.Timeout[] = [];

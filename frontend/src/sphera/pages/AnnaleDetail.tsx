@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { ArrowLeft, Share2, Sparkles, AlertCircle, Loader2, Check } from "lucide-react";
+import { ArrowLeft, Share2, AlertCircle, Loader2, Check } from "lucide-react";
+import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -107,13 +108,13 @@ export const AnnaleDetail: React.FC = () => {
   }
 
   return (
-    <div className="container py-8 max-w-5xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="w-full max-w-5xl mx-auto py-4 sm:py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <Helmet>
         <title>{annale.source_title || "Correction d'annale"} — CampusSphere</title>
       </Helmet>
 
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-6 sm:mb-8 px-4 sm:px-8">
         <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4 -ml-4 text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft className="mr-2 h-4 w-4" /> Retour
         </Button>
@@ -121,29 +122,31 @@ export const AnnaleDetail: React.FC = () => {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="bg-[#ff9800]/10 text-[#ff9800] px-2.5 py-1 rounded-full text-xs font-semibold flex items-center border border-[#ff9800]/20">
-                <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+                <SpheraIcon size="sm" className="mr-1.5" />
                 Correction Sphera
               </span>
             </div>
-            <h1 className="text-3xl font-bold tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight break-words">
               {annale.source_title || annale.source_filename || "Correction d'annale"}
             </h1>
-            <p className="text-muted-foreground mt-2">
+            <p className="text-muted-foreground mt-2 text-sm sm:text-base">
               Corrigée le {new Date(annale.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
               {annale.cours_title && (
                 <> · Croisée avec <span className="font-medium text-foreground">{annale.cours_title}</span></>
               )}
             </p>
           </div>
-          <Button variant="outline" className="gap-2" onClick={handleOpenShare} disabled={shared}>
+          <Button variant="outline" className="gap-2 w-full md:w-auto mt-4 md:mt-0" onClick={handleOpenShare} disabled={shared}>
             {shared ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
-            {shared ? "Partagée" : "Partager"}
+            {shared ? "Partagé" : "Partager"}
           </Button>
         </div>
       </div>
 
       {/* Correction */}
-      <AnnaleCorrection annale={annale} />
+      <div className="px-4 sm:px-8">
+        <AnnaleCorrection annale={annale} />
+      </div>
 
       {/* Modal partage */}
       <Dialog open={isShareModalOpen} onOpenChange={setIsShareModalOpen}>

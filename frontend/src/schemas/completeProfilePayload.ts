@@ -43,7 +43,7 @@ const portfolioLinkItemSchema = z.object({
 });
 
 export const completeSupabaseProfilePayloadSchema = z.object({
-  username: z.string().trim().min(3, "Au moins 3 caractères").max(MAX.username, `Maximum ${MAX.username} caractères`),
+  username: z.string().trim().min(3, "Au moins 3 caractères").max(MAX.username, `Maximum ${MAX.username} caractères`).optional(),
   first_name: z.string().trim().max(MAX.firstName, `Maximum ${MAX.firstName} caractères`).optional(),
   last_name: z.string().trim().max(MAX.lastName, `Maximum ${MAX.lastName} caractères`).optional(),
   phone_number: z.string().trim().regex(phoneRegex, "Téléphone invalide (9 chiffres, avec ou sans +237)").optional(),

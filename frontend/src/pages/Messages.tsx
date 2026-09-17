@@ -78,6 +78,7 @@ function mapMessage(rawMsg: any, currentUserId?: string) {
     senderId,
     content: msg.content || "",
     timestamp: msg.created_at || msg.createdAt || null,
+    isEdited: msg.is_edited || (msg.updated_at && msg.created_at && msg.updated_at !== msg.created_at) || false,
     isCurrentUser: senderId === String(currentUserId || ""),
     avatar: author.avatar || "/placeholder-avatar.jpg",
     canEdit: msg.can_edit ?? senderId === String(currentUserId || ""),
@@ -432,6 +433,8 @@ export function Messages() {
       });
       return;
     }
+    
+    if (isSending || !newMessage.trim()) return;
 
     const validation = messageSchema.safeParse({ content: newMessage });
     
@@ -450,7 +453,7 @@ export function Messages() {
       const result = await sendMessage(conversationId, newMessage);
       const newMsg = mapMessage(result, String(currentUser?.id || ""));
       
-      setMessages(prev => [...prev, newMsg]);
+      setMessages(prev => prev.some((item: any) => item.id === newMsg.id) ? prev : [...prev, newMsg]);
       setConversations((prev) =>
         prev.map((conversation) =>
           conversation.id === conversationId
@@ -753,7 +756,7 @@ export function Messages() {
         <div className={`w-full md:w-80 lg:w-96 border-r bg-card/50 flex-shrink-0 ${conversationId ? 'hidden md:flex' : 'flex'} flex-col h-full`}>
           <div className="p-3 md:p-4 border-b flex-shrink-0">
             <div className="flex items-center justify-between mb-3 md:mb-4">
-              <h2 className="text-3xl font-bold text-muted-foreground">
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
                 Messages
               </h2>
               <div className="flex items-center gap-2">
@@ -1154,15 +1157,18 @@ export function Messages() {
                            </div>
                          </div>
                        ) : (
-                         <p className="leading-relaxed break-all whitespace-pre-wrap">
-                           {message.content.split(/(https?:\/\/[^\s]+)/g).map((part: string, i: number) =>
-                             /^https?:\/\//.test(part) ? (
-                               <a key={i} href={part} target="_blank" rel="noopener noreferrer"
-                                 className="underline underline-offset-2 hover:opacity-80 break-all"
-                                 onClick={(e) => e.stopPropagation()}>{part}</a>
-                             ) : <span key={i}>{part}</span>
-                           )}
-                         </p>
+                          <p className="leading-relaxed break-all whitespace-pre-wrap">
+                            {message.content.split(/(https?:\/\/[^\s]+)/g).map((part: string, i: number) =>
+                              /^https?:\/\//.test(part) ? (
+                                <a key={i} href={part} target="_blank" rel="noopener noreferrer"
+                                  className="underline underline-offset-2 hover:opacity-80 break-all"
+                                  onClick={(e) => e.stopPropagation()}>{part}</a>
+                              ) : <span key={i}>{part}</span>
+                            )}
+                            {message.isEdited && (
+                              <span className="text-[10px] opacity-70 ml-2 italic whitespace-nowrap">(modifié)</span>
+                            )}
+                          </p>
                        )}
                       </div>
 

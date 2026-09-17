@@ -15,8 +15,9 @@ import {
   Bell,
   Plus,
   Link,
-  Sparkles,
+  Calendar,
 } from "lucide-react";
+import { SpheraIcon } from "@/components/ui/sphera-icon";
 
 export interface NavigationUser {
   username?: string | null;
@@ -32,7 +33,7 @@ export interface NavigationUser {
 export interface NavigationItem {
   title: string;
   url: string;
-  icon: LucideIcon;
+  icon: any; // Using any to support both LucideIcon and custom SVG/React components like SpheraIcon
   external?: boolean;
 }
 
@@ -70,6 +71,7 @@ export function getNavigationSections(user?: NavigationUser | null): NavigationS
   
   // Resources is now public-read
   navigationItems.push({ title: "Ressources", url: "/resources", icon: FolderOpen });
+  navigationItems.push({ title: "Événements", url: "/events", icon: Calendar });
   
   if (isAuthenticated) {
     navigationItems.push({ title: "Sphères", url: "/spheres", icon: Globe });
@@ -80,7 +82,7 @@ export function getNavigationSections(user?: NavigationUser | null): NavigationS
     quickActions.push(
       { title: "Connexions", url:"/connections", icon: Link },
       { title: "Messages", url: "/messages", icon: MessageSquare },
-      { title: "Assistante Sphera", url: "/study-sessions", icon: Sparkles },
+      { title: "Assistante Sphera", url: "/sphera", icon: SpheraIcon },
       { title: "Enregistrements", url: "/saved", icon: Bookmark },
       { title: "Paramètres", url: "/settings", icon: Settings }
     );

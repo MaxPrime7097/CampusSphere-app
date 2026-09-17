@@ -117,3 +117,30 @@ export function truncate(str: string | null | undefined, length: number): string
   if (str.length <= length) return str;
   return str.slice(0, length) + "...";
 }
+
+export function toSlug(text: string | null | undefined): string {
+  if (!text) return "";
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Remove accents
+    .replace(/[^a-z0-9]+/g, "-") // Replace non-alphanumeric chars with hyphens
+    .replace(/^-+|-+$/g, "") // Trim hyphens
+    .slice(0, 60);
+}
+
+export function getSphereUrl(sphere: { id: string | number; name?: string; slug?: string }): string {
+  if (sphere.slug) return `/spheres/${sphere.slug}`;
+  const slug = toSlug(sphere.name);
+  return slug ? `/spheres/${sphere.id}-${slug}` : `/spheres/${sphere.id}`;
+}
+
+export function getResourceUrl(resource: { id: string | number; title?: string }): string {
+  const slug = toSlug(resource.title);
+  return slug ? `/resources/${resource.id}-${slug}` : `/resources/${resource.id}`;
+}
+
+export function getEventUrl(event: { id: string | number; title?: string }): string {
+  const slug = toSlug(event.title);
+  return slug ? `/events/${event.id}-${slug}` : `/events/${event.id}`;
+}

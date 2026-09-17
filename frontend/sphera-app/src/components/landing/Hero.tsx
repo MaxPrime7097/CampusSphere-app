@@ -1,6 +1,15 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Sparkles } from 'lucide-react'
+import { 
+  ArrowRight, 
+  FileText, 
+  ArrowLeft, 
+  MessageSquare, 
+  Share2, 
+  CheckCircle2, 
+  List, 
+  Maximize2 
+} from 'lucide-react'
 
 export function Hero() {
   return (
@@ -25,7 +34,7 @@ export function Hero() {
         </h1>
 
         <p className="text-lg md:text-xl text-sphera-text-muted max-w-2xl mb-10 leading-relaxed font-light animate-in" style={{ animationDelay: '200ms' }}>
-          Upload ton cours PDF. Sphera génère ta fiche de révision, quiz, flashcards et corrige tes annales en secondes.
+          Upload ton cours PDF. Sphera génère instantanément fiche de révision, quiz, flashcards et répond à toutes tes questions sur le document.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center gap-4 animate-in" style={{ animationDelay: '300ms' }}>
@@ -34,103 +43,160 @@ export function Hero() {
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </Link>
           <Link to="/login" className="btn btn-outline border-sphera-border text-white hover:bg-sphera-surface px-8 py-3.5 rounded-lg font-semibold w-full sm:w-auto">
-            Se connecter avec CampusSphere
+            Se connecter
           </Link>
         </div>
 
-        {/* Mockup Image Area */}
+        {/* ── Authentic Sphera App Workspace Mockup ─────── */}
         <div className="mt-16 w-full max-w-5xl relative animate-in" style={{ animationDelay: '400ms' }}>
           <div className="absolute inset-0 bg-gradient-to-t from-sphera-bg via-transparent to-transparent z-10 pointer-events-none" />
-          <div className="rounded-2xl border border-sphera-border bg-sphera-surface-2 p-2 shadow-[0_0_50px_rgba(34,197,94,0.1)]">
-            <div className="rounded-xl overflow-hidden bg-sphera-bg border border-sphera-border/50 h-[400px] md:h-[500px] relative text-left flex flex-col">
+          
+          <div className="rounded-2xl md:rounded-3xl border border-sphera-border bg-sphera-surface-2 p-2 sm:p-3 shadow-[0_0_60px_rgba(34,197,94,0.12)]">
+            <div className="rounded-xl md:rounded-2xl overflow-hidden bg-sphera-bg border border-sphera-border/60 h-[480px] md:h-[540px] relative text-left flex flex-col">
               
-              {/* Fake UI Header */}
-              <div className="h-14 border-b border-sphera-border flex items-center justify-between px-4 bg-sphera-surface/50 backdrop-blur-md">
-                <div className="flex items-center gap-4">
-                  <div className="flex gap-2">
-                    <div className="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/50"></div>
-                    <div className="w-3 h-3 rounded-full bg-yellow-500/20 border border-yellow-500/50"></div>
-                    <div className="w-3 h-3 rounded-full bg-green-500/20 border border-green-500/50"></div>
+              {/* Window Header Bar matching SessionDetail */}
+              <div className="h-14 border-b border-sphera-border flex items-center justify-between px-4 bg-sphera-surface-2/90 backdrop-blur-md z-20">
+                <div className="flex items-center gap-3 min-w-0">
+                  {/* Window control dots */}
+                  <div className="flex gap-1.5 mr-2">
+                    <div className="w-3 h-3 rounded-full bg-red-500/30 border border-red-500/60" />
+                    <div className="w-3 h-3 rounded-full bg-yellow-500/30 border border-yellow-500/60" />
+                    <div className="w-3 h-3 rounded-full bg-green-500/30 border border-green-500/60" />
                   </div>
-                  <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-md bg-sphera-surface border border-sphera-border text-xs text-sphera-text-muted">
-                    <FileText className="w-3.5 h-3.5" /> neurobiologie_chap1.pdf
+
+                  <div className="p-1.5 text-sphera-text-muted hover:text-white rounded-md transition-colors hidden sm:block">
+                    <ArrowLeft className="w-4 h-4" />
+                  </div>
+
+                  <div className="flex items-center gap-2 min-w-0">
+                    <FileText className="w-4 h-4 text-sphera-green shrink-0" />
+                    <span className="text-xs sm:text-sm font-semibold text-white truncate max-w-[200px] md:max-w-[280px]">
+                      neurobiologie_chapitre1.pdf
+                    </span>
                   </div>
                 </div>
 
-                <div className="flex gap-1 bg-sphera-bg p-1 rounded-md border border-sphera-border">
-                  <div className="px-3 py-1.5 rounded text-xs font-semibold bg-sphera-surface text-white shadow-sm">Fiche</div>
-                  <div className="px-3 py-1.5 rounded text-xs font-semibold text-sphera-text-muted hidden sm:block">Quiz</div>
-                  <div className="px-3 py-1.5 rounded text-xs font-semibold text-sphera-text-muted flex items-center gap-1.5">
-                    <MessageSquare className="w-3.5 h-3.5" /> Q&A
+                {/* Workspace Tabs: Fiche, Quiz, Flashcards, Q&A */}
+                <div className="flex items-center gap-3">
+                  <div className="flex gap-1 bg-sphera-bg p-1 rounded-lg border border-sphera-border/60">
+                    <div className="px-3 py-1.5 rounded-md text-xs font-semibold bg-sphera-surface text-white shadow-sm">
+                      Fiche
+                    </div>
+                    <div className="px-3 py-1.5 rounded-md text-xs font-semibold text-sphera-text-muted hidden sm:block">
+                      Quiz
+                    </div>
+                    <div className="px-3 py-1.5 rounded-md text-xs font-semibold text-sphera-text-muted hidden md:block">
+                      Flashcards
+                    </div>
+                    <div className="px-3 py-1.5 rounded-md text-xs font-semibold text-sphera-text-muted flex items-center gap-1.5">
+                      <MessageSquare className="w-3.5 h-3.5" /> Q&A
+                    </div>
+                  </div>
+
+                  <div className="hidden sm:flex items-center gap-2 pl-3 border-l border-sphera-border text-sphera-text-muted">
+                    <Share2 className="w-4 h-4" />
+                    <Maximize2 className="w-4 h-4" />
                   </div>
                 </div>
               </div>
 
-              {/* Fake UI Content */}
-              <div className="flex-1 relative flex">
-                {/* Background grid */}
-                <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none z-0"></div>
-                
-                {/* Left: PDF Preview (Hidden on mobile) */}
-                <div className="hidden md:flex w-[35%] border-r border-sphera-border bg-sphera-bg/50 relative z-10 p-6 flex-col items-center">
-                  <div className="w-full aspect-[1/1.4] bg-white rounded shadow-sm border border-gray-200 p-4 opacity-70">
-                    <div className="h-4 w-3/4 bg-gray-200 rounded mb-4"></div>
-                    <div className="space-y-2">
-                      <div className="h-2 w-full bg-gray-100 rounded"></div>
-                      <div className="h-2 w-full bg-gray-100 rounded"></div>
-                      <div className="h-2 w-5/6 bg-gray-100 rounded"></div>
-                      <div className="h-2 w-full bg-gray-100 rounded"></div>
-                      <div className="h-2 w-4/5 bg-gray-100 rounded"></div>
-                    </div>
-                    <div className="mt-6 w-full h-24 bg-gray-100 rounded flex items-center justify-center">
-                      <div className="w-12 h-12 rounded-full bg-gray-200"></div>
-                    </div>
-                    <div className="space-y-2 mt-4">
-                      <div className="h-2 w-full bg-gray-100 rounded"></div>
-                      <div className="h-2 w-5/6 bg-gray-100 rounded"></div>
-                    </div>
-                  </div>
-                </div>
+              {/* Workspace Body: Split Document View & Generated Results */}
+              <div className="flex-1 relative flex overflow-hidden">
+                {/* Background Grid */}
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none z-0" />
 
-                {/* Right: AI Output */}
-                <div className="flex-1 p-6 md:p-8 relative z-10 overflow-hidden">
-                  <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sphera-green/10 text-sphera-green border border-sphera-green/20 text-xs font-bold mb-4">
-                      <Sparkles className="w-3.5 h-3.5" /> Fiche générée en 12s
+                {/* ── Left Column: Original Document Viewer ── */}
+                <div className="hidden md:flex w-[42%] border-r border-sphera-border bg-[#161618] relative z-10 p-5 flex-col overflow-hidden">
+                  <div className="flex items-center justify-between pb-3 mb-3 border-b border-sphera-border/60 text-[11px] text-sphera-text-muted font-mono">
+                    <span>Page 1 sur 14</span>
+                    <span className="bg-sphera-surface px-2 py-0.5 rounded text-white text-[10px]">100%</span>
+                  </div>
+
+                  {/* Academic Document Paper */}
+                  <div className="flex-1 bg-sphera-surface/90 rounded-xl border border-sphera-border p-5 text-left text-xs space-y-3 shadow-inner relative overflow-hidden">
+                    <div className="text-[10px] uppercase font-mono tracking-widest text-sphera-text-muted border-b border-sphera-border/60 pb-2">
+                      Faculté des Sciences &bull; Neurophysiologie
                     </div>
-                    
-                    <h3 className="text-2xl font-display font-bold text-white mb-2">Le Système Nerveux Central</h3>
-                    <p className="text-sm text-sphera-text-muted mb-6 leading-relaxed">
-                      Centre d'intégration et de traitement de l'information. Il est composé de deux éléments principaux : l'encéphale et la moelle épinière.
+
+                    <h5 className="font-bold text-white text-sm leading-snug">
+                      Chapitre 1 : Les Mécanismes de la Transmission Synaptique
+                    </h5>
+
+                    <p className="text-sphera-text-muted leading-relaxed text-[11px]">
+                      La communication inter-neuronale repose sur le transfert unidirectionnel d'informations électriques ou chimiques.
                     </p>
 
-                    <div className="space-y-4">
-                      <div className="p-4 rounded-xl bg-sphera-surface border border-sphera-border border-l-4 border-l-sphera-green">
-                        <h4 className="text-sm font-bold text-white mb-1">Concept Clé : Les Synapses</h4>
-                        <p className="text-xs text-sphera-text-muted leading-relaxed">
-                          Zone de communication entre deux neurones. Le signal électrique est converti en signal chimique (neurotransmetteurs) pour franchir la fente synaptique.
-                        </p>
-                      </div>
+                    <div className="p-3 rounded-lg bg-sphera-bg border border-sphera-border text-sphera-text text-[11px] leading-relaxed">
+                      L'onde de dépolarisation du potentiel d'action provoque l'ouverture immédiate des canaux calciques voltage-dépendants, entraînant l'exocytose des neurotransmetteurs stockés dans les vésicules présynaptiques.
+                    </div>
 
-                      {/* Mock Formules */}
-                      <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center">
-                            <span className="text-[10px] font-bold">ƒ(x)</span>
-                          </div>
-                          <h4 className="text-sm font-bold text-blue-400">Potentiel d'action</h4>
-                        </div>
-                        <div className="bg-sphera-bg border border-sphera-border p-3 rounded-lg text-center font-mono text-sm text-white">
-                          V_m(t) = V_rest + ΔV(t)
-                        </div>
-                      </div>
+                    <p className="text-sphera-text-muted leading-relaxed text-[11px]">
+                      Les molécules diffusent ensuite dans la fente synaptique (20 à 40 nm) avant de se fixer sur leurs récepteurs cibles.
+                    </p>
+                  </div>
+                </div>
 
+                {/* ── Right Column: Generated Workspace Content ── */}
+                <div className="flex-1 p-5 md:p-7 relative z-10 overflow-hidden flex flex-col justify-between">
+                  <div className="space-y-4">
+                    {/* Header line */}
+                    <div className="flex items-center justify-between pb-3 border-b border-sphera-border/60">
+                      <div>
+                        <p className="text-xs text-sphera-green font-semibold">Fiche de révision</p>
+                        <p className="text-[11px] text-sphera-text-muted">Généré le 10/09/2026 &bull; Analyse IA complète</p>
+                      </div>
+                      <span className="text-[11px] text-sphera-text-muted/60 font-mono hidden sm:inline-block">
+                        sphera.campussphere.app
+                      </span>
+                    </div>
+
+                    {/* Fiche Title */}
+                    <h3 className="text-lg sm:text-xl font-bold text-white leading-tight">
+                      Neurophysiologie : La Transmission Synaptique
+                    </h3>
+
+                    {/* Résumé Card */}
+                    <div className="sphera-card p-4">
+                      <h4 className="text-blue-400 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <FileText className="w-3.5 h-3.5" /> Résumé
+                      </h4>
+                      <p className="text-sphera-text-muted text-xs leading-relaxed">
+                        Synthèse concise des étapes de la transmission chimique : dépolarisation, ouverture des canaux Ca²⁺, exocytose vésiculaire et fixation sur les récepteurs post-synaptiques.
+                      </p>
+                    </div>
+
+                    {/* Points clés Card */}
+                    <div className="sphera-card p-4">
+                      <h4 className="text-sphera-green text-xs font-bold uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Points clés
+                      </h4>
+                      <ul className="space-y-1.5 text-xs text-sphera-text-muted">
+                        <li className="flex items-start gap-2">
+                          <span className="text-sphera-green font-bold shrink-0">1.</span>
+                          <span>Dépolarisation de la membrane présynaptique par le potentiel d'action.</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-sphera-green font-bold shrink-0">2.</span>
+                          <span>Influx massif d'ions Ca²⁺ déclenchant la libération vésiculaire.</span>
+                        </li>
+                      </ul>
+                    </div>
+
+                    {/* Définitions Card */}
+                    <div className="sphera-card p-4 hidden sm:block">
+                      <h4 className="text-purple-400 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <List className="w-3.5 h-3.5" /> Définition
+                      </h4>
+                      <div className="border border-sphera-border rounded-lg p-2.5 bg-sphera-bg/50 text-xs">
+                        <span className="font-semibold text-white">Fente synaptique : </span>
+                        <span className="text-sphera-text-muted">Espace extracellulaire de 20 à 40 nm entre neurones pré et post-synaptiques.</span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Gradient overlay to fade bottom */}
-                <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-sphera-bg to-transparent z-20 pointer-events-none"></div>
+                {/* Bottom Fade */}
+                <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-sphera-bg to-transparent z-20 pointer-events-none" />
               </div>
             </div>
           </div>
@@ -140,5 +206,3 @@ export function Hero() {
     </section>
   )
 }
-
-import { FileText, MessageSquare } from 'lucide-react'

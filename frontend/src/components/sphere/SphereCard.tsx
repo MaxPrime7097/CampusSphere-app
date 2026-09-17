@@ -1,12 +1,22 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, Clock, Check, Loader2, Zap } from "lucide-react";
-import { OptimizedImage } from "@/components/ui/optimized-image";
-import { cn } from "@/lib/utils";
-import { SPHERE_TYPE_LABELS, SPHERE_TYPE_COLORS, type SphereType } from "@/config/sphereFeatures";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Users,
+  Lock,
+  Check,
+  Clock,
+  BookOpen,
+  FolderGit2,
+  Sparkles,
+  GraduationCap,
+  Layers,
+  ArrowRight,
+  ShieldCheck,
+} from "lucide-react";
+import { cn, getSphereUrl } from "@/lib/utils";
 
 interface SphereCardProps {
   sphere: any;
@@ -16,117 +26,219 @@ interface SphereCardProps {
   className?: string;
 }
 
-export const SphereCard = React.memo(({ sphere, isJoining, membership = "none", onJoin, className }: SphereCardProps) => {
-  const navigate = useNavigate();
-  
-  // Design details
-  const sphereColor = sphere.color || "from-primary/20 to-accent/20";
-  const bannerImage = sphere.banner_image || sphere.bannerImage;
-  const sphereType = (sphere.sphere_type || 'communaute') as SphereType;
-  
-  return (
-    <Card 
-      className={cn(
-        "group overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 campus-card cursor-pointer border-border/50 bg-card active:scale-[0.98]",
-        className
-      )}
-      onClick={() => navigate(`/spheres/${sphere.id}`)}
-    >
-      <CardContent className="p-0 flex flex-col h-full">
-        {/* Banner Section */}
-        <div className="relative aspect-[16/9] overflow-hidden">
+const SPHERE_TYPE_META: Record<
+  string,
+  { label: string; gradient: string; icon: React.ComponentType<{ className?: string }> }
+> = {
+  cours: {
+    label: "Cours & TD",
+    gradient: "from-blue-600 to-indigo-700",
+    icon: BookOpen,
+  },
+  projet: {
+    label: "Projet",
+    gradient: "from-pink-600 to-rose-700",
+    icon: FolderGit2,
+  },
+  communaute: {
+    label: "Communauté",
+    gradient: "from-emerald-600 to-teal-700",
+    icon: Users,
+  },
+  club: {
+    label: "Club & Asso",
+    gradient: "from-indigo-600 to-purple-700",
+    icon: Sparkles,
+  },
+  revision: {
+    label: "Révisions & Examens",
+    gradient: "from-purple-600 to-violet-800",
+    icon: GraduationCap,
+  },
+  default: {
+    label: "Sphère",
+    gradient: "from-slate-700 to-zinc-900",
+    icon: Layers,
+  },
+};
+
+export const SphereCard = React.memo(
+  ({
+    sphere,
+    isJoining = false,
+    membership = "none",
+    onJoin,
+    className,
+  }: SphereCardProps) => {
+    const navigate = useNavigate();
+
+    const bannerImage = sphere.banner_url || sphere.bannerUrl || sphere.cover_image || sphere.coverImage;
+    const rawType = (sphere.sphere_type || sphere.sphereType || "communaute").toLowerCase();
+    const meta = SPHERE_TYPE_META[rawType] || SPHERE_TYPE_META.default;
+    const IconComponent = meta.icon;
+
+    const memberCount = Number(sphere.member_count ?? sphere.memberCount ?? 1);
+    const creator = sphere.created_by_info || sphere.createdBy || sphere.creator_info;
+    const creatorName = creator?.name || creator?.username || "Créateur";
+
+    const isMember = membership === "active";
+    const isPending = membership === "pending";
+
+    const handleActionClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (isMember) {
+        navigate(getSphereUrl(sphere));
+      } else if (!isPending && onJoin) {
+        onJoin();
+      }
+    };
+
+    return (
+      <div
+        onClick={() => navigate(getSphereUrl(sphere))}
+        className={cn(
+          "group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/70 bg-card text-card-foreground shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg cursor-pointer",
+          className
+        )}
+      >
+        {/* Top Banner / Cover */}
+        <div className="relative h-36 w-full overflow-hidden bg-muted">
           {bannerImage ? (
-            <OptimizedImage 
-              src={bannerImage} 
-              alt={sphere.name} 
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-              containerClassName="w-full h-full"
+            <img
+              src={bannerImage}
+              alt={sphere.name}
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              loading="lazy"
             />
           ) : (
-            <div className={cn("w-full h-full bg-gradient-to-br flex items-center justify-center text-white text-3xl font-bold", sphereColor)}>
-              {sphere.name?.charAt(0)}
+            <div
+              className={`h-full w-full bg-gradient-to-br ${meta.gradient} opacity-90 flex items-center justify-center`}
+            >
+              <IconComponent className="h-14 w-14 text-white/30" />
             </div>
           )}
-          
-          {/* Overlay badges (Type de sphère au lieu de catégorie) */}
-          <div className="absolute top-3 left-3">
-             <Badge className={cn("px-2 py-0.5 text-[10px] font-bold border shadow-sm", SPHERE_TYPE_COLORS[sphereType])}>
-                {SPHERE_TYPE_LABELS[sphereType]}
-             </Badge>
+
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+          {/* Sphere Type Badge (Top Left) */}
+          <div className="absolute left-3 top-3">
+            <Badge
+              variant="secondary"
+              className="flex items-center gap-1.5 backdrop-blur-md bg-background/90 text-foreground font-semibold px-2.5 py-1 text-xs shadow-xs border border-border/40"
+            >
+              <IconComponent className="h-3.5 w-3.5 text-primary" />
+              <span>{meta.label}</span>
+            </Badge>
           </div>
-          
-          {sphere.require_approval && (
-            <div className="absolute top-3 right-3">
-              <Badge variant="destructive" className="text-[10px] py-0.5 px-2 opacity-90 shadow-sm border-none bg-red-600">
-                Privé
+
+          {/* Privacy Lock Badge (Top Right) */}
+          {(sphere.is_private || sphere.require_approval) && (
+            <div className="absolute right-3 top-3">
+              <Badge
+                variant="outline"
+                className="bg-black/60 text-white backdrop-blur-md border-white/20 text-[10px] font-medium px-2 py-0.5"
+              >
+                <Lock className="h-3 w-3 mr-1" />
+                Privée
               </Badge>
             </div>
           )}
-        </div>
 
-        {/* Info Section */}
-        <div className="p-4 flex flex-col flex-1 space-y-3">
-          <div className="flex-1">
-            <h3 className="font-bold text-sm line-clamp-1 group-hover:text-primary transition-colors">
-              {sphere.name}
-            </h3>
-            <p className="text-[11px] text-muted-foreground line-clamp-2 mt-1.5 leading-relaxed">
-              {sphere.description || "Rejoignez cette communauté pour collaborer et partager."}
-            </p>
-          </div>
-
-          <div className="flex items-center justify-between pt-1">
-            <div className="flex items-center gap-3 text-muted-foreground">
-              <span className="flex items-center gap-1.5 text-[11px] font-medium">
-                <Users className="h-3.5 w-3.5" />
-                {sphere.memberCount || 0}
+          {/* Target Audience / Status on Cover bottom */}
+          <div className="absolute bottom-2.5 left-3 right-3 flex items-center justify-between text-white text-xs">
+            {sphere.target_audience && sphere.target_audience !== "Tous les étudiants" ? (
+              <span className="truncate text-[11px] font-medium text-white/90 bg-black/50 backdrop-blur-xs px-2 py-0.5 rounded-md">
+                {sphere.target_audience}
               </span>
-              {Number(sphere.impactScore) > 0 && (
-                <span className="flex items-center gap-1.5 text-primary/80 text-[11px] font-bold">
-                  <Zap className="h-3.5 w-3.5 fill-current" />
-                  {sphere.impactScore}
-                </span>
-              )}
-            </div>
-            
-            {/* Action text indicator */}
-            {membership === "active" && (
-              <span className="text-[10px] font-bold text-primary flex items-center gap-1">
+            ) : (
+              <span />
+            )}
+
+            {isMember && (
+              <span className="flex items-center gap-1 rounded-full bg-emerald-500/90 text-white text-[10px] font-bold px-2 py-0.5 shadow-xs backdrop-blur-xs">
                 <Check className="h-3 w-3" /> Membre
               </span>
             )}
+            {isPending && (
+              <span className="flex items-center gap-1 rounded-full bg-primary/90 text-primary-foreground text-[10px] font-bold px-2 py-0.5 shadow-xs backdrop-blur-xs">
+                <Clock className="h-3 w-3" /> En attente
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Card Body */}
+        <div className="flex flex-1 flex-col p-4">
+          {/* Title */}
+          <h3 className="line-clamp-1 text-base font-bold tracking-tight text-foreground transition-colors group-hover:text-primary">
+            {sphere.name}
+          </h3>
+
+          {/* Description */}
+          <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground leading-relaxed flex-1">
+            {sphere.description || sphere.objective || "Sphère d'échange et de travail collaboratif."}
+          </p>
+
+          {/* Footer Info: Creator & Member Count */}
+          <div className="mt-4 pt-3 border-t border-border/50 flex items-center justify-between gap-2">
+            {/* Creator */}
+            <div className="flex items-center gap-2 min-w-0">
+              <Avatar className="h-6 w-6 border border-border shrink-0">
+                <AvatarImage src={creator?.avatar || undefined} />
+                <AvatarFallback className="text-[9px] font-bold">
+                  {creatorName.slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-xs text-muted-foreground truncate font-medium">
+                {creatorName}
+              </span>
+            </div>
+
+            {/* Member count */}
+            <div className="flex items-center gap-1 text-xs font-semibold text-muted-foreground shrink-0">
+              <Users className="h-3.5 w-3.5 text-primary" />
+              <span>{memberCount}</span>
+            </div>
           </div>
 
           {/* Action Button */}
-          <div className="pt-1" onClick={(e) => e.stopPropagation()}>
-            {membership === "none" && (
-              <Button 
-                size="sm" 
-                className="w-full h-8 text-[11px] font-bold campus-gradient text-white hover:opacity-90 transition-all active:scale-95 shadow-md border-none"
-                onClick={onJoin}
+          <div className="mt-3">
+            {isMember ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-semibold text-xs"
+                onClick={handleActionClick}
+              >
+                <Check className="h-3.5 w-3.5 mr-1.5" />
+                Accéder à la sphère
+              </Button>
+            ) : isPending ? (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled
+                className="w-full border-primary/30 text-primary font-semibold text-xs"
+              >
+                <Clock className="h-3.5 w-3.5 mr-1.5" />
+                Demande envoyée
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs transition-all"
+                onClick={handleActionClick}
                 disabled={isJoining}
               >
-                {isJoining ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Rejoindre la sphère"}
-              </Button>
-            )}
-            
-            {membership === "pending" && (
-              <Button size="sm" variant="outline" className="w-full h-8 text-[11px] font-bold gap-1 bg-amber-500/10 text-amber-600 border-amber-500/20" disabled>
-                <Clock className="h-3.5 w-3.5" />
-                Demande en attente
-              </Button>
-            )}
-            
-            {membership === "active" && (
-              <Button size="sm" variant="outline" className="w-full h-8 text-[11px] font-bold gap-1 border-primary/20 text-primary bg-primary/5 hover:bg-primary/10 transition-all active:scale-95">
-                Accéder
+                {isJoining ? "Connexion..." : "Rejoindre la sphère"}
+                <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
               </Button>
             )}
           </div>
         </div>
-      </CardContent>
-    </Card>
-  );
-});
+      </div>
+    );
+  }
+);
 
 SphereCard.displayName = "SphereCard";

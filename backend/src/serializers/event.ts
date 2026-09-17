@@ -2,7 +2,7 @@
  * Event serialisation — API_CONTRACT §2 `<Event>` and `<EventAttendee>`.
  */
 
-import type { Prisma, Event, EventAttendee, EventAttendeeStatus } from "@prisma/client";
+import { EventAttendeeStatus, type Prisma, type Event, type EventAttendee } from "@prisma/client";
 import { serializeUser, userSelect, type SerializableUser } from "./user.js";
 
 export const eventInclude = {
@@ -35,13 +35,18 @@ export interface EventViewerContext {
   viewerId: number | null;
   attendeesCount?: number;
   userStatus?: EventAttendeeStatus | null;
+  userAttendee?: {
+    status?: EventAttendeeStatus | string;
+    ticketCode?: string | null;
+    checkedInAt?: Date | null;
+  } | null;
 }
 
 export function serializeEvent(
   event: SerializableEvent,
   ctx: EventViewerContext = { viewerId: null }
 ): Record<string, unknown> {
-  const { viewerId, attendeesCount = 0, userStatus = null } = ctx;
+  const { viewerId, attendeesCount = 0, userStatus = null, userAttendee = null } = ctx;
 
   const startDate = event.startDate.toISOString();
   const endDate = event.endDate ? event.endDate.toISOString() : null;
@@ -85,11 +90,20 @@ export function serializeEvent(
     maxAttendees: event.maxAttendees,
     is_public: event.isPublic,
     isPublic: event.isPublic,
+    is_featured: event.isFeatured,
+    isFeatured: event.isFeatured,
+    has_ticketing: (event as any).hasTicketing ?? true,
+    hasTicketing: (event as any).hasTicketing ?? true,
 
     attendees_count: attendeesCount,
     attendeesCount,
     user_status: userStatus ? userStatus.toLowerCase() : null,
     userStatus: userStatus ? userStatus.toLowerCase() : null,
+    user_ticket_code: userAttendee?.ticketCode || null,
+    userTicketCode: userAttendee?.ticketCode || null,
+    is_checked_in: userAttendee?.status === EventAttendeeStatus.ATTENDED,
+    isCheckedIn: userAttendee?.status === EventAttendeeStatus.ATTENDED,
+    checked_in_at: userAttendee?.checkedInAt ? userAttendee.checkedInAt.toISOString() : null,
     is_past: isPast,
 
     created_at: event.createdAt.toISOString(),
@@ -107,6 +121,10 @@ export function serializeEventAttendee(
     eventId: attendee.eventId,
     user: serializeUser(attendee.user, { viewerId }),
     status: attendee.status.toLowerCase(),
+    ticket_code: attendee.ticketCode,
+    ticketCode: attendee.ticketCode,
+    checked_in_at: attendee.checkedInAt ? attendee.checkedInAt.toISOString() : null,
+    checkedInAt: attendee.checkedInAt ? attendee.checkedInAt.toISOString() : null,
     registered_at: attendee.registeredAt.toISOString(),
     registeredAt: attendee.registeredAt.toISOString(),
   };

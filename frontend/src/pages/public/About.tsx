@@ -1,9 +1,10 @@
 import React from "react";
+import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
-import { Users, Heart, Zap, BookOpen, MessageCircle, Award, Globe, Star, Sparkles, Target, Eye, Users2, Trophy, ChevronDown, Bug } from "lucide-react";
+import { Users, Heart, Zap, BookOpen, MessageCircle, Award, Globe, Star, Sparkles, Target, Eye, Users2, Trophy, ChevronDown, Bug, Linkedin, Github, Mail, ArrowRight, GraduationCap } from "lucide-react";
 
 export function About(): JSX.Element {
   const navigate = useNavigate();
@@ -11,36 +12,100 @@ export function About(): JSX.Element {
     {
       name: "Nlend Max",
       role: "CEO & Full-Stack Dev",
-      description: "Fondateur et moteur technique, Max développe le MVP et pilote la stratégie produit.",
+      description: "Étudiant et développeur, Max a conçu CampusSphere pour simplifier le quotidien universitaire. Il développe la plateforme et coordonne l'équipe.",
       avatar: "/Team/Nlend.jpg",
+      initials: "NM",
+      socials: {
+        linkedin: "https://www.linkedin.com/in/max-prime-96b651239/",
+        github: "https://github.com/MaxPrime7097",
+        email: "mailto:contact@campussphere.app"
+      }
     },
     {
       name: "Kana Tommi",
       role: "CMO & Graphic Designer",
-      description: "Co-fondateur, responsable marketing et communauté, Tommi attire les premiers utilisateurs et anime nos réseaux.",
+      description: "Passionné de graphisme et de communication, Tommi a créé l'univers visuel de CampusSphere et anime la communauté étudiante.",
       avatar: "/Team/Tommi.jpg",
+      initials: "KT",
+      socials: {
+        linkedin: "https://www.linkedin.com/",
+        email: "mailto:contact@campussphere.app"
+      }
     },
     {
       name: "Hussein Boris",
       role: "CTO & Full-Stack Dev",
-      description: "Expert technique et Full-Stack, Boris construit l’architecture et assure la scalabilité de la plateforme.",
+      description: "Féru de code et d'architecture, Boris assure le bon fonctionnement technique de la plateforme pour qu'elle reste fluide et sécurisée.",
       avatar: "/Team/Boris.jpg",
+      initials: "HB",
+      socials: {
+        github: "https://github.com/",
+        email: "mailto:contact@campussphere.app"
+      }
     },
     {
       name: "Nounga Nathan",
       role: "CPO & Head of Design",
-      description: "Responsable produit et design, Nathan façonne l’expérience utilisateur et guide la roadmap produit.",
+      description: "Toujours à l'écoute des retours étudiants, Nathan façonne des interfaces claires et agréables pour rendre les révisions faciles.",
       avatar: "/Team/Nathan.jpg",
+      initials: "NN",
+      socials: {
+        linkedin: "https://www.linkedin.com/",
+        email: "mailto:contact@campussphere.app"
+      }
     },
     {
-      role: "CFO & Community Manager",
       name: "Gwenaëlle Stelvana",
-      description: "Responsable produit et design, Nathan façonne l’expérience utilisateur et guide la roadmap produit.",
+      role: "CFO & Community Manager",
+      description: "Proche des étudiants sur les campus, Gwenaëlle gère les ressources du projet et veille à la convivialité au sein des sphères.",
       avatar: "/Team/Gwen.png",
+      initials: "GS",
+      socials: {
+        linkedin: "https://www.linkedin.com/",
+        email: "mailto:contact@campussphere.app"
+      }
     }
   ];
+
+  const teamSchema = {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    "mainEntity": {
+      "@type": "Organization",
+      "name": "CampusSphere",
+      "url": "https://campussphere.app",
+      "logo": "https://campussphere.app/CS.svg",
+      "description": "Le réseau social académique et collaboratif conçu pour les étudiants.",
+      "founders": teamMembers.map((member) => ({
+        "@type": "Person",
+        "name": member.name,
+        "jobTitle": member.role,
+        "image": `https://campussphere.app${member.avatar}`,
+        "description": member.description
+      }))
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5">
+      <Helmet>
+        <title>À Propos - Notre Histoire & Vision | CampusSphere</title>
+        <meta name="description" content="Découvrez l'histoire de CampusSphere, l'équipe fondatrice et notre mission : révolutionner la vie étudiante et l'entraide académique." />
+        <link rel="canonical" href="https://campussphere.app/cs-inc/about" />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="À Propos de CampusSphere - Notre Équipe et Vision" />
+        <meta property="og:description" content="Découvrez les coulisses de CampusSphere, la plateforme qui connecte et dynamise les étudiants dans leur quotidien académique." />
+        <meta property="og:url" content="https://campussphere.app/cs-inc/about" />
+        <meta property="og:image" content="https://campussphere.app/CS.svg" />
+        <meta property="og:site_name" content="CampusSphere" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="À Propos de CampusSphere - Notre Équipe et Vision" />
+        <meta name="twitter:description" content="Découvrez les coulisses de CampusSphere, la plateforme qui connecte et dynamise les étudiants dans leur quotidien académique." />
+        <meta name="twitter:image" content="https://campussphere.app/CS.svg" />
+        <script type="application/ld+json">
+          {JSON.stringify(teamSchema)}
+        </script>
+      </Helmet>
       {/* Navigation: brand + links + CTA */}
       <Header />
 
@@ -311,19 +376,101 @@ export function About(): JSX.Element {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
-            {teamMembers.map((member, index) => (
-              <div className="campus-card text-center hover:scale-105 transition-all duration-300 campus-animate-slide-up animation-delay-1s">
-              <div className="aspect-square bg-gradient-to-br from-primary/20 to-primary/5 rounded-t-lg flex items-center justify-center">
-                <img src={member.avatar} alt={member.name} className="w-full h-full rounded-t-lg object-cover" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+            {teamMembers.map((member) => (
+              <div
+                key={member.name}
+                className="group bg-card border border-border/80 rounded-2xl flex flex-col justify-between transition-all duration-300 hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-1.5 overflow-hidden"
+              >
+                {/* Full-width photo */}
+                <div className="relative w-full aspect-[4/5] overflow-hidden bg-muted">
+                  <img
+                    src={member.avatar}
+                    alt={member.name}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    loading="lazy"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                      if (fallback) fallback.classList.remove('hidden');
+                    }}
+                  />
+                  <div className="hidden absolute inset-0 flex items-center justify-center text-3xl font-bold font-automata campus-gradient bg-clip-text text-transparent">
+                    {member.initials}
+                  </div>
+                  {/* Subtle bottom shadow overlay */}
+                  <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
+                </div>
+
+                {/* Details (Name, Role, Socials) */}
+                <div className="p-5 flex flex-col items-center text-center">
+                  <h3 className="font-bold text-lg text-foreground font-poppins mb-1">
+                    {member.name}
+                  </h3>
+                  <span className="text-xs font-semibold text-primary font-poppins mb-4 tracking-wide">
+                    {member.role}
+                  </span>
+
+                  {/* Social links row */}
+                  <div className="flex items-center justify-center gap-2">
+                    {'linkedin' in member.socials && member.socials.linkedin && (
+                      <a
+                        href={member.socials.linkedin}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`LinkedIn de ${member.name}`}
+                        className="w-9 h-9 rounded-xl bg-secondary/80 hover:bg-primary/15 hover:text-primary flex items-center justify-center transition-all text-muted-foreground"
+                      >
+                        <Linkedin className="w-4 h-4" />
+                      </a>
+                    )}
+                    {member.socials.github && (
+                      <a
+                        href={member.socials.github}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`GitHub de ${member.name}`}
+                        className="w-9 h-9 rounded-xl bg-secondary/80 hover:bg-primary/15 hover:text-primary flex items-center justify-center transition-all text-muted-foreground"
+                      >
+                        <Github className="w-4 h-4" />
+                      </a>
+                    )}
+                    {member.socials.email && (
+                      <a
+                        href={member.socials.email}
+                        aria-label={`Envoyer un email à ${member.name}`}
+                        className="w-9 h-9 rounded-xl bg-secondary/80 hover:bg-primary/15 hover:text-primary flex items-center justify-center transition-all text-muted-foreground"
+                      >
+                        <Mail className="w-4 h-4" />
+                      </a>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div className="p-6">
-              <div className="font-bold text-lg mb-1 font-poppins">{member.name}</div>
-              <div className="text-sm text-muted-foreground mb-3 font-nunito font-semibold">{member.role}</div>
-              {/*<p className="align-left justify-left text-sm text-muted-foreground font-nunito">{member.description}</p>*/}
-              </div>
-            </div>
             ))}
+          </div>
+
+          {/* Programme Campus Ambassadeurs */}
+          <div className="mt-14 p-8 rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/10 via-background to-primary/5 text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-6 shadow-lg">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/15 border border-primary/30 text-xs font-semibold text-primary">
+                <GraduationCap className="w-3.5 h-3.5" />
+                <span>Programme Campus Ambassadeurs</span>
+              </div>
+              <h3 className="text-xl md:text-2xl font-bold font-poppins text-foreground">
+                Envie de représenter CampusSphere dans votre université ?
+              </h3>
+              <p className="text-sm md:text-base text-muted-foreground font-nunito max-w-2xl">
+                Rejoignez notre réseau d'étudiants ambassadeurs, animez les sphères de votre établissement, partagez vos retours et contribuez directement à l'expansion de la communauté.
+              </p>
+            </div>
+            <Button
+              onClick={() => navigate('/cs-inc/contact')}
+              className="campus-gradient text-white font-poppins px-6 py-6 rounded-xl hover:scale-105 transition-all duration-300 shadow-md whitespace-nowrap"
+            >
+              Devenir Ambassadeur
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
           </div>
         </div>
       </section>

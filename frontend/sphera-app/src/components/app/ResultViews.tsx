@@ -1,5 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react'
-import { FileText, BrainCircuit, List, CheckCircle2, HelpCircle, CircleSmall, Lightbulb, ChevronDown, ChevronRight, Timer, Trophy, XCircle, RotateCcw, RefreshCcw, Code2, Calculator, AlignLeft, Target, BookOpen, BookMarked, Award, Layers, Zap } from 'lucide-react'
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { FileText, BrainCircuit, List, CheckCircle2, HelpCircle, CircleSmall, Lightbulb, ChevronDown, ChevronRight, Timer, Trophy, XCircle, RotateCcw, RefreshCcw, Code2, Calculator, AlignLeft, Target, BookOpen, BookMarked, Award, Layers, Zap, GitFork, AudioLines, Play, Pause, Volume2, Download, LocateFixed, Sparkles, Maximize2, Minimize2, Network, Eye } from 'lucide-react'
+import ReactFlow, { Background, Controls, type Node, type Edge, type ReactFlowInstance } from 'reactflow'
+import 'reactflow/dist/style.css'
 import DownloadPDFButton from '../shared/DownloadPDFButton'
 import { useDownloadPDF } from '../../hooks/useDownloadPDF'
 
@@ -92,7 +94,14 @@ export function FicheView({ content, sourceName }: { content: any; sourceName?: 
               <p className="text-xs text-sphera-text-muted">Généré le {new Date().toLocaleDateString('fr-FR')}</p>
             </div>
           </div>
-          <span className="text-xs text-sphera-text-muted/60">sphera.campussphere.app</span>
+          <a
+            href="https://sphera.campussphere.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-sphera-text-muted/60 hover:text-sphera-green transition-colors underline-offset-2 hover:underline"
+          >
+            sphera.campussphere.app
+          </a>
         </div>
 
         {f.titre && <h2 className="text-xl font-bold text-white">{f.titre}</h2>}
@@ -165,8 +174,9 @@ export function FicheView({ content, sourceName }: { content: any; sourceName?: 
             </h3>
             <ul className="flex flex-wrap gap-2">
               {f.a_retenir.map((p: string, i: number) => (
-                <li key={i} className="bg-yellow-400/10 text-yellow-400 text-sm px-4 py-2 rounded-xl border border-yellow-400/20 leading-relaxed">
-                  <span className="mr-2">💡</span> {formatText(p)}
+                <li key={i} className="bg-yellow-400/10 text-yellow-400 text-sm px-4 py-2 rounded-xl border border-yellow-400/20 leading-relaxed flex items-center gap-2">
+                  <Lightbulb className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                  <span>{formatText(p)}</span>
                 </li>
               ))}
             </ul>
@@ -744,7 +754,9 @@ function QuestionCard({ question, mode }: { question: any, mode?: 'complete' | '
 }
 
 export function AnnaleView({ annale, sourceName }: { annale: any; sourceName?: string }) {
-  const { content, mode } = annale;
+  const rawAnnale = annale || {};
+  const content = rawAnnale.content !== undefined ? rawAnnale.content : rawAnnale;
+  const mode = rawAnnale.mode || 'complete';
   const isRawArray = Array.isArray(content);
   const hasSections = !isRawArray && Array.isArray(content?.sections) && content.sections.length > 0;
   const hasLegacy = !isRawArray && Array.isArray(content?.corrections) && content.corrections.length > 0;
@@ -758,30 +770,36 @@ export function AnnaleView({ annale, sourceName }: { annale: any; sourceName?: s
       : (content?.corrections?.length ?? 0);
 
   return (
-    <div className="space-y-6">
-      {/* Header with download */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-sphera-surface-2 p-6 rounded-2xl border border-sphera-border">
-        <div>
-          <h2 className="text-xl font-bold text-white mb-1">{content?.titre || "Correction d'annale"}</h2>
-          <p className="text-sm text-sphera-text-muted">
-            {totalQuestions} question{totalQuestions > 1 ? "s" : ""} corrigée{totalQuestions > 1 ? "s" : ""}
-          </p>
+    <div className="flex flex-col gap-6">
+      {/* Download button */}
+      <div className="flex justify-end">
+        <DownloadPDFButton
+          onDownload={() => generateAnnale(annale, sourceName)}
+          isDownloading={isDownloading}
+          label="Télécharger la correction"
+        />
+      </div>
+
+      {/* Sober Header like FicheView */}
+      <div className="flex flex-col gap-4 p-4 rounded-2xl bg-sphera-bg">
+        <div className="flex items-center justify-between pb-4 border-b border-sphera-border">
+          <div className="flex items-center gap-3">
+            <div>
+              <p className="text-xs text-orange-400 font-semibold flex items-center gap-2">
+                <span>Correction d'annale</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-sphera-surface border border-sphera-border text-sphera-text-muted font-normal">
+                  {mode === 'complete' ? 'Mode complet' : 'Mode rapide'}
+                </span>
+              </p>
+              <p className="text-xs text-sphera-text-muted mt-0.5">
+                {totalQuestions} question{totalQuestions > 1 ? 's' : ''} corrigée{totalQuestions > 1 ? 's' : ''}
+              </p>
+            </div>
+          </div>
+          <span className="text-xs text-sphera-text-muted/60">sphera.campussphere.app</span>
         </div>
-        <div className="flex items-center gap-3 flex-wrap">
-          {hasSections && (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20">
-              <Layers className="w-3 h-3" /> Structurée
-            </span>
-          )}
-          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ring-1 ${mode === 'complete' ? 'bg-blue-500/10 text-blue-400 ring-blue-500/20' : 'bg-[#ff9800]/10 text-[#ff9800] ring-[#ff9800]/20'}`}>
-            {mode === 'complete' ? <><BookOpen className="w-3 h-3" /> Complète</> : <><Zap className="w-3 h-3" /> Rapide</>}
-          </span>
-          <DownloadPDFButton
-            onDownload={() => generateAnnale(annale, sourceName)}
-            isDownloading={isDownloading}
-            label="Télécharger la correction"
-          />
-        </div>
+
+        <h2 className="text-xl font-bold text-white">{content?.titre || "Correction d'annale"}</h2>
       </div>
 
       {/* Sections Structurées */}
@@ -844,3 +862,739 @@ export function AnnaleView({ annale, sourceName }: { annale: any; sourceName?: s
     </div>
   );
 }
+
+interface FlowData {
+  nodes: Node[];
+  edges: Edge[];
+}
+
+const MINDMAP_COULEURS: Record<string, { hex: string; bg: string; border: string; glow: string; text: string }> = {
+  vert: { hex: '#10B981', bg: 'rgba(6, 78, 59, 0.45)', border: '#10b981', glow: 'rgba(16, 185, 129, 0.35)', text: '#34d399' },
+  bleu: { hex: '#3B82F6', bg: 'rgba(30, 58, 138, 0.45)', border: '#3b82f6', glow: 'rgba(59, 130, 246, 0.35)', text: '#60a5fa' },
+  orange: { hex: '#F59E0B', bg: 'rgba(120, 53, 15, 0.45)', border: '#f59e0b', glow: 'rgba(245, 158, 11, 0.35)', text: '#fbbf24' },
+  violet: { hex: '#A855F7', bg: 'rgba(88, 28, 135, 0.45)', border: '#a855f7', glow: 'rgba(168, 85, 247, 0.35)', text: '#c084fc' },
+  rose: { hex: '#EC4899', bg: 'rgba(131, 24, 67, 0.45)', border: '#ec4899', glow: 'rgba(236, 72, 153, 0.35)', text: '#f472b6' },
+  cyan: { hex: '#06B6D4', bg: 'rgba(22, 78, 99, 0.45)', border: '#06b6d4', glow: 'rgba(6, 182, 212, 0.35)', text: '#22d3ee' },
+};
+
+function getBranchColor(couleurStr?: string, index: number = 0) {
+  const c = String(couleurStr || '').toLowerCase();
+  if (c.includes('vert') || c === 'green') return MINDMAP_COULEURS.vert;
+  if (c.includes('bleu') || c === 'blue') return MINDMAP_COULEURS.bleu;
+  if (c.includes('orange')) return MINDMAP_COULEURS.orange;
+  if (c.includes('violet') || c === 'purple') return MINDMAP_COULEURS.violet;
+  if (c.includes('rose') || c === 'pink') return MINDMAP_COULEURS.rose;
+  if (c.includes('cyan')) return MINDMAP_COULEURS.cyan;
+  const palette = [MINDMAP_COULEURS.vert, MINDMAP_COULEURS.bleu, MINDMAP_COULEURS.orange, MINDMAP_COULEURS.violet, MINDMAP_COULEURS.rose, MINDMAP_COULEURS.cyan];
+  return palette[index % palette.length];
+}
+
+export function MindmapView({ content }: { content: any }) {
+  const mapData = content?.mindmap || content || {};
+  const centralNode = mapData?.noeud_central || mapData?.titre || "Concept Central";
+  const branches: any[] = Array.isArray(mapData?.branches) ? mapData.branches : [];
+
+  const [viewMode, setViewMode] = useState<'canvas' | 'tree'>('canvas');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [expandedBranches, setExpandedBranches] = useState<Record<number, boolean>>({});
+  const reactFlowInstance = useRef<ReactFlowInstance | null>(null);
+
+  const toggleBranch = (idx: number) => {
+    setExpandedBranches(prev => ({ ...prev, [idx]: !prev[idx] }));
+  };
+
+  const expandAll = () => {
+    const all: Record<number, boolean> = {};
+    branches.forEach((_, i) => { all[i] = true; });
+    setExpandedBranches(all);
+  };
+
+  const collapseAll = () => {
+    setExpandedBranches({});
+  };
+
+  const handleRecenter = () => {
+    reactFlowInstance.current?.fitView({ padding: 0.2, duration: 400 });
+  };
+
+  // Build the radial node-link structure for ReactFlow
+  const { nodes, edges } = useMemo<FlowData>(() => {
+    const nodesList: Node[] = [];
+    const edgesList: Edge[] = [];
+
+    const centerX = 650;
+    const centerY = 450;
+
+    // Central core node
+    nodesList.push({
+      id: 'central',
+      data: {
+        label: (
+          <div className="flex flex-col items-center justify-center p-3 text-center select-none">
+            <div className="flex items-center gap-1.5 mb-1 text-[10px] font-extrabold uppercase tracking-widest text-emerald-400">
+              <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+              <span>Noyau Central</span>
+            </div>
+            <span className="font-extrabold text-sm sm:text-base text-white leading-snug">
+              {centralNode}
+            </span>
+          </div>
+        ),
+      },
+      position: { x: centerX, y: centerY },
+      style: {
+        background: 'rgba(15, 23, 42, 0.95)',
+        border: '2.5px solid #10B981',
+        borderRadius: '18px',
+        boxShadow: '0 0 35px rgba(16, 185, 129, 0.35), inset 0 0 15px rgba(16, 185, 129, 0.15)',
+        color: '#fff',
+        minWidth: 180,
+        maxWidth: 260,
+        zIndex: 10,
+      },
+    });
+
+    const branchCount = branches.length;
+    if (branchCount === 0) return { nodes: nodesList, edges: edgesList };
+
+    // Radial layout around center
+    const radius = Math.max(300, 240 + branchCount * 12);
+    const angleStep = (2 * Math.PI) / branchCount;
+
+    branches.forEach((b: any, i: number) => {
+      const angle = i * angleStep - Math.PI / 2;
+      const bx = centerX + radius * Math.cos(angle);
+      const by = centerY + radius * Math.sin(angle);
+      const branchId = `branch-${i}`;
+      const color = getBranchColor(b.couleur, i);
+
+      const subBranches: any[] = Array.isArray(b.sous_branches) ? b.sous_branches : [];
+      const subCount = subBranches.length;
+
+      nodesList.push({
+        id: branchId,
+        data: {
+          label: (
+            <div className="flex flex-col gap-1 p-2 text-left select-none">
+              <div className="flex items-center gap-2">
+                <span
+                  className="w-2.5 h-2.5 rounded-full shrink-0"
+                  style={{ backgroundColor: color.hex, boxShadow: `0 0 8px ${color.hex}` }}
+                />
+                <span className="font-bold text-xs sm:text-sm text-white leading-tight">
+                  {b.label}
+                </span>
+              </div>
+              {subCount > 0 && (
+                <span className="text-[10px] text-white/50 pl-4 font-mono">
+                  {subCount} sous-concept{subCount > 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+          ),
+        },
+        position: { x: bx, y: by },
+        style: {
+          background: 'rgba(15, 23, 42, 0.92)',
+          border: `2px solid ${color.hex}`,
+          borderRadius: '12px',
+          boxShadow: `0 0 20px ${color.glow}`,
+          color: '#fff',
+          minWidth: 160,
+          maxWidth: 240,
+          zIndex: 5,
+        },
+      });
+
+      edgesList.push({
+        id: `e-central-${branchId}`,
+        source: 'central',
+        target: branchId,
+        type: 'default',
+        animated: true,
+        style: { stroke: color.hex, strokeWidth: 2.5 },
+      });
+
+      // Sub-branches radiating outward
+      if (subCount > 0) {
+        const subRadius = radius + 175;
+        const spreadStep = 0.32;
+
+        subBranches.forEach((sb: any, j: number) => {
+          const subId = `${branchId}-sub-${j}`;
+          const subLabel = typeof sb === 'string' ? sb : (sb.label || sb.nom || sb.texte || JSON.stringify(sb));
+          const subAngle = angle + (j - (subCount - 1) / 2) * spreadStep;
+          const sx = centerX + subRadius * Math.cos(subAngle);
+          const sy = centerY + subRadius * Math.sin(subAngle);
+
+          nodesList.push({
+            id: subId,
+            data: {
+              label: (
+                <div className="p-1 text-xs text-white/90 leading-snug select-none">
+                  {subLabel}
+                </div>
+              ),
+            },
+            position: { x: sx, y: sy },
+            style: {
+              background: 'rgba(30, 41, 59, 0.88)',
+              border: `1.5px solid ${color.hex}99`,
+              borderRadius: '10px',
+              boxShadow: '0 2px 10px rgba(0, 0, 0, 0.5)',
+              color: '#e2e8f0',
+              maxWidth: 190,
+              fontSize: '11px',
+              zIndex: 2,
+            },
+          });
+
+          edgesList.push({
+            id: `e-${branchId}-${subId}`,
+            source: branchId,
+            target: subId,
+            type: 'default',
+            style: { stroke: `${color.hex}88`, strokeWidth: 1.5 },
+          });
+        });
+      }
+    });
+
+    return { nodes: nodesList, edges: edgesList };
+  }, [centralNode, branches]);
+
+  const renderSubBranches = (subList: any[], level = 1) => {
+    if (!Array.isArray(subList) || subList.length === 0) return null;
+    return (
+      <ul className={`space-y-2 ${level > 1 ? 'ml-4 pl-3 border-l border-sphera-border/60' : 'mt-2'}`}>
+        {subList.map((item, idx) => {
+          const label = typeof item === 'string' ? item : (item.label || item.nom || item.texte || JSON.stringify(item));
+          const hasChildren = Array.isArray(item?.sous_branches) && item.sous_branches.length > 0;
+          return (
+            <li key={idx} className="text-sm">
+              <div className="flex items-start gap-2 text-white/90">
+                <span className="text-sphera-text-muted mt-1 text-xs">•</span>
+                <span className="leading-snug">{formatText(label)}</span>
+              </div>
+              {hasChildren && renderSubBranches(item.sous_branches, level + 1)}
+            </li>
+          );
+        })}
+      </ul>
+    );
+  };
+
+  const totalSubBranches = branches.reduce((acc, b) => acc + (Array.isArray(b.sous_branches) ? b.sous_branches.length : 0), 0);
+
+  return (
+    <div className={`flex flex-col gap-6 ${isFullscreen ? 'fixed inset-0 z-50 bg-[#070b14] p-4 sm:p-6 overflow-hidden' : ''}`}>
+      {/* Mindmap Toolbar */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-sphera-bg border border-sphera-border shadow-md">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <Network className="w-5 h-5 text-emerald-400" />
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">Carte Mentale Interactive</span>
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-sphera-surface border border-sphera-border text-sphera-text-muted">
+                {branches.length} branches · {totalSubBranches} sous-points
+              </span>
+            </div>
+            {mapData?.titre && (
+              <h2 className="text-lg sm:text-xl font-bold text-white mt-1">
+                {mapData.titre}
+              </h2>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* View switcher */}
+            <div className="flex items-center rounded-lg bg-sphera-surface p-1 border border-sphera-border">
+              <button
+                type="button"
+                onClick={() => setViewMode('canvas')}
+                className={`px-3 py-1 text-xs font-semibold rounded-md flex items-center gap-1.5 transition-colors ${
+                  viewMode === 'canvas'
+                    ? 'bg-emerald-500 text-black shadow'
+                    : 'text-sphera-text-muted hover:text-white'
+                }`}
+              >
+                <Network className="w-3.5 h-3.5" />
+                <span>Carte Visuelle</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('tree')}
+                className={`px-3 py-1 text-xs font-semibold rounded-md flex items-center gap-1.5 transition-colors ${
+                  viewMode === 'tree'
+                    ? 'bg-emerald-500 text-black shadow'
+                    : 'text-sphera-text-muted hover:text-white'
+                }`}
+              >
+                <List className="w-3.5 h-3.5" />
+                <span>Plan Structuré</span>
+              </button>
+            </div>
+
+            {viewMode === 'canvas' && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleRecenter}
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-sphera-surface text-emerald-400 hover:bg-emerald-500/10 border border-emerald-500/30 transition-colors inline-flex items-center gap-1.5"
+                  title="Centrer la carte mentale"
+                >
+                  <LocateFixed className="w-3.5 h-3.5" />
+                  <span>Centrer</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsFullscreen(prev => !prev)}
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-sphera-surface text-sphera-text-muted hover:text-white border border-sphera-border transition-colors inline-flex items-center gap-1.5"
+                  title={isFullscreen ? "Quitter plein écran" : "Plein écran"}
+                >
+                  {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                  <span>{isFullscreen ? 'Réduire' : 'Plein écran'}</span>
+                </button>
+              </>
+            )}
+
+            {viewMode === 'tree' && (
+              <>
+                <button
+                  type="button"
+                  onClick={expandAll}
+                  className="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-sphera-surface text-sphera-text-muted hover:text-white border border-sphera-border transition-colors"
+                >
+                  Tout déplier
+                </button>
+                <button
+                  type="button"
+                  onClick={collapseAll}
+                  className="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-sphera-surface text-sphera-text-muted hover:text-white border border-sphera-border transition-colors"
+                >
+                  Tout replier
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Main View Area */}
+      {branches.length === 0 ? (
+        <div className="p-12 text-center bg-sphera-surface-2 rounded-2xl border border-sphera-border opacity-60">
+          <GitFork className="w-12 h-12 text-sphera-text-muted mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-white mb-1">Carte mentale en cours de génération</h3>
+          <p className="text-sm text-sphera-text-muted max-w-md mx-auto">
+            Les branches de la carte mentale n'ont pas pu être extraites pour ce document.
+          </p>
+        </div>
+      ) : viewMode === 'canvas' ? (
+        /* Real Interactive Radial ReactFlow Mind Map Canvas */
+        <div className={`relative w-full rounded-2xl border border-sphera-border bg-[#070b14] overflow-hidden shadow-2xl ${isFullscreen ? 'flex-1 h-full' : 'h-[650px]'}`}>
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            fitView
+            onInit={(instance) => {
+              reactFlowInstance.current = instance;
+            }}
+            panOnDrag={true}
+            zoomOnPinch={true}
+            zoomOnScroll={true}
+            zoomOnDoubleClick={true}
+            minZoom={0.2}
+            maxZoom={2.5}
+            preventScrolling={true}
+          >
+            <Background color="#334155" gap={20} size={1} />
+            <Controls showInteractive={false} className="bg-sphera-surface-2 border border-sphera-border rounded-xl text-white shadow-2xl" />
+          </ReactFlow>
+
+          <div className="absolute bottom-4 left-4 z-10 pointer-events-none text-[11px] text-white/40 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-white/10">
+            Glisser pour déplacer · Molette ou pincement pour zoomer
+          </div>
+        </div>
+      ) : (
+        /* Hierarchical Outline / Tree View */
+        <div className="space-y-4">
+          <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-500/10 via-sphera-surface-2 to-teal-500/10 border border-emerald-500/30 text-center">
+            <span className="text-[10px] uppercase tracking-widest text-emerald-400 font-bold">Noyau Conceptuel</span>
+            <h3 className="text-lg md:text-xl font-extrabold text-white mt-0.5 tracking-tight">
+              {centralNode}
+            </h3>
+          </div>
+
+          {branches.map((b: any, i: number) => {
+            const color = getBranchColor(b.couleur, i);
+            const isExpanded = expandedBranches[i] ?? true;
+            const subCount = Array.isArray(b.sous_branches) ? b.sous_branches.length : 0;
+
+            return (
+              <div
+                key={i}
+                className="rounded-2xl border transition-all duration-200 overflow-hidden"
+                style={{ borderColor: `${color.hex}55`, backgroundColor: color.bg }}
+              >
+                <button
+                  type="button"
+                  onClick={() => toggleBranch(i)}
+                  className="w-full p-4 sm:p-5 flex items-center justify-between text-left hover:bg-white/[0.03] transition-colors"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span
+                      className="w-3 h-3 rounded-full shrink-0"
+                      style={{ backgroundColor: color.hex, boxShadow: `0 0 8px ${color.hex}` }}
+                    />
+                    <span className="font-bold text-white text-base sm:text-lg truncate">
+                      {b.label}
+                    </span>
+                    {b.couleur && (
+                      <span
+                        className="text-[10px] px-2 py-0.5 rounded-full border uppercase tracking-wider font-semibold"
+                        style={{ color: color.text, borderColor: `${color.hex}66`, backgroundColor: `${color.hex}22` }}
+                      >
+                        {b.couleur}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0 ml-2">
+                    <span className="text-xs text-sphera-text-muted">
+                      {subCount} sous-point{subCount > 1 ? 's' : ''}
+                    </span>
+                    {isExpanded ? (
+                      <ChevronDown className="w-4 h-4 text-sphera-text-muted" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-sphera-text-muted" />
+                    )}
+                  </div>
+                </button>
+
+                {isExpanded && (
+                  <div className="px-5 pb-5 pt-1 border-t border-sphera-border/40">
+                    {subCount > 0 ? (
+                      renderSubBranches(b.sous_branches)
+                    ) : (
+                      <p className="text-xs text-sphera-text-muted italic">Aucun sous-concept détaillé</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function cleanSpokenText(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/^(?:(?:étudiant|etudiant|student|speaker|locuteur)\s*[ab12]\s*[:\-–—]\s*)/i, '')
+    .replace(/^[AB12]\s*[:\-–—]\s*/i, '')
+    .trim();
+}
+
+function normalizeSpeaker(rawSpeaker: unknown, index: number = 0): 'A' | 'B' {
+  if (typeof rawSpeaker === 'number') {
+    return rawSpeaker === 2 ? 'B' : 'A';
+  }
+  const s = String(rawSpeaker || '').trim().toLowerCase();
+  if (!s) return index % 2 === 0 ? 'A' : 'B';
+  if (s === 'b' || s === '2') return 'B';
+  if (s === 'a' || s === '1') return 'A';
+  if (
+    /\b[b2]\b/i.test(s) ||
+    s.includes('étudiant b') ||
+    s.includes('etudiant b') ||
+    s.includes('student b') ||
+    s.includes('speaker b') ||
+    s.includes('curieux') ||
+    s.includes('interrog') ||
+    s.endsWith('b') ||
+    s.endsWith('2')
+  ) {
+    return 'B';
+  }
+  if (
+    /\b[a1]\b/i.test(s) ||
+    s.includes('étudiant a') ||
+    s.includes('etudiant a') ||
+    s.includes('student a') ||
+    s.includes('speaker a') ||
+    s.includes('explicateur') ||
+    s.includes('tuteur') ||
+    s.endsWith('a') ||
+    s.endsWith('1')
+  ) {
+    return 'A';
+  }
+  return index % 2 === 0 ? 'A' : 'B';
+}
+
+export function AudioSummaryView({ content }: { content: any }) {
+  const audioData = content?.audio || content || {};
+  const dialogue: Array<{ speaker: string; text: string }> = Array.isArray(audioData?.dialogue) ? audioData.dialogue : [];
+  const audioUrl: string | undefined = audioData?.audioUrl;
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const normalizedDialogue = useMemo(() => {
+    const raw = dialogue.map((turn, idx) => ({
+      ...turn,
+      speaker: normalizeSpeaker(turn.speaker, idx),
+    }));
+    const hasA = raw.some((t) => t.speaker === 'A');
+    const hasB = raw.some((t) => t.speaker === 'B');
+    if (!hasA || !hasB) {
+      return raw.map((t, idx) => ({
+        ...t,
+        speaker: (idx % 2 === 0 ? 'A' : 'B') as 'A' | 'B',
+      }));
+    }
+    return raw;
+  }, [dialogue]);
+
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isSpeakingWebSpeech, setIsSpeakingWebSpeech] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  const toggleAudioPlay = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      audioRef.current.play().then(() => setIsPlaying(true)).catch(console.error);
+    }
+  };
+
+  const handleSpeedChange = () => {
+    const speeds = [1, 1.25, 1.5, 2];
+    const nextIdx = (speeds.indexOf(playbackSpeed) + 1) % speeds.length;
+    const nextSpeed = speeds[nextIdx];
+    setPlaybackSpeed(nextSpeed);
+    if (audioRef.current) {
+      audioRef.current.playbackRate = nextSpeed;
+    }
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const time = Number(e.target.value);
+    setCurrentTime(time);
+    if (audioRef.current) {
+      audioRef.current.currentTime = time;
+    }
+  };
+
+  const formatTime = (secs: number) => {
+    if (isNaN(secs) || secs < 0) return '0:00';
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
+
+  const toggleWebSpeech = () => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+    if (isSpeakingWebSpeech) {
+      window.speechSynthesis.cancel();
+      setIsSpeakingWebSpeech(false);
+      return;
+    }
+
+    const langCode = audioData?.lang?.toLowerCase().startsWith('en') ? 'en-US' : 'fr-FR';
+
+    window.speechSynthesis.cancel();
+
+    let currentTurnIndex = 0;
+
+    const speakNextTurn = () => {
+      if (!window.speechSynthesis) return;
+      if (currentTurnIndex >= normalizedDialogue.length) {
+        setIsSpeakingWebSpeech(false);
+        return;
+      }
+
+      const turn = normalizedDialogue[currentTurnIndex];
+      const isSpeakerA = turn.speaker === 'A';
+      const cleaned = cleanSpokenText(turn.text);
+
+      const utterance = new SpeechSynthesisUtterance(cleaned);
+      utterance.lang = langCode;
+      utterance.rate = playbackSpeed;
+      utterance.pitch = isSpeakerA ? 1.0 : 1.15;
+
+      utterance.onend = () => {
+        currentTurnIndex++;
+        speakNextTurn();
+      };
+      utterance.onerror = () => {
+        setIsSpeakingWebSpeech(false);
+      };
+
+      window.speechSynthesis.speak(utterance);
+    };
+
+    setIsSpeakingWebSpeech(true);
+    speakNextTurn();
+  };
+
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Audio Player Card */}
+      <div className="p-6 rounded-2xl bg-sphera-surface-2 border border-sphera-border relative overflow-hidden shadow-xl">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <AudioLines className="w-5 h-5 text-teal-400" />
+            <span className="text-xs font-bold uppercase tracking-wider text-teal-400">Podcast & Résumé Audio</span>
+          </div>
+          {audioUrl && (
+            <a
+              href={audioUrl}
+              download="podcast-revision.mp3"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors"
+              title="Télécharger l'audio MP3"
+            >
+              <Download className="w-4 h-4" />
+            </a>
+          )}
+        </div>
+
+        {audioData?.titre && (
+          <h2 className="text-xl font-bold text-white mb-4">{audioData.titre}</h2>
+        )}
+
+        {/* Audio Element or Web Speech Fallback */}
+        {audioUrl ? (
+          <div className="space-y-3 bg-sphera-bg p-4 rounded-xl border border-sphera-border">
+            <audio
+              ref={audioRef}
+              src={audioUrl}
+              onTimeUpdate={() => audioRef.current && setCurrentTime(audioRef.current.currentTime)}
+              onLoadedMetadata={() => audioRef.current && setDuration(audioRef.current.duration)}
+              onEnded={() => setIsPlaying(false)}
+            />
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={toggleAudioPlay}
+                className="w-10 h-10 rounded-full bg-sphera-green text-black flex items-center justify-center font-bold shadow-lg hover:brightness-110 transition-all shrink-0"
+              >
+                {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+              </button>
+
+              <div className="flex-1">
+                <input
+                  type="range"
+                  min={0}
+                  max={duration || 100}
+                  value={currentTime}
+                  onChange={handleSeek}
+                  className="w-full accent-sphera-green cursor-pointer h-1.5 bg-sphera-surface rounded-lg"
+                />
+                <div className="flex justify-between text-[11px] text-sphera-text-muted font-mono mt-1">
+                  <span>{formatTime(currentTime)}</span>
+                  <span>{formatTime(duration)}</span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleSpeedChange}
+                className="px-2 py-1 rounded bg-sphera-surface border border-sphera-border text-xs font-mono text-sphera-text-muted hover:text-white transition-colors"
+              >
+                {playbackSpeed}x
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between p-4 rounded-xl bg-sphera-bg border border-sphera-border">
+            <div className="flex items-center gap-3">
+              <Volume2 className="w-5 h-5 text-teal-400" />
+              <div>
+                <p className="text-sm font-semibold text-white">Lecture audio du dialogue</p>
+                <p className="text-xs text-sphera-text-muted">Écouter la synthèse vocale des 2 étudiants</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={toggleWebSpeech}
+              className="sphera-primary-btn py-2 px-4 text-xs inline-flex items-center gap-2"
+            >
+              {isSpeakingWebSpeech ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+              <span>{isSpeakingWebSpeech ? 'Arrêter la lecture' : 'Lancer la voix'}</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Dialogue Script */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between px-1">
+          <h3 className="font-bold text-white text-base">Script du dialogue ({dialogue.length} répliques)</h3>
+          <span className="text-xs text-sphera-text-muted">~{Math.max(1, Math.round(dialogue.length * 0.4))} min de discussion</span>
+        </div>
+
+        {normalizedDialogue.length === 0 ? (
+          <div className="p-8 text-center bg-sphera-surface-2 rounded-2xl border border-sphera-border opacity-60">
+            <AudioLines className="w-12 h-12 text-sphera-text-muted mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-white mb-1">Aucun dialogue audio</h3>
+            <p className="text-sm text-sphera-text-muted max-w-md mx-auto">
+              Le script de discussion n'a pas été généré pour ce cours.
+            </p>
+          </div>
+        ) : (
+          normalizedDialogue.map((turn, idx) => {
+            const isSpeakerA = turn.speaker === 'A';
+            return (
+              <div
+                key={idx}
+                className={`flex gap-3 sm:gap-4 p-4 rounded-2xl border transition-all ${
+                  isSpeakerA
+                    ? 'bg-sphera-surface border-sphera-green/30'
+                    : 'bg-sphera-surface-2 border-purple-500/30 ml-4 sm:ml-8'
+                }`}
+              >
+                <div
+                  className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
+                    isSpeakerA
+                      ? 'bg-sphera-green/20 text-sphera-green border border-sphera-green/40'
+                      : 'bg-purple-500/20 text-purple-400 border border-purple-500/40'
+                  }`}
+                >
+                  {isSpeakerA ? 'A' : 'B'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-bold text-white">
+                      {isSpeakerA ? 'Étudiant A (Explicateur)' : 'Étudiant B (Curieux)'}
+                    </span>
+                    <span className="text-[10px] text-sphera-text-muted font-mono">#{idx + 1}</span>
+                  </div>
+                  <div className="text-sm text-white/90 leading-relaxed">
+                    {formatText(cleanSpokenText(turn.text))}
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+

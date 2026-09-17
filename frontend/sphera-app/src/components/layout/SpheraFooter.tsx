@@ -15,11 +15,14 @@ export function SpheraFooter() {
         </div>
 
         <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 md:gap-6 text-sm text-sphera-text-muted">
+          <Link to="/sphera-live" className="text-sphera-green hover:underline transition-colors font-medium">Sphera Live</Link>
           <Link to="/#faq" className="hover:text-white transition-colors">FAQ</Link>
           <Link to="/pricing" className="hover:text-white transition-colors">Tarifs</Link>
           <Link to="/blogs" className="hover:text-white transition-colors">Blog</Link>
           <Link to="/privacy" className="hover:text-white transition-colors">Confidentialité</Link>
-          <Link to="/terms" className="hover:text-white transition-colors">Conditions</Link>
+          <Link to="/terms" className="hover:text-white transition-colors">CGU</Link>
+          <Link to="/terms-of-sale" className="hover:text-white transition-colors">CGV</Link>
+          <Link to="/legal-notice" className="hover:text-white transition-colors">Mentions Légales</Link>
         </div>
 
         <div className="flex items-center gap-2 text-sm text-sphera-text-muted">

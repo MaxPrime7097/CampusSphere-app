@@ -1,43 +1,65 @@
 import { Suspense, lazy, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { listSpheres, joinSphere, getUserSpheres, leaveSphere } from "@/services/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SPHERE_CATEGORY_OPTIONS, getSphereCategoryLabel, SPHERE_AUDIENCE_OPTIONS } from "@/constants/sphereCategories";
+import { SPHERE_AUDIENCE_OPTIONS } from "@/constants/sphereCategories";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
-import { UnifiedSearchFiltersBar } from "@/components/ui/unified-search-filters-bar";
+import { NetflixCarousel } from "@/components/ui/netflix-carousel";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Globe, Search, Users, TrendingUp, Clock, Loader2, Check, RefreshCw, Plus, Filter } from "lucide-react";
+import {
+  Globe,
+  Search,
+  Users,
+  TrendingUp,
+  Clock,
+  Loader2,
+  Check,
+  RefreshCw,
+  Plus,
+  X,
+  Filter,
+  BookOpen,
+  FolderGit2,
+  Sparkles,
+  GraduationCap,
+  ShieldCheck,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { openVerificationModal } from "@/lib/events";
 import { SphereCard } from "@/components/sphere/SphereCard";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-import {
-  DEFAULT_SORT,
-  SPHERE_SORT_KEYS,
-  type SphereSortKey,
-  ensureValidSortKey,
-} from "@/constants/defaultSort";
 import { SphereSkeleton } from "@/components/ui/skeletons";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 
-const CreateSphereModal = lazy(() => import("@/components/modals/CreateSphereModal").then((module) => ({ default: module.CreateSphereModal })));
+const CreateSphereModal = lazy(() =>
+  import("@/components/modals/CreateSphereModal").then((module) => ({
+    default: module.CreateSphereModal,
+  }))
+);
+
+export const SPHERE_TYPE_CHIPS = [
+  { value: "all", label: "Toutes les sphères", icon: Globe },
+  { value: "cours", label: "Cours & TD", icon: BookOpen },
+  { value: "projet", label: "Projets & Groupes", icon: FolderGit2 },
+  { value: "communaute", label: "Communautés", icon: Users },
+  { value: "club", label: "Clubs & Assos", icon: Sparkles },
+  { value: "revision", label: "Révisions & Examens", icon: GraduationCap },
+] as const;
 
 export function Spheres() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { user: currentUser, isLoading: isAuthLoading } = useAuth();
+
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterCategory, setFilterCategory] = useState("all");
-  const [filterAudience, setFilterAudience] = useState("all");
+  const [filterType, setFilterType] = useState<string>("all");
+  const [filterAudience, setFilterAudience] = useState<string>("all");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [isCreateSphereOpen, setIsCreateSphereOpen] = useState(false);
 
@@ -48,6 +70,9 @@ export function Spheres() {
   const [allSpheres, setAllSpheres] = useState<any[]>([]);
   const [loadingSpheres, setLoadingSpheres] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [isJoining, setIsJoining] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
   const spheresQuery = useQuery({
     queryKey: ["spheres"],
     queryFn: listSpheres,
@@ -60,18 +85,19 @@ export function Spheres() {
   const userSpheresQuery = useQuery({
     queryKey: ["user-spheres"],
     queryFn: getUserSpheres,
+    enabled: Boolean(currentUser?.id),
     staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
   });
 
-  // Tab State - Initialized to page1
-  const [activeTab, setActiveTab] = useState("page1");
   const debugApiError = (endpoint: string, error: unknown) => {
     const safeMsg = String(
       (error as any)?.message ?? (error as any)?.detail ?? error ?? ""
-    ).replace(/[\r\n\t]/g, " ").slice(0, 200);
+    )
+      .replace(/[\r\n\t]/g, " ")
+      .slice(0, 200);
     console.debug(`[Spheres] API error (${endpoint}): ${safeMsg}`);
   };
 
@@ -97,79 +123,51 @@ export function Spheres() {
 
   const isSpheresLoading = isAuthLoading || userSpheresQuery.isLoading || spheresQuery.isLoading;
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [isJoining, setIsJoining] = useState<string | null>(null);
-
   const refreshMembershipState = async () => {
-    const [spheresResult, userSpheresResult] = await Promise.all([
+    const [spheresRes, mySpheresRes] = await Promise.all([
       spheresQuery.refetch(),
-      userSpheresQuery.refetch()
+      currentUser?.id ? userSpheresQuery.refetch() : Promise.resolve({ data: [] }),
     ]);
-    const spheresData = spheresResult.data || [];
-    setAllSpheres(spheresData);
-    const userSpheresData = userSpheresResult.data || [];
-    const sphereIds = userSpheresData.map((s: any) => String(s.id));
-    setUserJoinedSpheres(sphereIds);
-    setPendingJoinRequests([]);
-    setUserSpheres(userSpheresData);
-    setUserSpheresLoadError(null);
-    setLoadError(null);
-  };
-
-  const resolveJoinConflict = (error: unknown): "already_active" | "already_pending" | null => {
-    const rawMessage =
-      (error as any)?.response?.data?.detail ??
-      (error as any)?.response?.data?.message ??
-      (error as any)?.message ??
-      "";
-
-    let parsedPayload: any = null;
-    if (typeof rawMessage === "string") {
-      try {
-        parsedPayload = JSON.parse(rawMessage);
-      } catch {
-        parsedPayload = null;
-      }
+    if (spheresRes.data) setAllSpheres(spheresRes.data);
+    if (mySpheresRes.data) {
+      setUserSpheres(mySpheresRes.data);
+      setUserJoinedSpheres((mySpheresRes.data || []).map((s: any) => String(s.id)));
     }
-
-    const normalizedMessage = [
-      rawMessage,
-      parsedPayload?.detail,
-      parsedPayload?.message,
-      parsedPayload?.error,
-      parsedPayload?.status,
-      parsedPayload?.data?.status,
-    ]
-      .filter(Boolean)
-      .map((value) => String(value).toLowerCase())
-      .join(" ");
-
-    if (normalizedMessage.includes("already active")) return "already_active";
-    if (normalizedMessage.includes("already pending")) return "already_pending";
-    return null;
   };
 
-  const filteredSpheres = allSpheres.filter(sphere => {
-    const matchesSearch = sphere.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          sphere.description?.toLowerCase().includes(searchQuery.toLowerCase()) || false;
-    const matchesCategory = filterCategory === "all" || sphere.category === filterCategory;
-    const matchesAudience = filterAudience === "all" || sphere.target_audience === filterAudience;
-    return matchesSearch && matchesCategory && matchesAudience;
-  });
+  const filteredSpheres = allSpheres.filter((sphere) => {
+    const query = searchQuery.toLowerCase().trim();
+    const matchesSearch =
+      !query ||
+      sphere.name?.toLowerCase().includes(query) ||
+      sphere.description?.toLowerCase().includes(query) ||
+      sphere.objective?.toLowerCase().includes(query);
 
-  const resolvedSphereSort = ensureValidSortKey(activeTab, SPHERE_SORT_KEYS, DEFAULT_SORT.spheres);
+    const sphereType = (sphere.sphere_type || sphere.sphereType || "").toLowerCase();
+    const matchesType =
+      filterType === "all" ||
+      sphereType === filterType ||
+      (filterType === "cours" && (sphereType === "cours" || sphereType === "revision")) ||
+      (filterType === "revision" && (sphereType === "revision" || sphereType === "cours"));
+
+    const matchesAudience =
+      filterAudience === "all" ||
+      sphere.target_audience === filterAudience ||
+      sphere.targetAudience === filterAudience;
+
+    return matchesSearch && matchesType && matchesAudience;
+  });
 
   const getUnifiedMembershipState = (sphere: any): "active" | "pending" | "none" => {
     const sphereId = String(sphere?.id);
-    // normalizeSphere() dans api.ts convertit is_member -> isMember et membership_status -> membershipStatus
     const membershipStatus = String(
       sphere?.membership_status ?? sphere?.membershipStatus ?? ""
     ).toLowerCase();
-    const isCreator = currentUser?.id && (
-      String(sphere?.created_by) === String(currentUser.id) ||
-      String(sphere?.createdBy) === String(currentUser.id)
-    );
-    // Vérifier les deux formes (snake_case depuis API brute, camelCase après normalisation)
+    const isCreator =
+      currentUser?.id &&
+      (String(sphere?.created_by) === String(currentUser.id) ||
+        String(sphere?.createdBy) === String(currentUser.id));
+
     const isMemberFromApi =
       sphere?.is_member === true ||
       sphere?.isMember === true ||
@@ -183,78 +181,19 @@ export function Spheres() {
     return "none";
   };
 
-  const getSphereActionModel = (sphere: any) => {
-    const membership = getUnifiedMembershipState(sphere);
-    const sphereId = String(sphere?.id);
-    const disabled = isSpheresLoading || isJoining === sphereId;
-
-    if (membership === "active") {
-      return {
-        label: "Rejoint",
-        className: "bg-green-500 hover:bg-green-600 text-white",
-        disabled: true,
-        icon: <Check className="h-3 w-3 mr-1" />,
-        onClick: () => undefined,
-      };
-    }
-
-    if (membership === "pending") {
-      return {
-        label: "En attente",
-        className: "bg-amber-500 hover:bg-amber-600 text-white",
-        disabled: true,
-        icon: <Clock className="h-3 w-3 mr-1" />,
-        onClick: () => undefined,
-      };
-    }
-
-    return {
-      label: "Rejoindre",
-      className: "campus-gradient text-white",
-      disabled,
-      icon: null,
-      onClick: () => handleJoinSphere(sphere.id, sphere.name),
-    };
-  };
-
-  /**
-   * Formule de classement Top Sphères (transparente) :
-   *   score = (membres / maxMembres) × 0.5 + (progression / 100) × 0.5
-   *
-   * Poids : 50% popularité (membres), 50% avancement (progression)
-   * Quand l'API fournira les posts récents, le poids activité sera ajouté.
-   */
-  const getSortedSpheres = (): any[] => {
-    const sorted = [...filteredSpheres];
-    switch (resolvedSphereSort) {
-      case "top": {
-        const maxMembers = Math.max(1, ...sorted.map((s: any) => Number(s.memberCount) || 0));
-        const score = (s: any) => {
-          const members  = (Number(s.memberCount)  || 0) / maxMembers;        // 0–1
-          const progress = Math.min(100, Number(s.progression) || 0) / 100;   // 0–1
-          return members * 0.5 + progress * 0.5;
-        };
-        return sorted.sort((a: any, b: any) => score(b) - score(a));
-      }
-      case "mySpheres":
-        return sorted.filter((sphere: any) => getUnifiedMembershipState(sphere) === "active");
-      case "discover":
-      default:
-        return sorted;
-    }
-  };
-
   const handleJoinSphere = async (sphereId: string, sphereName: string) => {
     if (!currentUser) return;
-    
+
     if (!currentUser.isVerified) {
       toast({
         title: "Compte non certifié",
         description: "Vous devez être certifié pour rejoindre une sphère.",
         variant: "destructive",
         action: (
-          <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>Vérifier</Button>
-        )
+          <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>
+            Vérifier
+          </Button>
+        ),
       });
       return;
     }
@@ -266,46 +205,27 @@ export function Spheres() {
     setIsJoining(sphereId);
     try {
       const result = await joinSphere(sphereId);
-      if (result?.data?.status === 'pending') {
+      if (result?.data?.status === "pending") {
         setPendingJoinRequests((prev) => (prev.includes(sphereId) ? prev : [...prev, sphereId]));
         setUserJoinedSpheres((prev) => prev.filter((id) => String(id) !== String(sphereId)));
-        toast({ title: "Demande envoyée !", description: `Attente d'approbation pour ${sphereName}` });
+        toast({ title: "Demande envoyée", description: `Attente d'approbation pour ${sphereName}` });
       } else {
-        toast({ title: "Sphère rejoint !", description: `Succès pour ${sphereName}` });
-        setUserJoinedSpheres(prev => [...prev, sphereId]);
+        toast({ title: "Sphère rejointe", description: `Vous avez rejoint ${sphereName}` });
+        setUserJoinedSpheres((prev) => [...prev, sphereId]);
         setPendingJoinRequests((prev) => prev.filter((id) => String(id) !== String(sphereId)));
         const joinedSphere = allSpheres.find((sphere) => String(sphere.id) === String(sphereId));
         if (joinedSphere) {
-          setUserSpheres((prev) => [joinedSphere, ...prev.filter((sphere) => String(sphere.id) !== String(sphereId))]);
+          setUserSpheres((prev) => [
+            joinedSphere,
+            ...prev.filter((sphere) => String(sphere.id) !== String(sphereId)),
+          ]);
         }
       }
     } catch (e: any) {
       debugApiError(`POST /spheres/${sphereId}/join`, e);
-      const joinConflict = resolveJoinConflict(e);
-      if (joinConflict === "already_active" || joinConflict === "already_pending") {
-        try {
-          await refreshMembershipState();
-        } catch (refreshError: any) {
-          debugApiError("GET /spheres + GET /users/me/spheres (join conflict refresh)", refreshError);
-        }
-      } else {
-        toast({ title: "Erreur", description: e?.message, variant: "destructive" });
-      }
+      toast({ title: "Erreur", description: e?.message, variant: "destructive" });
     } finally {
       setIsJoining(null);
-    }
-  };
-
-  const handleLeaveSphere = async (sphereId: string, sphereName: string) => {
-    try {
-      await leaveSphere(sphereId);
-      toast({ title: "Sphère quittée", description: `Vous avez quitté "${sphereName}"` });
-      setUserJoinedSpheres((prev) => prev.filter((id) => String(id) !== String(sphereId)));
-      setPendingJoinRequests((prev) => prev.filter((id) => String(id) !== String(sphereId)));
-      setUserSpheres((prev) => prev.filter((sphere) => String(sphere.id) !== String(sphereId)));
-    } catch (e: any) {
-      debugApiError(`POST /spheres/${sphereId}/leave`, e);
-      toast({ title: "Erreur", description: e?.message || "Impossible de quitter la sphère", variant: "destructive" });
     }
   };
 
@@ -313,6 +233,10 @@ export function Spheres() {
     setIsLoading(true);
     try {
       await refreshMembershipState();
+      toast({
+        title: "Sphères actualisées",
+        description: "La liste des sphères a été mise à jour.",
+      });
     } catch (e: any) {
       debugApiError("GET /spheres + GET /users/me/spheres", e);
       toast({ title: "Erreur", description: e?.message || "Impossible d'actualiser", variant: "destructive" });
@@ -323,46 +247,57 @@ export function Spheres() {
 
   const handleSphereCreated = (sphere: any) => {
     if (!sphere) return;
-    setAllSpheres((prev) => [sphere, ...prev.filter((item) => String(item.id) !== String(sphere.id))]);
+    setAllSpheres((prev) => [
+      sphere,
+      ...prev.filter((item) => String(item.id) !== String(sphere.id)),
+    ]);
     setUserJoinedSpheres((prev) =>
       prev.includes(String(sphere.id)) ? prev : [String(sphere.id), ...prev]
     );
     setPendingJoinRequests((prev) => prev.filter((id) => String(id) !== String(sphere.id)));
-    setUserSpheres((prev) => [sphere, ...prev.filter((item) => String(item.id) !== String(sphere.id))]);
+    setUserSpheres((prev) => [
+      sphere,
+      ...prev.filter((item) => String(item.id) !== String(sphere.id)),
+    ]);
   };
 
-  const categories = [
-    ...SPHERE_CATEGORY_OPTIONS,
-    ...Array.from(new Set(allSpheres.map(s => s.category))).
-      filter((cat) => cat && !SPHERE_CATEGORY_OPTIONS.some(option => option.value === cat)).
-      map((cat) => ({ value: cat, label: getSphereCategoryLabel(cat) }))
-  ];
-
-
-  const cardClasses = cn(
-    "transition-all duration-300",
-    isMobile ? "rounded-none border-x-0 border-t-0 shadow-none bg-card" : "campus-card hover:campus-glow"
-  );
+  const isFiltering =
+    searchQuery.trim() !== "" || filterType !== "all" || filterAudience !== "all";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
-      <div className="w-full max-w-6xl mx-auto py-4 md:py-6 px-2 sm:px-4">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 campus-animate-fade-in">
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8 space-y-6 animate-in fade-in duration-300">
+        {/* ─── Top Header (Standardisé & Épuré) ─── */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2 campus-animate-fade-in">
           <div>
-            <h1 className="text-3xl font-bold bg-clip-text text-muted-foreground">Sphères Collaboratives</h1>
-            <p className="text-muted-foreground mt-2">Rejoignez des projets, apprenez ensemble et créez l'impact</p>
+            <h1 className="text-3xl font-bold tracking-tight text-white">
+              Sphères Collaboratives
+            </h1>
+            <p className="text-muted-foreground mt-2 text-sm">
+              Rejoignez des projets, révisez ensemble et collaborez au sein de la communauté étudiante
+            </p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading} className="gap-2">
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-              <span className="hidden sm:inline">Actualiser</span>
 
+          <div className="flex w-full sm:w-auto gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={isLoading || isSpheresLoading}
+              className="gap-2"
+            >
+              <RefreshCw className={cn("h-4 w-4", (isLoading || spheresQuery.isFetching) && "animate-spin")} />
+              <span className="hidden sm:inline">Actualiser</span>
             </Button>
+
             {currentUser?.isVerified ? (
               <>
-                <Button size="sm" className="campus-gradient text-white hover:opacity-90 gap-2 w-full sm:w-auto" onClick={() => setIsCreateSphereOpen(true)}>
-                  <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Créer</span>
+                <Button
+                  size="sm"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 flex-1 sm:flex-none font-semibold"
+                  onClick={() => setIsCreateSphereOpen(true)}
+                >
+                  <Plus className="h-4 w-4" /> <span>Créer</span>
                 </Button>
                 {isCreateSphereOpen && (
                   <Suspense fallback={<ModalLoadingFallback />}>
@@ -375,163 +310,186 @@ export function Spheres() {
                 )}
               </>
             ) : (
-              <Button 
-                size="sm" 
-                className="campus-gradient text-white hover:opacity-90 gap-2 w-full sm:w-auto"
+              <Button
+                size="sm"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 flex-1 sm:flex-none font-semibold"
                 onClick={() => {
                   toast({
-                    title: "Compte non vérifié",
-                    description: "Vérifiez votre compte pour créer des sphères.",
+                    title: "Compte non certifié",
+                    description: "Certifiez votre compte pour créer des sphères.",
                     variant: "destructive",
                     action: (
-                      <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>Vérifier</Button>
-                    )
+                      <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>
+                        Vérifier
+                      </Button>
+                    ),
                   });
                 }}
               >
-                <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Créer</span>
+                <Plus className="h-4 w-4" /> <span>Créer</span>
               </Button>
             )}
           </div>
         </div>
-
-        <Card className={cn(cardClasses, "mb-6")}>
-          <CardContent className="p-3">
-            {/* Mobile */}
-            <div className="flex gap-2 sm:hidden">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Rechercher une sphère..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
-              </div>
-              <Button variant="outline" size="icon" onClick={() => setShowMobileFilters((v) => !v)} className={showMobileFilters ? "border-primary text-primary" : ""}>
-                <Filter className="h-4 w-4" />
-              </Button>
+        {/* ─── Search & Filters Bar (Épuré sans boîte de carte) ─── */}
+        <div className="space-y-3">
+          {/* Top Row: Search Input + Audience Select */}
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher une sphère par nom, description ou projet..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-9 text-xs rounded-xl h-10 border-border/80 bg-card focus-visible:ring-primary shadow-xs"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
-            {showMobileFilters && (
-              <div className="flex flex-col gap-2 mt-2 sm:hidden">
-                <Select value={filterCategory} onValueChange={setFilterCategory}>
-                  <SelectTrigger><SelectValue placeholder="Catégorie" /></SelectTrigger>
-                  <SelectContent>
-                    {categories.map((cat) => <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <Select value={filterAudience} onValueChange={setFilterAudience}>
-                  <SelectTrigger><SelectValue placeholder="Public cible" /></SelectTrigger>
-                  <SelectContent>
-                    {SPHERE_AUDIENCE_OPTIONS.map((a) => <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            {/* Desktop */}
-            <div className="hidden sm:grid sm:grid-cols-3 gap-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Rechercher une sphère..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
-              </div>
-              <Select value={filterCategory} onValueChange={setFilterCategory}>
-                <SelectTrigger><SelectValue placeholder="Catégorie" /></SelectTrigger>
-                <SelectContent>
-                  {categories.map((cat) => <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
+
+            {/* Mobile Filter Toggle Button */}
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setShowMobileFilters((v) => !v)}
+              className={cn(
+                "sm:hidden h-10 w-10 rounded-xl shrink-0 border-border/80",
+                showMobileFilters || filterAudience !== "all"
+                  ? "border-primary text-primary bg-primary/5"
+                  : ""
+              )}
+              title="Filtres"
+            >
+              <Filter className="h-4 w-4" />
+            </Button>
+
+            {/* Desktop Audience Select */}
+            <div className="hidden sm:flex items-center gap-2 shrink-0">
               <Select value={filterAudience} onValueChange={setFilterAudience}>
-                <SelectTrigger><SelectValue placeholder="Public cible" /></SelectTrigger>
+                <SelectTrigger className="w-56 h-10 rounded-xl text-xs border-border/80 bg-card">
+                  <SelectValue placeholder="Tous publics" />
+                </SelectTrigger>
                 <SelectContent>
-                  {SPHERE_AUDIENCE_OPTIONS.map((a) => <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>)}
+                  {SPHERE_AUDIENCE_OPTIONS.map((a) => (
+                    <SelectItem key={a.value} value={a.value} className="text-xs">
+                      {a.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-            </div>
-          </CardContent>
-        </Card>
 
-        <Tabs
-          value={resolvedSphereSort}
-          onValueChange={(value) => setActiveTab(value as SphereSortKey)}
-          className="w-full"
-        >
-
-          <SharedTabsList containerClassName="mb-6">
-            <SharedTabsTrigger value="discover">Découvrir</SharedTabsTrigger>
-            <SharedTabsTrigger value="mySpheres">Mes Sphères</SharedTabsTrigger>
-            <SharedTabsTrigger value="top">Top</SharedTabsTrigger>
-          </SharedTabsList>
-
-          {/* Section 1: Pilot Training */}
-          <TabsContent value="discover" className="mt-0">
-            <section id="discover" className="space-y-4">
-              {loadError ? (
-                <Card className={cardClasses}>
-                  <CardContent className="py-8 text-center space-y-3">
-                    <p className="text-sm text-destructive">{loadError}</p>
-                    <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading} className="gap-2">
-                      {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                      Réessayer
-                    </Button>
-                  </CardContent>
-                </Card>
-              ) : !isSpheresLoading && getSortedSpheres().length === 0 ? (
-                <EmptyState
-                  icon={Globe}
-                  title="Aucune sphère trouvée"
-                  description="Essayez d'ajuster vos filtres pour trouver ce que vous cherchez."
-                  actionLabel="Tout réinitialiser"
-                  onAction={() => {
+              {isFiltering && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
                     setSearchQuery("");
-                    setFilterCategory("all");
+                    setFilterType("all");
                     setFilterAudience("all");
                   }}
-                />
-              ) : (
-              <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-                {isSpheresLoading ? (
-                  Array.from({ length: 8 }).map((_, i) => (
-                    <SphereSkeleton key={i} />
-                  ))
-                ) : (
-                  getSortedSpheres().map((sphere) => (
-                    <SphereCard
-                      key={sphere.id}
-                      sphere={sphere}
-                      membership={getUnifiedMembershipState(sphere)}
-                      isJoining={isJoining === String(sphere.id)}
-                      onJoin={() => handleJoinSphere(sphere.id, sphere.name)}
-                    />
-                  ))
-                )}
-              </div>
+                  className="rounded-xl text-xs h-10 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5 mr-1" />
+                  Réinitialiser
+                </Button>
               )}
-            </section>
-          </TabsContent>
+            </div>
+          </div>
 
-          {/* Section 2: Titan maintenance */}
-          <TabsContent value="mySpheres" className="mt-0">
-            <section id="mySpheres" className="space-y-4">
-              {userSpheresLoadError ? (
-                <Card className={cardClasses}>
-                  <CardContent className="py-8 text-center space-y-3">
-                    <p className="text-sm text-destructive">{userSpheresLoadError}</p>
-                    <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading} className="gap-2">
-                      {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                      Réessayer
-                    </Button>
-                  </CardContent>
-                </Card>
-              ) : isSpheresLoading ? (
-                <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-                  <SphereSkeleton />
-                  <SphereSkeleton />
-                  <SphereSkeleton />
-                  <SphereSkeleton />
-                </div>
-              ) : getSortedSpheres().length === 0 ? (
-                <div className="text-center py-8">
-                  <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">Vous n'avez rejoint aucune sphère pour le moment.</p>
-                </div>
-              ) : (
-              <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-                {getSortedSpheres().map((sphere) => (
+          {/* Mobile Collapsible Filters */}
+          {showMobileFilters && (
+            <div className="flex items-center gap-2 sm:hidden animate-in fade-in duration-200">
+              <Select value={filterAudience} onValueChange={setFilterAudience}>
+                <SelectTrigger className="w-full h-10 rounded-xl text-xs border-border/80 bg-card">
+                  <SelectValue placeholder="Tous publics" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SPHERE_AUDIENCE_OPTIONS.map((a) => (
+                    <SelectItem key={a.value} value={a.value} className="text-xs">
+                      {a.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {isFiltering && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setFilterType("all");
+                    setFilterAudience("all");
+                  }}
+                  className="text-xs text-muted-foreground hover:text-foreground shrink-0 h-10"
+                >
+                  <X className="h-3.5 w-3.5 mr-1" />
+                  Effacer
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Bottom Row: Horizontal Type Chips (Sans scrollbar visible) */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pt-1 border-t border-border/40">
+            {SPHERE_TYPE_CHIPS.map((chip) => {
+              const isSelected = filterType === chip.value;
+              return (
+                <button
+                  key={chip.value}
+                  type="button"
+                  onClick={() => setFilterType(chip.value)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer",
+                    isSelected
+                      ? "bg-primary text-primary-foreground shadow-xs"
+                      : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  <span>{chip.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ─── Main Content (Filtered Grid or Dashboard Carousels) ─── */}
+        {isFiltering ? (
+          <div className="space-y-4 pt-2">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-xs font-bold text-muted-foreground">
+                {filteredSpheres.length} {filteredSpheres.length > 1 ? "sphères trouvées" : "sphère trouvée"}
+              </span>
+            </div>
+
+            {isSpheresLoading ? (
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <SphereSkeleton key={i} />
+                ))}
+              </div>
+            ) : filteredSpheres.length === 0 ? (
+              <EmptyState
+                icon={Globe}
+                title="Aucune sphère trouvée"
+                description="Essayez d'ajuster vos filtres pour trouver ce que vous cherchez."
+                actionLabel="Tout réinitialiser"
+                onAction={() => {
+                  setSearchQuery("");
+                  setFilterType("all");
+                  setFilterAudience("all");
+                }}
+              />
+            ) : (
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                {filteredSpheres.map((sphere) => (
                   <SphereCard
                     key={sphere.id}
                     sphere={sphere}
@@ -541,88 +499,144 @@ export function Spheres() {
                   />
                 ))}
               </div>
-              )}
-            </section>
-          </TabsContent>
+            )}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-10 mt-6 pb-12">
+            {/* Row 1: Mes Sphères */}
+            {(() => {
+              const mySpheres = allSpheres.filter(
+                (sphere) => getUnifiedMembershipState(sphere) === "active"
+              );
+              if (mySpheres.length === 0 && !isSpheresLoading) return null;
+              return (
+                <section>
+                  <h2 className="text-base sm:text-lg font-bold mb-3 px-1 text-foreground">
+                    Mes Sphères ({mySpheres.length})
+                  </h2>
+                  <NetflixCarousel className="gap-4">
+                    {isSpheresLoading ? (
+                      Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="cs-scroll-item w-[240px] sm:w-[280px]">
+                          <SphereSkeleton />
+                        </div>
+                      ))
+                    ) : (
+                      mySpheres.map((sphere) => (
+                        <div key={sphere.id} className="cs-scroll-item w-[240px] sm:w-[280px]">
+                          <SphereCard
+                            sphere={sphere}
+                            membership={getUnifiedMembershipState(sphere)}
+                            isJoining={isJoining === String(sphere.id)}
+                            onJoin={() => handleJoinSphere(sphere.id, sphere.name)}
+                          />
+                        </div>
+                      ))
+                    )}
+                  </NetflixCarousel>
+                </section>
+              );
+            })()}
 
-          {/* Section 3: Loadout */}
-          <TabsContent value="top" className="mt-0">
-            <section id="top" className="space-y-4">
-              <Card className={cardClasses}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <TrendingUp className="h-4 w-4 text-primary" /> Top Sphères du mois
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-1 pt-0">
-                  {getSortedSpheres().slice(0, 5).map((sphere, index) => {
-                    const membership = getUnifiedMembershipState(sphere);
-                    const actionModel = getSphereActionModel(sphere);
-                    const progress = Math.max(0, Math.min(100, Number(sphere.progression || 0)));
-                    const rankColors = [
-                      "bg-amber-400 text-white",
-                      "bg-slate-400 text-white",
-                      "bg-orange-400 text-white",
-                      "bg-muted text-muted-foreground",
-                      "bg-muted text-muted-foreground",
-                    ];
-                    return (
-                      <div
-                        key={sphere.id}
-                        className="flex items-center gap-1.5 sm:gap-3 p-1.5 sm:p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors group"
-                        onClick={() => navigate(`/spheres/${sphere.id}`)}
+            {/* Row 2: Tendances */}
+            {(() => {
+              const topSpheres = [...allSpheres]
+                .sort((a: any, b: any) => {
+                  const membersA = Number(a.memberCount) || 0;
+                  const membersB = Number(b.memberCount) || 0;
+                  const progressA = Math.min(100, Number(a.progression) || 0);
+                  const progressB = Math.min(100, Number(b.progression) || 0);
+                  return membersB * 0.5 + progressB * 0.5 - (membersA * 0.5 + progressA * 0.5);
+                })
+                .slice(0, 10);
+
+              if (topSpheres.length === 0 && !isSpheresLoading) return null;
+              return (
+                <section>
+                  <h2 className="text-base sm:text-lg font-bold mb-3 px-1 text-foreground">
+                    Sphères Populaires & Tendances
+                  </h2>
+                  <NetflixCarousel className="gap-4">
+                    {isSpheresLoading ? (
+                      Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="cs-scroll-item w-[240px] sm:w-[280px]">
+                          <SphereSkeleton />
+                        </div>
+                      ))
+                    ) : (
+                      topSpheres.map((sphere) => (
+                        <div key={sphere.id} className="cs-scroll-item w-[240px] sm:w-[280px]">
+                          <SphereCard
+                            sphere={sphere}
+                            membership={getUnifiedMembershipState(sphere)}
+                            isJoining={isJoining === String(sphere.id)}
+                            onJoin={() => handleJoinSphere(sphere.id, sphere.name)}
+                          />
+                        </div>
+                      ))
+                    )}
+                  </NetflixCarousel>
+                </section>
+              );
+            })()}
+
+            {/* Rows 3+: Par Type de Sphère */}
+            {[
+              { value: "cours", label: "Cours, TD & Académique" },
+              { value: "projet", label: "Projets & Groupes de Travail" },
+              { value: "communaute", label: "Communautés & Échanges" },
+              { value: "club", label: "Clubs & Associations" },
+              { value: "revision", label: "Groupes de Révision & Annales" },
+            ].map((typeObj) => {
+              const catSpheres = allSpheres.filter((s) => {
+                const sType = (s.sphere_type || s.sphereType || "").toLowerCase();
+                return sType === typeObj.value;
+              });
+              if (catSpheres.length === 0 && !isSpheresLoading) return null;
+              return (
+                <section key={typeObj.value}>
+                  <div className="flex justify-between items-center mb-3 px-1">
+                    <h2 className="text-base sm:text-lg font-bold text-foreground">
+                      {typeObj.label}
+                    </h2>
+                    {catSpheres.length > 4 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs text-muted-foreground hover:text-foreground font-semibold"
+                        onClick={() => {
+                          setFilterType(typeObj.value);
+                        }}
                       >
-                        {/* Rank */}
-                        <span className={`flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[9px] sm:text-[11px] font-bold ${rankColors[index] ?? rankColors[3]}`}>
-                          {index + 1}
-                        </span>
-
-                        {/* Avatar */}
-                        <div className={`flex-shrink-0 w-7 h-7 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br ${sphere.color || "from-primary/30 to-accent/30"} flex items-center justify-center text-white font-bold text-[10px] sm:text-sm`}>
-                          {sphere.name?.charAt(0) || "?"}
+                        Voir tout ({catSpheres.length})
+                      </Button>
+                    )}
+                  </div>
+                  <NetflixCarousel className="gap-4">
+                    {isSpheresLoading ? (
+                      Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="cs-scroll-item w-[240px] sm:w-[280px]">
+                          <SphereSkeleton />
                         </div>
-
-                        {/* Info */}
-                        <div className="flex-1 min-w-0 px-0.5">
-                          <p className="font-semibold text-[11px] sm:text-sm truncate group-hover:text-primary transition-colors">
-                            {sphere.name}
-                          </p>
-                          <div className="flex items-center gap-1 mt-0.5">
-                            <div className="flex-1 h-1 sm:h-1.5 bg-muted rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-primary rounded-full transition-all"
-                                style={{ width: `${progress}%` }}
-                              />
-                            </div>
-                            <span className="text-[8px] sm:text-[10px] text-muted-foreground flex-shrink-0 flex items-center gap-0.5">
-                              <Users className="h-2 w-2 sm:h-2.5 sm:w-2.5" />{sphere.memberCount}
-                            </span>
-                          </div>
+                      ))
+                    ) : (
+                      catSpheres.map((sphere) => (
+                        <div key={sphere.id} className="cs-scroll-item w-[240px] sm:w-[280px]">
+                          <SphereCard
+                            sphere={sphere}
+                            membership={getUnifiedMembershipState(sphere)}
+                            isJoining={isJoining === String(sphere.id)}
+                            onJoin={() => handleJoinSphere(sphere.id, sphere.name)}
+                          />
                         </div>
-
-                        {/* Action */}
-                        <Button
-                          size="sm"
-                          className={`flex-shrink-0 h-6 sm:h-7 text-[9px] sm:text-xs px-1.5 sm:px-2.5 ${membership === "active" ? "campus-gradient text-white hover:opacity-90" : actionModel.className}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            membership === "active" ? navigate(`/spheres/${sphere.id}`) : actionModel.onClick();
-                          }}
-                          disabled={actionModel.disabled}
-                        >
-                          {isJoining === String(sphere.id)
-                            ? <Loader2 className="h-3 w-3 animate-spin" />
-                            : membership === "active" ? "Voir" : actionModel.label
-                          }
-                        </Button>
-                      </div>
-                    );
-                  })}
-                </CardContent>
-              </Card>
-            </section>
-          </TabsContent>
-        </Tabs>
+                      ))
+                    )}
+                  </NetflixCarousel>
+                </section>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -10,7 +10,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Share2, Sparkles, AlertCircle, Loader2, Check, MessageCircleQuestion, BookOpen, BrainCircuit, Columns } from "lucide-react";
+import { ArrowLeft, Share2, AlertCircle, Loader2, Check, MessageCircleQuestion, BookOpen, BrainCircuit, SquareStack, GitFork, AudioLines } from "lucide-react";
+import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -18,6 +19,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FicheRevision } from "@/sphera/components/study/FicheRevision";
 import { QuizInteractif } from "@/sphera/components/study/QuizInteractif";
 import { Flashcards } from "@/sphera/components/study/Flashcards";
+import { MindMapView } from "@/sphera/components/study/MindMapView";
+import { AudioPlayerView } from "@/sphera/components/study/AudioPlayerView";
 
 // V2 : Q&A
 import { QAChat } from "../components/QAChat";
@@ -145,7 +148,7 @@ export const StudySessionDetail: React.FC = () => {
   const defaultTab = toolTypes[0] || (hasQA ? "qa" : "fiche");
 
   return (
-    <div className="container py-8 max-w-5xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="w-full max-w-5xl mx-auto py-4 sm:py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <Helmet>
         <title>
           {session.resource_title || session.source_filename || "Session d'étude"} — CampusSphere
@@ -153,7 +156,7 @@ export const StudySessionDetail: React.FC = () => {
       </Helmet>
 
       {/* ─── Header ─── */}
-      <div className="mb-8">
+      <div className="mb-6 sm:mb-8 px-4 sm:px-8">
         <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4 -ml-4 text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft className="mr-2 h-4 w-4" /> Retour
         </Button>
@@ -161,7 +164,7 @@ export const StudySessionDetail: React.FC = () => {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="bg-[#ff9800]/10 text-[#ff9800] px-2.5 py-1 rounded-full text-xs font-semibold flex items-center border border-[#ff9800]/20">
-                <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+                <SpheraIcon size="sm" className="mr-1.5" />
                 Assistante Sphera
               </span>
               {hasQA && (
@@ -171,10 +174,10 @@ export const StudySessionDetail: React.FC = () => {
                 </span>
               )}
             </div>
-            <h1 className="text-3xl font-bold tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight break-words">
               {session.resource_title || session.source_filename || "Session d'étude"}
             </h1>
-            <p className="text-muted-foreground mt-2">
+            <p className="text-muted-foreground mt-2 text-sm sm:text-base">
               Généré le{" "}
               {new Date(session.created_at).toLocaleDateString("fr-FR", {
                 day: "numeric",
@@ -186,7 +189,7 @@ export const StudySessionDetail: React.FC = () => {
               )}
             </p>
           </div>
-          <Button variant="outline" className="gap-2" onClick={handleOpenShare} disabled={shared}>
+          <Button variant="outline" className="gap-2 w-full md:w-auto mt-4 md:mt-0" onClick={handleOpenShare} disabled={shared}>
             {shared ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
             {shared ? "Partagé" : "Partager"}
           </Button>
@@ -195,39 +198,69 @@ export const StudySessionDetail: React.FC = () => {
 
       {/* ─── Tabs ─── */}
       <Tabs defaultValue={defaultTab} className="w-full">
-        <TabsList className="w-full justify-start overflow-x-auto bg-transparent border-b rounded-none h-auto p-0 space-x-6">
-          {(["fiche", "quiz", "flashcards"] as ToolType[]).map((t) => {
-            const isGenerated = toolTypes.includes(t);
-            return (
-              <TabsTrigger 
-                key={t} 
-                value={t} 
-                className={`${TAB_STYLE} ${!isGenerated ? "opacity-70" : ""}`}
-              >
-                {t === "fiche" && <BookOpen className="h-5 w-5 mr-2" />}
-                {t === "quiz" && <BrainCircuit className="h-5 w-5 mr-2" />}
-                {t === "flashcards" && <Columns className="h-5 w-5 mr-2" />}
-                {t.charAt(0).toUpperCase() + t.slice(1)}
-                {!isGenerated && (
-                  <span className="ml-2 text-[10px] bg-secondary px-1.5 py-0.5 rounded-full border opacity-50">+</span>
-                )}
-              </TabsTrigger>
-            );
-          })}
-          <TabsTrigger value="qa" className={TAB_STYLE}>
-            <MessageCircleQuestion className="h-5 w-5 mr-2" />
-            Q&A
-          </TabsTrigger>
-        </TabsList>
+        <div className="px-4 sm:px-8">
+          <TabsList className="flex overflow-x-auto w-full h-auto border-b justify-start sm:justify-center gap-1 sm:gap-4 no-scrollbar">
+            {(["fiche", "quiz", "flashcards", "mindmap", "audio"] as ToolType[]).map((t) => {
+              const isGenerated = toolTypes.includes(t);
+              const label =
+                t === "fiche"
+                  ? "Fiche"
+                  : t === "quiz"
+                  ? "Quiz"
+                  : t === "flashcards"
+                  ? "Flashcards"
+                  : t === "mindmap"
+                  ? "Carte mentale"
+                  : "Résumé audio";
+              return (
+                <TabsTrigger 
+                  key={t} 
+                  value={t}
+                  className={!isGenerated ? "opacity-70 whitespace-nowrap" : "whitespace-nowrap"}
+                >
+                  <div className="flex items-center">
+                    {t === "fiche" && <BookOpen className="h-4 w-4 mr-2 hidden sm:block" />}
+                    {t === "quiz" && <BrainCircuit className="h-4 w-4 mr-2 hidden sm:block" />}
+                    {t === "flashcards" && <SquareStack className="h-4 w-4 mr-2 hidden sm:block" />}
+                    {t === "mindmap" && <GitFork className="h-4 w-4 mr-2 hidden sm:block text-emerald-500" />}
+                    {t === "audio" && <AudioLines className="h-4 w-4 mr-2 hidden sm:block text-emerald-500" />}
+                    {label}
+                    {!isGenerated && (
+                      <span className="ml-2 text-[9px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full border hidden sm:inline-block">
+                        + Générer
+                      </span>
+                    )}
+                  </div>
+                </TabsTrigger>
+              );
+            })}
+            <TabsTrigger value="qa" className="whitespace-nowrap">
+              <div className="flex items-center">
+                <MessageCircleQuestion className="h-4 w-4 mr-2 hidden sm:block" />
+                Q&A
+              </div>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-        <div className="mt-8">
-          {(["fiche", "quiz", "flashcards"] as ToolType[]).map((t) => {
+        <div className="mt-4 sm:mt-8">
+          {(["fiche", "quiz", "flashcards", "mindmap", "audio"] as ToolType[]).map((t) => {
             const isGenerated = toolTypes.includes(t);
+            const toolName =
+              t === "fiche"
+                ? "la fiche"
+                : t === "quiz"
+                ? "le quiz"
+                : t === "flashcards"
+                ? "les flashcards"
+                : t === "mindmap"
+                ? "la carte mentale"
+                : "le résumé audio";
             return (
-              <TabsContent key={t} value={t} className="mt-0 focus-visible:outline-none focus-visible:ring-0">
+              <TabsContent key={t} value={t} className="mt-0 focus-visible:outline-none focus-visible:ring-0 px-4 sm:px-8">
                 {!isGenerated ? (
-                  <div className="flex flex-col items-center justify-center p-12 text-center bg-card rounded-2xl border">
-                    <Sparkles className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                  <div className="flex flex-col items-center justify-center p-6 sm:p-12 text-center bg-card rounded-2xl border">
+                    <SpheraIcon size="xl" className="mx-auto mb-4 opacity-50" />
                     <h3 className="text-xl font-bold mb-2">Cet outil n'a pas encore été généré</h3>
                     <p className="text-sm text-muted-foreground mb-8 max-w-sm">
                       Génère ce contenu instantanément en utilisant l'analyse déjà effectuée sur ton document.
@@ -240,7 +273,7 @@ export const StudySessionDetail: React.FC = () => {
                       {isGeneratingTool ? (
                         <><Loader2 className="w-4 h-4 animate-spin"/> Génération...</>
                       ) : (
-                        <><Sparkles className="w-4 h-4"/> Générer {t === 'flashcards' ? 'les' : 'le'} {t}</>
+                        <><SpheraIcon size="md" variant="white" /> Générer {toolName}</>
                       )}
                     </Button>
                     {toolError && <p className="text-destructive text-sm mt-4">{toolError}</p>}
@@ -250,6 +283,8 @@ export const StudySessionDetail: React.FC = () => {
                     {t === "fiche" && content.fiche && <FicheRevision data={content.fiche} />}
                     {t === "quiz" && content.quiz && <QuizInteractif data={content.quiz} />}
                     {t === "flashcards" && content.flashcards && <Flashcards data={content.flashcards} />}
+                    {t === "mindmap" && content.mindmap && <MindMapView data={content.mindmap} />}
+                    {t === "audio" && content.audio && <AudioPlayerView data={content.audio} />}
                   </>
                 )}
               </TabsContent>
@@ -258,8 +293,8 @@ export const StudySessionDetail: React.FC = () => {
 
           {/* ─── Q&A Tab ─── */}
           <TabsContent value="qa" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-            <div className="max-w-2xl">
-              <p className="text-sm text-muted-foreground mb-4">
+            <div className="w-full">
+              <p className="text-sm text-muted-foreground mb-4 px-4 sm:px-8 hidden sm:block">
                 Pose tes questions sur le contenu de ce cours. Sphera répond uniquement depuis le document original.
               </p>
               <QAChat

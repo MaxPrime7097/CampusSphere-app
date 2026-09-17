@@ -1,5 +1,5 @@
 import {
-  Menu, Shield, ExternalLink
+  Menu, Shield, ExternalLink, BadgeCheck
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -57,7 +57,7 @@ export function MenuDropdown({ user: externalUser }: { user?: NavigationUser }) 
   };
 
   return (
-  <Sheet open={open} onOpenChange={setOpen}>
+    <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button variant="ghost" size="sm" className="relative hover:bg-accent">
           <Menu className="h-4 w-4" />
@@ -65,14 +65,14 @@ export function MenuDropdown({ user: externalUser }: { user?: NavigationUser }) 
       </SheetTrigger>
       <SheetContent className="pt-5 overflow-y-auto" onClickCapture={handleContainerClickCapture}>
         <SheetHeader>
-          <h1 className="text-3xl font-bold bg-clip-text text-muted-foreground">
+          <h1 className="text-2xl font-bold tracking-tight text-white">
             Menu
           </h1>
         </SheetHeader>
         
         {isAuthenticated ? (
           <Card
-            className="campus-card mt-5"
+            className="campus-card mt-5 cursor-pointer"
             onClick={() => {
               closeMenu();
               navigate(profileUrl);
@@ -80,7 +80,7 @@ export function MenuDropdown({ user: externalUser }: { user?: NavigationUser }) 
           >
             <CardContent className="pt-4 md:pt-6 p-4 md:p-6">
               <div 
-                className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                className="flex items-center gap-3 hover:opacity-80 transition-opacity"
               >
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={avatarUrl} />
@@ -91,9 +91,9 @@ export function MenuDropdown({ user: externalUser }: { user?: NavigationUser }) 
                 <div>
                   <div className="flex items-center gap-2">
                     <h4 className="font-semibold text-sm hover:underline">{displayName}</h4>
-                    <div className="w-4 h-4 campus-gradient rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
-                    </div>
+                    {user?.isVerified && (
+                      <BadgeCheck className="h-4 w-4 text-primary fill-primary/10" />
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <p className="text-xs text-muted-foreground">{displayUsername}</p>
@@ -113,13 +113,13 @@ export function MenuDropdown({ user: externalUser }: { user?: NavigationUser }) 
           </div>
         )}
 
-        {quickActions.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Actions</SidebarGroupLabel>
+        {/* Section Navigation Principale (Accueil, Événements, Sphères, Ressources) */}
+        {navigationItems.length > 0 && (
+          <SidebarGroup className="mt-4">
+            <SidebarGroupLabel>Navigation</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {quickActions.map((item) => (
-                <Card className="py-2" key={item.title}>
+                {navigationItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
                       <NavLink to={item.url} className={getNavClasses} onClick={closeMenu}>
@@ -128,7 +128,27 @@ export function MenuDropdown({ user: externalUser }: { user?: NavigationUser }) 
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                </Card>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Section Actions Rapides (Connexions, Messages, Sphera, Sauvegardes, Paramètres) */}
+        {quickActions.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Actions</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {quickActions.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink to={item.url} className={getNavClasses} onClick={closeMenu}>
+                        <item.icon className="h-5 w-5" />
+                        {!isCollapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                 ))}
               </SidebarMenu>
             </SidebarGroupContent>
@@ -141,7 +161,6 @@ export function MenuDropdown({ user: externalUser }: { user?: NavigationUser }) 
             <SidebarGroupContent>
               <SidebarMenu>
                 {utilities.map((item) => (
-                <Card className="py-2" key={item.title}>
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
                       <NavLink to={item.url} end className={getNavClasses} onClick={closeMenu}>
@@ -151,43 +170,16 @@ export function MenuDropdown({ user: externalUser }: { user?: NavigationUser }) 
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                </Card>
                 ))}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         )}
-        {resolveAdminRole(user) !== 'none' && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Administration</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <Card className="py-2">
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <NavLink to="/admin/dashboard" className={getNavClasses} onClick={closeMenu}>
-                        <Shield className="h-5 w-5 text-primary" />
-                        <span>Panel Admin</span>
-                        <Badge className="ml-auto campus-gradient text-white text-[10px] px-1.5 py-0.5 border-0">Admin</Badge>
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </Card>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
 
-        <Card className="campus-card mt-5">
-          <CardContent className="pt-4 md:pt-6 p-4 md:p-6">
-            <div className="text-center space-y-4">
-              <div>
-                <h3 className="font-automata text-primary text-lg md:text-xl">CampusSphere</h3>
-                <p className="text-xs md:text-sm text-muted-foreground">Version {appVersion}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="mt-8 mb-4 text-center">
+          <h3 className="font-automata text-primary/60 text-lg md:text-xl">CampusSphere</h3>
+          <p className="text-xs text-muted-foreground/60">Version {appVersion}</p>
+        </div>
       </SheetContent>
     </Sheet>
   );

@@ -1,33 +1,88 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
-
 import { cn } from "@/lib/utils";
 
+/* ──────────────────────────────────────────────
+   Button hierarchy
+   
+   primary    : Orange fill — ONE per view, main CTA
+   secondary  : Neutral fill — secondary actions
+   outline    : Border only — tertiary actions
+   ghost      : No bg, no border — icon buttons, nav items
+   danger     : Red fill — destructive, irreversible actions
+   link       : Text only — inline links
+────────────────────────────────────────────── */
+
 const buttonVariants = cva(
-  "inline-flex min-w-0 items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  [
+    "inline-flex min-w-0 items-center justify-center gap-2 whitespace-nowrap font-medium",
+    "transition-[background-color,box-shadow,transform,opacity] duration-150",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+    "disabled:pointer-events-none disabled:opacity-40",
+    "active:scale-[0.97]",
+    "[&_svg]:pointer-events-none [&_svg]:shrink-0",
+  ].join(" "),
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
+        /* Primary — orange, used sparingly */
+        primary:
+          "rounded-[var(--radius-sm)] bg-primary text-primary-foreground shadow-sm " +
+          "hover:bg-primary/90 active:bg-primary/95",
+
+        /* Default alias for primary (backwards compat) */
+        default:
+          "rounded-[var(--radius-sm)] bg-primary text-primary-foreground shadow-sm " +
+          "hover:bg-primary/90 active:bg-primary/95",
+
+        /* Secondary — neutral, frequent use */
+        secondary:
+          "rounded-[var(--radius-sm)] bg-secondary text-secondary-foreground " +
+          "hover:bg-secondary/70",
+
+        /* Outline — bordered, transparent bg */
+        outline:
+          "rounded-[var(--radius-sm)] border border-border bg-transparent text-foreground " +
+          "hover:bg-accent hover:border-border/80",
+
+        /* Ghost — invisible until hover */
+        ghost:
+          "rounded-[var(--radius-sm)] bg-transparent text-foreground " +
+          "hover:bg-accent hover:text-foreground",
+
+        /* Danger — destructive actions */
+        danger:
+          "rounded-[var(--radius-sm)] bg-destructive text-destructive-foreground shadow-sm " +
+          "hover:bg-destructive/85",
+
+        /* Backwards compat */
+        destructive:
+          "rounded-[var(--radius-sm)] bg-destructive text-destructive-foreground shadow-sm " +
+          "hover:bg-destructive/85",
+
+        /* Link — inline text */
+        link:
+          "rounded-sm bg-transparent text-primary underline-offset-4 " +
+          "hover:underline p-0 h-auto",
       },
+
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3",
-        lg: "h-11 rounded-md px-8",
-        icon: "h-10 w-10",
+        xs:      "h-7 px-2.5 text-xs [&_svg]:size-3",
+        sm:      "h-8 px-3 text-sm [&_svg]:size-3.5",
+        default: "h-9 px-4 text-sm [&_svg]:size-4",
+        lg:      "h-11 px-6 text-base [&_svg]:size-4",
+        xl:      "h-12 px-8 text-base [&_svg]:size-5",
+        icon:    "h-9 w-9 [&_svg]:size-4",
+        "icon-sm": "h-7 w-7 [&_svg]:size-3.5",
+        "icon-lg": "h-11 w-11 [&_svg]:size-5",
       },
     },
     defaultVariants: {
       variant: "default",
       size: "default",
     },
-  },
+  }
 );
 
 export interface ButtonProps
@@ -39,8 +94,14 @@ export interface ButtonProps
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button";
-    return <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />;
-  },
+    return (
+      <Comp
+        className={cn(buttonVariants({ variant, size }), className)}
+        ref={ref}
+        {...props}
+      />
+    );
+  }
 );
 Button.displayName = "Button";
 

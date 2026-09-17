@@ -12,15 +12,20 @@ import {
   Loader2,
   Share2,
   AlertCircle,
-  Sparkles,
   ChevronLeft,
   Check,
-  Columns,
   BrainCircuit,
+  GitFork,
+  AudioLines,
+  SquareStack,
 } from "lucide-react";
+import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { FicheRevision } from "./FicheRevision";
 import { QuizInteractif } from "./QuizInteractif";
 import { Flashcards } from "./Flashcards";
+import { MindMapView } from "./MindMapView";
+import { AudioPlayerView } from "./AudioPlayerView";
+import { QuotaIndicator } from "../QuotaIndicator";
 import {
   generateStudyTools,
   generateFromUpload,
@@ -39,7 +44,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 
-type ToolType = "fiche" | "quiz" | "flashcards";
+type ToolType = "fiche" | "quiz" | "flashcards" | "mindmap" | "audio";
 type Step = "choose" | "loading" | "result" | "error";
 
 // [BE-MIGRATION FE-02] Needs a `sphereFileId?: string | number | null` prop forwarded to
@@ -66,17 +71,33 @@ const TOOLS: { type: ToolType; icon: React.ReactNode; label: string; desc: strin
     type: "quiz",
     icon: <BrainCircuit className="h-6 w-6" />,
     label: "Quiz interactif",
-    desc: "20 questions QCM avec timer et score",
+    desc: "Des questions QCM avec timer et score",
     color: "text-[#ff9800]",
     bg: "bg-[#ff9800]/10 border-[#ff9800]/30 hover:border-[#ff9800]",
   },
   {
     type: "flashcards",
-    icon: <Columns className="h-6 w-6" />,
+    icon: <SquareStack className="h-6 w-6" />,
     label: "Flashcards",
-    desc: "20 cartes recto/verso pour mémoriser",
+    desc: "Des cartes recto/verso pour mémoriser",
     color: "text-purple-500",
     bg: "bg-purple-500/10 border-purple-500/30 hover:border-purple-500",
+  },
+  {
+    type: "mindmap",
+    icon: <GitFork className="h-6 w-6" />,
+    label: "Carte mentale",
+    desc: "Représentation visuelle des concepts clés",
+    color: "text-emerald-500",
+    bg: "bg-emerald-500/10 border-emerald-500/30 hover:border-emerald-500",
+  },
+  {
+    type: "audio",
+    icon: <AudioLines className="h-6 w-6" />,
+    label: "Résumé audio",
+    desc: "Dialogue podcast pour réviser",
+    color: "text-teal-500",
+    bg: "bg-teal-500/10 border-teal-500/30 hover:border-teal-500",
   },
 ];
 
@@ -202,7 +223,7 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
               </button>
             )}
             <div className="flex items-center gap-2 min-w-0">
-              <Sparkles className="h-5 w-5 text-[#ff9800] flex-shrink-0" />
+              <SpheraIcon size="lg" />
               <div className="min-w-0">
                 <DialogTitle className="text-base font-bold">
                   Réviser avec l'IA
@@ -250,12 +271,16 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
                 ))}
               </div>
 
+              <div className="flex justify-center pt-1">
+                <QuotaIndicator />
+              </div>
+
               <Button
                 disabled={selectedTypes.length === 0}
                 onClick={handleGenerate}
                 className="w-full campus-gradient text-white gap-2 mt-2"
               >
-                <Sparkles className="h-4 w-4" />
+                <SpheraIcon size="md" variant="white" />
                 Générer{selectedTypes.length > 0 ? ` (${selectedTypes.length} outil${selectedTypes.length > 1 ? 's' : ''})` : ""}
               </Button>
             </div>
@@ -266,7 +291,7 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
             <div className="flex flex-col items-center justify-center py-16 gap-4">
               <div className="relative">
                 <div className="h-14 w-14 rounded-full bg-[#ff9800]/10 flex items-center justify-center">
-                  <Sparkles className="h-7 w-7 text-[#ff9800]" />
+                  <SpheraIcon size="xl" />
                 </div>
                 <Loader2 className="h-14 w-14 text-[#ff9800] animate-spin absolute inset-0" />
               </div>
@@ -297,10 +322,10 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
               {/* Composants résultat avec Tabs si multiple */}
               {Object.keys(sessionData).length > 1 ? (
                 <Tabs defaultValue={Object.keys(sessionData)[0]} className="w-full">
-                  <TabsList className="w-full grid grid-cols-3 mb-4">
+                  <TabsList className="w-full flex overflow-x-auto gap-2 mb-4 no-scrollbar">
                     {Object.keys(sessionData).map((type) => (
                       <TabsTrigger key={type} value={type} className="capitalize">
-                        {type}
+                        {type === "mindmap" ? "Carte mentale" : type === "audio" ? "Résumé audio" : type}
                       </TabsTrigger>
                     ))}
                   </TabsList>
@@ -309,6 +334,8 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
                       {type === "fiche" && <FicheRevision data={sessionData[type]} />}
                       {type === "quiz" && <QuizInteractif data={sessionData[type]} />}
                       {type === "flashcards" && <Flashcards data={sessionData[type]} />}
+                      {type === "mindmap" && <MindMapView data={sessionData[type]} />}
+                      {type === "audio" && <AudioPlayerView data={sessionData[type]} />}
                     </TabsContent>
                   ))}
                 </Tabs>
@@ -318,6 +345,8 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
                     {type === "fiche" && <FicheRevision data={sessionData[type]} />}
                     {type === "quiz" && <QuizInteractif data={sessionData[type]} />}
                     {type === "flashcards" && <Flashcards data={sessionData[type]} />}
+                    {type === "mindmap" && <MindMapView data={sessionData[type]} />}
+                    {type === "audio" && <AudioPlayerView data={sessionData[type]} />}
                   </div>
                 ))
               )}

@@ -41,6 +41,8 @@ export const RESOURCE_MIME_TYPES = [
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "text/csv",
   "text/plain",
+  "text/markdown",
+  "text/x-markdown",
   "text/x-python",
   "application/javascript",
   "application/zip",
@@ -74,9 +76,8 @@ const ALLOWED: Record<UploadKind, string[] | null> = {
   conversationAvatar: IMAGE_TYPES,
   post: POST_MIME_TYPES,
   resource: RESOURCE_MIME_TYPES,
-  // Sphere files are membership-gated rather than type-gated, matching Django.
   sphereFile: null,
-  other: IMAGE_TYPES,
+  other: null,
 };
 
 /**

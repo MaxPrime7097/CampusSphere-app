@@ -13,5 +13,9 @@ export function isFeatureEnabled(value?: string | boolean | null): boolean {
 }
 
 export const featureFlags = {
-  ADMIN_PANEL_V2: isFeatureEnabled(import.meta.env.VITE_ADMIN_PANEL_V2),
+  ADMIN_PANEL_V2:
+    import.meta.env.VITE_ADMIN_PANEL_V2 !== undefined
+      ? isFeatureEnabled(import.meta.env.VITE_ADMIN_PANEL_V2)
+      : true,
 } as const;
+

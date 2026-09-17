@@ -5,14 +5,22 @@
 @tailwind components;
 @tailwind utilities;
 
-/* CampusSphere Design System - Modern student social network */
+/* ─────────────────────────────────────────────
+   CampusSphere Design System v2
+   Principles:
+   - Orange = intentional accent only (CTA, active, badge)
+   - Neutral-first surfaces — warmth through spacing & type
+   - One consistent typographic scale across the whole app
+   - Cards: 3 variants, one clear system
+   - Horizontal scroll sections: one shared pattern
+───────────────────────────────────────────── */
 
-/* Import custom font */
 @font-face {
   font-family: 'Automata';
   src: url('/fonts/AUTOMATA.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
+  font-display: swap;
 }
 
 @font-face {
@@ -20,214 +28,268 @@
   src: url('/fonts/Raleway.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
+  font-display: swap;
 }
 
 @layer base {
   :root {
-    /* Core CampusSphere Brand Colors */
-    --background: 0 0% 100%;
-    --foreground: 220 13% 13%;
-    
-    /* CampusSphere Orange Primary */
-    --primary: 33 100% 51%; /* #ff9800 */
+    /* ── Brand ─────────────────────────────── */
+    --primary: 33 100% 51%;          /* #ff9800 — used ONLY on CTAs, active states, badges */
     --primary-foreground: 0 0% 100%;
-    --primary-light: 33 100% 65%;
+    --primary-light: 33 100% 63%;
     --primary-glow: 33 100% 75%;
-    
-    /* Surface Colors */
-    --card: 0 0% 100%;
-    --card-foreground: 220 13% 13%;
-    --card-elevated: 0 0% 98%;
-    
-    /* Interactive Elements */
-    --secondary: 220 13% 96%;
-    --secondary-foreground: 220 13% 13%;
-    --accent: 33 100% 95%;
-    --accent-foreground: 33 100% 20%;
-    
-    /* Neutral Palette */
-    --muted: 220 13% 96%;
-    --muted-foreground: 220 9% 46%;
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
+
+    /* ── Surfaces ───────────────────────────── */
+    --background: 30 20% 98%;        /* Off-white with a very slight warm tint */
+    --foreground: 220 15% 15%;       /* Near-black, not pure */
+
+    --card: 0 0% 100%;               /* Pure white cards */
+    --card-foreground: 220 15% 15%;
+    --card-elevated: 30 20% 99%;     /* Slightly elevated surface */
+
+    /* ── Neutrals ───────────────────────────── */
+    --secondary: 220 14% 94%;
+    --secondary-foreground: 220 15% 25%;
+
+    --muted: 220 14% 94%;
+    --muted-foreground: 220 10% 52%;
+
+    /* ── Accent — warm, not orange ─────────── */
+    /* Used for hover surfaces, not for text or icons */
+    --accent: 30 30% 95%;            /* Warm beige — replaces orange accent */
+    --accent-foreground: 220 15% 15%;
+
+    /* ── Borders & Inputs ───────────────────── */
+    --border: 220 13% 89%;
+    --input: 220 13% 89%;
     --ring: 33 100% 51%;
-    
-    /* Status Colors */
-    --success: 142 76% 36%;
+
+    /* ── Semantic ───────────────────────────── */
+    --success: 142 71% 35%;
     --success-foreground: 0 0% 100%;
     --warning: 45 93% 47%;
-    --warning-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;
+    --warning-foreground: 0 0% 10%;
+    --destructive: 0 74% 57%;
     --destructive-foreground: 0 0% 100%;
-    
-    /* Popover & Dropdown */
+    --info: 210 90% 50%;
+    --info-foreground: 0 0% 100%;
+
+    /* ── Popover ────────────────────────────── */
     --popover: 0 0% 100%;
-    --popover-foreground: 220 13% 13%;
-    
-    /* Campus-specific gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(33 100% 51%), hsl(33 100% 65%));
-    --gradient-hero: linear-gradient(135deg, hsl(33 100% 51%) 0%, hsl(24 100% 50%) 50%, hsl(15 100% 49%) 100%);
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(0 0% 98%) 100%);
-    --gradient-glass: linear-gradient(145deg, hsl(0 0% 100% / 0.7) 0%, hsl(0 0% 100% / 0.1) 100%);
-    
-    /* Elegant shadows */
-    --shadow-soft: 0 2px 8px hsl(220 13% 13% / 0.04);
-    --shadow-medium: 0 4px 16px hsl(220 13% 13% / 0.08);
-    --shadow-large: 0 8px 32px hsl(220 13% 13% / 0.12);
-    --shadow-glow: 0 0 20px hsl(33 100% 51% / 0.2);
-    
-    /* Animation & Transitions */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    
-    --radius: 0.75rem;
+    --popover-foreground: 220 15% 15%;
 
-    --sidebar-background: 0 0% 98%;
+    /* ── Sidebar ────────────────────────────── */
+    --sidebar-background: 30 20% 97%;
+    --sidebar-foreground: 220 12% 30%;
+    --sidebar-primary: 33 100% 51%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 30 25% 93%;
+    --sidebar-accent-foreground: 220 15% 20%;
+    --sidebar-border: 220 13% 89%;
+    --sidebar-ring: 33 100% 51%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    /* ── Typography Scale ───────────────────── */
+    /* Applied via .text-display, .text-title, etc. utility classes */
+    --text-display: 2rem;        /* 32px  — hero headings */
+    --text-h1: 1.5rem;           /* 24px  — page titles */
+    --text-h2: 1.25rem;          /* 20px  — section titles */
+    --text-h3: 1.0625rem;        /* 17px  — card titles, subheadings */
+    --text-body: 0.9375rem;      /* 15px  — primary body text */
+    --text-sm: 0.875rem;         /* 14px  — secondary text */
+    --text-xs: 0.75rem;          /* 12px  — labels, captions */
+    --text-xxs: 0.6875rem;       /* 11px  — timestamps, micro-text */
 
-    --sidebar-primary: 240 5.9% 10%;
+    --leading-tight: 1.25;
+    --leading-snug: 1.4;
+    --leading-normal: 1.6;
 
-    --sidebar-primary-foreground: 0 0% 98%;
+    /* ── Shadows — 4 intentional levels ────── */
+    --shadow-xs:  0 1px 2px hsl(220 15% 10% / 0.04);
+    --shadow-sm:  0 2px 6px hsl(220 15% 10% / 0.06), 0 1px 2px hsl(220 15% 10% / 0.04);
+    --shadow-md:  0 4px 12px hsl(220 15% 10% / 0.08), 0 2px 4px hsl(220 15% 10% / 0.05);
+    --shadow-lg:  0 8px 24px hsl(220 15% 10% / 0.10), 0 4px 8px hsl(220 15% 10% / 0.06);
+    --shadow-glow: 0 0 16px hsl(33 100% 51% / 0.18);
 
-    --sidebar-accent: 240 4.8% 95.9%;
+    /* ── Gradients ──────────────────────────── */
+    --gradient-primary: linear-gradient(135deg, hsl(33 100% 51%), hsl(33 100% 62%));
+    --gradient-warm: linear-gradient(145deg, hsl(30 20% 98%) 0%, hsl(30 25% 95%) 100%);
 
-    --sidebar-accent-foreground: 240 5.9% 10%;
+    /* ── Spacing & Shape ────────────────────── */
+    --radius: 0.75rem;           /* 12px — base radius */
+    --radius-sm: 0.5rem;         /* 8px */
+    --radius-lg: 1rem;           /* 16px */
+    --radius-xl: 1.25rem;        /* 20px */
 
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* ── Transitions ────────────────────────── */
+    --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-base: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.35s cubic-bezier(0.68, -0.55, 0.265, 1.55);
   }
 
   .dark {
-    /* Dark theme for CampusSphere */
-    --background: 220 27% 8%;
-    --foreground: 220 9% 93%;
-    
-    /* Orange primary stays vibrant in dark */
+    /* ── Brand stays identical in dark ───── */
     --primary: 33 100% 51%;
     --primary-foreground: 0 0% 100%;
     --primary-light: 33 100% 60%;
     --primary-glow: 33 100% 70%;
-    
-    /* Dark surfaces */
-    --card: 220 27% 12%;
-    --card-foreground: 220 9% 93%;
-    --card-elevated: 220 27% 15%;
-    
-    /* Dark interactive elements */
-    --secondary: 220 27% 15%;
-    --secondary-foreground: 220 9% 93%;
-    --accent: 33 100% 15%;
-    --accent-foreground: 33 100% 80%;
-    
-    /* Dark neutrals */
-    --muted: 220 27% 15%;
-    --muted-foreground: 220 9% 63%;
-    --border: 220 27% 18%;
-    --input: 220 27% 18%;
+
+    /* ── Surfaces ───────────────────────── */
+    --background: 222 24% 9%;        /* Deep blue-dark */
+    --foreground: 220 10% 90%;
+
+    --card: 222 22% 13%;
+    --card-foreground: 220 10% 90%;
+    --card-elevated: 222 20% 16%;
+
+    /* ── Neutrals ───────────────────────── */
+    --secondary: 222 20% 16%;
+    --secondary-foreground: 220 10% 80%;
+
+    --muted: 222 20% 16%;
+    --muted-foreground: 220 10% 58%;
+
+    /* ── Accent — dark warm ─────────────── */
+    --accent: 222 18% 20%;
+    --accent-foreground: 220 10% 85%;
+
+    /* ── Borders & Inputs ───────────────── */
+    --border: 222 18% 20%;
+    --input: 222 18% 20%;
     --ring: 33 100% 51%;
-    
-    /* Status colors for dark */
-    --success: 142 76% 45%;
-    --warning: 45 93% 55%;
-    --destructive: 0 84% 65%;
-    
-    /* Dark popover */
-    --popover: 220 27% 12%;
-    --popover-foreground: 220 9% 93%;
-    
-    /* Dark gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(33 100% 51%), hsl(33 100% 60%));
-    --gradient-hero: linear-gradient(135deg, hsl(33 100% 51%) 0%, hsl(24 100% 55%) 50%, hsl(15 100% 55%) 100%);
-    --gradient-card: linear-gradient(145deg, hsl(220 27% 12%) 0%, hsl(220 27% 15%) 100%);
-    --gradient-glass: linear-gradient(145deg, hsl(220 27% 12% / 0.8) 0%, hsl(220 27% 8% / 0.3) 100%);
-    
-    /* Dark shadows with orange glow */
-    --shadow-soft: 0 2px 8px hsl(220 27% 4% / 0.3);
-    --shadow-medium: 0 4px 16px hsl(220 27% 4% / 0.4);
-    --shadow-large: 0 8px 32px hsl(220 27% 4% / 0.5);
-    --shadow-glow: 0 0 25px hsl(33 100% 51% / 0.3);
-    
-    /* Sidebar dark theme */
-    --sidebar-background: 220 27% 10%;
-    --sidebar-foreground: 220 9% 85%;
+
+    /* ── Semantic ───────────────────────── */
+    --success: 142 71% 42%;
+    --warning: 45 93% 52%;
+    --destructive: 0 74% 62%;
+
+    /* ── Popover ────────────────────────── */
+    --popover: 222 22% 13%;
+    --popover-foreground: 220 10% 90%;
+
+    /* ── Sidebar ────────────────────────── */
+    --sidebar-background: 222 26% 11%;
+    --sidebar-foreground: 220 10% 80%;
     --sidebar-primary: 33 100% 51%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 27% 15%;
-    --sidebar-accent-foreground: 220 9% 85%;
-    --sidebar-border: 220 27% 18%;
+    --sidebar-accent: 222 20% 17%;
+    --sidebar-accent-foreground: 220 10% 82%;
+    --sidebar-border: 222 18% 18%;
     --sidebar-ring: 33 100% 51%;
+
+    /* ── Shadows (dark) ─────────────────── */
+    --shadow-xs:  0 1px 2px hsl(222 30% 4% / 0.25);
+    --shadow-sm:  0 2px 6px hsl(222 30% 4% / 0.35), 0 1px 2px hsl(222 30% 4% / 0.20);
+    --shadow-md:  0 4px 12px hsl(222 30% 4% / 0.40), 0 2px 4px hsl(222 30% 4% / 0.25);
+    --shadow-lg:  0 8px 24px hsl(222 30% 4% / 0.50), 0 4px 8px hsl(222 30% 4% / 0.30);
+    --shadow-glow: 0 0 20px hsl(33 100% 51% / 0.25);
+
+    /* ── Gradients ──────────────────────── */
+    --gradient-primary: linear-gradient(135deg, hsl(33 100% 51%), hsl(33 100% 60%));
+    --gradient-warm: linear-gradient(145deg, hsl(222 22% 13%) 0%, hsl(222 20% 16%) 100%);
   }
 }
 
+/* ─────────────────────────────────────────────
+   Base resets & global styles
+───────────────────────────────────────────── */
 @layer base {
   * {
     @apply border-border;
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
-    /* Empêcher le scroll horizontal global */
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Raleway', ui-sans-serif, system-ui, sans-serif;
+    font-size: var(--text-body);
+    line-height: var(--leading-normal);
     overflow-x: hidden;
   }
 
-  /* Custom Premium Scrollbars */
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+  /* ── Typographic element defaults ──── */
+  h1 { font-size: var(--text-h1); font-weight: 700; line-height: var(--leading-tight); letter-spacing: -0.02em; }
+  h2 { font-size: var(--text-h2); font-weight: 600; line-height: var(--leading-tight); letter-spacing: -0.01em; }
+  h3 { font-size: var(--text-h3); font-weight: 600; line-height: var(--leading-snug); }
+  h4 { font-size: var(--text-body); font-weight: 600; line-height: var(--leading-snug); }
+  p  { font-size: var(--text-body); line-height: var(--leading-normal); }
+
+  /* ── Focus ring — consistent ────────── */
+  :focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
   }
 
-  ::-webkit-scrollbar-track {
-    @apply bg-transparent;
-  }
-
+  /* ── Scrollbars ─────────────────────── */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    @apply bg-muted-foreground/20 rounded-full transition-colors;
-    border: 2px solid transparent;
-    background-clip: padding-box;
+    background: hsl(var(--border));
+    border-radius: 99px;
   }
-
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-primary/40;
+    background: hsl(var(--muted-foreground) / 0.5);
   }
-
-  /* Version fine pour les zones de texte/petites listes */
-  .scrollbar-thin::-webkit-scrollbar {
-    width: 4px;
-  }
-  
-  /* Pour Firefox */
   * {
     scrollbar-width: thin;
-    scrollbar-color: hsl(var(--muted-foreground) / 0.2) transparent;
+    scrollbar-color: hsl(var(--border)) transparent;
   }
 }
 
+/* ─────────────────────────────────────────────
+   Component utilities
+───────────────────────────────────────────── */
 @layer components {
-  /* CampusSphere Component Utilities */
-  
+
+  /* ── Brand / Logo ─────────────────── */
   .campus-gradient {
     background: var(--gradient-primary);
   }
-  
-  .campus-hero-gradient {
-    background: var(--gradient-hero);
-  }
-  
-  .campus-card {
-    background: var(--gradient-card);
-    box-shadow: var(--shadow-soft);
-    border-radius: var(--radius);
-    transition: var(--transition-smooth);
-  }
-  
-  .campus-card:hover {
-    box-shadow: var(--shadow-medium);
-    transform: translateY(-2px);
+  .campus-gradient-text {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 
-  /* Mobile full-width card — bord à bord, sans arrondi, sans ombre, collées */
+  /* ── Card system ─────────────────────
+     Three intentional variants:
+     .cs-card         — standard (most things)
+     .cs-card-raised  — floats above, hover lift
+     .cs-card-ghost   — no bg, border only
+  ────────────────────────────────────── */
+  .cs-card {
+    background-color: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-xs);
+    transition: var(--transition-base);
+  }
+
+  .cs-card-raised {
+    background-color: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition-base);
+  }
+  .cs-card-raised:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+    border-color: hsl(var(--border) / 0.8);
+  }
+
+  .cs-card-ghost {
+    background-color: transparent;
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    transition: var(--transition-base);
+  }
+  .cs-card-ghost:hover {
+    background-color: hsl(var(--accent));
+  }
+
+  /* ── Mobile card — edge to edge ───── */
   @media (max-width: 639px) {
     .mobile-card {
       border-radius: 0 !important;
@@ -239,100 +301,163 @@
       margin-right: 0 !important;
     }
   }
-  
-  .campus-glass {
-    background: var(--gradient-glass);
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
+
+  /* ── Legacy aliases (backwards compat) ──
+     campus-card/campus-glow still referenced in ~50 files.
+     They now map to the new clean design system values.
+  ────────────────────────────────────────── */
+  .campus-card {
+    background-color: hsl(var(--card));
     border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-xs);
+    transition: var(--transition-base);
   }
-  
+  .campus-card:hover {
+    box-shadow: var(--shadow-sm);
+  }
+  .campus-glow {
+    box-shadow: var(--shadow-sm);
+  }
+  .campus-hero-gradient {
+    background: var(--gradient-primary);
+  }
+
+  /* ── Horizontal scroll section ──────
+     Usage: <div class="cs-scroll-row">
+              <div class="cs-scroll-item">...</div>
+            </div>
+  ────────────────────────────────────── */
+  .cs-scroll-row {
+    display: flex;
+    gap: 0.75rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+    max-width: 100%;
+    min-width: 0;
+    width: 100%;
+  }
+  .cs-scroll-row::-webkit-scrollbar { display: none; }
+
+  .cs-scroll-item {
+    flex-shrink: 0;
+    scroll-snap-align: start;
+  }
+
+  /* ── Section title ──────────────────
+     Consistent label above any section
+  ────────────────────────────────────── */
+  .cs-section-title {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: hsl(var(--muted-foreground));
+  }
+
+  /* ── Glass ──────────────────────────── */
+  .campus-glass {
+    background: hsl(var(--card) / 0.7);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--border) / 0.6);
+  }
+
+  /* ── Orange glow — reserved for brand moments ── */
   .campus-glow {
     box-shadow: var(--shadow-glow);
   }
-  
+
+  /* ── Animations ──────────────────── */
   .campus-animate-fade-in {
-    animation: fadeIn 0.5s ease-out;
+    animation: fadeIn 0.4s ease-out both;
   }
-  
   .campus-animate-slide-up {
-    animation: slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: slideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
+  /* ── Divider with label ─────────────
+     <div class="cs-divider"><span>Aujourd'hui</span></div>
+  ────────────────────────────────────── */
+  .cs-divider {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: hsl(var(--muted-foreground));
+    font-size: var(--text-xs);
+    font-weight: 500;
+  }
+  .cs-divider::before,
+  .cs-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: hsl(var(--border));
   }
 }
 
+/* ─────────────────────────────────────────────
+   Utilities & Keyframes
+───────────────────────────────────────────── */
 @layer utilities {
-  /* Custom animations for CampusSphere */
+
+  /* ── Typography scale helpers ─────── */
+  .text-display { font-size: var(--text-display); font-weight: 800; line-height: var(--leading-tight); letter-spacing: -0.03em; }
+  .text-title   { font-size: var(--text-h1); font-weight: 700; line-height: var(--leading-tight); letter-spacing: -0.02em; }
+  .text-heading { font-size: var(--text-h2); font-weight: 600; line-height: var(--leading-tight); letter-spacing: -0.01em; }
+  .text-subhead { font-size: var(--text-h3); font-weight: 600; line-height: var(--leading-snug); }
+  .text-body    { font-size: var(--text-body); line-height: var(--leading-normal); }
+  .text-caption { font-size: var(--text-xs); color: hsl(var(--muted-foreground)); }
+  .text-micro   { font-size: var(--text-xxs); color: hsl(var(--muted-foreground)); letter-spacing: 0.01em; }
+
+  /* ── Keyframes ───────────────────── */
   @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
-  
+
   @keyframes slideUp {
-    from {
-      opacity: 0;
-      transform: translateY(30px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  @keyframes pulse-glow {
-    0%, 100% {
-      box-shadow: 0 0 5px hsl(var(--primary) / 0.3);
-    }
-    50% {
-      box-shadow: 0 0 20px hsl(var(--primary) / 0.6);
-    }
-  }
-  
-  .animate-pulse-glow {
-    animation: pulse-glow 2s ease-in-out infinite;
-  }
-  
-  .progress-bar {
-    width: var(--progress-width, 0%);
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
 
   @keyframes pop {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.4); color: hsl(var(--primary)); }
+    0%   { transform: scale(1); }
+    45%  { transform: scale(1.35); }
     100% { transform: scale(1); }
   }
 
-  .animate-pop {
-    animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 4px hsl(var(--primary) / 0.25); }
+    50%       { box-shadow: 0 0 16px hsl(var(--primary) / 0.5); }
   }
 
-  /* Utility to make a page feel like a fixed app */
-  .app-height-fix {
-    height: calc(100vh - 64px); /* Desktop Navbar height */
-  }
+  .animate-pop        { animation: pop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  .animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
 
+  /* ── App height helpers ────────────── */
+  .app-height-fix { height: calc(100vh - 64px); }
   @media (max-width: 768px) {
-    .app-height-fix {
-      height: calc(100vh - 110px); /* Top (56px) + Bottom (approx 54px) bars on mobile */
-    }
-    
-    .app-height-fix-no-nav {
-      height: 100vh;
-    }
+    .app-height-fix { height: calc(100vh - 110px); }
+    .app-height-fix-no-nav { height: 100vh; }
   }
 
-  /* Hide scrollbar for Chrome, Safari and Opera */
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
+  /* ── Scrollbar hide ─────────────────── */
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* ── Progress bar ───────────────────── */
+  .progress-bar { width: var(--progress-width, 0%); }
+
+  /* ── Interaction states ─────────────── */
+  .interactive {
+    cursor: pointer;
+    transition: var(--transition-fast);
   }
-  /* Hide scrollbar for IE, Edge and Firefox */
-  .scrollbar-hide {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
-  }
+  .interactive:hover { opacity: 0.85; }
+  .interactive:active { transform: scale(0.97); }
 }

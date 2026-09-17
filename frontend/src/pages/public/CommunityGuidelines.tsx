@@ -1,4 +1,5 @@
 import React from "react";
+import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
 import { Users, AlertCircle, CheckCircle, XCircle, Shield, Heart, Facebook, Twitter, Linkedin, Instagram, Youtube, ChevronDown, User, BookLock, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,14 @@ export function CommunityGuidelines(): JSX.Element {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5">
+      <Helmet>
+        <title>Règles de la Communauté & Charte Étudiante | CampusSphere</title>
+        <meta name="description" content="Découvrez les règles de bienveillance, de respect mutuel et de modération à respecter au sein de la communauté étudiante CampusSphere." />
+        <link rel="canonical" href="https://campussphere.app/cs-inc/policies/community-guidelines" />
+        <meta property="og:title" content="Charte de la Communauté - CampusSphere" />
+        <meta property="og:description" content="Nos principes de respect, d'entraide et de sécurité dans les sphères étudiantes." />
+        <meta property="og:url" content="https://campussphere.app/cs-inc/policies/community-guidelines" />
+      </Helmet>
       {/* Navigation: brand + links + CTA */}
       <Header />
 
