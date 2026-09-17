@@ -10,6 +10,7 @@
 
 import type { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
+import { Prisma } from "@prisma/client";
 import { ApiError } from "../lib/errors.js";
 import { env } from "../config/env.js";
 
@@ -62,6 +63,27 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
   // Body-parser rejects malformed JSON with a 400-flavoured SyntaxError.
   if (err instanceof SyntaxError && "body" in err) {
     envelope(res, 400, { error: "Malformed JSON body.", code: "bad_request" });
+    return;
+  }
+
+  // Handle known Prisma errors cleanly rather than dumping unhandled 500s
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    if (err.code === "P2025") {
+      envelope(res, 404, { error: "Resource not found.", code: "not_found" });
+      return;
+    }
+    if (err.code === "P2002") {
+      envelope(res, 409, { error: "A resource with these details already exists.", code: "conflict" });
+      return;
+    }
+    if (err.code === "P2003") {
+      envelope(res, 400, { error: "Invalid reference to a related resource.", code: "bad_request" });
+      return;
+    }
+  }
+
+  if (err instanceof Prisma.PrismaClientValidationError) {
+    envelope(res, 400, { error: "Invalid request data.", code: "bad_request" });
     return;
   }
 

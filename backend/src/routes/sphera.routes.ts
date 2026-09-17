@@ -25,6 +25,7 @@ import { AnnaleMode as PrismaAnnaleMode, StudyToolType, type Prisma } from "@pri
 import { prisma } from "../lib/prisma.js";
 import { created, list, noContent, ok } from "../lib/envelope.js";
 import { badRequest, forbidden, notFound } from "../lib/errors.js";
+import { resolveSphereId } from "../lib/sphereLookup.js";
 import { currentUser, requireAuth } from "../middleware/auth.js";
 import { rateLimit, RATE_LIMITS } from "../middleware/rateLimit.js";
 import { singleUpload } from "../middleware/upload.js";
@@ -1084,7 +1085,7 @@ spheraRouter.delete("/annales/:id/share/", async (req, res) => {
 
 spheraRouter.get("/sphere/:id/annales/", async (req, res) => {
   const me = currentUser(req);
-  const sphereId = idParam(req);
+  const sphereId = await resolveSphereId(req.params.id);
   await assertSphereAccess(sphereId, me.id);
 
   const sessions = await prisma.annaleSession.findMany({
@@ -1097,7 +1098,7 @@ spheraRouter.get("/sphere/:id/annales/", async (req, res) => {
 
 spheraRouter.get("/sphere/:id/", async (req, res) => {
   const me = currentUser(req);
-  const sphereId = idParam(req);
+  const sphereId = await resolveSphereId(req.params.id);
   await assertSphereAccess(sphereId, me.id);
 
   const sessions = await prisma.studySession.findMany({

@@ -14,6 +14,7 @@ import { z } from "zod";
 import { Prisma, SphereCategory, SphereType, type SphereMemberStatus, type SphereRole } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { computeExpiry, getSphereFeatures } from "../lib/sphereConfig.js";
+import { resolveSphereId } from "../lib/sphereLookup.js";
 import { serializeSphere, serializeSphereMember, sphereInclude } from "../serializers/sphere.js";
 import { userSelect } from "../serializers/user.js";
 import { ok, created, list, paginate, paginationParams } from "../lib/envelope.js";
@@ -58,28 +59,7 @@ async function syncMemberCount(sphereId: number): Promise<void> {
 }
 
 async function sphereIdOf(req: Request): Promise<number> {
-  const raw = String(req.params.id ?? "").trim();
-  if (!raw) throw notFound("Sphere not found.");
-
-  const match = raw.match(/^(\d+)(?:-.*)?$/);
-  if (match) {
-    const num = Number(match[1]);
-    if (Number.isInteger(num) && num > 0) return num;
-  }
-
-  const cleaned = raw.replace(/-/g, " ");
-  const sphere = await prisma.sphere.findFirst({
-    where: {
-      OR: [
-        { name: { equals: cleaned, mode: "insensitive" } },
-        { name: { contains: cleaned, mode: "insensitive" } },
-      ],
-    },
-    select: { id: true },
-  });
-
-  if (sphere) return sphere.id;
-  throw notFound("Sphere not found.");
+  return resolveSphereId(req.params.id);
 }
 
 // ── List / create ───────────────────────────────────────────────────────────
@@ -404,8 +384,11 @@ spheresRouter.patch("/:id/members/:memberId/", async (req, res) => {
   if (Object.keys(input).length === 0) throw badRequest("Provide at least one field to update.");
   if (input.role && !actorIsAdmin) throw forbidden("Only sphere admins can change member roles.");
 
+  const memberId = Number(req.params.memberId);
+  if (!Number.isInteger(memberId) || memberId <= 0) throw notFound("Member not found.");
+
   const target = await prisma.sphereMember.findFirst({
-    where: { id: Number(req.params.memberId), sphereId: sphere.id },
+    where: { id: memberId, sphereId: sphere.id },
   });
   if (!target) throw notFound("Member not found.");
 
@@ -437,8 +420,11 @@ spheresRouter.delete("/:id/members/:memberId/", async (req, res) => {
     throw forbidden("Only sphere moderators or admins can remove members.");
   }
 
+  const memberId = Number(req.params.memberId);
+  if (!Number.isInteger(memberId) || memberId <= 0) throw notFound("Member not found.");
+
   const target = await prisma.sphereMember.findFirst({
-    where: { id: Number(req.params.memberId), sphereId: sphere.id },
+    where: { id: memberId, sphereId: sphere.id },
   });
   if (!target) throw notFound("Member not found.");
 
@@ -636,8 +622,11 @@ spheresRouter.get("/:id/files/", async (req, res) => {
 spheresRouter.delete("/:id/files/:fileId/", async (req, res) => {
   const { sphere, membership, me } = await loadVisibleSphere(req);
 
+  const fileId = Number(req.params.fileId);
+  if (!Number.isInteger(fileId) || fileId <= 0) throw notFound("File not found.");
+
   const file = await prisma.sphereFile.findFirst({
-    where: { id: Number(req.params.fileId), sphereId: sphere.id },
+    where: { id: fileId, sphereId: sphere.id },
   });
   if (!file) throw notFound("File not found.");
 
