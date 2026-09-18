@@ -6,6 +6,21 @@ interface MarkdownRendererProps {
   className?: string
 }
 
+function splitTableRow(rowStr: string): string[] {
+  let s = rowStr.trim()
+  if (s.startsWith('|')) s = s.slice(1)
+  if (s.endsWith('|')) s = s.slice(0, -1)
+  return s.split('|').map(c => c.trim())
+}
+
+function isTableSeparator(line: string): boolean {
+  const trimmed = line.trim()
+  if (!trimmed.includes('-')) return false
+  const cells = splitTableRow(trimmed)
+  if (cells.length === 0) return false
+  return cells.every(c => /^:?-{2,}:?$/.test(c.trim()))
+}
+
 export function MarkdownRenderer({ content, className = '' }: MarkdownRendererProps) {
   if (!content) return null
 
@@ -131,6 +146,69 @@ export function MarkdownRenderer({ content, className = '' }: MarkdownRendererPr
       continue
     }
 
+    // Markdown Table Detection
+    if (trimmed.includes('|') && idx + 1 < lines.length && isTableSeparator(lines[idx + 1])) {
+      flushList(`table-start-${idx}`)
+      const headers = splitTableRow(trimmed)
+      const sepCells = splitTableRow(lines[idx + 1])
+      const alignments: ('left' | 'center' | 'right')[] = sepCells.map(c => {
+        const t = c.trim()
+        if (t.startsWith(':') && t.endsWith(':')) return 'center'
+        if (t.endsWith(':')) return 'right'
+        return 'left'
+      })
+
+      const tableRows: string[][] = []
+      let rowIdx = idx + 2
+      while (rowIdx < lines.length) {
+        const candidate = lines[rowIdx].trim()
+        if (!candidate.includes('|') || candidate === '') break
+        tableRows.push(splitTableRow(candidate))
+        rowIdx++
+      }
+
+      elements.push(
+        <div
+          key={`table-${idx}`}
+          className="my-3.5 w-full overflow-x-auto rounded-xl border border-sphera-border bg-sphera-surface-2/60 shadow-sm"
+        >
+          <table className="w-full text-left text-xs border-collapse">
+            <thead className="bg-sphera-surface border-b border-sphera-border text-white">
+              <tr>
+                {headers.map((h, hIdx) => (
+                  <th
+                    key={hIdx}
+                    className="px-4 py-2.5 whitespace-nowrap font-semibold text-white tracking-wide border-r border-sphera-border/30 last:border-r-0"
+                    style={{ textAlign: alignments[hIdx] || 'left' }}
+                  >
+                    {renderInline(h)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-sphera-border/30 text-white/90">
+              {tableRows.map((row, rIdx) => (
+                <tr key={rIdx} className="hover:bg-sphera-surface/50 transition-colors">
+                  {headers.map((_, cIdx) => (
+                    <td
+                      key={cIdx}
+                      className="px-4 py-2 leading-relaxed border-r border-sphera-border/20 last:border-r-0"
+                      style={{ textAlign: alignments[cIdx] || 'left' }}
+                    >
+                      {renderInline(row[cIdx] || '')}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )
+
+      idx = rowIdx - 1
+      continue
+    }
+
     // Bullet list item (- or *)
     if (/^[-*]\s+/.test(trimmed)) {
       if (listType !== 'ul') {
@@ -140,6 +218,7 @@ export function MarkdownRenderer({ content, className = '' }: MarkdownRendererPr
       listItems.push(trimmed.replace(/^[-*]\s+/, ''))
       continue
     }
+
 
     // Numbered list item (1. )
     const numberedMatch = trimmed.match(/^(\d+)\.\s+(.*)$/)

@@ -896,25 +896,47 @@ export function MindmapView({ content }: { content: any }) {
 
   const [viewMode, setViewMode] = useState<'canvas' | 'tree'>('canvas');
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [expandedBranches, setExpandedBranches] = useState<Record<number, boolean>>({});
+  const [collapsedBranches, setCollapsedBranches] = useState<Record<number, boolean>>({});
   const reactFlowInstance = useRef<ReactFlowInstance | null>(null);
 
   const toggleBranch = (idx: number) => {
-    setExpandedBranches(prev => ({ ...prev, [idx]: !prev[idx] }));
+    setCollapsedBranches(prev => ({ ...prev, [idx]: !prev[idx] }));
   };
 
   const expandAll = () => {
-    const all: Record<number, boolean> = {};
-    branches.forEach((_, i) => { all[i] = true; });
-    setExpandedBranches(all);
+    setCollapsedBranches({});
+    setTimeout(() => {
+      reactFlowInstance.current?.fitView({ padding: 0.2, duration: 300 });
+    }, 50);
   };
 
   const collapseAll = () => {
-    setExpandedBranches({});
+    const all: Record<number, boolean> = {};
+    branches.forEach((_, i) => { all[i] = true; });
+    setCollapsedBranches(all);
+    setTimeout(() => {
+      reactFlowInstance.current?.fitView({ padding: 0.2, duration: 300 });
+    }, 50);
   };
 
   const handleRecenter = () => {
     reactFlowInstance.current?.fitView({ padding: 0.2, duration: 400 });
+  };
+
+  const onNodeClick = (_event: React.MouseEvent, node: Node) => {
+    if (node.id.startsWith('branch-')) {
+      const idx = parseInt(node.id.replace('branch-', ''), 10);
+      if (!isNaN(idx)) {
+        toggleBranch(idx);
+      }
+    } else if (node.id === 'central') {
+      const anyCollapsed = branches.some((_, i) => collapsedBranches[i]);
+      if (anyCollapsed) {
+        expandAll();
+      } else {
+        collapseAll();
+      }
+    }
   };
 
   // Build the radial node-link structure for ReactFlow
@@ -930,13 +952,12 @@ export function MindmapView({ content }: { content: any }) {
       id: 'central',
       data: {
         label: (
-          <div className="flex flex-col items-center justify-center p-3 text-center select-none">
-            <div className="flex items-center gap-1.5 mb-1 text-[10px] font-extrabold uppercase tracking-widest text-emerald-400">
-              <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-              <span>Noyau Central</span>
-            </div>
+          <div className="flex flex-col items-center justify-center p-3.5 text-center select-none cursor-pointer">
             <span className="font-extrabold text-sm sm:text-base text-white leading-snug">
               {centralNode}
+            </span>
+            <span className="text-[10px] text-emerald-400/60 mt-1 font-mono">
+              {branches.length} thèmes · Cliquer pour tout plier/déplier
             </span>
           </div>
         ),
@@ -948,8 +969,9 @@ export function MindmapView({ content }: { content: any }) {
         borderRadius: '18px',
         boxShadow: '0 0 35px rgba(16, 185, 129, 0.35), inset 0 0 15px rgba(16, 185, 129, 0.15)',
         color: '#fff',
-        minWidth: 180,
-        maxWidth: 260,
+        minWidth: 190,
+        maxWidth: 270,
+        cursor: 'pointer',
         zIndex: 10,
       },
     });
@@ -970,38 +992,59 @@ export function MindmapView({ content }: { content: any }) {
 
       const subBranches: any[] = Array.isArray(b.sous_branches) ? b.sous_branches : [];
       const subCount = subBranches.length;
+      const isCollapsed = Boolean(collapsedBranches[i]);
 
       nodesList.push({
         id: branchId,
         data: {
           label: (
-            <div className="flex flex-col gap-1 p-2 text-left select-none">
-              <div className="flex items-center gap-2">
-                <span
-                  className="w-2.5 h-2.5 rounded-full shrink-0"
-                  style={{ backgroundColor: color.hex, boxShadow: `0 0 8px ${color.hex}` }}
-                />
-                <span className="font-bold text-xs sm:text-sm text-white leading-tight">
-                  {b.label}
-                </span>
+            <div className="flex flex-col gap-1.5 p-2.5 text-left select-none cursor-pointer">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className="w-2.5 h-2.5 rounded-full shrink-0"
+                    style={{ backgroundColor: color.hex, boxShadow: `0 0 8px ${color.hex}` }}
+                  />
+                  <span className="font-bold text-xs sm:text-sm text-white leading-tight truncate">
+                    {b.label}
+                  </span>
+                </div>
+                {subCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleBranch(i);
+                    }}
+                    className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full font-bold transition-all border flex items-center gap-1 ${
+                      isCollapsed
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30 shadow-sm'
+                        : 'bg-white/10 text-white/70 border-white/20 hover:bg-white/20'
+                    }`}
+                    title={isCollapsed ? "Déplier les sous-concepts" : "Replier les sous-concepts"}
+                  >
+                    <span>{isCollapsed ? `+ ${subCount}` : `- ${subCount}`}</span>
+                  </button>
+                )}
               </div>
               {subCount > 0 && (
-                <span className="text-[10px] text-white/50 pl-4 font-mono">
-                  {subCount} sous-concept{subCount > 1 ? 's' : ''}
-                </span>
+                <div className="flex items-center justify-between text-[10px] text-white/45 pl-4 font-mono">
+                  <span>{isCollapsed ? "Cliquer pour déplier" : `${subCount} sous-concepts`}</span>
+                </div>
               )}
             </div>
           ),
         },
         position: { x: bx, y: by },
         style: {
-          background: 'rgba(15, 23, 42, 0.92)',
+          background: isCollapsed ? 'rgba(15, 23, 42, 0.98)' : 'rgba(15, 23, 42, 0.92)',
           border: `2px solid ${color.hex}`,
-          borderRadius: '12px',
-          boxShadow: `0 0 20px ${color.glow}`,
+          borderRadius: '14px',
+          boxShadow: isCollapsed ? `0 0 25px ${color.glow}` : `0 0 16px ${color.glow}`,
           color: '#fff',
-          minWidth: 160,
-          maxWidth: 240,
+          minWidth: 170,
+          maxWidth: 250,
+          cursor: 'pointer',
           zIndex: 5,
         },
       });
@@ -1015,8 +1058,8 @@ export function MindmapView({ content }: { content: any }) {
         style: { stroke: color.hex, strokeWidth: 2.5 },
       });
 
-      // Sub-branches radiating outward
-      if (subCount > 0) {
+      // Sub-branches radiating outward (only if not collapsed!)
+      if (!isCollapsed && subCount > 0) {
         const subRadius = radius + 175;
         const spreadStep = 0.32;
 
@@ -1061,7 +1104,7 @@ export function MindmapView({ content }: { content: any }) {
     });
 
     return { nodes: nodesList, edges: edgesList };
-  }, [centralNode, branches]);
+  }, [centralNode, branches, collapsedBranches]);
 
   const renderSubBranches = (subList: any[], level = 1) => {
     if (!Array.isArray(subList) || subList.length === 0) return null;
@@ -1135,8 +1178,27 @@ export function MindmapView({ content }: { content: any }) {
               </button>
             </div>
 
+            {/* Fold / Unfold buttons */}
+            <button
+              type="button"
+              onClick={expandAll}
+              className="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-sphera-surface text-sphera-text-muted hover:text-white border border-sphera-border transition-colors"
+              title="Déplier toutes les branches"
+            >
+              Tout déplier
+            </button>
+            <button
+              type="button"
+              onClick={collapseAll}
+              className="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-sphera-surface text-sphera-text-muted hover:text-white border border-sphera-border transition-colors"
+              title="Replier toutes les branches"
+            >
+              Tout replier
+            </button>
+
             {viewMode === 'canvas' && (
               <>
+                <div className="h-4 w-px bg-sphera-border mx-0.5" />
                 <button
                   type="button"
                   onClick={handleRecenter}
@@ -1158,25 +1220,6 @@ export function MindmapView({ content }: { content: any }) {
                 </button>
               </>
             )}
-
-            {viewMode === 'tree' && (
-              <>
-                <button
-                  type="button"
-                  onClick={expandAll}
-                  className="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-sphera-surface text-sphera-text-muted hover:text-white border border-sphera-border transition-colors"
-                >
-                  Tout déplier
-                </button>
-                <button
-                  type="button"
-                  onClick={collapseAll}
-                  className="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-sphera-surface text-sphera-text-muted hover:text-white border border-sphera-border transition-colors"
-                >
-                  Tout replier
-                </button>
-              </>
-            )}
           </div>
         </div>
       </div>
@@ -1191,11 +1234,12 @@ export function MindmapView({ content }: { content: any }) {
           </p>
         </div>
       ) : viewMode === 'canvas' ? (
-        /* Real Interactive Radial ReactFlow Mind Map Canvas */
+        /* Real Interactive Radial ReactFlow Mind Map Canvas with Collapsible Nodes */
         <div className={`relative w-full rounded-2xl border border-sphera-border bg-[#070b14] overflow-hidden shadow-2xl ${isFullscreen ? 'flex-1 h-full' : 'h-[650px]'}`}>
           <ReactFlow
             nodes={nodes}
             edges={edges}
+            onNodeClick={onNodeClick}
             fitView
             onInit={(instance) => {
               reactFlowInstance.current = instance;
@@ -1212,15 +1256,15 @@ export function MindmapView({ content }: { content: any }) {
             <Controls showInteractive={false} className="bg-sphera-surface-2 border border-sphera-border rounded-xl text-white shadow-2xl" />
           </ReactFlow>
 
-          <div className="absolute bottom-4 left-4 z-10 pointer-events-none text-[11px] text-white/40 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-white/10">
-            Glisser pour déplacer · Molette ou pincement pour zoomer
+          <div className="absolute bottom-4 left-4 z-10 pointer-events-none text-[11px] text-white/50 bg-black/70 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            <span>Cliquer sur un nœud pour le plier/déplier · Glisser pour explorer · Molette pour zoomer</span>
           </div>
         </div>
       ) : (
         /* Hierarchical Outline / Tree View */
         <div className="space-y-4">
           <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-500/10 via-sphera-surface-2 to-teal-500/10 border border-emerald-500/30 text-center">
-            <span className="text-[10px] uppercase tracking-widest text-emerald-400 font-bold">Noyau Conceptuel</span>
             <h3 className="text-lg md:text-xl font-extrabold text-white mt-0.5 tracking-tight">
               {centralNode}
             </h3>
@@ -1228,7 +1272,7 @@ export function MindmapView({ content }: { content: any }) {
 
           {branches.map((b: any, i: number) => {
             const color = getBranchColor(b.couleur, i);
-            const isExpanded = expandedBranches[i] ?? true;
+            const isExpanded = !collapsedBranches[i];
             const subCount = Array.isArray(b.sous_branches) ? b.sous_branches.length : 0;
 
             return (

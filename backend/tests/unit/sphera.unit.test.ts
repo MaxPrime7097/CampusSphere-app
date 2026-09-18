@@ -69,10 +69,37 @@ describe("prompt construction", () => {
     expect(withRealCourse).toContain("source_cours");
   });
 
+  it("enforces language mandates based on detected language", () => {
+    const frenchDoc = "Ce cours présente l'échantillonnage et la quantification en télécommunications.";
+    const englishDoc = "Pulse Code Modulation is a method used to digitally represent analog signals.";
+
+    const frenchFiche = toolPrompt("fiche", frenchDoc);
+    expect(frenchFiche).toContain("FRANÇAIS");
+    expect(frenchFiche).not.toContain("100% in ENGLISH");
+
+    const englishFiche = toolPrompt("fiche", englishDoc);
+    expect(englishFiche).toContain("ENGLISH");
+    expect(englishFiche).toContain("100% in ENGLISH");
+
+    // Q&A language targeting: French question on English doc replies in French
+    const qaFrOnEn = qaPrompt(englishDoc, "Explique-moi ce concept simplement s'il te plaît.");
+    expect(qaFrOnEn).toContain("TARGET RESPONSE LANGUAGE: FRENCH");
+
+    // Q&A language targeting: English question replies in English
+    const qaEn = qaPrompt(englishDoc, "Can you explain the sampling theorem in detail?");
+    expect(qaEn).toContain("TARGET RESPONSE LANGUAGE: ENGLISH");
+
+    // Prohibits standalone title at start
+    expect(qaFrOnEn).toContain("NO STANDALONE TITLE");
+    expect(qaFrOnEn).toContain("TABLE FORMATTING RULES");
+    expect(qaFrOnEn).toContain("COURTESY & GREETING RULES");
+  });
+
   it("rejects an unknown tool type", () => {
     expect(() => toolPrompt("annale" as never, SOURCE)).toThrow();
   });
 });
+
 
 describe("model output parsing", () => {
   it("parses plain JSON", () => {
