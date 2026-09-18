@@ -46,7 +46,12 @@ function getTransport(): Transporter | null {
     // 587 is STARTTLS: connect in clear, upgrade. Only 465 is implicit TLS.
     secure: env.email.port === 465,
     auth: { user: env.email.user, pass: env.email.password },
-  });
+    // Force IPv4 to prevent ENETUNREACH in containerized hosting without IPv6 routing
+    family: 4,
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 15_000,
+  } as any);
   return transporter;
 }
 

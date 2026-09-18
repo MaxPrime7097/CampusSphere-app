@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { FileText, BrainCircuit, Layers, PenTool, Zap, ArrowRight } from 'lucide-react'
+import { FileText, BrainCircuit, Zap, ArrowRight, FilePenLine, SquareStack } from 'lucide-react'
 
 export function Features() {
   const features = [
@@ -25,12 +25,12 @@ export function Features() {
     {
       title: "Flashcards intelligentes",
       desc: "Cartes recto/verso optimisées pour l'Active Recall et la répétition espacée, prêtes à être révisées.",
-      icon: <Layers className="w-6 h-6 text-sphera-green" />,
+      icon: <SquareStack className="w-6 h-6 text-sphera-green" />,
     },
     {
       title: "Correction d'annales",
       desc: "Mode complet ou rapide selon ton timing pour t'entraîner sur les vrais sujets des années précédentes.",
-      icon: <PenTool className="w-6 h-6 text-sphera-green" />,
+      icon: <FilePenLine className="w-6 h-6 text-sphera-green" />,
     }
   ]
 

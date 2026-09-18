@@ -6,7 +6,7 @@
 // StudySession — V1
 // ---------------------------------------------------------------------------
 
-export type ToolType = "fiche" | "quiz" | "flashcards";
+export type ToolType = "fiche" | "quiz" | "flashcards" | "mindmap" | "audio";
 
 export interface FicheContent {
   titre: string;
@@ -39,10 +39,36 @@ export interface FlashcardsContent {
   cartes: Carte[];
 }
 
+export interface MindMapBranch {
+  label: string;
+  couleur: "vert" | "bleu" | "orange" | "violet" | "rose" | string;
+  sous_branches: { label: string }[];
+}
+
+export interface MindMapContent {
+  titre: string;
+  noeud_central: string;
+  branches: MindMapBranch[];
+}
+
+export interface DialogueTurn {
+  speaker: "A" | "B" | string;
+  text: string;
+}
+
+export interface AudioContent {
+  titre: string;
+  dialogue: DialogueTurn[];
+  audioUrl?: string;
+  audioKey?: string;
+}
+
 export interface StudySessionContent {
   fiche?: FicheContent;
   quiz?: QuizContent;
   flashcards?: FlashcardsContent;
+  mindmap?: MindMapContent;
+  audio?: AudioContent;
 }
 
 // ---------------------------------------------------------------------------

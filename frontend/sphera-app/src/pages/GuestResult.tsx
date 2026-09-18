@@ -1,10 +1,7 @@
 import React from 'react'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { SpheraHeader } from '../components/layout/SpheraHeader'
-import { FicheResult } from '../components/results/FicheResult'
-import { QuizResult } from '../components/results/QuizResult'
-import { FlashcardsResult } from '../components/results/FlashcardsResult'
-import { AnnaleResult } from '../components/results/AnnaleResult'
+import { FicheView, QuizView, FlashcardsView, AnnaleView } from '../components/app/ResultViews'
 import { ArrowLeft, Share2, Download, AlertCircle } from 'lucide-react'
 import { useSpheraAuth } from '../contexts/SpheraAuthContext'
 
@@ -17,11 +14,11 @@ export default function GuestResult() {
 
   const renderResult = () => {
     switch(tool) {
-      case 'fiche': return <FicheResult data={result} />
-      case 'quiz': return <QuizResult data={result} />
-      case 'flashcards': return <FlashcardsResult data={result} />
-      case 'annale': return <AnnaleResult data={result} mode="complete" />
-      default: return <FicheResult data={result} />
+      case 'fiche': return <FicheView content={result} sourceName={filename} />
+      case 'quiz': return <QuizView content={result} />
+      case 'flashcards': return <FlashcardsView content={result} />
+      case 'annale': return <AnnaleView annale={{ content: result, mode: 'complete' }} sourceName={filename} />
+      default: return <FicheView content={result} sourceName={filename} />
     }
   }
 

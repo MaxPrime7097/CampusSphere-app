@@ -16,6 +16,7 @@ import type {
   AnnaleMode,
   ToolType,
 } from "../types/sphera.types";
+import { parseBackendError, translateError } from "@/lib/errorUtils";
 
 // ---------------------------------------------------------------------------
 // Import de la fonction fetch centralisée depuis api.ts
@@ -69,11 +70,11 @@ async function apiFetch<T>(path: string, options: FetchOptions = {}): Promise<T>
     const contentType = res.headers.get("content-type") || "";
     if (contentType.includes("application/json")) {
       const errJson = await res.json().catch(() => ({}));
-      const msg = errJson?.error || errJson?.detail || errJson?.message || `Erreur ${res.status}`;
+      const msg = parseBackendError(errJson, res.status);
       throw new Error(msg);
     }
     const text = await res.text().catch(() => "");
-    throw new Error(text || `Erreur ${res.status}`);
+    throw new Error(translateError(text, res.status));
   }
 
   const ct = res.headers.get("content-type") || "";
@@ -112,6 +113,50 @@ export async function generateStudyToolsFromUpload(params: {
   formData.append("file", params.file);
   formData.append("tool_types", JSON.stringify(params.tool_types));
   return apiFetch("api/sphera/generate/from-upload/", { method: "POST", body: formData });
+}
+
+/**
+ * Génère une carte mentale (Mind Map) depuis un fichier ou une ressource.
+ */
+export async function generateMindmap(params: {
+  file?: File;
+  resource_id?: string | number;
+  sphere_file_id?: string | number;
+}): Promise<{ success: boolean; data: StudySession }> {
+  if (params.file) {
+    const formData = new FormData();
+    formData.append("file", params.file);
+    return apiFetch("api/sphera/generate/mindmap/", { method: "POST", body: formData });
+  }
+  return apiFetch("api/sphera/generate/mindmap/", {
+    method: "POST",
+    body: {
+      resource_id: params.resource_id,
+      sphere_file_id: params.sphere_file_id,
+    } as any,
+  });
+}
+
+/**
+ * Génère un résumé audio podcast (2 voix) depuis un fichier ou une ressource.
+ */
+export async function generateAudioSummary(params: {
+  file?: File;
+  resource_id?: string | number;
+  sphere_file_id?: string | number;
+}): Promise<{ success: boolean; data: StudySession }> {
+  if (params.file) {
+    const formData = new FormData();
+    formData.append("file", params.file);
+    return apiFetch("api/sphera/generate/audio/", { method: "POST", body: formData });
+  }
+  return apiFetch("api/sphera/generate/audio/", {
+    method: "POST",
+    body: {
+      resource_id: params.resource_id,
+      sphere_file_id: params.sphere_file_id,
+    } as any,
+  });
 }
 
 // ===========================================================================

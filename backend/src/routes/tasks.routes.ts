@@ -15,6 +15,7 @@ import { prisma } from "../lib/prisma.js";
 import { serializeTask, taskInclude } from "../serializers/task.js";
 import { ok, created, list, paginate, paginationParams } from "../lib/envelope.js";
 import { badRequest, forbidden, notFound } from "../lib/errors.js";
+import { resolveSphereId } from "../lib/sphereLookup.js";
 import { currentUser, requireAuth } from "../middleware/auth.js";
 import { createNotification } from "../services/notifications.js";
 
@@ -27,6 +28,7 @@ const KANBAN = ["todo", "in_progress", "review", "done"] as const;
 type Membership = { role: SphereRole; status: SphereMemberStatus } | null;
 
 async function membershipOf(sphereId: number, userId: number): Promise<Membership> {
+  if (!Number.isInteger(sphereId) || sphereId <= 0) return null;
   return prisma.sphereMember.findUnique({
     where: { sphereId_userId: { sphereId, userId } },
     select: { role: true, status: true },
@@ -213,7 +215,7 @@ tasksRouter.get("/user/:userId/", async (req, res) => {
 
 tasksRouter.get("/sphere/:sphereId/", async (req, res) => {
   const me = currentUser(req);
-  const sphereId = Number(req.params.sphereId);
+  const sphereId = await resolveSphereId(req.params.sphereId);
 
   const membership = await membershipOf(sphereId, me.id);
   if (!isActive(membership)) throw forbidden("You must be a member of this sphere.");

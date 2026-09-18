@@ -193,6 +193,8 @@ enum StudyToolType {
   FICHE
   QUIZ
   FLASHCARDS
+  MINDMAP
+  AUDIO
 }
 
 enum AnnaleMode {

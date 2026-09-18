@@ -239,84 +239,14 @@ function clearTokens() {
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
-export // Helper to parse ugly backend errors into a clean string
-function parseBackendError(errJson: any, status: number): string {
-  if (!errJson) return "Une erreur inattendue est survenue.";
-  
-  if (typeof errJson === "string") return translateError(errJson, status);
+export {
+  parseBackendError,
+  translateError,
+  translateField,
+  formatUserErrorMessage,
+  isRateLimitOrQuotaError,
+} from "@/lib/errorUtils";
 
-
-  // Field errors if available from backend envelope (e.g. { error: "...", field_errors: { name: ["Already used."] } })
-  if (errJson.field_errors && typeof errJson.field_errors === "object") {
-    const errorMessages: string[] = [];
-    for (const [key, value] of Object.entries(errJson.field_errors)) {
-      if (Array.isArray(value) && typeof value[0] === "string") {
-        errorMessages.push(`${translateField(key)}: ${translateError(value[0], status)}`);
-      } else if (typeof value === "string") {
-        errorMessages.push(`${translateField(key)}: ${translateError(value, status)}`);
-      }
-    }
-    if (errorMessages.length > 0) return errorMessages.join(" | ");
-  }
-
-  // Standard fields
-  if (typeof errJson.detail === "string") return translateError(errJson.detail, status);
-  if (typeof errJson.error === "string") return translateError(errJson.error, status);
-  if (typeof errJson.message === "string") return translateError(errJson.message, status);
-
-  // Handle Django REST Framework field validation errors (e.g. { "name": ["This field must be unique."] })
-  if (typeof errJson === "object" && !Array.isArray(errJson)) {
-    const errorMessages: string[] = [];
-    for (const [key, value] of Object.entries(errJson)) {
-      if (key === "success" || key === "timestamp" || key === "code") continue;
-      if (Array.isArray(value) && typeof value[0] === "string") {
-        errorMessages.push(`${translateField(key)}: ${translateError(value[0], status)}`);
-      } else if (typeof value === "string") {
-        errorMessages.push(`${translateField(key)}: ${translateError(value, status)}`);
-      }
-    }
-    if (errorMessages.length > 0) return errorMessages.join(" | ");
-  }
-
-  return "Une erreur technique est survenue.";
-}
-
-function translateField(field: string): string {
-  const fields: Record<string, string> = {
-    username: "Nom d'utilisateur",
-    email: "Email",
-    password: "Mot de passe",
-    name: "Nom",
-    description: "Description",
-    title: "Titre"
-  };
-  return fields[field] || field;
-}
-
-function translateError(msg: string, status: number): string {
-  const m = msg.toLowerCase();
-  
-  if (status === 409 || m.includes("unique") || m.includes("already exists") || m.includes("already used")) {
-    return "Un élément avec ce nom existe déjà. Veuillez choisir un nom différent.";
-  }
-  if (m.includes("reached the limit") || (m.includes("limit") && m.includes("folder"))) {
-    return "Vous avez atteint la limite maximale autorisée (4 dossiers maximum).";
-  }
-  if (m.includes("not found") || status === 404) {
-    return "L'élément demandé est introuvable.";
-  }
-  if (m.includes("credentials") || m.includes("unauthorized") || m.includes("invalid login") || m.includes("token")) {
-    return "Identifiants incorrects ou session expirée.";
-  }
-  if (m.includes("permission") || m.includes("forbidden") || status === 403) {
-    return "Vous n'avez pas l'autorisation d'effectuer cette action.";
-  }
-  if (m.includes("required") || m.includes("blank")) {
-    return "Ce champ est obligatoire.";
-  }
-
-  return msg;
-}
 
 class ApiRequestError extends Error {
   status?: number;
@@ -2482,9 +2412,11 @@ export async function apiInfo() {
 // [BE-MIGRATION FE-02] Node backend accepts `resource_id` OR `sphere_file_id` (exactly one).
 // Add an optional sphereFileId arg and send it instead of resource_id when the source is a
 // sphere file. — documentation/FRONTEND_CHANGES.md
+export type ApiStudyToolType = "fiche" | "quiz" | "flashcards" | "mindmap" | "audio";
+
 export async function generateStudyTools(
   resourceId: string | number,
-  toolTypes: ("fiche" | "quiz" | "flashcards")[]
+  toolTypes: ApiStudyToolType[]
 ) {
   const response = await apiFetch<any>("api/study/generate/from-resource/", {
     method: "POST",
@@ -2495,7 +2427,7 @@ export async function generateStudyTools(
 
 export async function generateFromUpload(
   file: File,
-  toolTypes: ("fiche" | "quiz" | "flashcards")[]
+  toolTypes: ApiStudyToolType[]
 ) {
   const formData = new FormData();
   formData.append("file", file);
@@ -2507,7 +2439,7 @@ export async function generateFromUpload(
   return response;
 }
 
-export async function getStudySessions(toolType?: "fiche" | "quiz" | "flashcards") {
+export async function getStudySessions(toolType?: ApiStudyToolType) {
   const query = toolType ? `?tool_type=${toolType}` : "";
   const response = await apiFetch<any>(`api/study/sessions/${query}`);
   return response;

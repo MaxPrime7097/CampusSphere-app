@@ -49,7 +49,7 @@ export const redisEnabled = Boolean(env.redisUrl);
 const baseOptions: RedisOptions = {
   lazyConnect: true,
   maxRetriesPerRequest: 2,
-  commandTimeout: 1_000,
+  commandTimeout: 3_000,
   // Exponential-ish backoff capped at 3s, so a long outage does not become a
   // reconnect storm when Redis comes back.
   retryStrategy: (attempt) => Math.min(attempt * 200, 3_000),

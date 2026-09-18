@@ -23,6 +23,17 @@ const KATEX_CDN_CSS = 'https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min
 const KATEX_CDN_JS = 'https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js'
 const KATEX_CDN_AUTO = 'https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js'
 
+const ICONS = {
+  resume: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>`,
+  pointsCles: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
+  definitions: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9333ea" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`,
+  formules: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#db2777" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="14" x2="16" y2="14"/><line x1="12" y1="14" x2="12" y2="14"/><line x1="8" y1="14" x2="8" y2="14"/><line x1="16" y1="18" x2="16" y2="18"/><line x1="12" y1="18" x2="12" y2="18"/><line x1="8" y1="18" x2="8" y2="18"/></svg>`,
+  pieges: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+  aRetenir: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>`,
+  exemples: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
+  questions: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`
+}
+
 function escapeHtml(str: string): string {
   if (!str) return ''
   return String(str)
@@ -163,9 +174,7 @@ function buildBaseStyle(): string {
     .doc-brand {
       font-size: 9pt;
       font-weight: 800;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: #ea580c;
+      color: #22c55e;
     }
 
     .doc-meta-badge {
@@ -196,47 +205,87 @@ function buildBaseStyle(): string {
       letter-spacing: -0.02em;
     }
 
-    /* Callout Card (Résumé) */
-    .callout-card {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
+    /* Callout Card (Résumé - Bleu) */
+    .callout-card-blue {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
       border-left: 4px solid #3b82f6;
       border-radius: 8px;
       padding: 14px 16px;
       margin-bottom: 18px;
     }
 
-    .callout-title {
-      font-size: 9pt;
+    .callout-title-blue {
+      font-size: 9.5pt;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: #2563eb;
-      margin-bottom: 6px;
+      color: #1d4ed8;
+      margin-bottom: 8px;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 7px;
     }
 
     /* Sections principales */
     .section-title {
-      font-size: 12pt;
+      font-size: 11pt;
       font-weight: 700;
       color: #0f172a;
-      margin-top: 20px;
+      margin-top: 22px;
       margin-bottom: 10px;
       display: flex;
       align-items: center;
       gap: 8px;
-      border-bottom: 1px solid #e2e8f0;
-      padding-bottom: 4px;
+      padding-bottom: 5px;
     }
 
-    .section-icon {
-      color: #ea580c;
+    .section-title-green {
+      border-bottom: 2px solid #bbf7d0;
+    }
+    .section-icon-green {
+      color: #16a34a;
+      display: flex;
+      align-items: center;
     }
 
-    /* Points clés */
+    .section-title-purple {
+      border-bottom: 2px solid #e9d5ff;
+    }
+    .section-icon-purple {
+      color: #9333ea;
+      display: flex;
+      align-items: center;
+    }
+
+    .section-title-pink {
+      border-bottom: 2px solid #fbcfe8;
+    }
+    .section-icon-pink {
+      color: #db2777;
+      display: flex;
+      align-items: center;
+    }
+
+    .section-title-amber {
+      border-bottom: 2px solid #fde68a;
+    }
+    .section-icon-amber {
+      color: #d97706;
+      display: flex;
+      align-items: center;
+    }
+
+    .section-title-blue {
+      border-bottom: 2px solid #bfdbfe;
+    }
+    .section-icon-blue {
+      color: #2563eb;
+      display: flex;
+      align-items: center;
+    }
+
+    /* Points clés - Vert */
     .points-list {
       list-style: none;
       display: flex;
@@ -249,9 +298,10 @@ function buildBaseStyle(): string {
       display: flex;
       align-items: flex-start;
       gap: 10px;
-      background: #fdfdfd;
-      border: 1px solid #f1f5f9;
-      padding: 8px 12px;
+      background: #f0fdf4;
+      border: 1px solid #dcfce7;
+      border-left: 3px solid #22c55e;
+      padding: 9px 12px;
       border-radius: 6px;
     }
 
@@ -260,8 +310,9 @@ function buildBaseStyle(): string {
       width: 20px;
       height: 20px;
       border-radius: 999px;
-      background: #ffedd5;
-      color: #c2410c;
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid #86efac;
       font-weight: 700;
       font-size: 8pt;
       display: flex;
@@ -270,7 +321,7 @@ function buildBaseStyle(): string {
       margin-top: 1px;
     }
 
-    /* Grille de définitions */
+    /* Grille de définitions - Violet */
     .definitions-grid {
       display: grid;
       grid-template-columns: 1fr;
@@ -279,30 +330,31 @@ function buildBaseStyle(): string {
     }
 
     .def-card {
-      background: #fdfdfd;
-      border: 1px solid #e2e8f0;
+      background: #faf5ff;
+      border: 1px solid #e9d5ff;
+      border-left: 3px solid #a855f7;
       border-radius: 6px;
       padding: 10px 12px;
     }
 
     .def-term {
       font-weight: 700;
-      color: #0f172a;
+      color: #6b21a8;
       font-size: 9.5pt;
       margin-bottom: 3px;
     }
 
     .def-desc {
-      color: #475569;
+      color: #334155;
       font-size: 9pt;
       line-height: 1.5;
     }
 
-    /* Cartes de formules */
+    /* Cartes de formules - Rose */
     .formula-card {
-      background: #fdfbf7;
-      border: 1px solid #fed7aa;
-      border-left: 4px solid #ea580c;
+      background: #fdf2f8;
+      border: 1px solid #fbcfe8;
+      border-left: 4px solid #ec4899;
       border-radius: 8px;
       padding: 12px 16px;
       margin-bottom: 14px;
@@ -311,16 +363,16 @@ function buildBaseStyle(): string {
     .formula-content {
       font-family: 'JetBrains Mono', monospace;
       font-size: 10pt;
-      color: #9a3412;
-      background: #fff;
-      border: 1px solid #ffedd5;
+      color: #831843;
+      background: #ffffff;
+      border: 1px solid #f472b6;
       padding: 8px 12px;
       border-radius: 6px;
       margin: 6px 0;
       overflow-x: auto;
     }
 
-    /* Pièges & erreurs */
+    /* Pièges & erreurs - Ambre */
     .warning-card {
       background: #fffbeb;
       border: 1px solid #fde68a;
@@ -333,10 +385,71 @@ function buildBaseStyle(): string {
     .warning-title {
       font-size: 8.5pt;
       font-weight: 700;
-      color: #b45309;
+      color: #92400e;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* A retenir - Ambre / Jaune */
+    .retenir-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .retenir-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-left: 3px solid #f59e0b;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 9pt;
+      color: #78350f;
+    }
+
+    .retenir-icon {
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .doc-link {
+      font-size: 8pt;
+      color: #16a34a;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .doc-link:hover {
+      text-decoration: underline;
+    }
+
+    .doc-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 32px;
+      padding-top: 10px;
+      border-top: 1px solid #e2e8f0;
+      font-size: 8pt;
+      color: #64748b;
+    }
+
+    .doc-footer a {
+      color: #16a34a;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .doc-footer a:hover {
+      text-decoration: underline;
     }
 
     /* Question d'annale */
@@ -466,7 +579,6 @@ function buildBaseStyle(): string {
 export function generateFicheHtml(options: GenerateFicheOptions): string {
   const f = options.fiche?.fiche || options.fiche || {}
   const title = f.titre || 'Fiche de Révision'
-  const sourceName = options.sourceName || 'Cours universitaire'
   const dateStr = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
 
   let html = `<!DOCTYPE html>
@@ -482,12 +594,12 @@ export function generateFicheHtml(options: GenerateFicheOptions): string {
       <!-- En-tête -->
       <div class="doc-header">
         <div>
-          <div class="doc-brand">SPHERA • CAMPUSSPHERE</div>
-          <span class="doc-meta-badge">Fiche de Révision • ${escapeHtml(sourceName)}</span>
+          <div class="doc-brand">Sphera by CampusSphere</div>
+          <span class="doc-meta-badge">Fiche de Révision</span>
         </div>
         <div class="doc-date">
           <div>Généré le ${escapeHtml(dateStr)}</div>
-          <div style="font-size:7pt; color:#94a3b8; margin-top:2px;">sphera.campussphere.app</div>
+          <div style="margin-top:2px;"><a href="https://sphera.campussphere.app" target="_blank" rel="noopener noreferrer" class="doc-link">sphera.campussphere.app</a></div>
         </div>
       </div>
 
@@ -495,21 +607,21 @@ export function generateFicheHtml(options: GenerateFicheOptions): string {
       <h1 class="doc-title">${escapeHtml(title)}</h1>
   `
 
-  // Résumé
+  // Résumé (Bleu)
   if (f.resume) {
     html += `
-      <div class="callout-card page-break-avoid">
-        <div class="callout-title">💡 Résumé Exécutif</div>
-        <div style="font-size:9.5pt; color:#334155;">${markdownToHtml(f.resume)}</div>
+      <div class="callout-card-blue page-break-avoid">
+        <div class="callout-title-blue"><span class="section-icon-blue">${ICONS.resume}</span> Résumé du cours</div>
+        <div style="font-size:9.5pt; color:#334155; line-height:1.6;">${markdownToHtml(f.resume)}</div>
       </div>
     `
   }
 
-  // Points clés
+  // Points clés (Vert)
   if (Array.isArray(f.points_cles) && f.points_cles.length > 0) {
     html += `
-      <div class="section-title">
-        <span class="section-icon">★</span> Points Clés à Maîtriser
+      <div class="section-title section-title-green">
+        <span class="section-icon-green">${ICONS.pointsCles}</span> Points clés à maîtriser
       </div>
       <div class="points-list">
     `
@@ -517,18 +629,18 @@ export function generateFicheHtml(options: GenerateFicheOptions): string {
       html += `
         <div class="point-item page-break-avoid">
           <span class="point-number">${i + 1}</span>
-          <div style="flex:1; font-size:9.5pt; color:#334155;">${markdownToHtml(p)}</div>
+          <div style="flex:1; font-size:9.5pt; color:#334155; line-height:1.5;">${markdownToHtml(p)}</div>
         </div>
       `
     })
     html += `</div>`
   }
 
-  // Formules & Concepts Abstraits
+  // Formules & Concepts Abstraits (Rose)
   if (Array.isArray(f.formules) && f.formules.length > 0) {
     html += `
-      <div class="section-title">
-        <span class="section-icon">∑</span> Formules & Démonstrations Clés
+      <div class="section-title section-title-pink">
+        <span class="section-icon-pink">${ICONS.formules}</span> Formules & Concepts Clés
       </div>
     `
     f.formules.forEach((item: any) => {
@@ -539,7 +651,7 @@ export function generateFicheHtml(options: GenerateFicheOptions): string {
 
       html += `
         <div class="formula-card page-break-avoid">
-          ${nom ? `<div style="font-weight:700; color:#9a3412; font-size:9pt; margin-bottom:4px;">${escapeHtml(nom)}</div>` : ''}
+          ${nom ? `<div style="font-weight:700; color:#9d174d; font-size:9pt; margin-bottom:4px;">${escapeHtml(nom)}</div>` : ''}
           <div class="formula-content">${escapeHtml(form)}</div>
           ${expl ? `<div style="font-size:8.5pt; color:#475569; margin-top:4px;">${markdownToHtml(expl)}</div>` : ''}
         </div>
@@ -547,11 +659,11 @@ export function generateFicheHtml(options: GenerateFicheOptions): string {
     })
   }
 
-  // Définitions
+  // Définitions (Violet)
   if (Array.isArray(f.definitions) && f.definitions.length > 0) {
     html += `
-      <div class="section-title">
-        <span class="section-icon">📖</span> Lexique & Définitions Essentielles
+      <div class="section-title section-title-purple">
+        <span class="section-icon-purple">${ICONS.definitions}</span> Lexique & Définitions Essentielles
       </div>
       <div class="definitions-grid">
     `
@@ -568,48 +680,67 @@ export function generateFicheHtml(options: GenerateFicheOptions): string {
     html += `</div>`
   }
 
-  // Exemples
+  // Exemples (Violet)
   if (Array.isArray(f.exemples) && f.exemples.length > 0) {
     html += `
-      <div class="section-title">
-        <span class="section-icon">⚡</span> Exemples Concrets d'Application
+      <div class="section-title section-title-purple">
+        <span class="section-icon-purple">${ICONS.exemples}</span> Exemples Concrets d'Application
       </div>
     `
     f.exemples.forEach((ex: any) => {
       const titreEx = typeof ex === 'object' ? ex.titre || ex.concept || 'Exemple' : 'Exemple'
       const descEx = typeof ex === 'object' ? ex.description || ex.exemple || '' : ex
       html += `
-        <div class="callout-card page-break-avoid" style="border-left-color:#8b5cf6; background:#faf5ff;">
-          <div class="callout-title" style="color:#7c3aed;">${escapeHtml(titreEx)}</div>
+        <div class="callout-card page-break-avoid" style="border-left-color:#a855f7; background:#faf5ff;">
+          <div class="callout-title" style="color:#7e22ce; display:flex; align-items:center; gap:6px;"><span class="section-icon-purple">${ICONS.exemples}</span> ${escapeHtml(titreEx)}</div>
           <div style="font-size:9pt; color:#334155;">${markdownToHtml(descEx)}</div>
         </div>
       `
     })
   }
 
-  // Pièges à éviter
+  // Pièges à éviter (Ambre)
   if (Array.isArray(f.pieges) && f.pieges.length > 0) {
     html += `
-      <div class="section-title">
-        <span class="section-icon">⚠️</span> Pièges d'Examen & Confusions Fréquentes
+      <div class="section-title section-title-amber">
+        <span class="section-icon-amber">${ICONS.pieges}</span> Pièges d'Examen & Confusions Fréquentes
       </div>
     `
     f.pieges.forEach((piege: any) => {
       const text = typeof piege === 'object' ? piege.piege || piege.description || JSON.stringify(piege) : piege
       html += `
         <div class="warning-card page-break-avoid">
-          <div class="warning-title">Attention</div>
+          <div class="warning-title"><span class="section-icon-amber">${ICONS.pieges}</span> Attention aux pièges</div>
           <div style="font-size:9pt; color:#451a03;">${markdownToHtml(text)}</div>
         </div>
       `
     })
   }
 
-  // Questions d'examen
+  // À retenir (Ambre / Jaune)
+  if (Array.isArray(f.a_retenir) && f.a_retenir.length > 0) {
+    html += `
+      <div class="section-title section-title-amber">
+        <span class="section-icon-amber">${ICONS.aRetenir}</span> À Retenir
+      </div>
+      <div class="retenir-list">
+    `
+    f.a_retenir.forEach((r: string) => {
+      html += `
+        <div class="retenir-item page-break-avoid">
+          <span class="retenir-icon">${ICONS.aRetenir}</span>
+          <div style="flex:1; line-height:1.5;">${markdownToHtml(r)}</div>
+        </div>
+      `
+    })
+    html += `</div>`
+  }
+
+  // Questions d'examen (Bleu)
   if (Array.isArray(f.questions_examen) && f.questions_examen.length > 0) {
     html += `
-      <div class="section-title">
-        <span class="section-icon">🎯</span> Questions Types d'Épreuve
+      <div class="section-title section-title-blue">
+        <span class="section-icon-blue">${ICONS.questions}</span> Questions Types d'Épreuve
       </div>
     `
     f.questions_examen.forEach((q: any, idx: number) => {
@@ -633,6 +764,11 @@ export function generateFicheHtml(options: GenerateFicheOptions): string {
   }
 
   html += `
+      <!-- Pied de page -->
+      <div class="doc-footer">
+        <div>Sphera • Upload. Revise. Succeed.</div>
+        <div><a href="https://sphera.campussphere.app" target="_blank" rel="noopener noreferrer">sphera.campussphere.app</a></div>
+      </div>
     </div>
     <script src="${KATEX_CDN_JS}"></script>
     <script src="${KATEX_CDN_AUTO}"></script>
@@ -659,11 +795,23 @@ export function generateFicheHtml(options: GenerateFicheOptions): string {
 }
 
 export function generateAnnaleHtml(options: GenerateAnnaleOptions): string {
-  const a = options.annale || {}
-  const title = a.titre || "Correction d'Annale d'Examen"
-  const sourceName = options.sourceName || 'Sujet d\'examen'
+  let raw = options.annale || {}
+  if (typeof raw === 'string') {
+    try { raw = JSON.parse(raw) } catch {}
+  }
+  let a = raw?.content?.annale || raw?.annale || raw?.content || raw
+  if (typeof a === 'string') {
+    try { a = JSON.parse(a) } catch {}
+  }
+  const title = a?.titre || raw?.titre || raw?.source_title || raw?.source_filename || options.sourceName || "Correction d'Annale d'Examen"
   const dateStr = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
-  const hasSections = Array.isArray(a.sections) && a.sections.length > 0
+
+  const isRawArray = Array.isArray(a)
+  const rawSections = !isRawArray && (Array.isArray(a?.sections) ? a.sections : (Array.isArray(a?.parties) ? a.parties : []))
+  const hasSections = Array.isArray(rawSections) && rawSections.length > 0
+  const hasCorrections = !isRawArray && Array.isArray(a?.corrections) && a.corrections.length > 0
+  const hasQuestions = !isRawArray && Array.isArray(a?.questions) && a.questions.length > 0
+  const questionsList = isRawArray ? a : hasCorrections ? a.corrections : hasQuestions ? a.questions : []
 
   let html = `<!DOCTYPE html>
   <html lang="fr">
@@ -678,12 +826,12 @@ export function generateAnnaleHtml(options: GenerateAnnaleOptions): string {
       <!-- En-tête -->
       <div class="doc-header">
         <div>
-          <div class="doc-brand">SPHERA • CORRECTION D'EXAMEN</div>
-          <span class="doc-meta-badge">Corrigé Officiel • ${escapeHtml(sourceName)}</span>
+          <div class="doc-brand">Sphera by CampusSphere</div>
+          <span class="doc-meta-badge">Corrigé d'annale</span>
         </div>
         <div class="doc-date">
           <div>Édité le ${escapeHtml(dateStr)}</div>
-          <div style="font-size:7pt; color:#94a3b8; margin-top:2px;">sphera.campussphere.app</div>
+          <div style="margin-top:2px;"><a href="https://sphera.campussphere.app" target="_blank" rel="noopener noreferrer" class="doc-link">sphera.campussphere.app</a></div>
         </div>
       </div>
 
@@ -704,13 +852,33 @@ export function generateAnnaleHtml(options: GenerateAnnaleOptions): string {
         <div class="question-enonce">${markdownToHtml(q.enonce || q.question || '')}</div>
     `
 
-    // Réponse attendue
-    const rep = q.reponse_attendue || q.reponse_courte || q.reponse
+    // Réponse attendue / corrigé
+    const rep = q.reponse_attendue || q.reponse_courte || q.reponse || q.correction || q.answer || q.solution
     if (rep) {
       qHtml += `
         <div class="answer-block">
           <div class="answer-title">Corrigé & Solution Attendue</div>
-          <div style="font-size:9pt; color:#0f172a;">${markdownToHtml(rep)}</div>
+          <div style="font-size:9pt; color:#0f172a; line-height:1.5;">${markdownToHtml(rep)}</div>
+        </div>
+      `
+    }
+
+    // Explication détaillée
+    const expl = q.explication || q.justification || q.raisonnement
+    if (expl) {
+      qHtml += `
+        <div style="margin-top:8px; padding:8px 12px; background:#f0fdf4; border-left:3px solid #10b981; border-radius:6px;">
+          <div style="font-size:8pt; font-weight:700; color:#047857; text-transform:uppercase; margin-bottom:3px;">Explication détaillée & Raisonnement</div>
+          <div style="font-size:8.5pt; color:#1e293b; line-height:1.5;">${markdownToHtml(expl)}</div>
+        </div>
+      `
+    }
+
+    // Référence cours
+    if (q.source_cours || q.chapitre) {
+      qHtml += `
+        <div style="margin-top:6px; font-size:8pt; color:#6b21a8; background:#faf5ff; padding:4px 8px; border-radius:4px; display:inline-block;">
+          <strong>Référence cours :</strong> ${escapeHtml(q.source_cours || q.chapitre)}
         </div>
       `
     }
@@ -743,12 +911,12 @@ export function generateAnnaleHtml(options: GenerateAnnaleOptions): string {
       qHtml += `</table></div>`
     }
 
-    // Pièges fréquents
-    if (q.piege_frequent || q.pieges_frequents) {
-      const pText = q.piege_frequent || (Array.isArray(q.pieges_frequents) ? q.pieges_frequents.join(' • ') : q.pieges_frequents)
+    // Pièges fréquents / À retenir
+    if (q.piege_frequent || q.pieges_frequents || q.a_retenir) {
+      const pText = q.piege_frequent || (Array.isArray(q.pieges_frequents) ? q.pieges_frequents.join(' • ') : q.pieges_frequents) || q.a_retenir
       qHtml += `
         <div class="warning-card" style="margin-top:8px; padding:6px 10px;">
-          <span style="font-weight:700; color:#b45309; font-size:8pt;">Piège fréquent : </span>
+          <span style="font-weight:700; color:#b45309; font-size:8pt; display:inline-flex; align-items:center; gap:4px;"><span class="section-icon-amber">${ICONS.pieges}</span> À retenir / Piège : </span>
           <span style="font-size:8.5pt; color:#451a03;">${markdownToHtml(pText)}</span>
         </div>
       `
@@ -759,10 +927,10 @@ export function generateAnnaleHtml(options: GenerateAnnaleOptions): string {
   }
 
   if (hasSections) {
-    a.sections.forEach((sec: any, secIdx: number) => {
+    rawSections.forEach((sec: any, secIdx: number) => {
       html += `
         <div class="section-title">
-          <span class="section-icon">${secIdx + 1}.</span> ${escapeHtml(sec.nom || `Section ${secIdx + 1}`)}
+          <span class="section-icon">${secIdx + 1}.</span> ${escapeHtml(sec.nom || sec.titre || sec.section || `Section ${secIdx + 1}`)}
         </div>
       `
       if (Array.isArray(sec.questions)) {
@@ -771,26 +939,32 @@ export function generateAnnaleHtml(options: GenerateAnnaleOptions): string {
         })
       }
     })
-  } else if (Array.isArray(a.corrections)) {
-    a.corrections.forEach((q: any, qIdx: number) => {
+  } else if (questionsList.length > 0) {
+    questionsList.forEach((q: any, qIdx: number) => {
       html += renderQuestion(q, qIdx)
     })
   }
 
   // Conseils généraux
-  if (Array.isArray(a.conseils_generaux) && a.conseils_generaux.length > 0) {
+  const conseils = a?.conseils_generaux || raw?.conseils_generaux || []
+  if (Array.isArray(conseils) && conseils.length > 0) {
     html += `
-      <div class="callout-card page-break-avoid" style="margin-top:20px; border-left-color:#ea580c; background:#fffaf0;">
-        <div class="callout-title" style="color:#c2410c;">Conseils Stratégiques pour l'Épreuve</div>
+      <div class="callout-card-blue page-break-avoid" style="margin-top:20px;">
+        <div class="callout-title-blue"><span class="section-icon-blue">${ICONS.resume}</span> Conseils Stratégiques pour l'Épreuve</div>
         <ul style="padding-left:16px; font-size:9pt; color:#334155;">
     `
-    a.conseils_generaux.forEach((c: string) => {
+    conseils.forEach((c: string) => {
       html += `<li style="margin-bottom:4px;">${markdownToHtml(c)}</li>`
     })
     html += `</ul></div>`
   }
 
   html += `
+      <!-- Pied de page -->
+      <div class="doc-footer">
+        <div>Sphera • Corrigé d'Examen & Annales</div>
+        <div><a href="https://sphera.campussphere.app" target="_blank" rel="noopener noreferrer">sphera.campussphere.app</a></div>
+      </div>
     </div>
     <script src="${KATEX_CDN_JS}"></script>
     <script src="${KATEX_CDN_AUTO}"></script>
@@ -815,6 +989,8 @@ export function generateAnnaleHtml(options: GenerateAnnaleOptions): string {
 
   return html
 }
+
+
 
 /**
  * Lance l'impression vectorielle haute définition dans un iframe masqué.

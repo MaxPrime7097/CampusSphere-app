@@ -1,3 +1,4 @@
+import React, { useState } from "react";
 import { CheckCircle2, BookOpen, Key, Calculator, Lightbulb, Download, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useDownloadPDF } from "../../hooks/useDownloadPDF";
@@ -16,7 +17,7 @@ interface FicheRevisionProps {
 }
 
 export const FicheRevision: React.FC<FicheRevisionProps> = ({ data }) => {
-  const [openDef, setOpenDef] = React.useState<number | null>(null);
+  const [openDef, setOpenDef] = useState<number | null>(null);
   const { isDownloading, generateFiche } = useDownloadPDF();
 
   return (

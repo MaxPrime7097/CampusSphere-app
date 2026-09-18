@@ -17,11 +17,19 @@ const roomStates = new Map<string, {
     sockets: Map<WebSocket, ParticipantInfo>;
     hostSocket: WebSocket | null;
     timers: NodeJS.Timeout[];
+    answeredQuestions: Map<WebSocket, Set<number>>;
 }>();
+
+function clearRoomTimers(state: { timers: NodeJS.Timeout[] }) {
+    for (const timer of state.timers) {
+        clearTimeout(timer);
+    }
+    state.timers = [];
+}
 
 function getRoomState(roomCode: string) {
     if (!roomStates.has(roomCode)) {
-        roomStates.set(roomCode, { sockets: new Map(), hostSocket: null, timers: [] });
+        roomStates.set(roomCode, { sockets: new Map(), hostSocket: null, timers: [], answeredQuestions: new Map() });
     }
     return roomStates.get(roomCode)!;
 }
@@ -51,7 +59,8 @@ function sendToClient(ws: WebSocket, message: any) {
 async function sendNextQuestion(roomCode: string, session: any, questionIndex: number) {
     const questions = session.questions as any[];
     const q = questions[questionIndex];
-    const timeLimit = q.timeLimit || 30;
+    const timeLimit = typeof q.timeLimit === "number" && q.timeLimit > 0 ? q.timeLimit : 30;
+    const points = typeof q.points === "number" && q.points > 0 ? q.points : 1000;
     
     broadcastToRoom(roomCode, {
         type: "new_question",
@@ -60,11 +69,13 @@ async function sendNextQuestion(roomCode: string, session: any, questionIndex: n
             question: q.question,
             options: q.options,
             timeLimit: timeLimit,
+            points: points,
             totalQuestions: questions.length
         }
     });
     
     const state = getRoomState(roomCode);
+    clearRoomTimers(state);
     const timer = setTimeout(async () => {
         const leaderboard = await prisma.quizLiveParticipant.findMany({
             where: { sessionId: session.id },
@@ -199,13 +210,22 @@ quizLiveWss.on("connection", (ws: WebSocket, _request: IncomingMessage, roomCode
                 const session = await prisma.quizLiveSession.findUnique({ where: { roomCode } });
                 if (!session || session.currentQuestionIndex !== questionIndex) return;
 
+                // Prevent multiple submissions for the same question
+                const answered = state.answeredQuestions.get(ws) ?? new Set<number>();
+                if (answered.has(questionIndex)) return;
+                answered.add(questionIndex);
+                state.answeredQuestions.set(ws, answered);
+
                 const questions = session.questions as any[];
                 const q = questions[questionIndex];
                 const isCorrect = q.correctIndex === selectedIndex;
                 
                 let points = 0;
                 if (isCorrect) {
-                     points = 1000 + Math.max(0, Math.floor(500 - (timeToAnswer * 1000) / 10));
+                     const basePoints = typeof q.points === "number" && q.points > 0 ? q.points : 1000;
+                     const qTimeLimit = typeof q.timeLimit === "number" && q.timeLimit > 0 ? q.timeLimit : 30;
+                     const speedFactor = Math.max(0, 1 - (timeToAnswer / qTimeLimit));
+                     points = Math.round(basePoints * (0.5 + 0.5 * speedFactor));
                 }
 
                 if (participantId) {
@@ -233,6 +253,7 @@ quizLiveWss.on("connection", (ws: WebSocket, _request: IncomingMessage, roomCode
                      sendToClient(ws, { type: "error", payload: { message: "Only the host can go to the next question" } });
                      return;
                  }
+                 clearRoomTimers(state);
                  const session = await prisma.quizLiveSession.findUnique({ where: { roomCode } });
                  if (!session) return;
                  const questions = session.questions as any[];
@@ -270,7 +291,12 @@ quizLiveWss.on("connection", (ws: WebSocket, _request: IncomingMessage, roomCode
     ws.on("close", () => {
         const state = getRoomState(roomCode);
         state.sockets.delete(ws);
+        state.answeredQuestions.delete(ws);
+        if (ws === state.hostSocket) {
+            state.hostSocket = null;
+        }
         if (state.sockets.size === 0) {
+            clearRoomTimers(state);
             roomStates.delete(roomCode);
         }
     });

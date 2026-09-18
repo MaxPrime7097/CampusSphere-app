@@ -8,7 +8,7 @@
 
 import { badRequest, serviceUnavailable } from "../../lib/errors.js";
 import { parseJsonWithFallback, UnparseableModelOutputError } from "./json.js";
-import { annalePrompt, qaPrompt, suggestionsPrompt, toolPrompt, type AnnaleMode, type ToolType } from "./prompts.js";
+import { annalePrompt, qaPrompt, suggestionsPrompt, toolPrompt, quizFromSelectionPrompt, flashcardFromSelectionPrompt, type AnnaleMode, type ToolType } from "./prompts.js";
 import { AllProvidersFailedError, callWithFallback, TOKENS_ANNALE, TOKENS_DEFAULT, TOKENS_FLASHCARDS, TOKENS_QUIZ } from "./providers.js";
 import { buildContextPrefix, getUserAcademicContext } from "./userContext.js";
 
@@ -18,7 +18,7 @@ export const MIN_SOURCE_CHARS = 50;
 /** Above this, we reject to prevent budget explosion and context window overflow. */
 export const MAX_SOURCE_CHARS = 40_000;
 
-export const VALID_TOOL_TYPES: readonly ToolType[] = ["fiche", "quiz", "flashcards"];
+export const VALID_TOOL_TYPES: readonly ToolType[] = ["fiche", "quiz", "flashcards", "mindmap", "audio"];
 
 export const isToolType = (value: string): value is ToolType =>
   (VALID_TOOL_TYPES as readonly string[]).includes(value);
@@ -28,6 +28,8 @@ const TOOL_TOKENS: Record<ToolType, number> = {
   fiche: TOKENS_DEFAULT,
   quiz: TOKENS_QUIZ,
   flashcards: TOKENS_FLASHCARDS,
+  mindmap: 4000,
+  audio: 4000,
 };
 
 /**
@@ -89,6 +91,14 @@ function validateToolOutput(toolType: ToolType, data: Record<string, unknown>): 
   } else if (toolType === "fiche") {
     if (typeof data.resume !== "string" && !Array.isArray(data.points_cles)) {
       throw new UnparseableModelOutputError("Le modèle n'a pas retourné de résumé ou points clés valides.");
+    }
+  } else if (toolType === "mindmap") {
+    if (typeof data.noeud_central !== "string" || !Array.isArray(data.branches)) {
+      throw new UnparseableModelOutputError("Le modèle n'a pas retourné de carte mentale valide (noeud_central ou branches manquants).");
+    }
+  } else if (toolType === "audio") {
+    if (!Array.isArray(data.dialogue) || data.dialogue.length === 0) {
+      throw new UnparseableModelOutputError("Le modèle n'a pas retourné de script de dialogue audio valide.");
     }
   }
   return data;
@@ -175,6 +185,26 @@ export async function generateSuggestions(text: string, userId?: number): Promis
   } catch (error) {
     console.warn("[sphera] suggestion generation failed:", error);
     return [];
+  }
+}
+
+/**
+ * Generate 1 targeted item (quiz or flashcard) based strictly on a user selection.
+ */
+export async function generateFromSelection(
+  selectedText: string,
+  toolType: "quiz" | "flashcards",
+  userId?: number,
+): Promise<Record<string, unknown>> {
+  assertUsableSource(selectedText, "Le passage sélectionné");
+  const prefix = await resolveContextPrefix(userId);
+  const prompt = prefix + (toolType === "quiz" ? quizFromSelectionPrompt(selectedText) : flashcardFromSelectionPrompt(selectedText));
+  const maxTokens = 2000;
+  try {
+    const raw = await callWithFallback(prompt, maxTokens, { toolType, userId });
+    return validateToolOutput(toolType, parseJsonWithFallback(raw));
+  } catch (error) {
+    throw asApiError(error);
   }
 }
 

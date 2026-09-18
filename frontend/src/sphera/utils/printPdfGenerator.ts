@@ -158,9 +158,7 @@ function buildBaseStyle(): string {
     .doc-brand {
       font-size: 9pt;
       font-weight: 800;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: #ea580c;
+      color: #22c55e;
     }
 
     .doc-meta-badge {
@@ -453,7 +451,6 @@ function buildBaseStyle(): string {
 export function generateFicheHtml(options: GenerateFicheOptions): string {
   const f = options.fiche?.fiche || options.fiche || {};
   const title = f.titre || "Fiche de Révision";
-  const sourceName = options.sourceName || "Cours universitaire";
   const dateStr = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 
   let html = `<!DOCTYPE html>
@@ -468,8 +465,8 @@ export function generateFicheHtml(options: GenerateFicheOptions): string {
     <div class="doc-container">
       <div class="doc-header">
         <div>
-          <div class="doc-brand">SPHERA • CAMPUSSPHERE</div>
-          <span class="doc-meta-badge">Fiche de Révision • ${escapeHtml(sourceName)}</span>
+          <div class="doc-brand">Sphera by CampusSphere</div>
+          <span class="doc-meta-badge">Fiche de Révision</span>
         </div>
         <div class="doc-date">
           <div>Généré le ${escapeHtml(dateStr)}</div>
@@ -483,7 +480,7 @@ export function generateFicheHtml(options: GenerateFicheOptions): string {
   if (f.resume) {
     html += `
       <div class="callout-card page-break-avoid">
-        <div class="callout-title">💡 Résumé Exécutif</div>
+        <div class="callout-title">Résumé Exécutif</div>
         <div style="font-size:9.5pt; color:#334155;">${markdownToHtml(f.resume)}</div>
       </div>
     `;
@@ -492,7 +489,7 @@ export function generateFicheHtml(options: GenerateFicheOptions): string {
   if (Array.isArray(f.points_cles) && f.points_cles.length > 0) {
     html += `
       <div class="section-title">
-        <span class="section-icon">★</span> Points Clés à Maîtriser
+        <span class="section-icon">•</span> Points Clés à Maîtriser
       </div>
       <div class="points-list">
     `;
@@ -532,7 +529,7 @@ export function generateFicheHtml(options: GenerateFicheOptions): string {
   if (Array.isArray(f.definitions) && f.definitions.length > 0) {
     html += `
       <div class="section-title">
-        <span class="section-icon">📖</span> Lexique & Définitions Essentielles
+        <span class="section-icon">•</span> Lexique & Définitions Essentielles
       </div>
       <div class="definitions-grid">
     `;
@@ -552,7 +549,7 @@ export function generateFicheHtml(options: GenerateFicheOptions): string {
   if (Array.isArray(f.exemples) && f.exemples.length > 0) {
     html += `
       <div class="section-title">
-        <span class="section-icon">⚡</span> Exemples Concrets d'Application
+        <span class="section-icon">•</span> Exemples Concrets d'Application
       </div>
     `;
     f.exemples.forEach((ex: any) => {
@@ -570,7 +567,7 @@ export function generateFicheHtml(options: GenerateFicheOptions): string {
   if (Array.isArray(f.pieges) && f.pieges.length > 0) {
     html += `
       <div class="section-title">
-        <span class="section-icon">⚠️</span> Pièges d'Examen & Confusions Fréquentes
+        <span class="section-icon">•</span> Pièges d'Examen & Confusions Fréquentes
       </div>
     `;
     f.pieges.forEach((piege: any) => {
@@ -587,7 +584,7 @@ export function generateFicheHtml(options: GenerateFicheOptions): string {
   if (Array.isArray(f.questions_examen) && f.questions_examen.length > 0) {
     html += `
       <div class="section-title">
-        <span class="section-icon">🎯</span> Questions Types d'Épreuve
+        <span class="section-icon">•</span> Questions Types d'Épreuve
       </div>
     `;
     f.questions_examen.forEach((q: any, idx: number) => {
@@ -637,11 +634,23 @@ export function generateFicheHtml(options: GenerateFicheOptions): string {
 }
 
 export function generateAnnaleHtml(options: GenerateAnnaleOptions): string {
-  const a = options.annale || {};
-  const title = a.titre || "Correction d'Annale d'Examen";
-  const sourceName = options.sourceName || "Sujet d'examen";
+  let raw = options.annale || {};
+  if (typeof raw === "string") {
+    try { raw = JSON.parse(raw); } catch {}
+  }
+  let a = raw?.content?.annale || raw?.annale || raw?.content || raw;
+  if (typeof a === "string") {
+    try { a = JSON.parse(a); } catch {}
+  }
+  const title = a?.titre || raw?.titre || raw?.source_title || raw?.source_filename || options.sourceName || "Correction d'Annale d'Examen";
   const dateStr = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
-  const hasSections = Array.isArray(a.sections) && a.sections.length > 0;
+
+  const isRawArray = Array.isArray(a);
+  const rawSections = !isRawArray && (Array.isArray(a?.sections) ? a.sections : (Array.isArray(a?.parties) ? a.parties : []));
+  const hasSections = Array.isArray(rawSections) && rawSections.length > 0;
+  const hasCorrections = !isRawArray && Array.isArray(a?.corrections) && a.corrections.length > 0;
+  const hasQuestions = !isRawArray && Array.isArray(a?.questions) && a.questions.length > 0;
+  const questionsList = isRawArray ? a : hasCorrections ? a.corrections : hasQuestions ? a.questions : [];
 
   let html = `<!DOCTYPE html>
   <html lang="fr">
@@ -655,8 +664,8 @@ export function generateAnnaleHtml(options: GenerateAnnaleOptions): string {
     <div class="doc-container">
       <div class="doc-header">
         <div>
-          <div class="doc-brand">SPHERA • CORRECTION D'EXAMEN</div>
-          <span class="doc-meta-badge">Corrigé Officiel • ${escapeHtml(sourceName)}</span>
+          <div class="doc-brand">Sphera by CampusSphere</div>
+          <span class="doc-meta-badge">Corrigé d'annale</span>
         </div>
         <div class="doc-date">
           <div>Édité le ${escapeHtml(dateStr)}</div>
@@ -681,12 +690,30 @@ export function generateAnnaleHtml(options: GenerateAnnaleOptions): string {
         <div class="question-enonce">${markdownToHtml(q.enonce || q.question || "")}</div>
     `;
 
-    const rep = q.reponse_attendue || q.reponse_courte || q.reponse;
+    const rep = q.reponse_attendue || q.reponse_courte || q.reponse || q.correction || q.answer || q.solution;
     if (rep) {
       qHtml += `
         <div class="answer-block">
           <div class="answer-title">Corrigé & Solution Attendue</div>
-          <div style="font-size:9pt; color:#0f172a;">${markdownToHtml(rep)}</div>
+          <div style="font-size:9pt; color:#0f172a; line-height:1.5;">${markdownToHtml(rep)}</div>
+        </div>
+      `;
+    }
+
+    const expl = q.explication || q.justification || q.raisonnement;
+    if (expl) {
+      qHtml += `
+        <div style="margin-top:8px; padding:8px 12px; background:#f0fdf4; border-left:3px solid #10b981; border-radius:6px;">
+          <div style="font-size:8pt; font-weight:700; color:#047857; text-transform:uppercase; margin-bottom:3px;">Explication détaillée & Raisonnement</div>
+          <div style="font-size:8.5pt; color:#1e293b; line-height:1.5;">${markdownToHtml(expl)}</div>
+        </div>
+      `;
+    }
+
+    if (q.source_cours || q.chapitre) {
+      qHtml += `
+        <div style="margin-top:6px; font-size:8pt; color:#6b21a8; background:#faf5ff; padding:4px 8px; border-radius:4px; display:inline-block;">
+          <strong>Référence cours :</strong> ${escapeHtml(q.source_cours || q.chapitre)}
         </div>
       `;
     }
@@ -717,11 +744,11 @@ export function generateAnnaleHtml(options: GenerateAnnaleOptions): string {
       qHtml += `</table></div>`;
     }
 
-    if (q.piege_frequent || q.pieges_frequents) {
-      const pText = q.piege_frequent || (Array.isArray(q.pieges_frequents) ? q.pieges_frequents.join(" • ") : q.pieges_frequents);
+    if (q.piege_frequent || q.pieges_frequents || q.a_retenir) {
+      const pText = q.piege_frequent || (Array.isArray(q.pieges_frequents) ? q.pieges_frequents.join(" • ") : q.pieges_frequents) || q.a_retenir;
       qHtml += `
         <div class="warning-card" style="margin-top:8px; padding:6px 10px;">
-          <span style="font-weight:700; color:#b45309; font-size:8pt;">Piège fréquent : </span>
+          <span style="font-weight:700; color:#b45309; font-size:8pt;">À retenir / Piège : </span>
           <span style="font-size:8.5pt; color:#451a03;">${markdownToHtml(pText)}</span>
         </div>
       `;
@@ -732,10 +759,10 @@ export function generateAnnaleHtml(options: GenerateAnnaleOptions): string {
   };
 
   if (hasSections) {
-    a.sections.forEach((sec: any, secIdx: number) => {
+    rawSections.forEach((sec: any, secIdx: number) => {
       html += `
         <div class="section-title">
-          <span class="section-icon">${secIdx + 1}.</span> ${escapeHtml(sec.nom || `Section ${secIdx + 1}`)}
+          <span class="section-icon">${secIdx + 1}.</span> ${escapeHtml(sec.nom || sec.titre || sec.section || `Section ${secIdx + 1}`)}
         </div>
       `;
       if (Array.isArray(sec.questions)) {
@@ -744,23 +771,25 @@ export function generateAnnaleHtml(options: GenerateAnnaleOptions): string {
         });
       }
     });
-  } else if (Array.isArray(a.corrections)) {
-    a.corrections.forEach((q: any, qIdx: number) => {
+  } else if (questionsList.length > 0) {
+    questionsList.forEach((q: any, qIdx: number) => {
       html += renderQuestion(q, qIdx);
     });
   }
 
-  if (Array.isArray(a.conseils_generaux) && a.conseils_generaux.length > 0) {
+  const conseils = a?.conseils_generaux || raw?.conseils_generaux || [];
+  if (Array.isArray(conseils) && conseils.length > 0) {
     html += `
       <div class="callout-card page-break-avoid" style="margin-top:20px; border-left-color:#ea580c; background:#fffaf0;">
         <div class="callout-title" style="color:#c2410c;">Conseils Stratégiques pour l'Épreuve</div>
         <ul style="padding-left:16px; font-size:9pt; color:#334155;">
     `;
-    a.conseils_generaux.forEach((c: string) => {
+    conseils.forEach((c: string) => {
       html += `<li style="margin-bottom:4px;">${markdownToHtml(c)}</li>`;
     });
     html += `</ul></div>`;
   }
+
 
   html += `
     </div>

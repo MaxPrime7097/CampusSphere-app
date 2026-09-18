@@ -10,7 +10,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Share2, AlertCircle, Loader2, Check, MessageCircleQuestion, BookOpen, BrainCircuit, Columns } from "lucide-react";
+import { ArrowLeft, Share2, AlertCircle, Loader2, Check, MessageCircleQuestion, BookOpen, BrainCircuit, SquareStack, GitFork, AudioLines } from "lucide-react";
 import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,6 +19,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FicheRevision } from "@/sphera/components/study/FicheRevision";
 import { QuizInteractif } from "@/sphera/components/study/QuizInteractif";
 import { Flashcards } from "@/sphera/components/study/Flashcards";
+import { MindMapView } from "@/sphera/components/study/MindMapView";
+import { AudioPlayerView } from "@/sphera/components/study/AudioPlayerView";
 
 // V2 : Q&A
 import { QAChat } from "../components/QAChat";
@@ -198,8 +200,18 @@ export const StudySessionDetail: React.FC = () => {
       <Tabs defaultValue={defaultTab} className="w-full">
         <div className="px-4 sm:px-8">
           <TabsList className="flex overflow-x-auto w-full h-auto border-b justify-start sm:justify-center gap-1 sm:gap-4 no-scrollbar">
-            {(["fiche", "quiz", "flashcards"] as ToolType[]).map((t) => {
+            {(["fiche", "quiz", "flashcards", "mindmap", "audio"] as ToolType[]).map((t) => {
               const isGenerated = toolTypes.includes(t);
+              const label =
+                t === "fiche"
+                  ? "Fiche"
+                  : t === "quiz"
+                  ? "Quiz"
+                  : t === "flashcards"
+                  ? "Flashcards"
+                  : t === "mindmap"
+                  ? "Carte mentale"
+                  : "Résumé audio";
               return (
                 <TabsTrigger 
                   key={t} 
@@ -209,8 +221,10 @@ export const StudySessionDetail: React.FC = () => {
                   <div className="flex items-center">
                     {t === "fiche" && <BookOpen className="h-4 w-4 mr-2 hidden sm:block" />}
                     {t === "quiz" && <BrainCircuit className="h-4 w-4 mr-2 hidden sm:block" />}
-                    {t === "flashcards" && <Columns className="h-4 w-4 mr-2 hidden sm:block" />}
-                    {t.charAt(0).toUpperCase() + t.slice(1)}
+                    {t === "flashcards" && <SquareStack className="h-4 w-4 mr-2 hidden sm:block" />}
+                    {t === "mindmap" && <GitFork className="h-4 w-4 mr-2 hidden sm:block text-emerald-500" />}
+                    {t === "audio" && <AudioLines className="h-4 w-4 mr-2 hidden sm:block text-emerald-500" />}
+                    {label}
                     {!isGenerated && (
                       <span className="ml-2 text-[9px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full border hidden sm:inline-block">
                         + Générer
@@ -230,8 +244,18 @@ export const StudySessionDetail: React.FC = () => {
         </div>
 
         <div className="mt-4 sm:mt-8">
-          {(["fiche", "quiz", "flashcards"] as ToolType[]).map((t) => {
+          {(["fiche", "quiz", "flashcards", "mindmap", "audio"] as ToolType[]).map((t) => {
             const isGenerated = toolTypes.includes(t);
+            const toolName =
+              t === "fiche"
+                ? "la fiche"
+                : t === "quiz"
+                ? "le quiz"
+                : t === "flashcards"
+                ? "les flashcards"
+                : t === "mindmap"
+                ? "la carte mentale"
+                : "le résumé audio";
             return (
               <TabsContent key={t} value={t} className="mt-0 focus-visible:outline-none focus-visible:ring-0 px-4 sm:px-8">
                 {!isGenerated ? (
@@ -249,7 +273,7 @@ export const StudySessionDetail: React.FC = () => {
                       {isGeneratingTool ? (
                         <><Loader2 className="w-4 h-4 animate-spin"/> Génération...</>
                       ) : (
-                        <><SpheraIcon size="md" variant="white" /> Générer {t === 'flashcards' ? 'les' : 'le'} {t}</>
+                        <><SpheraIcon size="md" variant="white" /> Générer {toolName}</>
                       )}
                     </Button>
                     {toolError && <p className="text-destructive text-sm mt-4">{toolError}</p>}
@@ -259,6 +283,8 @@ export const StudySessionDetail: React.FC = () => {
                     {t === "fiche" && content.fiche && <FicheRevision data={content.fiche} />}
                     {t === "quiz" && content.quiz && <QuizInteractif data={content.quiz} />}
                     {t === "flashcards" && content.flashcards && <Flashcards data={content.flashcards} />}
+                    {t === "mindmap" && content.mindmap && <MindMapView data={content.mindmap} />}
+                    {t === "audio" && content.audio && <AudioPlayerView data={content.audio} />}
                   </>
                 )}
               </TabsContent>

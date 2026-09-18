@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { formatUserErrorMessage, isRateLimitOrQuotaError } from "@/lib/errorUtils";
 
 interface AnnaleUploadModalProps {
   open: boolean;
@@ -71,7 +72,13 @@ export function AnnaleUploadModal({ open, onClose }: AnnaleUploadModalProps) {
         navigate(`/sphera/annales/${res.data.id}`);
       }
     } catch (err: any) {
-      toast({ title: "Erreur de génération", description: err?.message, variant: "destructive" });
+      const msg = formatUserErrorMessage(err, "Impossible de générer la correction de l'annale.");
+      const isQuota = isRateLimitOrQuotaError(err) || isRateLimitOrQuotaError(msg);
+      toast({
+        title: isQuota ? "Limite de révision atteinte" : "Erreur de génération",
+        description: msg,
+        variant: "destructive",
+      });
     } finally {
       setIsGenerating(false);
     }

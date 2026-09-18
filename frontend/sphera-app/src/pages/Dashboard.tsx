@@ -1,11 +1,14 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { FileText, BrainCircuit, Columns, PenTool, Calendar, ArrowRight, LayoutDashboard, FilePenLine, Loader2, Zap, Plus, LogIn } from 'lucide-react'
+import { FileText, BrainCircuit, SquareStack, Calendar, ArrowRight, LayoutDashboard, FilePenLine, Loader2, Share2, Trash2, GitFork, AudioLines } from 'lucide-react'
 import { useSpheraAuth } from '../contexts/SpheraAuthContext'
-import { getSessions, getAnnales } from '../services/spheraApi'
+import { getSessions, getAnnales, deleteSession, deleteAnnale, shareSession, shareAnnale } from '../services/spheraApi'
 import { UploadZone } from '../components/app/UploadZone'
 import { setPendingUploadFile } from '../store/fileStore'
 import { QuotaIndicator } from '../components/app/QuotaIndicator'
+import { PasteTextModal } from '../components/app/PasteTextModal'
+import { DeleteConfirmModal } from '../components/app/DeleteConfirmModal'
+import { ShareModal } from '../components/app/ShareModal'
 
 // Force Vite HMR reload
 export default function Dashboard() {
@@ -14,6 +17,11 @@ export default function Dashboard() {
   
   // Upload State
   const [error, setError] = useState<string | null>(null)
+  const [isPasteModalOpen, setIsPasteModalOpen] = useState(false)
+
+  // Quick Action Modals State
+  const [itemToDelete, setItemToDelete] = useState<{ id: string | number; type: 'session' | 'annale'; title: string } | null>(null)
+  const [shareModalData, setShareModalData] = useState<{ url: string; title: string } | null>(null)
 
   // Sessions State
   const [sessions, setSessions] = useState<any[]>([])
@@ -34,8 +42,10 @@ export default function Dashboard() {
     switch(type) {
       case 'fiche': return <FileText className="w-5 h-5 text-blue-400" />
       case 'quiz': return <BrainCircuit className="w-5 h-5 text-purple-400" />
-      case 'flashcards': return <Columns className="w-5 h-5 text-sphera-green" />
-      case 'annale': return <PenTool className="w-5 h-5 text-orange-400" />
+      case 'flashcards': return <SquareStack className="w-5 h-5 text-sphera-green" />
+      case 'annale': return <FilePenLine className="w-5 h-5 text-orange-400" />
+      case 'mindmap': return <GitFork className="w-5 h-5 text-emerald-400" />
+      case 'audio': return <AudioLines className="w-5 h-5 text-teal-400" />
       default: return <FileText className="w-5 h-5 text-sphera-text-muted" />
     }
   }
@@ -46,6 +56,54 @@ export default function Dashboard() {
     if (!f) return
     setPendingUploadFile(f)
     navigate('/create')
+  }
+
+  const handlePasteConfirm = (text: string, title: string) => {
+    setIsPasteModalOpen(false)
+    const safeTitle = title.replace(/[/\\?%*:|"<>]/g, '-').trim() || 'Notes-de-cours'
+    const virtualFile = new File([text], `${safeTitle}.md`, {
+      type: 'text/markdown',
+      lastModified: Date.now(),
+    })
+    setPendingUploadFile(virtualFile)
+    navigate('/create')
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!itemToDelete) return
+    try {
+      if (itemToDelete.type === 'annale') {
+        await deleteAnnale(itemToDelete.id)
+        setAnnales(prev => prev.filter(a => a.id !== itemToDelete.id))
+      } else {
+        await deleteSession(itemToDelete.id)
+        setSessions(prev => prev.filter(s => s.id !== itemToDelete.id))
+      }
+    } catch (e) {
+      console.error("Erreur lors de la suppression:", e)
+    } finally {
+      setItemToDelete(null)
+    }
+  }
+
+  const handleShareClick = async (e: React.MouseEvent, item: any) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const isAnnale = activeTab === 'annales'
+    try {
+      if (!item.is_shared) {
+        if (isAnnale) await shareAnnale(item.id)
+        else await shareSession(item.id)
+      }
+      const sharePath = isAnnale ? `/annales/${item.id}` : `/sessions/${item.id}`
+      const url = `${window.location.origin}${sharePath}`
+      setShareModalData({
+        url,
+        title: item.resource_title || (isAnnale ? 'Annale partagée' : 'Session partagée')
+      })
+    } catch (e) {
+      console.error("Erreur partage:", e)
+    }
   }
 
   return (
@@ -72,10 +130,33 @@ export default function Dashboard() {
               onFileSelect={handleFileSelect} 
               selectedFile={null} 
             />
+
+            {/* Divider with "OU" */}
+            <div className="relative my-4 flex items-center justify-center">
+              <div className="border-t border-sphera-border w-full" />
+              <span className="bg-sphera-surface-2 px-3 text-xs text-sphera-text-muted uppercase tracking-wider font-semibold">
+                ou
+              </span>
+            </div>
+
+            {/* Paste Text Button */}
+            <button
+              type="button"
+              onClick={() => setIsPasteModalOpen(true)}
+              className="w-full py-3 px-4 rounded-xl bg-sphera-surface hover:bg-sphera-bg border border-sphera-border hover:border-sphera-green/50 text-white transition-all flex items-center justify-center gap-2.5 text-sm font-semibold group shadow-sm"
+            >
+              <FileText className="w-4 h-4 text-sphera-green group-hover:scale-110 transition-transform" />
+              <span>Coller ou rédiger un cours / des notes</span>
+            </button>
           </div>
         </div>
 
-
+        {/* Paste Text Modal */}
+        <PasteTextModal
+          isOpen={isPasteModalOpen}
+          onClose={() => setIsPasteModalOpen(false)}
+          onConfirm={handlePasteConfirm}
+        />
 
         {/* Tabs */}
         <div className="flex items-center w-full mb-8 border-b border-sphera-border px-4 sm:px-0">
@@ -123,9 +204,35 @@ export default function Dashboard() {
                   >
                     <div className="flex items-center justify-between mb-4">
                       <div className="w-10 h-10 rounded-lg bg-sphera-bg border border-sphera-border flex items-center justify-center">
-                        {getIcon(item.tool_types?.[0] || 'fiche')}
+                        {getIcon(item.tool_types?.[0] || (activeTab === 'annales' ? 'annale' : 'fiche'))}
                       </div>
-                      <ArrowRight className="w-4 h-4 text-sphera-text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={(e) => handleShareClick(e, item)}
+                          className="p-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors"
+                          title="Partager"
+                        >
+                          <Share2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setItemToDelete({
+                              id: item.id,
+                              type: activeTab === 'annales' ? 'annale' : 'session',
+                              title: item.resource_title || `Session #${item.id}`
+                            });
+                          }}
+                          className="p-1.5 rounded-lg text-sphera-text-muted hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                          title="Supprimer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                        <ArrowRight className="w-4 h-4 text-sphera-text-muted opacity-0 group-hover:opacity-100 transition-opacity ml-1" />
+                      </div>
                     </div>
                     <h3 className="text-white font-medium mb-1 line-clamp-1">{item.resource_title || `Session #${item.id}`}</h3>
                     <p className="text-xs text-sphera-text-muted mb-4 line-clamp-1">Extrait de {item.source_filename || 'document inconnu'}</p>
@@ -145,6 +252,25 @@ export default function Dashboard() {
             )}
           </>
       </main>
+
+      <DeleteConfirmModal
+        isOpen={Boolean(itemToDelete)}
+        setIsOpen={(open) => {
+          if (!open) setItemToDelete(null)
+        }}
+        onConfirm={handleDeleteConfirm}
+        title={itemToDelete?.type === 'annale' ? "Supprimer l'annale ?" : "Supprimer la session ?"}
+        description="Cette action est irréversible. Toutes les données associées seront définitivement supprimées."
+      />
+
+      <ShareModal
+        isOpen={Boolean(shareModalData)}
+        setIsOpen={(open) => {
+          if (!open) setShareModalData(null)
+        }}
+        url={shareModalData?.url || ''}
+        title={shareModalData?.title || 'Lien public'}
+      />
     </div>
   )
 }

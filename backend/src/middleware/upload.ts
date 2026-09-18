@@ -41,6 +41,8 @@ export const RESOURCE_MIME_TYPES = [
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "text/csv",
   "text/plain",
+  "text/markdown",
+  "text/x-markdown",
   "text/x-python",
   "application/javascript",
   "application/zip",
@@ -75,7 +77,7 @@ const ALLOWED: Record<UploadKind, string[] | null> = {
   post: POST_MIME_TYPES,
   resource: RESOURCE_MIME_TYPES,
   sphereFile: null,
-  other: [...IMAGE_TYPES, "application/json"],
+  other: null,
 };
 
 /**
