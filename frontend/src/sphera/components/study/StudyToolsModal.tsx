@@ -18,6 +18,7 @@ import {
   GitFork,
   AudioLines,
   SquareStack,
+  Clock,
 } from "lucide-react";
 import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { FicheRevision } from "./FicheRevision";
@@ -33,6 +34,7 @@ import {
   listSpheres,
 } from "@/services/api";
 import { cn } from "@/lib/utils";
+import { formatUserErrorMessage, isRateLimitOrQuotaError } from "@/lib/errorUtils";
 import {
   Select,
   SelectContent,
@@ -155,9 +157,10 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
       onClose();
       navigate(`/sphera/sessions/${data.id}`);
     } catch (err: any) {
-      const msg =
-        err?.message ||
-        "La génération a échoué. Vérifie ta connexion et réessaie.";
+      const msg = formatUserErrorMessage(
+        err,
+        "La génération a échoué. Vérifie ta connexion et réessaie."
+      );
       setErrorMsg(msg);
       setStep("error");
     }
@@ -422,21 +425,38 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
 
           {/* ÉTAPE : Erreur */}
           {step === "error" && (
-            <div className="flex flex-col items-center py-10 gap-4 text-center">
-              <div className="h-14 w-14 rounded-full bg-red-500/10 flex items-center justify-center">
-                <AlertCircle className="h-7 w-7 text-red-500" />
+            <div className="flex flex-col items-center py-10 gap-4 text-center px-4">
+              <div
+                className={cn(
+                  "h-14 w-14 rounded-full flex items-center justify-center",
+                  isRateLimitOrQuotaError(errorMsg)
+                    ? "bg-amber-500/10 text-amber-500"
+                    : "bg-red-500/10 text-red-500"
+                )}
+              >
+                {isRateLimitOrQuotaError(errorMsg) ? (
+                  <Clock className="h-7 w-7" />
+                ) : (
+                  <AlertCircle className="h-7 w-7" />
+                )}
               </div>
               <div>
-                <p className="font-semibold text-foreground">Génération échouée</p>
-                <p className="text-sm text-muted-foreground mt-1 max-w-xs">{errorMsg}</p>
+                <p className="font-semibold text-foreground text-base">
+                  {isRateLimitOrQuotaError(errorMsg) ? "Limite de révision atteinte" : "Génération impossible"}
+                </p>
+                <p className="text-sm text-muted-foreground mt-2 max-w-md leading-relaxed">
+                  {errorMsg}
+                </p>
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-3 mt-2">
                 <Button variant="outline" onClick={handleBack}>
-                  Retour
+                  {isRateLimitOrQuotaError(errorMsg) ? "Compris" : "Retour"}
                 </Button>
-                <Button onClick={handleGenerate} className="campus-gradient text-white">
-                  Réessayer
-                </Button>
+                {!isRateLimitOrQuotaError(errorMsg) && (
+                  <Button onClick={handleGenerate} className="campus-gradient text-white">
+                    Réessayer
+                  </Button>
+                )}
               </div>
             </div>
           )}

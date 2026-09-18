@@ -15,6 +15,14 @@ import { describe, it, expect } from "vitest";
 import { annalePrompt, qaPrompt, suggestionsPrompt, toolPrompt } from "../../src/services/ai/prompts.js";
 import { cleanJson, parseJsonWithFallback, UnparseableModelOutputError } from "../../src/services/ai/json.js";
 import { correctionsCount } from "../../src/serializers/sphera.js";
+import {
+  escapeXml,
+  buildSSML,
+  cleanSpokenText,
+  detectLanguage,
+  normalizeSpeaker,
+  sanitizeDialogueTurns,
+} from "../../src/services/ttsProvider.js";
 
 describe("prompt construction", () => {
   const SOURCE = "Chapitre 1. La thermodynamique étudie les échanges d'énergie.";
@@ -61,10 +69,37 @@ describe("prompt construction", () => {
     expect(withRealCourse).toContain("source_cours");
   });
 
+  it("enforces language mandates based on detected language", () => {
+    const frenchDoc = "Ce cours présente l'échantillonnage et la quantification en télécommunications.";
+    const englishDoc = "Pulse Code Modulation is a method used to digitally represent analog signals.";
+
+    const frenchFiche = toolPrompt("fiche", frenchDoc);
+    expect(frenchFiche).toContain("FRANÇAIS");
+    expect(frenchFiche).not.toContain("100% in ENGLISH");
+
+    const englishFiche = toolPrompt("fiche", englishDoc);
+    expect(englishFiche).toContain("ENGLISH");
+    expect(englishFiche).toContain("100% in ENGLISH");
+
+    // Q&A language targeting: French question on English doc replies in French
+    const qaFrOnEn = qaPrompt(englishDoc, "Explique-moi ce concept simplement s'il te plaît.");
+    expect(qaFrOnEn).toContain("TARGET RESPONSE LANGUAGE: FRENCH");
+
+    // Q&A language targeting: English question replies in English
+    const qaEn = qaPrompt(englishDoc, "Can you explain the sampling theorem in detail?");
+    expect(qaEn).toContain("TARGET RESPONSE LANGUAGE: ENGLISH");
+
+    // Prohibits standalone title at start
+    expect(qaFrOnEn).toContain("NO STANDALONE TITLE");
+    expect(qaFrOnEn).toContain("TABLE FORMATTING RULES");
+    expect(qaFrOnEn).toContain("COURTESY & GREETING RULES");
+  });
+
   it("rejects an unknown tool type", () => {
     expect(() => toolPrompt("annale" as never, SOURCE)).toThrow();
   });
 });
+
 
 describe("model output parsing", () => {
   it("parses plain JSON", () => {
@@ -116,5 +151,95 @@ describe("corrections_count", () => {
     expect(correctionsCount(null)).toBe(0);
     expect(correctionsCount({ sections: "not an array" })).toBe(0);
     expect(correctionsCount({ sections: [{ nom: "A" }] })).toBe(0);
+  });
+});
+
+describe("tts provider & ssml", () => {
+  it("escapes XML special characters safely", () => {
+    expect(escapeXml("Tom & Jerry <friends> 'yes' \"no\"")).toBe(
+      "Tom &amp; Jerry &lt;friends&gt; &apos;yes&apos; &quot;no&quot;"
+    );
+  });
+
+  it("builds SSML with multi-speaker voices and chat style", () => {
+    const dialogue = [
+      { speaker: "A", text: "Bienvenue dans ce cours & révision." },
+      { speaker: "B", text: "Peux-tu m'expliquer le premier point ?" },
+    ];
+    const ssmlFr = buildSSML(dialogue, "fr");
+    expect(ssmlFr).toContain('xml:lang="fr-FR"');
+    expect(ssmlFr).toContain("fr-FR-HenriNeural");
+    expect(ssmlFr).toContain("fr-FR-DeniseNeural");
+    expect(ssmlFr).toContain("Bienvenue dans ce cours &amp; révision.");
+    expect(ssmlFr).toContain('<mstts:express-as style="chat">');
+
+    const ssmlEn = buildSSML(dialogue, "en");
+    expect(ssmlEn).toContain('xml:lang="en-US"');
+    expect(ssmlEn).toContain("en-US-GuyNeural");
+    expect(ssmlEn).toContain("en-US-JennyNeural");
+  });
+
+  it("strips speaker labels like Étudiant 1: from dialogue text", () => {
+    expect(cleanSpokenText("Étudiant 1 : Bonjour à tous !")).toBe("Bonjour à tous !");
+    expect(cleanSpokenText("etudiant 2: Exactement, continuons.")).toBe("Exactement, continuons.");
+    expect(cleanSpokenText("Student 1 - Hello everyone")).toBe("Hello everyone");
+    expect(cleanSpokenText("Speaker A: Let's discuss this.")).toBe("Let's discuss this.");
+    expect(cleanSpokenText("Locuteur B — C'est vrai.")).toBe("C'est vrai.");
+    expect(cleanSpokenText("A : Première question.")).toBe("Première question.");
+    expect(cleanSpokenText("B: Deuxième réponse.")).toBe("Deuxième réponse.");
+    expect(cleanSpokenText("Texte normal sans préfixe.")).toBe("Texte normal sans préfixe.");
+  });
+
+  it("detects French vs English text accurately", () => {
+    const frText = "Dans ce cours nous allons étudier le principe de conservation de l'énergie et la thermodynamique.";
+    const enText = "In this course we will study the conservation of energy and thermodynamics with examples.";
+    expect(detectLanguage(frText)).toBe("fr");
+    expect(detectLanguage(enText)).toBe("en");
+  });
+
+  it("sanitizes dialogue turns and normalizes speaker keys", () => {
+    const rawDialogue = [
+      { speaker: "1", text: "Étudiant 1 : Premier point." },
+      { speaker: "2", text: "Étudiant 2 : Deuxième point." },
+      { speaker: "B", text: "B : Troisième point." },
+    ];
+    const cleaned = sanitizeDialogueTurns(rawDialogue);
+    expect(cleaned).toEqual([
+      { speaker: "A", text: "Premier point." },
+      { speaker: "B", text: "Deuxième point." },
+      { speaker: "B", text: "Troisième point." },
+    ]);
+  });
+
+  it("normalizes diverse speaker representations accurately", () => {
+    expect(normalizeSpeaker("Étudiant A", 0)).toBe("A");
+    expect(normalizeSpeaker("Étudiant B", 1)).toBe("B");
+    expect(normalizeSpeaker("Student 1", 0)).toBe("A");
+    expect(normalizeSpeaker("Student 2", 1)).toBe("B");
+    expect(normalizeSpeaker("locuteur b", 1)).toBe("B");
+    expect(normalizeSpeaker("speaker a", 0)).toBe("A");
+    expect(normalizeSpeaker("explicateur", 0)).toBe("A");
+    expect(normalizeSpeaker("curieux", 1)).toBe("B");
+    expect(normalizeSpeaker(1, 0)).toBe("A");
+    expect(normalizeSpeaker(2, 1)).toBe("B");
+    expect(normalizeSpeaker("", 0)).toBe("A");
+    expect(normalizeSpeaker("", 1)).toBe("B");
+  });
+
+  it("safeguards against single-speaker output by enforcing alternation", () => {
+    // When a model erroneously marks all turns as 'A', strict alternation is enforced
+    const monologue = [
+      { speaker: "A", text: "Premier point." },
+      { speaker: "A", text: "Deuxième point." },
+      { speaker: "A", text: "Troisième point." },
+      { speaker: "A", text: "Quatrième point." },
+    ];
+    const cleaned = sanitizeDialogueTurns(monologue);
+    expect(cleaned).toEqual([
+      { speaker: "A", text: "Premier point." },
+      { speaker: "B", text: "Deuxième point." },
+      { speaker: "A", text: "Troisième point." },
+      { speaker: "B", text: "Quatrième point." },
+    ]);
   });
 });

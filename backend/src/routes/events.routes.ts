@@ -107,9 +107,13 @@ function generateTicketCode(eventId: number, userId: number): string {
 }
 
 function idParam(req: Request, name = "id"): number {
-  const id = Number(req.params[name]);
-  if (!Number.isInteger(id) || id < 1) throw notFound("Événement introuvable.");
-  return id;
+  const raw = String(req.params[name] ?? "").trim();
+  const match = raw.match(/^(\d+)(?:-.*)?$/);
+  if (match) {
+    const num = Number(match[1]);
+    if (Number.isInteger(num) && num > 0) return num;
+  }
+  throw notFound("Événement introuvable.");
 }
 
 // ── Endpoints ───────────────────────────────────────────────────────────────
@@ -287,8 +291,9 @@ eventsRouter.get("/", async (req, res) => {
  * Retrieve details of a single event.
  */
 eventsRouter.get("/:id", async (req, res) => {
-  const rawId = req.params.id;
-  const numId = Number(rawId);
+  const rawId = String(req.params.id ?? "").trim();
+  const match = rawId.match(/^(\d+)(?:-.*)?$/);
+  const numId = match ? Number(match[1]) : NaN;
   const isNumeric = Number.isInteger(numId) && numId > 0;
   const user = currentUser(req);
 

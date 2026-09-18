@@ -113,9 +113,28 @@ export const env = {
       budgetUsd: Number(process.env.BEDROCK_TOTAL_BUDGET_USD || "90"),
       safetyThresholdPercent: Number(process.env.BEDROCK_SAFETY_THRESHOLD_PERCENT || "90"),
     },
+    bedrockMantle: {
+      endpoint: process.env.BEDROCK_MANTLE_ENDPOINT || "https://bedrock-mantle.us-east-1.api.aws/v1",
+      region: process.env.BEDROCK_MANTLE_REGION || process.env.BEDROCK_AWS_REGION || process.env.AWS_REGION || "us-east-1",
+      apiKey: process.env.BEDROCK_MANTLE_API_KEY || "",
+      deepseekModelId: process.env.BEDROCK_MANTLE_DEEPSEEK_MODEL_ID || "deepseek.v3.2",
+      minimaxModelId: process.env.BEDROCK_MANTLE_MINIMAX_MODEL_ID || "minimax.minimax-m2.5",
+      claudeModelId: process.env.BEDROCK_MANTLE_CLAUDE_MODEL_ID || "anthropic.claude-haiku-4-5",
+      primaryStructured: (process.env.BEDROCK_MANTLE_PRIMARY_STRUCTURED || "deepseek").toLowerCase(),
+      deepseekInputPrice: Number(process.env.BEDROCK_MANTLE_DEEPSEEK_INPUT_PRICE || "0.62") / 1_000_000,
+      deepseekOutputPrice: Number(process.env.BEDROCK_MANTLE_DEEPSEEK_OUTPUT_PRICE || "1.85") / 1_000_000,
+      minimaxInputPrice: Number(process.env.BEDROCK_MANTLE_MINIMAX_INPUT_PRICE || "0.30") / 1_000_000,
+      minimaxOutputPrice: Number(process.env.BEDROCK_MANTLE_MINIMAX_OUTPUT_PRICE || "1.20") / 1_000_000,
+      claudeInputPrice: Number(process.env.BEDROCK_MANTLE_CLAUDE_INPUT_PRICE || "1.00") / 1_000_000,
+      claudeOutputPrice: Number(process.env.BEDROCK_MANTLE_CLAUDE_OUTPUT_PRICE || "5.00") / 1_000_000,
+    },
     azureSpeech: {
       key: process.env.AZURE_SPEECH_KEY || "",
       region: process.env.AZURE_SPEECH_REGION || "westeurope",
+    },
+    tts: {
+      provider: (process.env.TTS_PROVIDER || "polly").toLowerCase() as "polly" | "azure",
+      pollyRegion: process.env.POLLY_AWS_REGION || process.env.AWS_REGION || "eu-west-1",
     },
   },
 

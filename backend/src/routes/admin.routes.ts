@@ -29,6 +29,7 @@ import { prisma } from "../lib/prisma.js";
 import { badRequest, notFound } from "../lib/errors.js";
 import { currentUser, requireAdmin, requireAuth } from "../middleware/auth.js";
 import { getWeekStartDate } from "../lib/weekHelper.js";
+import { BEDROCK_PROVIDERS_FOR_BUDGET } from "../services/ai/providers.js";
 
 export const adminRouter: Router = Router();
 
@@ -724,7 +725,7 @@ async function aiUsageSummaryHandler(_req: Request, res: Response): Promise<void
 
   try {
     const totalSpentResult = await prisma.aIUsageLog.aggregate({
-      where: { provider: "bedrock" },
+      where: { provider: { in: [...BEDROCK_PROVIDERS_FOR_BUDGET] } },
       _sum: { estimatedCostUSD: true },
       _count: true,
     });
@@ -734,7 +735,7 @@ async function aiUsageSummaryHandler(_req: Request, res: Response): Promise<void
     // Consommation des 7 derniers jours pour projeter la tendance
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const recentSpentResult = await prisma.aIUsageLog.aggregate({
-      where: { provider: "bedrock", createdAt: { gte: sevenDaysAgo } },
+      where: { provider: { in: [...BEDROCK_PROVIDERS_FOR_BUDGET] }, createdAt: { gte: sevenDaysAgo } },
       _sum: { estimatedCostUSD: true },
       _count: true,
     });
@@ -745,7 +746,7 @@ async function aiUsageSummaryHandler(_req: Request, res: Response): Promise<void
     // Répartition par type d'outil
     const breakdown = await prisma.aIUsageLog.groupBy({
       by: ["toolType"],
-      where: { provider: "bedrock" },
+      where: { provider: { in: [...BEDROCK_PROVIDERS_FOR_BUDGET] } },
       _sum: { estimatedCostUSD: true, inputTokensEstimate: true, outputTokensEstimate: true },
       _count: true,
     });
@@ -808,12 +809,12 @@ async function spheraDetailedStatsHandler(_req: Request, res: Response): Promise
     // 1. Bedrock Budget & Totals
     const [totalSpentResult, recentSpentResult, totalGenerationsAllProviders] = await Promise.all([
       prisma.aIUsageLog.aggregate({
-        where: { provider: "bedrock" },
+        where: { provider: { in: [...BEDROCK_PROVIDERS_FOR_BUDGET] } },
         _sum: { estimatedCostUSD: true, inputTokensEstimate: true, outputTokensEstimate: true },
         _count: true,
       }),
       prisma.aIUsageLog.aggregate({
-        where: { provider: "bedrock", createdAt: { gte: sevenDaysAgo } },
+        where: { provider: { in: [...BEDROCK_PROVIDERS_FOR_BUDGET] }, createdAt: { gte: sevenDaysAgo } },
         _sum: { estimatedCostUSD: true },
         _count: true,
       }),

@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { askStudyQuestion } from "../services/spheraService";
 import type { QAMessage } from "../types/sphera.types";
+import { formatUserErrorMessage } from "@/lib/errorUtils";
 
 interface UseQAChatOptions {
   sessionId: number;
@@ -26,7 +27,7 @@ export function useQAChat({ sessionId, initialHistory = [] }: UseQAChatOptions) 
           setMessages((prev) => [...prev, res.data]);
         }
       } catch (err: any) {
-        setError(err?.message || "Une erreur est survenue.");
+        setError(formatUserErrorMessage(err, "Une erreur est survenue lors de l'envoi de la question."));
       } finally {
         setIsLoading(false);
       }

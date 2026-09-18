@@ -37,7 +37,7 @@ export function BedrockUsageWidget() {
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-bold flex items-center gap-2 font-automata">
             <Bot className="h-4 w-4 text-primary animate-pulse" />
-            Suivi Consommation AWS Bedrock (Claude 4.5 Haiku)
+            Suivi Consommation AWS Bedrock
           </CardTitle>
           <CardDescription className="text-xs">Chargement des données de facturation...</CardDescription>
         </CardHeader>

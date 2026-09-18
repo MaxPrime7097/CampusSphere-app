@@ -16,6 +16,7 @@ import type {
   AnnaleMode,
   ToolType,
 } from "../types/sphera.types";
+import { parseBackendError, translateError } from "@/lib/errorUtils";
 
 // ---------------------------------------------------------------------------
 // Import de la fonction fetch centralisée depuis api.ts
@@ -69,11 +70,11 @@ async function apiFetch<T>(path: string, options: FetchOptions = {}): Promise<T>
     const contentType = res.headers.get("content-type") || "";
     if (contentType.includes("application/json")) {
       const errJson = await res.json().catch(() => ({}));
-      const msg = errJson?.error || errJson?.detail || errJson?.message || `Erreur ${res.status}`;
+      const msg = parseBackendError(errJson, res.status);
       throw new Error(msg);
     }
     const text = await res.text().catch(() => "");
-    throw new Error(text || `Erreur ${res.status}`);
+    throw new Error(translateError(text, res.status));
   }
 
   const ct = res.headers.get("content-type") || "";

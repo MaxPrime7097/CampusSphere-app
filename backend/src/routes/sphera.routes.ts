@@ -25,6 +25,7 @@ import { AnnaleMode as PrismaAnnaleMode, StudyToolType, type Prisma } from "@pri
 import { prisma } from "../lib/prisma.js";
 import { created, list, noContent, ok } from "../lib/envelope.js";
 import { badRequest, forbidden, notFound } from "../lib/errors.js";
+import { resolveSphereId } from "../lib/sphereLookup.js";
 import { currentUser, requireAuth } from "../middleware/auth.js";
 import { rateLimit, RATE_LIMITS } from "../middleware/rateLimit.js";
 import { singleUpload } from "../middleware/upload.js";
@@ -32,7 +33,7 @@ import { keyFromUrl, storage } from "../services/storage.js";
 import { extractText, SUPPORTED_EXTENSIONS } from "../services/extraction.js";
 import { checkGenerationQuota, incrementGenerationQuota, WEEKLY_LIMIT } from "../middleware/generationQuota.js";
 import { getWeekStartDate } from "../lib/weekHelper.js";
-import { synthesizeDialogue, type DialogueTurn } from "../services/audioGeneration.js";
+import { synthesizeSpeech, sanitizeDialogueTurns, type DialogueTurn } from "../services/ttsProvider.js";
 import {
   generateAnnale,
   generateFromSelection,
@@ -199,8 +200,9 @@ async function processToolContent(text: string, tool: ToolType, userId?: number)
   if (tool === "audio") {
     const audioData = result as { titre?: string; dialogue?: DialogueTurn[] };
     if (Array.isArray(audioData.dialogue) && audioData.dialogue.length > 0) {
+      const cleanDialogue = sanitizeDialogueTurns(audioData.dialogue);
       try {
-        const audioBuffer = await synthesizeDialogue(audioData.dialogue, "fr");
+        const { buffer: audioBuffer, provider, lang } = await synthesizeSpeech(cleanDialogue);
         if (audioBuffer) {
           const stored = await storage.put({
             buffer: audioBuffer,
@@ -210,13 +212,20 @@ async function processToolContent(text: string, tool: ToolType, userId?: number)
           });
           return {
             ...audioData,
+            dialogue: cleanDialogue,
             audioUrl: stored.url,
             audioKey: stored.key,
+            ttsProvider: provider,
+            lang,
           };
         }
       } catch (err) {
         console.warn("[sphera] dialogue synthesis failed, returning dialogue script only:", err);
       }
+      return {
+        ...audioData,
+        dialogue: cleanDialogue,
+      };
     }
   }
   return result;
@@ -533,6 +542,32 @@ spheraRouter.post("/generate/annale/", checkGenerationQuota, singleUpload("file"
     assertSupportedUpload(file.originalname);
     annaleBuffer = file.buffer;
     sourceFilename = file.originalname;
+
+    try {
+      const stored = await storage.put({
+        buffer: file.buffer,
+        originalName: file.originalname,
+        contentType: file.mimetype,
+        prefix: "resources",
+      });
+
+      const resource = await prisma.resource.create({
+        data: {
+          title: file.originalname,
+          authorId: me.id,
+          fileUrl: stored.url,
+          storageKey: stored.key,
+          fileSize: file.size,
+          fileType: file.mimetype || "application/octet-stream",
+          type: "EXAM_PAPERS",
+          visibility: "FRIENDS",
+        },
+        select: { id: true },
+      });
+      annaleResourceId = resource.id;
+    } catch (storageErr) {
+      console.warn("[sphera] Could not persist annale file to storage:", storageErr);
+    }
   } else {
     throw badRequest("Un fichier ou resource_id est requis.");
   }
@@ -704,7 +739,15 @@ spheraRouter.get("/sessions/", async (req, res) => {
 
 spheraRouter.get("/sessions/:id/", async (req, res) => {
   const me = currentUser(req);
-  ok(res, serializeStudySession(await readableStudySession(idParam(req), me.id)));
+  try {
+    ok(res, serializeStudySession(await readableStudySession(idParam(req), me.id)));
+  } catch (err) {
+    try {
+      ok(res, serializeAnnaleSession(await readableAnnaleSession(idParam(req), me.id)));
+    } catch {
+      throw err;
+    }
+  }
 });
 
 spheraRouter.delete("/sessions/:id/", async (req, res) => {
@@ -965,7 +1008,15 @@ spheraRouter.get("/annales/", async (req, res) => {
 
 spheraRouter.get("/annales/:id/", async (req, res) => {
   const me = currentUser(req);
-  ok(res, serializeAnnaleSession(await readableAnnaleSession(idParam(req), me.id)));
+  try {
+    ok(res, serializeAnnaleSession(await readableAnnaleSession(idParam(req), me.id)));
+  } catch (err) {
+    try {
+      ok(res, serializeStudySession(await readableStudySession(idParam(req), me.id)));
+    } catch {
+      throw err;
+    }
+  }
 });
 
 spheraRouter.delete("/annales/:id/", async (req, res) => {
@@ -1034,7 +1085,7 @@ spheraRouter.delete("/annales/:id/share/", async (req, res) => {
 
 spheraRouter.get("/sphere/:id/annales/", async (req, res) => {
   const me = currentUser(req);
-  const sphereId = idParam(req);
+  const sphereId = await resolveSphereId(req.params.id);
   await assertSphereAccess(sphereId, me.id);
 
   const sessions = await prisma.annaleSession.findMany({
@@ -1047,7 +1098,7 @@ spheraRouter.get("/sphere/:id/annales/", async (req, res) => {
 
 spheraRouter.get("/sphere/:id/", async (req, res) => {
   const me = currentUser(req);
-  const sphereId = idParam(req);
+  const sphereId = await resolveSphereId(req.params.id);
   await assertSphereAccess(sphereId, me.id);
 
   const sessions = await prisma.studySession.findMany({

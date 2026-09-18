@@ -14,6 +14,7 @@ import { prisma } from "../lib/prisma.js";
 import { resourceInclude, serializeFolder, serializeResource } from "../serializers/resource.js";
 import { ok, created, list, paginate, paginationParams } from "../lib/envelope.js";
 import { badRequest, conflict, forbidden, notFound } from "../lib/errors.js";
+import { resolveSphereId } from "../lib/sphereLookup.js";
 import { currentUser, requireAuth } from "../middleware/auth.js";
 import { applyImpactEvent } from "../services/impact.js";
 import { keyFromUrl, storage } from "../services/storage.js";
@@ -149,10 +150,16 @@ async function canAccessFolder(folder: { ownerId: number; visibility: ResourceVi
   return (await friendIds(viewerId)).includes(folder.ownerId);
 }
 
+function folderIdOf(req: Request): number {
+  const id = Number(req.params.folderId);
+  if (!Number.isInteger(id) || id <= 0) throw notFound("Folder not found.");
+  return id;
+}
+
 resourcesRouter.get("/folders/:folderId/", requireAuth, async (req, res) => {
   const me = currentUser(req);
   const folder = await prisma.resourceFolder.findUnique({
-    where: { id: Number(req.params.folderId) },
+    where: { id: folderIdOf(req) },
     include: { _count: { select: { resources: true } } },
   });
   if (!folder) throw notFound("Folder not found.");
@@ -174,7 +181,7 @@ resourcesRouter.get("/folders/:folderId/", requireAuth, async (req, res) => {
 async function updateFolder(req: Request, res: import("express").Response) {
   const me = currentUser(req);
   const folder = await prisma.resourceFolder.findFirst({
-    where: { id: Number(req.params.folderId), ownerId: me.id },
+    where: { id: folderIdOf(req), ownerId: me.id },
   });
   if (!folder) throw notFound("Folder not found.");
 
@@ -205,7 +212,7 @@ resourcesRouter.patch("/folders/:folderId/", requireAuth, updateFolder);
 resourcesRouter.delete("/folders/:folderId/", requireAuth, async (req, res) => {
   const me = currentUser(req);
   const folder = await prisma.resourceFolder.findFirst({
-    where: { id: Number(req.params.folderId), ownerId: me.id },
+    where: { id: folderIdOf(req), ownerId: me.id },
   });
   if (!folder) throw notFound("Folder not found.");
 
@@ -216,7 +223,7 @@ resourcesRouter.delete("/folders/:folderId/", requireAuth, async (req, res) => {
 
 resourcesRouter.get("/folders/:folderId/download/", requireAuth, async (req, res) => {
   const me = currentUser(req);
-  const folder = await prisma.resourceFolder.findUnique({ where: { id: Number(req.params.folderId) } });
+  const folder = await prisma.resourceFolder.findUnique({ where: { id: folderIdOf(req) } });
   if (!folder) throw notFound("Folder not found.");
   if (!(await canAccessFolder(folder, me.id))) throw forbidden("You do not have access to this folder.");
 
@@ -285,10 +292,12 @@ resourcesRouter.get("/saved/", requireAuth, async (req, res) => {
 
 resourcesRouter.get("/user/:userId/", requireAuth, async (req, res) => {
   const me = currentUser(req);
+  const userId = Number(req.params.userId);
+  if (!Number.isInteger(userId) || userId <= 0) throw notFound("User not found.");
   const { page, pageSize, skip } = paginationParams(req.query as Record<string, unknown>);
 
   const where: Prisma.ResourceWhereInput = {
-    AND: [{ authorId: Number(req.params.userId) }, await visibleToUser(me.id)],
+    AND: [{ authorId: userId }, await visibleToUser(me.id)],
   };
   const [total, resources] = await Promise.all([
     prisma.resource.count({ where }),
@@ -305,7 +314,7 @@ resourcesRouter.get("/user/:userId/", requireAuth, async (req, res) => {
 
 resourcesRouter.get("/sphere/:sphereId/", requireAuth, async (req, res) => {
   const me = currentUser(req);
-  const sphereId = Number(req.params.sphereId);
+  const sphereId = await resolveSphereId(req.params.sphereId);
 
   const membership = await prisma.sphereMember.findFirst({
     where: { sphereId, userId: me.id, status: "ACTIVE" },
@@ -547,20 +556,33 @@ resourcesRouter.post("/:id/save/", requireAuth, async (req, res) => {
     where: { resourceId_userId: { resourceId: resource.id, userId: me.id } },
   });
 
+  let saved = !existing;
   if (existing) {
-    await prisma.$transaction([
-      prisma.resourceSave.delete({ where: { resourceId_userId: { resourceId: resource.id, userId: me.id } } }),
-      prisma.resource.update({ where: { id: resource.id }, data: { savesCount: { decrement: 1 } } }),
-    ]);
+    try {
+      await prisma.$transaction([
+        prisma.resourceSave.delete({ where: { resourceId_userId: { resourceId: resource.id, userId: me.id } } }),
+        prisma.resource.update({ where: { id: resource.id }, data: { savesCount: { decrement: 1 } } }),
+      ]);
+      saved = false;
+    } catch (error: any) {
+      if (error?.code === "P2025") saved = false;
+      else throw error;
+    }
   } else {
-    await prisma.$transaction([
-      prisma.resourceSave.create({ data: { resourceId: resource.id, userId: me.id } }),
-      prisma.resource.update({ where: { id: resource.id }, data: { savesCount: { increment: 1 } } }),
-    ]);
+    try {
+      await prisma.$transaction([
+        prisma.resourceSave.create({ data: { resourceId: resource.id, userId: me.id } }),
+        prisma.resource.update({ where: { id: resource.id }, data: { savesCount: { increment: 1 } } }),
+      ]);
+      saved = true;
+    } catch (error: any) {
+      if (error?.code === "P2002") saved = true;
+      else throw error;
+    }
   }
 
   const fresh = await prisma.resource.findUniqueOrThrow({ where: { id: resource.id }, select: { savesCount: true } });
-  ok(res, { saved: !existing, savesCount: fresh.savesCount });
+  ok(res, { saved, savesCount: Math.max(0, fresh.savesCount) });
 });
 
 resourcesRouter.post("/:id/view/", requireAuth, async (req, res) => {
@@ -572,10 +594,14 @@ resourcesRouter.post("/:id/view/", requireAuth, async (req, res) => {
       where: { resourceId_userId: { resourceId: resource.id, userId: me.id } },
     });
     if (!view) {
-      await prisma.$transaction([
-        prisma.resourceView.create({ data: { resourceId: resource.id, userId: me.id } }),
-        prisma.resource.update({ where: { id: resource.id }, data: { viewsCount: { increment: 1 } } }),
-      ]);
+      try {
+        await prisma.$transaction([
+          prisma.resourceView.create({ data: { resourceId: resource.id, userId: me.id } }),
+          prisma.resource.update({ where: { id: resource.id }, data: { viewsCount: { increment: 1 } } }),
+        ]);
+      } catch (error: any) {
+        if (error?.code !== "P2002") throw error;
+      }
     }
   }
 

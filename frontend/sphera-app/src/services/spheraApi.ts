@@ -56,6 +56,63 @@ async function performRefreshRaw(refresh: string): Promise<string | null> {
 }
 
 // ─── Core fetch ─────────────────────────────────────────────────
+function translateSpheraApiError(errJson: any, status: number): string {
+  if (!errJson && status === 429) {
+    return "Limite de requêtes atteinte. Vous avez effectué trop d'actions en peu de temps ou atteint votre quota. Veuillez patienter un instant.";
+  }
+  const raw = errJson?.message || errJson?.error || errJson?.detail || "";
+  const lower = String(raw).toLowerCase();
+
+  if (
+    status === 429 ||
+    lower === "rate_limit" ||
+    lower === "rate_limited" ||
+    lower.includes("too many requests") ||
+    lower.includes("throttled")
+  ) {
+    if (lower.includes("weekly_limit_reached") || lower.includes("tu as utilisé tes")) {
+      return "Limite hebdomadaire atteinte : vous avez utilisé vos 5 générations Sphera gratuites pour cette semaine (quota renouvelé lundi prochain).";
+    }
+    if (lower.includes("insufficient_quota") || lower.includes("quota insuffisant")) {
+      return "Quota insuffisant : le nombre d'outils sélectionnés dépasse vos générations restantes pour cette semaine.";
+    }
+    const match = String(raw).match(/available in (\d+)\s*seconds/i);
+    if (match?.[1]) {
+      return `Trop de requêtes envoyées. Veuillez patienter environ ${match[1]} seconde(s) avant de réessayer.`;
+    }
+    return "Trop de requêtes envoyées en peu de temps ou quota hebdomadaire atteint. Veuillez patienter avant de réessayer.";
+  }
+
+  if (lower.includes("weekly_limit_reached")) {
+    return "Limite hebdomadaire atteinte : vous avez utilisé vos 5 générations Sphera gratuites pour cette semaine.";
+  }
+  if (lower.includes("insufficient_quota")) {
+    return "Quota insuffisant : le nombre d'outils sélectionnés dépasse vos générations restantes pour cette semaine.";
+  }
+  if (status === 413 || lower.includes("too large")) {
+    return "Le fichier sélectionné est trop volumineux (20 Mo maximum).";
+  }
+  if (status === 415 || lower.includes("unsupported")) {
+    return "Format de document non supporté. Formats acceptés : PDF, DOCX et TXT.";
+  }
+  if (status === 503 || lower.includes("ai_providers_failed") || lower.includes("allprovidersfailed")) {
+    return "Le service d'intelligence artificielle Sphera est temporairement saturé ou indisponible. Veuillez réessayer dans quelques instants.";
+  }
+  if (status === 401) {
+    return "Identifiants incorrects ou session expirée. Veuillez vous reconnecter.";
+  }
+  if (status === 403) {
+    return "Vous n'avez pas l'autorisation d'effectuer cette action.";
+  }
+  if (status === 404) {
+    return "L'élément demandé est introuvable.";
+  }
+  if (status >= 500) {
+    return "Une erreur serveur temporaire est survenue. Veuillez réessayer dans un instant.";
+  }
+  return raw || `Erreur ${status}`;
+}
+
 async function apiFetch<T>(
   path: string,
   options: { method?: string; body?: unknown | FormData; requireAuth?: boolean; _retry?: boolean; signal?: AbortSignal } = {}
@@ -80,11 +137,6 @@ async function apiFetch<T>(
     signal,
   })
 
-  // Rate limit
-  if (res.status === 429) {
-    throw new Error('RATE_LIMIT')
-  }
-
   if (!res.ok) {
     // Si expiration du token (401) et que nous n'avons pas déjà réessayé, tente de rafraîchir
     if (res.status === 401 && !_retry) {
@@ -107,10 +159,10 @@ async function apiFetch<T>(
     const ct = res.headers.get('content-type') || ''
     if (ct.includes('application/json')) {
       const err = await res.json().catch(() => ({}))
-      throw new Error(err?.error || err?.detail || err?.message || `Erreur ${res.status}`)
+      throw new Error(translateSpheraApiError(err, res.status))
     }
     const text = await res.text().catch(() => '')
-    throw new Error(text || `Erreur ${res.status}`)
+    throw new Error(translateSpheraApiError({ message: text }, res.status))
   }
 
   const ct = res.headers.get('content-type') || ''
@@ -197,43 +249,57 @@ export async function guestGenerate(params: {
 
 export type ToolType = 'fiche' | 'quiz' | 'flashcards' | 'mindmap' | 'audio'
 
+export function notifyQuotaUpdated() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('sphera:quota-updated'))
+  }
+}
+
 export async function generateFromUpload(params: { file: File; tool_types?: ToolType[] }) {
   const formData = new FormData()
   formData.append('file', params.file)
   formData.append('tool_types', JSON.stringify(params.tool_types || []))
-  return apiFetch<{ success: boolean; data: any; cached: boolean }>('api/sphera/generate/from-upload/', {
+  const res = await apiFetch<{ success: boolean; data: any; cached: boolean }>('api/sphera/generate/from-upload/', {
     method: 'POST',
     body: formData,
     requireAuth: true,
   })
+  notifyQuotaUpdated()
+  return res
 }
 
 export async function generateMindmap(file: File) {
   const formData = new FormData()
   formData.append('file', file)
-  return apiFetch<{ success: boolean; data: any }>('api/sphera/generate/mindmap/', {
+  const res = await apiFetch<{ success: boolean; data: any }>('api/sphera/generate/mindmap/', {
     method: 'POST',
     body: formData,
     requireAuth: true,
   })
+  notifyQuotaUpdated()
+  return res
 }
 
 export async function generateAudioSummary(file: File) {
   const formData = new FormData()
   formData.append('file', file)
-  return apiFetch<{ success: boolean; data: any }>('api/sphera/generate/audio/', {
+  const res = await apiFetch<{ success: boolean; data: any }>('api/sphera/generate/audio/', {
     method: 'POST',
     body: formData,
     requireAuth: true,
   })
+  notifyQuotaUpdated()
+  return res
 }
 
 export async function addToolToSession(sessionId: number | string, toolType: ToolType) {
-  return apiFetch<{ success: boolean; data: any }>(`api/sphera/sessions/${sessionId}/add-tool/`, {
+  const res = await apiFetch<{ success: boolean; data: any }>(`api/sphera/sessions/${sessionId}/add-tool/`, {
     method: 'PATCH',
     body: { tool_type: toolType },
     requireAuth: true,
   })
+  notifyQuotaUpdated()
+  return res
 }
 
 export async function createFromSelection(
@@ -273,10 +339,12 @@ export async function generateAnnale(params: { file: File; mode: 'complete' | 'r
   const formData = new FormData()
   formData.append('file', params.file)
   formData.append('mode', params.mode)
-  return apiFetch<{ success: boolean; data: any }>(
+  const res = await apiFetch<{ success: boolean; data: any }>(
     'api/sphera/generate/annale/',
     { method: 'POST', body: formData, requireAuth: true }
   )
+  notifyQuotaUpdated()
+  return res
 }
 
 // ─── Sessions (auth requis) ──────────────────────────────────────

@@ -8,19 +8,30 @@
  */
 
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
+import { SignatureV4 } from "@smithy/signature-v4";
+import { Sha256 } from "@smithy/core/checksum";
+import { HttpRequest } from "@smithy/core/transport";
 import { env } from "../../config/env.js";
 import { prisma } from "../../lib/prisma.js";
 
 /** Providers get their own timeout: a hung upstream must not hold a request open. */
 const REQUEST_TIMEOUT_MS = 120_000;
 
-// Bedrock Claude Haiku pricing: $1.00 / 1M input, $5.00 / 1M output
-export const CLAUDE_INPUT_PRICE = 1.0 / 1_000_000;
-export const CLAUDE_OUTPUT_PRICE = 5.0 / 1_000_000;
+// Bedrock Mantle pricing (configured in env.ts)
+export const MANTLE_CLAUDE_INPUT_PRICE = env.ai.bedrockMantle.claudeInputPrice;
+export const MANTLE_CLAUDE_OUTPUT_PRICE = env.ai.bedrockMantle.claudeOutputPrice;
 
-// Bedrock DeepSeek V3.2 pricing: $0.62 / 1M input, $1.85 / 1M output
-export const DEEPSEEK_INPUT_PRICE = 0.62 / 1_000_000;
-export const DEEPSEEK_OUTPUT_PRICE = 1.85 / 1_000_000;
+export const MANTLE_DEEPSEEK_INPUT_PRICE = env.ai.bedrockMantle.deepseekInputPrice;
+export const MANTLE_DEEPSEEK_OUTPUT_PRICE = env.ai.bedrockMantle.deepseekOutputPrice;
+
+export const MANTLE_MINIMAX_INPUT_PRICE = env.ai.bedrockMantle.minimaxInputPrice;
+export const MANTLE_MINIMAX_OUTPUT_PRICE = env.ai.bedrockMantle.minimaxOutputPrice;
+
+// Legacy pricing constants kept for backwards compatibility
+export const CLAUDE_INPUT_PRICE = MANTLE_CLAUDE_INPUT_PRICE;
+export const CLAUDE_OUTPUT_PRICE = MANTLE_CLAUDE_OUTPUT_PRICE;
+export const DEEPSEEK_INPUT_PRICE = MANTLE_DEEPSEEK_INPUT_PRICE;
+export const DEEPSEEK_OUTPUT_PRICE = MANTLE_DEEPSEEK_OUTPUT_PRICE;
 
 export interface CallMeta {
   toolType?: string;
@@ -65,17 +76,17 @@ async function postJson(url: string, init: RequestInit): Promise<unknown> {
   }
 }
 
-/** Record token consumption and estimated cost across all providers into AIUsageLog. */
-async function recordUsageLog(
+/** Record token consumption and estimated cost across all providers into AIUsageLog (non-blocking). */
+function recordUsageLog(
   provider: string,
   model: string,
   meta: CallMeta | undefined,
   inputTokens: number,
   outputTokens: number,
   costUsd: number,
-): Promise<void> {
-  try {
-    await prisma.aIUsageLog.create({
+): void {
+  prisma.aIUsageLog
+    .create({
       data: {
         userId: meta?.userId ?? null,
         provider,
@@ -85,10 +96,10 @@ async function recordUsageLog(
         outputTokensEstimate: outputTokens,
         estimatedCostUSD: costUsd,
       },
+    })
+    .catch((logError: any) => {
+      console.warn(`[sphera-ai] Failed to save AIUsageLog for ${provider}:`, logError?.message || logError);
     });
-  } catch (logError) {
-    console.warn(`[sphera-ai] Failed to save AIUsageLog for ${provider}:`, logError);
-  }
 }
 
 /**
@@ -126,6 +137,284 @@ export function resolveBedrockClaudeModelId(rawId: string, region: string): stri
   }
 
   return modelId;
+}
+
+/**
+ * Signs an HTTP request targeting the Amazon Bedrock Mantle endpoint using official
+ * AWS/Smithy SDK primitives (`@smithy/signature-v4`, `@smithy/core/checksum`, `@smithy/core/transport`).
+ */
+export async function signMantleRequest(
+  url: string,
+  bodyString: string,
+): Promise<{ headers: Record<string, string> }> {
+  const mantleConfig = env.ai.bedrockMantle;
+  const { accessKeyId, secretAccessKey } = env.ai.bedrock;
+
+  if (mantleConfig.apiKey) {
+    return {
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${mantleConfig.apiKey}`,
+      },
+    };
+  }
+
+  if (!accessKeyId || !secretAccessKey) {
+    throw new Error("AWS_ACCESS_KEY_ID ou AWS_SECRET_ACCESS_KEY non configurés pour Bedrock Mantle");
+  }
+
+  const parsedUrl = new URL(url);
+  const signer = new SignatureV4({
+    credentials: { accessKeyId, secretAccessKey },
+    region: mantleConfig.region,
+    service: "bedrock-mantle",
+    sha256: Sha256,
+  });
+
+  const request = new HttpRequest({
+    method: "POST",
+    protocol: parsedUrl.protocol,
+    hostname: parsedUrl.hostname,
+    port: parsedUrl.port ? Number(parsedUrl.port) : undefined,
+    path: parsedUrl.pathname,
+    headers: {
+      "content-type": "application/json",
+      host: parsedUrl.hostname,
+    },
+    body: bodyString,
+  });
+
+  const signed = await signer.sign(request);
+  return { headers: signed.headers as Record<string, string> };
+}
+
+interface MantleChatCompletionResponse {
+  choices?: Array<{
+    message?: { content?: string; role?: string };
+    text?: string;
+    finish_reason?: string;
+  }>;
+  content?: Array<{ type: string; text?: string }>;
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    total_tokens?: number;
+    input_tokens?: number;
+    output_tokens?: number;
+  };
+}
+
+/**
+ * Generic caller for Amazon Bedrock Mantle OpenAI-compatible endpoints with official AWS SigV4 signing.
+ */
+export async function callMantleModel(
+  providerName: string,
+  modelId: string,
+  prompt: string,
+  maxTokens: number,
+  inputPrice: number,
+  outputPrice: number,
+  meta?: CallMeta,
+): Promise<string> {
+  const endpoint = env.ai.bedrockMantle.endpoint.replace(/\/+$/, "");
+  const url = `${endpoint}/chat/completions`;
+
+  const payload = {
+    model: modelId,
+    messages: [{ role: "user", content: prompt }],
+    max_tokens: maxTokens,
+    temperature: 0,
+  };
+  const bodyString = JSON.stringify(payload);
+
+  const signed = await signMantleRequest(url, bodyString);
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers: signed.headers,
+      body: bodyString,
+      signal: controller.signal,
+    });
+  } catch (fetchError: any) {
+    if (fetchError?.name === "AbortError") {
+      throw new Error(`Timeout Mantle (${REQUEST_TIMEOUT_MS}ms dépassé pour ${modelId})`);
+    }
+    throw new Error(`Erreur réseau Mantle (${modelId}): ${fetchError?.message || String(fetchError)}`);
+  } finally {
+    clearTimeout(timer);
+  }
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    let detailMsg = errorText.slice(0, 300);
+    try {
+      const parsed = JSON.parse(errorText);
+      detailMsg = parsed?.error?.message || parsed?.message || detailMsg;
+    } catch {
+      // plain text error
+    }
+
+    if (response.status === 401 || response.status === 403) {
+      throw new Error(
+        `IAM SigV4 / Accès refusé pour Bedrock Mantle (${modelId}): HTTP ${response.status} - ${detailMsg}. ` +
+          "Vérifier la permission 'bedrock-mantle:CreateInference' sur vos identifiants IAM AWS.",
+      );
+    }
+    if (response.status === 404) {
+      throw new Error(`Modèle introuvable sur Bedrock Mantle (${modelId}): HTTP 404 - ${detailMsg}`);
+    }
+    if (response.status === 429) {
+      throw new Error(`Rate limit / Throttling Bedrock Mantle (${modelId}): HTTP 429 - ${detailMsg}`);
+    }
+    throw new Error(`HTTP ${response.status} Bedrock Mantle (${modelId}): ${detailMsg}`);
+  }
+
+  const responseBody = (await response.json()) as MantleChatCompletionResponse;
+
+  const choice = responseBody.choices?.[0];
+  const text =
+    choice?.message?.content ??
+    choice?.text ??
+    responseBody.content?.find((b) => b.type === "text")?.text;
+
+  if (!text || !text.trim()) {
+    if (choice?.finish_reason === "length") {
+      throw new Error(
+        `Réponse tronquée par le plafond de tokens (max_tokens=${maxTokens}) avant finalisation du contenu pour ${modelId}`,
+      );
+    }
+    throw new Error(`Réponse vide reçue de Bedrock Mantle (${modelId})`);
+  }
+
+  const inputTokens =
+    responseBody.usage?.prompt_tokens ??
+    responseBody.usage?.input_tokens ??
+    Math.ceil(prompt.length / 4);
+  const outputTokens =
+    responseBody.usage?.completion_tokens ??
+    responseBody.usage?.output_tokens ??
+    Math.ceil(text.length / 4);
+  const cost = inputTokens * inputPrice + outputTokens * outputPrice;
+
+  recordUsageLog(providerName, modelId, meta, inputTokens, outputTokens, cost);
+  return text;
+}
+
+/** Call DeepSeek V3.2 via Amazon Bedrock Mantle. */
+export async function callMantleDeepSeek(prompt: string, maxTokens: number, meta?: CallMeta): Promise<string> {
+  const modelId = env.ai.bedrockMantle.deepseekModelId;
+  const { deepseekInputPrice, deepseekOutputPrice } = env.ai.bedrockMantle;
+  return callMantleModel(
+    "bedrock-mantle-deepseek",
+    modelId,
+    prompt,
+    maxTokens,
+    deepseekInputPrice,
+    deepseekOutputPrice,
+    meta,
+  );
+}
+
+/** Call MiniMax M2.5 via Amazon Bedrock Mantle. */
+export async function callMantleMiniMax(prompt: string, maxTokens: number, meta?: CallMeta): Promise<string> {
+  const modelId = env.ai.bedrockMantle.minimaxModelId;
+  const { minimaxInputPrice, minimaxOutputPrice } = env.ai.bedrockMantle;
+  return callMantleModel(
+    "bedrock-mantle-minimax",
+    modelId,
+    prompt,
+    maxTokens,
+    minimaxInputPrice,
+    minimaxOutputPrice,
+    meta,
+  );
+}
+
+/**
+ * Call Claude Haiku via Amazon Bedrock Mantle using the Anthropic Messages API surface
+ * (`/anthropic/v1/messages`).
+ */
+export async function callMantleClaude(prompt: string, maxTokens: number, meta?: CallMeta): Promise<string> {
+  const modelId = env.ai.bedrockMantle.claudeModelId;
+  const { claudeInputPrice, claudeOutputPrice } = env.ai.bedrockMantle;
+  const endpointBase = env.ai.bedrockMantle.endpoint.replace(/\/v1\/?$/, "");
+  const url = `${endpointBase}/anthropic/v1/messages`;
+
+  const payload = {
+    model: modelId,
+    max_tokens: maxTokens,
+    messages: [{ role: "user", content: prompt }],
+  };
+  const bodyString = JSON.stringify(payload);
+
+  const signed = await signMantleRequest(url, bodyString);
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers: signed.headers,
+      body: bodyString,
+      signal: controller.signal,
+    });
+  } catch (fetchError: any) {
+    if (fetchError?.name === "AbortError") {
+      throw new Error(`Timeout Mantle Claude (${REQUEST_TIMEOUT_MS}ms dépassé pour ${modelId})`);
+    }
+    throw new Error(`Erreur réseau Mantle Claude (${modelId}): ${fetchError?.message || String(fetchError)}`);
+  } finally {
+    clearTimeout(timer);
+  }
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    let detailMsg = errorText.slice(0, 300);
+    try {
+      const parsed = JSON.parse(errorText);
+      detailMsg = parsed?.error?.message || parsed?.message || detailMsg;
+    } catch {
+      // plain text error
+    }
+
+    if (response.status === 401 || response.status === 403) {
+      throw new Error(
+        `IAM SigV4 / Accès refusé pour Claude sur Bedrock Mantle (${modelId}): HTTP ${response.status} - ${detailMsg}. ` +
+          "Le modèle requiert une autorisation ou activation dans la console AWS Bedrock.",
+      );
+    }
+    if (response.status === 404) {
+      throw new Error(`Modèle Claude introuvable sur Bedrock Mantle (${modelId}): HTTP 404 - ${detailMsg}`);
+    }
+    if (response.status === 429) {
+      throw new Error(`Rate limit / Throttling Claude sur Bedrock Mantle (${modelId}): HTTP 429 - ${detailMsg}`);
+    }
+    throw new Error(`HTTP ${response.status} Bedrock Mantle Claude (${modelId}): ${detailMsg}`);
+  }
+
+  const responseBody = (await response.json()) as {
+    content?: Array<{ type: string; text?: string }>;
+    usage?: { input_tokens?: number; output_tokens?: number };
+  };
+
+  const text = responseBody.content?.find((b) => b.type === "text")?.text;
+  if (!text || !text.trim()) {
+    throw new Error(`Réponse vide reçue de Bedrock Mantle Claude (${modelId})`);
+  }
+
+  const inputTokens = responseBody.usage?.input_tokens ?? Math.ceil(prompt.length / 4);
+  const outputTokens = responseBody.usage?.output_tokens ?? Math.ceil(text.length / 4);
+  const cost = inputTokens * claudeInputPrice + outputTokens * claudeOutputPrice;
+
+  recordUsageLog("bedrock-mantle-claude", modelId, meta, inputTokens, outputTokens, cost);
+  return text;
 }
 
 /** Call Claude via AWS Bedrock (Anthropic payload format). */
@@ -196,7 +485,7 @@ async function callBedrockClaude(prompt: string, maxTokens: number, meta?: CallM
   const outputTokens = responseBody.usage?.output_tokens ?? 0;
   const cost = inputTokens * CLAUDE_INPUT_PRICE + outputTokens * CLAUDE_OUTPUT_PRICE;
 
-  await recordUsageLog("bedrock-claude", modelId, meta, inputTokens, outputTokens, cost);
+  recordUsageLog("bedrock-claude", modelId, meta, inputTokens, outputTokens, cost);
   return text;
 }
 
@@ -253,7 +542,7 @@ async function callBedrockDeepSeek(prompt: string, maxTokens: number, meta?: Cal
     Math.ceil(text.length / 4);
   const cost = inputTokens * DEEPSEEK_INPUT_PRICE + outputTokens * DEEPSEEK_OUTPUT_PRICE;
 
-  await recordUsageLog("bedrock-deepseek", modelId, meta, inputTokens, outputTokens, cost);
+  recordUsageLog("bedrock-deepseek", modelId, meta, inputTokens, outputTokens, cost);
   return text;
 }
 
@@ -284,7 +573,7 @@ async function callGemini(prompt: string, maxTokens: number, meta?: CallMeta): P
   const outputTokens = data.usageMetadata?.candidatesTokenCount ?? Math.ceil(text.length / 4);
   const cost = inputTokens * (0.075 / 1_000_000) + outputTokens * (0.30 / 1_000_000);
 
-  await recordUsageLog("gemini", modelId, meta, inputTokens, outputTokens, cost);
+  recordUsageLog("gemini", modelId, meta, inputTokens, outputTokens, cost);
   return text;
 }
 
@@ -313,7 +602,7 @@ async function callGroq(prompt: string, maxTokens: number, meta?: CallMeta): Pro
   const inputTokens = data.usage?.prompt_tokens ?? Math.ceil(prompt.length / 4);
   const outputTokens = data.usage?.completion_tokens ?? Math.ceil(text.length / 4);
 
-  await recordUsageLog("groq", modelId, meta, inputTokens, outputTokens, 0);
+  recordUsageLog("groq", modelId, meta, inputTokens, outputTokens, 0);
   return text;
 }
 
@@ -333,7 +622,16 @@ export interface BedrockStats {
 let _cachedBedrockStats: { stats: BedrockStats; expiresAt: number } | null = null;
 const STATS_CACHE_TTL_MS = 60_000;
 
-/** Check if Bedrock budget limit has been reached across all Bedrock models, with 60s in-memory caching. */
+export const BEDROCK_PROVIDERS_FOR_BUDGET = [
+  "bedrock",
+  "bedrock-claude",
+  "bedrock-deepseek",
+  "bedrock-mantle-deepseek",
+  "bedrock-mantle-minimax",
+  "bedrock-mantle-claude",
+] as const;
+
+/** Check if Bedrock/Mantle budget limit has been reached across all Bedrock models, with 60s in-memory caching. */
 export async function getBedrockUsageStats(forceRefresh = false): Promise<BedrockStats> {
   const now = Date.now();
   if (!forceRefresh && _cachedBedrockStats && now < _cachedBedrockStats.expiresAt) {
@@ -347,7 +645,7 @@ export async function getBedrockUsageStats(forceRefresh = false): Promise<Bedroc
     const result = await prisma.aIUsageLog.aggregate({
       where: {
         provider: {
-          in: ["bedrock", "bedrock-claude", "bedrock-deepseek"],
+          in: [...BEDROCK_PROVIDERS_FOR_BUDGET],
         },
       },
       _sum: { estimatedCostUSD: true },
@@ -383,21 +681,28 @@ export class AllProvidersFailedError extends Error {
 }
 
 /**
- * Builds the provider chain tailored to the specific tool task:
- * - fiche / quiz / flashcards : DeepSeek (Bedrock) → Claude (Bedrock) → Gemini → Groq
- * - annale / qa              : Claude (Bedrock) → DeepSeek (Bedrock) → Gemini → Groq
- * - suggestions              : Groq → DeepSeek (Bedrock) → Claude (Bedrock) → Gemini
+ * Builds the provider chain tailored to the specific tool task with Amazon Bedrock Mantle:
+ * - fiche / quiz / flashcards / mindmap / audio :
+ *     DeepSeek (Mantle) / MiniMax (Mantle) → the other Mantle model → Claude (Mantle) → Gemini → Groq
+ * - annale / qa :
+ *     Claude (Mantle) → DeepSeek (Mantle) → MiniMax (Mantle) → Gemini → Groq
+ * - suggestions :
+ *     Groq → DeepSeek (Mantle) / MiniMax (Mantle) → Claude (Mantle) → Gemini
  */
-function buildProviderChain(toolType: string | undefined, isBudgetExceeded: boolean): Provider[] {
+export function buildProviderChain(toolType: string | undefined, isBudgetExceeded: boolean): Provider[] {
   const chain: Provider[] = [];
 
-  const bedrockDeepSeek: Provider = {
-    name: "bedrock-deepseek",
-    call: (p, t, m) => callBedrockDeepSeek(p, t, m),
+  const mantleDeepSeek: Provider = {
+    name: "bedrock-mantle-deepseek",
+    call: (p, t, m) => callMantleDeepSeek(p, t, m),
   };
-  const bedrockClaude: Provider = {
-    name: "bedrock-claude",
-    call: (p, t, m) => callBedrockClaude(p, t, m),
+  const mantleMiniMax: Provider = {
+    name: "bedrock-mantle-minimax",
+    call: (p, t, m) => callMantleMiniMax(p, t, m),
+  };
+  const mantleClaude: Provider = {
+    name: "bedrock-mantle-claude",
+    call: (p, t, m) => callMantleClaude(p, t, m),
   };
   const gemini: Provider = {
     name: "gemini-2.5-flash",
@@ -408,22 +713,30 @@ function buildProviderChain(toolType: string | undefined, isBudgetExceeded: bool
     call: (p, t, m) => callGroq(p, t, m),
   };
 
-  const hasBedrockConfig = Boolean(env.ai.bedrock.accessKeyId && env.ai.bedrock.secretAccessKey);
-  const allowBedrock = hasBedrockConfig && !isBudgetExceeded;
+  const hasMantleConfig = Boolean(
+    (env.ai.bedrock.accessKeyId && env.ai.bedrock.secretAccessKey) || env.ai.bedrockMantle.apiKey,
+  );
+  const allowMantle = hasMantleConfig && !isBudgetExceeded;
+
+  // Ordering structured models: DeepSeek vs MiniMax based on config
+  const isMiniMaxPrimary = env.ai.bedrockMantle.primaryStructured === "minimax";
+  const primaryStructured = isMiniMaxPrimary ? mantleMiniMax : mantleDeepSeek;
+  const secondaryStructured = isMiniMaxPrimary ? mantleDeepSeek : mantleMiniMax;
 
   if (toolType === "suggestions") {
     // Suggestions are short questions: Groq first (fast and free)
     if (env.ai.groqApiKey) chain.push(groq);
-    if (allowBedrock) chain.push(bedrockDeepSeek, bedrockClaude);
+    if (allowMantle) chain.push(primaryStructured, secondaryStructured, mantleClaude);
     if (env.ai.geminiApiKey) chain.push(gemini);
   } else if (toolType === "annale" || toolType === "qa") {
     // Complex reasoning and pedagogical conversational voice: Claude first
-    if (allowBedrock) chain.push(bedrockClaude, bedrockDeepSeek);
+    if (allowMantle) chain.push(mantleClaude, primaryStructured, secondaryStructured);
     if (env.ai.geminiApiKey) chain.push(gemini);
     if (env.ai.groqApiKey) chain.push(groq);
   } else {
-    // fiche, quiz, flashcards and default: DeepSeek first (cheaper, validated for structured items)
-    if (allowBedrock) chain.push(bedrockDeepSeek, bedrockClaude);
+    // fiche, quiz, flashcards, mindmap, audio and default:
+    // primary structured (DeepSeek or MiniMax) -> secondary -> Claude -> Gemini -> Groq
+    if (allowMantle) chain.push(primaryStructured, secondaryStructured, mantleClaude);
     if (env.ai.geminiApiKey) chain.push(gemini);
     if (env.ai.groqApiKey) chain.push(groq);
   }
@@ -440,13 +753,15 @@ export async function callWithFallback(
   const attempts: ProviderAttempt[] = [];
 
   let isBudgetExceeded = false;
-  const hasBedrockConfig = Boolean(env.ai.bedrock.accessKeyId && env.ai.bedrock.secretAccessKey);
-  if (hasBedrockConfig) {
+  const hasMantleConfig = Boolean(
+    (env.ai.bedrock.accessKeyId && env.ai.bedrock.secretAccessKey) || env.ai.bedrockMantle.apiKey,
+  );
+  if (hasMantleConfig) {
     try {
       const stats = await getBedrockUsageStats();
       if (stats.isThresholdExceeded) {
         console.warn(
-          `[sphera-ai] Seuil de sécurité Bedrock atteint (${stats.percentUsed.toFixed(1)}% / ${stats.spent.toFixed(2)}$). Bascule sur providers alternatifs.`,
+          `[sphera-ai] Seuil de sécurité Bedrock/Mantle atteint (${stats.percentUsed.toFixed(1)}% / ${stats.spent.toFixed(2)}$). Bascule sur providers alternatifs.`,
         );
         isBudgetExceeded = true;
       }
@@ -477,6 +792,11 @@ export async function callWithFallback(
 export const anyProviderConfigured = (): boolean =>
   Boolean(
     (env.ai.bedrock.accessKeyId && env.ai.bedrock.secretAccessKey) ||
+      env.ai.bedrockMantle.apiKey ||
       env.ai.geminiApiKey ||
       env.ai.groqApiKey,
   );
+
+// Retain legacy Runtime references for fallback / transition
+export { callBedrockClaude, callBedrockDeepSeek };
+export { callBedrockClaude as callBedrockClaudeRuntime, callBedrockDeepSeek as callBedrockDeepSeekRuntime };

@@ -69,6 +69,7 @@ const AdminResourcesPage = lazy(() => import("./admin/pages/AdminResourcesPage")
 const AdminLogsPage = lazy(() => import("./admin/pages/AdminLogsPage").then(m => ({ default: m.AdminLogsPage })));
 const AdminVerificationPage = lazy(() => import("./admin/pages/AdminVerificationPage").then(m => ({ default: m.AdminVerificationPage })));
 const AdminContactMessagesPage = lazy(() => import("./admin/pages/AdminContactMessagesPage").then(m => ({ default: m.AdminContactMessagesPage })));
+const AdminSpheraPage = lazy(() => import("./admin/pages/AdminSpheraPage").then(m => ({ default: m.AdminSpheraPage })));
 
 const PageLoader = () => (
   <div className="min-h-screen w-full flex items-center justify-center bg-background">
@@ -372,6 +373,7 @@ const App = () => (
               <Route path="spheres" element={<AdminSpheresPage />} />
               <Route path="moderation" element={<AdminModerationPage />} />
               <Route path="resources" element={<AdminResourcesPage />} />
+              <Route path="sphera" element={<AdminSpheraPage />} />
               <Route path="logs" element={<AdminLogsPage />} />
               <Route path="contact" element={<AdminContactMessagesPage />} />
               <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />

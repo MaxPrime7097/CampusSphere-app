@@ -1,7 +1,7 @@
 import React from 'react'
-import { FileText, BrainCircuit, CheckCircle2, SquareStack, GitFork, AudioLines, MessageSquare } from 'lucide-react'
-
-export type ToolType = 'fiche' | 'quiz' | 'flashcards' | 'annale' | 'mindmap' | 'audio'
+import { FileText, SquareStack, BrainCircuit, CheckCircle2, Layers, GitFork, AudioLines, MessageSquare } from 'lucide-react'
+import type { ToolType } from '../../services/spheraApi'
+export type { ToolType }
 
 interface ToolSelectorProps {
   selectedTools: ToolType[];
