@@ -9,7 +9,7 @@ import { Helmet } from 'react-helmet-async';
 import { useSpheraAuth } from '../contexts/SpheraAuthContext';
 import confetti from 'canvas-confetti';
 import { playSound, preloadSounds, toggleMute, getMuteState } from '../utils/audioManager';
-import { Volume2, VolumeX, Zap, Eye, ArrowLeft } from 'lucide-react';
+import { Volume2, VolumeX, Zap, Eye, ArrowLeft, Square } from 'lucide-react';
 import { getQuizSessionByCode, getQuizSessionHostDetails, resetQuizSession } from '../services/spheraApi';
 import { QuizQuestionsDrawer } from '../components/quiz-live/QuizQuestionsDrawer';
 
@@ -89,6 +89,7 @@ export default function QuizLiveHost() {
     countdownActive,
     startCountdown,
     startQuiz,
+    stopQuiz,
     nextQuestion,
     joinRoom
   } = useQuizSocket(session?.roomCode || null);
@@ -114,6 +115,13 @@ export default function QuizLiveHost() {
 
   const handleStartWithCountdown = () => {
     startCountdown();
+  };
+
+  const handleStopQuiz = () => {
+    if (window.confirm("Êtes-vous sûr de vouloir arrêter le quiz et ramener tous les participants au salon d'attente ?")) {
+      setCountdown(null);
+      stopQuiz();
+    }
   };
 
   useEffect(() => {
@@ -222,13 +230,28 @@ export default function QuizLiveHost() {
         </Link>
       )}
 
-      {/* Mute Button */}
-      <button 
-        onClick={toggleSound}
-        className="absolute top-6 right-6 z-50 p-3 rounded-full bg-sphera-surface-2 border border-sphera-border text-white hover:bg-sphera-surface transition-colors shadow-lg"
-      >
-        {isMuted ? <VolumeX className="w-6 h-6 text-red-500" /> : <Volume2 className="w-6 h-6 text-sphera-green" />}
-      </button>
+      {/* Top-Right Controls: Mute and Stop Quiz */}
+      <div className="absolute top-6 right-6 z-50 flex flex-col items-end gap-2.5">
+        <button 
+          onClick={toggleSound}
+          className="p-3 rounded-full bg-sphera-surface-2 border border-sphera-border text-white hover:bg-sphera-surface transition-colors shadow-lg"
+          title={isMuted ? "Activer le son" : "Couper le son"}
+        >
+          {isMuted ? <VolumeX className="w-6 h-6 text-red-500" /> : <Volume2 className="w-6 h-6 text-sphera-green" />}
+        </button>
+
+        {/* Bouton Arrêter le Quiz pour l'admin pendant le jeu */}
+        {(phase === 'countdown' || phase === 'playing' || phase === 'results' || phase === 'finished') && (
+          <button
+            onClick={handleStopQuiz}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/40 hover:border-red-500 text-red-400 hover:text-red-300 transition-all text-xs font-semibold shadow-lg backdrop-blur group"
+            title="Arrêter la partie et revenir au salon d'attente"
+          >
+            <Square className="w-3.5 h-3.5 fill-red-400 text-red-400 group-hover:scale-110 transition-transform" />
+            <span className="hidden sm:inline">Arrêter le quiz</span>
+          </button>
+        )}
+      </div>
       
       <main className="flex-1 w-full max-w-5xl mx-auto py-8 px-4 sm:px-6 flex flex-col justify-center min-h-screen relative z-10">
         

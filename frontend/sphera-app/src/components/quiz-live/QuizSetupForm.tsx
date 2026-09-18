@@ -5,7 +5,7 @@ import {
   generateQuizQuestionsFromUpload,
   importQuizJson,
 } from '../../services/spheraApi';
-import { Loader2, Plus, Trash2, Upload, Sparkles, Clock, Award, CheckCircle2, X } from 'lucide-react';
+import { Loader2, Plus, Trash2, Upload, Sparkles, Clock, Award, CheckCircle2, X, Sliders, Check } from 'lucide-react';
 
 interface QuizSetupFormProps {
   onSessionCreated: (session: any) => void;
@@ -19,6 +19,9 @@ interface QuestionItem {
   points: number;
 }
 
+const TIME_PRESETS = [10, 15, 20, 30, 45, 60, 90, 120];
+const POINTS_PRESETS = [500, 1000, 1500, 2000];
+
 export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
   const [activeTab, setActiveTab] = useState<'generate' | 'manual' | 'import'>('generate');
   const [title, setTitle] = useState('');
@@ -31,7 +34,21 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
   const [resourceInput, setResourceInput] = useState('');
   const [generateFile, setGenerateFile] = useState<File | null>(null);
   const [defaultTimeLimit, setDefaultTimeLimit] = useState(30);
+  const [isCustomDefaultTime, setIsCustomDefaultTime] = useState(false);
+  const [customDefaultTime, setCustomDefaultTime] = useState('30');
+
   const [defaultPoints, setDefaultPoints] = useState(1000);
+  const [isCustomDefaultPoints, setIsCustomDefaultPoints] = useState(false);
+  const [customDefaultPoints, setCustomDefaultPoints] = useState('1000');
+
+  // Manual tab global bulk controls
+  const [bulkTime, setBulkTime] = useState<number>(30);
+  const [isCustomBulkTime, setIsCustomBulkTime] = useState(false);
+  const [customBulkTime, setCustomBulkTime] = useState('30');
+
+  const [bulkPoints, setBulkPoints] = useState<number>(1000);
+  const [isCustomBulkPoints, setIsCustomBulkPoints] = useState(false);
+  const [customBulkPoints, setCustomBulkPoints] = useState('1000');
 
   // Manual questions list
   const [questions, setQuestions] = useState<QuestionItem[]>([
@@ -91,10 +108,13 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
     setError(null);
     setSuccessMessage(null);
 
+    const effectiveTime = isCustomDefaultTime ? (parseInt(customDefaultTime, 10) || 30) : defaultTimeLimit;
+    const effectivePoints = isCustomDefaultPoints ? (parseInt(customDefaultPoints, 10) || 1000) : defaultPoints;
+
     try {
       let res;
       if (generateFile) {
-        res = await generateQuizQuestionsFromUpload(generateFile, title, defaultTimeLimit, defaultPoints);
+        res = await generateQuizQuestionsFromUpload(generateFile, title, effectiveTime, effectivePoints);
       } else {
         let raw = resourceInput.trim();
         const urlMatch = raw.match(/\/(\d+)(?:\/|\?|$)/) || raw.match(/(\d+)/);
@@ -103,7 +123,7 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
           throw new Error('Lien ou identifiant de document invalide. Entrez par exemple un numéro (ex: 12) ou un lien CampusSphere.');
         }
 
-        res = await generateQuizQuestionsFromResource(parsedId, title, defaultTimeLimit, defaultPoints);
+        res = await generateQuizQuestionsFromResource(parsedId, title, effectiveTime, effectivePoints);
       }
 
       const payload = res?.data || res;
@@ -119,13 +139,13 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
         question: q.question || '',
         options: Array.isArray(q.options) && q.options.length === 4 ? q.options : [q.options?.[0] || '', q.options?.[1] || '', q.options?.[2] || '', q.options?.[3] || ''],
         correctIndex: typeof q.correctIndex === 'number' ? q.correctIndex : 0,
-        timeLimit: typeof q.timeLimit === 'number' && q.timeLimit > 0 ? q.timeLimit : defaultTimeLimit,
-        points: typeof q.points === 'number' && q.points > 0 ? q.points : defaultPoints,
+        timeLimit: typeof q.timeLimit === 'number' && q.timeLimit > 0 ? q.timeLimit : effectiveTime,
+        points: typeof q.points === 'number' && q.points > 0 ? q.points : effectivePoints,
       }));
 
       setQuestions(formatted);
       setActiveTab('manual');
-      setSuccessMessage(`✨ ${formatted.length} questions générées par Sphera ! Vous pouvez les prévisualiser, ajuster le temps et les points ci-dessous avant de lancer la session.`);
+      setSuccessMessage(`${formatted.length} questions générées par Sphera ! Vous pouvez les prévisualiser, ajuster le temps et les points ci-dessous avant de lancer la session.`);
     } catch (err: any) {
       setError(err.message || 'Erreur lors de la génération avec Sphera.');
     } finally {
@@ -161,12 +181,10 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
   };
 
   // Appliquer le même temps / points à toutes les questions
-  const applyGlobalTime = (time: number) => {
-    setQuestions(prev => prev.map(q => ({ ...q, timeLimit: time })));
-  };
-
-  const applyGlobalPoints = (pts: number) => {
-    setQuestions(prev => prev.map(q => ({ ...q, points: pts })));
+  const handleApplyBulkToAll = () => {
+    const t = isCustomBulkTime ? (parseInt(customBulkTime, 10) || 30) : bulkTime;
+    const p = isCustomBulkPoints ? (parseInt(customBulkPoints, 10) || 1000) : bulkPoints;
+    setQuestions(prev => prev.map(q => ({ ...q, timeLimit: t, points: p })));
   };
 
   return (
@@ -293,32 +311,81 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs text-sphera-text-muted mb-1.5">Temps par question :</label>
-                  <select
-                    value={defaultTimeLimit}
-                    onChange={e => setDefaultTimeLimit(Number(e.target.value))}
-                    className="w-full bg-sphera-bg border border-sphera-border rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-sphera-green"
-                  >
-                    <option value={10}>10 secondes (Ultra-rapide)</option>
-                    <option value={15}>15 secondes</option>
-                    <option value={20}>20 secondes</option>
-                    <option value={30}>30 secondes (Standard)</option>
-                    <option value={45}>45 secondes</option>
-                    <option value={60}>60 secondes (Réflexion)</option>
-                    <option value={90}>90 secondes</option>
-                    <option value={120}>2 minutes (Calculs)</option>
-                  </select>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={isCustomDefaultTime ? 'custom' : defaultTimeLimit}
+                      onChange={e => {
+                        if (e.target.value === 'custom') {
+                          setIsCustomDefaultTime(true);
+                        } else {
+                          setIsCustomDefaultTime(false);
+                          setDefaultTimeLimit(Number(e.target.value));
+                        }
+                      }}
+                      className="flex-1 bg-sphera-bg border border-sphera-border rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-sphera-green"
+                    >
+                      <option value={10}>10 secondes (Ultra-rapide)</option>
+                      <option value={15}>15 secondes</option>
+                      <option value={20}>20 secondes</option>
+                      <option value={30}>30 secondes (Standard)</option>
+                      <option value={45}>45 secondes</option>
+                      <option value={60}>60 secondes (Réflexion)</option>
+                      <option value={90}>90 secondes</option>
+                      <option value={120}>2 minutes (Calculs)</option>
+                      <option value="custom">Personnalisé...</option>
+                    </select>
+                    {isCustomDefaultTime && (
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          min={5}
+                          max={600}
+                          value={customDefaultTime}
+                          onChange={e => setCustomDefaultTime(e.target.value)}
+                          placeholder="sec"
+                          className="w-16 bg-sphera-bg border border-sphera-border rounded-xl px-2.5 py-2 text-white text-sm focus:outline-none focus:border-sphera-green"
+                        />
+                        <span className="text-xs text-sphera-text-muted">s</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs text-sphera-text-muted mb-1.5">Points par question :</label>
-                  <select
-                    value={defaultPoints}
-                    onChange={e => setDefaultPoints(Number(e.target.value))}
-                    className="w-full bg-sphera-bg border border-sphera-border rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-sphera-green"
-                  >
-                    <option value={500}>500 points (Quiz court)</option>
-                    <option value={1000}>1 000 points (Standard)</option>
-                    <option value={2000}>2 000 points (Double points)</option>
-                  </select>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={isCustomDefaultPoints ? 'custom' : defaultPoints}
+                      onChange={e => {
+                        if (e.target.value === 'custom') {
+                          setIsCustomDefaultPoints(true);
+                        } else {
+                          setIsCustomDefaultPoints(false);
+                          setDefaultPoints(Number(e.target.value));
+                        }
+                      }}
+                      className="flex-1 bg-sphera-bg border border-sphera-border rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-sphera-green"
+                    >
+                      <option value={500}>500 points (Quiz court)</option>
+                      <option value={1000}>1 000 points (Standard)</option>
+                      <option value={2000}>2 000 points (Double points)</option>
+                      <option value="custom">Personnalisé...</option>
+                    </select>
+                    {isCustomDefaultPoints && (
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          min={50}
+                          max={10000}
+                          step={50}
+                          value={customDefaultPoints}
+                          onChange={e => setCustomDefaultPoints(e.target.value)}
+                          placeholder="pts"
+                          className="w-20 bg-sphera-bg border border-sphera-border rounded-xl px-2.5 py-2 text-white text-sm focus:outline-none focus:border-sphera-green"
+                        />
+                        <span className="text-xs text-sphera-text-muted">pts</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -366,39 +433,106 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
             )}
 
             {/* Barre de contrôle globale */}
-            <div className="p-3.5 rounded-2xl bg-sphera-surface border border-sphera-border flex flex-wrap items-center justify-between gap-3">
-              <div className="text-xs text-sphera-text-muted font-medium flex items-center gap-2">
-                <span>{questions.length} question{questions.length > 1 ? 's' : ''}</span>
-                <span>•</span>
-                <span>Total : {questions.reduce((acc, q) => acc + (q.points || 1000), 0)} pts</span>
-              </div>
-              <div className="flex items-center gap-3 flex-wrap">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] text-sphera-text-muted">Tout régler à :</span>
-                  <select
-                    onChange={e => applyGlobalTime(Number(e.target.value))}
-                    defaultValue=""
-                    className="bg-sphera-bg border border-sphera-border rounded-lg px-2 py-1 text-white text-xs"
-                  >
-                    <option value="" disabled>Temps...</option>
-                    <option value="15">15s</option>
-                    <option value="20">20s</option>
-                    <option value="30">30s</option>
-                    <option value="45">45s</option>
-                    <option value="60">60s</option>
-                  </select>
-                  <select
-                    onChange={e => applyGlobalPoints(Number(e.target.value))}
-                    defaultValue=""
-                    className="bg-sphera-bg border border-sphera-border rounded-lg px-2 py-1 text-white text-xs"
-                  >
-                    <option value="" disabled>Points...</option>
-                    <option value="500">500 pts</option>
-                    <option value="1000">1000 pts</option>
-                    <option value="2000">2000 pts</option>
-                  </select>
+            <div className="p-4 rounded-2xl bg-sphera-surface border border-sphera-border space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <span className="text-xs font-bold text-sphera-green uppercase tracking-wider flex items-center gap-1.5">
+                  <Sliders className="w-3.5 h-3.5" /> Réglage global pour toutes les questions
+                </span>
+                <div className="text-xs text-sphera-text-muted font-medium flex items-center gap-2">
+                  <span>{questions.length} question{questions.length > 1 ? 's' : ''}</span>
+                  <span>•</span>
+                  <span>Total : {questions.reduce((acc, q) => acc + (q.points || 1000), 0)} pts</span>
                 </div>
               </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sphera-text-muted flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-blue-400" /> Temps pour toutes :
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={isCustomBulkTime ? 'custom' : bulkTime}
+                      onChange={(e) => {
+                        if (e.target.value === 'custom') {
+                          setIsCustomBulkTime(true);
+                        } else {
+                          setIsCustomBulkTime(false);
+                          setBulkTime(parseInt(e.target.value, 10));
+                        }
+                      }}
+                      className="flex-1 bg-sphera-bg border border-sphera-border text-white text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-sphera-green"
+                    >
+                      {TIME_PRESETS.map(t => (
+                        <option key={t} value={t}>{t}s</option>
+                      ))}
+                      <option value="custom">Personnalisé...</option>
+                    </select>
+                    {isCustomBulkTime && (
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          min={5}
+                          max={600}
+                          value={customBulkTime}
+                          onChange={(e) => setCustomBulkTime(e.target.value)}
+                          placeholder="sec"
+                          className="w-16 bg-sphera-bg border border-sphera-border text-white text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:border-sphera-green"
+                        />
+                        <span className="text-xs text-sphera-text-muted">s</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sphera-text-muted flex items-center gap-1">
+                    <Award className="w-3 h-3 text-yellow-400" /> Points pour toutes :
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={isCustomBulkPoints ? 'custom' : bulkPoints}
+                      onChange={(e) => {
+                        if (e.target.value === 'custom') {
+                          setIsCustomBulkPoints(true);
+                        } else {
+                          setIsCustomBulkPoints(false);
+                          setBulkPoints(parseInt(e.target.value, 10));
+                        }
+                      }}
+                      className="flex-1 bg-sphera-bg border border-sphera-border text-white text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-sphera-green"
+                    >
+                      {POINTS_PRESETS.map(p => (
+                        <option key={p} value={p}>{p} pts</option>
+                      ))}
+                      <option value="custom">Personnalisé...</option>
+                    </select>
+                    {isCustomBulkPoints && (
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          min={50}
+                          max={10000}
+                          step={50}
+                          value={customBulkPoints}
+                          onChange={(e) => setCustomBulkPoints(e.target.value)}
+                          placeholder="pts"
+                          className="w-20 bg-sphera-bg border border-sphera-border text-white text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:border-sphera-green"
+                        />
+                        <span className="text-xs text-sphera-text-muted">pts</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleApplyBulkToAll}
+                className="w-full py-2 px-3 rounded-lg bg-sphera-green/10 hover:bg-sphera-green/20 border border-sphera-green/30 text-sphera-green font-semibold text-xs transition-colors flex items-center justify-center gap-1.5"
+              >
+                <Check className="w-3.5 h-3.5" /> Appliquer à toutes les questions ({questions.length})
+              </button>
             </div>
 
             {/* Liste des questions */}
@@ -477,44 +611,80 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
                 {/* Réglage du temps et des points de CETTE question */}
                 <div className="pt-2 border-t border-sphera-border/50 flex items-center justify-between flex-wrap gap-4 text-xs">
                   <div className="flex items-center gap-2">
-                    <Clock className="w-3.5 h-3.5 text-sphera-text-muted" />
+                    <Clock className="w-3.5 h-3.5 text-blue-400" />
                     <span className="text-sphera-text-muted">Temps :</span>
                     <select 
-                      value={q.timeLimit}
+                      value={TIME_PRESETS.includes(q.timeLimit) ? q.timeLimit : 'custom'}
                       onChange={e => {
                         const newQ = [...questions];
-                        newQ[qIndex].timeLimit = parseInt(e.target.value, 10);
+                        if (e.target.value !== 'custom') {
+                          newQ[qIndex].timeLimit = parseInt(e.target.value, 10);
+                        }
                         setQuestions(newQ);
                       }}
                       className="bg-sphera-bg border border-sphera-border rounded-lg px-2 py-1 text-white text-xs focus:outline-none focus:border-sphera-green"
                     >
-                      <option value="10">10s</option>
-                      <option value="15">15s</option>
-                      <option value="20">20s</option>
-                      <option value="30">30s</option>
-                      <option value="45">45s</option>
-                      <option value="60">60s</option>
-                      <option value="90">90s</option>
-                      <option value="120">120s</option>
+                      {TIME_PRESETS.map(t => (
+                        <option key={t} value={t}>{t}s</option>
+                      ))}
+                      <option value="custom">Perso...</option>
                     </select>
+                    {!TIME_PRESETS.includes(q.timeLimit) && (
+                      <div className="flex items-center gap-0.5">
+                        <input
+                          type="number"
+                          min={5}
+                          max={600}
+                          value={q.timeLimit}
+                          onChange={e => {
+                            const newQ = [...questions];
+                            newQ[qIndex].timeLimit = parseInt(e.target.value, 10) || 5;
+                            setQuestions(newQ);
+                          }}
+                          className="w-12 bg-sphera-bg border border-sphera-border rounded px-1.5 py-1 text-white text-xs focus:outline-none focus:border-sphera-green"
+                        />
+                        <span className="text-[10px] text-sphera-text-muted">s</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <Award className="w-3.5 h-3.5 text-[#ff9800]" />
+                    <Award className="w-3.5 h-3.5 text-yellow-400" />
                     <span className="text-sphera-text-muted">Points :</span>
                     <select 
-                      value={q.points}
+                      value={POINTS_PRESETS.includes(q.points) ? q.points : 'custom'}
                       onChange={e => {
                         const newQ = [...questions];
-                        newQ[qIndex].points = parseInt(e.target.value, 10);
+                        if (e.target.value !== 'custom') {
+                          newQ[qIndex].points = parseInt(e.target.value, 10);
+                        }
                         setQuestions(newQ);
                       }}
                       className="bg-sphera-bg border border-sphera-border rounded-lg px-2 py-1 text-white text-xs focus:outline-none focus:border-sphera-green"
                     >
-                      <option value="500">500 pts</option>
-                      <option value="1000">1 000 pts (Standard)</option>
-                      <option value="2000">2 000 pts (Double)</option>
+                      {POINTS_PRESETS.map(p => (
+                        <option key={p} value={p}>{p} pts</option>
+                      ))}
+                      <option value="custom">Perso...</option>
                     </select>
+                    {!POINTS_PRESETS.includes(q.points) && (
+                      <div className="flex items-center gap-0.5">
+                        <input
+                          type="number"
+                          min={50}
+                          max={10000}
+                          step={50}
+                          value={q.points}
+                          onChange={e => {
+                            const newQ = [...questions];
+                            newQ[qIndex].points = parseInt(e.target.value, 10) || 100;
+                            setQuestions(newQ);
+                          }}
+                          className="w-16 bg-sphera-bg border border-sphera-border rounded px-1.5 py-1 text-white text-xs focus:outline-none focus:border-sphera-green"
+                        />
+                        <span className="text-[10px] text-sphera-text-muted">pts</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -524,7 +694,13 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
               type="button"
               onClick={() => setQuestions([
                 ...questions, 
-                { question: '', options: ['', '', '', ''], correctIndex: 0, timeLimit: defaultTimeLimit, points: defaultPoints }
+                { 
+                  question: '', 
+                  options: ['', '', '', ''], 
+                  correctIndex: 0, 
+                  timeLimit: isCustomDefaultTime ? (parseInt(customDefaultTime, 10) || 30) : defaultTimeLimit, 
+                  points: isCustomDefaultPoints ? (parseInt(customDefaultPoints, 10) || 1000) : defaultPoints 
+                }
               ])}
               className="flex items-center gap-2 text-sphera-green hover:text-green-400 transition-colors text-sm font-semibold"
             >
@@ -540,7 +716,7 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
                 className="w-full bg-sphera-green text-black font-bold text-lg rounded-2xl px-6 py-4 hover:bg-sphera-green-hover transition-all duration-300 shadow-[0_0_20px_rgba(34,197,94,0.3)] hover:shadow-[0_0_30px_rgba(34,197,94,0.5)] disabled:opacity-50 flex justify-center items-center gap-2"
               >
                 {loading && <Loader2 className="w-6 h-6 animate-spin" />}
-                {loading ? 'Lancement de la session...' : '🚀 Lancer la session Live'}
+                {loading ? 'Lancement de la session...' : 'Lancer la session Live'}
               </button>
             </div>
           </div>
