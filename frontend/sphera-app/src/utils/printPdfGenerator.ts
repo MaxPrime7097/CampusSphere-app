@@ -795,10 +795,23 @@ export function generateFicheHtml(options: GenerateFicheOptions): string {
 }
 
 export function generateAnnaleHtml(options: GenerateAnnaleOptions): string {
-  const a = options.annale || {}
-  const title = a.titre || "Correction d'Annale d'Examen"
+  let raw = options.annale || {}
+  if (typeof raw === 'string') {
+    try { raw = JSON.parse(raw) } catch {}
+  }
+  let a = raw?.content?.annale || raw?.annale || raw?.content || raw
+  if (typeof a === 'string') {
+    try { a = JSON.parse(a) } catch {}
+  }
+  const title = a?.titre || raw?.titre || raw?.source_title || raw?.source_filename || options.sourceName || "Correction d'Annale d'Examen"
   const dateStr = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
-  const hasSections = Array.isArray(a.sections) && a.sections.length > 0
+
+  const isRawArray = Array.isArray(a)
+  const rawSections = !isRawArray && (Array.isArray(a?.sections) ? a.sections : (Array.isArray(a?.parties) ? a.parties : []))
+  const hasSections = Array.isArray(rawSections) && rawSections.length > 0
+  const hasCorrections = !isRawArray && Array.isArray(a?.corrections) && a.corrections.length > 0
+  const hasQuestions = !isRawArray && Array.isArray(a?.questions) && a.questions.length > 0
+  const questionsList = isRawArray ? a : hasCorrections ? a.corrections : hasQuestions ? a.questions : []
 
   let html = `<!DOCTYPE html>
   <html lang="fr">
@@ -839,13 +852,33 @@ export function generateAnnaleHtml(options: GenerateAnnaleOptions): string {
         <div class="question-enonce">${markdownToHtml(q.enonce || q.question || '')}</div>
     `
 
-    // Réponse attendue
-    const rep = q.reponse_attendue || q.reponse_courte || q.reponse
+    // Réponse attendue / corrigé
+    const rep = q.reponse_attendue || q.reponse_courte || q.reponse || q.correction || q.answer || q.solution
     if (rep) {
       qHtml += `
         <div class="answer-block">
           <div class="answer-title">Corrigé & Solution Attendue</div>
-          <div style="font-size:9pt; color:#0f172a;">${markdownToHtml(rep)}</div>
+          <div style="font-size:9pt; color:#0f172a; line-height:1.5;">${markdownToHtml(rep)}</div>
+        </div>
+      `
+    }
+
+    // Explication détaillée
+    const expl = q.explication || q.justification || q.raisonnement
+    if (expl) {
+      qHtml += `
+        <div style="margin-top:8px; padding:8px 12px; background:#f0fdf4; border-left:3px solid #10b981; border-radius:6px;">
+          <div style="font-size:8pt; font-weight:700; color:#047857; text-transform:uppercase; margin-bottom:3px;">Explication détaillée & Raisonnement</div>
+          <div style="font-size:8.5pt; color:#1e293b; line-height:1.5;">${markdownToHtml(expl)}</div>
+        </div>
+      `
+    }
+
+    // Référence cours
+    if (q.source_cours || q.chapitre) {
+      qHtml += `
+        <div style="margin-top:6px; font-size:8pt; color:#6b21a8; background:#faf5ff; padding:4px 8px; border-radius:4px; display:inline-block;">
+          <strong>Référence cours :</strong> ${escapeHtml(q.source_cours || q.chapitre)}
         </div>
       `
     }
@@ -878,12 +911,12 @@ export function generateAnnaleHtml(options: GenerateAnnaleOptions): string {
       qHtml += `</table></div>`
     }
 
-    // Pièges fréquents
-    if (q.piege_frequent || q.pieges_frequents) {
-      const pText = q.piege_frequent || (Array.isArray(q.pieges_frequents) ? q.pieges_frequents.join(' • ') : q.pieges_frequents)
+    // Pièges fréquents / À retenir
+    if (q.piege_frequent || q.pieges_frequents || q.a_retenir) {
+      const pText = q.piege_frequent || (Array.isArray(q.pieges_frequents) ? q.pieges_frequents.join(' • ') : q.pieges_frequents) || q.a_retenir
       qHtml += `
         <div class="warning-card" style="margin-top:8px; padding:6px 10px;">
-          <span style="font-weight:700; color:#b45309; font-size:8pt; display:inline-flex; align-items:center; gap:4px;"><span class="section-icon-amber">${ICONS.pieges}</span> Piège fréquent : </span>
+          <span style="font-weight:700; color:#b45309; font-size:8pt; display:inline-flex; align-items:center; gap:4px;"><span class="section-icon-amber">${ICONS.pieges}</span> À retenir / Piège : </span>
           <span style="font-size:8.5pt; color:#451a03;">${markdownToHtml(pText)}</span>
         </div>
       `
@@ -894,10 +927,10 @@ export function generateAnnaleHtml(options: GenerateAnnaleOptions): string {
   }
 
   if (hasSections) {
-    a.sections.forEach((sec: any, secIdx: number) => {
+    rawSections.forEach((sec: any, secIdx: number) => {
       html += `
         <div class="section-title">
-          <span class="section-icon">${secIdx + 1}.</span> ${escapeHtml(sec.nom || `Section ${secIdx + 1}`)}
+          <span class="section-icon">${secIdx + 1}.</span> ${escapeHtml(sec.nom || sec.titre || sec.section || `Section ${secIdx + 1}`)}
         </div>
       `
       if (Array.isArray(sec.questions)) {
@@ -906,20 +939,21 @@ export function generateAnnaleHtml(options: GenerateAnnaleOptions): string {
         })
       }
     })
-  } else if (Array.isArray(a.corrections)) {
-    a.corrections.forEach((q: any, qIdx: number) => {
+  } else if (questionsList.length > 0) {
+    questionsList.forEach((q: any, qIdx: number) => {
       html += renderQuestion(q, qIdx)
     })
   }
 
   // Conseils généraux
-  if (Array.isArray(a.conseils_generaux) && a.conseils_generaux.length > 0) {
+  const conseils = a?.conseils_generaux || raw?.conseils_generaux || []
+  if (Array.isArray(conseils) && conseils.length > 0) {
     html += `
       <div class="callout-card-blue page-break-avoid" style="margin-top:20px;">
         <div class="callout-title-blue"><span class="section-icon-blue">${ICONS.resume}</span> Conseils Stratégiques pour l'Épreuve</div>
         <ul style="padding-left:16px; font-size:9pt; color:#334155;">
     `
-    a.conseils_generaux.forEach((c: string) => {
+    conseils.forEach((c: string) => {
       html += `<li style="margin-bottom:4px;">${markdownToHtml(c)}</li>`
     })
     html += `</ul></div>`
@@ -955,6 +989,8 @@ export function generateAnnaleHtml(options: GenerateAnnaleOptions): string {
 
   return html
 }
+
+
 
 /**
  * Lance l'impression vectorielle haute définition dans un iframe masqué.
