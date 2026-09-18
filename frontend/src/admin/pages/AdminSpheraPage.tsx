@@ -260,7 +260,7 @@ export function AdminSpheraPage() {
             </div>
             <div>
               <p className="text-sm font-bold font-automata text-foreground truncate" title={budget?.model}>
-                Claude 4.5 Haiku
+                AWS Bedrock
               </p>
               <p className="text-[10px] text-muted-foreground mt-0.5">
                 AWS Bedrock ({budget?.model?.split(":")[0]?.split("-").slice(-2).join("-") || "us-east-1"})

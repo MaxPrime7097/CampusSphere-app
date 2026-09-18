@@ -3,7 +3,9 @@ import { Send, MessageCircleQuestion, AlertCircle, Loader2 } from "lucide-react"
 import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { useQAChat } from "../hooks/useQAChat";
 import { CommandMenu, CHAT_COMMANDS, type ChatCommand } from "./CommandMenu";
+import { MarkdownRenderer } from "./MarkdownRenderer";
 import type { QAMessage } from "../types/sphera.types";
+
 
 interface QAChatProps {
   sessionId: number;
@@ -164,10 +166,11 @@ export function QAChat({ sessionId, initialHistory = [] }: QAChatProps) {
               <div className="flex-shrink-0 w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center mt-0.5">
                 <SpheraIcon size="sm" />
               </div>
-              <div className="max-w-[80%] bg-accent/60 border border-border/30 rounded-2xl rounded-tl-sm px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap">
-                {msg.answer}
+              <div className="max-w-[85%] bg-accent/60 border border-border/30 rounded-2xl rounded-tl-sm px-4 py-3 text-sm leading-relaxed">
+                <MarkdownRenderer content={msg.answer} />
               </div>
             </div>
+
           </div>
         ))}
 
