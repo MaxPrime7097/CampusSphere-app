@@ -6,12 +6,18 @@ import { QuestionDisplay } from '../components/quiz-live/QuestionDisplay';
 import { Leaderboard } from '../components/quiz-live/Leaderboard';
 import { getQuizSessionByCode } from '../services/spheraApi';
 import { useSpheraAuth } from '../contexts/SpheraAuthContext';
-import { Loader2, LogIn, ArrowLeft } from 'lucide-react';
+import { Loader2, LogIn, ArrowLeft, Volume2, VolumeX } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import confetti from 'canvas-confetti';
-import { playSound, preloadSounds } from '../utils/audioManager';
+import { playSound, preloadSounds, toggleMute, getMuteState } from '../utils/audioManager';
 
 export default function QuizLiveJoin() {
+  const [isMuted, setIsMuted] = useState(getMuteState());
+
+  const toggleSound = () => {
+    setIsMuted(toggleMute());
+  };
+
   // Preload sounds when component mounts
   useEffect(() => {
     preloadSounds();
@@ -76,6 +82,8 @@ export default function QuizLiveJoin() {
     if (currentQuestion) {
       setSelectedOption(null);
       setAnswerTime(Date.now());
+    } else {
+      setSelectedOption(null);
     }
   }, [currentQuestion]);
 
@@ -161,6 +169,15 @@ export default function QuizLiveJoin() {
           <span>Sphera Live</span>
         </Link>
       )}
+
+      {/* Mute Button for participant */}
+      <button 
+        onClick={toggleSound}
+        className="absolute top-6 right-6 z-50 p-3 rounded-full bg-sphera-surface-2 border border-sphera-border text-white hover:bg-sphera-surface transition-colors shadow-lg"
+        title={isMuted ? "Activer le son" : "Couper le son"}
+      >
+        {isMuted ? <VolumeX className="w-6 h-6 text-red-500" /> : <Volume2 className="w-6 h-6 text-sphera-green" />}
+      </button>
 
       <main className="flex-1 w-full max-w-5xl mx-auto py-8 px-4 flex flex-col justify-center min-h-screen relative z-10">
         
@@ -288,10 +305,10 @@ export default function QuizLiveJoin() {
                   answerResult.correct ? (
                       <h2 className="text-4xl font-bold text-sphera-green mb-2 animate-bounce">+ {answerResult.pointsEarned} pts</h2>
                   ) : (
-                      <h2 className="text-3xl font-bold text-red-500 mb-2 animate-pulse">Mauvaise reponse</h2>
+                      <h2 className="text-3xl font-bold text-red-500 mb-2 animate-pulse">Mauvaise réponse</h2>
                   )
               ) : (
-                  <h2 className="text-3xl font-bold text-sphera-text-muted mb-2">Temps ecoule</h2>
+                  <h2 className="text-3xl font-bold text-sphera-text-muted mb-2">Temps écoulé</h2>
               )}
             </div>
 

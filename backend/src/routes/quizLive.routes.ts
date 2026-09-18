@@ -96,30 +96,49 @@ async function createSessionWithQuestions(hostId: number, title: string, questio
   return session;
 }
 
+function cleanOptionText(text: string): string {
+  if (typeof text !== "string") return "";
+  return text.replace(/^[A-Da-d0-9][.)\-:]\s*/, "").trim();
+}
+
 function mapAiQuizQuestions(generatedQuestions: any[], defaultTime = 30, defaultPoints = 1000) {
   return generatedQuestions.map((q: any) => {
-    let correctIndex = 0;
+    let initialCorrectIndex = 0;
     const letter = typeof q.bonne_reponse === "string" ? q.bonne_reponse.trim().toUpperCase()[0] : "";
-    if (letter === "A") correctIndex = 0;
-    else if (letter === "B") correctIndex = 1;
-    else if (letter === "C") correctIndex = 2;
-    else if (letter === "D") correctIndex = 3;
+    if (letter === "A") initialCorrectIndex = 0;
+    else if (letter === "B") initialCorrectIndex = 1;
+    else if (letter === "C") initialCorrectIndex = 2;
+    else if (letter === "D") initialCorrectIndex = 3;
     else if (typeof q.bonne_reponse === "number" && q.bonne_reponse >= 0 && q.bonne_reponse <= 3) {
-      correctIndex = q.bonne_reponse;
+      initialCorrectIndex = q.bonne_reponse;
     }
 
     const rawOptions = Array.isArray(q.options) ? q.options : [];
-    const options: string[] = [
-      rawOptions[0] || "Option A",
-      rawOptions[1] || "Option B",
-      rawOptions[2] || "Option C",
-      rawOptions[3] || "Option D",
-    ];
+    const fallbackLabels = ["Option A", "Option B", "Option C", "Option D"];
+
+    // Prepare items with their correctness flag and cleaned text
+    const optionItems = [0, 1, 2, 3].map(i => {
+      const raw = rawOptions[i];
+      const cleaned = cleanOptionText(raw || fallbackLabels[i]);
+      return {
+        text: cleaned || fallbackLabels[i],
+        isCorrect: i === initialCorrectIndex,
+      };
+    });
+
+    // Fisher-Yates shuffle to randomize answer position across A, B, C, D
+    for (let i = optionItems.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [optionItems[i], optionItems[j]] = [optionItems[j], optionItems[i]];
+    }
+
+    const shuffledOptions = optionItems.map(item => item.text);
+    const newCorrectIndex = optionItems.findIndex(item => item.isCorrect);
 
     return {
       question: q.question || "Question",
-      options,
-      correctIndex,
+      options: shuffledOptions,
+      correctIndex: newCorrectIndex >= 0 ? newCorrectIndex : 0,
       timeLimit: typeof q.timeLimit === "number" && q.timeLimit > 0 ? q.timeLimit : defaultTime,
       points: typeof q.points === "number" && q.points > 0 ? q.points : defaultPoints,
     };
