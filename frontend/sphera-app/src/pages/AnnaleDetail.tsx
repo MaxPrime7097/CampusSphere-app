@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getAnnale, askQuestion } from '../services/spheraApi'
 import { normalizeAiResponse } from '../utils/normalizeAiResponse'
-import { MessageSquare, Bot, User, Send, ArrowUp } from 'lucide-react'
+import { MessageSquare, Bot, User, Send, ArrowUp, Download, Loader2 } from 'lucide-react'
+import { useDownloadPDF } from '../hooks/useDownloadPDF'
 
 export default function AnnaleDetail() {
   const { id } = useParams<{ id: string }>()
@@ -14,6 +15,7 @@ export default function AnnaleDetail() {
   const [chatMessage, setChatMessage] = useState('')
   const [chatHistory, setChatHistory] = useState<any[]>([])
   const [isChatting, setIsChatting] = useState(false)
+  const { isDownloading, generateAnnale } = useDownloadPDF()
 
   useEffect(() => {
     if (!id) return
@@ -78,9 +80,20 @@ export default function AnnaleDetail() {
     <div style={{ padding: '2rem 1.25rem 4rem', maxWidth: 860, margin: '0 auto' }}>
       <div className="animate-in" style={{ marginBottom: '2rem' }}>
         <button onClick={() => navigate('/dashboard')} className="btn btn-ghost btn-sm" style={{ marginBottom: '0.75rem' }}>← Tableau de bord</button>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <h1 style={{ fontSize: '1.5rem' }}>{annale.resource_title || annale.source_filename || `Annale #${annale.id}`}</h1>
-          <span className="badge badge-brand">{annale.mode === 'rapide' ? '⚡ Rapide' : '📚 Complète'}</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <h1 style={{ fontSize: '1.5rem' }}>{annale.resource_title || annale.source_filename || `Annale #${annale.id}`}</h1>
+            <span className="badge badge-brand">{annale.mode === 'rapide' ? 'Rapide' : 'Complète'}</span>
+          </div>
+          <button
+            onClick={() => generateAnnale(annale, annale.resource_title || annale.source_filename)}
+            disabled={isDownloading}
+            className="btn btn-outline btn-sm"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
+          >
+            {isDownloading ? <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} /> : <Download style={{ width: 14, height: 14 }} />}
+            Télécharger PDF
+          </button>
         </div>
         {annale.created_at && (
           <p style={{ color: 'var(--text-3)', fontSize: '0.8rem', marginTop: '0.25rem' }}>
@@ -99,7 +112,7 @@ export default function AnnaleDetail() {
               transition: 'all 0.2s',
             }}
           >
-            📚 Correction
+            Correction
           </button>
           <button
             onClick={() => setActiveTab('chat')}
@@ -111,7 +124,7 @@ export default function AnnaleDetail() {
               transition: 'all 0.2s',
             }}
           >
-            💬 Assistant
+            Assistant
           </button>
         </div>
       </div>
@@ -132,7 +145,7 @@ export default function AnnaleDetail() {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <span style={{ fontWeight: 700 }}>{sec.titre || sec.section || `Section ${si + 1}`}</span>
+                    <span style={{ fontWeight: 700 }}>{sec.titre || sec.nom || sec.section || `Section ${si + 1}`}</span>
                     <span style={{ fontSize: '0.72rem', color: 'var(--text-3)' }}>
                       {(sec.questions || []).length} question{(sec.questions || []).length !== 1 ? 's' : ''}
                     </span>
@@ -166,7 +179,7 @@ export default function AnnaleDetail() {
                         {/* Code type */}
                         {q.type === 'code' ? (
                           <div className="code-block" style={{ marginBottom: '0.5rem' }}>
-                            <pre><code>{q.correction || q.reponse}</code></pre>
+                            <pre><code>{q.correction || q.reponse || q.answer}</code></pre>
                           </div>
                         ) : (
                           <p style={{ color: 'var(--text-2)', fontSize: '0.875rem', lineHeight: 1.7 }}>
@@ -179,7 +192,7 @@ export default function AnnaleDetail() {
                             background: 'var(--brand-dim)', borderRadius: 'var(--radius-sm)',
                             fontSize: '0.82rem', color: 'var(--brand)',
                           }}>
-                            ✨ À retenir : {q.a_retenir}
+                            À retenir : {q.a_retenir}
                           </div>
                         )}
                       </div>
