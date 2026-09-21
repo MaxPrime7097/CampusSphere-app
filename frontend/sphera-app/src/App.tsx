@@ -38,14 +38,18 @@ function ScrollToTop() {
 function SSOCatcher() {
   const navigate = useNavigate();
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('access_token');
-    const refresh = params.get('refresh_token');
+    const searchParams = new URLSearchParams(window.location.search);
+    const hash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : '';
+    const hashParams = new URLSearchParams(hash);
+    const token = hashParams.get('access_token') || searchParams.get('access_token');
+    const refresh = hashParams.get('refresh_token') || searchParams.get('refresh_token');
     if (token) {
       localStorage.setItem('sphera_access', token);
       if (refresh) localStorage.setItem('sphera_refresh', refresh);
-      // Clean URL
-      window.history.replaceState({}, document.title, window.location.pathname);
+      // Clean URL (both query and hash)
+      if (window.history.replaceState) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
       // Navigate to dashboard without full reload
       navigate('/dashboard', { replace: true });
     }

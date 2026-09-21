@@ -62,7 +62,7 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    prerenderPublicPagesPlugin(),
+    !process.env.VITEST && prerenderPublicPagesPlugin(),
     VitePWA({
       registerType: "autoUpdate",
       workbox: {

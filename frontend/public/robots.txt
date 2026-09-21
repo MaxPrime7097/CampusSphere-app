@@ -2,6 +2,12 @@
 
 User-agent: *
 Allow: /
+Disallow: /admin/
+Disallow: /messages/
+Disallow: /settings/
+Disallow: /sphera/sessions/
+Disallow: /sso/
+Disallow: /auth/
 
 # Directives explicites pour les moteurs de recherche IA et crawlers LLM
 User-agent: GPTBot
