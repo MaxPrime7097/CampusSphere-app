@@ -164,6 +164,7 @@ QUANTITY RULES:
 STRICT FORMATTING RULES:
 - Each question must have exactly 4 options labeled "A. ...", "B. ...", "C. ...", "D. ...".
 - "bonne_reponse" MUST be strictly a single uppercase letter: "A", "B", "C", or "D". Nothing else — no full text, no lowercase, no number.
+- CRITICAL: Distribute "bonne_reponse" evenly and randomly across "A", "B", "C", and "D". Do NOT systematically choose "A" or "B" for all questions.
 - Cover different aspects of the course: definitions, applications, comparisons, edge cases.
 - Keep explanations concise (1-2 sentences) but informative to ensure output finishes cleanly.
 - All question text, options, and explanations MUST be in the same language as the source text.
@@ -175,7 +176,7 @@ Strict JSON format:
     {
       "question": "Question in source language",
       "options": ["A. Option 1", "B. Option 2", "C. Option 3", "D. Option 4"],
-      "bonne_reponse": "A",
+      "bonne_reponse": "B",
       "explication": "Brief explanation of the correct answer in source language"
     }
   ]
@@ -627,6 +628,7 @@ STRICT FORMATTING RULES:
 - Each question must be unique, relevant, and test a distinct key concept.
 - Exactly 4 options labeled "A. ...", "B. ...", "C. ...", "D. ...".
 - "bonne_reponse" MUST be strictly a single uppercase letter: "A", "B", "C", or "D".
+- CRITICAL: Distribute "bonne_reponse" evenly across "A", "B", "C", and "D". Do NOT systematically pick "A".
 - "explication" must be concise and pedagogical (1-2 sentences).
 - All question text, options, and explanations MUST be written in the same language as <selected_passage>.
 - JSON keys must remain in French as shown in the format below.
@@ -637,7 +639,7 @@ Strict JSON format:
     {
       "question": "Precise question prompt",
       "options": ["A. ...", "B. ...", "C. ...", "D. ..."],
-      "bonne_reponse": "A",
+      "bonne_reponse": "C",
       "explication": "Brief explanation demonstrating why this option is correct."
     }
   ]
