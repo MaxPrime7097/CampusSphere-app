@@ -26,71 +26,8 @@ export function prerenderPublicPagesPlugin(): Plugin {
         }
       };
 
-      const publicHeader = `
-    <header style="position:sticky; top:0; z-index:50; background:rgba(18,18,18,0.88); backdrop-filter:blur(12px); border-bottom:1px solid rgba(255,255,255,0.1);">
-      <div style="max-width:1200px; margin:0 auto; padding:0 1.25rem; height:4.25rem; display:flex; align-items:center; justify-content:space-between;">
-        <a href="/cs-inc" style="display:flex; align-items:center; gap:0.65rem; text-decoration:none;">
-          <img src="/CS.svg" alt="CampusSphere Logo" width="36" height="36" />
-          <span style="font-size:1.35rem; font-weight:800; color:#ff9800; font-family:sans-serif; letter-spacing:-0.02em;">CampusSphere</span>
-        </a>
-        <nav style="display:flex; align-items:center; gap:1.25rem; font-size:0.95rem; font-weight:600;">
-          <a href="/cs-inc/about" style="color:#a1a1aa; text-decoration:none;">À propos</a>
-          <a href="/cs-inc/faq" style="color:#a1a1aa; text-decoration:none;">FAQ</a>
-          <a href="/cs-inc/contact" style="color:#a1a1aa; text-decoration:none;">Contact</a>
-          <a href="/login" style="color:#ff9800; text-decoration:none; margin-left:0.5rem;">Connexion</a>
-          <a href="/register" style="background:#ff9800; color:#ffffff; padding:0.55rem 1.15rem; border-radius:0.5rem; text-decoration:none; font-weight:700;">Rejoins la communauté</a>
-        </nav>
-      </div>
-    </header>
-      `.trim();
-
-      const publicFooter = `
-    <footer style="background:#0a0a0a; border-top:1px solid rgba(255,255,255,0.1); padding:3.5rem 1.5rem 2rem;">
-      <div style="max-width:1100px; margin:0 auto;">
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:2rem; margin-bottom:2.5rem; text-align:left;">
-          <div>
-            <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:1rem;">
-              <img src="/CS.svg" alt="CampusSphere" width="28" height="28" />
-              <span style="font-size:1.15rem; font-weight:800; color:#ff9800;">CampusSphere</span>
-            </div>
-            <p style="color:#a1a1aa; font-size:0.9rem; line-height:1.5;">Le premier réseau social étudiant et plateforme d'entraide universitaire. Connectez-vous, partagez des cours et progressez ensemble.</p>
-          </div>
-          <div>
-            <h4 style="color:#ffffff; font-size:0.95rem; font-weight:700; margin-bottom:1rem;">Plateforme</h4>
-            <ul style="list-style:none; padding:0; margin:0; line-height:2; font-size:0.9rem;">
-              <li><a href="/cs-inc" style="color:#a1a1aa; text-decoration:none;">Accueil</a></li>
-              <li><a href="/cs-inc/about" style="color:#a1a1aa; text-decoration:none;">À propos</a></li>
-              <li><a href="/cs-inc/faq" style="color:#a1a1aa; text-decoration:none;">Foire aux questions</a></li>
-              <li><a href="/cs-inc/contact" style="color:#a1a1aa; text-decoration:none;">Contact & Support</a></li>
-            </ul>
-          </div>
-          <div>
-            <h4 style="color:#ffffff; font-size:0.95rem; font-weight:700; margin-bottom:1rem;">Outils & IA</h4>
-            <ul style="list-style:none; padding:0; margin:0; line-height:2; font-size:0.9rem;">
-              <li><a href="https://sphera.campussphere.app" target="_blank" rel="noopener noreferrer" style="color:#10b981; text-decoration:none; font-weight:600;">Sphera IA Académique &rarr;</a></li>
-              <li><a href="/register" style="color:#a1a1aa; text-decoration:none;">Rejoindre un groupe d'étude</a></li>
-              <li><a href="/register" style="color:#a1a1aa; text-decoration:none;">Partager des cours</a></li>
-            </ul>
-          </div>
-          <div>
-            <h4 style="color:#ffffff; font-size:0.95rem; font-weight:700; margin-bottom:1rem;">Légal & Confidentialité</h4>
-            <ul style="list-style:none; padding:0; margin:0; line-height:2; font-size:0.9rem;">
-              <li><a href="/cs-inc/policies" style="color:#a1a1aa; text-decoration:none;">Centre des politiques</a></li>
-              <li><a href="/cs-inc/policies/privacy" style="color:#a1a1aa; text-decoration:none;">Confidentialité</a></li>
-              <li><a href="/cs-inc/policies/terms" style="color:#a1a1aa; text-decoration:none;">CGU</a></li>
-              <li><a href="/cs-inc/policies/terms-of-sale" style="color:#a1a1aa; text-decoration:none;">CGV</a></li>
-            </ul>
-          </div>
-        </div>
-        <div style="border-top:1px solid rgba(255,255,255,0.08); padding-top:1.5rem; text-align:center; color:#71717a; font-size:0.85rem;">
-          <p>&copy; 2026 CampusSphere. Tous droits réservés. Le réseau social dédié à la communauté étudiante.</p>
-        </div>
-      </div>
-    </footer>
-      `.trim();
-
       // ─────────────────────────────────────────────────────────────
-      // 1. Landing Page HTML (/ and /cs-inc)
+      // 1. Landing Page Metadata & Semantic Noscript (/ and /cs-inc)
       // ─────────────────────────────────────────────────────────────
       const landingTitle = "CampusSphere | Réseau Social Étudiant & Plateforme d'Entraide Universitaire";
       const landingDesc = "CampusSphere est le réseau social étudiant de référence. Rejoignez votre communauté étudiante en ligne : partagez des cours entre étudiants, créez des groupes d'étude et révisez avec Sphera IA.";
@@ -126,133 +63,49 @@ export function prerenderPublicPagesPlugin(): Plugin {
         ]
       };
 
-      const landingRootHtml = `
-<div id="root">
-  <div class="min-h-screen bg-background text-foreground flex flex-col" style="font-family:sans-serif; background-color:#0f0f11; color:#f4f4f5;">
-    ${publicHeader}
-
-    <main class="flex-1">
-      <!-- Hero Section -->
-      <section style="max-width:1150px; margin:0 auto; padding:4.5rem 1.5rem 3rem; text-align:center;">
-        <div style="display:inline-block; padding:0.35rem 1rem; border-radius:9999px; background:rgba(255,152,0,0.12); color:#ff9800; font-size:0.85rem; font-weight:700; margin-bottom:1.5rem; letter-spacing:0.04em; text-transform:uppercase;">
-          Plateforme étudiante &amp; Réseau social universitaire
-        </div>
-        <h1 style="font-size:3rem; font-weight:900; line-height:1.15; margin-bottom:1.5rem; color:#ffffff; max-width:950px; margin-left:auto; margin-right:auto;">
-          Le réseau social étudiant qui connecte la communauté universitaire
-        </h1>
-        <p style="font-size:1.25rem; color:#a1a1aa; max-width:780px; margin:0 auto 2.5rem; line-height:1.6;">
-          Rejoins la communauté étudiante en ligne : partage des cours entre étudiants, collabore au sein de groupes d'étude interactifs et optimise l'organisation de tes études.
-        </p>
-        <div style="display:flex; justify-content:center; gap:1.2rem; flex-wrap:wrap; margin-bottom:3.5rem;">
-          <a href="/register" style="background:linear-gradient(135deg, #ff9800, #ff5722); color:#ffffff; padding:0.95rem 2.25rem; border-radius:0.75rem; text-decoration:none; font-weight:700; font-size:1.1rem; display:inline-block; box-shadow:0 10px 25px rgba(255,152,0,0.25);">
-            Rejoins CampusSphere gratuitement &rarr;
-          </a>
-          <a href="/cs-inc/about" style="border:1px solid rgba(255,255,255,0.2); color:#e4e4e7; padding:0.95rem 1.8rem; border-radius:0.75rem; text-decoration:none; font-weight:600; font-size:1.05rem; display:inline-block; background:rgba(255,255,255,0.03);">
-            Découvrir notre mission
-          </a>
-        </div>
-      </section>
-
-      <!-- Key Features Section (Non-Brand Focus) -->
-      <section style="max-width:1150px; margin:0 auto; padding:3rem 1.5rem 4rem;">
-        <div style="text-align:center; margin-bottom:3.5rem;">
-          <h2 style="font-size:2.4rem; font-weight:800; color:#ffffff; margin-bottom:1rem;">
-            Tout ce dont tu as besoin pour réussir tes études
-          </h2>
-          <p style="color:#a1a1aa; font-size:1.15rem; max-width:700px; margin:0 auto;">
-            Une plateforme tout-en-un développée par et pour les étudiants pour réviser, échanger et s'organiser.
-          </p>
-        </div>
-
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:2rem;">
-          <article style="padding:2.2rem; border-radius:1rem; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08);">
-            <div style="color:#ff9800; font-size:0.85rem; font-weight:700; text-transform:uppercase; margin-bottom:0.6rem;">Groupes d'étude &amp; Sphères</div>
-            <h3 style="font-size:1.45rem; font-weight:700; margin-bottom:1rem; color:#ffffff;">Organisation des études en équipe</h3>
-            <p style="color:#a1a1aa; line-height:1.6; margin-bottom:1.2rem;">
-              Crée des groupes d'étude étudiants par promotion, matière ou filière. Coordonne tes révisions grâce à un tableau Kanban visuel, un chat de groupe instantané et un dashboard d'activité partagé.
-            </p>
-            <ul style="padding-left:1.25rem; color:#d4d4d8; line-height:1.7; font-size:0.95rem;">
-              <li>Tableau Kanban pour planifier devoirs et examens</li>
-              <li>Chat étudiant instantané sans distraction extérieure</li>
-              <li>Centralisation des documents de révision du groupe</li>
-            </ul>
+      const landingNoscriptHtml = `
+      <header>
+        <h1>CampusSphere - Le réseau social qui connecte les étudiants</h1>
+        <p>Rejoignez la communauté étudiante en ligne : sphères collaboratives, partage de cours et ressources universitaires, vie de campus et révisions avec l'IA Sphera.</p>
+      </header>
+      <main>
+        <section>
+          <h2>Plateforme étudiante &amp; Réseau social universitaire</h2>
+          <p>Partagez des cours entre étudiants, collaborez au sein de groupes d'étude interactifs et optimisez l'organisation de vos études.</p>
+        </section>
+        <section>
+          <h2>Fonctionnalités clés de CampusSphere</h2>
+          <article>
+            <h3>Groupes d'étude &amp; Sphères Collaboratives</h3>
+            <p>Créez et rejoignez des espaces de travail thématiques. Tableau Kanban pour piloter vos projets, espace de cours partagé pour centraliser documents et notes, et chat étudiant instantané.</p>
           </article>
-
-          <article style="padding:2.2rem; border-radius:1rem; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08);">
-            <div style="color:#ff9800; font-size:0.85rem; font-weight:700; text-transform:uppercase; margin-bottom:0.6rem;">Ressources &amp; Annales</div>
-            <h3 style="font-size:1.45rem; font-weight:700; margin-bottom:1rem; color:#ffffff;">Partager des cours entre étudiants</h3>
-            <p style="color:#a1a1aa; line-height:1.6; margin-bottom:1.2rem;">
-              Accède à une immense bibliothèque de ressources universitaires partagées par tes pairs : fiches synthétiques, annales universitaires corrigées, résumés de cours et exercices d'entraînement.
-            </p>
-            <ul style="padding-left:1.25rem; color:#d4d4d8; line-height:1.7; font-size:0.95rem;">
-              <li>Filtres précis par matière, filière et niveau d'études</li>
-              <li>Dépôt de cours et fiches en quelques clics</li>
-              <li>Annales corrigées pour préparer sereinement les partiels</li>
-            </ul>
+          <article>
+            <h3>Partager des cours &amp; Ressources universitaires</h3>
+            <p>Bibliothèque collaborative d'annales d'examens et fiches de révision partagées par des étudiants ayant validé la matière.</p>
           </article>
-
-          <article style="padding:2.2rem; border-radius:1rem; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08);">
-            <div style="color:#ff9800; font-size:0.85rem; font-weight:700; text-transform:uppercase; margin-bottom:0.6rem;">Feed Intelligent</div>
-            <h3 style="font-size:1.45rem; font-weight:700; margin-bottom:1rem; color:#ffffff;">Entraide académique &amp; Impact Score</h3>
-            <p style="color:#a1a1aa; line-height:1.6; margin-bottom:1.2rem;">
-              Un fil d'actualité universitaire qui valorise les publications utiles. Pose des questions académiques, partage des conseils méthodologiques et gagne des points de réputation.
-            </p>
-            <ul style="padding-left:1.25rem; color:#d4d4d8; line-height:1.7; font-size:0.95rem;">
-              <li>Impact Score : algorithme qui favorise le contenu utile</li>
-              <li>Pose tes questions aux étudiants des promos supérieures</li>
-              <li>Fini le bruit des réseaux généralistes</li>
-            </ul>
+          <article>
+            <h3>Feed Universitaire avec Impact Score</h3>
+            <p>Un fil d'actualité académique qui valorise les publications utiles et l'entraide entre étudiants.</p>
           </article>
-
-          <article style="padding:2.2rem; border-radius:1rem; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08);">
-            <div style="color:#ff9800; font-size:0.85rem; font-weight:700; text-transform:uppercase; margin-bottom:0.6rem;">Vie de Campus</div>
-            <h3 style="font-size:1.45rem; font-weight:700; margin-bottom:1rem; color:#ffffff;">Plateforme vie étudiante &amp; Événements</h3>
-            <p style="color:#a1a1aa; line-height:1.6; margin-bottom:1.2rem;">
-              Reste connecté avec la vie associative et les initiatives de ton université. Conférences, ateliers de révision collectifs, hackathons et rencontres inter-étudiants.
-            </p>
-            <ul style="padding-left:1.25rem; color:#d4d4d8; line-height:1.7; font-size:0.95rem;">
-              <li>Calendrier des événements universitaires en direct</li>
-              <li>Création et inscription en 1 clic</li>
-              <li>Échange avec les participants avant chaque session</li>
-            </ul>
+          <article>
+            <h3>Plateforme Vie Étudiante &amp; Événements</h3>
+            <p>Calendrier centralisé des conférences, soirées d'intégration, hackathons et événements associatifs de votre campus.</p>
           </article>
-        </div>
-      </section>
-
-      <!-- Sphera Bridge Section -->
-      <section style="max-width:1150px; margin:1rem auto 4rem; padding:2.8rem; border-radius:1.5rem; background:linear-gradient(135deg, rgba(16,185,129,0.12), rgba(6,78,59,0.28)); border:1px solid rgba(16,185,129,0.35);">
-        <div style="color:#10b981; font-weight:bold; font-size:0.85rem; text-transform:uppercase; margin-bottom:0.5rem; letter-spacing:0.05em;">Intelligence Artificielle Académique</div>
-        <h2 style="font-size:2.2rem; font-weight:800; margin-bottom:1rem; color:#ffffff;">Sphera : Votre assistante de révision IA intégrée</h2>
-        <p style="color:#a1a1aa; line-height:1.6; margin-bottom:1.8rem; max-width:780px; font-size:1.1rem;">
-          Révisez plus intelligemment : transformez vos cours en fiches de synthèse, quiz interactifs, flashcards et résolvez des annales d'examens avec une correction pas-à-pas basée sur l'IA.
-        </p>
-        <div style="display:flex; gap:1rem; flex-wrap:wrap;">
-          <a href="https://sphera.campussphere.app" target="_blank" rel="noopener noreferrer" style="background:#10b981; color:#ffffff; padding:0.85rem 1.8rem; border-radius:0.6rem; text-decoration:none; font-weight:700; display:inline-block;">
-            Essayer Sphera gratuitement &rarr;
-          </a>
-          <a href="/cs-inc/faq" style="border:1px solid rgba(255,255,255,0.25); color:#ffffff; padding:0.85rem 1.5rem; border-radius:0.6rem; text-decoration:none; font-weight:600; display:inline-block;">
-            Voir les questions fréquentes
-          </a>
-        </div>
-      </section>
-
-      <!-- Final Call to Action -->
-      <section style="text-align:center; padding:5rem 1.5rem 6rem; background:linear-gradient(180deg, transparent, rgba(255,152,0,0.06)); border-top:1px solid rgba(255,255,255,0.08);">
-        <h2 style="font-size:2.5rem; font-weight:900; margin-bottom:1rem; color:#ff9800;">
-          Prêt à transformer l'organisation de vos études ?
-        </h2>
-        <p style="color:#a1a1aa; max-width:640px; margin:0 auto 2.2rem; font-size:1.15rem; line-height:1.6;">
-          Rejoignez des étudiants de toute filière sur CampusSphere. Partagez des cours, créez vos groupes de travail et boostez vos résultats dès aujourd'hui.
-        </p>
-        <a href="/register" style="background:#ff9800; color:#ffffff; padding:0.95rem 2.4rem; border-radius:0.75rem; text-decoration:none; font-weight:700; font-size:1.15rem; display:inline-block; box-shadow:0 10px 30px rgba(255,152,0,0.3);">
-          Créer mon compte étudiant gratuit
-        </a>
-      </section>
-    </main>
-
-    ${publicFooter}
-  </div>
-</div>
+          <article>
+            <h3>Sphera IA : Assistante académique personnelle</h3>
+            <p>Générez des fiches de révision, résolvez des annales d'examens avec correction pas-à-pas et créez des quiz personnalisés.</p>
+          </article>
+        </section>
+      </main>
+      <nav>
+        <a href="/cs-inc">Accueil</a> |
+        <a href="/cs-inc/about">À propos</a> |
+        <a href="/cs-inc/faq">FAQ</a> |
+        <a href="/cs-inc/contact">Contact</a> |
+        <a href="/login">Connexion</a> |
+        <a href="/register">Inscription</a> |
+        <a href="https://sphera.campussphere.app">Sphera IA</a>
+      </nav>
       `.trim();
 
       const injectPrerender = (
@@ -260,7 +113,7 @@ export function prerenderPublicPagesPlugin(): Plugin {
         metaTitle: string,
         metaDesc: string,
         canonicalUrl: string,
-        bodyHtml: string,
+        noscriptContent: string,
         schemaObj?: object
       ) => {
         const targetDir = path.join(distDir, targetRelativeDir);
@@ -286,10 +139,15 @@ export function prerenderPublicPagesPlugin(): Plugin {
         `.trim();
 
         html = html.replace('</head>', `  ${headAdditions}\n</head>`);
-        html = html.replace(/<div id="root"><\/div>/, bodyHtml);
+        
+        // IMPORTANT: <div id="root"></div> remains UNTOUCHED so real users NEVER see a flash on refresh!
+        // Crawlers and non-JS clients read noscript and head metadata.
+        if (noscriptContent) {
+          html = html.replace(/<noscript>[\s\S]*?<\/noscript>/, `<noscript>\n${noscriptContent}\n    </noscript>`);
+        }
 
         fs.writeFileSync(path.join(targetDir, 'index.html'), html, 'utf-8');
-        console.log(`✓ [prerender-campus] Generated /dist/${targetRelativeDir}/index.html`);
+        console.log(`✓ [prerender-campus] Generated /dist/${targetRelativeDir}/index.html (no visual flash)`);
       };
 
       // 1. Root page (/)
@@ -314,9 +172,10 @@ ${JSON.stringify(landingJsonLd, null, 2)}
     </script>
       `.trim();
       rootHtml = rootHtml.replace('</head>', `  ${rootHeadAdditions}\n</head>`);
-      rootHtml = rootHtml.replace(/<div id="root"><\/div>/, landingRootHtml);
+      rootHtml = rootHtml.replace(/<noscript>[\s\S]*?<\/noscript>/, `<noscript>\n${landingNoscriptHtml}\n    </noscript>`);
+      // <div id="root"></div> REMAINS UNTOUCHED to eliminate any flicker
       fs.writeFileSync(templatePath, rootHtml, 'utf-8');
-      console.log(`✓ [prerender-campus] Prerendered dist/index.html (root)`);
+      console.log(`✓ [prerender-campus] Prerendered dist/index.html (root, no visual flash)`);
 
       // 2. /cs-inc
       injectPrerender(
@@ -324,7 +183,7 @@ ${JSON.stringify(landingJsonLd, null, 2)}
         landingTitle,
         landingDesc,
         'https://campussphere.app/cs-inc',
-        landingRootHtml,
+        landingNoscriptHtml,
         landingJsonLd
       );
 
@@ -347,46 +206,29 @@ ${JSON.stringify(landingJsonLd, null, 2)}
           description: "Plateforme étudiante et réseau social d'entraide universitaire."
         }
       };
-      const aboutHtml = `
-<div id="root">
-  <div class="min-h-screen bg-background text-foreground flex flex-col" style="font-family:sans-serif; background-color:#0f0f11; color:#f4f4f5;">
-    ${publicHeader}
-    <main class="flex-1">
-      <section style="max-width:1050px; margin:0 auto; padding:4.5rem 1.5rem 3rem; text-align:center;">
-        <div style="display:inline-block; padding:0.35rem 1rem; border-radius:9999px; background:rgba(255,152,0,0.12); color:#ff9800; font-size:0.85rem; font-weight:700; margin-bottom:1.5rem;">
-          Notre Histoire &amp; Vision
-        </div>
-        <h1 style="font-size:2.8rem; font-weight:900; line-height:1.2; margin-bottom:1.5rem; color:#ffffff;">
-          À Propos de CampusSphere
-        </h1>
-        <p style="font-size:1.2rem; color:#a1a1aa; max-width:760px; margin:0 auto 2.5rem; line-height:1.6;">
-          La plateforme étudiante qui révolutionne l'apprentissage collaboratif et connecte les étudiants dans une communauté d'entraide, de partage de cours et d'excellence.
-        </p>
-      </section>
-
-      <section style="max-width:900px; margin:0 auto; padding:2rem 1.5rem 4rem; line-height:1.8; color:#d4d4d8; font-size:1.05rem;">
-        <h2 style="font-size:1.8rem; font-weight:800; color:#ffffff; margin-bottom:1rem;">La Vision Originelle (2025)</h2>
-        <p style="margin-bottom:2rem; color:#a1a1aa;">
-          CampusSphere est né en 2025 de la vision d'une communauté étudiante plus connectée et collaborative. Fondée par des étudiants passionnés par l'innovation technologique et l'éducation, notre plateforme répond concrètement aux défis du quotidien universitaire : dispersion des ressources, manque d'outils d'organisation pour les groupes d'étude et absence d'un espace d'entraide dédié.
-        </p>
-
-        <h2 style="font-size:1.8rem; font-weight:800; color:#ffffff; margin-bottom:1rem;">Notre Mission</h2>
-        <p style="margin-bottom:2rem; color:#a1a1aa;">
-          Bâtir le premier réseau social étudiant centré sur la valeur académique et l'entraide mutuelle. Permettre à chaque étudiant d'accéder instantanément aux cours partagés, de s'entraîner sur des annales universitaires et de progresser sereinement tout au long de son cursus.
-        </p>
-
-        <div style="text-align:center; margin-top:3rem;">
-          <a href="/register" style="background:#ff9800; color:#ffffff; padding:0.85rem 2rem; border-radius:0.6rem; text-decoration:none; font-weight:700; font-size:1.05rem; display:inline-block;">
-            Rejoindre la communauté étudiante &rarr;
-          </a>
-        </div>
-      </section>
-    </main>
-    ${publicFooter}
-  </div>
-</div>
+      const aboutNoscriptHtml = `
+      <header>
+        <h1>À Propos de CampusSphere - Notre Histoire &amp; Vision</h1>
+        <p>La plateforme étudiante qui révolutionne l'apprentissage collaboratif et connecte les étudiants dans une communauté d'entraide, de partage de cours et d'excellence.</p>
+      </header>
+      <main>
+        <section>
+          <h2>La Vision Originelle (2025)</h2>
+          <p>CampusSphere est né en 2025 de la vision d'une communauté étudiante plus connectée et collaborative. Fondée par des étudiants passionnés par l'innovation technologique et l'éducation, notre plateforme répond concrètement aux défis du quotidien universitaire : dispersion des ressources, manque d'outils d'organisation pour les groupes d'étude et absence d'un espace d'entraide dédié.</p>
+        </section>
+        <section>
+          <h2>Notre Mission</h2>
+          <p>Bâtir le premier réseau social étudiant centré sur la valeur académique et l'entraide mutuelle. Permettre à chaque étudiant d'accéder instantanément aux cours partagés, de s'entraîner sur des annales universitaires et de progresser sereinement tout au long de son cursus.</p>
+        </section>
+      </main>
+      <nav>
+        <a href="/cs-inc">Accueil</a> |
+        <a href="/cs-inc/faq">FAQ</a> |
+        <a href="/cs-inc/contact">Contact</a> |
+        <a href="/register">Rejoindre la communauté</a>
+      </nav>
       `.trim();
-      injectPrerender('cs-inc/about', aboutTitle, aboutDesc, 'https://campussphere.app/cs-inc/about', aboutHtml, aboutJsonLd);
+      injectPrerender('cs-inc/about', aboutTitle, aboutDesc, 'https://campussphere.app/cs-inc/about', aboutNoscriptHtml, aboutJsonLd);
 
       // ─────────────────────────────────────────────────────────────
       // 4. /cs-inc/faq
@@ -444,51 +286,32 @@ ${JSON.stringify(landingJsonLd, null, 2)}
         }))
       };
 
-      const faqHtml = `
-<div id="root">
-  <div class="min-h-screen bg-background text-foreground flex flex-col" style="font-family:sans-serif; background-color:#0f0f11; color:#f4f4f5;">
-    ${publicHeader}
-    <main class="flex-1">
-      <section style="max-width:900px; margin:0 auto; padding:4.5rem 1.5rem 2rem; text-align:center;">
-        <div style="display:inline-block; padding:0.35rem 1rem; border-radius:9999px; background:rgba(255,152,0,0.12); color:#ff9800; font-size:0.85rem; font-weight:700; margin-bottom:1.5rem;">
-          Centre d'Aide &amp; Questions
-        </div>
-        <h1 style="font-size:2.8rem; font-weight:900; line-height:1.2; margin-bottom:1.5rem; color:#ffffff;">
-          Foire Aux Questions (FAQ)
-        </h1>
-        <p style="font-size:1.15rem; color:#a1a1aa; max-width:680px; margin:0 auto 2.5rem; line-height:1.6;">
-          Toutes les réponses pour utiliser au mieux CampusSphere : partage de cours, groupes d'étude étudiants, révisions avec Sphera IA et organisation académique.
-        </p>
-      </section>
-
-      <section style="max-width:850px; margin:0 auto; padding:1rem 1.5rem 5rem;">
-        <div>
-          ${faqItems.map(item => `
-            <details style="margin-bottom:1.2rem; padding:1.25rem 1.5rem; border-radius:0.75rem; background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.08);">
-              <summary style="font-size:1.15rem; font-weight:700; cursor:pointer; color:#ffffff; outline:none;">
-                ${item.q}
-              </summary>
-              <p style="color:#a1a1aa; line-height:1.65; margin-top:0.85rem; font-size:1rem;">
-                ${item.a}
-              </p>
-            </details>
-          `).join('')}
-        </div>
-
-        <div style="margin-top:3.5rem; padding:2rem; border-radius:1rem; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); text-align:center;">
-          <h3 style="font-size:1.3rem; font-weight:700; color:#ffffff; margin-bottom:0.5rem;">Vous avez une autre question ?</h3>
-          <p style="color:#a1a1aa; font-size:0.95rem; margin-bottom:1.5rem;">Notre équipe est à votre disposition pour vous accompagner.</p>
-          <a href="/cs-inc/contact" style="background:#ff9800; color:#ffffff; padding:0.7rem 1.5rem; border-radius:0.5rem; text-decoration:none; font-weight:700; display:inline-block;">
-            Contactez le support &rarr;
-          </a>
-        </div>
-      </section>
-    </main>
-    ${publicFooter}
-  </div>
-</div>
+      const faqNoscriptHtml = `
+      <header>
+        <h1>Foire Aux Questions (FAQ) - CampusSphere</h1>
+        <p>Toutes les réponses pour utiliser au mieux CampusSphere : partage de cours, groupes d'étude étudiants, révisions avec Sphera IA et organisation académique.</p>
+      </header>
+      <main>
+        <section>
+          <h2>Questions fréquentes</h2>
+          <ul>
+            ${faqItems.map(item => `
+              <li>
+                <h3>${item.q}</h3>
+                <p>${item.a}</p>
+              </li>
+            `).join('')}
+          </ul>
+        </section>
+      </main>
+      <nav>
+        <a href="/cs-inc">Accueil</a> |
+        <a href="/cs-inc/about">À propos</a> |
+        <a href="/cs-inc/contact">Contact</a> |
+        <a href="/register">Inscription</a>
+      </nav>
       `.trim();
-      injectPrerender('cs-inc/faq', faqTitle, faqDesc, 'https://campussphere.app/cs-inc/faq', faqHtml, faqJsonLd);
+      injectPrerender('cs-inc/faq', faqTitle, faqDesc, 'https://campussphere.app/cs-inc/faq', faqNoscriptHtml, faqJsonLd);
 
       // ─────────────────────────────────────────────────────────────
       // 5. /cs-inc/contact
@@ -502,45 +325,26 @@ ${JSON.stringify(landingJsonLd, null, 2)}
         url: 'https://campussphere.app/cs-inc/contact',
         description: contactDesc
       };
-      const contactHtml = `
-<div id="root">
-  <div class="min-h-screen bg-background text-foreground flex flex-col" style="font-family:sans-serif; background-color:#0f0f11; color:#f4f4f5;">
-    ${publicHeader}
-    <main class="flex-1">
-      <section style="max-width:900px; margin:0 auto; padding:4.5rem 1.5rem 3rem; text-align:center;">
-        <div style="display:inline-block; padding:0.35rem 1rem; border-radius:9999px; background:rgba(255,152,0,0.12); color:#ff9800; font-size:0.85rem; font-weight:700; margin-bottom:1.5rem;">
-          Support &amp; Partenariats
-        </div>
-        <h1 style="font-size:2.8rem; font-weight:900; line-height:1.2; margin-bottom:1.5rem; color:#ffffff;">
-          Contactez l'Équipe CampusSphere
-        </h1>
-        <p style="font-size:1.15rem; color:#a1a1aa; max-width:680px; margin:0 auto 2.5rem; line-height:1.6;">
-          Nous sommes à votre écoute pour toute question relative à votre compte, vos groupes d'étude ou les partenariats universitaires.
-        </p>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:1.5rem; margin-top:2rem; text-align:left;">
-          <div style="padding:1.8rem; border-radius:0.75rem; background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.08);">
-            <h3 style="font-size:1.15rem; font-weight:700; color:#ffffff; margin-bottom:0.5rem;">Assistance &amp; Technique</h3>
-            <p style="color:#a1a1aa; font-size:0.95rem; margin-bottom:1rem;">Problème de compte, bug ou question sur la plateforme :</p>
-            <a href="mailto:support@campussphere.app" style="color:#ff9800; font-weight:700; text-decoration:none;">support@campussphere.app</a>
-          </div>
-          <div style="padding:1.8rem; border-radius:0.75rem; background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.08);">
-            <h3 style="font-size:1.15rem; font-weight:700; color:#ffffff; margin-bottom:0.5rem;">Partenariats &amp; Campus</h3>
-            <p style="color:#a1a1aa; font-size:0.95rem; margin-bottom:1rem;">Associations étudiantes, universités et relations presse :</p>
-            <a href="mailto:contact@campussphere.app" style="color:#ff9800; font-weight:700; text-decoration:none;">contact@campussphere.app</a>
-          </div>
-          <div style="padding:1.8rem; border-radius:0.75rem; background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.08);">
-            <h3 style="font-size:1.15rem; font-weight:700; color:#ffffff; margin-bottom:0.5rem;">Juridique &amp; Données</h3>
-            <p style="color:#a1a1aa; font-size:0.95rem; margin-bottom:1rem;">RGPD, suppression de données et signalements :</p>
-            <a href="mailto:policies@campussphere.app" style="color:#ff9800; font-weight:700; text-decoration:none;">policies@campussphere.app</a>
-          </div>
-        </div>
-      </section>
-    </main>
-    ${publicFooter}
-  </div>
-</div>
+      const contactNoscriptHtml = `
+      <header>
+        <h1>Contactez l'Équipe CampusSphere</h1>
+        <p>Nous sommes à votre écoute pour toute question relative à votre compte, vos groupes d'étude ou les partenariats universitaires.</p>
+      </header>
+      <main>
+        <section>
+          <h2>Canaux de contact</h2>
+          <p><strong>Assistance &amp; Technique :</strong> support@campussphere.app</p>
+          <p><strong>Partenariats &amp; Campus :</strong> contact@campussphere.app</p>
+          <p><strong>Juridique &amp; Données :</strong> policies@campussphere.app</p>
+        </section>
+      </main>
+      <nav>
+        <a href="/cs-inc">Accueil</a> |
+        <a href="/cs-inc/about">À propos</a> |
+        <a href="/cs-inc/faq">FAQ</a>
+      </nav>
       `.trim();
-      injectPrerender('cs-inc/contact', contactTitle, contactDesc, 'https://campussphere.app/cs-inc/contact', contactHtml, contactJsonLd);
+      injectPrerender('cs-inc/contact', contactTitle, contactDesc, 'https://campussphere.app/cs-inc/contact', contactNoscriptHtml, contactJsonLd);
 
       // ─────────────────────────────────────────────────────────────
       // 6. /cs-inc/policies & Legal subpages
