@@ -571,3 +571,72 @@ export async function getQuota(): Promise<{ success: boolean; data: GenerationQu
   });
 }
 
+// ─── Sphera Preferences & Settings ──────────────────────────────
+export interface SpheraPreferencesData {
+  id: number;
+  user_id: number;
+  default_language: 'auto' | 'fr' | 'en';
+  detail_level: 'court' | 'standard' | 'detaille';
+  tone: 'decontracte' | 'formel';
+  quiz_question_count: number | null;
+  quiz_time_limit: number;
+  flashcard_count: number | null;
+  theme: 'system' | 'sombre' | 'clair';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SpheraProfileData {
+  id: number;
+  username: string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  avatar: string | null;
+  university: string;
+  faculty: string;
+  study_year: string;
+  edit_url: string;
+}
+
+export interface SpheraStatsData {
+  total_sessions: number;
+  current_streak: number;
+  longest_streak: number;
+  favorite_tool: string;
+  tool_counts: Record<string, number>;
+  activity_grid: Record<string, number>;
+}
+
+export async function getSpheraPreferences(): Promise<{ success: boolean; data: SpheraPreferencesData }> {
+  return apiFetch<{ success: boolean; data: SpheraPreferencesData }>('api/sphera/preferences/', {
+    method: 'GET',
+    requireAuth: true,
+  });
+}
+
+export async function updateSpheraPreferences(
+  updates: Partial<SpheraPreferencesData>
+): Promise<{ success: boolean; data: SpheraPreferencesData }> {
+  return apiFetch<{ success: boolean; data: SpheraPreferencesData }>('api/sphera/preferences/', {
+    method: 'PATCH',
+    body: updates,
+    requireAuth: true,
+  });
+}
+
+export async function getSpheraProfile(): Promise<{ success: boolean; data: SpheraProfileData }> {
+  return apiFetch<{ success: boolean; data: SpheraProfileData }>('api/sphera/profile/', {
+    method: 'GET',
+    requireAuth: true,
+  });
+}
+
+export async function getSpheraStats(): Promise<{ success: boolean; data: SpheraStatsData }> {
+  return apiFetch<{ success: boolean; data: SpheraStatsData }>('api/sphera/stats/', {
+    method: 'GET',
+    requireAuth: true,
+  });
+}
+
+

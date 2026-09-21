@@ -34,6 +34,7 @@ import { extractText, SUPPORTED_EXTENSIONS } from "../services/extraction.js";
 import { checkGenerationQuota, incrementGenerationQuota, WEEKLY_LIMIT } from "../middleware/generationQuota.js";
 import { getWeekStartDate } from "../lib/weekHelper.js";
 import { synthesizeSpeech, sanitizeDialogueTurns, type DialogueTurn } from "../services/ttsProvider.js";
+import { invalidatePreferencesCache } from "../services/ai/userContext.js";
 import {
   generateAnnale,
   generateFromSelection,
@@ -293,6 +294,290 @@ const quotaHandler = async (req: Request, res: Response) => {
 
 spheraRouter.get("/quota", quotaHandler);
 spheraRouter.get("/quota/", quotaHandler);
+
+// ── Preferences (Sphera Settings) ──────────────────────────────────────────
+
+function serializePreferences(prefs: {
+  id: number;
+  userId: number;
+  defaultLanguage: string;
+  detailLevel: string;
+  tone: string;
+  quizQuestionCount: number | null;
+  quizTimeLimit: number;
+  flashcardCount: number | null;
+  theme: string;
+  createdAt: Date;
+  updatedAt: Date;
+}) {
+  return {
+    id: prefs.id,
+    user_id: prefs.userId,
+    default_language: prefs.defaultLanguage,
+    detail_level: prefs.detailLevel,
+    tone: prefs.tone,
+    quiz_question_count: prefs.quizQuestionCount,
+    quiz_time_limit: prefs.quizTimeLimit,
+    flashcard_count: prefs.flashcardCount,
+    theme: prefs.theme,
+    created_at: prefs.createdAt.toISOString(),
+    updated_at: prefs.updatedAt.toISOString(),
+  };
+}
+
+const updatePreferencesSchema = z.object({
+  default_language: z.enum(["auto", "fr", "en"]).optional(),
+  defaultLanguage: z.enum(["auto", "fr", "en"]).optional(),
+  detail_level: z.enum(["court", "standard", "detaille"]).optional(),
+  detailLevel: z.enum(["court", "standard", "detaille"]).optional(),
+  tone: z.enum(["decontracte", "formel"]).optional(),
+  quiz_question_count: z.union([z.number().int().min(5).max(30), z.null()]).optional(),
+  quizQuestionCount: z.union([z.number().int().min(5).max(30), z.null()]).optional(),
+  quiz_time_limit: z.number().int().min(5).max(60).optional(),
+  quizTimeLimit: z.number().int().min(5).max(60).optional(),
+  flashcard_count: z.union([z.number().int().min(5).max(30), z.null()]).optional(),
+  flashcardCount: z.union([z.number().int().min(5).max(30), z.null()]).optional(),
+  theme: z.enum(["system", "sombre", "clair"]).optional(),
+});
+
+const getPreferencesHandler = async (req: Request, res: Response) => {
+  const me = currentUser(req);
+  let prefs = await prisma.spheraPreferences.findUnique({
+    where: { userId: me.id },
+  });
+  if (!prefs) {
+    prefs = await prisma.spheraPreferences.create({
+      data: {
+        userId: me.id,
+      },
+    });
+  }
+  ok(res, serializePreferences(prefs));
+};
+
+const updatePreferencesHandler = async (req: Request, res: Response) => {
+  const me = currentUser(req);
+  const input = updatePreferencesSchema.parse(req.body ?? {});
+
+  const dataToUpdate: {
+    defaultLanguage?: string;
+    detailLevel?: string;
+    tone?: string;
+    quizQuestionCount?: number | null;
+    quizTimeLimit?: number;
+    flashcardCount?: number | null;
+    theme?: string;
+  } = {};
+  const lang = input.default_language ?? input.defaultLanguage;
+  if (lang !== undefined) dataToUpdate.defaultLanguage = lang;
+
+  const detail = input.detail_level ?? input.detailLevel;
+  if (detail !== undefined) dataToUpdate.detailLevel = detail;
+
+  if (input.tone !== undefined) dataToUpdate.tone = input.tone;
+
+  const quizCount = input.quiz_question_count !== undefined ? input.quiz_question_count : input.quizQuestionCount;
+  if (quizCount !== undefined) dataToUpdate.quizQuestionCount = quizCount;
+
+  const quizTime = input.quiz_time_limit ?? input.quizTimeLimit;
+  if (quizTime !== undefined) dataToUpdate.quizTimeLimit = quizTime;
+
+  const flashCount = input.flashcard_count !== undefined ? input.flashcard_count : input.flashcardCount;
+  if (flashCount !== undefined) dataToUpdate.flashcardCount = flashCount;
+
+  if (input.theme !== undefined) dataToUpdate.theme = input.theme;
+
+  const createData: Prisma.SpheraPreferencesUncheckedCreateInput = {
+    ...dataToUpdate,
+    userId: me.id,
+  };
+
+  const prefs = await prisma.spheraPreferences.upsert({
+    where: { userId: me.id },
+    create: createData,
+    update: dataToUpdate,
+  });
+
+  invalidatePreferencesCache(me.id);
+  ok(res, serializePreferences(prefs));
+};
+
+spheraRouter.get("/preferences", getPreferencesHandler);
+spheraRouter.get("/preferences/", getPreferencesHandler);
+spheraRouter.patch("/preferences", updatePreferencesHandler);
+spheraRouter.patch("/preferences/", updatePreferencesHandler);
+
+// ── Profile (Read-only CampusSphere Profile Proxy) ─────────────────────────
+
+const getProfileHandler = async (req: Request, res: Response) => {
+  const me = currentUser(req);
+  const user = await prisma.user.findUnique({
+    where: { id: me.id },
+    select: {
+      id: true,
+      username: true,
+      firstName: true,
+      lastName: true,
+      avatar: true,
+      university: true,
+      faculty: true,
+      studyYear: true,
+    },
+  });
+  if (!user) throw notFound("Utilisateur introuvable.");
+
+  const baseUrl = process.env.CAMPUSSPHERE_URL || "https://campussphere.app";
+  ok(res, {
+    id: user.id,
+    username: user.username,
+    first_name: user.firstName,
+    last_name: user.lastName,
+    full_name: `${user.firstName} ${user.lastName}`.trim(),
+    avatar: user.avatar,
+    university: user.university,
+    faculty: user.faculty,
+    study_year: user.studyYear,
+    edit_url: `${baseUrl}/settings/profile`,
+  });
+};
+
+spheraRouter.get("/profile", getProfileHandler);
+spheraRouter.get("/profile/", getProfileHandler);
+
+// ── Statistics & Revision Streak (GitHub-style Activity Grid) ───────────────
+
+const getStatsHandler = async (req: Request, res: Response) => {
+  const me = currentUser(req);
+  const now = new Date();
+  const past90Days = new Date();
+  past90Days.setDate(past90Days.getDate() - 90);
+
+  const [studySessions, annaleSessions, allUserStudySessions] = await Promise.all([
+    prisma.studySession.findMany({
+      where: { ownerId: me.id, createdAt: { gte: past90Days } },
+      select: { createdAt: true, toolTypes: true },
+    }),
+    prisma.annaleSession.findMany({
+      where: { ownerId: me.id, createdAt: { gte: past90Days } },
+      select: { createdAt: true },
+    }),
+    prisma.studySession.findMany({
+      where: { ownerId: me.id },
+      select: { createdAt: true, toolTypes: true },
+    }),
+  ]);
+
+  // Aggregate daily counts for the last 90 days
+  const activityMap: Record<string, number> = {};
+  for (const s of studySessions) {
+    const key = s.createdAt.toISOString().slice(0, 10);
+    activityMap[key] = (activityMap[key] || 0) + 1;
+  }
+  for (const a of annaleSessions) {
+    const key = a.createdAt.toISOString().slice(0, 10);
+    activityMap[key] = (activityMap[key] || 0) + 1;
+  }
+
+  // Count tools
+  const toolCounts: Record<string, number> = {
+    fiche: 0,
+    quiz: 0,
+    flashcards: 0,
+    mindmap: 0,
+    audio: 0,
+  };
+  for (const s of allUserStudySessions) {
+    if (Array.isArray(s.toolTypes)) {
+      for (const t of s.toolTypes) {
+        const lower = String(t).toLowerCase();
+        if (toolCounts[lower] !== undefined) toolCounts[lower]++;
+      }
+    }
+  }
+
+  // Determine favorite tool
+  let favoriteTool = "quiz";
+  let maxToolCount = -1;
+  for (const [tool, cnt] of Object.entries(toolCounts)) {
+    if (cnt > maxToolCount) {
+      maxToolCount = cnt;
+      favoriteTool = tool;
+    }
+  }
+
+  // Calculate current streak
+  const dateSet = new Set<string>();
+  for (const s of allUserStudySessions) {
+    dateSet.add(s.createdAt.toISOString().slice(0, 10));
+  }
+  for (const a of annaleSessions) {
+    dateSet.add(a.createdAt.toISOString().slice(0, 10));
+  }
+
+  const todayStr = now.toISOString().slice(0, 10);
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().slice(0, 10);
+
+  let currentStreak = 0;
+  let checkDate = new Date();
+
+  if (dateSet.has(todayStr)) {
+    checkDate = new Date();
+  } else if (dateSet.has(yesterdayStr)) {
+    checkDate = new Date(yesterday);
+  } else {
+    checkDate = new Date(yesterday);
+  }
+
+  if (dateSet.has(todayStr) || dateSet.has(yesterdayStr)) {
+    while (true) {
+      const dStr = checkDate.toISOString().slice(0, 10);
+      if (dateSet.has(dStr)) {
+        currentStreak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+  }
+
+  // Calculate longest streak
+  const sortedDates = Array.from(dateSet).sort();
+  let longestStreak = 0;
+  let runningStreak = 0;
+  let prevDate: Date | null = null;
+
+  for (const dStr of sortedDates) {
+    const currDate = new Date(dStr + "T00:00:00.000Z");
+    if (!prevDate) {
+      runningStreak = 1;
+    } else {
+      const diffMs = currDate.getTime() - prevDate.getTime();
+      const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+      if (diffDays === 1) {
+        runningStreak++;
+      } else if (diffDays > 1) {
+        runningStreak = 1;
+      }
+    }
+    if (runningStreak > longestStreak) longestStreak = runningStreak;
+    prevDate = currDate;
+  }
+
+  ok(res, {
+    total_sessions: allUserStudySessions.length + annaleSessions.length,
+    current_streak: currentStreak,
+    longest_streak: Math.max(longestStreak, currentStreak),
+    favorite_tool: favoriteTool,
+    tool_counts: toolCounts,
+    activity_grid: activityMap,
+  });
+};
+
+spheraRouter.get("/stats", getStatsHandler);
+spheraRouter.get("/stats/", getStatsHandler);
+
 
 
 // ── Generation ──────────────────────────────────────────────────────────────

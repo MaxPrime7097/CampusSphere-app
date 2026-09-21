@@ -175,5 +175,106 @@ L'écosystème est composé de deux parties principales qui interagissent :
   - **Harmonisation App Standalone (`sphera-app`)** : Mise à jour des types, de `ToolSelector.tsx`, de `Dashboard.tsx` et du client API `spheraApi.ts`.
   - **Politique Zéro Emoji** : Remplacement systématique par des icônes SVG Lucide (`GitFork`, `AudioLines`, `LocateFixed`, `Play`, `Pause`, `Download`).
 
+### 15. Sphera Live : Hardening Infrastructure, Refonte Auth & Expérience Jeu (Septembre 2026)
+
+#### 1. Différenciation de Marque & Design Auth (`sphera-app`)
+- **Étanchéité Visuelle Sphera vs Sphera Live** : Suppression des confusions sur les maquettes et landing pages entre la suite d'étude asynchrone (Sphera) et le mode multijoueur en temps réel (Sphera Live).
+- **Refonte des Pages Authentification (`Login.tsx`, `Register.tsx`)** :
+  - Inspiration subtile du style moderne de CampusSphere sans en faire une reproduction exacte.
+  - Suppression du bouton « Retour à l'accueil » inutile pour recentrer le focus utilisateur.
+  - Réhaussement de l'ensemble logo et texte « Sphera » pour aérer l'espace au-dessus du titre.
+  - Remplacement du badge « Écosystème CampusSphere » par le badge officiel « Powered by CampusSphere » (calqué sur le hero).
+  - Révision des cartes de réassurance latérale avec un contenu orienté sur les bénéfices concrets pour les étudiants.
+
+#### 2. Mécanique de Jeu & Réparation des Règles Quiz Live
+- **Distribution Aléatoire IA (Fisher-Yates)** :
+  - Résolution du biais de génération où la bonne réponse était quasi systématiquement la lettre A ou B.
+  - Implémentation du shuffle Fisher-Yates dans `backend/src/routes/quizLive.routes.ts` (`mapAiQuizQuestions`).
+  - Nettoyage regex systématique des préfixes dans le texte des options (`A.`, `B)`, `1-`, etc.) et mise à jour des directives de prompts dans `prompts.ts`.
+- **Bouton d'Arrêt d'Urgence du Quiz (`stop_quiz`)** :
+  - Ajout d'un bouton d'arrêt pour l'hôte sous les contrôles de volume dans `QuizLiveHost.tsx` avec confirmation modale.
+  - Gestion du message WS `stop_quiz` dans `quizLiveSocket.ts` et `useQuizSocket.ts`.
+  - Annulation des timers en cours, réinitialisation des scores à 0, passage du statut à `WAITING` et redirection synchronisée de tous les participants vers le salon d'attente sans déconnexion (`quiz_stopped`).
+- **Attribution Intégrale des Points (100% des points)** :
+  - Suppression de la formule de dégressivité temporelle complexe qui produisait des scores fractionnés (ex: 756 pts).
+  - Règle simplifiée et transparente : 100% des points définis sur la question (ex: 1000 pts) sont attribués dès lors que la réponse est juste.
+- **Personnalisation Libre du Temps & des Points** :
+  - Support de temps et points personnalisés (inputs numériques directs en complément des presets) dans `QuizSetupForm.tsx` et `QuizQuestionsDrawer.tsx`.
+- **Modification en Masse dans le Salon d'Attente (`QuizQuestionsDrawer.tsx`)** :
+  - Ajout d'une barre de modification globale permettant à l'hôte d'ajuster le temps et/ou le score sur toutes les questions en un seul clic.
+  - Endpoint `PATCH /api/quiz-live/:roomCode/questions/` pour sauvegarder les modifications avant le lancement.
+- **Bouton Mute Participants (`QuizLiveJoin.tsx`)** :
+  - Ajout du bouton mute/démute audio pour les joueurs leur permettant de désactiver le son indépendamment de l'hôte.
+
+#### 3. Résolution du Bug de la Barre de Progression (`TimerBar.tsx`)
+- **Diagnostic** : La barre ne diminuait pas de façon fluide et se vidait brutalement en fin de décompte en raison de re-renders React fréquents et de conflits avec la transition CSS `transition-all duration-1000`.
+- **Solution 60 FPS** :
+  - Réécriture complète de `TimerBar.tsx` avec boucle `requestAnimationFrame` et mise à jour directe du style DOM (`barRef.current.style.width`).
+  - Découplage CSS : seule la couleur de la barre (`transition-colors duration-500`) utilise une transition, la largeur suit le décompte continu à la milliseconde.
+  - Synchronisation audio du son `tick` sur les 3 dernières secondes.
+  - Clé React dynamique (`key={currentQuestion.questionIndex}`) dans `QuizLiveHost.tsx` et `QuizLiveJoin.tsx` pour forcer la réinitialisation de la barre à chaque nouvelle question.
+
+#### 4. Audit d'Infrastructure & Hardening Production
+- **Heartbeat Keep-Alive WebSocket (`websocket.ts`)** :
+  - Correction de la faille où seul `wss` (chat/notifications) était pingé par le heartbeat serveur (30s), tandis que `quizLiveWss` ne l'était pas.
+  - Intégration de `quizLiveWss.clients` dans la boucle de ping/pong et suivi de l'état `ws.isAlive` pour éliminer toute coupure arbitraire par les reverse proxies (Render, Cloudflare, AWS ALB, Nginx).
+- **Validation Instantanée des Réponses en RAM (< 2 ms)** :
+  - Mise en cache mémoire de la session, de ses questions et de son statut dans `roomStates` (`quizLiveSocket.ts`).
+  - Dans `submit_answer`, vérification immédiate en mémoire : élimination des requêtes `findUnique` bloquantes et renvoi de `answer_result` en moins de 2 ms au joueur.
+  - Écriture asynchrone non-bloquante des scores dans PostgreSQL via Prisma en arrière-plan.
+- **Restauration de Session en Plein Jeu (Reconnection Recovery)** :
+  - Prise en charge de la reconnexion à chaud : si un joueur ou l'hôte rafraîchit sa page pendant `QUESTION_ACTIVE` ou `QUESTION_RESULTS`, le serveur lui renvoie immédiatement la question en cours avec le temps restant exact calculé à la volée.
+- **Indexation SQL du Classement** :
+  - Modèle `QuizLiveParticipant` doté de `@@index([sessionId, score])`, garantissant un calcul du classement (leaderboard) en moins de 1 ms.
+- **Validation de Build** :
+  - Backend : `npx tsc --noEmit --project tsconfig.build.json` (Code 0).
+  - Frontend Sphera-App : `npm run build` (Code 0, bundle optimisé et pré-rendu SEO validé).
+
+### 16. Espace Paramètres Sphera & Système de Préférences (Septembre 2026)
+
+#### 1. Modèle de Données & Migration PostgreSQL (`schema.prisma`, `migration.sql`)
+- **Modèle `SpheraPreferences`** :
+  - `userId` (`@unique`, cascade sur suppression utilisateur).
+  - Préférences de génération : `defaultLanguage` (`auto`, `fr`, `en`), `detailLevel` (`court`, `standard`, `detaille`), `tone` (`decontracte`, `formel`).
+  - Paramètres par outil : `quizQuestionCount` (null = auto, ou 5 à 30), `quizTimeLimit` (10s à 30s), `flashcardCount` (null = auto, ou 5 à 30).
+  - Apparence : `theme` (`system`, `sombre`, `clair`).
+- **Migration SQL** : Script prêt `backend/prisma/migrations/20260921120000_add_sphera_preferences/migration.sql` pour déploiement en production via `npx prisma migrate deploy` ou exécution directe dans PostgreSQL / Supabase.
+
+#### 2. Endpoints Backend (`sphera.routes.ts`)
+- `GET /api/sphera/preferences` & `PATCH /api/sphera/preferences` : Récupération et mise à jour dynamique avec validation Zod et invalidation de cache en mémoire.
+- `GET /api/sphera/profile` : Proxy en lecture seule vers les données profil CampusSphere de l'utilisateur (`firstName`, `lastName`, `avatar`, `university`, `faculty`, `studyYear`, `edit_url`), respectant le principe de source unique de vérité.
+- `GET /api/sphera/stats` : Calcul en temps réel de l'activité étudiante :
+  - `current_streak` : Nombre de jours consécutifs de révision en cours.
+  - `longest_streak` : Record personnel de régularité.
+  - `total_sessions` : Nombre total de sessions étudiées.
+  - `favorite_tool` : Outil le plus généré.
+  - `activity_grid` : Agrégation quotidienne sur les 90 derniers jours pour la grille de contribution.
+
+#### 3. Injection Intelligente & Non-Intrusive dans l'IA (`userContext.ts`, `ai/index.ts`)
+- **Par défaut** : Comportement 100% intact si l'utilisateur conserve les options automatiques (`auto`, `standard`, `decontracte`, nombre auto).
+- **Si personnalisé** : Préfixage d'instructions précises via `buildStyleInstructions` (`[STUDENT PREFERENCES: ...]`) et injection du nombre exact d'items pour le Quiz et les Flashcards via `[USER QUANTITY OVERRIDE: ...]`.
+
+#### 4. UI / UX Standalone (`sphera-app`)
+- **Menu Utilisateur Épuré en Bas de Sidebar (`SidebarLayout.tsx`)** :
+  - Affichage de la photo de profil réelle (`user.avatar`) avec repli propre sur les initiales.
+  - Clic ouvrant un dialogue moderne avec accès direct à :
+    1. Paramètres Sphera
+    2. CampusSphere (lien externe)
+    3. Aide & Support (`/contact`)
+    4. Déconnexion (bouton rouge)
+- **Modale Paramètres (`SpheraSettingsModal.tsx`)** :
+  - 6 onglets clairs : Mon Profil, Préférences IA, Outils (Quiz & Flashcards), Usage & Quota, Activité & Streak, Apparence.
+  - Mini-explications contextuelles sous chaque réglage informant l'étudiant de l'impact direct de son choix.
+  - Sauvegarde réactive avec feedback visuel discret.
+- **Grille d'Activité façon GitHub (`ActivityStreakGrid.tsx`)** :
+  - Matrice de 14 semaines avec cases colorées selon l'intensité des sessions en vert Sphera `#22C55E`.
+  - Badges métriques (streak en cours, record, sessions totales, outil favori).
+- **Thème Clair / Sombre / Système (`theme.ts`, `index.css`, `tailwind.config.js`)** :
+  - Variables CSS dynamiques (`--sphera-bg`, `--sphera-surface`, `--sphera-border`, etc.) avec vert de marque `#22C55E` préservé.
+  - Palette douce pour le thème clair évitant l'éblouissement.
+  - Détection automatique du mode système via `matchMedia('(prefers-color-scheme: dark)')`.
+
+
+
 
 

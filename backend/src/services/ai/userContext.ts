@@ -72,3 +72,71 @@ export function buildContextPrefix(context: AcademicContext | null): string {
   const namePart = context.firstName ? `Student name: ${context.firstName}, ` : "";
   return `[STUDENT PROFILE: ${namePart}${parts.join(", ")}. Use this background to calibrate pedagogical depth and keep explanations accessible. Do not repeat greetings at every turn, and do not recite academic profile details unless genuinely relevant.]\n\n`;
 }
+
+export interface SpheraUserPreferences {
+  defaultLanguage: string;
+  detailLevel: string;
+  tone: string;
+  quizQuestionCount: number | null;
+  quizTimeLimit: number;
+  flashcardCount: number | null;
+  theme: string;
+}
+
+const prefsCache = new Map<number, { prefs: SpheraUserPreferences | null; expiresAt: number }>();
+
+export async function getUserPreferences(userId: number): Promise<SpheraUserPreferences | null> {
+  const cached = prefsCache.get(userId);
+  if (cached && Date.now() < cached.expiresAt) {
+    return cached.prefs;
+  }
+
+  try {
+    const record = await prisma.spheraPreferences.findUnique({
+      where: { userId },
+    });
+    const result: SpheraUserPreferences | null = record
+      ? {
+          defaultLanguage: record.defaultLanguage,
+          detailLevel: record.detailLevel,
+          tone: record.tone,
+          quizQuestionCount: record.quizQuestionCount,
+          quizTimeLimit: record.quizTimeLimit,
+          flashcardCount: record.flashcardCount,
+          theme: record.theme,
+        }
+      : null;
+    prefsCache.set(userId, { prefs: result, expiresAt: Date.now() + CONTEXT_CACHE_TTL_MS });
+    return result;
+  } catch (err) {
+    console.warn("[sphera-ai] Failed to load preferences:", err);
+    return null;
+  }
+}
+
+export function invalidatePreferencesCache(userId: number): void {
+  prefsCache.delete(userId);
+}
+
+export function buildStyleInstructions(prefs: SpheraUserPreferences | null): string {
+  if (!prefs) return "";
+  const parts: string[] = [];
+
+  if (prefs.detailLevel === "court") {
+    parts.push("Sois concis, va directement à l'essentiel sans digression ni verbiage.");
+  } else if (prefs.detailLevel === "detaille") {
+    parts.push("Sois très détaillé, rigoureux et exhaustif dans tes explications, en définissant chaque concept et sous-concept.");
+  }
+
+  if (prefs.tone === "formel") {
+    parts.push("Adopte un ton académique, rigoureux et formel digne d'un professeur d'université.");
+  }
+
+  if (prefs.defaultLanguage === "fr") {
+    parts.push("CRITICAL LANGUAGE OVERRIDE: Réponds impérativement et intégralement en Français.");
+  } else if (prefs.defaultLanguage === "en") {
+    parts.push("CRITICAL LANGUAGE OVERRIDE: You MUST formulate all content strictly and entirely in English.");
+  }
+
+  return parts.length ? `[STUDENT PREFERENCES: ${parts.join(" ")}]\n\n` : "";
+}
