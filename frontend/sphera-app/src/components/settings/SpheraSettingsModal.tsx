@@ -16,6 +16,7 @@ import {
   MessageSquare,
   Globe,
   Gauge,
+  Info,
 } from 'lucide-react'
 import {
   getSpheraPreferences,
@@ -29,6 +30,7 @@ import {
   type GenerationQuota,
 } from '../../services/spheraApi'
 import { applyTheme, getSavedTheme, type SpheraTheme } from '../../utils/theme'
+import { formatStudyYear, formatFaculty, formatUniversity } from '../../utils/profileMetadata'
 import { ActivityStreakGrid } from './ActivityStreakGrid'
 
 interface SpheraSettingsModalProps {
@@ -38,6 +40,42 @@ interface SpheraSettingsModalProps {
 }
 
 type TabType = 'profile' | 'generation' | 'tools' | 'quota' | 'stats' | 'appearance'
+
+const NAV_ITEMS: { id: TabType; label: string; icon: React.FC<{ className?: string }>; desc: string }[] = [
+  { id: 'profile', label: 'Mon Profil', icon: User, desc: 'Identité académique & SSO' },
+  { id: 'generation', label: 'Préférences IA', icon: Sparkles, desc: 'Langue, détail & tonalité' },
+  { id: 'tools', label: 'Quiz & Flashcards', icon: Layers, desc: 'Volume & temps par outil' },
+  { id: 'quota', label: 'Usage & Quota', icon: PieChart, desc: 'Consommation hebdomadaire' },
+  { id: 'stats', label: 'Activité & Streak', icon: Gauge, desc: 'Grille 14 semaines & stats' },
+  { id: 'appearance', label: 'Apparence', icon: SunMoon, desc: 'Thèmes sombre & clair' },
+]
+
+const TAB_CONFIG: Record<TabType, { title: string; desc: string }> = {
+  profile: {
+    title: 'Mon Profil Académique',
+    desc: 'Données académiques synchronisées en lecture seule depuis votre compte CampusSphere',
+  },
+  generation: {
+    title: 'Préférences de Génération IA',
+    desc: 'Personnalisez la langue, le niveau de détail et la posture pédagogique de votre tuteur Sphera',
+  },
+  tools: {
+    title: 'Paramètres par Outil (Quiz & Flashcards)',
+    desc: 'Définissez le volume par défaut de questions et cartes mémoires générées pour chaque cours',
+  },
+  quota: {
+    title: 'Usage & Quota Hebdomadaire',
+    desc: 'Consultez votre consommation en temps réel et le décompte des sessions IA',
+  },
+  stats: {
+    title: 'Activité & Streak d\'Étude',
+    desc: 'Historique de régularité et matrice d\'entraînement sur les 14 dernières semaines',
+  },
+  appearance: {
+    title: 'Apparence & Confort Visuel',
+    desc: 'Basculez entre le Mode Sombre Studio et le Mode Clair Nature selon vos préférences',
+  },
+}
 
 export const SpheraSettingsModal: React.FC<SpheraSettingsModalProps> = ({
   isOpen,
@@ -73,6 +111,9 @@ export const SpheraSettingsModal: React.FC<SpheraSettingsModalProps> = ({
 
       if (prefsRes.status === 'fulfilled' && prefsRes.value.data) {
         setPrefs(prefsRes.value.data)
+        if (prefsRes.value.data.theme === 'clair' || prefsRes.value.data.theme === 'sombre') {
+          applyTheme(prefsRes.value.data.theme)
+        }
       }
       if (profRes.status === 'fulfilled' && profRes.value.data) {
         setProfile(profRes.value.data)
@@ -119,196 +160,264 @@ export const SpheraSettingsModal: React.FC<SpheraSettingsModalProps> = ({
     <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 transition-opacity animate-in fade-in duration-200" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-3xl max-h-[90vh] bg-sphera-surface border border-sphera-border rounded-2xl shadow-2xl z-50 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
-          {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-sphera-border bg-sphera-surface-2/60 shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-sphera-green/10 border border-sphera-green/30 flex items-center justify-center text-sphera-green">
-                <Sliders className="w-4 h-4" />
+        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl h-[92vh] md:h-[82vh] max-h-[760px] bg-sphera-surface border border-sphera-border rounded-2xl shadow-2xl z-50 overflow-hidden flex flex-col md:flex-row animate-in fade-in zoom-in-95 duration-200">
+          {/* ── DESKTOP SIDEBAR (md+) ── */}
+          <div className="hidden md:flex md:w-64 flex-col border-r border-sphera-border bg-sphera-surface-2 shrink-0 p-4 justify-between select-none">
+            <div className="space-y-4">
+              {/* Modal Brand Header */}
+              <div className="flex items-center gap-2.5 px-2 py-1">
+                <div className="w-8 h-8 rounded-lg bg-sphera-green/10 border border-sphera-green/30 flex items-center justify-center text-sphera-green shrink-0">
+                  <Sliders className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <Dialog.Title className="text-sm font-semibold text-white tracking-tight leading-tight">
+                    Paramètres
+                  </Dialog.Title>
+                  <Dialog.Description className="text-[10px] text-sphera-text-muted truncate">
+                    Configuration Sphera
+                  </Dialog.Description>
+                </div>
               </div>
-              <div>
-                <Dialog.Title className="text-base font-semibold text-white tracking-tight">
-                  Paramètres Sphera
-                </Dialog.Title>
-                <Dialog.Description className="text-xs text-sphera-text-muted">
-                  Personnalisez votre expérience d'étude, vos quotas et l'intelligence de vos cours
-                </Dialog.Description>
-              </div>
-            </div>
 
-            <div className="flex items-center gap-3">
-              {isSaving && (
-                <span className="flex items-center gap-1.5 text-xs text-sphera-text-muted animate-pulse">
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-sphera-green" />
-                  Sauvegarde...
-                </span>
-              )}
-              {saveSuccess && (
-                <span className="flex items-center gap-1 text-xs text-sphera-green font-medium">
-                  <Check className="w-3.5 h-3.5" /> Enregistré
-                </span>
-              )}
-              <Dialog.Close asChild>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="p-1.5 text-sphera-text-muted hover:text-white rounded-lg hover:bg-sphera-surface transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </Dialog.Close>
-            </div>
-          </div>
-
-          {/* Navigation Bar / Tabs */}
-          <div className="flex items-center gap-1 px-4 py-2 border-b border-sphera-border bg-sphera-surface shrink-0 overflow-x-auto scrollbar-none">
-            <button
-              type="button"
-              onClick={() => setActiveTab('profile')}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
-                activeTab === 'profile'
-                  ? 'bg-sphera-green/10 text-sphera-green border border-sphera-green/30 font-semibold'
-                  : 'text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2'
-              }`}
-            >
-              <User className="w-3.5 h-3.5" />
-              Mon Profil
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab('generation')}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
-                activeTab === 'generation'
-                  ? 'bg-sphera-green/10 text-sphera-green border border-sphera-green/30 font-semibold'
-                  : 'text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              Préférences IA
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab('tools')}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
-                activeTab === 'tools'
-                  ? 'bg-sphera-green/10 text-sphera-green border border-sphera-green/30 font-semibold'
-                  : 'text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2'
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5" />
-              Outils (Quiz & Flashcards)
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab('quota')}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
-                activeTab === 'quota'
-                  ? 'bg-sphera-green/10 text-sphera-green border border-sphera-green/30 font-semibold'
-                  : 'text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2'
-              }`}
-            >
-              <PieChart className="w-3.5 h-3.5" />
-              Usage & Quota
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab('stats')}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
-                activeTab === 'stats'
-                  ? 'bg-sphera-green/10 text-sphera-green border border-sphera-green/30 font-semibold'
-                  : 'text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2'
-              }`}
-            >
-              <Gauge className="w-3.5 h-3.5" />
-              Activité & Streak
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab('appearance')}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
-                activeTab === 'appearance'
-                  ? 'bg-sphera-green/10 text-sphera-green border border-sphera-green/30 font-semibold'
-                  : 'text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2'
-              }`}
-            >
-              <SunMoon className="w-3.5 h-3.5" />
-              Apparence
-            </button>
-          </div>
-
-          {/* Modal Body / Tab Content */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
-            {isLoading ? (
-              <div className="py-16 flex flex-col items-center justify-center gap-3 text-sphera-text-muted">
-                <Loader2 className="w-8 h-8 animate-spin text-sphera-green" />
-                <span className="text-xs">Chargement de vos paramètres...</span>
-              </div>
-            ) : (
-              <>
-                {/* ── TAB 1: MON PROFIL (Lecture seule) ── */}
-                {activeTab === 'profile' && (
-                  <div className="space-y-6 animate-in fade-in duration-150">
-                    <div className="p-5 rounded-xl border border-sphera-border bg-sphera-surface-2">
-                      <div className="flex items-start gap-4">
-                        {profile?.avatar ? (
-                          <img
-                            src={profile.avatar}
-                            alt={profile.full_name || 'Avatar'}
-                            className="w-16 h-16 rounded-full object-cover border-2 border-sphera-border shrink-0 shadow-md"
-                          />
-                        ) : (
-                          <div className="w-16 h-16 rounded-full bg-sphera-surface border-2 border-sphera-border flex items-center justify-center text-lg font-bold text-white shrink-0">
-                            {profile?.first_name?.[0]?.toUpperCase() || profile?.username?.[0]?.toUpperCase() || 'U'}
-                          </div>
-                        )}
-
-                        <div className="flex-1 min-w-0 space-y-1">
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-base font-semibold text-white truncate">
-                              {profile?.full_name || profile?.username || 'Étudiant'}
-                            </h3>
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-sphera-green/10 text-sphera-green border border-sphera-green/30 font-medium">
-                              SSO Connecté
-                            </span>
-                          </div>
-
-                          <p className="text-xs text-sphera-text-muted truncate">
-                            {[profile?.faculty, profile?.study_year, profile?.university]
-                              .filter(Boolean)
-                              .join(' · ') || 'Profil académique CampusSphere'}
-                          </p>
-
-                          <div className="pt-2">
-                            <a
-                              href={profile?.edit_url || 'https://campussphere.app/settings/profile'}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 text-xs font-medium text-sphera-green hover:underline group"
-                            >
-                              <span>Modifier sur CampusSphere</span>
-                              <ExternalLink className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
-                            </a>
-                          </div>
+              {/* Vertical Navigation Items */}
+              <nav className="space-y-1">
+                {NAV_ITEMS.map((item) => {
+                  const isActive = activeTab === item.id
+                  const Icon = item.icon
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setActiveTab(item.id)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all text-left group ${
+                        isActive
+                          ? 'bg-sphera-green/15 text-sphera-green border border-sphera-green/30 font-semibold shadow-sm'
+                          : 'text-sphera-text-muted hover:text-white hover:bg-sphera-surface border border-transparent'
+                      }`}
+                    >
+                      <Icon
+                        className={`w-4 h-4 shrink-0 transition-colors ${
+                          isActive ? 'text-sphera-green' : 'text-sphera-text-muted group-hover:text-white'
+                        }`}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="truncate">{item.label}</div>
+                        <div
+                          className={`text-[10px] truncate font-normal ${
+                            isActive ? 'text-sphera-green/75' : 'text-sphera-text-muted/75'
+                          }`}
+                        >
+                          {item.desc}
                         </div>
                       </div>
-                    </div>
+                    </button>
+                  )
+                })}
+              </nav>
+            </div>
 
-                    <div className="p-4 rounded-xl border border-sphera-border/60 bg-sphera-surface-2/40 text-xs text-sphera-text-muted space-y-2">
-                      <div className="flex items-center gap-2 font-medium text-white">
-                        <HelpCircle className="w-4 h-4 text-sphera-green" />
-                        <span>Source de vérité du profil</span>
-                      </div>
-                      <p>
-                        Sphera utilise les données de votre profil CampusSphere (photo, nom, filière et université) en lecture seule afin d'adapter automatiquement le niveau de difficulté des synthèses et Q&A sans jamais dupliquer vos informations.
-                      </p>
-                    </div>
-                  </div>
+            {/* Desktop Sidebar Footer */}
+            <div className="pt-3 border-t border-sphera-border/70 text-[11px] text-sphera-text-muted flex items-center justify-between px-2">
+              <span className="font-mono text-[10px]">Sphera v2.1</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-sphera-surface border border-sphera-border text-sphera-green font-medium">
+                Connecté
+              </span>
+            </div>
+          </div>
+
+          {/* ── MOBILE HEADER & HORIZONTAL TABS (< md) ── */}
+          <div className="md:hidden shrink-0 border-b border-sphera-border bg-sphera-surface-2">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-sphera-border/60">
+              <div className="flex items-center gap-2">
+                <Sliders className="w-4 h-4 text-sphera-green" />
+                <span className="text-sm font-semibold text-white">Paramètres Sphera</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {isSaving && <Loader2 className="w-3.5 h-3.5 animate-spin text-sphera-green" />}
+                {saveSuccess && <Check className="w-3.5 h-3.5 text-sphera-green" />}
+                <Dialog.Close asChild>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="p-1 text-sphera-text-muted hover:text-white rounded-lg"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </Dialog.Close>
+              </div>
+            </div>
+
+            {/* Scrollable pill tabs */}
+            <div className="flex items-center gap-1.5 px-3 py-2 overflow-x-auto scrollbar-none">
+              {NAV_ITEMS.map((item) => {
+                const isActive = activeTab === item.id
+                const Icon = item.icon
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setActiveTab(item.id)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+                      isActive
+                        ? 'bg-sphera-green/15 text-sphera-green border border-sphera-green/30 font-semibold'
+                        : 'text-sphera-text-muted hover:text-white hover:bg-sphera-surface border border-transparent'
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    <span>{item.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* ── RIGHT MAIN CONTENT PANE ── */}
+          <div className="flex-1 flex flex-col min-w-0 bg-sphera-surface overflow-hidden">
+            {/* Desktop Content Header */}
+            <div className="hidden md:flex items-center justify-between px-6 py-4 border-b border-sphera-border bg-sphera-surface-2/40 shrink-0">
+              <div>
+                <h3 className="text-base font-semibold text-white tracking-tight">
+                  {TAB_CONFIG[activeTab].title}
+                </h3>
+                <p className="text-xs text-sphera-text-muted mt-0.5">
+                  {TAB_CONFIG[activeTab].desc}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                {isSaving && (
+                  <span className="flex items-center gap-1.5 text-xs text-sphera-text-muted animate-pulse">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-sphera-green" />
+                    Sauvegarde...
+                  </span>
                 )}
+                {saveSuccess && (
+                  <span className="flex items-center gap-1 text-xs text-sphera-green font-medium">
+                    <Check className="w-3.5 h-3.5" /> Enregistré
+                  </span>
+                )}
+                <Dialog.Close asChild>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="p-1.5 text-sphera-text-muted hover:text-white rounded-lg hover:bg-sphera-surface transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </Dialog.Close>
+              </div>
+            </div>
+
+            {/* Scrollable Content Body */}
+            <div className="flex-1 overflow-y-auto p-5 md:p-6 space-y-6 custom-scrollbar">
+              {isLoading ? (
+                <div className="py-16 flex flex-col items-center justify-center gap-3 text-sphera-text-muted">
+                  <Loader2 className="w-8 h-8 animate-spin text-sphera-green" />
+                  <span className="text-xs">Chargement de vos paramètres...</span>
+                </div>
+              ) : (
+                <>
+                  {/* ── TAB 1: MON PROFIL (Lecture seule) ── */}
+                  {activeTab === 'profile' && (() => {
+                    const displayYear = formatStudyYear(profile?.study_year)
+                    const displayFaculty = formatFaculty(profile?.faculty)
+                    const displayUniversity = formatUniversity(profile?.university)
+
+                    return (
+                      <div className="space-y-6 animate-in fade-in duration-150">
+                        {/* Profile Header Card */}
+                        <div className="p-5 rounded-xl border border-sphera-border bg-sphera-surface-2">
+                          <div className="flex items-start gap-4">
+                            {profile?.avatar ? (
+                              <img
+                                src={profile.avatar}
+                                alt={profile.full_name || 'Avatar'}
+                                className="w-16 h-16 rounded-full object-cover border-2 border-sphera-border shrink-0 shadow-md"
+                              />
+                            ) : (
+                              <div className="w-16 h-16 rounded-full bg-sphera-surface border-2 border-sphera-border flex items-center justify-center text-lg font-bold text-white shrink-0">
+                                {profile?.first_name?.[0]?.toUpperCase() || profile?.username?.[0]?.toUpperCase() || 'U'}
+                              </div>
+                            )}
+
+                            <div className="flex-1 min-w-0 space-y-1.5">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h3 className="text-base font-semibold text-white truncate">
+                                  {profile?.full_name || profile?.username || 'Étudiant'}
+                                </h3>
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-sphera-green/10 text-sphera-green border border-sphera-green/30 font-medium">
+                                  SSO Connecté
+                                </span>
+                              </div>
+
+                              <p className="text-xs text-sphera-text-muted font-medium truncate">
+                                {[displayYear, displayFaculty].filter(Boolean).join(' · ') || 'Profil académique CampusSphere'}
+                              </p>
+
+                              {displayUniversity && (
+                                <p className="text-xs text-sphera-text-muted/80 truncate">
+                                  {displayUniversity}
+                                </p>
+                              )}
+
+                              <div className="pt-1.5">
+                                <a
+                                  href={profile?.edit_url || 'https://campussphere.app/settings/profile'}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1.5 text-xs font-medium text-sphera-green hover:underline group"
+                                >
+                                  <span>Modifier sur CampusSphere</span>
+                                  <ExternalLink className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                                </a>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Detailed Academic Cards (Humanized Values, No Slugs) */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div className="p-3.5 rounded-xl border border-sphera-border bg-sphera-surface-2 space-y-1">
+                            <span className="text-[10px] uppercase font-semibold text-sphera-text-muted tracking-wider">
+                              Niveau d'études
+                            </span>
+                            <p className="text-xs font-semibold text-white">
+                              {displayYear || 'Non renseigné'}
+                            </p>
+                          </div>
+
+                          <div className="p-3.5 rounded-xl border border-sphera-border bg-sphera-surface-2 space-y-1">
+                            <span className="text-[10px] uppercase font-semibold text-sphera-text-muted tracking-wider">
+                              Filière / Spécialité
+                            </span>
+                            <p className="text-xs font-semibold text-white truncate" title={displayFaculty}>
+                              {displayFaculty || 'Non renseignée'}
+                            </p>
+                          </div>
+
+                          <div className="p-3.5 rounded-xl border border-sphera-border bg-sphera-surface-2 space-y-1">
+                            <span className="text-[10px] uppercase font-semibold text-sphera-text-muted tracking-wider">
+                              Établissement
+                            </span>
+                            <p className="text-xs font-semibold text-white truncate" title={displayUniversity}>
+                              {displayUniversity || 'Non renseigné'}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Source of Truth Information */}
+                        <div className="p-4 rounded-xl border border-sphera-border/60 bg-sphera-surface-2/40 text-xs text-sphera-text-muted space-y-2">
+                          <div className="flex items-center gap-2 font-medium text-white">
+                            <HelpCircle className="w-4 h-4 text-sphera-green" />
+                            <span>Source de vérité du profil</span>
+                          </div>
+                          <p>
+                            Sphera utilise les données de votre profil CampusSphere (photo, nom, filière et université) en lecture seule afin d'adapter automatiquement le niveau de difficulté des synthèses et Q&A sans jamais dupliquer vos informations.
+                          </p>
+                        </div>
+                      </div>
+                    )
+                  })()}
 
                 {/* ── TAB 2: PRÉFÉRENCES DE GÉNÉRATION ── */}
                 {activeTab === 'generation' && (
@@ -349,16 +458,19 @@ export const SpheraSettingsModal: React.FC<SpheraSettingsModalProps> = ({
                       </div>
 
                       {/* Mini explanation */}
-                      <div className="text-[11px] text-sphera-text-muted bg-sphera-surface p-2.5 rounded-lg border border-sphera-border/60">
-                        {prefs?.default_language === 'fr' && (
-                          <span>💡 <strong>Français forcé :</strong> Toutes les fiches, questions et réponses seront formulées en français, même si le cours source fourni est en anglais.</span>
-                        )}
-                        {prefs?.default_language === 'en' && (
-                          <span>💡 <strong>English forced:</strong> All revision sheets, questions and Q&A answers will be generated strictly in English.</span>
-                        )}
-                        {(!prefs?.default_language || prefs?.default_language === 'auto') && (
-                          <span>💡 <strong>Détection automatique :</strong> L'IA s'adapte à la langue de votre document ou de votre question. Si votre cours est en anglais, la synthèse sera rédigée en anglais.</span>
-                        )}
+                      <div className="flex items-start gap-2 text-[11px] text-sphera-text-muted bg-sphera-surface p-2.5 rounded-lg border border-sphera-border/60">
+                        <Info className="w-4 h-4 text-sphera-green shrink-0 mt-0.5" />
+                        <div>
+                          {prefs?.default_language === 'fr' && (
+                            <span><strong>Français forcé :</strong> Toutes les fiches, questions et réponses seront formulées en français, même si le cours source fourni est en anglais.</span>
+                          )}
+                          {prefs?.default_language === 'en' && (
+                            <span><strong>English forced :</strong> All revision sheets, questions and Q&A answers will be generated strictly in English.</span>
+                          )}
+                          {(!prefs?.default_language || prefs?.default_language === 'auto') && (
+                            <span><strong>Détection automatique :</strong> L'IA s'adapte à la langue de votre document ou de votre question. Si votre cours est en anglais, la synthèse sera rédigée en anglais.</span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -393,16 +505,19 @@ export const SpheraSettingsModal: React.FC<SpheraSettingsModalProps> = ({
                       </div>
 
                       {/* Mini explanation */}
-                      <div className="text-[11px] text-sphera-text-muted bg-sphera-surface p-2.5 rounded-lg border border-sphera-border/60">
-                        {prefs?.detail_level === 'court' && (
-                          <span>💡 <strong>Concis :</strong> Va droit au but avec des listes à puces condensées. Idéal pour des révisions express de dernière minute avant un examen.</span>
-                        )}
-                        {prefs?.detail_level === 'detaille' && (
-                          <span>💡 <strong>Détaillé :</strong> L'IA approfondit chaque notion, ajoute des démonstrations et des exemples concrets pour une compréhension exhaustive.</span>
-                        )}
-                        {(!prefs?.detail_level || prefs?.detail_level === 'standard') && (
-                          <span>💡 <strong>Standard :</strong> Équilibre parfait entre clarté synthétique et explications indispensables pour vos cours universitaires.</span>
-                        )}
+                      <div className="flex items-start gap-2 text-[11px] text-sphera-text-muted bg-sphera-surface p-2.5 rounded-lg border border-sphera-border/60">
+                        <Info className="w-4 h-4 text-sphera-green shrink-0 mt-0.5" />
+                        <div>
+                          {prefs?.detail_level === 'court' && (
+                            <span><strong>Concis :</strong> Va droit au but avec des listes à puces condensées. Idéal pour des révisions express de dernière minute avant un examen.</span>
+                          )}
+                          {prefs?.detail_level === 'detaille' && (
+                            <span><strong>Détaillé :</strong> L'IA approfondit chaque notion, ajoute des démonstrations et des exemples concrets pour une compréhension exhaustive.</span>
+                          )}
+                          {(!prefs?.detail_level || prefs?.detail_level === 'standard') && (
+                            <span><strong>Standard :</strong> Équilibre parfait entre clarté synthétique et explications indispensables pour vos cours universitaires.</span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -436,12 +551,15 @@ export const SpheraSettingsModal: React.FC<SpheraSettingsModalProps> = ({
                       </div>
 
                       {/* Mini explanation */}
-                      <div className="text-[11px] text-sphera-text-muted bg-sphera-surface p-2.5 rounded-lg border border-sphera-border/60">
-                        {prefs?.tone === 'formel' ? (
-                          <span>💡 <strong>Académique :</strong> Formulations soutenues, vocabulaire rigoureux et posture académique digne d'un professeur d'amphithéâtre.</span>
-                        ) : (
-                          <span>💡 <strong>Bienveillant :</strong> Ton chaleureux, encourageant et dynamique, idéal pour dédramatiser les révisions complexes.</span>
-                        )}
+                      <div className="flex items-start gap-2 text-[11px] text-sphera-text-muted bg-sphera-surface p-2.5 rounded-lg border border-sphera-border/60">
+                        <Info className="w-4 h-4 text-sphera-green shrink-0 mt-0.5" />
+                        <div>
+                          {prefs?.tone === 'formel' ? (
+                            <span><strong>Académique :</strong> Formulations soutenues, vocabulaire rigoureux et posture académique digne d'un professeur d'amphithéâtre.</span>
+                          ) : (
+                            <span><strong>Bienveillant :</strong> Ton chaleureux, encourageant et dynamique, idéal pour dédramatiser les révisions complexes.</span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -465,7 +583,7 @@ export const SpheraSettingsModal: React.FC<SpheraSettingsModalProps> = ({
                       </div>
 
                       {/* Presets Grid */}
-                      <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
                         <button
                           type="button"
                           onClick={() => handleUpdatePreference({ quiz_question_count: null })}
@@ -488,18 +606,21 @@ export const SpheraSettingsModal: React.FC<SpheraSettingsModalProps> = ({
                                 : 'bg-sphera-surface text-sphera-text-muted border-sphera-border hover:text-white'
                             }`}
                           >
-                            {num} Qs
+                            {num} questions
                           </button>
                         ))}
                       </div>
 
                       {/* Mini explanation */}
-                      <div className="text-[11px] text-sphera-text-muted bg-sphera-surface p-2.5 rounded-lg border border-sphera-border/60">
-                        {prefs?.quiz_question_count ? (
-                          <span>💡 <strong>Volume fixe :</strong> Sphera générera exactement {prefs.quiz_question_count} questions pour vos quiz. Note : un nombre élevé peut allonger légèrement le temps de réponse initial.</span>
-                        ) : (
-                          <span>💡 <strong>Mode automatique :</strong> Sphera évalue la densité du cours et génère automatiquement le nombre idéal (entre 20 et 30 questions) pour tester exhaustivement chaque chapitre.</span>
-                        )}
+                      <div className="flex items-start gap-2 text-[11px] text-sphera-text-muted bg-sphera-surface p-2.5 rounded-lg border border-sphera-border/60">
+                        <Info className="w-4 h-4 text-sphera-green shrink-0 mt-0.5" />
+                        <div>
+                          {prefs?.quiz_question_count ? (
+                            <span><strong>Volume fixe :</strong> Sphera générera exactement {prefs.quiz_question_count} questions pour vos quiz. Note : un nombre élevé peut allonger légèrement le temps de réponse initial.</span>
+                          ) : (
+                            <span><strong>Mode automatique :</strong> Sphera évalue la densité du cours et génère automatiquement le nombre idéal (entre 20 et 30 questions) pour tester exhaustivement chaque chapitre.</span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -517,7 +638,7 @@ export const SpheraSettingsModal: React.FC<SpheraSettingsModalProps> = ({
                         </p>
                       </div>
 
-                      <div className="grid grid-cols-4 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         {[10, 15, 20, 30].map((sec) => (
                           <button
                             key={sec}
@@ -530,7 +651,7 @@ export const SpheraSettingsModal: React.FC<SpheraSettingsModalProps> = ({
                             }`}
                           >
                             <Clock className="w-3 h-3" />
-                            {sec} s
+                            {sec} secondes
                           </button>
                         ))}
                       </div>
@@ -550,7 +671,7 @@ export const SpheraSettingsModal: React.FC<SpheraSettingsModalProps> = ({
                         </p>
                       </div>
 
-                      <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
                         <button
                           type="button"
                           onClick={() => handleUpdatePreference({ flashcard_count: null })}
@@ -573,18 +694,21 @@ export const SpheraSettingsModal: React.FC<SpheraSettingsModalProps> = ({
                                 : 'bg-sphera-surface text-sphera-text-muted border-sphera-border hover:text-white'
                             }`}
                           >
-                            {num} Cts
+                            {num} cartes
                           </button>
                         ))}
                       </div>
 
                       {/* Mini explanation */}
-                      <div className="text-[11px] text-sphera-text-muted bg-sphera-surface p-2.5 rounded-lg border border-sphera-border/60">
-                        {prefs?.flashcard_count ? (
-                          <span>💡 <strong>Paquet ciblé :</strong> Sphera créera précisément {prefs.flashcard_count} fiches de mémorisation active couvrant les termes clés essentiels.</span>
-                        ) : (
-                          <span>💡 <strong>Mode automatique :</strong> L'IA ajuste le nombre de cartes (jusqu'à 30) pour couvrir toutes les définitions, théorèmes et formules du cours.</span>
-                        )}
+                      <div className="flex items-start gap-2 text-[11px] text-sphera-text-muted bg-sphera-surface p-2.5 rounded-lg border border-sphera-border/60">
+                        <Info className="w-4 h-4 text-sphera-green shrink-0 mt-0.5" />
+                        <div>
+                          {prefs?.flashcard_count ? (
+                            <span><strong>Paquet ciblé :</strong> Sphera créera précisément {prefs.flashcard_count} fiches de mémorisation active couvrant les termes clés essentiels.</span>
+                          ) : (
+                            <span><strong>Mode automatique :</strong> L'IA ajuste le nombre de cartes (jusqu'à 30) pour couvrir toutes les définitions, théorèmes et formules du cours.</span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -658,63 +782,159 @@ export const SpheraSettingsModal: React.FC<SpheraSettingsModalProps> = ({
                 )}
 
                 {/* ── TAB 6: APPARENCE & THÈME ── */}
-                {activeTab === 'appearance' && (
-                  <div className="space-y-6 animate-in fade-in duration-150">
-                    <div className="p-5 rounded-xl border border-sphera-border bg-sphera-surface-2 space-y-4">
-                      <div>
-                        <h4 className="text-sm font-medium text-white">Thème de l'interface</h4>
-                        <p className="text-xs text-sphera-text-muted mt-0.5">
-                          Personnalisez le contraste visuel de l'application selon vos préférences d'étude
-                        </p>
-                      </div>
+                {activeTab === 'appearance' && (() => {
+                  const activeTheme = (prefs?.theme === 'clair' || (!prefs?.theme && getSavedTheme() === 'clair')) ? 'clair' : 'sombre'
 
-                      <div className="grid grid-cols-3 gap-3 pt-1">
-                        {[
-                          { value: 'system', label: 'Système', desc: 'S\'adapte à l\'OS' },
-                          { value: 'sombre', label: 'Sombre', desc: 'Mode nuit (défaut)' },
-                          { value: 'clair', label: 'Clair', desc: 'Blanc doux reposant' },
-                        ].map((t) => {
-                          const currentTheme = prefs?.theme || getSavedTheme()
-                          const isSelected = currentTheme === t.value
+                  return (
+                    <div className="space-y-6 animate-in fade-in duration-150">
+                      <div className="p-5 rounded-xl border border-sphera-border bg-sphera-surface-2 space-y-4">
+                        <div>
+                          <h4 className="text-sm font-medium text-white">Thème d'affichage</h4>
+                          <p className="text-xs text-sphera-text-muted mt-0.5">
+                            Sélectionnez l'environnement visuel le plus confortable pour vos sessions d'étude
+                          </p>
+                        </div>
 
-                          return (
-                            <button
-                              key={t.value}
-                              type="button"
-                              onClick={() => handleUpdatePreference({ theme: t.value as any })}
-                              className={`p-3.5 rounded-xl border text-left transition-all flex flex-col justify-between ${
-                                isSelected
-                                  ? 'bg-sphera-green/15 text-white border-sphera-green ring-1 ring-sphera-green'
-                                  : 'bg-sphera-surface text-sphera-text-muted border-sphera-border hover:text-white hover:border-sphera-border/80'
-                              }`}
-                            >
-                              <div className="flex items-center justify-between w-full">
-                                <span className="font-semibold text-xs text-white">{t.label}</span>
-                                {isSelected && <Check className="w-3.5 h-3.5 text-sphera-green" />}
+                        {/* 2 Interactive Cards */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                          {/* Option 1: Mode Sombre Studio */}
+                          <button
+                            type="button"
+                            onClick={() => handleUpdatePreference({ theme: 'sombre' })}
+                            className={`p-4 rounded-xl border text-left transition-all relative flex flex-col justify-between gap-3 group ${
+                              activeTheme === 'sombre'
+                                ? 'bg-sphera-green/10 border-sphera-green shadow-sm ring-1 ring-sphera-green/30'
+                                : 'bg-sphera-surface border-sphera-border hover:border-sphera-border/80 hover:bg-sphera-surface/80'
+                            }`}
+                          >
+                            <div className="space-y-2">
+                              {/* Mini Preview Mock */}
+                              <div className="w-full h-20 rounded-lg p-2.5 bg-[#0D0E10] border border-[#222222] flex flex-col justify-between select-none pointer-events-none">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-1.5">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-[#22C55E]" />
+                                    <div className="w-12 h-1.5 rounded bg-[#222222]" />
+                                  </div>
+                                  <div className="w-6 h-1.5 rounded bg-[#1F1F1F]" />
+                                </div>
+                                <div className="p-2 rounded bg-[#111111] border border-[#222222] flex items-center justify-between">
+                                  <div className="space-y-1">
+                                    <div className="w-16 h-1.5 rounded bg-[#F5F5F5]/90" />
+                                    <div className="w-10 h-1 rounded bg-[#888888]/60" />
+                                  </div>
+                                  <div className="w-3.5 h-3.5 rounded bg-[#22C55E]/20 flex items-center justify-center text-[8px] text-[#22C55E]">✓</div>
+                                </div>
                               </div>
-                              <span className="text-[10px] text-sphera-text-muted mt-2">{t.desc}</span>
-                            </button>
-                          )
-                        })}
-                      </div>
 
-                      {/* Mini explanation */}
-                      <div className="text-[11px] text-sphera-text-muted bg-sphera-surface p-2.5 rounded-lg border border-sphera-border/60">
-                        {prefs?.theme === 'clair' ? (
-                          <span>💡 <strong>Thème clair actif :</strong> Palette douce conçue pour éviter l'éblouissement tout en préservant le vert de marque `#22C55E` et les contrastes de lecture.</span>
-                        ) : prefs?.theme === 'system' ? (
-                          <span>💡 <strong>Mode système :</strong> Sphera détecte automatiquement les préférences de votre système d'exploitation et bascule en mode sombre ou clair en temps réel.</span>
-                        ) : (
-                          <span>💡 <strong>Thème sombre actif :</strong> Conçu pour maximiser la concentration et réduire la fatigue oculaire lors des sessions d'apprentissage prolongées.</span>
-                        )}
+                              <div className="flex items-center justify-between pt-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-semibold text-white">Mode Sombre Studio</span>
+                                  {activeTheme === 'sombre' && (
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-sphera-green/20 text-sphera-green font-medium">
+                                      Actif
+                                    </span>
+                                  )}
+                                </div>
+                                {activeTheme === 'sombre' && <Check className="w-4 h-4 text-sphera-green shrink-0" />}
+                              </div>
+
+                              <p className="text-xs text-sphera-text-muted">
+                                Contraste sombre carbone (#0D0E10) pour les révisions nocturnes sans éblouissement
+                              </p>
+                            </div>
+
+                            {/* Color chips */}
+                            <div className="flex items-center gap-1.5 pt-1 border-t border-sphera-border/60">
+                              <span className="text-[10px] text-sphera-text-muted mr-1">Palette :</span>
+                              <div className="w-3.5 h-3.5 rounded-full bg-[#0D0E10] border border-[#333]" title="Fond #0D0E10" />
+                              <div className="w-3.5 h-3.5 rounded-full bg-[#111111] border border-[#333]" title="Surface #111111" />
+                              <div className="w-3.5 h-3.5 rounded-full bg-[#222222] border border-[#444]" title="Bordure #222222" />
+                              <div className="w-3.5 h-3.5 rounded-full bg-[#22C55E]" title="Primaire #22C55E" />
+                            </div>
+                          </button>
+
+                          {/* Option 2: Mode Clair Nature */}
+                          <button
+                            type="button"
+                            onClick={() => handleUpdatePreference({ theme: 'clair' })}
+                            className={`p-4 rounded-xl border text-left transition-all relative flex flex-col justify-between gap-3 group ${
+                              activeTheme === 'clair'
+                                ? 'bg-sphera-green/10 border-sphera-green shadow-sm ring-1 ring-sphera-green/30'
+                                : 'bg-sphera-surface border-sphera-border hover:border-sphera-border/80 hover:bg-sphera-surface/80'
+                            }`}
+                          >
+                            <div className="space-y-2">
+                              {/* Mini Preview Mock */}
+                              <div className="w-full h-20 rounded-lg p-2.5 bg-[#F4FBF7] border border-[#DCEDE2] flex flex-col justify-between select-none pointer-events-none">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-1.5">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-[#22C55E]" />
+                                    <div className="w-12 h-1.5 rounded bg-[#DCEDE2]" />
+                                  </div>
+                                  <div className="w-6 h-1.5 rounded bg-[#EAF5EE]" />
+                                </div>
+                                <div className="p-2 rounded bg-[#FFFFFF] border border-[#DCEDE2] shadow-sm flex items-center justify-between">
+                                  <div className="space-y-1">
+                                    <div className="w-16 h-1.5 rounded bg-[#17301F]" />
+                                    <div className="w-10 h-1 rounded bg-[#66806F]" />
+                                  </div>
+                                  <div className="w-3.5 h-3.5 rounded bg-[#22C55E]/20 flex items-center justify-center text-[8px] text-[#22C55E]">✓</div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center justify-between pt-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-semibold text-white">Mode Clair Nature</span>
+                                  {activeTheme === 'clair' && (
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-sphera-green/20 text-sphera-green font-medium">
+                                      Actif
+                                    </span>
+                                  )}
+                                </div>
+                                {activeTheme === 'clair' && <Check className="w-4 h-4 text-sphera-green shrink-0" />}
+                              </div>
+
+                              <p className="text-xs text-sphera-text-muted">
+                                Fond sauge doux (#F4FBF7), cartes blanches et texte forêt (#17301F) sans fatigue oculaire
+                              </p>
+                            </div>
+
+                            {/* Color chips */}
+                            <div className="flex items-center gap-1.5 pt-1 border-t border-sphera-border/60">
+                              <span className="text-[10px] text-sphera-text-muted mr-1">Palette :</span>
+                              <div className="w-3.5 h-3.5 rounded-full bg-[#F4FBF7] border border-[#DCEDE2]" title="Fond #F4FBF7" />
+                              <div className="w-3.5 h-3.5 rounded-full bg-[#FFFFFF] border border-[#DCEDE2]" title="Surface #FFFFFF" />
+                              <div className="w-3.5 h-3.5 rounded-full bg-[#DCEDE2] border border-[#BBDBC6]" title="Bordure #DCEDE2" />
+                              <div className="w-3.5 h-3.5 rounded-full bg-[#17301F]" title="Texte #17301F" />
+                              <div className="w-3.5 h-3.5 rounded-full bg-[#22C55E]" title="Primaire #22C55E" />
+                            </div>
+                          </button>
+                        </div>
+
+                        {/* Mini explanation */}
+                        <div className="flex items-start gap-2 text-[11px] text-sphera-text-muted bg-sphera-surface p-3 rounded-lg border border-sphera-border/60">
+                          <Info className="w-4 h-4 text-sphera-green shrink-0 mt-0.5" />
+                          <div>
+                            {activeTheme === 'clair' ? (
+                              <span>
+                                <strong>Mode Clair Nature actif :</strong> Conçu avec un fond sauge reposant (<code className="text-[10px] px-1 py-0.5 rounded bg-sphera-surface-2 border border-sphera-border/60">#F4FBF7</code>), des cartes blanches pures (<code className="text-[10px] px-1 py-0.5 rounded bg-sphera-surface-2 border border-sphera-border/60">#FFFFFF</code>), des bordures pastel (<code className="text-[10px] px-1 py-0.5 rounded bg-sphera-surface-2 border border-sphera-border/60">#DCEDE2</code>) et une typographie forêt sombre (<code className="text-[10px] px-1 py-0.5 rounded bg-sphera-surface-2 border border-sphera-border/60">#17301F</code>) pour éliminer toute fatigue oculaire en plein jour.
+                              </span>
+                            ) : (
+                              <span>
+                                <strong>Mode Sombre Studio actif :</strong> Idéal pour les révisions nocturnes et les environnements peu éclairés. Fond noir carbone (<code className="text-[10px] px-1 py-0.5 rounded bg-sphera-surface-2 border border-sphera-border/60">#0D0E10</code>) avec contraste optimisé sur les accents émeraude (<code className="text-[10px] px-1 py-0.5 rounded bg-sphera-surface-2 border border-sphera-border/60">#22C55E</code>).
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )
+                })()}
               </>
             )}
           </div>
-        </Dialog.Content>
+        </div>
+      </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
   )

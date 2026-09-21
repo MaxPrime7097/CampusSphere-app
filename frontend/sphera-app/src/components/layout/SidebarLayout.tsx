@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import * as Dialog from '@radix-ui/react-dialog'
 import {
   Plus,
   LogOut,
@@ -22,6 +21,140 @@ import { getMyQuizSessions, getSessions, getAnnales } from '../../services/spher
 import { QuotaIndicator } from '../app/QuotaIndicator'
 import { SearchModal } from '../app/SearchModal'
 import { SpheraSettingsModal } from '../settings/SpheraSettingsModal'
+interface UserProfileMenuProps {
+  isOpen: boolean
+  onClose: () => void
+  onOpenSettings: () => void
+  user: any
+  logout: () => void
+  className?: string
+}
+
+const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
+  isOpen,
+  onClose,
+  onOpenSettings,
+  user,
+  logout,
+  className = '',
+}) => {
+  if (!isOpen) return null
+
+  return (
+    <>
+      {/* Invisible backdrop to dismiss on click outside */}
+      <div className="fixed inset-0 z-40" onClick={onClose} />
+
+      <div
+        className={`z-50 bg-sphera-surface border border-sphera-border rounded-2xl shadow-2xl p-3.5 space-y-2.5 animate-in fade-in slide-in-from-bottom-2 duration-150 ${className}`}
+        role="dialog"
+        aria-label="Menu profil utilisateur"
+      >
+        {/* User identity & Close */}
+        <div className="flex items-center justify-between pb-2 border-b border-sphera-border">
+          <div className="flex items-center gap-2.5 min-w-0">
+            {user?.avatar ? (
+              <img
+                src={user.avatar}
+                alt="Avatar"
+                className="w-8 h-8 rounded-full object-cover border border-sphera-border shrink-0 shadow-sm"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-sphera-surface-2 flex items-center justify-center text-xs font-bold border border-sphera-border text-white shrink-0">
+                {user?.first_name?.[0]?.toUpperCase() || user?.username?.[0]?.toUpperCase() || 'U'}
+              </div>
+            )}
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-white truncate">
+                {user?.first_name || user?.last_name
+                  ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
+                  : user?.username}
+              </p>
+              <p className="text-[10px] text-sphera-text-muted truncate">
+                @{user?.username || 'etudiant'}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2 transition-colors"
+            title="Fermer"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* Actions list */}
+        <div className="space-y-1">
+          <button
+            type="button"
+            onClick={() => {
+              onClose()
+              onOpenSettings()
+            }}
+            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-medium text-white hover:bg-sphera-surface-2 hover:text-sphera-green transition-colors text-left group"
+          >
+            <div className="w-6 h-6 rounded-lg bg-sphera-green/10 text-sphera-green flex items-center justify-center shrink-0">
+              <Sliders className="w-3.5 h-3.5" />
+            </div>
+            <div className="flex-1 truncate">
+              <div className="font-semibold">Paramètres Sphera</div>
+              <div className="text-[10px] text-sphera-text-muted truncate">Préférences, quotas & streak</div>
+            </div>
+          </button>
+
+          <a
+            href="https://campussphere.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={onClose}
+            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-medium text-white hover:bg-sphera-surface-2 transition-colors text-left group"
+          >
+            <div className="w-6 h-6 rounded-lg bg-orange-500/10 text-orange-400 flex items-center justify-center shrink-0">
+              <ExternalLink className="w-3.5 h-3.5" />
+            </div>
+            <div className="flex-1 truncate">
+              <div className="font-semibold">CampusSphere</div>
+              <div className="text-[10px] text-sphera-text-muted truncate">Réseau social & profil</div>
+            </div>
+          </a>
+
+          <a
+            href="https://campussphere.app/contact"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={onClose}
+            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-medium text-white hover:bg-sphera-surface-2 transition-colors text-left group"
+          >
+            <div className="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center shrink-0">
+              <HelpCircle className="w-3.5 h-3.5" />
+            </div>
+            <div className="flex-1 truncate">
+              <div className="font-semibold">Aide & Support</div>
+              <div className="text-[10px] text-sphera-text-muted truncate">Assistance et retours</div>
+            </div>
+          </a>
+        </div>
+
+        {/* Logout */}
+        <div className="pt-1.5 border-t border-sphera-border">
+          <button
+            type="button"
+            onClick={() => {
+              onClose()
+              logout()
+            }}
+            className="w-full flex items-center justify-center gap-2 px-2.5 py-1.5 rounded-xl text-xs font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Déconnexion</span>
+          </button>
+        </div>
+      </div>
+    </>
+  )
+}
 
 export function SidebarLayout() {
   const { user, logout } = useSpheraAuth()
@@ -99,7 +232,8 @@ export function SidebarLayout() {
       {/* Mobile Top Header (Screens < md) */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-sphera-surface-2 border-b border-sphera-border px-4 flex items-center justify-between z-30">
         <Link to="/dashboard" className="flex items-center gap-2.5">
-          <img src="/sphera-logo-dark.png" alt="Sphera logo" className="h-7 w-auto" />
+          <img src="/sphera-logo-dark.png" alt="Sphera logo" className="h-7 w-auto dark-logo" />
+          <img src="/sphera-logo-light.png" alt="Sphera logo" className="h-7 w-auto light-logo" />
           <span className="font-display font-bold text-lg text-white tracking-tight">Sphera</span>
         </Link>
         <button
@@ -129,7 +263,8 @@ export function SidebarLayout() {
         {/* Mobile Drawer Header */}
         <div className="h-16 flex items-center justify-between px-5 border-b border-sphera-border shrink-0">
           <Link to="/dashboard" className="flex items-center gap-2.5">
-            <img src="/sphera-logo-dark.png" alt="Sphera logo" className="h-7 w-auto" />
+            <img src="/sphera-logo-dark.png" alt="Sphera logo" className="h-7 w-auto dark-logo" />
+            <img src="/sphera-logo-light.png" alt="Sphera logo" className="h-7 w-auto light-logo" />
             <span className="font-display font-bold text-lg text-white tracking-tight">Sphera</span>
           </Link>
           <button
@@ -235,10 +370,18 @@ export function SidebarLayout() {
         </div>
 
         {/* Mobile Drawer Footer */}
-        <div className="p-3 border-t border-sphera-border bg-sphera-surface-2 shrink-0">
+        <div className="p-3 border-t border-sphera-border bg-sphera-surface-2 shrink-0 relative">
+          <UserProfileMenu
+            isOpen={isUserMenuOpen}
+            onClose={() => setIsUserMenuOpen(false)}
+            onOpenSettings={() => setIsSettingsModalOpen(true)}
+            user={user}
+            logout={logout}
+            className="absolute bottom-full left-3 right-3 mb-2"
+          />
           <button
             type="button"
-            onClick={() => setIsUserMenuOpen(true)}
+            onClick={() => setIsUserMenuOpen(prev => !prev)}
             className="w-full flex items-center gap-2.5 p-2 rounded-xl bg-sphera-surface border border-sphera-border hover:border-sphera-green/40 transition-all text-left group"
           >
             {user?.avatar ? (
@@ -277,7 +420,8 @@ export function SidebarLayout() {
         <div className="h-16 flex items-center justify-between px-4 border-b border-sphera-border shrink-0">
           {!isCollapsed ? (
             <Link to="/dashboard" className="flex items-center gap-3 min-w-0">
-              <img src="/sphera-logo-dark.png" alt="Sphera logo" className="h-8 w-auto shrink-0" />
+              <img src="/sphera-logo-dark.png" alt="Sphera logo" className="h-8 w-auto shrink-0 dark-logo" />
+              <img src="/sphera-logo-light.png" alt="Sphera logo" className="h-8 w-auto shrink-0 light-logo" />
               <div className="flex flex-col min-w-0">
                 <span className="font-display font-bold text-lg text-white tracking-tight leading-none truncate">
                   Sphera
@@ -289,7 +433,8 @@ export function SidebarLayout() {
             </Link>
           ) : (
             <Link to="/dashboard" className="mx-auto" title="Sphera Dashboard">
-              <img src="/sphera-logo-dark.png" alt="Sphera logo" className="h-7 w-auto" />
+              <img src="/sphera-logo-dark.png" alt="Sphera logo" className="h-7 w-auto dark-logo" />
+              <img src="/sphera-logo-light.png" alt="Sphera logo" className="h-7 w-auto light-logo" />
             </Link>
           )}
 
@@ -482,11 +627,19 @@ export function SidebarLayout() {
         </div>
 
         {/* Bottom Section (Fixed): User Profile Interactive Trigger */}
-        <div className="p-3 border-t border-sphera-border bg-sphera-surface-2 shrink-0">
+        <div className="p-3 border-t border-sphera-border bg-sphera-surface-2 shrink-0 relative">
+          <UserProfileMenu
+            isOpen={isUserMenuOpen}
+            onClose={() => setIsUserMenuOpen(false)}
+            onOpenSettings={() => setIsSettingsModalOpen(true)}
+            user={user}
+            logout={logout}
+            className={isCollapsed ? 'fixed bottom-4 left-20 w-64' : 'absolute bottom-full left-3 right-3 mb-2'}
+          />
           {!isCollapsed ? (
             <button
               type="button"
-              onClick={() => setIsUserMenuOpen(true)}
+              onClick={() => setIsUserMenuOpen(prev => !prev)}
               className="w-full flex items-center gap-2.5 p-2 rounded-xl bg-sphera-surface border border-sphera-border hover:border-sphera-green/40 hover:bg-sphera-surface/90 transition-all text-left group"
             >
               {user?.avatar ? (
@@ -516,7 +669,7 @@ export function SidebarLayout() {
             <div className="flex flex-col items-center gap-2">
               <button
                 type="button"
-                onClick={() => setIsUserMenuOpen(true)}
+                onClick={() => setIsUserMenuOpen(prev => !prev)}
                 className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:ring-2 hover:ring-sphera-green/40"
                 title="Mon compte & paramètres"
               >
@@ -548,119 +701,6 @@ export function SidebarLayout() {
         onClose={() => setIsSearchModalOpen(false)}
         items={allSearchItems}
       />
-
-      {/* User Actions Menu Dialog */}
-      <Dialog.Root open={isUserMenuOpen} onOpenChange={setIsUserMenuOpen}>
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity" />
-          <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-sphera-surface border border-sphera-border rounded-2xl shadow-2xl z-50 overflow-hidden p-5 space-y-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between">
-              <Dialog.Title className="text-sm font-semibold text-white">Mon Compte Sphera</Dialog.Title>
-              <Dialog.Close asChild>
-                <button
-                  type="button"
-                  onClick={() => setIsUserMenuOpen(false)}
-                  className="text-sphera-text-muted hover:text-white p-1 rounded-lg hover:bg-sphera-surface-2 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </Dialog.Close>
-            </div>
-
-            {/* Profile summary */}
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-sphera-surface-2 border border-sphera-border">
-              {user?.avatar ? (
-                <img
-                  src={user.avatar}
-                  alt="Avatar"
-                  className="w-11 h-11 rounded-full object-cover border border-sphera-border shrink-0"
-                />
-              ) : (
-                <div className="w-11 h-11 rounded-full bg-sphera-surface border border-sphera-border flex items-center justify-center text-sm font-bold text-white shrink-0">
-                  {user?.first_name?.[0]?.toUpperCase() || user?.username?.[0]?.toUpperCase() || 'U'}
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-white truncate">
-                  {user?.first_name || user?.last_name
-                    ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
-                    : user?.username}
-                </p>
-                <p className="text-[11px] text-sphera-text-muted truncate">
-                  @{user?.username || 'etudiant'}
-                </p>
-              </div>
-            </div>
-
-            {/* Actions List */}
-            <div className="space-y-1.5 pt-1">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsUserMenuOpen(false)
-                  setIsSettingsModalOpen(true)
-                }}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-white bg-sphera-surface-2 hover:bg-sphera-surface hover:text-sphera-green border border-sphera-border/60 transition-colors group"
-              >
-                <div className="w-7 h-7 rounded-lg bg-sphera-green/10 text-sphera-green flex items-center justify-center shrink-0">
-                  <Sliders className="w-3.5 h-3.5" />
-                </div>
-                <div className="flex-1 text-left">
-                  <div className="font-semibold">Paramètres Sphera</div>
-                  <div className="text-[10px] text-sphera-text-muted">Préférences IA, quotas, quiz & thèmes</div>
-                </div>
-              </button>
-
-              <a
-                href="https://campussphere.app"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setIsUserMenuOpen(false)}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-white bg-sphera-surface-2 hover:bg-sphera-surface hover:text-white border border-sphera-border/60 transition-colors group"
-              >
-                <div className="w-7 h-7 rounded-lg bg-orange-500/10 text-orange-400 flex items-center justify-center shrink-0">
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </div>
-                <div className="flex-1 text-left">
-                  <div className="font-semibold">CampusSphere</div>
-                  <div className="text-[10px] text-sphera-text-muted">Réseau social académique et profil</div>
-                </div>
-              </a>
-
-              <a
-                href="https://campussphere.app/contact"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setIsUserMenuOpen(false)}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-white bg-sphera-surface-2 hover:bg-sphera-surface hover:text-white border border-sphera-border/60 transition-colors group"
-              >
-                <div className="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center shrink-0">
-                  <HelpCircle className="w-3.5 h-3.5" />
-                </div>
-                <div className="flex-1 text-left">
-                  <div className="font-semibold">Aide & Support</div>
-                  <div className="text-[10px] text-sphera-text-muted">Une question ? Contacter l'assistance</div>
-                </div>
-              </a>
-            </div>
-
-            {/* Logout button */}
-            <div className="pt-2 border-t border-sphera-border">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsUserMenuOpen(false)
-                  logout()
-                }}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                <span>Déconnexion</span>
-              </button>
-            </div>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
 
       {/* Sphera Settings Modal */}
       <SpheraSettingsModal
