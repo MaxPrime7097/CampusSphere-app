@@ -85,6 +85,16 @@ export function useQuizSocket(roomCode: string | null) {
             setCurrentQuestion(null);
             setStatus('connected'); // keeps it connected but we know it's finished by state in components
             break;
+          case 'quiz_stopped':
+            setCountdownActive(false);
+            setCurrentQuestion(null);
+            setAnswerResult(null);
+            setQuestionResults(null);
+            setLeaderboard([]);
+            if (data.payload?.participants) {
+              setParticipants(data.payload.participants);
+            }
+            break;
           case 'error':
             console.error('Quiz socket error:', data.payload.message);
             break;
@@ -138,6 +148,10 @@ export function useQuizSocket(roomCode: string | null) {
     sendMessage('start_quiz');
   }, [sendMessage]);
 
+  const stopQuiz = useCallback(() => {
+    sendMessage('stop_quiz');
+  }, [sendMessage]);
+
   const submitAnswer = useCallback((questionIndex: number, selectedIndex: number, timeToAnswer: number) => {
     sendMessage('submit_answer', { questionIndex, selectedIndex, timeToAnswer });
   }, [sendMessage]);
@@ -157,6 +171,7 @@ export function useQuizSocket(roomCode: string | null) {
     joinRoom,
     startCountdown,
     startQuiz,
+    stopQuiz,
     submitAnswer,
     nextQuestion,
   };

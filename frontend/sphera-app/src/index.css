@@ -35,17 +35,58 @@
 
     --radius: 0.75rem;
 
-    /* Custom Sphera variables */
-    --sphera-green: #22C55E;
-    --sphera-green-dim: #16A34A;
-    --sphera-green-glow: rgba(34,197,94,0.15);
-    --sphera-bg: #0D0E10;
-    --sphera-surface: #111111;
-    --sphera-surface-2: #1A1A1A;
-    --sphera-border: #222222;
-    --sphera-text: #F5F5F5;
-    --sphera-text-muted: #888888;
+    /* Native Sphera Dark Palette */
+    --sphera-green: 34 197 94;
+    --sphera-green-dim: 22 163 74;
+    --sphera-bg: 13 14 16;
+    --sphera-surface: 17 17 17;
+    --sphera-surface-2: 26 26 26;
+    --sphera-border: 34 34 34;
+    --sphera-text: 245 245 245;
+    --sphera-text-muted: 136 136 136;
     --cs-orange: #ff9800;
+  }
+
+  /* User-defined soft soothing Light Theme:
+     Background  #F4FBF7 (244 251 247)
+     Surface     #FFFFFF (255 255 255)
+     Surface-2   #EAF5EE (234 245 238)
+     Primary     #22C55E (34 197 94)
+     Text        #17301F (23 48 31)
+     Muted       #66806F (102 128 111)
+     Border      #DCEDE2 (220 237 226)
+  */
+  [data-theme="clair"] {
+    --background: 146 45% 97%;
+    --foreground: 140 35% 14%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 140 35% 14%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 140 35% 14%;
+
+    --primary: 142 71% 45%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 144 33% 94%;
+    --secondary-foreground: 140 35% 14%;
+
+    --muted: 144 33% 94%;
+    --muted-foreground: 140 11% 45%;
+
+    --border: 140 30% 90%;
+    --input: 140 30% 90%;
+    --ring: 142 71% 45%;
+
+    --sphera-green: 34 197 94;
+    --sphera-green-dim: 22 163 74;
+    --sphera-bg: 244 251 247;
+    --sphera-surface: 255 255 255;
+    --sphera-surface-2: 234 245 238;
+    --sphera-border: 220 237 226;
+    --sphera-text: 23 48 31;
+    --sphera-text-muted: 102 128 111;
   }
 }
 
@@ -53,6 +94,46 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  [data-theme="clair"] body {
+    background-color: #F4FBF7;
+    color: #17301F;
+  }
+
+  [data-theme="clair"] .text-white {
+    color: #17301F;
+  }
+
+  [data-theme="clair"] .bg-sphera-green,
+  [data-theme="clair"] .bg-sphera-green .text-white,
+  [data-theme="clair"] button.bg-sphera-green,
+  [data-theme="clair"] a.bg-sphera-green {
+    color: #0A0A0A !important;
+  }
+
+  [data-theme="clair"] .bg-red-500,
+  [data-theme="clair"] .bg-red-500 .text-white,
+  [data-theme="clair"] .bg-red-600,
+  [data-theme="clair"] .bg-red-600 .text-white,
+  [data-theme="clair"] .bg-blue-600,
+  [data-theme="clair"] .bg-blue-600 .text-white,
+  [data-theme="clair"] .bg-purple-600,
+  [data-theme="clair"] .bg-purple-600 .text-white,
+  [data-theme="clair"] .bg-violet-600,
+  [data-theme="clair"] .bg-violet-600 .text-white {
+    color: #FFFFFF !important;
+  }
+
+  [data-theme="clair"] input,
+  [data-theme="clair"] textarea,
+  [data-theme="clair"] select {
+    color: #17301F;
+  }
+
+  [data-theme="clair"] input::placeholder,
+  [data-theme="clair"] textarea::placeholder {
+    color: #66806F;
   }
 }
 
@@ -62,21 +143,21 @@
 }
 
 .sphera-card {
-  background-color: var(--sphera-surface);
-  border: 1px solid var(--sphera-border);
+  background-color: rgb(var(--sphera-surface));
+  border: 1px solid rgb(var(--sphera-border));
   border-radius: 12px;
   transition: border-color 0.2s;
 }
 
 .sphera-upload-zone {
-  border: 2px dashed #333333;
+  border: 2px dashed rgb(var(--sphera-border));
   border-radius: 16px;
-  background-color: #0F0F0F;
+  background-color: rgb(var(--sphera-surface-2));
   transition: all 0.2s;
 }
 
 .sphera-primary-btn {
-  background-color: var(--sphera-green);
+  background-color: rgb(var(--sphera-green));
   color: #0A0A0A;
   font-weight: 600;
   border-radius: 8px;
@@ -86,7 +167,7 @@
 }
 
 .sphera-primary-btn:hover:not(:disabled) {
-  background-color: var(--sphera-green-dim);
+  background-color: rgb(var(--sphera-green-dim));
   box-shadow: 0 0 25px rgba(34,197,94,0.4);
 }
 
@@ -96,6 +177,12 @@
   box-shadow: none;
 }
 
+/* Adaptive logo */
+.light-logo { display: none !important; }
+.dark-logo { display: block !important; }
+[data-theme="clair"] .light-logo { display: block !important; }
+[data-theme="clair"] .dark-logo { display: none !important; }
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
@@ -103,16 +190,16 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--sphera-bg); 
+  background: rgb(var(--sphera-bg)); 
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--sphera-border); 
+  background: rgb(var(--sphera-border)); 
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #333333; 
+  background: rgb(var(--sphera-text-muted)); 
 }
 
 /* Hide scrollbar utility (especially for mobile touch swipe) */

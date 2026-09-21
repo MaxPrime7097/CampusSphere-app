@@ -3,8 +3,12 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
 import { SpheraAuthProvider } from './contexts/SpheraAuthContext'
+import { initTheme } from './utils/theme'
 import App from './App'
 import './index.css'
+
+// Initialize user theme
+initTheme()
 
 function hydrateSpheraTokensFromUrl() {
   const params = new URLSearchParams(window.location.search)
