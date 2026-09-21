@@ -10,7 +10,7 @@ import { badRequest, serviceUnavailable } from "../../lib/errors.js";
 import { parseJsonWithFallback, UnparseableModelOutputError } from "./json.js";
 import { annalePrompt, qaPrompt, suggestionsPrompt, toolPrompt, quizFromSelectionPrompt, flashcardFromSelectionPrompt, type AnnaleMode, type ToolType } from "./prompts.js";
 import { AllProvidersFailedError, callWithFallback, TOKENS_ANNALE, TOKENS_DEFAULT, TOKENS_FLASHCARDS, TOKENS_QUIZ } from "./providers.js";
-import { buildContextPrefix, getUserAcademicContext } from "./userContext.js";
+import { buildContextPrefix, buildStyleInstructions, getUserAcademicContext, getUserPreferences } from "./userContext.js";
 
 /** Below this, a document has no usable content — usually a failed scan. */
 export const MIN_SOURCE_CHARS = 50;
@@ -71,10 +71,15 @@ function assertUsableSource(text: string, what = "Le texte extrait"): void {
 async function resolveContextPrefix(userId?: number): Promise<string> {
   if (!userId) return "";
   try {
-    const context = await getUserAcademicContext(userId);
-    return buildContextPrefix(context);
+    const [context, prefs] = await Promise.all([
+      getUserAcademicContext(userId),
+      getUserPreferences(userId),
+    ]);
+    const academicPrefix = buildContextPrefix(context);
+    const stylePrefix = buildStyleInstructions(prefs);
+    return academicPrefix + stylePrefix;
   } catch (err) {
-    console.warn("[sphera-ai] Failed to load academic context:", err);
+    console.warn("[sphera-ai] Failed to load academic context or preferences:", err);
     return "";
   }
 }
@@ -119,7 +124,22 @@ export async function generateTool(
 ): Promise<Record<string, unknown>> {
   assertUsableSource(text);
   const prefix = await resolveContextPrefix(userId);
-  const prompt = prefix + toolPrompt(toolType, text);
+
+  let countInstruction = "";
+  if (userId) {
+    try {
+      const prefs = await getUserPreferences(userId);
+      if (toolType === "quiz" && prefs?.quizQuestionCount) {
+        countInstruction = `\n\n[USER QUANTITY OVERRIDE: Generate exactly ${prefs.quizQuestionCount} quiz questions in the 'questions' array, no more, no less.]\n\n`;
+      } else if (toolType === "flashcards" && prefs?.flashcardCount) {
+        countInstruction = `\n\n[USER QUANTITY OVERRIDE: Generate exactly ${prefs.flashcardCount} flashcards in the 'cartes' array, no more, no less.]\n\n`;
+      }
+    } catch {
+      // Continue without quantity override on error
+    }
+  }
+
+  const prompt = prefix + toolPrompt(toolType, text) + countInstruction;
   const maxTokens = TOOL_TOKENS[toolType] ?? TOKENS_DEFAULT;
   try {
     const raw = await callWithFallback(prompt, maxTokens, { toolType, userId });

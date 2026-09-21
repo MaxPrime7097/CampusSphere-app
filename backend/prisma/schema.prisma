@@ -309,6 +309,7 @@ model User {
   quizLiveParticipations QuizLiveParticipant[] @relation("QuizLiveParticipations")
   generationUsages    GenerationUsage[]
   aiUsageLogs         AIUsageLog[]
+  spheraPreferences   SpheraPreferences?
 
   @@index([university])
   @@index([faculty])
@@ -1133,5 +1134,27 @@ model AIUsageLog {
   @@index([provider, createdAt])
   @@index([createdAt])
   @@map("ai_usage_logs")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Sphera Preferences (Standalone Sphera configuration)
+// ─────────────────────────────────────────────────────────────
+
+model SpheraPreferences {
+  id                Int      @id @default(autoincrement())
+  userId            Int      @unique @map("user_id")
+  defaultLanguage   String   @default("auto") @map("default_language") // 'auto', 'fr', 'en'
+  detailLevel       String   @default("standard") @map("detail_level") // 'court', 'standard', 'detaille'
+  tone              String   @default("decontracte") // 'decontracte', 'formel'
+  quizQuestionCount Int?     @map("quiz_question_count") // null = auto (system decides, between 10 and 30)
+  quizTimeLimit     Int      @default(15) @map("quiz_time_limit") // seconds per question
+  flashcardCount    Int?     @map("flashcard_count") // null = auto (system decides, between 10 and 30)
+  theme             String   @default("sombre") // 'system', 'sombre', 'clair'
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sphera_preferences")
 }
 
