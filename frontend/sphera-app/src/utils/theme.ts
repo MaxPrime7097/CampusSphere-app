@@ -1,36 +1,35 @@
-export type SpheraTheme = 'system' | 'sombre' | 'clair';
+export type SpheraTheme = 'sombre' | 'clair'
 
-const THEME_KEY = 'sphera_theme';
+const THEME_KEY = 'sphera_theme'
 
 export function getSavedTheme(): SpheraTheme {
-  const saved = localStorage.getItem(THEME_KEY);
-  if (saved === 'system' || saved === 'sombre' || saved === 'clair') {
-    return saved;
+  try {
+    const saved = localStorage.getItem(THEME_KEY) as SpheraTheme | null
+    if (saved === 'clair' || saved === 'sombre') {
+      return saved
+    }
+  } catch (err) {
+    console.warn('[sphera-theme] Failed to read localStorage:', err)
   }
-  return 'sombre';
+  return 'sombre'
 }
 
 export function applyTheme(theme: SpheraTheme): void {
-  localStorage.setItem(THEME_KEY, theme);
-  const root = document.documentElement;
+  try {
+    localStorage.setItem(THEME_KEY, theme)
+  } catch (err) {
+    console.warn('[sphera-theme] Failed to save to localStorage:', err)
+  }
 
-  if (theme === 'system') {
-    const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    root.setAttribute('data-theme', isDark ? 'sombre' : 'clair');
+  if (theme === 'clair') {
+    document.documentElement.setAttribute('data-theme', 'clair')
   } else {
-    root.setAttribute('data-theme', theme);
+    document.documentElement.removeAttribute('data-theme')
   }
 }
 
 export function initTheme(): void {
-  const saved = getSavedTheme();
-  applyTheme(saved);
-
-  // Listen for system theme changes if set to 'system'
-  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-  mediaQuery.addEventListener('change', (e) => {
-    if (getSavedTheme() === 'system') {
-      document.documentElement.setAttribute('data-theme', e.matches ? 'sombre' : 'clair');
-    }
-  });
+  const saved = getSavedTheme()
+  applyTheme(saved)
 }
+

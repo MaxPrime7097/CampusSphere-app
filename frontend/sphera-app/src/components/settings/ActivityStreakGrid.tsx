@@ -1,10 +1,27 @@
 import React, { useMemo } from 'react'
-import { Flame, Trophy, Sparkles, BookOpen, Layers } from 'lucide-react'
+import { Flame, Trophy, Sparkles, BookOpen, Layers, Info } from 'lucide-react'
 import type { SpheraStatsData } from '../../services/spheraApi'
 
 interface ActivityStreakGridProps {
   stats: SpheraStatsData | null
   isLoading?: boolean
+}
+
+function getToolDisplayName(toolKey: string): string {
+  switch (toolKey.toLowerCase()) {
+    case 'fiche':
+      return 'Fiches de cours'
+    case 'quiz':
+      return 'Quiz interactifs'
+    case 'flashcards':
+      return 'Cartes mémoires'
+    case 'mindmap':
+      return 'Cartes mentales'
+    case 'audio':
+      return 'Résumés audio'
+    default:
+      return 'Quiz interactifs'
+  }
 }
 
 export const ActivityStreakGrid: React.FC<ActivityStreakGridProps> = ({ stats, isLoading }) => {
@@ -14,9 +31,6 @@ export const ActivityStreakGrid: React.FC<ActivityStreakGridProps> = ({ stats, i
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    // Find day of week (0 = Sun, 1 = Mon ... 6 = Sat)
-    const todayDay = today.getDay()
-    // Align so current week ends on today or Sunday
     const days: { dateStr: string; date: Date; count: number }[] = []
 
     for (let i = totalDays - 1; i >= 0; i--) {
@@ -62,7 +76,7 @@ export const ActivityStreakGrid: React.FC<ActivityStreakGridProps> = ({ stats, i
   const currentStreak = stats?.current_streak ?? 0
   const longestStreak = stats?.longest_streak ?? 0
   const totalSessions = stats?.total_sessions ?? 0
-  const favoriteTool = stats?.favorite_tool ? stats.favorite_tool.toUpperCase() : 'QUIZ'
+  const favoriteTool = getToolDisplayName(stats?.favorite_tool || 'quiz')
 
   return (
     <div className="space-y-6">
@@ -70,7 +84,7 @@ export const ActivityStreakGrid: React.FC<ActivityStreakGridProps> = ({ stats, i
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="p-3.5 rounded-xl border border-sphera-border bg-sphera-surface-2 flex flex-col justify-between">
           <div className="flex items-center justify-between text-xs text-sphera-text-muted">
-            <span>Streak actuel</span>
+            <span>Streak en cours</span>
             <Flame className={`w-4 h-4 ${currentStreak > 0 ? 'text-amber-500 fill-amber-500/20' : 'text-sphera-text-muted'}`} />
           </div>
           <div className="mt-2">
@@ -107,34 +121,35 @@ export const ActivityStreakGrid: React.FC<ActivityStreakGridProps> = ({ stats, i
             <Sparkles className="w-4 h-4 text-purple-400" />
           </div>
           <div className="mt-2">
-            <span className="text-sm font-semibold text-white tracking-tight truncate block">{favoriteTool}</span>
-            <span className="text-[10px] text-sphera-text-muted">le plus généré</span>
+            <span className="text-xs font-semibold text-white tracking-tight truncate block">{favoriteTool}</span>
+            <span className="text-[10px] text-sphera-text-muted">le plus utilisé</span>
           </div>
         </div>
       </div>
 
-      {/* GitHub-style Contribution Grid */}
+      {/* Contribution Grid */}
       <div className="p-4 rounded-xl border border-sphera-border bg-sphera-surface">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Layers className="w-4 h-4 text-sphera-green" />
             <h4 className="text-xs font-semibold text-white uppercase tracking-wider">
-              Grille d'activité & révisions (14 dernières semaines)
+              Grille d'activité et révisions (14 dernières semaines)
             </h4>
           </div>
           <span className="text-xs text-sphera-text-muted">
-            {currentStreak > 0 ? `${currentStreak} j d'affilée en cours` : 'Réviser aujourd\'hui pour démarrer un streak'}
+            {currentStreak > 0 ? `${currentStreak} jours consécutifs` : 'Révisez aujourd\'hui pour démarrer un streak'}
           </span>
         </div>
 
-        {/* Month labels */}
+        {/* Scrollable grid container */}
         <div className="overflow-x-auto pb-2 scrollbar-none">
-          <div className="min-w-[420px]">
-            <div className="grid grid-cols-14 gap-1.5 mb-1.5 pl-6 text-[10px] text-sphera-text-muted font-mono capitalize">
+          <div className="min-w-[480px]">
+            {/* Month labels */}
+            <div className="flex gap-1.5 mb-1.5 pl-7 text-[10px] text-sphera-text-muted font-mono capitalize">
               {weeks.map((week, idx) => {
                 const label = monthLabels.find(m => m.colIndex === idx)
                 return (
-                  <div key={`m-${idx}`} className="truncate">
+                  <div key={`m-${idx}`} className="flex-1 truncate">
                     {label ? label.label : ''}
                   </div>
                 )
@@ -142,24 +157,24 @@ export const ActivityStreakGrid: React.FC<ActivityStreakGridProps> = ({ stats, i
             </div>
 
             {/* 7 Days of the week row-by-row */}
-            <div className="flex gap-1.5">
+            <div className="flex gap-1.5 items-center">
               {/* Day of week abbreviations */}
-              <div className="flex flex-col justify-between text-[9px] text-sphera-text-muted font-mono pr-1 select-none py-0.5">
+              <div className="flex flex-col justify-between text-[9px] text-sphera-text-muted font-mono pr-1 select-none h-[112px] py-0.5">
                 <span>Lun</span>
                 <span>Mer</span>
                 <span>Ven</span>
                 <span>Dim</span>
               </div>
 
-              {/* Grid Columns */}
-              <div className="flex-1 grid grid-cols-14 gap-1.5">
+              {/* Flexbox Columns for all 14 weeks */}
+              <div className="flex-1 flex gap-1.5">
                 {weeks.map((week, wIdx) => (
-                  <div key={`w-${wIdx}`} className="flex flex-col gap-1.5">
+                  <div key={`w-${wIdx}`} className="flex-1 flex flex-col gap-1.5">
                     {week.map((day) => {
-                      let cellColor = 'bg-sphera-surface-2 border-sphera-border/50'
-                      if (day.count === 1) cellColor = 'bg-emerald-500/30 border-emerald-500/40 text-emerald-300'
-                      else if (day.count === 2) cellColor = 'bg-emerald-500/60 border-emerald-500/70 text-emerald-100'
-                      else if (day.count >= 3) cellColor = 'bg-sphera-green border-sphera-green text-black font-bold shadow-[0_0_6px_rgba(34,197,94,0.35)]'
+                      let cellColor = 'bg-sphera-surface-2 border-sphera-border'
+                      if (day.count === 1) cellColor = 'bg-emerald-500/30 border-emerald-500/50'
+                      else if (day.count === 2) cellColor = 'bg-emerald-500/60 border-emerald-500/70'
+                      else if (day.count >= 3) cellColor = 'bg-sphera-green border-sphera-green shadow-[0_0_6px_rgba(34,197,94,0.4)]'
 
                       const formattedDate = day.date.toLocaleDateString('fr-FR', {
                         day: 'numeric',
@@ -181,12 +196,15 @@ export const ActivityStreakGrid: React.FC<ActivityStreakGridProps> = ({ stats, i
             </div>
 
             {/* Footer Legend */}
-            <div className="flex items-center justify-between pt-3 mt-3 border-t border-sphera-border/60 text-[11px] text-sphera-text-muted">
-              <span>Chaque carré représente une journée d'entraînement ou de génération.</span>
+            <div className="flex items-center justify-between pt-3 mt-3 border-t border-sphera-border text-[11px] text-sphera-text-muted">
+              <span className="flex items-center gap-1.5">
+                <Info className="w-3.5 h-3.5 text-sphera-green" />
+                Chaque carré représente une journée d'entraînement ou de révision.
+              </span>
               <div className="flex items-center gap-1.5">
                 <span>Moins</span>
-                <span className="w-2.5 h-2.5 rounded-[2px] bg-sphera-surface-2 border border-sphera-border/50 inline-block" />
-                <span className="w-2.5 h-2.5 rounded-[2px] bg-emerald-500/30 border border-emerald-500/40 inline-block" />
+                <span className="w-2.5 h-2.5 rounded-[2px] bg-sphera-surface-2 border border-sphera-border inline-block" />
+                <span className="w-2.5 h-2.5 rounded-[2px] bg-emerald-500/30 border border-emerald-500/50 inline-block" />
                 <span className="w-2.5 h-2.5 rounded-[2px] bg-emerald-500/60 border border-emerald-500/70 inline-block" />
                 <span className="w-2.5 h-2.5 rounded-[2px] bg-sphera-green border border-sphera-green inline-block" />
                 <span>Plus</span>
