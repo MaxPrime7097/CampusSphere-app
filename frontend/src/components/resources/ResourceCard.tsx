@@ -16,9 +16,10 @@ import {
 import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { formatFileSize, cn, getResourceUrl } from "@/lib/utils";
 import { StudyToolsModal } from "@/sphera/components/study/StudyToolsModal";
+import type { ResourceCardData, Resource } from "@/types";
 
 interface ResourceCardProps {
-  resource: any;
+  resource: ResourceCardData | Resource;
   isDownloading?: boolean;
   isSaved?: boolean;
   onDownload?: (e: React.MouseEvent) => void;

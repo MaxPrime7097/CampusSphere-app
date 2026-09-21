@@ -33,41 +33,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
 import { useAuth } from "@/contexts/AuthContext";
+import type { PostCardData } from "@/types";
 
 const CommentsModal = lazy(() => import("@/components/modals/CommentsModal").then((module) => ({ default: module.CommentsModal })));
 
 interface PostCardProps {
-  post: {
-    files?: {
-      id: string | number | null;
-      name: string;
-      url: string;
-      type: string;
-      size: number;
-    }[];
-    id: string;
-    author: {
-      name: string;
-      avatar?: string;
-      username: string;
-      isVerified?: boolean;
-      impactScore?: number;
-    };
-    content: string;
-    image?: string;
-    createdAt?: string | null;
-    timestamp?: string;
-    likes: number;
-    comments: number;
-    category?: string;
-    impactScore?: number;
-    userImpactRating?: number | null;
-    isLiked?: boolean;
-    isSaved?: boolean;
-    canEdit?: boolean;
-    canDelete?: boolean;
-  };
-
+  post: PostCardData;
   onToggleSave?: (saved: boolean) => void;
 }
 

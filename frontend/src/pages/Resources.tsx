@@ -57,6 +57,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import type { Resource, ResourceFolder, ResourceCardData } from "@/types";
 
 const UploadResourceModal = lazy(() =>
   import("@/components/modals/UploadResourceModal").then((module) => ({
@@ -80,7 +81,7 @@ const RESOURCE_CHIPS = [
   { value: "presentations", label: "Présentations / Slides", icon: Presentation },
 ] as const;
 
-function mapResourceCard(r: any) {
+function mapResourceCard(r: Resource | any): ResourceCardData {
   return {
     id: String(r.id),
     title: r.title,
@@ -118,14 +119,14 @@ export function Resources() {
 
   // Folder states
   const [showCreateFolder, setShowCreateFolder] = useState(false);
-  const [editingFolder, setEditingFolder] = useState<any>(null);
-  const [selectedFolder, setSelectedFolder] = useState<any>(null);
-  const [folderResources, setFolderResources] = useState<any[]>([]);
+  const [editingFolder, setEditingFolder] = useState<ResourceFolder | null>(null);
+  const [selectedFolder, setSelectedFolder] = useState<ResourceFolder | null>(null);
+  const [folderResources, setFolderResources] = useState<Resource[]>([]);
 
   // Action states
   const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
   const [savedResources, setSavedResources] = useState<Set<string>>(new Set());
-  const [resources, setResources] = useState<any[]>([]);
+  const [resources, setResources] = useState<Resource[]>([]);
 
   // Fetch Resources
   const resourcesQuery = useQuery({

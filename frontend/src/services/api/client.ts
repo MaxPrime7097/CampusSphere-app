@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { normalizeResourceType } from "@/constants/resourceTypes";
+import type { UserProfile, Sphere, Post, Resource, PostFile } from "@/types";
 
 export {
   parseBackendError,
@@ -197,7 +198,7 @@ export function unwrapList<T = any>(response: any): T[] {
   return [];
 }
 
-export function normalizeUser(user: any) {
+export function normalizeUser(user: any): UserProfile | null {
   if (!user) return null;
 
   const currentMood = user.currentMood ?? user.current_mood ?? "";
@@ -264,11 +265,11 @@ export function normalizeUser(user: any) {
   };
 }
 
-export function normalizeUsers(users: any[] = []) {
-  return users.map((user) => normalizeUser(user)).filter(Boolean);
+export function normalizeUsers(users: any[] = []): UserProfile[] {
+  return users.map((user) => normalizeUser(user)).filter(Boolean) as UserProfile[];
 }
 
-export function normalizeSphere(sphere: any) {
+export function normalizeSphere(sphere: any): Sphere | null {
   if (!sphere) return null;
 
   const createdByInfo = normalizeUser(sphere.created_by_info ?? sphere.createdByInfo ?? sphere.creator_info);
@@ -301,11 +302,11 @@ export function normalizeSphere(sphere: any) {
   };
 }
 
-export function normalizeSpheres(spheres: any[] = []) {
-  return spheres.map((sphere) => normalizeSphere(sphere)).filter(Boolean);
+export function normalizeSpheres(spheres: any[] = []): Sphere[] {
+  return spheres.map((sphere) => normalizeSphere(sphere)).filter(Boolean) as Sphere[];
 }
 
-export function normalizePostFiles(files: any[] | null | undefined) {
+export function normalizePostFiles(files: any[] | null | undefined): PostFile[] {
   return toArray(files).map((file) => {
     if (typeof file === "string") {
       return {
@@ -328,7 +329,7 @@ export function normalizePostFiles(files: any[] | null | undefined) {
   });
 }
 
-export function normalizeResource(resource: any) {
+export function normalizeResource(resource: any): Resource | null {
   if (!resource) return null;
 
   const authorInfo = normalizeUser(resource.author_info ?? resource.authorInfo);
@@ -358,11 +359,11 @@ export function normalizeResource(resource: any) {
   };
 }
 
-export function normalizeResources(resources: any[] = []) {
-  return resources.map((resource) => normalizeResource(resource)).filter(Boolean);
+export function normalizeResources(resources: any[] = []): Resource[] {
+  return resources.map((resource) => normalizeResource(resource)).filter(Boolean) as Resource[];
 }
 
-export function normalizePost(post: any) {
+export function normalizePost(post: any): Post | null {
   if (!post) return null;
 
   const authorInfo = normalizeUser(post.author_info ?? post.authorInfo ?? post.author);
@@ -400,8 +401,8 @@ export function normalizePost(post: any) {
   };
 }
 
-export function normalizePosts(posts: any[] = []) {
-  return posts.map((post) => normalizePost(post)).filter(Boolean);
+export function normalizePosts(posts: any[] = []): Post[] {
+  return posts.map((post) => normalizePost(post)).filter(Boolean) as Post[];
 }
 
 // ============================================================================

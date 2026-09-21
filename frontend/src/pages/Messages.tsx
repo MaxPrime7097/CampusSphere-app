@@ -17,6 +17,7 @@ import { formatRelativeTime } from "@/lib/date";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
+import type { Conversation, Message, ConversationParticipant } from "@/types";
 
 const CreateGroupConversationModal = lazy(() => import("@/components/modals/CreateGroupConversationModal").then((module) => ({ default: module.CreateGroupConversationModal })));
 
@@ -29,7 +30,7 @@ function unwrapApiData(payload: any) {
 }
 
 
-function mapConversation(rawConv: any, currentUserId?: string) {
+function mapConversation(rawConv: any, currentUserId?: string): Conversation {
   const conv = unwrapApiData(rawConv) || {};
   const isGroup = (conv.type || conv.conversation_type) === 'group';
   const participants = conv.participants_info || conv.participants || [];
@@ -66,7 +67,7 @@ function mapConversation(rawConv: any, currentUserId?: string) {
   };
 }
 
-function mapMessage(rawMsg: any, currentUserId?: string) {
+function mapMessage(rawMsg: any, currentUserId?: string): Message {
   const msg = unwrapApiData(rawMsg) || {};
   const author = msg.author_info || msg.author || {};
   const senderId = String(author.id || msg.author || "");
@@ -92,7 +93,7 @@ export function Messages() {
   const { conversationId } = useParams<{ conversationId: string }>();
   const [newMessage, setNewMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [showNewConversationModal, setShowNewConversationModal] = useState(false);
   const [showCreateGroupConversationModal, setShowCreateGroupConversationModal] = useState(false);
@@ -112,14 +113,14 @@ export function Messages() {
   const pollingRef = useRef<number | null>(null);
   const wsRetryRef = useRef<number>(0);
 
-  const [conversations, setConversations] = useState<any[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [connections, setConnections] = useState<any[]>([]);
   const [globalUsers, setGlobalUsers] = useState<any[]>([]);
   const [loadingGlobalUsers, setLoadingGlobalUsers] = useState(false);
   const [loadingConnections, setLoadingConnections] = useState(false);
   const [loading, setLoading] = useState(true);
   const [participantsDialogOpen, setParticipantsDialogOpen] = useState(false);
-  const [participants, setParticipants] = useState<any[]>([]);
+  const [participants, setParticipants] = useState<ConversationParticipant[]>([]);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
   const [pendingParticipantId, setPendingParticipantId] = useState<string | null>(null);
   const [isUpdatingConversation, setIsUpdatingConversation] = useState(false);

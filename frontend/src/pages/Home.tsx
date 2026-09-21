@@ -16,6 +16,7 @@ import { mapPostToCard } from "@/lib/postCardMapper";
 import { PostSkeleton } from "@/components/ui/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useQuery } from "@tanstack/react-query";
+import type { PostCardData, Sphere } from "@/types";
 
 export function Home() {
   const isMobile = useIsMobile();
@@ -32,11 +33,11 @@ export function Home() {
     refetchOnMount: false,
     select: (spheres) =>
       [...(Array.isArray(spheres) ? spheres : [])]
-        .sort((a: any, b: any) => (b.member_count || 0) - (a.member_count || 0))
+        .sort((a: Sphere, b: Sphere) => Number(b.memberCount || 0) - Number(a.memberCount || 0))
         .slice(0, 3),
   });
 
-  const [posts, setPosts] = useState<any[]>([]);
+  const [posts, setPosts] = useState<PostCardData[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const postsQuery = useQuery({

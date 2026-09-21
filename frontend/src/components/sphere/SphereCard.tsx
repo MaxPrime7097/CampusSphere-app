@@ -17,9 +17,10 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { cn, getSphereUrl } from "@/lib/utils";
+import type { Sphere } from "@/types";
 
 interface SphereCardProps {
-  sphere: any;
+  sphere: Sphere;
   isJoining?: boolean;
   membership?: "active" | "pending" | "none";
   onJoin?: () => void;
