@@ -149,8 +149,17 @@ export function attachWebSockets(server: Server): void {
       client.isAlive = false;
       client.ping();
     }
+    for (const client of quizLiveWss.clients as Set<LiveSocket>) {
+      if (client.isAlive === false) {
+        client.terminate();
+        continue;
+      }
+      client.isAlive = false;
+      client.ping();
+    }
   }, HEARTBEAT_MS);
 
   wss.on("close", () => clearInterval(heartbeat));
+  quizLiveWss.on("close", () => clearInterval(heartbeat));
   server.on("close", () => clearInterval(heartbeat));
 }

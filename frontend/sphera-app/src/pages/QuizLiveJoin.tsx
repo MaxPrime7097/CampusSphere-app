@@ -283,7 +283,7 @@ export default function QuizLiveJoin() {
         {phase === 'playing' && currentQuestion && (
           <div className="w-full flex flex-col items-center">
             <div className="w-full max-w-4xl mb-8">
-              <TimerBar duration={currentQuestion.timeLimit} />
+              <TimerBar key={currentQuestion.questionIndex} duration={currentQuestion.timeLimit} />
             </div>
             <QuestionDisplay 
               question={currentQuestion.question}

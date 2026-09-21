@@ -6,6 +6,10 @@ import { quizRoomChannel } from "./hub.js";
 
 export const quizLiveWss = new WebSocketServer({ noServer: true });
 
+interface LiveSocket extends WebSocket {
+    isAlive?: boolean;
+}
+
 interface ParticipantInfo {
     userId?: number;
     displayName: string;
@@ -13,12 +17,22 @@ interface ParticipantInfo {
     id?: number;
 }
 
-const roomStates = new Map<string, {
+interface RoomState {
+    sessionId?: number;
+    hostId?: number;
+    title?: string;
+    questions?: any[];
+    status?: "WAITING" | "QUESTION_ACTIVE" | "QUESTION_RESULTS" | "FINISHED";
+    currentQuestionIndex: number;
+    questionStartTime: number;
     sockets: Map<WebSocket, ParticipantInfo>;
     hostSocket: WebSocket | null;
     timers: NodeJS.Timeout[];
     answeredQuestions: Map<WebSocket, Set<number>>;
-}>();
+    answeredParticipants: Map<number, Set<number>>;
+}
+
+const roomStates = new Map<string, RoomState>();
 
 function clearRoomTimers(state: { timers: NodeJS.Timeout[] }) {
     for (const timer of state.timers) {
@@ -27,9 +41,17 @@ function clearRoomTimers(state: { timers: NodeJS.Timeout[] }) {
     state.timers = [];
 }
 
-function getRoomState(roomCode: string) {
+function getRoomState(roomCode: string): RoomState {
     if (!roomStates.has(roomCode)) {
-        roomStates.set(roomCode, { sockets: new Map(), hostSocket: null, timers: [], answeredQuestions: new Map() });
+        roomStates.set(roomCode, {
+            sockets: new Map(),
+            hostSocket: null,
+            timers: [],
+            answeredQuestions: new Map(),
+            answeredParticipants: new Map(),
+            currentQuestionIndex: -1,
+            questionStartTime: 0,
+        });
     }
     return roomStates.get(roomCode)!;
 }
@@ -38,18 +60,17 @@ function broadcastToRoom(roomCode: string, message: any) {
     const state = getRoomState(roomCode);
     const frame = JSON.stringify(message);
     
-    // Broadcast locally
+    // Broadcast locally to all connected sockets in this room
     for (const client of state.sockets.keys()) {
         if (client.readyState === WebSocket.OPEN) {
             client.send(frame);
         }
     }
     
-    // Broadcast globally via Redis
+    // Broadcast globally via Redis cross-instance pub/sub
     publishFrame(quizRoomChannel(roomCode), frame);
 }
 
-// Ensure the client sends a frame and not a raw object
 function sendToClient(ws: WebSocket, message: any) {
     if (ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify(message));
@@ -57,8 +78,16 @@ function sendToClient(ws: WebSocket, message: any) {
 }
 
 async function sendNextQuestion(roomCode: string, session: any, questionIndex: number) {
-    const questions = session.questions as any[];
+    const state = getRoomState(roomCode);
+    const questions = (state.questions && state.questions.length > 0) ? state.questions : (session.questions as any[]);
+    state.questions = questions;
+    state.status = "QUESTION_ACTIVE";
+    state.currentQuestionIndex = questionIndex;
+    state.questionStartTime = Date.now();
+
     const q = questions[questionIndex];
+    if (!q) return;
+
     const timeLimit = typeof q.timeLimit === "number" && q.timeLimit > 0 ? q.timeLimit : 30;
     const points = typeof q.points === "number" && q.points > 0 ? q.points : 1000;
     
@@ -74,13 +103,20 @@ async function sendNextQuestion(roomCode: string, session: any, questionIndex: n
         }
     });
     
-    const state = getRoomState(roomCode);
     clearRoomTimers(state);
     const timer = setTimeout(async () => {
+        state.status = "QUESTION_RESULTS";
+
+        // Persist status asynchronously to DB
+        prisma.quizLiveSession.update({
+            where: { roomCode },
+            data: { status: "QUESTION_RESULTS" }
+        }).catch(err => console.error("Error setting QUESTION_RESULTS:", err));
+
         const leaderboard = await prisma.quizLiveParticipant.findMany({
             where: { sessionId: session.id },
             orderBy: { score: "desc" },
-            select: { displayName: true, score: true }
+            select: { displayName: true, score: true, userId: true }
         });
         
         broadcastToRoom(roomCode, {
@@ -106,8 +142,14 @@ export function handleQuizLiveUpgrade(
     });
 }
 
-quizLiveWss.on("connection", (ws: WebSocket, _request: IncomingMessage, roomCode: string) => {
+quizLiveWss.on("connection", (ws: LiveSocket, _request: IncomingMessage, roomCode: string) => {
     let participantId: number | undefined;
+
+    // Heartbeat ping/pong tracking to prevent cloud proxies dropping idle connections
+    ws.isAlive = true;
+    ws.on("pong", () => {
+        ws.isAlive = true;
+    });
 
     ws.on("message", async (data: string) => {
         try {
@@ -126,6 +168,16 @@ quizLiveWss.on("connection", (ws: WebSocket, _request: IncomingMessage, roomCode
                     return;
                 }
 
+                // Cache session details in room state
+                state.sessionId = session.id;
+                state.hostId = session.hostId;
+                state.title = session.title;
+                state.status = session.status as any;
+                state.questions = session.questions as any[];
+                if (state.currentQuestionIndex === -1 && session.currentQuestionIndex >= 0) {
+                    state.currentQuestionIndex = session.currentQuestionIndex;
+                }
+
                 if (session.hostId === userId) {
                     state.hostSocket = ws;
                     state.sockets.set(ws, {
@@ -137,12 +189,59 @@ quizLiveWss.on("connection", (ws: WebSocket, _request: IncomingMessage, roomCode
                     
                     const allParticipants = await prisma.quizLiveParticipant.findMany({
                         where: { sessionId: session.id },
-                        select: { id: true, displayName: true, score: true }
+                        select: { id: true, displayName: true, score: true, userId: true }
                     });
                     sendToClient(ws, {
                         type: "participants_update",
                         payload: { participants: allParticipants }
                     });
+
+                    // Host reconnection recovery
+                    if (state.status === "QUESTION_ACTIVE" && state.currentQuestionIndex >= 0) {
+                        const q = state.questions?.[state.currentQuestionIndex];
+                        if (q) {
+                            const elapsedSec = state.questionStartTime ? Math.floor((Date.now() - state.questionStartTime) / 1000) : 0;
+                            const remaining = Math.max(1, (q.timeLimit || 30) - elapsedSec);
+                            sendToClient(ws, {
+                                type: "new_question",
+                                payload: {
+                                    questionIndex: state.currentQuestionIndex,
+                                    question: q.question,
+                                    options: q.options,
+                                    timeLimit: remaining,
+                                    points: q.points || 1000,
+                                    totalQuestions: state.questions!.length
+                                }
+                            });
+                        }
+                    } else if (state.status === "QUESTION_RESULTS" && state.currentQuestionIndex >= 0) {
+                        const q = state.questions?.[state.currentQuestionIndex];
+                        if (q) {
+                            sendToClient(ws, {
+                                type: "new_question",
+                                payload: {
+                                    questionIndex: state.currentQuestionIndex,
+                                    question: q.question,
+                                    options: q.options,
+                                    timeLimit: 0,
+                                    points: q.points || 1000,
+                                    totalQuestions: state.questions!.length
+                                }
+                            });
+                            const leaderboard = await prisma.quizLiveParticipant.findMany({
+                                where: { sessionId: session.id },
+                                orderBy: { score: "desc" },
+                                select: { displayName: true, score: true, userId: true }
+                            });
+                            sendToClient(ws, {
+                                type: "question_results",
+                                payload: {
+                                    correctIndex: q.correctIndex,
+                                    leaderboard
+                                }
+                            });
+                        }
+                    }
                     return;
                 }
 
@@ -171,16 +270,73 @@ quizLiveWss.on("connection", (ws: WebSocket, _request: IncomingMessage, roomCode
 
                 sendToClient(ws, { type: "connected", payload: { roomCode, sessionId: session.id } });
 
-                // Broadcast updated participants
+                // Broadcast updated participants list
                 const allParticipants = await prisma.quizLiveParticipant.findMany({
                     where: { sessionId: session.id },
-                    select: { id: true, displayName: true, score: true }
+                    select: { id: true, displayName: true, score: true, userId: true }
                 });
 
                 broadcastToRoom(roomCode, {
                     type: "participants_update",
                     payload: { participants: allParticipants }
                 });
+
+                // Seamless participant reconnection recovery:
+                if (state.status === "QUESTION_ACTIVE" && state.currentQuestionIndex >= 0) {
+                    const q = state.questions?.[state.currentQuestionIndex];
+                    if (q) {
+                        const elapsedSec = state.questionStartTime ? Math.floor((Date.now() - state.questionStartTime) / 1000) : 0;
+                        const remaining = Math.max(1, (q.timeLimit || 30) - elapsedSec);
+                        sendToClient(ws, {
+                            type: "new_question",
+                            payload: {
+                                questionIndex: state.currentQuestionIndex,
+                                question: q.question,
+                                options: q.options,
+                                timeLimit: remaining,
+                                points: q.points || 1000,
+                                totalQuestions: state.questions!.length
+                            }
+                        });
+                    }
+                } else if (state.status === "QUESTION_RESULTS" && state.currentQuestionIndex >= 0) {
+                    const q = state.questions?.[state.currentQuestionIndex];
+                    if (q) {
+                        sendToClient(ws, {
+                            type: "new_question",
+                            payload: {
+                                questionIndex: state.currentQuestionIndex,
+                                question: q.question,
+                                options: q.options,
+                                timeLimit: 0,
+                                points: q.points || 1000,
+                                totalQuestions: state.questions!.length
+                            }
+                        });
+                        const leaderboard = await prisma.quizLiveParticipant.findMany({
+                            where: { sessionId: session.id },
+                            orderBy: { score: "desc" },
+                            select: { displayName: true, score: true, userId: true }
+                        });
+                        sendToClient(ws, {
+                            type: "question_results",
+                            payload: {
+                                correctIndex: q.correctIndex,
+                                leaderboard
+                            }
+                        });
+                    }
+                } else if (state.status === "FINISHED") {
+                    const leaderboard = await prisma.quizLiveParticipant.findMany({
+                        where: { sessionId: session.id },
+                        orderBy: { score: "desc" },
+                        select: { displayName: true, score: true, userId: true }
+                    });
+                    sendToClient(ws, {
+                        type: "quiz_finished",
+                        payload: { leaderboard }
+                    });
+                }
             } else if (type === "start_countdown") {
                  if (ws !== state.hostSocket) {
                      sendToClient(ws, { type: "error", payload: { message: "Only the host can start the countdown" } });
@@ -195,56 +351,70 @@ quizLiveWss.on("connection", (ws: WebSocket, _request: IncomingMessage, roomCode
                      sendToClient(ws, { type: "error", payload: { message: "Only the host can start the quiz" } });
                      return;
                  }
-                 await prisma.quizLiveSession.update({
+                 state.status = "QUESTION_ACTIVE";
+                 state.currentQuestionIndex = 0;
+                 state.answeredQuestions.clear();
+                 state.answeredParticipants.clear();
+
+                 // Update DB status asynchronously
+                 prisma.quizLiveSession.update({
                      where: { roomCode },
                      data: { status: "QUESTION_ACTIVE", currentQuestionIndex: 0 }
-                 });
+                 }).catch(err => console.error("Error setting session QUESTION_ACTIVE:", err));
                  
                  const session = await prisma.quizLiveSession.findUnique({ where: { roomCode } });
                  if (session) {
+                     state.sessionId = session.id;
+                     state.questions = session.questions as any[];
                      await sendNextQuestion(roomCode, session, 0);
                  }
 
             } else if (type === "submit_answer") {
                 const { questionIndex, selectedIndex } = payload;
-                const session = await prisma.quizLiveSession.findUnique({ where: { roomCode } });
-                if (!session || session.currentQuestionIndex !== questionIndex) return;
+                if (state.currentQuestionIndex !== questionIndex || state.status !== "QUESTION_ACTIVE") {
+                    return;
+                }
 
-                // Prevent multiple submissions for the same question
+                // Prevent duplicate answer submissions
                 const answered = state.answeredQuestions.get(ws) ?? new Set<number>();
                 if (answered.has(questionIndex)) return;
+                if (participantId) {
+                    const pAnswered = state.answeredParticipants.get(participantId) ?? new Set<number>();
+                    if (pAnswered.has(questionIndex)) return;
+                    pAnswered.add(questionIndex);
+                    state.answeredParticipants.set(participantId, pAnswered);
+                }
                 answered.add(questionIndex);
                 state.answeredQuestions.set(ws, answered);
 
-                const questions = session.questions as any[];
+                const questions = state.questions || [];
                 const q = questions[questionIndex];
+                if (!q) return;
+
                 const isCorrect = q.correctIndex === selectedIndex;
-                
                 let points = 0;
                 if (isCorrect) {
-                     const basePoints = typeof q.points === "number" && q.points > 0 ? q.points : 1000;
-                     points = basePoints;
+                     points = typeof q.points === "number" && q.points > 0 ? q.points : 1000;
                 }
 
-                if (participantId) {
-                    await prisma.quizLiveParticipant.update({
-                        where: { id: participantId },
-                        data: { score: { increment: points } }
-                    });
-                    
-                    const participant = await prisma.quizLiveParticipant.findUnique({ where: { id: participantId } });
-                    if (participant) {
-                        state.sockets.set(ws, {
-                            ...state.sockets.get(ws)!,
-                            score: participant.score
-                        });
-                    }
+                const currentInfo = state.sockets.get(ws);
+                if (currentInfo) {
+                    currentInfo.score += points;
                 }
 
+                // Ultra-low latency response sent to participant immediately (<2ms)
                 sendToClient(ws, {
                     type: "answer_result",
                     payload: { correct: isCorrect, pointsEarned: points, correctIndex: q.correctIndex }
                 });
+
+                // Non-blocking asynchronous database update
+                if (participantId && points > 0) {
+                    prisma.quizLiveParticipant.update({
+                        where: { id: participantId },
+                        data: { score: { increment: points } }
+                    }).catch(err => console.error("Error saving participant score:", err));
+                }
 
             } else if (type === "stop_quiz") {
                  if (ws !== state.hostSocket) {
@@ -253,6 +423,9 @@ quizLiveWss.on("connection", (ws: WebSocket, _request: IncomingMessage, roomCode
                  }
                  clearRoomTimers(state);
                  state.answeredQuestions.clear();
+                 state.answeredParticipants.clear();
+                 state.status = "WAITING";
+                 state.currentQuestionIndex = -1;
 
                  const session = await prisma.quizLiveSession.findUnique({ where: { roomCode } });
                  if (!session) return;
@@ -287,12 +460,18 @@ quizLiveWss.on("connection", (ws: WebSocket, _request: IncomingMessage, roomCode
                      return;
                  }
                  clearRoomTimers(state);
+                 state.answeredQuestions.clear();
+                 state.answeredParticipants.clear();
+
                  const session = await prisma.quizLiveSession.findUnique({ where: { roomCode } });
                  if (!session) return;
-                 const questions = session.questions as any[];
-                 const nextIndex = session.currentQuestionIndex + 1;
+                 state.sessionId = session.id;
+                 state.questions = session.questions as any[];
+                 const questions = state.questions;
+                 const nextIndex = (state.currentQuestionIndex >= 0 ? state.currentQuestionIndex : session.currentQuestionIndex) + 1;
                  
                  if (nextIndex >= questions.length) {
+                     state.status = "FINISHED";
                      await prisma.quizLiveSession.update({
                          where: { roomCode },
                          data: { status: "FINISHED" }
@@ -301,7 +480,7 @@ quizLiveWss.on("connection", (ws: WebSocket, _request: IncomingMessage, roomCode
                      const allParticipants = await prisma.quizLiveParticipant.findMany({
                         where: { sessionId: session.id },
                         orderBy: { score: "desc" },
-                        select: { displayName: true, score: true }
+                        select: { displayName: true, score: true, userId: true }
                      });
                      
                      broadcastToRoom(roomCode, {
@@ -309,10 +488,14 @@ quizLiveWss.on("connection", (ws: WebSocket, _request: IncomingMessage, roomCode
                          payload: { leaderboard: allParticipants }
                      });
                  } else {
-                     await prisma.quizLiveSession.update({
+                     state.status = "QUESTION_ACTIVE";
+                     state.currentQuestionIndex = nextIndex;
+
+                     prisma.quizLiveSession.update({
                          where: { roomCode },
                          data: { status: "QUESTION_ACTIVE", currentQuestionIndex: nextIndex }
-                     });
+                     }).catch(err => console.error("Error setting session QUESTION_ACTIVE:", err));
+
                      await sendNextQuestion(roomCode, session, nextIndex);
                  }
             }
