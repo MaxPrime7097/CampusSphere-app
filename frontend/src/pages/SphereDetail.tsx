@@ -38,13 +38,13 @@ import { MiniChat } from "@/components/chat/MiniChat";
 import { KanbanBoard, type KanbanTask } from "@/components/kanban/KanbanBoard";
 import { SphereOverview } from "@/components/sphere/SphereOverview";
 import { OptimizedImage } from "@/components/ui/optimized-image";
-import { ImageUploadModal } from "@/components/modals/ImageUploadModal";
 import { ResourceCard } from "@/components/resources/ResourceCard";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ResourceSkeleton } from "@/components/ui/skeletons";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
 import { useAuth } from "@/contexts/AuthContext";
 
+const ImageUploadModal = lazy(() => import("@/components/modals/ImageUploadModal").then((module) => ({ default: module.ImageUploadModal })));
 const CreateTaskModal = lazy(() => import("@/components/modals/CreateTaskModal").then((module) => ({ default: module.CreateTaskModal })));
 const AddMemberModal = lazy(() => import("@/components/modals/AddMemberModal").then((module) => ({ default: module.AddMemberModal })));
 const SphereSettingsModal = lazy(() => import("@/components/modals/SphereSettingsModal").then((module) => ({ default: module.SphereSettingsModal })));
@@ -556,7 +556,9 @@ export function SphereDetail() {
 
         
 
-        <ImageUploadModal isOpen={showBannerModal} onClose={() => setShowBannerModal(false)} onSave={async (file) => { if (!id) return; const res = await uploadSphereBanner(id, file); setSphere((prev: any) => prev ? { ...prev, banner_image_url: res.banner_image_url } : prev); toast({ title: "Bannière mise à jour !" }); }} title="Photo de couverture de la sphère" description="Téléchargez une nouvelle bannière pour cette sphère." currentImage={sphereFallback.banner_image_url} shape="rect" aspectRatio={16 / 5} />
+        <Suspense fallback={null}>
+          <ImageUploadModal isOpen={showBannerModal} onClose={() => setShowBannerModal(false)} onSave={async (file) => { if (!id) return; const res = await uploadSphereBanner(id, file); setSphere((prev: any) => prev ? { ...prev, banner_image_url: res.banner_image_url } : prev); toast({ title: "Bannière mise à jour !" }); }} title="Photo de couverture de la sphère" description="Téléchargez une nouvelle bannière pour cette sphère." currentImage={sphereFallback.banner_image_url} shape="rect" aspectRatio={16 / 5} />
+        </Suspense>
 
         <div className="max-w-6xl mx-auto py-4 md:py-6 px-0 md:px-4 space-y-4 md:space-y-6">
           <div className="px-4 md:px-0">

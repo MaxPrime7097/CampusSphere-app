@@ -56,6 +56,10 @@ export default defineConfig(({ mode }) => ({
           'vendor-ui-utils': ['sonner', 'tailwind-merge', 'clsx', 'class-variance-authority'],
           'vendor-meta': ['react-helmet-async'],
           'vendor-dates': ['date-fns'],
+          'vendor-charts': ['recharts'],
+          'vendor-lottie': ['@lottiefiles/dotlottie-react'],
+          'vendor-reactflow': ['reactflow'],
+          'vendor-motion': ['motion'],
         }
       }
     }

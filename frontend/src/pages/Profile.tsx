@@ -1,4 +1,3 @@
-import { ImageUploadModal } from "@/components/modals/ImageUploadModal";
 import { compressImageFile } from "@/lib/imageCompression";
 import { Suspense, lazy, useState, useEffect, useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -38,6 +37,7 @@ import { LanguageCombobox } from "@/components/forms/LanguageCombobox";
 import { useAuth } from "@/contexts/AuthContext";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
 
+const ImageUploadModal = lazy(() => import("@/components/modals/ImageUploadModal").then((module) => ({ default: module.ImageUploadModal })));
 const VerificationModal = lazy(() => import("@/components/modals/VerificationModal").then((module) => ({ default: module.VerificationModal })));
 const EditAcademicModal = lazy(() => import("@/components/modals/EditAcademicModal").then((module) => ({ default: module.EditAcademicModal })));
 const EditPersonalModal = lazy(() => import("@/components/modals/EditPersonalModal").then((module) => ({ default: module.EditPersonalModal })));
@@ -996,8 +996,10 @@ export function Profile() {
   return (
     <div key={`${username || 'current'}`} className="min-h-screen bg-gradient-to-br from-background to-accent/20">
 
-        <ImageUploadModal isOpen={showAvatarModal} onClose={() => setShowAvatarModal(false)} onSave={async (f) => { await uploadAvatar(currentUser!.id, f); toast({ title: "Avatar mis à jour !", duration: 3000 }); setShowAvatarModal(false); await refreshUser(); }} title="Photo de profil" description="Téléchargez une nouvelle photo de profil pour votre compte." currentImage={currentUser?.avatar} shape="round" aspectRatio={1} />
-        <ImageUploadModal isOpen={showCoverPhotoModal} onClose={() => setShowCoverPhotoModal(false)} onSave={async (f) => { await uploadCoverPhoto(currentUser!.id, f); toast({ title: "Photo de couverture mise à jour !", duration: 3000 }); setShowCoverPhotoModal(false); await refreshUser(); }} title="Photo de couverture" description="Téléchargez une nouvelle photo de couverture." currentImage={currentUser?.coverPhoto} shape="rect" aspectRatio={16/5} />
+        <Suspense fallback={null}>
+          <ImageUploadModal isOpen={showAvatarModal} onClose={() => setShowAvatarModal(false)} onSave={async (f) => { await uploadAvatar(currentUser!.id, f); toast({ title: "Avatar mis à jour !", duration: 3000 }); setShowAvatarModal(false); await refreshUser(); }} title="Photo de profil" description="Téléchargez une nouvelle photo de profil pour votre compte." currentImage={currentUser?.avatar} shape="round" aspectRatio={1} />
+          <ImageUploadModal isOpen={showCoverPhotoModal} onClose={() => setShowCoverPhotoModal(false)} onSave={async (f) => { await uploadCoverPhoto(currentUser!.id, f); toast({ title: "Photo de couverture mise à jour !", duration: 3000 }); setShowCoverPhotoModal(false); await refreshUser(); }} title="Photo de couverture" description="Téléchargez une nouvelle photo de couverture." currentImage={currentUser?.coverPhoto} shape="rect" aspectRatio={16/5} />
+        </Suspense>
 
         
       <div className="container max-w-4xl mx-auto py-0 px-0 sm:py-4 space-y-4">
