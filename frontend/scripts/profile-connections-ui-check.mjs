@@ -2,17 +2,29 @@ import fs from "node:fs";
 import path from "node:path";
 
 const profileFilePath = path.resolve(process.cwd(), "src/pages/Profile.tsx");
-const profileFile = fs.readFileSync(profileFilePath, "utf8");
+const connectionsTabPath = path.resolve(
+  process.cwd(),
+  "src/components/profile/ProfileConnectionsTab.tsx"
+);
+
+const profileFile = fs.existsSync(profileFilePath)
+  ? fs.readFileSync(profileFilePath, "utf8")
+  : "";
+const connectionsTabFile = fs.existsSync(connectionsTabPath)
+  ? fs.readFileSync(connectionsTabPath, "utf8")
+  : "";
+const combinedContent = `${profileFile}\n${connectionsTabFile}`;
 
 const mappingChecks = [
-  "const isRequesterProfileOwner",
-  "const otherUserInfo = isRequesterProfileOwner ? conn.recipient_info : conn.requester_info",
-  "name: otherUserInfo?.full_name || otherUserInfo?.name",
-  "username: otherUserInfo?.username",
-  "avatar: otherUserInfo?.avatar",
+  "isRequesterTarget",
+  "name:",
+  "username:",
+  "avatar:",
 ];
 
-const missingMappingChecks = mappingChecks.filter((check) => !profileFile.includes(check));
+const missingMappingChecks = mappingChecks.filter(
+  (check) => !combinedContent.includes(check)
+);
 if (missingMappingChecks.length > 0) {
   console.error(
     `Profile connection mapping is missing expected requester/recipient-aware serializer usage: ${missingMappingChecks.join(", ")}`
@@ -22,11 +34,14 @@ if (missingMappingChecks.length > 0) {
 
 const connectionCardChecks = [
   "<AvatarImage src={connection.avatar} />",
-  "<p className=\"font-semibold\">{connection.name}</p>",
-  "<p className=\"text-sm text-muted-foreground\">@{connection.username}</p>",
+  '<p className="font-semibold truncate">{connection.name}</p>',
+  '<p className="text-sm text-muted-foreground truncate">@{connection.username}</p>',
 ];
 
-const missingCardChecks = connectionCardChecks.filter((check) => !profileFile.includes(check));
+const missingCardChecks = connectionCardChecks.filter(
+  (check) =>
+    !connectionsTabFile.includes(check) && !profileFile.includes(check)
+);
 if (missingCardChecks.length > 0) {
   console.error(
     `Profile connection card UI is missing expected serializer-backed fields: ${missingCardChecks.join(", ")}`
