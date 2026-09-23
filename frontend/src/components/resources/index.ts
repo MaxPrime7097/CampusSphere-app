@@ -8,3 +8,8 @@ export { ResourceAuthModal } from "./ResourceAuthModal";
 export { ResourceEditDialog } from "./ResourceEditDialog";
 export { ResourceDeleteDialog } from "./ResourceDeleteDialog";
 export { ResourceGuestCta } from "./ResourceGuestCta";
+export { ResourcesPageHeader } from "./ResourcesPageHeader";
+export { ResourcesFilterBar } from "./ResourcesFilterBar";
+export { ResourcesFolderSection } from "./ResourcesFolderSection";
+export { ResourcesFilteredGrid } from "./ResourcesFilteredGrid";
+export { ResourcesCategoryCarousels } from "./ResourcesCategoryCarousels";
