@@ -9,3 +9,7 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+declare module 'react-icons/*';
+declare module 'react-icons/fa';
+declare module 'react-icons/fc';

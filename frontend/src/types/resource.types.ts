@@ -1,15 +1,20 @@
 import type { UserProfile } from "./user.types";
 
 export interface ResourceFolder {
-  id: number;
+  id: number | string;
   name: string;
-  description: string;
-  category: string;
-  subject: string;
-  item_count: number;
-  total_size_formatted: string;
-  created_at: string;
-  updated_at: string;
+  description?: string;
+  category?: string;
+  subject?: string;
+  item_count?: number;
+  total_size_formatted?: string;
+  visibility?: "public" | "university" | "friends" | string;
+  resource_count?: number;
+  can_edit?: boolean;
+  created_at?: string;
+  updated_at?: string;
+  resources?: any[];
+  [key: string]: any;
 }
 
 export interface Resource {
@@ -34,7 +39,7 @@ export interface Resource {
   authorName: string;
   createdAt: string | null;
   updatedAt: string | null;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 export interface SavedResourceItem {
@@ -48,11 +53,14 @@ export interface ResourceCardData {
   title: string;
   description?: string;
   type: string;
+  subject?: string;
   authorId?: string | number | null;
   authorName: string;
+  author?: { name?: string; avatar?: string };
   visibility?: string;
   fileUrl?: string;
   fileSize?: string | number;
+  file_size?: string | number;
   tags?: string[];
   impactScore?: number;
   createdAt?: string | null;

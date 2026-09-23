@@ -13,27 +13,11 @@ import { createSphere } from "@/services/api";
 import { SPHERE_TYPE_OPTIONS_V1, type SphereType } from "@/config/sphereFeatures";
 import { cn } from "@/lib/utils";
 
-interface SphereData {
-  id: string;
-  name: string;
-  description: string;
-  objective: string;
-  sphere_type: string;
-  isPrivate: boolean;
-  requireApproval: boolean;
-  allowMemberPosts: boolean;
-  allowResourceSharing: boolean;
-  allowTaskCreation: boolean;
-  maxMembers: number;
-  tags: string[];
-  targetAudience: string;
-  expectedDuration: string;
-  collaborationType: string[];
-}
+import type { Sphere } from "@/types";
 
 interface CreateSphereModalProps {
   children?: React.ReactNode;
-  onSphereCreated?: (sphereData: SphereData) => void;
+  onSphereCreated?: (sphereData: Sphere) => void;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }

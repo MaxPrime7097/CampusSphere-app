@@ -16,17 +16,8 @@ import {
 // RESOURCE FOLDERS
 // ============================================================================
 
-export interface ResourceFolder {
-  id: number;
-  name: string;
-  description: string;
-  visibility: "public" | "university" | "friends";
-  resource_count: number;
-  can_edit: boolean;
-  created_at: string;
-  updated_at: string;
-  resources?: any[];
-}
+import type { ResourceFolder } from "@/types";
+export type { ResourceFolder };
 
 export async function listFolders(token?: string): Promise<ResourceFolder[]> {
   const authToken = token || getAccessToken();
@@ -209,11 +200,11 @@ export async function downloadResource(id: number | string, token?: string) {
   if (!response.ok) {
     const contentType = (response.headers.get("content-type") || "").toLowerCase();
     if (contentType.includes("application/json")) {
-      const errJson = await response.json().catch(() => null);
+      const errJson = await response.json().catch((): null => null);
       throw new Error(errJson?.detail || errJson?.error || errJson?.message || `Request failed: ${response.status}`);
     }
 
-    const text = await response.text().catch(() => "");
+    const text = await response.text().catch((): string => "");
     throw new Error(text || `Request failed: ${response.status}`);
   }
 

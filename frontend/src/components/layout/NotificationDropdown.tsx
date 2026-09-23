@@ -80,7 +80,7 @@ export function NotificationDropdown() {
   };
 
   const handleNotificationClick = async (notification: NotificationItem) => {
-    void markNotificationRead(notification.id).catch(() => null);
+    void markNotificationRead(notification.id).catch((): void => {});
     setNotifications((prev) =>
       prev.map((item) =>
         item.id === notification.id ? { ...item, read: true } : item

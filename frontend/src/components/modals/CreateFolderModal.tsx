@@ -36,7 +36,7 @@ export function CreateFolderModal({
     if (folder) {
       setName(folder.name);
       setDescription(folder.description || "");
-      setVisibility(folder.visibility);
+      setVisibility((folder.visibility as "public" | "university" | "friends") || "public");
     } else {
       setName("");
       setDescription("");

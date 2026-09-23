@@ -659,7 +659,7 @@ export function SphereDetail() {
                     currentUserId={currentUserId}
                     onDeleteFile={handleDeleteFile}
                     onFileUploaded={() =>
-                      getSphereFiles(String(id)).then(setResources).catch(() => null)
+                      getSphereFiles(String(id)).then(setResources).catch((): void => {})
                     }
                   />
                 </TabsContent>

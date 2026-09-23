@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 interface StudySessionCardProps {
   session: {
     id: number;
-    tool_types: ("fiche" | "quiz" | "flashcards")[];
+    tool_types: string[];
     resource_title: string;
     source_filename?: string;
     content_preview?: string; // titre du contenu généré
@@ -46,7 +46,7 @@ export const StudySessionCard: React.FC<StudySessionCardProps> = ({
 }) => {
   const tools = session.tool_types || [];
   const primaryTool = tools[0] || "fiche";
-  const config = TOOL_CONFIG[primaryTool] || TOOL_CONFIG.fiche;
+  const config = (TOOL_CONFIG as Record<string, { icon: any; label: string }>)[primaryTool] || TOOL_CONFIG.fiche;
   const Icon = config.icon;
   const resourceName = session.resource_title || session.source_filename || "Document";
   const timeAgo = formatDistanceToNow(new Date(session.created_at), {
@@ -101,7 +101,7 @@ export const StudySessionCard: React.FC<StudySessionCardProps> = ({
               key={t}
               className="px-2 py-0.5 rounded-md bg-muted border border-border/50 text-[10px] font-medium text-foreground uppercase tracking-wider"
             >
-              {TOOL_CONFIG[t]?.label || t}
+              {(TOOL_CONFIG as any)[t]?.label || t}
             </span>
           ))}
           {session.is_shared && (

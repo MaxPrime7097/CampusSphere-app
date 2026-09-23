@@ -71,7 +71,7 @@ export interface UserProfile {
   dateOfBirth?: string;
   isVerified: boolean;
   stats: UserStats;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 export type User = UserProfile;

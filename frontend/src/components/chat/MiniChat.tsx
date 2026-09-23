@@ -74,7 +74,7 @@ export function MiniChat({ sphereId, sphereName, isExpanded, onToggleExpanded, c
   const startPolling = (convId: string, myId?: string) => {
     if (pollingRef.current) window.clearInterval(pollingRef.current);
     pollingRef.current = window.setInterval(() => {
-      void fetchMessages(convId, myId).catch(() => null);
+      void fetchMessages(convId, myId).catch((): void => {});
     }, 4000);
     setTransportMode("polling");
   };

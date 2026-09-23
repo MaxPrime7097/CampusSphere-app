@@ -98,7 +98,7 @@ const queryClient = new QueryClient({
   },
 });
 
-const Protected = ({ children, requireCompleteProfile = true }: { children: ReactNode, requireCompleteProfile?: boolean }) => {
+const Protected = ({ children, requireCompleteProfile = true }: { children: React.ReactNode, requireCompleteProfile?: boolean }) => {
   const { user, isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
@@ -150,7 +150,7 @@ const HomeOrLanding = () => {
   );
 };
 
-const ScrollToTop = () => {
+const ScrollToTop = (): null => {
   const { pathname } = useLocation();
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
@@ -158,7 +158,7 @@ const ScrollToTop = () => {
   return null;
 };
 
-const App = () => (
+const App = (): React.ReactElement => (
   <GlobalErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>

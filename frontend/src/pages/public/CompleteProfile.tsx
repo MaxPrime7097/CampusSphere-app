@@ -78,9 +78,10 @@ export function CompleteProfile() {
     }
     setUsernameCheck(prev => ({ ...prev, checking: true }));
     try {
-      const res = await checkUserAvailability(username, "");
-      setUsernameCheck({ checking: false, available: res.username, checkedValue: username });
-      if (!res.username) {
+      const res = await checkUserAvailability({ username });
+      const isAvailable = res?.data?.username ? res.data.username.available : true;
+      setUsernameCheck({ checking: false, available: isAvailable, checkedValue: username });
+      if (!isAvailable) {
         setErrors(prev => ({ ...prev, username: "Ce nom d'utilisateur est déjà pris" }));
       } else {
         setErrors(prev => ({ ...prev, username: "" }));

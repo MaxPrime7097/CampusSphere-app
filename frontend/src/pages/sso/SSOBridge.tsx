@@ -15,7 +15,7 @@ const ALLOWED_ORIGINS = [
   "http://localhost:4173",
 ];
 
-export function SSOBridge() {
+export function SSOBridge(): null {
   useEffect(() => {
     // Determine target origin from query param (set by Sphera) or referrer
     const params = new URLSearchParams(window.location.search);

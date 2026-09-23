@@ -16,7 +16,7 @@ interface FolderCardProps {
   onOpen: (folder: ResourceFolder) => void;
   onDownloadZip: (folder: ResourceFolder) => Promise<void>;
   onEdit?: (folder: ResourceFolder) => void;
-  onDelete?: (folder: string) => void;
+  onDelete?: (folderId: string | number) => void;
 }
 
 export function FolderCard({

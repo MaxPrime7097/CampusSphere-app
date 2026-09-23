@@ -54,7 +54,7 @@ export interface ProfileHeaderUser {
 
 interface ProfileHeaderProps {
   user: ProfileHeaderUser;
-  currentUser?: { isVerified?: boolean; id?: string } | null;
+  currentUser?: { isVerified?: boolean; id?: string | number } | null;
   isOwnProfile: boolean;
   cardClasses: string;
   animateScore: boolean;

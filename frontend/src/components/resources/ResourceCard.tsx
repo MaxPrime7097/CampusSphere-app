@@ -198,9 +198,9 @@ export const ResourceCard = React.memo(
             {/* Micro details: Subject + File details */}
             <div className="flex items-center justify-between text-[9px] sm:text-[10px] text-muted-foreground pt-2 mt-2 border-t border-border/40">
               <span className="font-medium text-foreground/80 truncate max-w-[90px]">
-                {resource.subject || "Général"}
+                {(resource as any).subject || "Général"}
               </span>
-              <span className="font-mono text-[9px]">{formatFileSize(resource.fileSize || resource.file_size)}</span>
+              <span className="font-mono text-[9px]">{formatFileSize((resource as any).fileSize || (resource as any).file_size)}</span>
             </div>
           </div>
 
@@ -210,7 +210,7 @@ export const ResourceCard = React.memo(
             onClick={(e) => e.stopPropagation()}
           >
             <span className="text-[9px] sm:text-[10px] text-muted-foreground truncate max-w-[80px]">
-              {resource.authorName || resource.author?.name || "Étudiant"}
+              {(resource as any).authorName || (resource as any).author?.name || "Étudiant"}
             </span>
 
             <Button

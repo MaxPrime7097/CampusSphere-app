@@ -26,7 +26,7 @@ export function Home() {
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const spheresQuery = useQuery({
     queryKey: ["home", "popular-spheres"],
-    queryFn: listSpheres,
+    queryFn: () => listSpheres(),
     staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -42,7 +42,7 @@ export function Home() {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const postsQuery = useQuery({
     queryKey: ["home", "posts"],
-    queryFn: listPosts,
+    queryFn: () => listPosts(),
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,

@@ -85,8 +85,9 @@ export function EditProfile() {
     setTown(currentUser.town || "");
     setDateOfBirth(currentUser.dateOfBirth || currentUser.date_of_birth || "");
 
-    const langs = currentUser.language
-      ? (typeof currentUser.language === "string" ? currentUser.language.split(",").map((l: string) => l.trim()).filter(Boolean) : currentUser.language)
+    const rawLang: any = currentUser.language;
+    const langs = rawLang
+      ? (typeof rawLang === "string" ? rawLang.split(",").map((l: string) => l.trim()).filter(Boolean) : Array.isArray(rawLang) ? rawLang : [])
       : [];
     setLanguages(langs);
 

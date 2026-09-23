@@ -131,7 +131,7 @@ export function Resources() {
   // Fetch Resources
   const resourcesQuery = useQuery({
     queryKey: ["resources"],
-    queryFn: listResources,
+    queryFn: () => listResources(),
     staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -141,7 +141,7 @@ export function Resources() {
   // Fetch Folders
   const foldersQuery = useQuery({
     queryKey: ["resource-folders"],
-    queryFn: listFolders,
+    queryFn: () => listFolders(),
     enabled: Boolean(currentUser?.id),
     retry: false,
     staleTime: 2 * 60 * 1000,
@@ -153,7 +153,7 @@ export function Resources() {
   // Fetch Saved Resources
   const savedResourcesQuery = useQuery({
     queryKey: ["saved-resources"],
-    queryFn: getSavedResources,
+    queryFn: () => getSavedResources(),
     enabled: Boolean(currentUser?.id),
     retry: false,
     staleTime: 2 * 60 * 1000,
@@ -558,11 +558,11 @@ export function Resources() {
                   <ResourceCard
                     key={resource.id}
                     resource={resource}
-                    isDownloading={downloadingIds.has(resource.id)}
-                    isSaved={savedResources.has(resource.id)}
-                    onDownload={(e) => handleDownload(e, resource.id)}
-                    onSave={(e) => handleSave(e, resource.id)}
-                    onPreview={(e) => handlePreview(e, resource.id)}
+                    isDownloading={downloadingIds.has(String(resource.id))}
+                    isSaved={savedResources.has(String(resource.id))}
+                    onDownload={(e) => handleDownload(e, String(resource.id))}
+                    onSave={(e) => handleSave(e, String(resource.id))}
+                    onPreview={(e) => handlePreview(e, String(resource.id))}
                   />
                 ))}
               </div>
@@ -591,11 +591,11 @@ export function Resources() {
                   <ResourceCard
                     key={resource.id}
                     resource={resource}
-                    isDownloading={downloadingIds.has(resource.id)}
-                    isSaved={savedResources.has(resource.id)}
-                    onDownload={(e) => handleDownload(e, resource.id)}
-                    onSave={(e) => handleSave(e, resource.id)}
-                    onPreview={(e) => handlePreview(e, resource.id)}
+                    isDownloading={downloadingIds.has(String(resource.id))}
+                    isSaved={savedResources.has(String(resource.id))}
+                    onDownload={(e) => handleDownload(e, String(resource.id))}
+                    onSave={(e) => handleSave(e, String(resource.id))}
+                    onPreview={(e) => handlePreview(e, String(resource.id))}
                   />
                 ))}
             </div>
@@ -709,11 +709,11 @@ export function Resources() {
                           <div key={resource.id} className="cs-scroll-item w-[160px] sm:w-[185px] md:w-[200px]">
                             <ResourceCard
                               resource={resource}
-                              isDownloading={downloadingIds.has(resource.id)}
-                              isSaved={savedResources.has(resource.id)}
-                              onDownload={(e) => handleDownload(e, resource.id)}
-                              onSave={(e) => handleSave(e, resource.id)}
-                              onPreview={(e) => handlePreview(e, resource.id)}
+                              isDownloading={downloadingIds.has(String(resource.id))}
+                              isSaved={savedResources.has(String(resource.id))}
+                              onDownload={(e) => handleDownload(e, String(resource.id))}
+                              onSave={(e) => handleSave(e, String(resource.id))}
+                              onPreview={(e) => handlePreview(e, String(resource.id))}
                             />
                           </div>
                         ))}
@@ -740,11 +740,11 @@ export function Resources() {
                       <div key={resource.id} className="cs-scroll-item w-[160px] sm:w-[185px] md:w-[200px]">
                         <ResourceCard
                           resource={resource}
-                          isDownloading={downloadingIds.has(resource.id)}
-                          isSaved={savedResources.has(resource.id)}
-                          onDownload={(e) => handleDownload(e, resource.id)}
-                          onSave={(e) => handleSave(e, resource.id)}
-                          onPreview={(e) => handlePreview(e, resource.id)}
+                          isDownloading={downloadingIds.has(String(resource.id))}
+                          isSaved={savedResources.has(String(resource.id))}
+                          onDownload={(e) => handleDownload(e, String(resource.id))}
+                          onSave={(e) => handleSave(e, String(resource.id))}
+                          onPreview={(e) => handlePreview(e, String(resource.id))}
                         />
                       </div>
                     ))}
@@ -785,11 +785,11 @@ export function Resources() {
                         <div key={resource.id} className="cs-scroll-item w-[160px] sm:w-[185px] md:w-[200px]">
                           <ResourceCard
                             resource={resource}
-                            isDownloading={downloadingIds.has(resource.id)}
-                            isSaved={savedResources.has(resource.id)}
-                            onDownload={(e) => handleDownload(e, resource.id)}
-                            onSave={(e) => handleSave(e, resource.id)}
-                            onPreview={(e) => handlePreview(e, resource.id)}
+                            isDownloading={downloadingIds.has(String(resource.id))}
+                            isSaved={savedResources.has(String(resource.id))}
+                            onDownload={(e) => handleDownload(e, String(resource.id))}
+                            onSave={(e) => handleSave(e, String(resource.id))}
+                            onPreview={(e) => handlePreview(e, String(resource.id))}
                           />
                         </div>
                       ))

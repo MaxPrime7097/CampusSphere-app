@@ -128,13 +128,13 @@ export function Settings() {
 
   const privacyQuery = useQuery({
     queryKey: ["privacy-settings"],
-    queryFn: getPrivacySettings,
+    queryFn: () => getPrivacySettings(),
     staleTime: 60 * 1000,
   });
 
   const blockedUsersQuery = useQuery({
     queryKey: ["blocked-users"],
-    queryFn: getBlockedUsers,
+    queryFn: () => getBlockedUsers(),
     staleTime: 60 * 1000,
   });
 

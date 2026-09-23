@@ -137,7 +137,7 @@ export function ResourceDetail() {
         format: (data.fileUrl || data.file)?.toString().split(".").pop() || "",
         size: String(data.fileSize || data.file_size || data.size || "0"),
         level: normalizeAudience(data.level || data.audience || data.courseLevel),
-        pages: data.pages || data.page_count || 0,
+        pages: Number(data.pages || data.page_count || 0),
         uploader: {
           name: author?.name || data.author_name || "Utilisateur",
           username: author?.username || data.author_username || "",
@@ -167,7 +167,7 @@ export function ResourceDetail() {
       };
 
       setResource(resourcePayload);
-      setIsSaved(resourcePayload.isSaved);
+      setIsSaved(Boolean(resourcePayload.isSaved));
       setDraftTitle(resourcePayload.title);
       setDraftDescription(resourcePayload.description || "");
 
@@ -180,7 +180,7 @@ export function ResourceDetail() {
               setCurrentFolderId(rawFolderId ? String(rawFolderId) : "none");
             }
           })
-          .catch(() => null);
+          .catch((): void => {});
       }
     } else if (resourceQuery.error) {
       toast({

@@ -1,5 +1,5 @@
 export interface AdminMember {
-  id: string;
+  id?: string;
   name: string;
   avatar: string | null;
 }

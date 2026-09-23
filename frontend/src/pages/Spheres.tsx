@@ -76,7 +76,7 @@ export function Spheres() {
 
   const spheresQuery = useQuery({
     queryKey: ["spheres"],
-    queryFn: listSpheres,
+    queryFn: () => listSpheres(),
     staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -85,7 +85,7 @@ export function Spheres() {
 
   const userSpheresQuery = useQuery({
     queryKey: ["user-spheres"],
-    queryFn: getUserSpheres,
+    queryFn: () => getUserSpheres(),
     enabled: Boolean(currentUser?.id),
     staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -496,7 +496,7 @@ export function Spheres() {
                     sphere={sphere}
                     membership={getUnifiedMembershipState(sphere)}
                     isJoining={isJoining === String(sphere.id)}
-                    onJoin={() => handleJoinSphere(sphere.id, sphere.name)}
+                    onJoin={() => handleJoinSphere(String(sphere.id), sphere.name)}
                   />
                 ))}
               </div>
@@ -529,7 +529,7 @@ export function Spheres() {
                             sphere={sphere}
                             membership={getUnifiedMembershipState(sphere)}
                             isJoining={isJoining === String(sphere.id)}
-                            onJoin={() => handleJoinSphere(sphere.id, sphere.name)}
+                            onJoin={() => handleJoinSphere(String(sphere.id), sphere.name)}
                           />
                         </div>
                       ))
@@ -571,7 +571,7 @@ export function Spheres() {
                             sphere={sphere}
                             membership={getUnifiedMembershipState(sphere)}
                             isJoining={isJoining === String(sphere.id)}
-                            onJoin={() => handleJoinSphere(sphere.id, sphere.name)}
+                            onJoin={() => handleJoinSphere(String(sphere.id), sphere.name)}
                           />
                         </div>
                       ))
@@ -627,7 +627,7 @@ export function Spheres() {
                             sphere={sphere}
                             membership={getUnifiedMembershipState(sphere)}
                             isJoining={isJoining === String(sphere.id)}
-                            onJoin={() => handleJoinSphere(sphere.id, sphere.name)}
+                            onJoin={() => handleJoinSphere(String(sphere.id), sphere.name)}
                           />
                         </div>
                       ))

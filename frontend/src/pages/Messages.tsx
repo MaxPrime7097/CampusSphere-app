@@ -147,7 +147,7 @@ export function Messages() {
 
   const conversationsQuery = useQuery({
     queryKey: ["messages", "conversations", currentUser?.id || "anon"],
-    queryFn: getUserConversations,
+    queryFn: () => getUserConversations(),
     enabled: Boolean(currentUser?.id),
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -339,7 +339,7 @@ export function Messages() {
   const startPolling = (targetConversationId: string) => {
     if (pollingRef.current) window.clearInterval(pollingRef.current);
     pollingRef.current = window.setInterval(() => {
-      void fetchConversationMessages(targetConversationId).catch(() => null);
+      void fetchConversationMessages(targetConversationId).catch((): void => {});
     }, 3000);
     setTransportMode("polling");
   };
@@ -442,7 +442,7 @@ export function Messages() {
       wsRetryRef.current += 1;
       if (wsRetryRef.current <= 2) {
         window.setTimeout(() => {
-          if (conversationId) void fetchConversationMessages(conversationId).catch(() => null);
+          if (conversationId) void fetchConversationMessages(conversationId).catch((): void => {});
         }, 1200);
       } else {
         startPolling(conversationId);
@@ -507,7 +507,7 @@ export function Messages() {
   };
 
   const handleMarkAsRead = (targetConversationId: string) => {
-    void markConversationRead(targetConversationId).catch(() => null);
+    void markConversationRead(targetConversationId).catch((): void => {});
     setConversations((prev) =>
       prev.map((conversation) =>
         conversation.id === targetConversationId ? { ...conversation, unread: 0 } : conversation
@@ -871,7 +871,7 @@ export function Messages() {
           <div className="flex-1 flex flex-col min-w-0 h-full relative">
             <ChatHeader
               conversation={selectedConv}
-              currentUserId={currentUser?.id}
+              currentUserId={currentUser?.id != null ? String(currentUser.id) : undefined}
               transportMode={transportMode}
               isUpdatingConversation={isUpdatingConversation}
               onBack={() => navigate("/messages")}
@@ -966,7 +966,7 @@ export function Messages() {
         loading={loadingParticipants}
         participants={participants}
         fallbackParticipants={selectedParticipants}
-        currentUserId={currentUser?.id}
+        currentUserId={currentUser?.id != null ? String(currentUser.id) : undefined}
         isGroup={selectedConv?.type === "group"}
         isGroupCreator={isGroupCreator}
         pendingParticipantId={pendingParticipantId}

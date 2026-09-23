@@ -20,7 +20,7 @@ import { z } from "zod";
 import { FileUpload } from "@/components/upload/FileUpload";
 import { RESOURCE_TYPE_OPTIONS } from "@/constants/resourceTypes";
 import { ACCEPTED_RESOURCE_MIME_TYPES, ACCEPTED_RESOURCE_FILE_EXTENSIONS } from "@/constants/resourceUpload";
-import { listFolders, createResource } from "@/services/api";
+import { listFolders, createResource, type ResourceFolder } from "@/services/api";
 import { compressImageFile } from "@/lib/imageCompression";
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
@@ -48,7 +48,7 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
   const [visibility, setVisibility] = useState("");
   const [audience, setAudience] = useState("");
   const [selectedFolderId, setSelectedFolderId] = useState("");
-  const [folders, setFolders] = useState<Array<{id: number; name: string; resource_count: number}>>([]);
+  const [folders, setFolders] = useState<ResourceFolder[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
@@ -57,7 +57,7 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
   // Load user's folders when modal opens
   useEffect(() => {
     if (open) {
-      listFolders().then(setFolders).catch(() => null);
+      listFolders().then(setFolders).catch((): void => {});
     }
   }, [open]);
   const resourceSchema = z.object({
@@ -436,9 +436,9 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
                     <SelectItem
                       key={f.id}
                       value={String(f.id)}
-                      disabled={f.resource_count >= 20}
+                      disabled={Number(f.resource_count || 0) >= 20}
                     >
-                      {f.name} ({f.resource_count}/20)
+                      {f.name} ({f.resource_count || 0}/20)
                     </SelectItem>
                   ))}
                 </SelectContent>

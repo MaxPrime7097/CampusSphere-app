@@ -51,5 +51,5 @@ export interface Sphere {
   banner?: string | null;
   createdAt: string | null;
   updatedAt: string | null;
-  [key: string]: unknown;
+  [key: string]: any;
 }

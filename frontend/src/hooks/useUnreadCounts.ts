@@ -6,7 +6,7 @@ interface UnreadCounts {
   messages: number;
 }
 
-let globalCounts: UnreadCounts = { notifications: 0, messages: 0 };
+const globalCounts: UnreadCounts = { notifications: 0, messages: 0 };
 const listeners = new Set<(c: UnreadCounts) => void>();
 
 function notify() {

@@ -91,7 +91,7 @@ export async function exchangeSupabaseToken(supabaseAccessToken: string) {
 }
 
 export async function completeSupabaseProfile(data: {
-  username: string;
+  username?: string;
   first_name?: string;
   last_name?: string;
   phone_number?: string;

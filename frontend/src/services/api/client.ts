@@ -478,7 +478,7 @@ export async function apiFetch<T>(
             if (!refreshPromise) {
               refreshPromise = performRefreshRaw(refresh);
             }
-            const newAccess = await refreshPromise.catch(() => null);
+            const newAccess = await refreshPromise.catch((): null => null);
             refreshPromise = null;
             if (newAccess) {
               setTokens(newAccess, refresh);

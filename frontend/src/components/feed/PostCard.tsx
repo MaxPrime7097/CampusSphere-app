@@ -26,7 +26,7 @@ import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { impactRatePost, likePost, savePost, reportPost, updatePost, deletePost, getUserConnections, createPrivateConversation, sendMessage } from "@/services/api";
+import { impactRatePost, likePost, savePost, reportPost, updatePost, deletePost, getUserConnections, getUserConversations, createPrivateConversation, sendMessage } from "@/services/api";
 import { formatRelativeTime } from "@/lib/date";
 import { renderMentionText } from "@/lib/mentions";
 import { Textarea } from "@/components/ui/textarea";
@@ -256,7 +256,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
             };
           }).filter((c: any) => c.id);
           setShareConnections(mapped);
-        }).catch(() => null).finally(() => setLoadingShareConnections(false));
+        }).catch((): void => {}).finally(() => setLoadingShareConnections(false));
       }
     });
   };
