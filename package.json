@@ -1,8 +1,15 @@
 {
-	"dependencies": {
-		"@lottiefiles/dotlottie-react": "^0.17.7",
-		"@react-three/drei": "^10.7.6",
-		"@react-three/fiber": "^9.4.0",
-		"three": "^0.181.0"
-	}
+  "name": "campussphere-monorepo",
+  "private": true,
+  "packageManager": "pnpm@10.20.0",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test"
+  },
+  "devDependencies": {
+    "turbo": "^2.4.4"
+  }
 }

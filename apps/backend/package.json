@@ -1,5 +1,5 @@
 {
-  "name": "campussphere-backend",
+  "name": "@cs/backend",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -13,6 +13,7 @@
     "build": "tsc --project tsconfig.build.json",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "test:contract": "vitest run",
     "test:contract:watch": "vitest",
     "test:defects": "vitest run --config vitest.integration.config.ts",

@@ -1,11 +1,13 @@
 {
-  "name": "sphera-app",
+  "name": "@cs/sphera",
   "private": true,
   "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
