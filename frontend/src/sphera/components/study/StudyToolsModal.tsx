@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, Suspense, lazy } from "react";
 import {
   Dialog,
   DialogContent,
@@ -24,8 +24,8 @@ import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { FicheRevision } from "./FicheRevision";
 import { QuizInteractif } from "./QuizInteractif";
 import { Flashcards } from "./Flashcards";
-import { MindMapView } from "./MindMapView";
-import { AudioPlayerView } from "./AudioPlayerView";
+const MindMapView = lazy(() => import("./MindMapView").then(m => ({ default: m.MindMapView })));
+const AudioPlayerView = lazy(() => import("./AudioPlayerView").then(m => ({ default: m.AudioPlayerView })));
 import { QuotaIndicator } from "../QuotaIndicator";
 import {
   generateStudyTools,
@@ -337,8 +337,16 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
                       {type === "fiche" && <FicheRevision data={sessionData[type]} />}
                       {type === "quiz" && <QuizInteractif data={sessionData[type]} />}
                       {type === "flashcards" && <Flashcards data={sessionData[type]} />}
-                      {type === "mindmap" && <MindMapView data={sessionData[type]} />}
-                      {type === "audio" && <AudioPlayerView data={sessionData[type]} />}
+                      {type === "mindmap" && (
+                        <Suspense fallback={<div className="h-64 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
+                          <MindMapView data={sessionData[type]} />
+                        </Suspense>
+                      )}
+                      {type === "audio" && (
+                        <Suspense fallback={<div className="h-32 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
+                          <AudioPlayerView data={sessionData[type]} />
+                        </Suspense>
+                      )}
                     </TabsContent>
                   ))}
                 </Tabs>
@@ -348,8 +356,16 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
                     {type === "fiche" && <FicheRevision data={sessionData[type]} />}
                     {type === "quiz" && <QuizInteractif data={sessionData[type]} />}
                     {type === "flashcards" && <Flashcards data={sessionData[type]} />}
-                    {type === "mindmap" && <MindMapView data={sessionData[type]} />}
-                    {type === "audio" && <AudioPlayerView data={sessionData[type]} />}
+                    {type === "mindmap" && (
+                      <Suspense fallback={<div className="h-64 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
+                        <MindMapView data={sessionData[type]} />
+                      </Suspense>
+                    )}
+                    {type === "audio" && (
+                      <Suspense fallback={<div className="h-32 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
+                        <AudioPlayerView data={sessionData[type]} />
+                      </Suspense>
+                    )}
                   </div>
                 ))
               )}

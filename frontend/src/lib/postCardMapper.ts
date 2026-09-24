@@ -1,6 +1,7 @@
 import { getCategoryLabel } from "@/lib/resourceMetadata";
+import type { Post, PostCardData } from "@/types";
 
-export function mapPostToCard(post: any) {
+export function mapPostToCard(post: Post | any): PostCardData {
   return {
     id: String(post.id),
     author: {

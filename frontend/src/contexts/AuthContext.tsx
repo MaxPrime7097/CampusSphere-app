@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { getCurrentUser, logoutUser as apiLogout } from "@/services/api";
+import { getCurrentUser, logoutUser as apiLogout, supabaseSignOut } from "@/services/api";
+import type { UserProfile } from "@/types";
 
 interface AuthContextType {
-  user: any | null;
+  user: UserProfile | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (userData: any, tokens: { access: string; refresh: string }) => void;
+  login: (userData: UserProfile, tokens: { access: string; refresh: string }) => void;
   logout: () => void;
   refreshUser: () => Promise<void>;
 }
@@ -13,7 +14,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<any | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const refreshUser = async () => {
@@ -47,11 +48,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    // [BE-MIGRATION FE-05] supabaseSignOut() is never called, so the Supabase session survives logout
-    // in localStorage; with autoRefreshToken + detectSessionInUrl a signed-out user can be silently
-    // re-authenticated. Call it here. — documentation/FRONTEND_CHANGES.md
     try {
-      await apiLogout();
+      await Promise.allSettled([
+        apiLogout(),
+        supabaseSignOut(),
+      ]);
     } finally {
       setUser(null);
       localStorage.removeItem("access");

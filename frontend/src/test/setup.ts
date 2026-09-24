@@ -6,5 +6,4 @@ class ResizeObserverMock {
   disconnect() {}
 }
 
-// @ts-expect-error test polyfill
-global.ResizeObserver = ResizeObserverMock;
+(global as any).ResizeObserver = ResizeObserverMock;

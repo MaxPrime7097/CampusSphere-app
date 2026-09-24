@@ -11,6 +11,7 @@ import { AdminLayout } from "./admin/components/AdminLayout";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
+import { GlobalErrorBoundary } from "./components/errors/GlobalErrorBoundary";
 
 // Lazy loaded pages
 const Landing = lazy(() => import("./pages/public/Landing").then(m => ({ default: m.Landing })));
@@ -97,7 +98,7 @@ const queryClient = new QueryClient({
   },
 });
 
-const Protected = ({ children, requireCompleteProfile = true }: { children: ReactNode, requireCompleteProfile?: boolean }) => {
+const Protected = ({ children, requireCompleteProfile = true }: { children: React.ReactNode, requireCompleteProfile?: boolean }) => {
   const { user, isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
@@ -149,7 +150,7 @@ const HomeOrLanding = () => {
   );
 };
 
-const ScrollToTop = () => {
+const ScrollToTop = (): null => {
   const { pathname } = useLocation();
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
@@ -157,14 +158,15 @@ const ScrollToTop = () => {
   return null;
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <Helmet>
-        <title>CampusSphere - Le réseau social qui connecte les étudiants</title>
-        <meta name="description" content="CampusSphere est le réseau social moderne dédié aux étudiants. Connectez-vous, partagez et grandissez avec la communauté." />
-        <link rel="canonical" href="https://campussphere.app/" />
-      </Helmet>
+const App = (): React.ReactElement => (
+  <GlobalErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <Helmet>
+          <title>CampusSphere - Le réseau social qui connecte les étudiants</title>
+          <meta name="description" content="CampusSphere est le réseau social moderne dédié aux étudiants. Connectez-vous, partagez et grandissez avec la communauté." />
+          <link rel="canonical" href="https://campussphere.app/" />
+        </Helmet>
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -418,6 +420,7 @@ const App = () => (
       </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>
+</GlobalErrorBoundary>
 );
 
 export default App;

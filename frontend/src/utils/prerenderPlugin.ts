@@ -428,7 +428,7 @@ ${JSON.stringify(landingJsonLd, null, 2)}
         const targetDir = path.join(distDir, p.dir);
         ensureDir(targetDir);
 
-        let pPageHtml = template
+        const pPageHtml = template
           .replace(/<title>.*?<\/title>/, `<title>${p.title}</title>`)
           .replace(/<meta name="description" content=".*?" \/>/, `<meta name="description" content="${escapeAttr(p.desc)}" />`)
           .replace(/<link rel="canonical" href=".*?" \/>/, `<link rel="canonical" href="${p.canonical}" />`);

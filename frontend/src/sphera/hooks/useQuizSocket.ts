@@ -1,6 +1,41 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { getQuizSocketUrl } from '../services/quizLiveService';
-import type { QuizLiveParticipant, CurrentQuestionData, AnswerResult, QuestionResults } from '../types/quizLive.types';
+
+export interface QuizLiveParticipant {
+  userId?: number;
+  displayName: string;
+  score: number;
+  [key: string]: any;
+}
+
+export interface CurrentQuestionData {
+  question: string;
+  options: string[];
+  questionIndex: number;
+  totalQuestions: number;
+  timeLimit: number;
+  points?: number;
+  startTime: number;
+  [key: string]: any;
+}
+
+export interface AnswerResult {
+  isCorrect: boolean;
+  score: number;
+  correctAnswer?: string;
+  [key: string]: any;
+}
+
+export interface QuestionResults {
+  question: string;
+  answers: Record<string, number>;
+  [key: string]: any;
+}
+
+export function getQuizSocketUrl(roomCode: string): string {
+  const apiBase = (typeof window !== 'undefined' && (window as any).__ENV__?.VITE_API_URL) || import.meta.env.VITE_API_URL || 'http://localhost:8000';
+  const wsBase = apiBase.replace(/^http/, 'ws');
+  return `${wsBase}/ws/quiz-live/${roomCode}/`;
+}
 
 export const useQuizSocket = (roomCode: string | null) => {
   const [participants, setParticipants] = useState<QuizLiveParticipant[]>([]);

@@ -35,6 +35,7 @@ import { SphereSkeleton } from "@/components/ui/skeletons";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
+import type { Sphere } from "@/types";
 
 const CreateSphereModal = lazy(() =>
   import("@/components/modals/CreateSphereModal").then((module) => ({
@@ -65,9 +66,9 @@ export function Spheres() {
 
   const [userJoinedSpheres, setUserJoinedSpheres] = useState<string[]>([]);
   const [pendingJoinRequests, setPendingJoinRequests] = useState<string[]>([]);
-  const [userSpheres, setUserSpheres] = useState<any[]>([]);
+  const [userSpheres, setUserSpheres] = useState<Sphere[]>([]);
   const [userSpheresLoadError, setUserSpheresLoadError] = useState<string | null>(null);
-  const [allSpheres, setAllSpheres] = useState<any[]>([]);
+  const [allSpheres, setAllSpheres] = useState<Sphere[]>([]);
   const [loadingSpheres, setLoadingSpheres] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isJoining, setIsJoining] = useState<string | null>(null);
@@ -75,7 +76,7 @@ export function Spheres() {
 
   const spheresQuery = useQuery({
     queryKey: ["spheres"],
-    queryFn: listSpheres,
+    queryFn: () => listSpheres(),
     staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -84,7 +85,7 @@ export function Spheres() {
 
   const userSpheresQuery = useQuery({
     queryKey: ["user-spheres"],
-    queryFn: getUserSpheres,
+    queryFn: () => getUserSpheres(),
     enabled: Boolean(currentUser?.id),
     staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -495,7 +496,7 @@ export function Spheres() {
                     sphere={sphere}
                     membership={getUnifiedMembershipState(sphere)}
                     isJoining={isJoining === String(sphere.id)}
-                    onJoin={() => handleJoinSphere(sphere.id, sphere.name)}
+                    onJoin={() => handleJoinSphere(String(sphere.id), sphere.name)}
                   />
                 ))}
               </div>
@@ -528,7 +529,7 @@ export function Spheres() {
                             sphere={sphere}
                             membership={getUnifiedMembershipState(sphere)}
                             isJoining={isJoining === String(sphere.id)}
-                            onJoin={() => handleJoinSphere(sphere.id, sphere.name)}
+                            onJoin={() => handleJoinSphere(String(sphere.id), sphere.name)}
                           />
                         </div>
                       ))
@@ -570,7 +571,7 @@ export function Spheres() {
                             sphere={sphere}
                             membership={getUnifiedMembershipState(sphere)}
                             isJoining={isJoining === String(sphere.id)}
-                            onJoin={() => handleJoinSphere(sphere.id, sphere.name)}
+                            onJoin={() => handleJoinSphere(String(sphere.id), sphere.name)}
                           />
                         </div>
                       ))
@@ -626,7 +627,7 @@ export function Spheres() {
                             sphere={sphere}
                             membership={getUnifiedMembershipState(sphere)}
                             isJoining={isJoining === String(sphere.id)}
-                            onJoin={() => handleJoinSphere(sphere.id, sphere.name)}
+                            onJoin={() => handleJoinSphere(String(sphere.id), sphere.name)}
                           />
                         </div>
                       ))

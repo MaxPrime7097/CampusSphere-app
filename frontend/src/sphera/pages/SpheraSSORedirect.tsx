@@ -14,8 +14,8 @@ export function SpheraSSORedirect() {
     if (accessToken) params.set("access_token", accessToken);
     if (refreshToken) params.set("refresh_token", refreshToken);
 
-    const query = params.toString();
-    window.location.replace(`${baseUrl.replace(/\/$/, "")}/app${query ? `?${query}` : ""}`);
+    const fragment = params.toString();
+    window.location.replace(`${baseUrl.replace(/\/$/, "")}/app${fragment ? `#${fragment}` : ""}`);
   }, []);
 
   return (

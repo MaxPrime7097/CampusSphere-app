@@ -18,11 +18,7 @@ export default {
         inter: ['Inter', 'sans-serif'],
         poppins: ['Poppins', 'sans-serif'],
         raleway: ['Raleway', 'sans-serif'],
-        manrope: ['Manrope', 'sans-serif'],
-        spacegrotesk: ['Space Grotesk', 'sans-serif'],
         nunito: ['Nunito Sans', 'sans-serif'],
-        dmsans: ['DM Sans', 'sans-serif'],
-        urbanist: ['Urbanist', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",

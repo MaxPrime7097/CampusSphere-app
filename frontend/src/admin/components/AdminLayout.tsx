@@ -29,7 +29,7 @@ const getBreadcrumbDescription = (pathname: string): string => {
   return current?.description ?? "Pilotage et supervision de la plateforme";
 };
 
-export function AdminLayout() {
+export function AdminLayout({ children }: { children?: React.ReactNode } = {}) {
   const { pathname } = useLocation();
   const { user } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -85,6 +85,9 @@ export function AdminLayout() {
     };
 
     void fetchBadges();
+    return () => {
+      isMounted = false;
+    };
   }, [pathname]);
 
   const groups = Array.from(new Set(ADMIN_NAVIGATION.map((item) => item.group)));
@@ -348,7 +351,7 @@ export function AdminLayout() {
 
         {/* ─── MAIN CONTENT CONTAINER (FULL-WIDTH) ─── */}
         <main className="flex-1 w-full p-4 sm:p-6 lg:p-8">
-          <Outlet />
+          {children || <Outlet />}
         </main>
       </div>
     </div>

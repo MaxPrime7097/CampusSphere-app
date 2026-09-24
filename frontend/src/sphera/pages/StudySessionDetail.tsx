@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense, lazy } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { listSpheres } from "@/services/api";
@@ -19,8 +19,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FicheRevision } from "@/sphera/components/study/FicheRevision";
 import { QuizInteractif } from "@/sphera/components/study/QuizInteractif";
 import { Flashcards } from "@/sphera/components/study/Flashcards";
-import { MindMapView } from "@/sphera/components/study/MindMapView";
-import { AudioPlayerView } from "@/sphera/components/study/AudioPlayerView";
+const MindMapView = lazy(() => import("@/sphera/components/study/MindMapView").then(m => ({ default: m.MindMapView })));
+const AudioPlayerView = lazy(() => import("@/sphera/components/study/AudioPlayerView").then(m => ({ default: m.AudioPlayerView })));
 
 // V2 : Q&A
 import { QAChat } from "../components/QAChat";
@@ -283,8 +283,16 @@ export const StudySessionDetail: React.FC = () => {
                     {t === "fiche" && content.fiche && <FicheRevision data={content.fiche} />}
                     {t === "quiz" && content.quiz && <QuizInteractif data={content.quiz} />}
                     {t === "flashcards" && content.flashcards && <Flashcards data={content.flashcards} />}
-                    {t === "mindmap" && content.mindmap && <MindMapView data={content.mindmap} />}
-                    {t === "audio" && content.audio && <AudioPlayerView data={content.audio} />}
+                    {t === "mindmap" && content.mindmap && (
+                      <Suspense fallback={<div className="h-64 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
+                        <MindMapView data={content.mindmap} />
+                      </Suspense>
+                    )}
+                    {t === "audio" && content.audio && (
+                      <Suspense fallback={<div className="h-32 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
+                        <AudioPlayerView data={content.audio} />
+                      </Suspense>
+                    )}
                   </>
                 )}
               </TabsContent>

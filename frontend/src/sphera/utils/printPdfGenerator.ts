@@ -636,11 +636,11 @@ export function generateFicheHtml(options: GenerateFicheOptions): string {
 export function generateAnnaleHtml(options: GenerateAnnaleOptions): string {
   let raw = options.annale || {};
   if (typeof raw === "string") {
-    try { raw = JSON.parse(raw); } catch {}
+    try { raw = JSON.parse(raw); } catch { /* ignore parsing errors */ }
   }
   let a = raw?.content?.annale || raw?.annale || raw?.content || raw;
   if (typeof a === "string") {
-    try { a = JSON.parse(a); } catch {}
+    try { a = JSON.parse(a); } catch { /* ignore parsing errors */ }
   }
   const title = a?.titre || raw?.titre || raw?.source_title || raw?.source_filename || options.sourceName || "Correction d'Annale d'Examen";
   const dateStr = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
@@ -856,7 +856,9 @@ export function printHtmlDocument(htmlContent: string, documentTitle: string): P
         console.error("[PDF Print Engine Error]", err);
         try {
           document.body.removeChild(iframe);
-        } catch (_) {}
+        } catch (_) {
+          /* ignore removal error if already detached */
+        }
         resolve();
       }
     };
