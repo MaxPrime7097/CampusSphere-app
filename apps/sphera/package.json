@@ -1,6 +1,7 @@
 {
   "name": "@cs/sphera",
   "private": true,
+  "packageManager": "pnpm@10.20.0",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
