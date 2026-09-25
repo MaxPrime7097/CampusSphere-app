@@ -1,320 +1,171 @@
-import React, { useRef, useMemo, useState } from "react";
-import ReactFlow, {
-  Background,
-  Controls,
-  type Node,
-  type Edge,
-  type ReactFlowInstance,
-  Position,
-} from "reactflow";
-import "reactflow/dist/style.css";
-import { LocateFixed, GitFork, Sparkles, FolderPlus, FolderMinus } from "lucide-react";
+import React, { useState } from "react";
+import { GitFork, Sparkles, FolderPlus, FolderMinus, ExternalLink, ChevronRight, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SpheraIcon } from "@/components/ui/sphera-icon";
+import { SPHERA_ORIGINS } from "@cs/sso";
 import type { MindMapContent } from "../../types/sphera.types";
 
 interface MindMapViewProps {
   data: MindMapContent;
+  sessionId?: string | number;
 }
 
-const COULEURS: Record<string, string> = {
-  vert: "#22C55E",
-  bleu: "#3B82F6",
-  orange: "#F97316",
-  violet: "#A855F7",
-  rose: "#EC4899",
+const COLOR_MAP: Record<string, { bg: string; border: string; text: string; badge: string }> = {
+  vert: { bg: "bg-emerald-500/10", border: "border-emerald-500/30", text: "text-emerald-500", badge: "bg-emerald-500/20 text-emerald-400" },
+  bleu: { bg: "bg-blue-500/10", border: "border-blue-500/30", text: "text-blue-500", badge: "bg-blue-500/20 text-blue-400" },
+  orange: { bg: "bg-amber-500/10", border: "border-amber-500/30", text: "text-amber-500", badge: "bg-amber-500/20 text-amber-400" },
+  violet: { bg: "bg-purple-500/10", border: "border-purple-500/30", text: "text-purple-500", badge: "bg-purple-500/20 text-purple-400" },
+  rose: { bg: "bg-pink-500/10", border: "border-pink-500/30", text: "text-pink-500", badge: "bg-pink-500/20 text-pink-400" },
 };
 
-export const MindMapView: React.FC<MindMapViewProps> = ({ data }) => {
-  const reactFlowInstance = useRef<ReactFlowInstance | null>(null);
+function getColorStyle(c?: string) {
+  if (!c) return COLOR_MAP.bleu;
+  const key = c.toLowerCase();
+  for (const [k, v] of Object.entries(COLOR_MAP)) {
+    if (key.includes(k)) return v;
+  }
+  return COLOR_MAP.bleu;
+}
+
+export const MindMapView: React.FC<MindMapViewProps> = ({ data, sessionId }) => {
   const [collapsedBranches, setCollapsedBranches] = useState<Record<number, boolean>>({});
 
   const branches = data?.branches || [];
+  const noeudCentral = data?.noeud_central || data?.titre || "Carte Mentale";
 
   const toggleBranch = (idx: number) => {
     setCollapsedBranches((prev) => ({ ...prev, [idx]: !prev[idx] }));
   };
 
-  const expandAll = () => {
-    setCollapsedBranches({});
-    setTimeout(() => {
-      reactFlowInstance.current?.fitView({ padding: 0.2, duration: 300 });
-    }, 50);
-  };
-
+  const expandAll = () => setCollapsedBranches({});
   const collapseAll = () => {
     const all: Record<number, boolean> = {};
     branches.forEach((_, i) => {
       all[i] = true;
     });
     setCollapsedBranches(all);
-    setTimeout(() => {
-      reactFlowInstance.current?.fitView({ padding: 0.2, duration: 300 });
-    }, 50);
   };
 
-  const handleRecenter = () => {
-    reactFlowInstance.current?.fitView({ padding: 0.2, duration: 400 });
-  };
-
-  const onNodeClick = (_event: React.MouseEvent, node: Node) => {
-    if (node.id.startsWith("branch-")) {
-      const idx = parseInt(node.id.replace("branch-", ""), 10);
-      if (!isNaN(idx)) {
-        toggleBranch(idx);
-      }
-    } else if (node.id === "central") {
-      const anyCollapsed = branches.some((_, i) => collapsedBranches[i]);
-      if (anyCollapsed) {
-        expandAll();
-      } else {
-        collapseAll();
-      }
-    }
-  };
-
-  const { nodes, edges } = useMemo(() => {
-    const nodesList: Node[] = [];
-    const edgesList: Edge[] = [];
-
-    const centerX = 500;
-    const centerY = 350;
-
-    // Central Node
-    nodesList.push({
-      id: "central",
-      data: {
-        label: (
-          <div className="flex flex-col items-center justify-center p-2 text-center select-none cursor-pointer">
-            <span className="font-bold text-sm sm:text-base text-foreground leading-snug">
-              {data.noeud_central || data.titre}
-            </span>
-            <span className="text-[10px] text-muted-foreground mt-1 font-mono">
-              {branches.length} thèmes · Cliquer pour tout plier/déplier
-            </span>
-          </div>
-        ),
-      },
-      position: { x: centerX, y: centerY },
-      sourcePosition: Position.Right,
-      targetPosition: Position.Left,
-      style: {
-        background: "var(--card)",
-        border: "2px solid #22C55E",
-        borderRadius: "14px",
-        padding: "10px 16px",
-        boxShadow: "0 10px 25px -5px rgba(34, 197, 94, 0.25)",
-        minWidth: 170,
-        maxWidth: 260,
-        textAlign: "center",
-        cursor: "pointer",
-        zIndex: 10,
-      },
-    });
-
-    const branchCount = branches.length;
-    if (branchCount === 0) return { nodes: nodesList, edges: edgesList };
-
-    const angleStep = (2 * Math.PI) / branchCount;
-    const radius = Math.max(280, 240 + branchCount * 10);
-
-    branches.forEach((branch, i) => {
-      const angle = i * angleStep - Math.PI / 2;
-      const bx = centerX + radius * Math.cos(angle);
-      const by = centerY + radius * Math.sin(angle);
-      const branchId = `branch-${i}`;
-      const color = COULEURS[branch.couleur?.toLowerCase()] || COULEURS.vert;
-
-      const subBranches = branch.sous_branches || [];
-      const subCount = subBranches.length;
-      const isCollapsed = Boolean(collapsedBranches[i]);
-
-      nodesList.push({
-        id: branchId,
-        data: {
-          label: (
-            <div className="flex flex-col gap-1 select-none cursor-pointer">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span
-                    className="w-2.5 h-2.5 rounded-full shrink-0"
-                    style={{ backgroundColor: color }}
-                  />
-                  <span className="font-semibold text-xs sm:text-sm text-foreground leading-tight truncate">
-                    {branch.label}
-                  </span>
-                </div>
-                {subCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleBranch(i);
-                    }}
-                    className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full font-bold transition-all border flex items-center gap-1 ${
-                      isCollapsed
-                        ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/25"
-                        : "bg-muted text-muted-foreground border-border hover:bg-muted/80"
-                    }`}
-                    title={isCollapsed ? "Déplier les sous-concepts" : "Replier les sous-concepts"}
-                  >
-                    <span>{isCollapsed ? `+ ${subCount}` : `- ${subCount}`}</span>
-                  </button>
-                )}
-              </div>
-              {subCount > 0 && (
-                <div className="text-[10px] text-muted-foreground pl-4 font-mono">
-                  {isCollapsed ? "Cliquer pour déplier" : `${subCount} sous-concepts`}
-                </div>
-              )}
-            </div>
-          ),
-        },
-        position: { x: bx, y: by },
-        style: {
-          background: "var(--card)",
-          border: `2px solid ${color}`,
-          borderRadius: "12px",
-          padding: "10px 14px",
-          boxShadow: isCollapsed ? `0 4px 14px 0 ${color}25` : `0 6px 20px 0 ${color}35`,
-          minWidth: 170,
-          maxWidth: 240,
-          cursor: "pointer",
-          zIndex: 5,
-        },
-      });
-
-      edgesList.push({
-        id: `e-central-${branchId}`,
-        source: "central",
-        target: branchId,
-        animated: true,
-        style: { stroke: color, strokeWidth: 2 },
-      });
-
-      // Sub-branches (rendered only if not collapsed)
-      if (!isCollapsed && subCount > 0) {
-        const subRadius = radius + 175;
-        const subSpread = 0.35;
-
-        subBranches.forEach((sb: any, j: number) => {
-          const subId = `${branchId}-sub-${j}`;
-          const subAngle = angle + (j - (subCount - 1) / 2) * subSpread;
-          const sx = centerX + subRadius * Math.cos(subAngle);
-          const sy = centerY + subRadius * Math.sin(subAngle);
-          const subLabel = typeof sb === "string" ? sb : sb?.label || "";
-
-          nodesList.push({
-            id: subId,
-            data: {
-              label: (
-                <span className="text-[11px] sm:text-xs text-muted-foreground leading-snug">
-                  {subLabel}
-                </span>
-              ),
-            },
-            position: { x: sx, y: sy },
-            style: {
-              background: "var(--muted)",
-              border: `1px solid ${color}66`,
-              borderRadius: "8px",
-              padding: "8px 12px",
-              maxWidth: 190,
-              zIndex: 2,
-            },
-          });
-
-          edgesList.push({
-            id: `e-${branchId}-${subId}`,
-            source: branchId,
-            target: subId,
-            style: { stroke: `${color}66`, strokeWidth: 1.5 },
-          });
-        });
-      }
-    });
-
-    return { nodes: nodesList, edges: edgesList };
-  }, [data, collapsedBranches]);
+  const envUrl = (import.meta.env.VITE_SPHERA_STANDALONE_URL as string)?.trim();
+  const isLocal = ["localhost", "127.0.0.1"].some((host) => window.location.hostname.includes(host));
+  const spheraBase = envUrl || (isLocal ? "http://localhost:4173" : SPHERA_ORIGINS[0]);
+  const spheraLink = sessionId ? `${spheraBase}/sessions/${sessionId}` : `${spheraBase}/dashboard`;
 
   return (
-    <div className="relative w-full rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
-      {/* Top action header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-border bg-card/60 backdrop-blur-sm z-10 relative">
-        <div className="flex items-center gap-2">
-          <GitFork className="w-5 h-5 text-emerald-500 shrink-0" />
-          <div>
-            <h3 className="font-semibold text-sm sm:text-base text-foreground leading-none">
-              {data.titre || "Carte mentale"}
-            </h3>
-            <p className="text-xs text-muted-foreground mt-1">
-              Cliquer sur un nœud pour le plier/déplier · Molette ou glisser pour naviguer
-            </p>
+    <div className="space-y-6 w-full max-w-4xl mx-auto">
+      {/* ─── Hero Sphera CTA ─── */}
+      <div className="relative overflow-hidden rounded-2xl border border-[#ff9800]/20 bg-gradient-to-br from-[#ff9800]/10 via-background to-background p-5 sm:p-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-[#ff9800] to-[#ff5722] flex items-center justify-center shadow-lg shadow-orange-500/20 text-white shrink-0">
+              <SpheraIcon size="md" variant="white" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="font-semibold text-foreground text-base">Carte Conceptuelle Interactive</h4>
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#ff9800]/20 text-[#ff9800]">
+                  Sphera App
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                Pour une navigation fluide en plein écran, zoom 2D et réorganisation des nœuds, ouvre cette session dans Sphera.
+              </p>
+            </div>
           </div>
-        </div>
-
-        <div className="flex items-center gap-2">
           <Button
-            variant="outline"
             size="sm"
-            onClick={expandAll}
-            className="gap-1 text-xs text-muted-foreground hover:text-foreground border-border"
-            title="Tout déplier"
+            onClick={() => window.open(spheraLink, "_blank")}
+            className="shrink-0 gap-2 bg-gradient-to-r from-[#ff9800] to-[#ff5722] hover:opacity-95 text-white shadow-md shadow-orange-500/20"
           >
-            <FolderPlus className="w-3.5 h-3.5 text-emerald-500" />
-            Tout déplier
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={collapseAll}
-            className="gap-1 text-xs text-muted-foreground hover:text-foreground border-border"
-            title="Tout replier"
-          >
-            <FolderMinus className="w-3.5 h-3.5 text-orange-500" />
-            Tout replier
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRecenter}
-            className="gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
-            title="Recentrer la carte mentale"
-          >
-            <LocateFixed className="w-3.5 h-3.5" />
-            Centrer la vue
+            <span>Ouvrir dans Sphera</span>
+            <ExternalLink className="w-3.5 h-3.5" />
           </Button>
         </div>
       </div>
 
-      {/* Canvas container */}
-      <div className="relative h-[650px] w-full bg-muted/20">
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodeClick={onNodeClick}
-          fitView
-          onInit={(instance) => {
-            reactFlowInstance.current = instance;
-          }}
-          panOnDrag={true}
-          zoomOnPinch={true}
-          zoomOnScroll={true}
-          zoomOnDoubleClick={true}
-          minZoom={0.2}
-          maxZoom={2.5}
-          preventScrolling={true}
-        >
-          <Background color="currentColor" className="text-border/40" gap={20} size={1} />
-          <Controls showInteractive={false} className="bg-card border-border rounded-lg" />
-        </ReactFlow>
-
-        {/* Floating guidance helper pill */}
-        <div className="absolute bottom-4 left-4 z-10 pointer-events-none text-[11px] text-muted-foreground bg-card/90 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-border flex items-center gap-2 shadow-sm">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-          <span>Cliquer sur un nœud pour le plier ou le déplier</span>
+      {/* ─── Central Node Concept ─── */}
+      <div className="text-center py-4 px-6 rounded-2xl border border-primary/20 bg-card shadow-sm">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-2">
+          <Sparkles className="w-3.5 h-3.5" />
+          <span>Cœur du sujet</span>
         </div>
+        <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">{noeudCentral}</h3>
+        <p className="text-xs text-muted-foreground mt-1">
+          {branches.length} branche{branches.length > 1 ? "s" : ""} principale{branches.length > 1 ? "s" : ""} identifiée{branches.length > 1 ? "s" : ""}
+        </p>
+      </div>
+
+      {/* ─── Controls ─── */}
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Layers className="w-3.5 h-3.5" />
+          <span>Structure arborescente</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={expandAll} className="h-8 text-xs gap-1.5 text-muted-foreground">
+            <FolderPlus className="w-3.5 h-3.5" />
+            <span>Tout déplier</span>
+          </Button>
+          <Button variant="ghost" size="sm" onClick={collapseAll} className="h-8 text-xs gap-1.5 text-muted-foreground">
+            <FolderMinus className="w-3.5 h-3.5" />
+            <span>Tout replier</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* ─── Branches Grid ─── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {branches.map((branch, idx) => {
+          const isCollapsed = collapsedBranches[idx] ?? false;
+          const style = getColorStyle(branch.couleur);
+          const subBranches = branch.sous_branches || [];
+
+          return (
+            <div
+              key={idx}
+              className={`rounded-xl border transition-all ${style.border} ${style.bg} overflow-hidden`}
+            >
+              <button
+                type="button"
+                onClick={() => toggleBranch(idx)}
+                className="w-full text-left p-4 flex items-center justify-between gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className={`p-1.5 rounded-lg ${style.badge} shrink-0`}>
+                    <GitFork className="w-4 h-4" />
+                  </div>
+                  <h4 className="font-semibold text-sm sm:text-base text-foreground truncate">
+                    {branch.label}
+                  </h4>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-[11px] font-medium text-muted-foreground">
+                    {subBranches.length} point{subBranches.length > 1 ? "s" : ""}
+                  </span>
+                  <ChevronRight
+                    className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${
+                      isCollapsed ? "" : "rotate-90"
+                    }`}
+                  />
+                </div>
+              </button>
+
+              {!isCollapsed && subBranches.length > 0 && (
+                <div className="px-4 pb-4 pt-1 space-y-2 border-t border-border/40">
+                  {subBranches.map((sub, subIdx) => (
+                    <div
+                      key={subIdx}
+                      className="flex items-start gap-2.5 p-2 rounded-lg bg-background/70 border border-border/40 text-xs text-foreground/90"
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${style.text} bg-current`} />
+                      <span className="leading-relaxed">{sub.label}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

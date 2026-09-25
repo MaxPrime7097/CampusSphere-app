@@ -58,7 +58,6 @@ export default defineConfig(({ mode }) => ({
           'vendor-dates': ['date-fns'],
           'vendor-charts': ['recharts'],
           'vendor-lottie': ['@lottiefiles/dotlottie-react'],
-          'vendor-reactflow': ['reactflow'],
           'vendor-motion': ['motion'],
         }
       }
