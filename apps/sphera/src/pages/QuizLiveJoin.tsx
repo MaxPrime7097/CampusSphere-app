@@ -4,7 +4,7 @@ import { useQuizSocket } from '../hooks/useQuizSocket';
 import { TimerBar } from '../components/quiz-live/TimerBar';
 import { QuestionDisplay } from '../components/quiz-live/QuestionDisplay';
 import { Leaderboard } from '../components/quiz-live/Leaderboard';
-import { getQuizSessionByCode } from '../services/spheraApi';
+import { getQuizSessionByCode, getQuizParticipants } from '../services/spheraApi';
 import { useSpheraAuth } from '../contexts/SpheraAuthContext';
 import { Loader2, LogIn, ArrowLeft, Volume2, VolumeX } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
@@ -39,6 +39,7 @@ export default function QuizLiveJoin() {
 
   const {
     participants,
+    setParticipants,
     currentQuestion,
     answerResult,
     questionResults,
@@ -115,6 +116,22 @@ export default function QuizLiveJoin() {
     else if (questionResults && currentQuestion) phase = 'results';
     else if (leaderboard.length > 0 && !currentQuestion) phase = 'finished';
   }
+
+  // Safety lobby polling every 3s while waiting for the quiz to start
+  useEffect(() => {
+    if (phase !== 'waiting' || !joinedRoomCode) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await getQuizParticipants(joinedRoomCode);
+        if (res?.data?.participants && Array.isArray(res.data.participants)) {
+          setParticipants(res.data.participants);
+        }
+      } catch {
+        // Silent catch: WebSocket is real-time primary
+      }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [phase, joinedRoomCode, setParticipants]);
 
   // Audio Effects
   useEffect(() => {

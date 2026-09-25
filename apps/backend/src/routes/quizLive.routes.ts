@@ -364,11 +364,15 @@ quizLiveRouter.patch("/:roomCode/reset/", requireAuth, async (req, res) => {
 
 quizLiveRouter.get("/:roomCode/host/", requireAuth, async (req, res) => {
   const user = currentUser(req);
-  const roomCode = req.params.roomCode as string;
+  const roomCode = (req.params.roomCode as string).toUpperCase().trim();
 
   const session = await prisma.quizLiveSession.findUnique({
     where: { roomCode },
     include: {
+      participants: {
+        select: { id: true, displayName: true, score: true, userId: true },
+        orderBy: { id: "asc" },
+      },
       _count: {
         select: { participants: true },
       },
@@ -384,7 +388,8 @@ quizLiveRouter.get("/:roomCode/host/", requireAuth, async (req, res) => {
     title: session.title,
     status: session.status,
     questions: session.questions,
-    participantCount: session._count.participants,
+    participants: session.participants,
+    participantCount: session.participants.length,
     createdAt: session.createdAt,
   });
 });
@@ -446,5 +451,27 @@ quizLiveRouter.get("/:roomCode/", async (req, res) => {
     title: session.title,
     status: session.status,
     participantCount: session._count.participants,
+  });
+});
+
+quizLiveRouter.get("/:roomCode/participants/", async (req, res) => {
+  const roomCode = (req.params.roomCode as string).toUpperCase().trim();
+  const session = await prisma.quizLiveSession.findUnique({
+    where: { roomCode },
+    include: {
+      participants: {
+        select: { id: true, displayName: true, score: true, userId: true },
+        orderBy: { id: "asc" },
+      },
+    },
+  });
+
+  if (!session) {
+    throw notFound("Session introuvable");
+  }
+
+  return ok(res, {
+    participants: session.participants,
+    participantCount: session.participants.length,
   });
 });

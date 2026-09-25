@@ -56,7 +56,16 @@ export function useQuizSocket(roomCode: string | null) {
 
     ws.current.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data);
+        let data = JSON.parse(event.data);
+        if (typeof data === 'string') {
+          try {
+            data = JSON.parse(data);
+          } catch {
+            // ignore
+          }
+        }
+        if (!data || typeof data !== 'object') return;
+
         switch (data.type) {
           case 'connected':
             setStatus('connected');
@@ -162,6 +171,7 @@ export function useQuizSocket(roomCode: string | null) {
 
   return {
     participants,
+    setParticipants,
     currentQuestion,
     answerResult,
     questionResults,

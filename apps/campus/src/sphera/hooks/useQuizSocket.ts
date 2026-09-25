@@ -70,7 +70,15 @@ export const useQuizSocket = (roomCode: string | null) => {
 
     ws.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data);
+        let data = JSON.parse(event.data);
+        if (typeof data === 'string') {
+          try {
+            data = JSON.parse(data);
+          } catch {
+            // ignore
+          }
+        }
+        if (!data || typeof data !== 'object') return;
         handleMessage(data);
       } catch (error) {
         console.error('Error parsing socket message:', error);
@@ -157,6 +165,7 @@ export const useQuizSocket = (roomCode: string | null) => {
 
   return {
     participants,
+    setParticipants,
     currentQuestion,
     answerResult,
     questionResults,
