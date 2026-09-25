@@ -1,57 +1,66 @@
-# Documentation CampusSphere
+# Documentation CampusSphere & Sphera
 
-## Index
+Ce dossier rassemble l'ensemble de la documentation technique, des spécifications d'architecture et des guides fonctionnels du monorepo.
 
-### Spécification du backend (anglais)
+---
 
-Écrites pendant la migration Django → Node/Express, ces trois-là font autorité sur le
-comportement de l'API.
+## Index de la Documentation
 
-| Fichier | Description |
-|---------|-------------|
-| [API_CONTRACT.md](./API_CONTRACT.md) | **Source de vérité** : forme de chaque requête/réponse, codes d'erreur, pagination, temps réel, jobs, rate limits. Les écarts volontaires vis-à-vis de Django sont marqués `[CHANGE]` |
-| [API_INVENTORY.md](./API_INVENTORY.md) | Les 143 routes, leur statut de portage et leurs appelants frontend |
-| [FRONTEND_CHANGES.md](./FRONTEND_CHANGES.md) | Ce que le frontend doit adapter (`FE-01` … `FE-10`), et ce qui fonctionne sans modification |
-
-### Guides projet (français)
+### 1. Spécifications & Architecture Monorepo
 
 | Fichier | Description |
-|---------|-------------|
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | Structure du projet, modèle de données, routing, variables d'environnement |
-| [AUTH.md](./AUTH.md) | Flux d'authentification email et OAuth, endpoints Supabase, `is_profile_complete`, limites email |
-| [DEPLOYMENT.md](./DEPLOYMENT.md) | Déploiement Vercel + Render, configuration Supabase, checklist production |
-| [API.md](./API.md) | Référence REST héritée de Django — **superseded** par `API_CONTRACT.md` en cas de désaccord |
-| [COMPONENTS.md](./COMPONENTS.md) | Guide des composants frontend (combobox, modales, pages, hooks, services) |
-| [IMPACT_POLICY.md](./IMPACT_POLICY.md) | Règles actives du score d'impact + propositions d'évolution |
-| [CACHE_POLICY.md](./CACHE_POLICY.md) | Politique de cache API — endpoints jamais mis en cache |
-| [SUPABASE_EMAIL_LIMITS.md](./SUPABASE_EMAIL_LIMITS.md) | Ajuster les quotas d'envoi email Supabase |
+|---|---|
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | Architecture monorepo, structure des dossiers (`apps/`, `packages/`), flux de données |
+| [DEPLOYMENT.md](./DEPLOYMENT.md) | Déploiement multi-projets Vercel (`apps/campus`, `apps/sphera`) + Render (`apps/backend`) |
+| [AUTH.md](./AUTH.md) | Flux d'authentification Supabase, JWT applicatif et handshake SSO cross-domain |
+| [COMPONENTS.md](./COMPONENTS.md) | Guide des composants UI, package partagé `@cs/ui` et composants spécifiques |
 
-### Hors de ce dossier
+### 2. Contrat d'API & Backend (Express / Prisma)
 
 | Fichier | Description |
-|---------|-------------|
-| [../backend/README.md](../backend/README.md) | Backend Node : exécution, migrations Prisma, scale-out, jobs, suites de tests |
-| [../SPHERA_DOCUMENTATION.md](../SPHERA_DOCUMENTATION.md) | Architecture SSO Sphera, moteur PDF, déploiement standalone |
+|---|---|
+| [API_CONTRACT.md](./API_CONTRACT.md) | **Source de vérité** : forme des requêtes/réponses, erreurs, pagination, temps réel, jobs |
+| [API_INVENTORY.md](./API_INVENTORY.md) | Inventaire des 143 routes backend, appelants frontend et statuts |
+| [FRONTEND_CHANGES.md](./FRONTEND_CHANGES.md) | Adaptations frontend consommateur (`FE-01` … `FE-10`) |
+| [API.md](./API.md) | Référence REST des endpoints |
+| [CACHE_POLICY.md](./CACHE_POLICY.md) | Politique de cache API et endpoints sans cache |
+| [IMPACT_POLICY.md](./IMPACT_POLICY.md) | Règles de calcul du score d'impact |
+| [SUPABASE_EMAIL_LIMITS.md](./SUPABASE_EMAIL_LIMITS.md) | Gestion des quotas et limites d'envoi d'emails Supabase |
 
-## Démarrage rapide
+### 3. Spécifications Fonctionnelles & Fonctionnalités Clés (`documentation/features/`)
 
-Voir le [README principal](../README.md) pour les commandes de démarrage local.
+| Fichier | Description |
+|---|---|
+| [features/SPHERA_DOCUMENTATION.md](./features/SPHERA_DOCUMENTATION.md) | Architecture SSO Sphera, moteur PDF et mode standalone |
+| [features/SPHERA_MINDMAP_AUDIO.md](./features/SPHERA_MINDMAP_AUDIO.md) | Spécifications des cartes mentales (React Flow) et résumés audio (TTS) |
+| [features/SPHERA_PARAMETRES.md](./features/SPHERA_PARAMETRES.md) | Préférences utilisateur, mode d'étude et personnalisation Sphera |
+| [features/QUIZ_MULTIJOUEUR.md](./features/QUIZ_MULTIJOUEUR.md) | Moteur de quiz multijoueur en temps réel (WebSockets / Redis) |
+| [features/MODULE_EVENEMENTS.md](./features/MODULE_EVENEMENTS.md) | Module d'événements étudiants, billetterie et calendrier |
+| [features/AI_ROUTING_FINAL.md](./features/AI_ROUTING_FINAL.md) | Routage intelligent des modèles IA (DeepSeek V3.2, Claude Haiku, Groq) |
+| [features/BEDROCK_MIGRATION_CONTEXT.md](./features/BEDROCK_MIGRATION_CONTEXT.md) | Architecture et contexte d'intégration AWS Bedrock |
+| [features/AI_CONTEXT.md](./features/AI_CONTEXT.md) | Historique et journal technique pour les agents IA |
 
-## Points clés de l'architecture
+### 4. Guides Développeur par Application
 
-- **Backend** : Node 22 + Express 5 + TypeScript (ESM), Prisma sur PostgreSQL (Supabase)
-- **Auth** : Supabase Auth → échange de token → JWT applicatif signé par le backend
-- **Inscription email** : 3 étapes sur `/register`, redirection après vérification email via `?verified=true`
-- **Inscription OAuth** : Pas de mot de passe, redirection vers `/complete-profile` (3 étapes identiques)
-- **Profil complet** : `is_profile_complete=true` requis pour accéder à l'app — calculé sur `university` + `faculty` + `study_year`
-- **Temps réel** : WebSocket natif sur le même écouteur HTTP, diffusion inter-instances via Redis
-- **Combobox** : Tous les champs de sélection utilisent des combobox avec suggestions (université, filière, niveau, entreprise, diplôme, compétences, intérêts…)
-- **API** : Toutes les fonctions dans `frontend/src/services/api.ts` — jamais de `fetch` direct
-- **Normalisation** : `normalizeUser/Sphere/Post/Resource()` pour harmoniser camelCase/snake_case
-- **Impact score** : +5 à l'upload d'une ressource + notation dynamique des posts (1–5 pts)
+| Emplacement | Description |
+|---|---|
+| [../README.md](../README.md) | README racine du monorepo (commandes de dev, build, lint, test) |
+| [../apps/backend/README.md](../apps/backend/README.md) | API Node/Express : migrations Prisma, Docker, jobs, tests de contrat |
+| [../apps/campus/README.md](../apps/campus/README.md) | Frontend principal CampusSphere |
+| [../apps/sphera/README.md](../apps/sphera/README.md) | Application d'apprentissage Sphera |
 
-## Conventions
+---
 
-Ces documents décrivent le backend **Node/Express** sous `backend/`. L'ancien backend Django est
-conservé sous `legacy/django-backend/` à titre de référence comportementale et n'est plus déployé ;
-quand un document y renvoie, c'est explicite.
+## Points Clés de l'Architecture Monorepo
+
+- **Applications (`apps/`)** :
+  - `apps/campus` (`@cs/campus`) : Plateforme collaborative et réseau social étudiant.
+  - `apps/sphera` (`@cs/sphera`) : Espace d'étude interactif avec mindmaps, audio, quiz live.
+  - `apps/backend` (`@cs/backend`) : API centrale commune Node 22 / Express 5 + Prisma.
+- **Packages Partagés (`packages/`)** :
+  - `packages/ui` (`@cs/ui`) : Design system unifié (Tailwind + Radix).
+  - `packages/types` (`@cs/types`) : Modèles et contrats TypeScript canoniques.
+  - `packages/api-client` (`@cs/api-client`) : Client HTTP typé avec auto-refresh token mutexé.
+  - `packages/sso` (`@cs/sso`) : Handshake SSO sécurisé (postMessage iframe + popup).
+- **Temps Réel & Jobs** : WebSocket natif sur l'API backend avec diffusion multi-instances via Redis.
+- **Base de Données** : PostgreSQL (Supabase) via Prisma ORM avec zéro rupture de schéma.

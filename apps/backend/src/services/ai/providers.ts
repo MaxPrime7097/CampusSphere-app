@@ -1,5 +1,5 @@
 /**
- * AI provider routing & fallback chain — based on AI_ROUTING_FINAL.md.
+ * AI provider routing & fallback chain — based on documentation/features/AI_ROUTING_FINAL.md.
  *
  * Task-based routing:
  * - Fiche / Quiz / Flashcards  → DeepSeek V3.2 (Bedrock) → Claude Haiku 4.5 (Bedrock) → Gemini → Groq
