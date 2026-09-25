@@ -25,6 +25,9 @@ export function setupI18n(options?: InitOptions) {
     .init({
       fallbackLng: DEFAULT_LANGUAGE,
       supportedLngs: ['fr', 'en'],
+      load: 'languageOnly',
+      cleanCode: true,
+      nonExplicitSupportedLngs: true,
       defaultNS: 'common',
       fallbackNS: 'common',
       ns: ['common'],
@@ -36,6 +39,9 @@ export function setupI18n(options?: InitOptions) {
       },
       interpolation: {
         escapeValue: false,
+      },
+      react: {
+        useSuspense: false,
       },
       ...options,
     });

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
-import { useTranslation, LanguageSwitcher } from '@cs/i18n'
+import { LanguageSwitcher } from '@cs/i18n'
+import { useTranslation } from 'react-i18next'
 import {
   X,
   User,

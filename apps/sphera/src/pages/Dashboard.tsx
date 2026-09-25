@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useTranslation } from '@cs/i18n'
+import { useTranslation } from 'react-i18next'
 import { FileText, BrainCircuit, SquareStack, Calendar, ArrowRight, LayoutDashboard, FilePenLine, Loader2, Share2, Trash2, GitFork, AudioLines } from 'lucide-react'
 import { useSpheraAuth } from '../contexts/SpheraAuthContext'
 import { getSessions, getAnnales, deleteSession, deleteAnnale, shareSession, shareAnnale } from '../services/spheraApi'

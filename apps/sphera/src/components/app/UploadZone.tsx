@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react'
-import { useTranslation } from '@cs/i18n'
+import { useTranslation } from 'react-i18next'
 import { UploadCloud, File, X } from 'lucide-react'
 
 interface UploadZoneProps {
