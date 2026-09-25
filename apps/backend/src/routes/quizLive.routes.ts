@@ -428,7 +428,7 @@ quizLiveRouter.patch("/:roomCode/questions/", requireAuth, async (req, res) => {
 });
 
 quizLiveRouter.get("/:roomCode/", async (req, res) => {
-  const roomCode = req.params.roomCode as string;
+  const roomCode = (req.params.roomCode as string).toUpperCase().trim();
   const session = await prisma.quizLiveSession.findUnique({
     where: { roomCode },
     include: {

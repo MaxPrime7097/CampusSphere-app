@@ -142,8 +142,9 @@ export function handleQuizLiveUpgrade(
     });
 }
 
-quizLiveWss.on("connection", (ws: LiveSocket, _request: IncomingMessage, roomCode: string) => {
+quizLiveWss.on("connection", (ws: LiveSocket, _request: IncomingMessage, rawRoomCode: string) => {
     let participantId: number | undefined;
+    const roomCode = (rawRoomCode || "").toUpperCase().trim();
 
     // Heartbeat ping/pong tracking to prevent cloud proxies dropping idle connections
     ws.isAlive = true;
@@ -155,12 +156,12 @@ quizLiveWss.on("connection", (ws: LiveSocket, _request: IncomingMessage, roomCod
         try {
             const parsed = JSON.parse(data.toString());
             const type = parsed.type;
-            const payload = parsed.payload;
+            const payload = parsed.payload || {};
 
             const state = getRoomState(roomCode);
 
             if (type === "join") {
-                const { displayName, userId } = payload;
+                const { displayName, userId, role } = payload;
                 const session = await prisma.quizLiveSession.findUnique({ where: { roomCode } });
                 
                 if (!session) {
@@ -178,10 +179,18 @@ quizLiveWss.on("connection", (ws: LiveSocket, _request: IncomingMessage, roomCod
                     state.currentQuestionIndex = session.currentQuestionIndex;
                 }
 
-                if (session.hostId === userId) {
+                const parsedUserId = typeof userId === "number" && !isNaN(userId)
+                    ? userId
+                    : (typeof userId === "string" && !isNaN(parseInt(userId, 10)) ? parseInt(userId, 10) : null);
+
+                // Disambiguate host vs participant:
+                // Only treat as host if role is explicitly 'host' or (no role specified AND userId matches hostId)
+                const isHost = role === "host" || (!role && parsedUserId !== null && session.hostId === parsedUserId);
+
+                if (isHost) {
                     state.hostSocket = ws;
                     state.sockets.set(ws, {
-                        userId: userId,
+                        userId: parsedUserId ?? undefined,
                         displayName: displayName || "Hôte",
                         score: 0
                     });
@@ -246,23 +255,31 @@ quizLiveWss.on("connection", (ws: LiveSocket, _request: IncomingMessage, roomCod
                 }
 
                 // If joining as participant
-                let participant = await prisma.quizLiveParticipant.findFirst({
-                    where: { sessionId: session.id, userId: userId || undefined, displayName: userId ? undefined : displayName }
-                });
+                const safeDisplayName = (displayName && typeof displayName === "string" && displayName.trim())
+                    ? displayName.trim().slice(0, 30)
+                    : (parsedUserId ? `Joueur #${parsedUserId}` : "Joueur");
+
+                let participant = parsedUserId
+                    ? await prisma.quizLiveParticipant.findFirst({
+                        where: { sessionId: session.id, userId: parsedUserId }
+                    })
+                    : await prisma.quizLiveParticipant.findFirst({
+                        where: { sessionId: session.id, userId: null, displayName: safeDisplayName }
+                    });
 
                 if (!participant) {
                     participant = await prisma.quizLiveParticipant.create({
                         data: {
                             sessionId: session.id,
-                            userId: userId || null,
-                            displayName,
+                            userId: parsedUserId,
+                            displayName: safeDisplayName,
                         }
                     });
                 }
                 
                 participantId = participant.id;
                 state.sockets.set(ws, {
-                    userId: userId,
+                    userId: parsedUserId ?? undefined,
                     displayName: participant.displayName,
                     score: participant.score,
                     id: participant.id

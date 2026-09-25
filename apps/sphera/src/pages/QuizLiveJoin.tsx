@@ -74,7 +74,7 @@ export default function QuizLiveJoin() {
 
   useEffect(() => {
     if (status === 'connected' && joinedRoomCode) {
-      joinRoom(displayName, user?.id);
+      joinRoom(displayName, user?.id, 'participant');
     }
   }, [status, joinedRoomCode, joinRoom, displayName, user?.id]);
 

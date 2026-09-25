@@ -136,8 +136,8 @@ export function useQuizSocket(roomCode: string | null) {
     }
   }, []);
 
-  const joinRoom = useCallback((displayName: string, userId?: number) => {
-    sendMessage('join', { displayName, userId });
+  const joinRoom = useCallback((displayName: string, userId?: number, role: 'host' | 'participant' = 'participant') => {
+    sendMessage('join', { displayName, userId, role });
   }, [sendMessage]);
 
   const startCountdown = useCallback(() => {

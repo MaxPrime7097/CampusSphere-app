@@ -105,7 +105,7 @@ export default function QuizLiveHost() {
 
   useEffect(() => {
     if (status === 'connected' && session) {
-      joinRoom(user?.first_name || user?.username || 'Hote', user?.id);
+      joinRoom(user?.first_name || user?.username || 'Hote', user?.id, 'host');
     }
   }, [status, session, joinRoom, user]);
 
