@@ -1,6 +1,15 @@
 # Guide des Composants Frontend
 
-## Composants UI de base (`src/components/ui/`)
+## Design System Partagé (`@cs/ui` — `packages/ui/`)
+
+Le monorepo centralise les composants UI de base dans le package `@cs/ui`, partagé entre `apps/campus` et `apps/sphera` :
+- **Composants atomiques** : `Button`, `Badge`, `Dialog`, `Tabs`, `SharedTabs`, `Progress`, `Skeleton`, `Alert`, `Select`, `SpheraIcon`.
+- **Utilitaires** : `cn` (`clsx` + `tailwind-merge`).
+- **Re-exports de compatibilité** : Dans `apps/campus/src/components/ui/`, ces composants sont ré-exportés directement depuis `@cs/ui` pour garantir une rétrocompatibilité à 100%.
+
+---
+
+## Composants UI Spécifiques CampusSphere (`apps/campus/src/components/ui/`)
 
 ### Combobox (`combobox.tsx`)
 Combobox avec recherche en temps réel. Supporte la saisie libre via `allowCustomValue`.

@@ -1,9 +1,9 @@
 # Guide de Déploiement Production
 
 Le backend est **Node/Express**. Il se déploie via [`render.yaml`](../render.yaml) +
-[`backend/Dockerfile`](../backend/Dockerfile) : ni Build Command ni Start Command à saisir dans
+[`apps/backend/Dockerfile`](../apps/backend/Dockerfile) : ni Build Command ni Start Command à saisir dans
 le dashboard, ils appartiennent au Dockerfile et à
-[`docker-entrypoint.sh`](../backend/docker-entrypoint.sh), qui applique les migrations avant de
+[`docker-entrypoint.sh`](../apps/backend/docker-entrypoint.sh), qui applique les migrations avant de
 démarrer.
 
 Le nom du service, son URL, son plan, son health check et son port sont **inchangés** depuis
@@ -103,33 +103,44 @@ retombe sur un état local et les événements de chat ne traversent plus les in
 
 ## 3. Déploiement Frontend (Vercel)
 
-### 3.1 Créer le projet
+Le monorepo héberge deux applications frontend déployées sur **deux projets Vercel distincts** :
 
-1. Nouveau projet → importer le repository
-2. **Root Directory** : `frontend`
-3. **Build Command** : `npm run build`
-4. **Output Directory** : `dist`
+### 3.1 Projet Vercel : CampusSphere (`campussphere.app`)
 
-### 3.2 Variables d'environnement Vercel
+1. **Root Directory** : `apps/campus`
+2. **Build Command** : `pnpm build`
+3. **Output Directory** : `dist`
+4. **Install Command** : `pnpm install`
 
+**Variables d'environnement requises :**
 ```env
 VITE_API_URL=https://api.campussphere.app
 VITE_APP_NAME=CampusSphere
 VITE_APP_ENV=production
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
+VITE_SPHERA_STANDALONE_URL=https://sphera.campussphere.app
+```
+
+### 3.2 Projet Vercel : Sphera (`sphera.campussphere.app`)
+
+1. **Root Directory** : `apps/sphera`
+2. **Build Command** : `pnpm build`
+3. **Output Directory** : `dist`
+4. **Install Command** : `pnpm install`
+
+**Variables d'environnement requises :**
+```env
+VITE_API_URL=https://api.campussphere.app
 ```
 
 `VITE_API_URL` doit être défini sur **les trois environnements** (Production, Preview,
 Development), puis le projet **redéployé** : Vite inline `import.meta.env` à la compilation,
 un déploiement existant ne prendra pas la variable en compte.
 
-Sans elle, le frontend devine l'URL du backend d'après le hostname et son repli local vise
-`127.0.0.1:8000`, le port de Django. Voir [FRONTEND_CHANGES.md](./FRONTEND_CHANGES.md) `FE-10`.
+### 3.3 Configuration de routing SPA
 
-### 3.3 Configuration vercel.json
-
-Le fichier `frontend/vercel.json` est déjà configuré pour le routing SPA.
+Les configurations de routing SPA et de redirection sont gérées directement dans chaque application (`apps/campus/vercel.json` et `apps/sphera/vercel.json`).
 
 ### 3.4 CORS
 
