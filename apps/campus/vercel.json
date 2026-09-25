@@ -1,4 +1,5 @@
 {
+  "installCommand": "pnpm install --filter @cs/campus...",
   "outputDirectory": "dist",
   "framework": "vite",
   "headers": [

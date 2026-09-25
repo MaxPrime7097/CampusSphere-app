@@ -9,17 +9,19 @@ export function getApiBase(): string {
     const metaEnv = (import.meta as any).env;
     if (metaEnv?.VITE_API_URL) return metaEnv.VITE_API_URL;
     const { hostname } = window.location;
-    if (hostname === "www.campussphere.app" || hostname === "campussphere.app" || hostname.includes("campussphere.app")) {
+    if (
+      hostname === "www.campussphere.app" ||
+      hostname === "campussphere.app" ||
+      hostname.includes("campussphere.app") ||
+      hostname.includes("vercel.app")
+    ) {
       return "https://api.campussphere.app";
-    }
-    if (hostname.includes("sphera.campussphere.app")) {
-      return "https://sphera.campussphere.app";
     }
     if (hostname.includes("onrender.com") && !hostname.includes("-backend")) {
       return "https://campus-sphere-backend-dyfu.onrender.com";
     }
   }
-  return "http://127.0.0.1:8000";
+  return "http://127.0.0.1:3000";
 }
 
 export const API_BASE = getApiBase();
