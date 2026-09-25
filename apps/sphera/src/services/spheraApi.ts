@@ -3,6 +3,7 @@
  * Toutes les requêtes vers api.campussphere.app
  * Supporte mode invité (sans token) et mode connecté (avec JWT)
  */
+export * from "@cs/types";
 
 const getApiBase = () => {
   if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;

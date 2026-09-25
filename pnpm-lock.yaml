@@ -115,6 +115,12 @@ importers:
 
   apps/campus:
     dependencies:
+      '@cs/api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
+      '@cs/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@cs/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -374,6 +380,12 @@ importers:
 
   apps/sphera:
     dependencies:
+      '@cs/api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
+      '@cs/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@cs/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -456,6 +468,22 @@ importers:
       vite:
         specifier: ^6.0.7
         version: 6.4.3(@types/node@20.19.43)(jiti@1.21.7)(terser@5.51.2)(tsx@4.23.15)
+
+  packages/api-client:
+    dependencies:
+      '@cs/types':
+        specifier: workspace:*
+        version: link:../types
+    devDependencies:
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+
+  packages/types:
+    devDependencies:
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
 
   packages/ui:
     dependencies:
