@@ -1,8 +1,7 @@
 import { WebSocket, WebSocketServer } from "ws";
 import { IncomingMessage } from "http";
 import { prisma } from "../lib/prisma.js";
-import { publishFrame } from "./hub.js";
-import { quizRoomChannel } from "./hub.js";
+import { publishFrame, quizRoomChannel, subscribe } from "./hub.js";
 
 export const quizLiveWss = new WebSocketServer({ noServer: true });
 
@@ -56,19 +55,25 @@ function getRoomState(roomCode: string): RoomState {
     return roomStates.get(roomCode)!;
 }
 
-function broadcastToRoom(roomCode: string, message: any) {
-    const state = getRoomState(roomCode);
-    const frame = JSON.stringify(message);
-    
-    // Broadcast locally to all connected sockets in this room
-    for (const client of state.sockets.keys()) {
-        if (client.readyState === WebSocket.OPEN) {
-            client.send(frame);
-        }
+function isHostAuthorized(ws: WebSocket, state: RoomState): boolean {
+    if (ws === state.hostSocket) return true;
+    const socketInfo = state.sockets.get(ws);
+    if (!socketInfo) return false;
+    if (socketInfo.displayName === "Hôte") {
+        state.hostSocket = ws;
+        return true;
     }
-    
-    // Broadcast globally via Redis cross-instance pub/sub
-    publishFrame(quizRoomChannel(roomCode), frame);
+    if (typeof state.hostId === "number" && socketInfo.userId === state.hostId) {
+        state.hostSocket = ws;
+        return true;
+    }
+    return false;
+}
+
+function broadcastToRoom(roomCode: string, message: any) {
+    // publishFrame delivers locally to all room sockets on this instance
+    // and broadcasts across instances via Redis pub/sub.
+    publishFrame(quizRoomChannel(roomCode), message);
 }
 
 function sendToClient(ws: WebSocket, message: any) {
@@ -145,6 +150,7 @@ export function handleQuizLiveUpgrade(
 quizLiveWss.on("connection", (ws: LiveSocket, _request: IncomingMessage, rawRoomCode: string) => {
     let participantId: number | undefined;
     const roomCode = (rawRoomCode || "").toUpperCase().trim();
+    const unsubscribeRedis = subscribe(quizRoomChannel(roomCode), ws);
 
     // Heartbeat ping/pong tracking to prevent cloud proxies dropping idle connections
     ws.isAlive = true;
@@ -198,7 +204,8 @@ quizLiveWss.on("connection", (ws: LiveSocket, _request: IncomingMessage, rawRoom
                     
                     const allParticipants = await prisma.quizLiveParticipant.findMany({
                         where: { sessionId: session.id },
-                        select: { id: true, displayName: true, score: true, userId: true }
+                        select: { id: true, displayName: true, score: true, userId: true },
+                        orderBy: { id: "asc" }
                     });
                     sendToClient(ws, {
                         type: "participants_update",
@@ -290,7 +297,8 @@ quizLiveWss.on("connection", (ws: LiveSocket, _request: IncomingMessage, rawRoom
                 // Broadcast updated participants list
                 const allParticipants = await prisma.quizLiveParticipant.findMany({
                     where: { sessionId: session.id },
-                    select: { id: true, displayName: true, score: true, userId: true }
+                    select: { id: true, displayName: true, score: true, userId: true },
+                    orderBy: { id: "asc" }
                 });
 
                 broadcastToRoom(roomCode, {
@@ -355,7 +363,7 @@ quizLiveWss.on("connection", (ws: LiveSocket, _request: IncomingMessage, rawRoom
                     });
                 }
             } else if (type === "start_countdown") {
-                 if (ws !== state.hostSocket) {
+                 if (!isHostAuthorized(ws, state)) {
                      sendToClient(ws, { type: "error", payload: { message: "Only the host can start the countdown" } });
                      return;
                  }
@@ -364,7 +372,7 @@ quizLiveWss.on("connection", (ws: LiveSocket, _request: IncomingMessage, rawRoom
                      payload: { duration: 3 }
                  });
             } else if (type === "start_quiz") {
-                 if (ws !== state.hostSocket) {
+                 if (!isHostAuthorized(ws, state)) {
                      sendToClient(ws, { type: "error", payload: { message: "Only the host can start the quiz" } });
                      return;
                  }
@@ -434,7 +442,7 @@ quizLiveWss.on("connection", (ws: LiveSocket, _request: IncomingMessage, rawRoom
                 }
 
             } else if (type === "stop_quiz") {
-                 if (ws !== state.hostSocket) {
+                 if (!isHostAuthorized(ws, state)) {
                      sendToClient(ws, { type: "error", payload: { message: "Only the host can stop the quiz" } });
                      return;
                  }
@@ -463,7 +471,8 @@ quizLiveWss.on("connection", (ws: LiveSocket, _request: IncomingMessage, rawRoom
 
                  const allParticipants = await prisma.quizLiveParticipant.findMany({
                      where: { sessionId: session.id },
-                     select: { id: true, displayName: true, score: true, userId: true }
+                     select: { id: true, displayName: true, score: true, userId: true },
+                     orderBy: { id: "asc" }
                  });
 
                  broadcastToRoom(roomCode, {
@@ -472,7 +481,7 @@ quizLiveWss.on("connection", (ws: LiveSocket, _request: IncomingMessage, rawRoom
                  });
 
             } else if (type === "next_question") {
-                 if (ws !== state.hostSocket) {
+                 if (!isHostAuthorized(ws, state)) {
                      sendToClient(ws, { type: "error", payload: { message: "Only the host can go to the next question" } });
                      return;
                  }
@@ -522,6 +531,7 @@ quizLiveWss.on("connection", (ws: LiveSocket, _request: IncomingMessage, rawRoom
     });
 
     ws.on("close", () => {
+        unsubscribeRedis();
         const state = getRoomState(roomCode);
         state.sockets.delete(ws);
         state.answeredQuestions.delete(ws);
@@ -532,5 +542,10 @@ quizLiveWss.on("connection", (ws: LiveSocket, _request: IncomingMessage, rawRoom
             clearRoomTimers(state);
             roomStates.delete(roomCode);
         }
+    });
+
+    ws.on("error", () => {
+        unsubscribeRedis();
+        ws.terminate();
     });
 });

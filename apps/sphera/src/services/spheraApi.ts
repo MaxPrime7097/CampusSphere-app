@@ -534,11 +534,34 @@ export async function getQuizSessionHostDetails(roomCode: string) {
       title: string;
       status: string;
       questions: any[];
+      participants?: Array<{
+        id: number;
+        displayName: string;
+        score: number;
+        userId?: number;
+      }>;
       participantCount: number;
     };
   }>(`api/quiz-live/${roomCode}/host/`, {
     method: 'GET',
     requireAuth: true,
+  });
+}
+
+export async function getQuizParticipants(roomCode: string) {
+  return apiFetch<{
+    success: boolean;
+    data: {
+      participants: Array<{
+        id: number;
+        displayName: string;
+        score: number;
+        userId?: number;
+      }>;
+      participantCount: number;
+    };
+  }>(`api/quiz-live/${roomCode}/participants/`, {
+    method: 'GET',
   });
 }
 

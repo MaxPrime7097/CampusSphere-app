@@ -55,6 +55,9 @@ export default function QuizLiveHost() {
               title: res.data.title,
               questions: res.data.questions || [],
             });
+            if (Array.isArray(res.data.participants)) {
+              setParticipants(res.data.participants);
+            }
           }
         } catch (err) {
           try {
@@ -82,6 +85,7 @@ export default function QuizLiveHost() {
 
   const {
     participants,
+    setParticipants,
     currentQuestion,
     questionResults,
     leaderboard,
@@ -159,6 +163,24 @@ export default function QuizLiveHost() {
       phase = 'finished';
     }
   }
+
+  // Safety lobby polling every 2.5s while waiting for players
+  useEffect(() => {
+    if (phase !== 'waiting' || !session?.roomCode) return;
+    
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await getQuizSessionHostDetails(session.roomCode);
+        if (res && res.data && Array.isArray(res.data.participants)) {
+          setParticipants(res.data.participants);
+        }
+      } catch {
+        // Silent catch: WebSocket is real-time primary
+      }
+    }, 2500);
+
+    return () => clearInterval(pollInterval);
+  }, [phase, session?.roomCode, setParticipants]);
 
   useEffect(() => {
     if (phase === 'results' && autoAdvanceTimer !== null) {
