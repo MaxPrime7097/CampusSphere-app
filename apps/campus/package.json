@@ -15,6 +15,7 @@
     "test:mobile-nav": "node scripts/mobile-navigation-check.mjs"
   },
   "dependencies": {
+    "@cs/ui": "workspace:*",
     "@hookform/resolvers": "^3.10.0",
     "@lottiefiles/dotlottie-react": "^0.17.7",
     "@radix-ui/react-accordion": "^1.2.11",
