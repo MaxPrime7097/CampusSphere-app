@@ -6,6 +6,7 @@ import { SpheraAuthProvider } from './contexts/SpheraAuthContext'
 import { initTheme } from './utils/theme'
 import App from './App'
 import './index.css'
+import './i18n'
 
 // Initialize user theme
 initTheme()

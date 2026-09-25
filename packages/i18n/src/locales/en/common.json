@@ -1,0 +1,65 @@
+{
+  "actions": {
+    "apply": "Apply",
+    "back": "Back",
+    "cancel": "Cancel",
+    "close": "Close",
+    "confirm": "Confirm",
+    "continue": "Continue",
+    "copied": "Copied!",
+    "copy": "Copy",
+    "delete": "Delete",
+    "download": "Download",
+    "edit": "Edit",
+    "export": "Export",
+    "filter": "Filter",
+    "finish": "Finish",
+    "loading": "Loading...",
+    "next": "Next",
+    "previous": "Previous",
+    "reset": "Reset",
+    "retry": "Retry",
+    "save": "Save",
+    "search": "Search",
+    "seeLess": "See less",
+    "seeMore": "See more",
+    "share": "Share",
+    "start": "Start"
+  },
+  "errors": {
+    "forbidden": "You do not have permission to perform this action.",
+    "generic": "An unexpected error occurred.",
+    "network": "Network connection problem. Please check your connection.",
+    "notFound": "Page or resource not found.",
+    "unauthorized": "You must be logged in to access this page."
+  },
+  "language": {
+    "changed": "Language updated",
+    "current": "Current language: {{lang}}",
+    "english": "English",
+    "french": "French",
+    "select": "Select language"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "help": "Help & FAQ",
+    "home": "Home",
+    "login": "Log in",
+    "logout": "Log out",
+    "privacy": "Privacy Policy",
+    "profile": "Profile",
+    "register": "Sign up",
+    "settings": "Settings",
+    "terms": "Terms of Service"
+  },
+  "status": {
+    "empty": "No results",
+    "error": "Error",
+    "info": "Information",
+    "loading": "Loading",
+    "offline": "Offline",
+    "online": "Online",
+    "success": "Success",
+    "warning": "Warning"
+  }
+}

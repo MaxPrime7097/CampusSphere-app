@@ -1,0 +1,93 @@
+{
+  "seo": {
+    "title": "Sphera Live – Real-Time Multiplayer Quiz · CampusSphere",
+    "description": "Turn any course into a live multiplayer quiz. Join with a simple PIN code on your smartphone, compete with classmates, and top the leaderboard."
+  },
+  "hero": {
+    "badge": "The Sphera Multiplayer Experience",
+    "titlePart1": "The multiplayer quiz",
+    "titlePart2": "live and without friction.",
+    "subtitle": "Whether studying for a medical exam in an auditorium or hosting a movie blind test on a Saturday night: start your game in 30 seconds, share a PIN, and challenge friends in real time.",
+    "hostCta": "Host a session",
+    "joinCta": "Join with a code",
+    "pills": {
+      "sso": "Instant login via CampusSphere SSO",
+      "audio": "Synchronized sound effects & timer",
+      "devices": "Works seamlessly on any smartphone"
+    }
+  },
+  "mockup": {
+    "waitingRoom": "Active waiting room",
+    "quizTitle": "General Quiz: Law, Science & Pop Culture",
+    "joinCodeLabel": "Join code",
+    "questionLabel": "Question 7 of 15",
+    "timeRemaining": "05s remaining",
+    "sampleQuestion": "In which year was the first GPT language model released by OpenAI?",
+    "topScorer": "Top Scorer",
+    "secondPlace": "2nd Place",
+    "thirdPlace": "3rd Place"
+  },
+  "ways": {
+    "title": "3 simple ways to create a game",
+    "subtitle": "Generate your quiz in seconds according to your inspiration.",
+    "way1": {
+      "title": "Generate with AI",
+      "description": "Drag & drop your lecture notes (PDF, Word, TXT) or paste a CampusSphere resource URL. AI extracts essentials and constructs the quiz instantly.",
+      "tag": "Supports PDF up to 50 MB & direct links"
+    },
+    "way2": {
+      "title": "Manual Creation",
+      "description": "Maintain total control: write each question, 4 choices, choose the correct answer, and calibrate the time limit (10 to 60s) to fit difficulty.",
+      "tag": "Ideal for custom quizzes & blind tests"
+    },
+    "way3": {
+      "title": "JSON Import",
+      "description": "Import a structured JSON file. Sphera populates the visual editor immediately to let you preview and fine-tune every question before takeoff.",
+      "tag": "Pre-launch preview and edit included"
+    }
+  },
+  "universes": {
+    "title": "Two universes, the same adrenaline",
+    "subtitle": "Sphera Live adapts equally well to university finals and weekend game nights.",
+    "study": {
+      "badge": "Academic Study",
+      "title": "Active Recall gone multiplayer",
+      "description": "Cognitive neuroscience proves that timed recall in a social context triples long-term retention compared to passive rereading.",
+      "item1": "Perfect for seminars, lecture halls, and library study groups",
+      "item2": "Instant identification of concepts misunderstood across the cohort",
+      "item3": "Realistic training under exam countdown pressure",
+      "cta": "Start a revision quiz"
+    },
+    "fun": {
+      "badge": "Culture, Cinema & Entertainment",
+      "title": "Board games reinvented on screen",
+      "description": "Have 10 minutes to spare or a party with friends? Launch a challenge on football, anime, world trivia, or pop culture.",
+      "item1": "Unusual trivia, cinema, music, sports, and geography",
+      "item2": "Everyone participates directly from their phone",
+      "item3": "Win the game and claim first place on the podium",
+      "cta": "Create a fun quiz"
+    }
+  },
+  "features": {
+    "title": "Built for a flawless experience",
+    "subtitle": "Every single detail is polished to maximize game thrill and hosting ease.",
+    "f1Title": "Join in 1 scan",
+    "f1Desc": "A simple 6-letter PIN and your connected account to jump straight into the match.",
+    "f2Title": "Sound effects & mute",
+    "f2Desc": "Immersive audio for ticking timer suspense, with a one-click mute button for classrooms.",
+    "f3Title": "Podium & confetti",
+    "f3Desc": "Celebrate the top 3 contenders at match end with an animated shower of confetti.",
+    "f4Title": "Millisecond scoring",
+    "f4Desc": "A precise algorithm that rewards both speed and accurate responses.",
+    "f5Title": "Instant replay",
+    "f5Desc": "Rerun the same session with a new group in one click without re-entering questions.",
+    "f6Title": "Connected generative AI",
+    "f6Desc": "Transform any course syllabus into a competitive quiz in seconds with Sphera AI engine."
+  },
+  "finalCta": {
+    "title": "Ready for the buzzer thrill?",
+    "subtitle": "Create your first Sphera Live session in 30 seconds or join your peers with their game code.",
+    "cta": "Launch my first quiz",
+    "blogCta": "Read the blog post"
+  }
+}

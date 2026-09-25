@@ -1,7 +1,10 @@
 import React from 'react'
+import { useTranslation } from '@cs/i18n'
 import { ArrowRight, GraduationCap } from 'lucide-react'
 
 export function CampusSphereSection() {
+  const { t } = useTranslation('landing')
+
   return (
     <section className="py-24 relative overflow-hidden">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl h-[400px] bg-[radial-gradient(circle,rgba(255,152,0,0.05)_0%,transparent_70%)] blur-3xl -z-10 pointer-events-none" />
@@ -17,15 +20,15 @@ export function CampusSphereSection() {
             {/* Content Side */}
             <div className="p-10 md:p-12 flex flex-col justify-center">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cs-orange border border-cs-orange text-xs font-bold text-white mb-6 self-start">
-                <GraduationCap className="w-4 h-4" /> Pour les étudiants
+                <GraduationCap className="w-4 h-4" /> {t('campusSphere.badge')}
               </div>
 
               <h2 className="font-display text-3xl md:text-4xl font-bold text-white mb-4">
-                Découvre l'écosystème complet
+                {t('campusSphere.title')}
               </h2>
 
               <p className="text-sphera-text-muted mb-8 leading-relaxed">
-                Sphera n'est que la pointe de l'iceberg. <strong className="text-white">CampusSphere</strong> est le premier réseau social académique pour les étudiants. Retrouve tes camarades de l'IUC et d'ailleurs, accède à tes cours, partage tes notes et booste ta vie étudiante sur une seule plateforme.
+                {t('campusSphere.description')}
               </p>
 
               <a
@@ -34,7 +37,7 @@ export function CampusSphereSection() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 bg-white text-[#0A0A0A] font-semibold px-6 py-3 rounded-lg hover:bg-cs-orange hover:text-white transition-colors duration-300 self-start group"
               >
-                Explorer CampusSphere
+                {t('campusSphere.cta')}
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </a>
             </div>

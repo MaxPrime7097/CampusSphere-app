@@ -1,12 +1,14 @@
 import React, { useEffect } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
+import { useTranslation } from 'react-i18next';
 import { SpheraHeader } from '../components/layout/SpheraHeader';
 import { SpheraFooter } from '../components/layout/SpheraFooter';
 import { Calendar, Clock, ArrowLeft, ArrowRight, Sparkles, BookOpen } from 'lucide-react';
 import { blogPosts } from '../data/blogs';
 
 export default function BlogDetail() {
+  const { t } = useTranslation('blog');
   const params = useParams<{ slug?: string; id?: string }>();
   const identifier = params.slug || params.id;
 
@@ -89,7 +91,7 @@ export default function BlogDetail() {
             to="/blogs" 
             className="inline-flex items-center gap-2 text-sphera-text-muted hover:text-white transition-colors mb-8 text-sm font-medium"
           >
-            <ArrowLeft className="w-4 h-4" /> Retour au blog
+            <ArrowLeft className="w-4 h-4" /> {t('detail.back')}
           </Link>
 
           <div className="mb-8">
@@ -138,20 +140,20 @@ export default function BlogDetail() {
             <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
               <div className="space-y-2 max-w-xl">
                 <div className="inline-flex items-center gap-2 text-sphera-green text-xs font-bold uppercase tracking-wider">
-                  <Sparkles className="w-3.5 h-3.5" /> Passez à l'action
+                  <Sparkles className="w-3.5 h-3.5" /> {t('detail.cta.badge')}
                 </div>
                 <h3 className="text-xl md:text-2xl font-bold text-white font-display">
-                  Automatisez vos révisions avec Sphera
+                  {t('detail.cta.title')}
                 </h3>
                 <p className="text-sphera-text-muted text-sm">
-                  Importez vos polycopiés et PDF de cours. Obtenez des questions de quiz, flashcards et une fiche de synthèse en 30 secondes.
+                  {t('detail.cta.description')}
                 </p>
               </div>
               <Link
                 to="/register"
                 className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-sphera-green text-black font-bold text-sm hover:opacity-90 transition-all shrink-0 shadow-lg shadow-sphera-green/20"
               >
-                Commencer gratuitement <ArrowRight className="w-4 h-4" />
+                {t('detail.cta.button')} <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           </div>
@@ -160,7 +162,7 @@ export default function BlogDetail() {
           {relatedPosts.length > 0 && (
             <div className="border-t border-sphera-border pt-12 mt-12">
               <h3 className="text-xl font-display font-bold text-white mb-6 flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-sphera-green" /> Articles recommandés
+                <BookOpen className="w-5 h-5 text-sphera-green" /> {t('detail.related.title')}
               </h3>
               <div className="grid md:grid-cols-2 gap-6">
                 {relatedPosts.map(related => (

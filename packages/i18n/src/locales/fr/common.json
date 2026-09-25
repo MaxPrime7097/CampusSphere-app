@@ -1,0 +1,65 @@
+{
+  "actions": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "close": "Fermer",
+    "back": "Retour",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "continue": "Continuer",
+    "retry": "Réessayer",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "export": "Exporter",
+    "download": "Télécharger",
+    "share": "Partager",
+    "copy": "Copier",
+    "copied": "Copié !",
+    "apply": "Appliquer",
+    "reset": "Réinitialiser",
+    "loading": "Chargement...",
+    "seeMore": "Voir plus",
+    "seeLess": "Voir moins",
+    "start": "Commencer",
+    "finish": "Terminer"
+  },
+  "status": {
+    "success": "Succès",
+    "error": "Erreur",
+    "warning": "Attention",
+    "info": "Information",
+    "loading": "Chargement",
+    "empty": "Aucun résultat",
+    "offline": "Hors ligne",
+    "online": "En ligne"
+  },
+  "navigation": {
+    "home": "Accueil",
+    "dashboard": "Tableau de bord",
+    "settings": "Paramètres",
+    "profile": "Profil",
+    "help": "Aide & FAQ",
+    "terms": "Conditions d'utilisation",
+    "privacy": "Confidentialité",
+    "logout": "Se déconnecter",
+    "login": "Se connecter",
+    "register": "S'inscrire"
+  },
+  "language": {
+    "select": "Choisir la langue",
+    "current": "Langue actuelle : {{lang}}",
+    "french": "Français",
+    "english": "Anglais",
+    "changed": "Langue mise à jour"
+  },
+  "errors": {
+    "generic": "Une erreur inattendue est survenue.",
+    "network": "Problème de connexion internet. Vérifiez votre réseau.",
+    "notFound": "Page ou ressource introuvable.",
+    "unauthorized": "Vous devez être connecté pour accéder à cette page.",
+    "forbidden": "Vous n'avez pas les autorisations nécessaires."
+  }
+}

@@ -15,7 +15,9 @@
     "build:sphera": "pnpm --filter @cs/sphera build",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
-    "test": "turbo test"
+    "test": "turbo test",
+    "i18n:check": "pnpm --filter @cs/i18n check",
+    "i18n:translate": "pnpm --filter @cs/i18n translate"
   },
   "devDependencies": {
     "turbo": "^2.4.4"

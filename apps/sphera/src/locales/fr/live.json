@@ -1,0 +1,30 @@
+{
+  "home": {
+    "title": "Sphera",
+    "titleHighlight": "Live",
+    "subtitle": "L'expérience quiz multijoueur interactive en temps réel.",
+    "hostTitle": "Héberger un Quiz",
+    "hostDesc": "Créez une session sur grand écran et invitez vos amis à rejoindre la partie avec un code.",
+    "hostStart": "Commencer",
+    "joinTitle": "Rejoindre une partie",
+    "joinDesc": "Vous avez un code ? Rejoignez instantanément une salle d'attente depuis votre téléphone.",
+    "joinPlay": "Jouer",
+    "recentSessions": "Dernières parties",
+    "noSessions": "Vous n'avez pas encore hébergé de session Sphera Live.",
+    "deleteSession": "Supprimer la session"
+  },
+  "join": {
+    "title": "Rejoindre une partie",
+    "enterPin": "Entrez le code PIN",
+    "enterPseudo": "Votre pseudo",
+    "joinBtn": "Rejoindre",
+    "waitingRoom": "En attente de l'hôte..."
+  },
+  "host": {
+    "roomCode": "Code PIN",
+    "shareLink": "Copier le lien d'invitation",
+    "participants": "Participants connectés",
+    "startQuiz": "Lancer la partie",
+    "waitingPlayers": "En attente des joueurs..."
+  }
+}

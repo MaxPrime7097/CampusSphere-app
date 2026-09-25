@@ -1,0 +1,118 @@
+{
+  "header": {
+    "liveBannerNew": "New",
+    "liveBannerText": "Sphera Live: Experience real-time multiplayer quiz battles!",
+    "liveBannerAction": "Explore",
+    "beta": "Beta",
+    "dashboard": "Dashboard",
+    "spheraLive": "Sphera Live",
+    "pricing": "Pricing",
+    "blog": "Blog",
+    "campusSphere": "CampusSphere",
+    "login": "Log in",
+    "tryFree": "Try for free",
+    "logout": "Log out",
+    "openMenu": "Open menu"
+  },
+  "hero": {
+    "poweredBy": "Powered by",
+    "titleLine1": "Turn any course into",
+    "titleHighlight": "smart study sessions",
+    "subtitle": "Upload your course PDF. Sphera instantly generates study sheets, quizzes, flashcards and answers all your questions about the document.",
+    "ctaTryFree": "Try for free",
+    "ctaLogin": "Log in"
+  },
+  "howItWorks": {
+    "title": "How it works",
+    "subtitle": "Three simple steps to transform your documents into powerful study tools.",
+    "step1Title": "Upload",
+    "step1Desc": "Upload your course PDF",
+    "step2Title": "Choose",
+    "step2Desc": "Study Sheet, Quiz, Flashcards or Past Exam",
+    "step3Title": "Study",
+    "step3Desc": "Sphera generates in 30 seconds"
+  },
+  "features": {
+    "title": "Everything you need",
+    "subtitle": "Generate the exact learning format tailored to your needs, solo or as a team.",
+    "liveTitle": "Sphera Live (Multiplayer)",
+    "liveDesc": "Launch live game sessions with your classmates. Join with a PIN code, beat the timer, and claim the podium in real time.",
+    "liveBadge": "New",
+    "sheetsTitle": "Structured study sheets",
+    "sheetsDesc": "Key concepts, definitions, theorems, and formulas extracted automatically from your PDFs in seconds.",
+    "quizTitle": "Solo interactive quizzes",
+    "quizDesc": "Targeted questions with timer, instant scoring, and detailed explanations to bridge every knowledge gap.",
+    "flashcardsTitle": "Smart flashcards",
+    "flashcardsDesc": "Front/back cards optimized for Active Recall and spaced repetition, ready to study.",
+    "annalesTitle": "Past exam corrections",
+    "annalesDesc": "Comprehensive or quick mode depending on your schedule to train on real exam papers from previous years."
+  },
+  "campusSphere": {
+    "badge": "For students",
+    "title": "Discover the full ecosystem",
+    "description": "Sphera is just the tip of the iceberg. CampusSphere is the leading academic social network for students. Connect with your peers from IUC and beyond, access courses, share notes, and boost your campus life on a single platform.",
+    "cta": "Explore CampusSphere"
+  },
+  "socialProof": {
+    "title": "Join the Spherians",
+    "subtitle": "Thousands of students from IUC Douala and beyond are already using it.",
+    "statSessions": "Generated sessions",
+    "statRating": "Average rating",
+    "statFields": "Fields covered",
+    "statSpeed": "Avg generation time",
+    "testimonials": {
+      "marc": {
+        "text": "I used to spend hours summarizing my law lectures. With Sphera, it's done while I go grab a coffee.",
+        "author": "Marc B.",
+        "role": "3rd Year Law"
+      },
+      "ines": {
+        "text": "We launched a Sphera Live in the amphitheater before exams, everyone was buzzing on their phones. The vibe and retention were incredible!",
+        "author": "Inès M.",
+        "role": "2nd Year Computer Science"
+      },
+      "sarah": {
+        "text": "The generated quizzes literally saved me for my biology finals. It is the best learning tool out there.",
+        "author": "Sarah N.",
+        "role": "Master's Year 1"
+      },
+      "kevin": {
+        "text": "Solving last year's past papers with one click is an absolute cheat code for exam prep.",
+        "author": "Kevin T.",
+        "role": "Engineering Prep"
+      }
+    }
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "subtitle": "Everything you need to know about Sphera and Sphera Live.",
+    "q1": "What is Sphera?",
+    "a1": "Sphera is an intelligent AI-powered study assistant. It analyzes your courses and lecture materials to automatically generate structured revision sheets, interactive quizzes, and flashcards—all designed to maximize retention.",
+    "q2": "What is Sphera Live and how does it work?",
+    "a2": "Sphera Live is our real-time multiplayer mode. A host creates or generates a quiz (from a PDF, CampusSphere link, or manually), then launches a lobby. Participants enter the 6-letter PIN on their mobile or computer to compete live with synchronized timers, live leaderboards, and podium celebrations.",
+    "q3": "Do I need an account to use Sphera and Sphera Live?",
+    "a3": "Yes, an account is required to access Sphera. If you are already registered on CampusSphere, your account is seamlessly synchronized with 1-click SSO (no re-registration needed). Both hosts and players log in with their account to create sessions, join live games, and save their history.",
+    "q4": "How does revision sheet and quiz generation work?",
+    "a4": "Simply upload your document (PDF, DOCX, TXT) or paste a CampusSphere link. Sphera analyzes it, extracts key concepts, formats definitions, and provides you with a crystal-clear study sheet, a targeted quiz, and flashcards ready to memorize.",
+    "q5": "Can I share my study sessions?",
+    "a5": "Yes, absolutely! Sphera allows you to create revision workspaces with all necessary tools. You can also generate a public link to share a specific study session with your classmates.",
+    "q6": "How much does Sphera cost?",
+    "a6": "Sphera offers full free access to get started and test all tools, including Sphera Live. Advanced premium plans will be available for students seeking unlimited quotas and in-depth analytics.",
+    "q7": "Are my documents secure?",
+    "a7": "Your data privacy and security are our top priorities. Your documents are encrypted and only used to generate your personal study materials. They are never sold or shared with third parties.",
+    "q8": "Does Sphera work for all majors?",
+    "a8": "Yes! Sphera's AI adapts to all fields of study: law, medicine, engineering, economics, humanities, or prep schools. It understands specialized technical vocabulary for each subject."
+  },
+  "footer": {
+    "slogan": "Upload. Revise. Succeed.",
+    "spheraLive": "Sphera Live",
+    "faq": "FAQ",
+    "pricing": "Pricing",
+    "blog": "Blog",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "termsOfSale": "Terms of Sale",
+    "legalNotice": "Legal Notice",
+    "poweredBy": "Powered by"
+  }
+}

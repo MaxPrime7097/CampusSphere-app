@@ -1,0 +1,28 @@
+{
+  "seo": {
+    "listTitle": "The Sphera Blog — Study Methods, AI & Student Success",
+    "listDescription": "Explore our comprehensive guides to revise effectively: Active Recall, spaced repetition, exam strategies, and smart AI usage.",
+    "ogTitle": "The Sphera Blog — Study Methods & Student Success",
+    "ogDescription": "Guides, methodologies, and cognitive tips to ace exams and revise stress-free."
+  },
+  "list": {
+    "title": "The Sphera Blog",
+    "subtitle": "Comprehensive guides and cognitive science-backed methods to ace your exams and revise more effectively.",
+    "featured": "Featured",
+    "allCategory": "All",
+    "readArticle": "Read article",
+    "emptyCategory": "No articles in this category at the moment."
+  },
+  "detail": {
+    "back": "Back to blog",
+    "cta": {
+      "badge": "Take action",
+      "title": "Automate your study routine with Sphera",
+      "description": "Upload lecture notes and course PDFs. Get quiz questions, flashcards, and a revision sheet in 30 seconds.",
+      "button": "Get started for free"
+    },
+    "related": {
+      "title": "Recommended articles"
+    }
+  }
+}

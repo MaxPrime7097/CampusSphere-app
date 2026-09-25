@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useTranslation } from '@cs/i18n'
 import { FileText, BrainCircuit, SquareStack, Calendar, ArrowRight, LayoutDashboard, FilePenLine, Loader2, Share2, Trash2, GitFork, AudioLines } from 'lucide-react'
 import { useSpheraAuth } from '../contexts/SpheraAuthContext'
 import { getSessions, getAnnales, deleteSession, deleteAnnale, shareSession, shareAnnale } from '../services/spheraApi'
@@ -12,6 +13,7 @@ import { ShareModal } from '../components/app/ShareModal'
 
 // Force Vite HMR reload
 export default function Dashboard() {
+  const { t } = useTranslation('study')
   const { user } = useSpheraAuth()
   const navigate = useNavigate()
   
@@ -113,10 +115,10 @@ export default function Dashboard() {
         {/* Welcome Area */}
         <div className="text-center mb-10 mt-10 px-4 sm:px-0">
           <h1 className="font-display text-3xl sm:text-4xl font-bold text-white mb-2">
-            Salut {user?.first_name || user?.username || 'Spherian'}, prêt à réviser ?
+            {t('dashboard.welcome', { name: user?.first_name || user?.username || 'Spherian' })}
           </h1>
-          <p className="text-sphera-text-muted">Je suis Sphera, ton assistante de révision académique.</p>
-          <p className="text-sphera-text-muted">Charge un document pour générer instantanément ton matériel de révision ou corrige tes annales.</p>
+          <p className="text-sphera-text-muted">{t('dashboard.subtitle1')}</p>
+          <p className="text-sphera-text-muted">{t('dashboard.subtitle2')}</p>
           <div className="flex justify-center mt-4">
             <QuotaIndicator />
           </div>
@@ -135,7 +137,7 @@ export default function Dashboard() {
             <div className="relative my-4 flex items-center justify-center">
               <div className="border-t border-sphera-border w-full" />
               <span className="bg-sphera-surface-2 px-3 text-xs text-sphera-text-muted uppercase tracking-wider font-semibold">
-                ou
+                {t('dashboard.or')}
               </span>
             </div>
 
@@ -146,7 +148,7 @@ export default function Dashboard() {
               className="w-full py-3 px-4 rounded-xl bg-sphera-surface hover:bg-sphera-bg border border-sphera-border hover:border-sphera-green/50 text-white transition-all flex items-center justify-center gap-2.5 text-sm font-semibold group shadow-sm"
             >
               <FileText className="w-4 h-4 text-sphera-green group-hover:scale-110 transition-transform" />
-              <span>Coller ou rédiger un cours / des notes</span>
+              <span>{t('dashboard.pasteOrWrite')}</span>
             </button>
           </div>
         </div>
@@ -168,7 +170,7 @@ export default function Dashboard() {
                 : 'border-transparent text-sphera-text-muted hover:text-white'
             }`}
           >
-            <LayoutDashboard className="w-4 h-4" /> Mes sessions
+            <LayoutDashboard className="w-4 h-4" /> {t('dashboard.tabs.sessions')}
           </button>
           <button
             onClick={() => setActiveTab('annales')}
@@ -178,7 +180,7 @@ export default function Dashboard() {
                 : 'border-transparent text-sphera-text-muted hover:text-white'
             }`}
           >
-            <FilePenLine className="w-4 h-4" /> Mes annales
+            <FilePenLine className="w-4 h-4" /> {t('dashboard.tabs.annales')}
           </button>
         </div>
 
@@ -191,8 +193,10 @@ export default function Dashboard() {
             ) : displayedItems.length === 0 ? (
               <div className="text-center p-12 bg-sphera-surface-2 rounded-2xl border border-sphera-border mx-4 sm:mx-0">
                 <FileText className="w-12 h-12 text-sphera-text-muted mx-auto mb-4 opacity-50" />
-                <p className="text-white font-medium mb-1">Aucune {activeTab === 'annales' ? 'annale' : 'session'} trouvée</p>
-                <p className="text-sm text-sphera-text-muted">Upload un document pour commencer à réviser.</p>
+                <p className="text-white font-medium mb-1">
+                  {t('dashboard.empty.title', { type: activeTab === 'annales' ? t('dashboard.annaleType') : t('dashboard.sessionType') })}
+                </p>
+                <p className="text-sm text-sphera-text-muted">{t('dashboard.empty.desc')}</p>
               </div>
             ) : (
               <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-1 sm:gap-4">

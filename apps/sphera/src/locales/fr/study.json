@@ -1,0 +1,82 @@
+{
+  "dashboard": {
+    "welcome": "Salut {{name}}, prêt à réviser ?",
+    "subtitle1": "Je suis Sphera, ton assistante de révision académique.",
+    "subtitle2": "Charge un document pour générer instantanément ton matériel de révision ou corrige tes annales.",
+    "pasteOrWrite": "Coller ou rédiger un cours / des notes",
+    "or": "ou",
+    "tabs": {
+      "sessions": "Mes sessions",
+      "annales": "Mes annales"
+    },
+    "empty": {
+      "title": "Aucune {{type}} trouvée",
+      "desc": "Upload un document pour commencer à réviser."
+    },
+    "annaleType": "annale",
+    "sessionType": "session"
+  },
+  "upload": {
+    "dropzoneTitle": "Glisse ton cours ou ton annale ici",
+    "dropzoneSubtitle": "ou clique pour choisir un fichier",
+    "supportedFormats": "PDF, DOCX, TXT, MD, Images (PNG, JPG, WEBP) · Max 50MB",
+    "readyForGeneration": "{{size}} MB • Prêt pour la génération",
+    "changeFile": "Changer de fichier"
+  },
+  "createSession": {
+    "backToDashboard": "Retour au tableau de bord",
+    "title": "Paramétrer la session",
+    "studyMode": "Réviser un cours",
+    "annaleMode": "Corriger une annale",
+    "annaleTypeLabel": "Type de correction",
+    "annaleComplete": "Complète",
+    "annaleCompleteDesc": "Correction détaillée étape par étape",
+    "annaleCompleteBadge": "Recommandé",
+    "annaleRapide": "Rapide",
+    "annaleRapideDesc": "Réponses synthétiques directes",
+    "annaleRapideBadge": "Express",
+    "directQaBtn": "Démarrer en mode Q&A direct",
+    "initializing": "Initialisation de la session...",
+    "generating": "Génération en cours...",
+    "generateCount": "Générer {{count}} outil",
+    "generateCount_plural": "Générer {{count}} outils",
+    "launchCorrection": "Lancer la correction",
+    "pdfPreviewTitle": "Aperçu du PDF",
+    "interactiveText": "Texte interactif",
+    "image": "Image",
+    "pdf": "PDF",
+    "fullscreen": "Plein écran",
+    "showPreview": "Afficher l'aperçu"
+  },
+  "tools": {
+    "title": "Choisir les outils à générer",
+    "deselectAll": "Tout désélectionner (Q&A direct)",
+    "selectFiche": "Sélectionner Fiche",
+    "directQaNoticeTitle": "Mode Q&A direct sélectionné",
+    "directQaNoticeDesc": "La session sera créée immédiatement sans générer de fiches ni quiz (0 quota consommé). Vous pourrez les générer à la demande plus tard !",
+    "fiche": {
+      "title": "Fiche de révision",
+      "desc": "Points clés, définitions, formules"
+    },
+    "quiz": {
+      "title": "Quiz interactif",
+      "desc": "QCM avec timer et score"
+    },
+    "flashcards": {
+      "title": "Flashcards",
+      "desc": "Cartes recto/verso pour mémoriser"
+    },
+    "mindmap": {
+      "title": "Carte mentale",
+      "desc": "Représentation visuelle des concepts clés"
+    },
+    "audio": {
+      "title": "Résumé audio",
+      "desc": "Dialogue podcast pour réviser"
+    },
+    "annale": {
+      "title": "Annale",
+      "desc": "Sujets d'examen et corrections"
+    }
+  }
+}

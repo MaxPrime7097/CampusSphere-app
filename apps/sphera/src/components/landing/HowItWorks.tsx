@@ -1,25 +1,28 @@
 import React from 'react'
+import { useTranslation } from '@cs/i18n'
 import { Upload, MousePointerClick, BookOpen } from 'lucide-react'
 
 export function HowItWorks() {
+  const { t } = useTranslation('landing')
+
   const steps = [
     {
       number: "1",
       icon: <Upload className="w-8 h-8 text-sphera-green" />,
-      title: "Upload",
-      desc: "Tu uploades ton cours PDF"
+      title: t('howItWorks.step1Title'),
+      desc: t('howItWorks.step1Desc')
     },
     {
       number: "2",
       icon: <MousePointerClick className="w-8 h-8 text-sphera-green" />,
-      title: "Choisis",
-      desc: "Fiche, Quiz, Flashcards ou Annale"
+      title: t('howItWorks.step2Title'),
+      desc: t('howItWorks.step2Desc')
     },
     {
       number: "3",
       icon: <BookOpen className="w-8 h-8 text-sphera-green" />,
-      title: "Révise",
-      desc: "Sphera génère en 30 secondes"
+      title: t('howItWorks.step3Title'),
+      desc: t('howItWorks.step3Desc')
     }
   ]
 
@@ -28,10 +31,10 @@ export function HowItWorks() {
       <div className="container mx-auto max-w-5xl px-4">
         <div className="text-center mb-16">
           <h2 className="font-display text-3xl md:text-4xl font-bold text-white mb-4">
-            Comment ça marche
+            {t('howItWorks.title')}
           </h2>
           <p className="text-sphera-text-muted text-lg max-w-2xl mx-auto">
-            Trois étapes simples pour transformer tes documents en outils de révision puissants.
+            {t('howItWorks.subtitle')}
           </p>
         </div>
 

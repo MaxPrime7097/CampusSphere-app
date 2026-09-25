@@ -1,9 +1,11 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useTranslation, LanguageSwitcher } from '@cs/i18n'
 import { useSpheraAuth } from '../contexts/SpheraAuthContext'
 import { logoutFromSphera } from '../services/spheraApi'
 
 export function Navbar() {
+  const { t } = useTranslation('navigation')
   const { user, isAuthenticated, logout } = useSpheraAuth()
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -51,10 +53,12 @@ export function Navbar() {
 
         {/* Right side */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <LanguageSwitcher variant="minimal" />
+
           {isAuthenticated && user ? (
             <>
               <Link to="/dashboard" className="btn btn-ghost btn-sm hide-mobile">
-                Mes sessions
+                {t('mySessions')}
               </Link>
               <div style={{ position: 'relative' }}>
                 <button
@@ -99,7 +103,7 @@ export function Navbar() {
                       onClick={() => setMenuOpen(false)}
                       style={{ display: 'block', padding: '0.5rem 0.75rem', color: 'var(--text)', textDecoration: 'none', borderRadius: 8, fontSize: '0.875rem' }}
                     >
-                      📚 Mes sessions
+                      📚 {t('mySessions')}
                     </Link>
                     <a
                       href="https://campussphere.app"
@@ -119,7 +123,7 @@ export function Navbar() {
                         border: 'none', cursor: 'pointer', borderRadius: 8, fontSize: '0.875rem',
                       }}
                     >
-                      Se déconnecter
+                      {t('logout')}
                     </button>
                   </div>
                 )}
@@ -128,7 +132,7 @@ export function Navbar() {
           ) : (
             <>
               <Link to="/app" className="btn btn-ghost btn-sm hide-mobile">
-                Générateur
+                {t('generator')}
               </Link>
               <a
                 href="https://campussphere.app"
@@ -139,7 +143,7 @@ export function Navbar() {
                 CampusSphere
               </a>
               <Link to="/login" className="btn btn-primary btn-sm">
-                Se connecter
+                {t('login')}
               </Link>
             </>
           )}

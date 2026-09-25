@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from '@cs/i18n'
 import { FileText, SquareStack, BrainCircuit, CheckCircle2, Layers, GitFork, AudioLines, MessageSquare } from 'lucide-react'
 import type { ToolType } from '../../services/spheraApi'
 export type { ToolType }
@@ -9,39 +10,41 @@ interface ToolSelectorProps {
 }
 
 export function ToolSelector({ selectedTools, onToolSelect }: ToolSelectorProps) {
+  const { t } = useTranslation('study')
+
   const tools: { id: ToolType; title: string; desc: string; icon: React.ReactNode; colorClass: string }[] = [
     {
       id: 'fiche',
-      title: "Fiche de révision",
-      desc: "Points clés, définitions, formules",
+      title: t('tools.fiche.title'),
+      desc: t('tools.fiche.desc'),
       icon: <FileText className="w-5 h-5" />,
       colorClass: "text-blue-400"
     },
     {
       id: 'quiz',
-      title: "Quiz interactif",
-      desc: "QCM avec timer et score",
+      title: t('tools.quiz.title'),
+      desc: t('tools.quiz.desc'),
       icon: <BrainCircuit className="w-5 h-5" />,
       colorClass: "text-purple-400"
     },
     {
       id: 'flashcards' as ToolType,
-      title: "Flashcards",
-      desc: "Cartes recto/verso pour mémoriser",
+      title: t('tools.flashcards.title'),
+      desc: t('tools.flashcards.desc'),
       icon: <SquareStack className="w-5 h-5" />,
       colorClass: "text-green-400"
     },
     {
       id: 'mindmap' as ToolType,
-      title: "Carte mentale",
-      desc: "Représentation visuelle des concepts clés",
+      title: t('tools.mindmap.title'),
+      desc: t('tools.mindmap.desc'),
       icon: <GitFork className="w-5 h-5" />,
       colorClass: "text-emerald-400"
     },
     {
       id: 'audio' as ToolType,
-      title: "Résumé audio",
-      desc: "Dialogue podcast pour réviser",
+      title: t('tools.audio.title'),
+      desc: t('tools.audio.desc'),
       icon: <AudioLines className="w-5 h-5" />,
       colorClass: "text-teal-400"
     }
@@ -58,14 +61,14 @@ export function ToolSelector({ selectedTools, onToolSelect }: ToolSelectorProps)
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between px-1">
-        <h3 className="text-white font-medium text-lg">Choisir les outils à générer</h3>
+        <h3 className="text-white font-medium text-lg">{t('tools.title')}</h3>
         {selectedTools.length > 0 ? (
           <button
             type="button"
             onClick={() => onToolSelect([])}
             className="text-xs text-sphera-text-muted hover:text-white transition-colors"
           >
-            Tout désélectionner (Q&A direct)
+            {t('tools.deselectAll')}
           </button>
         ) : (
           <button
@@ -73,7 +76,7 @@ export function ToolSelector({ selectedTools, onToolSelect }: ToolSelectorProps)
             onClick={() => onToolSelect(['fiche'])}
             className="text-xs text-sphera-green hover:underline transition-colors"
           >
-            Sélectionner Fiche
+            {t('tools.selectFiche')}
           </button>
         )}
       </div>
@@ -116,8 +119,8 @@ export function ToolSelector({ selectedTools, onToolSelect }: ToolSelectorProps)
             <MessageSquare className="w-4 h-4" />
           </div>
           <div>
-            <div className="text-white font-medium mb-0.5">Mode Q&A direct sélectionné</div>
-            <span>La session sera créée immédiatement sans générer de fiches ni quiz (0 quota consommé). Vous pourrez les générer à la demande plus tard !</span>
+            <div className="text-white font-medium mb-0.5">{t('tools.directQaNoticeTitle')}</div>
+            <span>{t('tools.directQaNoticeDesc')}</span>
           </div>
         </div>
       )}

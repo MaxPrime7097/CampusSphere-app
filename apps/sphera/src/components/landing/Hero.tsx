@@ -1,5 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from '@cs/i18n'
 import { 
   ArrowRight, 
   FileText, 
@@ -12,6 +13,8 @@ import {
 } from 'lucide-react'
 
 export function Hero() {
+  const { t } = useTranslation('landing')
+
   return (
     <section className="relative pt-24 pb-16 md:pt-32 md:pb-24 overflow-hidden">
       {/* Background Glow */}
@@ -20,30 +23,30 @@ export function Hero() {
       <div className="container mx-auto max-w-5xl px-4 text-center flex flex-col items-center">
         
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-sphera-border bg-sphera-surface/50 backdrop-blur-md mb-8 animate-in" style={{ animationDelay: '0ms' }}>
-          <span>Powered by</span>
+          <span>{t('hero.poweredBy')}</span>
           <a href="https://campussphere.app" target="_blank" rel="noopener noreferrer" className="font-semibold text-white hover:text-cs-orange transition-colors">
             CampusSphere
           </a>
         </div>
 
         <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white mb-6 animate-in" style={{ animationDelay: '100ms' }}>
-          Transforme n'importe quel cours en <br className="hidden md:block" />
+          {t('hero.titleLine1')} <br className="hidden md:block" />
           <span className="bg-gradient-to-br from-green-400 to-sphera-green bg-clip-text text-transparent">
-            révision intelligente
+            {t('hero.titleHighlight')}
           </span>
         </h1>
 
         <p className="text-lg md:text-xl text-sphera-text-muted max-w-2xl mb-10 leading-relaxed font-light animate-in" style={{ animationDelay: '200ms' }}>
-          Upload ton cours PDF. Sphera génère instantanément fiche de révision, quiz, flashcards et répond à toutes tes questions sur le document.
+          {t('hero.subtitle')}
         </p>
 
         <div className="flex flex-col sm:flex-row items-center gap-4 animate-in" style={{ animationDelay: '300ms' }}>
           <Link to="/app" className="sphera-primary-btn text-lg px-8 py-3.5 w-full sm:w-auto flex items-center justify-center gap-2 group">
-            Essayer gratuitement
+            {t('hero.ctaTryFree')}
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </Link>
           <Link to="/login" className="btn btn-outline border-sphera-border text-white hover:bg-sphera-surface px-8 py-3.5 rounded-lg font-semibold w-full sm:w-auto">
-            Se connecter
+            {t('hero.ctaLogin')}
           </Link>
         </div>
 

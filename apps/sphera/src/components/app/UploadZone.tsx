@@ -1,4 +1,5 @@
 import React, { useCallback, useState } from 'react'
+import { useTranslation } from '@cs/i18n'
 import { UploadCloud, File, X } from 'lucide-react'
 
 interface UploadZoneProps {
@@ -7,6 +8,7 @@ interface UploadZoneProps {
 }
 
 export function UploadZone({ onFileSelect, selectedFile }: UploadZoneProps) {
+  const { t } = useTranslation('study')
   const [isDragging, setIsDragging] = useState(false)
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -58,7 +60,7 @@ export function UploadZone({ onFileSelect, selectedFile }: UploadZoneProps) {
           </div>
           <h3 className="text-white font-medium text-lg mb-1">{selectedFile.name}</h3>
           <p className="text-sphera-text-muted text-sm mb-6">
-            {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB • Prêt pour la génération
+            {t('upload.readyForGeneration', { size: (selectedFile.size / (1024 * 1024)).toFixed(2) })}
           </p>
           <button 
             onClick={(e) => {
@@ -67,7 +69,7 @@ export function UploadZone({ onFileSelect, selectedFile }: UploadZoneProps) {
             }}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-sphera-surface-2 text-white hover:bg-sphera-border transition-colors text-sm font-medium"
           >
-            <X className="w-4 h-4" /> Changer de fichier
+            <X className="w-4 h-4" /> {t('upload.changeFile')}
           </button>
         </div>
       ) : (
@@ -75,10 +77,10 @@ export function UploadZone({ onFileSelect, selectedFile }: UploadZoneProps) {
           <div className="w-16 h-16 rounded-full bg-sphera-surface-2 border border-sphera-border flex items-center justify-center mb-4 text-sphera-green group-hover:bg-sphera-green/10 group-hover:border-sphera-green/30 transition-colors">
             <UploadCloud className="w-8 h-8" />
           </div>
-          <h3 className="text-white font-medium text-lg mb-2">Glisse ton cours ou ton annale ici</h3>
-          <p className="text-sphera-text-muted text-sm mb-4">ou clique pour choisir un fichier</p>
+          <h3 className="text-white font-medium text-lg mb-2">{t('upload.dropzoneTitle')}</h3>
+          <p className="text-sphera-text-muted text-sm mb-4">{t('upload.dropzoneSubtitle')}</p>
           <div className="text-xs text-sphera-text-muted bg-sphera-surface px-3 py-1.5 rounded-md border border-sphera-border">
-            PDF, DOCX, TXT, MD, Images (PNG, JPG, WEBP) · Max 50MB
+            {t('upload.supportedFormats')}
           </div>
         </div>
       )}

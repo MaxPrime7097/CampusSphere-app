@@ -1,35 +1,38 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from '@cs/i18n'
 import { FileText, BrainCircuit, Zap, ArrowRight, FilePenLine, SquareStack } from 'lucide-react'
 
 export function Features() {
+  const { t } = useTranslation('landing')
+
   const features = [
     {
-      title: "Sphera Live (Multijoueur)",
-      desc: "Lance des parties en direct avec tes camarades. Rejoins avec un code PIN, affronte le timer et monte sur le podium en temps réel.",
+      title: t('features.liveTitle'),
+      desc: t('features.liveDesc'),
       icon: <Zap className="w-6 h-6 text-sphera-green" />,
-      badge: "Nouveau",
+      badge: t('features.liveBadge'),
       link: "/sphera-live",
       highlight: true
     },
     {
-      title: "Fiches de révision structurées",
-      desc: "Points clés, définitions, théorèmes et formules extraits automatiquement de tes PDFs en quelques secondes.",
+      title: t('features.sheetsTitle'),
+      desc: t('features.sheetsDesc'),
       icon: <FileText className="w-6 h-6 text-sphera-green" />,
     },
     {
-      title: "Quiz interactifs solo",
-      desc: "Questions ciblées avec timer, score immédiat et explications détaillées pour combler chaque lacune.",
+      title: t('features.quizTitle'),
+      desc: t('features.quizDesc'),
       icon: <BrainCircuit className="w-6 h-6 text-sphera-green" />,
     },
     {
-      title: "Flashcards intelligentes",
-      desc: "Cartes recto/verso optimisées pour l'Active Recall et la répétition espacée, prêtes à être révisées.",
+      title: t('features.flashcardsTitle'),
+      desc: t('features.flashcardsDesc'),
       icon: <SquareStack className="w-6 h-6 text-sphera-green" />,
     },
     {
-      title: "Correction d'annales",
-      desc: "Mode complet ou rapide selon ton timing pour t'entraîner sur les vrais sujets des années précédentes.",
+      title: t('features.annalesTitle'),
+      desc: t('features.annalesDesc'),
       icon: <FilePenLine className="w-6 h-6 text-sphera-green" />,
     }
   ]
@@ -41,10 +44,10 @@ export function Features() {
       <div className="container mx-auto max-w-5xl px-4">
         <div className="text-center mb-16">
           <h2 className="font-display text-3xl md:text-4xl font-bold text-white mb-4">
-            Tout ce dont tu as besoin
+            {t('features.title')}
           </h2>
           <p className="text-sphera-text-muted text-lg max-w-2xl mx-auto">
-            Génère exactement le format d'apprentissage qui correspond à tes besoins, seul ou en équipe.
+            {t('features.subtitle')}
           </p>
         </div>
 
@@ -85,7 +88,7 @@ export function Features() {
                     to={feat.link}
                     className="self-end sm:self-center shrink-0 inline-flex items-center gap-1.5 text-xs font-bold text-sphera-green hover:underline uppercase tracking-wider group-hover:translate-x-1 transition-transform"
                   >
-                    Explorer <ArrowRight className="w-3.5 h-3.5" />
+                    {t('header.liveBannerAction')} <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 )}
               </div>

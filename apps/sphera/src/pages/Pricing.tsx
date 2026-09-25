@@ -1,43 +1,39 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
+import { useTranslation } from 'react-i18next'
 import { SpheraHeader } from '../components/layout/SpheraHeader'
 import { SpheraFooter } from '../components/layout/SpheraFooter'
 import { Sparkles, Check, BrainCircuit, FileText, SquareStack, MessageSquare, Bell, ScanEye, FilePenLine } from 'lucide-react'
 
-const features = [
-  { icon: FileText, label: "Fiches de révision", desc: "Résumé structuré + points clés + définitions générés automatiquement." },
-  { icon: BrainCircuit, label: "Quiz interactif", desc: "Des QCM avec explications pour te tester avant l'examen." },
-  { icon: SquareStack, label: "Flashcards", desc: "Cartes recto/verso pour mémoriser en mode actif." },
-  { icon: MessageSquare, label: "Q&A avec l'IA", desc: "Pose n'importe quelle question sur ton cours, Sphera répond depuis le document." },
-  { icon: FilePenLine, label: "Correction d'annales", desc: "Upload ton épreuve, Sphera la corrige section par section avec explications." },
-  { icon: ScanEye, label: "OCR pour scans", desc: "Sphera lit même les PDFs scannés et photos de cours." },
-]
-
 export default function Pricing() {
+  const { t } = useTranslation('pricing')
+
+  const featureCards = [
+    { icon: FileText, label: t('features.items.sheets.title'), desc: t('features.items.sheets.description') },
+    { icon: BrainCircuit, label: t('features.items.quiz.title'), desc: t('features.items.quiz.description') },
+    { icon: SquareStack, label: t('features.items.flashcards.title'), desc: t('features.items.flashcards.description') },
+    { icon: MessageSquare, label: t('features.items.qa.title'), desc: t('features.items.qa.description') },
+    { icon: FilePenLine, label: t('features.items.annales.title'), desc: t('features.items.annales.description') },
+    { icon: ScanEye, label: t('features.items.ocr.title'), desc: t('features.items.ocr.description') },
+  ]
+
+  const cardFeatures = t('card.features', { returnObjects: true }) as string[]
+
   return (
     <div className="flex flex-col min-h-screen bg-sphera-bg font-sans selection:bg-sphera-green/30">
       <Helmet>
-        <title>Tarifs Sphera — Accès 100% Gratuit Bêta & Outils de Révision IA</title>
-        <meta
-          name="description"
-          content="Sphera est actuellement 100% gratuit pendant toute la période de bêta ouverte. Profitez de générations illimitées de fiches, quiz interactifs et flashcards par IA."
-        />
+        <title>{t('seo.title')}</title>
+        <meta name="description" content={t('seo.description')} />
         <link rel="canonical" href="https://sphera.campussphere.app/pricing" />
-        <meta property="og:title" content="Tarifs Sphera — Accès Gratuit Bêta Ouverte" />
-        <meta
-          property="og:description"
-          content="Accédez gratuitement à tous les outils de révision IA : fiches, quiz, flashcards et corrections d'annales sans limite."
-        />
+        <meta property="og:title" content={t('seo.ogTitle')} />
+        <meta property="og:description" content={t('seo.ogDescription')} />
         <meta property="og:url" content="https://sphera.campussphere.app/pricing" />
         <meta property="og:type" content="website" />
         <meta property="og:image" content="https://sphera.campussphere.app/sphera-logo-dark.png" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Tarifs Sphera — Accès 100% Gratuit Bêta" />
-        <meta
-          name="twitter:description"
-          content="Générez vos fiches de révision, quiz et flashcards gratuitement avec Sphera pendant la bêta."
-        />
+        <meta name="twitter:title" content={t('seo.twitterTitle')} />
+        <meta name="twitter:description" content={t('seo.twitterDescription')} />
         <meta name="twitter:image" content="https://sphera.campussphere.app/sphera-logo-dark.png" />
       </Helmet>
 
@@ -53,15 +49,14 @@ export default function Pricing() {
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 bg-sphera-green/10 border border-sphera-green/20 text-sphera-green text-sm font-semibold px-4 py-2 rounded-full mb-6">
               <Sparkles className="w-4 h-4" />
-              Bêta ouverte — accès 100% gratuit
+              {t('hero.badge')}
             </div>
             <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-6 leading-tight">
-              Gratuit pendant<br />
-              <span className="text-sphera-green">toute la bêta</span>
+              {t('hero.titlePart1')}<br />
+              <span className="text-sphera-green">{t('hero.titlePart2')}</span>
             </h1>
             <p className="text-xl text-sphera-text-muted max-w-2xl mx-auto leading-relaxed">
-              Sphera est en bêta ouverte. Profitez de 5 générations complètes offertes chaque semaine (Fiches, Quiz, Flashcards, Annales) et du Q&A IA illimité, sans carte bancaire.
-              Le plan illimité complet viendra très prochainement.
+              {t('hero.subtitle')}
             </p>
           </div>
 
@@ -69,23 +64,16 @@ export default function Pricing() {
           <div className="max-w-lg mx-auto mb-20">
             <div className="relative bg-sphera-surface rounded-3xl border border-sphera-green shadow-[0_0_60px_rgba(34,197,94,0.08)] p-10 text-center">
               <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-sphera-green text-black text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider">
-                Actuellement disponible
+                {t('card.badge')}
               </div>
 
               <div className="mb-6">
-                <span className="text-7xl font-black text-white">0 XAF</span>
-                <span className="block text-sphera-text-muted mt-1 text-sm">pendant toute la durée de la bêta</span>
+                <span className="text-7xl font-black text-white">{t('card.price')}</span>
+                <span className="block text-sphera-text-muted mt-1 text-sm">{t('card.pricePeriod')}</span>
               </div>
 
               <ul className="text-left space-y-3 mb-8">
-                {[
-                  "5 générations complètes offertes / semaine (Bêta)",
-                  "Q&A illimité avec l'IA sur tous tes cours",
-                  "Tous les outils — Fiches, Quiz, Flashcards, Annales",
-                  "Partage public de sessions et export PDF",
-                  "Support pour PDFs scannés et photos (OCR)",
-                  "Aucune carte bancaire requise",
-                ].map((f, i) => (
+                {Array.isArray(cardFeatures) && cardFeatures.map((f, i) => (
                   <li key={i} className="flex items-center gap-3">
                     <div className="w-5 h-5 rounded-full bg-sphera-green/15 flex items-center justify-center shrink-0">
                       <Check className="w-3 h-3 text-sphera-green" />
@@ -99,7 +87,7 @@ export default function Pricing() {
                 to="/register"
                 className="block w-full py-3.5 rounded-xl font-bold text-black bg-sphera-green hover:bg-green-400 transition-all text-sm shadow-[0_0_20px_rgba(34,197,94,0.25)]"
               >
-                Commencer gratuitement →
+                {t('card.cta')}
               </Link>
             </div>
           </div>
@@ -107,10 +95,10 @@ export default function Pricing() {
           {/* Features grid */}
           <div className="mb-20">
             <h2 className="text-2xl font-display font-bold text-white text-center mb-10">
-              Tout ce qui est inclus gratuitement
+              {t('features.title')}
             </h2>
             <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {features.map((f, i) => {
+              {featureCards.map((f, i) => {
                 const Icon = f.icon
                 return (
                   <div key={i} className="bg-sphera-surface rounded-2xl border border-sphera-border p-6 hover:border-sphera-green/30 transition-colors">
@@ -131,28 +119,12 @@ export default function Pricing() {
               <Bell className="w-6 h-6 text-sphera-green" />
             </div>
             <h2 className="text-2xl font-display font-bold text-white mb-3">
-              Sois notifié à l'arrivée du Premium
+              {t('waitlist.title')}
             </h2>
             <p className="text-sphera-text-muted text-sm max-w-md mx-auto mb-8 leading-relaxed">
-              Laisse ton email. Quand le plan premium sortira, tu seras dans les premiers — avec une offre de lancement réservée aux bêta-testeurs.
+              {t('waitlist.subtitle')}
             </p>
 
-            {/* 
-              ════════════════════════════════════════
-              TALLY FORM — Remplace ce bloc par ton
-              embed Tally une fois le formulaire créé.
-              
-              Exemple d'intégration :
-              <iframe
-                data-tally-src="https://tally.so/embed/XXXX?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1"
-                loading="lazy"
-                width="100%"
-                height="300"
-                frameBorder="0"
-                title="Sphera Premium Waitlist"
-              />
-              ════════════════════════════════════════
-            */}
             <div className="w-full min-h-[140px] rounded-xl border border-dashed border-sphera-border flex items-center justify-center text-sphera-text-muted text-sm">
               <iframe
                 src="https://tally.so/embed/vGdQbl?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1"
@@ -167,7 +139,7 @@ export default function Pricing() {
             </div>
 
             <p className="text-xs text-sphera-text-muted/50 mt-6">
-              Aucun spam. Désabonnement en un clic.
+              {t('waitlist.noSpam')}
             </p>
           </div>
 

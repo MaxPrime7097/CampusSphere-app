@@ -1,0 +1,69 @@
+{
+  "nav": {
+    "profile": { "label": "My Profile", "desc": "Academic identity & SSO" },
+    "generation": { "label": "AI Preferences", "desc": "Language, detail & tone" },
+    "tools": { "label": "Quiz & Flashcards", "desc": "Volume & time per tool" },
+    "quota": { "label": "Usage & Quota", "desc": "Weekly consumption" },
+    "stats": { "label": "Activity & Streak", "desc": "14-week grid & stats" },
+    "appearance": { "label": "Appearance", "desc": "Dark & light themes" }
+  },
+  "tabs": {
+    "profile": {
+      "title": "My Academic Profile",
+      "desc": "Read-only academic data synchronized from your CampusSphere account"
+    },
+    "generation": {
+      "title": "AI Generation Preferences",
+      "desc": "Customize writing language, detail level, and pedagogical style of your Sphera tutor"
+    },
+    "tools": {
+      "title": "Per-Tool Settings (Quiz & Flashcards)",
+      "desc": "Define default questions and flashcards volume generated for each course"
+    },
+    "quota": {
+      "title": "Weekly Usage & Quota",
+      "desc": "View your real-time consumption and count of AI sessions"
+    },
+    "stats": {
+      "title": "Study Activity & Streak",
+      "desc": "Consistency history and training matrix over the last 14 weeks"
+    },
+    "appearance": {
+      "title": "Appearance & Visual Comfort",
+      "desc": "Switch between Dark Studio and Light Nature modes according to your preference"
+    }
+  },
+  "generation": {
+    "defaultLanguage": "Default language",
+    "defaultLanguageDesc": "Controls the language in which AI writes its responses and revision sheets",
+    "langAuto": "Automatic (Default)",
+    "langFr": "Français",
+    "langEn": "English",
+    "detailLevel": "Detail level",
+    "detailLevelDesc": "Length of explanations and granularity of summaries",
+    "detailConcise": "Concise",
+    "detailBalanced": "Balanced",
+    "detailDetailed": "In-depth",
+    "pedagogicalTone": "Pedagogical stance",
+    "pedagogicalToneDesc": "Regulates the rigor and tone of generated explanations",
+    "toneAcademic": "Academic & Rigorous",
+    "toneSupportive": "Supportive & Accessible",
+    "toneSocratic": "Socratic Method"
+  },
+  "appearance": {
+    "themeTitle": "Visual theme selection",
+    "themeDesc": "Choose the visual atmosphere tailored to your study sessions",
+    "darkTheme": "Dark Studio Mode",
+    "darkThemeDesc": "Deep black background (#0D0D0F), carbon surfaces and emerald accents (#22C55E)",
+    "lightTheme": "Light Nature Mode",
+    "lightThemeDesc": "Soft sage background (#F4FBF7), crisp white cards and forest text (#17301F) without eye fatigue",
+    "activeBadge": "Active",
+    "interfaceLanguageTitle": "Interface language",
+    "interfaceLanguageDesc": "Choose the global display language for Sphera"
+  },
+  "buttons": {
+    "saving": "Saving...",
+    "save": "Save changes",
+    "close": "Close"
+  }
+}

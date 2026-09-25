@@ -1,0 +1,64 @@
+{
+  "seo": {
+    "title": "Sphera Pricing — 100% Free Open Beta & AI Revision Tools",
+    "description": "Sphera is currently 100% free throughout the open beta period. Enjoy AI-generated study sheets, interactive quizzes, and flashcards.",
+    "ogTitle": "Sphera Pricing — Free Open Beta Access",
+    "ogDescription": "Access all AI study tools for free: revision sheets, quizzes, flashcards, and exam paper corrections.",
+    "twitterTitle": "Sphera Pricing — 100% Free Beta Access",
+    "twitterDescription": "Generate your revision sheets, quizzes, and flashcards for free with Sphera during beta."
+  },
+  "hero": {
+    "badge": "Open Beta — 100% free access",
+    "titlePart1": "Free throughout",
+    "titlePart2": "the entire beta",
+    "subtitle": "Sphera is currently in open beta. Enjoy 5 full generations offered each week (Sheets, Quizzes, Flashcards, Past Papers) and unlimited AI Q&A, no credit card required. Full unlimited plans are launching very soon."
+  },
+  "card": {
+    "badge": "Currently Available",
+    "price": "0 XAF",
+    "pricePeriod": "during the entire beta duration",
+    "features": [
+      "5 full generations offered / week (Beta)",
+      "Unlimited AI Q&A across all your coursework",
+      "All tools — Sheets, Quizzes, Flashcards, Past Papers",
+      "Public session sharing and PDF export",
+      "Support for scanned PDFs and lecture photos (OCR)",
+      "No credit card required"
+    ],
+    "cta": "Get started for free →"
+  },
+  "features": {
+    "title": "Everything included for free",
+    "items": {
+      "sheets": {
+        "title": "Revision sheets",
+        "description": "Structured summary + key takeaways + definitions generated automatically."
+      },
+      "quiz": {
+        "title": "Interactive quizzes",
+        "description": "MCQs with comprehensive explanations to test your recall before exams."
+      },
+      "flashcards": {
+        "title": "Flashcards",
+        "description": "Two-sided smart cards for active recall and spaced retention."
+      },
+      "qa": {
+        "title": "AI Document Q&A",
+        "description": "Ask any question about your course; Sphera answers accurately grounded in your file."
+      },
+      "annales": {
+        "title": "Past paper corrections",
+        "description": "Upload previous exams; Sphera provides step-by-step solutions and explanations."
+      },
+      "ocr": {
+        "title": "OCR for scanned files",
+        "description": "Sphera reads scanned PDFs, lecture notes, and classroom board photos."
+      }
+    }
+  },
+  "waitlist": {
+    "title": "Get notified when Premium arrives",
+    "subtitle": "Leave your email. When the premium tier launches, you'll be among the first with an early-bird launch deal exclusive to beta testers.",
+    "noSpam": "No spam. Unsubscribe in one click."
+  }
+}
