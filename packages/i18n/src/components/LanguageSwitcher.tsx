@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Globe, ChevronDown, Check } from 'lucide-react';
 import { useLanguage } from '../hooks/useLanguage.ts';
+import { FlagIcon } from './FlagIcon.tsx';
 import type { SupportedLanguage } from '../types.ts';
 
 export interface LanguageSwitcherProps {
@@ -57,7 +58,7 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
                   : 'text-zinc-400 hover:text-white hover:bg-white/5'
               }`}
             >
-              {showFlag && <span>{lang.flag}</span>}
+              {showFlag && <FlagIcon code={lang.code} className="w-4 h-3 rounded-[2px]" />}
               <span>{lang.code.toUpperCase()}</span>
             </button>
           );
@@ -75,11 +76,14 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
           const nextIndex = (currentIndex + 1) % supportedLanguages.length;
           changeLanguage(supportedLanguages[nextIndex].code);
         }}
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-300 hover:text-white hover:bg-white/10 transition-colors border border-transparent hover:border-white/10 ${className}`}
+        className={`inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-300 hover:text-white hover:bg-white/10 transition-colors border border-transparent hover:border-white/10 ${className}`}
         title={`Switch language (current: ${activeOption.label})`}
       >
-        <Globe className="w-3.5 h-3.5 text-zinc-400" />
-        {showFlag && <span>{activeOption.flag}</span>}
+        {showFlag ? (
+          <FlagIcon code={activeOption.code} className="w-4 h-3 rounded-[2px]" />
+        ) : (
+          <Globe className="w-3.5 h-3.5 text-zinc-400" />
+        )}
         <span className="font-semibold">{activeOption.code.toUpperCase()}</span>
       </button>
     );
@@ -95,8 +99,11 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
-        <Globe className="w-3.5 h-3.5 text-zinc-400" />
-        {showFlag && <span>{activeOption.flag}</span>}
+        {showFlag ? (
+          <FlagIcon code={activeOption.code} className="w-4 h-3 rounded-[2px]" />
+        ) : (
+          <Globe className="w-3.5 h-3.5 text-zinc-400" />
+        )}
         {showLabel && <span>{activeOption.label}</span>}
         {!showLabel && <span className="uppercase">{activeOption.code}</span>}
         <ChevronDown
@@ -131,8 +138,8 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
                 }`}
                 role="menuitem"
               >
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">{lang.flag}</span>
+                <div className="flex items-center gap-2.5">
+                  <FlagIcon code={lang.code} className="w-4 h-3 rounded-[2px]" />
                   <span>{lang.nativeName}</span>
                 </div>
                 {isSelected && <Check className="w-3.5 h-3.5 text-emerald-400" />}

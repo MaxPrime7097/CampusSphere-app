@@ -2,6 +2,7 @@ export * from './types.ts';
 export * from './instance.ts';
 export * from './hooks/useLanguage.ts';
 export * from './components/LanguageSwitcher.tsx';
+export * from './components/FlagIcon.tsx';
 export * from './components/I18nProvider.tsx';
 
 // Re-export common react-i18next primitives for convenience across apps
