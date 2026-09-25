@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { X, Copy, Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export function ShareModal({ 
   isOpen, 
   setIsOpen, 
   url, 
-  title = "Lien public partageable",
-  description = "Les liens publics peuvent être repartagés. Partagez-les de façon responsable. Vous pouvez les supprimer à tout moment. En cas de partage avec un tiers, son règlement s'applique."
+  title,
+  description,
 }: { 
   isOpen: boolean; 
   setIsOpen: (o: boolean) => void; 
@@ -15,7 +16,11 @@ export function ShareModal({
   title?: string;
   description?: string;
 }) {
+  const { t } = useTranslation('study');
   const [copied, setCopied] = useState(false);
+
+  const resolvedTitle = title || t('modals.share.title');
+  const resolvedDesc = description || t('modals.share.description');
 
   const handleCopy = async () => {
     try {
@@ -66,7 +71,7 @@ export function ShareModal({
         <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 animate-in fade-in duration-200" />
         <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-sphera-surface-2 border border-sphera-border rounded-2xl shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200 p-6 flex flex-col gap-5 text-white">
           <div className="flex items-center justify-between">
-            <Dialog.Title className="text-xl font-semibold">{title}</Dialog.Title>
+            <Dialog.Title className="text-xl font-semibold">{resolvedTitle}</Dialog.Title>
             <Dialog.Close className="text-sphera-text-muted hover:text-white transition-colors bg-sphera-surface hover:bg-sphera-border p-2 rounded-full">
               <X className="w-4 h-4" />
             </Dialog.Close>
@@ -85,13 +90,13 @@ export function ShareModal({
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all shrink-0 ${copied ? 'bg-sphera-green text-black' : 'bg-sphera-surface hover:bg-sphera-border text-white'}`}
             >
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-              {copied ? 'Copié' : 'Copier le lien'}
+              {copied ? t('modals.share.copied') : t('modals.share.copy')}
             </button>
           </div>
 
           <Dialog.Description className="text-sm text-sphera-text-muted leading-relaxed flex gap-3">
             <span className="shrink-0 mt-0.5 text-lg">ⓘ</span>
-            <span>{description}</span>
+            <span>{resolvedDesc}</span>
           </Dialog.Description>
 
           <div className="flex items-center justify-around mt-2 pt-5 border-t border-sphera-border/50">

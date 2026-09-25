@@ -103,6 +103,37 @@
     "q8": "Sphera fonctionne-t-il pour toutes les filières ?",
     "a8": "Oui ! L'IA de Sphera s'adapte à tous les domaines d'études : droit, médecine, ingénierie, sciences économiques, lettres ou prépas. Elle comprend le vocabulaire technique propre à chaque discipline."
   },
+  "liveSection": {
+    "badge": "Nouveau • Mode Multijoueur",
+    "titlePrefix": "Sphera",
+    "titleHighlight": "Live",
+    "titleSuffix": " : le quiz en direct sur grand écran",
+    "description": "Ne révisez plus jamais seuls. Projetez un quiz en amphi, lancez un défi en promo ou improvisez une session culture gé entre potes. Vos amis rejoignent avec un simple code sur smartphone, sans aucune inscription.",
+    "bullet1Title": "Rejoindre en 5s",
+    "bullet1Desc": "Un code à 6 lettres et un pseudo suffisent.",
+    "bullet2Title": "Timer & Sons live",
+    "bullet2Desc": "Adrénaline garantie avec chrono synchronisé.",
+    "bullet3Title": "Podium & Confettis",
+    "bullet3Desc": "Classement instantané après chaque réponse.",
+    "bullet4Title": "Tous les sujets",
+    "bullet4Desc": "Cours, culture gé, ciné, sport ou manga.",
+    "launchGame": "Lancer une partie",
+    "learnMore": "En savoir plus",
+    "mockup": {
+      "waitingRoom": "Salle d'attente live",
+      "roomTitle": "Quiz Culture & Sciences",
+      "pinCode": "Code PIN",
+      "questionProgress": "Question 4 / 10",
+      "timeRemaining": "08s restantes",
+      "sampleQuestion": "Quelle molécule transporte l'oxygène dans les hématies ?",
+      "optionA": "Insuline",
+      "optionB": "Hémoglobine",
+      "optionC": "Myosine",
+      "optionD": "Collagène",
+      "liveLeaderboard": "Leaderboard en direct",
+      "connectedParticipants": "14 participants connectés"
+    }
+  },
   "footer": {
     "slogan": "Upload. Revise. Succeed.",
     "spheraLive": "Sphera Live",

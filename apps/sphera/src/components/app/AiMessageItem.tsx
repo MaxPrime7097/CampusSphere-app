@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Copy, Check, ThumbsUp, ThumbsDown, Pencil, RotateCcw } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { MarkdownRenderer } from './MarkdownRenderer'
 
 interface AiMessageItemProps {
@@ -12,6 +13,7 @@ interface AiMessageItemProps {
 }
 
 export function AiMessageItem({ question, answer, index, onEdit, onRegenerate, disabled }: AiMessageItemProps) {
+  const { t } = useTranslation('study')
   const [copied, setCopied] = useState(false)
   const [feedback, setFeedback] = useState<'up' | 'down' | null>(null)
   const [isEditing, setIsEditing] = useState(false)
@@ -62,7 +64,7 @@ export function AiMessageItem({ question, answer, index, onEdit, onRegenerate, d
               }}
               rows={Math.min(5, Math.max(2, editText.split('\n').length))}
               className="w-full bg-sphera-surface/80 text-white text-sm rounded-xl p-2.5 border border-sphera-border focus:border-sphera-green focus:outline-none resize-none leading-relaxed"
-              placeholder="Modifier votre question..."
+              placeholder={t('aiMessage.editPlaceholder')}
               autoFocus
             />
             <div className="flex items-center justify-end gap-2 text-xs">
@@ -74,7 +76,7 @@ export function AiMessageItem({ question, answer, index, onEdit, onRegenerate, d
                 }}
                 className="px-3 py-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors"
               >
-                Annuler
+                {t('aiMessage.cancel')}
               </button>
               <button
                 type="button"
@@ -82,7 +84,7 @@ export function AiMessageItem({ question, answer, index, onEdit, onRegenerate, d
                 disabled={!editText.trim()}
                 className="px-3 py-1.5 rounded-lg bg-sphera-green text-black font-medium hover:bg-green-400 disabled:opacity-50 transition-colors"
               >
-                Envoyer
+                {t('aiMessage.send')}
               </button>
             </div>
           </div>
@@ -92,8 +94,8 @@ export function AiMessageItem({ question, answer, index, onEdit, onRegenerate, d
               <button
                 type="button"
                 onClick={() => setIsEditing(true)}
-                title="Modifier ce message"
-                aria-label="Modifier ce message"
+                title={t('aiMessage.editTooltip')}
+                aria-label={t('aiMessage.editTooltip')}
                 className="opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity p-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2 shrink-0"
               >
                 <Pencil className="w-3.5 h-3.5" />
@@ -123,19 +125,19 @@ export function AiMessageItem({ question, answer, index, onEdit, onRegenerate, d
               <button
                 type="button"
                 onClick={handleCopy}
-                title="Copier la réponse"
-                aria-label="Copier la réponse"
+                title={t('aiMessage.copy')}
+                aria-label={t('aiMessage.copy')}
                 className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs hover:text-white hover:bg-sphera-surface-2 transition-colors"
               >
                 {copied ? (
                   <>
                     <Check className="w-3.5 h-3.5 text-sphera-green" />
-                    <span className="text-sphera-green text-[11px]">Copié</span>
+                    <span className="text-sphera-green text-[11px]">{t('aiMessage.copied')}</span>
                   </>
                 ) : (
                   <>
                     <Copy className="w-3.5 h-3.5" />
-                    <span className="text-[11px]">Copier</span>
+                    <span className="text-[11px]">{t('aiMessage.copy')}</span>
                   </>
                 )}
               </button>
@@ -145,8 +147,8 @@ export function AiMessageItem({ question, answer, index, onEdit, onRegenerate, d
               <button
                 type="button"
                 onClick={() => handleFeedback('up')}
-                title="Réponse utile"
-                aria-label="Réponse utile"
+                title={t('aiMessage.helpful')}
+                aria-label={t('aiMessage.helpful')}
                 className={`p-1.5 rounded-md text-xs transition-colors ${
                   feedback === 'up'
                     ? 'text-sphera-green bg-sphera-green/10'
@@ -159,8 +161,8 @@ export function AiMessageItem({ question, answer, index, onEdit, onRegenerate, d
               <button
                 type="button"
                 onClick={() => handleFeedback('down')}
-                title="Réponse à améliorer"
-                aria-label="Réponse à améliorer"
+                title={t('aiMessage.improve')}
+                aria-label={t('aiMessage.improve')}
                 className={`p-1.5 rounded-md text-xs transition-colors ${
                   feedback === 'down'
                     ? 'text-red-400 bg-red-400/10'
@@ -176,12 +178,12 @@ export function AiMessageItem({ question, answer, index, onEdit, onRegenerate, d
                   <button
                     type="button"
                     onClick={() => onRegenerate(index)}
-                    title="Régénérer la réponse"
-                    aria-label="Régénérer la réponse"
+                    title={t('aiMessage.regenerate')}
+                    aria-label={t('aiMessage.regenerate')}
                     className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2 transition-colors active:scale-95"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
-                    <span className="text-[11px] hidden sm:inline">Régénérer</span>
+                    <span className="text-[11px] hidden sm:inline">{t('aiMessage.regenerate')}</span>
                   </button>
                 </>
               )}

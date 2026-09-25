@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Sparkles, Loader2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 interface GenerateButtonProps {
   onGenerate: () => void;
@@ -7,7 +8,7 @@ interface GenerateButtonProps {
   isGenerating: boolean;
 }
 
-const loadingMessages = [
+const defaultLoadingMessages = [
   "Sphera lit ton cours...",
   "Extraction des points clés...",
   "Analyse de la structure...",
@@ -18,7 +19,13 @@ const loadingMessages = [
 ]
 
 export function GenerateButton({ onGenerate, disabled, isGenerating }: GenerateButtonProps) {
+  const { t } = useTranslation('study')
   const [messageIndex, setMessageIndex] = useState(0)
+
+  const loadingMessages = useMemo(() => {
+    const msgs = t('generateButton.messages', { returnObjects: true })
+    return Array.isArray(msgs) ? (msgs as string[]) : defaultLoadingMessages
+  }, [t])
 
   useEffect(() => {
     if (!isGenerating) {
@@ -31,7 +38,7 @@ export function GenerateButton({ onGenerate, disabled, isGenerating }: GenerateB
     }, 2500)
 
     return () => clearInterval(interval)
-  }, [isGenerating])
+  }, [isGenerating, loadingMessages.length])
 
   return (
     <button
@@ -47,7 +54,7 @@ export function GenerateButton({ onGenerate, disabled, isGenerating }: GenerateB
       ) : (
         <>
           <Sparkles className="w-5 h-5 group-hover:scale-110 transition-transform" />
-          Générer avec Sphera
+          {t('generateButton.label')}
           
           {/* Subtle sweep animation on hover */}
           <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:animate-[shimmer_1.5s_infinite]" />

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Zap, Plus, LogIn, Loader2, ArrowRight, Trash2 } from 'lucide-react';
 import { getMyQuizSessions, deleteQuizSession } from '../services/spheraApi';
 import { DeleteConfirmModal } from '../components/app/DeleteConfirmModal';
 import { Helmet } from 'react-helmet-async';
 
 export default function QuizLiveHome() {
+  const { t, i18n } = useTranslation('live');
   const [liveSessions, setLiveSessions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [quizToDelete, setQuizToDelete] = useState<string | null>(null);
@@ -40,7 +42,7 @@ export default function QuizLiveHome() {
       }}></div>
 
       <Helmet>
-        <title>Sphera Live · CampusSphere</title>
+        <title>{t('home.pageTitle')}</title>
       </Helmet>
       
       <main className="flex-1 w-full max-w-5xl mx-auto py-12 px-4 sm:px-6 relative z-10">
@@ -49,10 +51,10 @@ export default function QuizLiveHome() {
             <Zap className="w-8 h-8 text-sphera-green" />
           </div>
           <h1 className="font-display text-5xl sm:text-6xl font-bold text-white mb-4 tracking-tight">
-            Sphera <span className="text-sphera-green">Live</span>
+            {t('home.title')} <span className="text-sphera-green">{t('home.titleHighlight')}</span>
           </h1>
           <p className="text-xl text-sphera-text-muted font-medium max-w-2xl mx-auto">
-            L'expérience quiz multijoueur interactive en temps réel.
+            {t('home.subtitle')}
           </p>
         </div>
 
@@ -62,10 +64,10 @@ export default function QuizLiveHome() {
             <div className="w-16 h-16 rounded-2xl bg-sphera-green/10 flex items-center justify-center mb-6 group-hover:bg-sphera-green group-hover:text-black transition-colors">
               <Plus className="w-8 h-8 text-sphera-green group-hover:text-black transition-colors" />
             </div>
-            <h3 className="text-2xl font-bold text-white mb-3 font-display">Héberger un Quiz</h3>
-            <p className="text-sphera-text-muted mb-8 text-lg">Créez une session sur grand écran et invitez vos amis à rejoindre la partie avec un code.</p>
+            <h3 className="text-2xl font-bold text-white mb-3 font-display">{t('home.hostTitle')}</h3>
+            <p className="text-sphera-text-muted mb-8 text-lg">{t('home.hostDesc')}</p>
             <div className="flex items-center gap-2 text-sphera-green font-bold uppercase tracking-wider text-sm">
-              Commencer <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              {t('home.hostStart')} <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
           </Link>
 
@@ -74,17 +76,17 @@ export default function QuizLiveHome() {
             <div className="w-16 h-16 rounded-2xl bg-blue-500/10 flex items-center justify-center mb-6 group-hover:bg-blue-500 group-hover:text-white transition-colors">
               <LogIn className="w-8 h-8 text-blue-500 group-hover:text-white transition-colors" />
             </div>
-            <h3 className="text-2xl font-bold text-white mb-3 font-display">Rejoindre une partie</h3>
-            <p className="text-sphera-text-muted mb-8 text-lg">Vous avez un code ? Rejoignez instantanément une salle d'attente depuis votre téléphone.</p>
+            <h3 className="text-2xl font-bold text-white mb-3 font-display">{t('home.joinTitle')}</h3>
+            <p className="text-sphera-text-muted mb-8 text-lg">{t('home.joinDesc')}</p>
             <div className="flex items-center gap-2 text-blue-500 font-bold uppercase tracking-wider text-sm">
-              Jouer <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              {t('home.joinPlay')} <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
           </Link>
         </div>
 
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-8">
-            <h3 className="text-2xl font-display font-bold text-white">Dernières parties</h3>
+            <h3 className="text-2xl font-display font-bold text-white">{t('home.recentSessions')}</h3>
           </div>
           
           {loading ? (
@@ -93,7 +95,7 @@ export default function QuizLiveHome() {
             </div>
           ) : liveSessions.length === 0 ? (
             <div className="text-center p-12 bg-sphera-surface-2/50 rounded-3xl border border-sphera-border border-dashed">
-              <p className="text-sphera-text-muted text-lg">Vous n'avez pas encore hébergé de session Sphera Live.</p>
+              <p className="text-sphera-text-muted text-lg">{t('home.noSessions')}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -114,7 +116,7 @@ export default function QuizLiveHome() {
                           setQuizToDelete(session.roomCode);
                         }}
                         className="p-1.5 rounded-lg text-sphera-text-muted hover:text-red-500 hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100"
-                        title="Supprimer la session"
+                        title={t('home.deleteSession')}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -125,7 +127,7 @@ export default function QuizLiveHome() {
                   </div>
                   <h4 className="text-white font-bold text-lg mb-2 line-clamp-1">{session.title}</h4>
                   <div className="text-sm text-sphera-text-muted">
-                    {new Date(session.createdAt).toLocaleDateString('fr-FR')}
+                    {new Date(session.createdAt).toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'fr-FR')}
                   </div>
                 </div>
               ))}
@@ -140,8 +142,8 @@ export default function QuizLiveHome() {
           if (!open) setQuizToDelete(null);
         }}
         onConfirm={handleConfirmDelete}
-        title="Supprimer le quiz ?"
-        description="Cette action est irréversible. Les scores et questions de cette session live seront définitivement supprimés."
+        title={t('home.deleteModalTitle')}
+        description={t('home.deleteModalDesc')}
       />
     </div>
   );

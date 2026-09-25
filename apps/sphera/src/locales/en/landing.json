@@ -103,6 +103,37 @@
     "q8": "Does Sphera work for all majors?",
     "a8": "Yes! Sphera's AI adapts to all fields of study: law, medicine, engineering, economics, humanities, or prep schools. It understands specialized technical vocabulary for each subject."
   },
+  "liveSection": {
+    "badge": "New • Multiplayer Mode",
+    "titlePrefix": "Sphera",
+    "titleHighlight": "Live",
+    "titleSuffix": ": live quiz on the big screen",
+    "description": "Never study alone again. Project a quiz in lecture halls, challenge classmates, or host trivia sessions with friends. Your friends join using a simple smartphone code, no registration needed.",
+    "bullet1Title": "Join in 5s",
+    "bullet1Desc": "A 6-letter code and a nickname are all you need.",
+    "bullet2Title": "Live Timer & Sounds",
+    "bullet2Desc": "Guaranteed rush with synchronized timers.",
+    "bullet3Title": "Podium & Confetti",
+    "bullet3Desc": "Instant rankings after every question.",
+    "bullet4Title": "Any Subject",
+    "bullet4Desc": "Lectures, trivia, movies, sports or manga.",
+    "launchGame": "Start a game",
+    "learnMore": "Learn more",
+    "mockup": {
+      "waitingRoom": "Live waiting room",
+      "roomTitle": "Science & Culture Quiz",
+      "pinCode": "PIN Code",
+      "questionProgress": "Question 4 / 10",
+      "timeRemaining": "08s remaining",
+      "sampleQuestion": "Which molecule carries oxygen in red blood cells?",
+      "optionA": "Insulin",
+      "optionB": "Hemoglobin",
+      "optionC": "Myosin",
+      "optionD": "Collagen",
+      "liveLeaderboard": "Live leaderboard",
+      "connectedParticipants": "14 participants connected"
+    }
+  },
   "footer": {
     "slogan": "Upload. Revise. Succeed.",
     "spheraLive": "Sphera Live",

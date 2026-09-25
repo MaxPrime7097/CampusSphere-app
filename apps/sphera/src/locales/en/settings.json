@@ -65,5 +65,42 @@
     "saving": "Saving...",
     "save": "Save changes",
     "close": "Close"
+  },
+  "statsGrid": {
+    "tools": {
+      "fiche": "Course summaries",
+      "quiz": "Interactive quizzes",
+      "flashcards": "Flashcards",
+      "mindmap": "Mind maps",
+      "audio": "Audio summaries"
+    },
+    "currentStreak": "Current streak",
+    "recordStreak": "Personal record",
+    "totalSessions": "Total sessions",
+    "favoriteTool": "Favorite tool",
+    "mostUsed": "most used",
+    "unitDay": "day",
+    "unitDay_plural": "days",
+    "unitCourse": "course",
+    "unitCourse_plural": "courses",
+    "gridTitle": "Activity and revision grid (last 14 weeks)",
+    "streakDays": "{{count}} day",
+    "streakDays_plural": "{{count}} days",
+    "totalCourses": "{{count}} course",
+    "totalCourses_plural": "{{count}} courses",
+    "consecutiveDays": "{{count}} consecutive day",
+    "consecutiveDays_plural": "{{count}} consecutive days",
+    "startStreakToday": "Study today to start a streak",
+    "dayTooltip": "{{count}} session on {{date}}",
+    "dayTooltip_plural": "{{count}} sessions on {{date}}",
+    "legendInfo": "Each square represents a study or revision day.",
+    "less": "Less",
+    "more": "More",
+    "days": {
+      "mon": "Mon",
+      "wed": "Wed",
+      "fri": "Fri",
+      "sun": "Sun"
+    }
   }
 }

@@ -65,5 +65,42 @@
     "saving": "Enregistrement...",
     "save": "Enregistrer les modifications",
     "close": "Fermer"
+  },
+  "statsGrid": {
+    "tools": {
+      "fiche": "Fiches de cours",
+      "quiz": "Quiz interactifs",
+      "flashcards": "Cartes mémoires",
+      "mindmap": "Cartes mentales",
+      "audio": "Résumés audio"
+    },
+    "currentStreak": "Streak en cours",
+    "recordStreak": "Record personnel",
+    "totalSessions": "Sessions totales",
+    "favoriteTool": "Outil favori",
+    "mostUsed": "le plus utilisé",
+    "unitDay": "jour",
+    "unitDay_plural": "jours",
+    "unitCourse": "cours",
+    "unitCourse_plural": "cours",
+    "gridTitle": "Grille d'activité et révisions (14 dernières semaines)",
+    "streakDays": "{{count}} jour",
+    "streakDays_plural": "{{count}} jours",
+    "totalCourses": "{{count}} cours",
+    "totalCourses_plural": "{{count}} cours",
+    "consecutiveDays": "{{count}} jour consécutif",
+    "consecutiveDays_plural": "{{count}} jours consécutifs",
+    "startStreakToday": "Révisez aujourd'hui pour démarrer un streak",
+    "dayTooltip": "{{count}} session le {{date}}",
+    "dayTooltip_plural": "{{count}} sessions le {{date}}",
+    "legendInfo": "Chaque carré représente une journée d'entraînement ou de révision.",
+    "less": "Moins",
+    "more": "Plus",
+    "days": {
+      "mon": "Lun",
+      "wed": "Mer",
+      "fri": "Ven",
+      "sun": "Dim"
+    }
   }
 }

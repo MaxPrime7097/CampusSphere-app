@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react'
 import { Sparkles, AlertCircle } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { getQuota, type GenerationQuota } from '../../services/spheraApi'
 import { useSpheraAuth } from '../../contexts/SpheraAuthContext'
 
 export function QuotaIndicator({ className = '' }: { className?: string }) {
+  const { t } = useTranslation('study')
   const { isAuthenticated } = useSpheraAuth()
   const [quota, setQuota] = useState<GenerationQuota | null>(null)
 
@@ -49,7 +51,7 @@ export function QuotaIndicator({ className = '' }: { className?: string }) {
         className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-medium bg-sphera-surface border-sphera-border text-sphera-text-muted ${className}`}
       >
         <Sparkles className="w-4 h-4 text-sphera-green shrink-0" />
-        <span className="truncate">5 gén. offertes / semaine</span>
+        <span className="truncate">{t('quotaIndicator.freeWeekly')}</span>
       </div>
     )
   }
@@ -75,7 +77,8 @@ export function QuotaIndicator({ className = '' }: { className?: string }) {
       )}
       <div className="flex items-center justify-between gap-2 flex-1 min-w-0">
         <span className="truncate">
-          <strong className={isExhausted ? 'text-red-400' : 'text-white'}>{remaining}</strong> / {limit} gén. semaine
+          <strong className={isExhausted ? 'text-red-400' : 'text-white'}>{remaining}</strong>
+          {t('quotaIndicator.weeklyRemaining', { remaining: '', limit }).replace(/^\s*/, ' ')}
         </span>
         <div className="w-12 h-1.5 rounded-full bg-sphera-surface-2 overflow-hidden shrink-0">
           <div

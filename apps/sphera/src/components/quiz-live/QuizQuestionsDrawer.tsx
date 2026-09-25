@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Edit3, Eye, Check, Plus, Trash2, Clock, Award, Save, Loader2, AlertCircle, Sliders } from 'lucide-react';
 import { updateQuizQuestions } from '../../services/spheraApi';
 
@@ -30,6 +31,7 @@ export function QuizQuestionsDrawer({
   initialTitle = 'Quiz Live',
   onQuestionsUpdated,
 }: QuizQuestionsDrawerProps) {
+  const { t } = useTranslation('live');
   const [mode, setMode] = useState<'view' | 'edit'>('view');
   const [questions, setQuestions] = useState<QuestionItem[]>([]);
   const [title, setTitle] = useState(initialTitle);
@@ -105,11 +107,11 @@ export function QuizQuestionsDrawer({
     const timeVal = isCustomBulkTime ? parseInt(customBulkTime, 10) : bulkTime;
     const ptsVal = isCustomBulkPoints ? parseInt(customBulkPoints, 10) : bulkPoints;
     if (!timeVal || isNaN(timeVal) || timeVal <= 0) {
-      setError('Veuillez spécifier un temps valide (en secondes).');
+      setError(t('drawer.errorGeneral'));
       return;
     }
     if (!ptsVal || isNaN(ptsVal) || ptsVal <= 0) {
-      setError('Veuillez spécifier un nombre de points valide.');
+      setError(t('drawer.errorGeneral'));
       return;
     }
     setQuestions(prev => prev.map(q => ({ ...q, timeLimit: timeVal, points: ptsVal })));
@@ -120,7 +122,7 @@ export function QuizQuestionsDrawer({
     setQuestions(prev => [
       ...prev,
       {
-        question: `Nouvelle question ${prev.length + 1}`,
+        question: `Question ${prev.length + 1}`,
         options: ['Option A', 'Option B', 'Option C', 'Option D'],
         correctIndex: 0,
         timeLimit: 30,
@@ -131,7 +133,7 @@ export function QuizQuestionsDrawer({
 
   const handleDeleteQuestion = (index: number) => {
     if (questions.length <= 1) {
-      setError('Le quiz doit contenir au moins une question.');
+      setError(t('drawer.errorMinOne'));
       return;
     }
     setQuestions(prev => prev.filter((_, i) => i !== index));
@@ -142,11 +144,11 @@ export function QuizQuestionsDrawer({
     for (let i = 0; i < questions.length; i++) {
       const q = questions[i];
       if (!q.question.trim()) {
-        setError(`La question #${i + 1} ne peut pas être vide.`);
+        setError(t('drawer.errorEmptyQuestion', { num: i + 1 }));
         return;
       }
       if (q.options.some(opt => !opt.trim())) {
-        setError(`Toutes les 4 options de la question #${i + 1} doivent être renseignées.`);
+        setError(t('drawer.errorMissingOptions', { num: i + 1 }));
         return;
       }
     }
@@ -160,11 +162,11 @@ export function QuizQuestionsDrawer({
         setTimeout(() => setSavedSuccess(false), 3000);
         setMode('view');
       } else {
-        setError('Impossible d\'enregistrer les modifications.');
+        setError(t('drawer.errorSaving'));
       }
     } catch (err: any) {
       console.error(err);
-      setError(err?.message || 'Erreur lors de la sauvegarde.');
+      setError(err?.message || t('drawer.errorGeneral'));
     } finally {
       setSaving(false);
     }
@@ -186,14 +188,14 @@ export function QuizQuestionsDrawer({
             <div>
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-sphera-green/20 text-sphera-green border border-sphera-green/40">
-                  Salle {roomCode}
+                  {t('drawer.roomBadge', { code: roomCode })}
                 </span>
                 <span className="text-xs text-sphera-text-muted">
-                  {questions.length} question{questions.length > 1 ? 's' : ''}
+                  {t('drawer.questionsCount', { count: questions.length })}
                 </span>
               </div>
               <h2 className="text-xl font-bold text-white mt-1">
-                {mode === 'view' ? (title || 'Questions du Quiz') : 'Modifier les questions'}
+                {mode === 'view' ? (title || t('drawer.titleView')) : t('drawer.titleEdit')}
               </h2>
             </div>
 
@@ -204,7 +206,7 @@ export function QuizQuestionsDrawer({
                   className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-sphera-green/10 border border-sphera-green/30 text-sphera-green hover:bg-sphera-green hover:text-black transition-colors text-sm font-semibold"
                 >
                   <Edit3 className="w-4 h-4" />
-                  Modifier
+                  {t('drawer.editBtn')}
                 </button>
               ) : (
                 <button
@@ -215,13 +217,13 @@ export function QuizQuestionsDrawer({
                   className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-sphera-bg border border-sphera-border text-sphera-text-muted hover:text-white transition-colors text-sm font-semibold"
                 >
                   <Eye className="w-4 h-4" />
-                  Aperçu
+                  {t('drawer.previewBtn')}
                 </button>
               )}
               <button
                 onClick={onClose}
                 className="p-2 text-sphera-text-muted hover:text-white hover:bg-sphera-bg rounded-lg transition-colors"
-                title="Fermer"
+                title={t('drawer.close')}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -232,7 +234,7 @@ export function QuizQuestionsDrawer({
           {savedSuccess && (
             <div className="mx-6 mt-4 p-3 bg-sphera-green/20 border border-sphera-green/50 rounded-xl flex items-center gap-2 text-sphera-green text-sm font-medium animate-fade-in">
               <Check className="w-4 h-4" />
-              Questions mises à jour avec succès ! Les joueurs verront ces modifications.
+              {t('drawer.successNotice')}
             </div>
           )}
 
@@ -249,14 +251,14 @@ export function QuizQuestionsDrawer({
               <>
                 <div className="bg-sphera-surface p-4 rounded-xl border border-sphera-border mb-4">
                   <label className="block text-xs font-semibold text-sphera-text-muted uppercase tracking-wider mb-2">
-                    Titre du Quiz
+                    {t('drawer.quizTitleLabel')}
                   </label>
                   <input
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     className="w-full bg-sphera-bg border border-sphera-border focus:border-sphera-green rounded-lg px-3 py-2 text-white font-medium text-sm focus:outline-none"
-                    placeholder="ex: Quiz Révision Biologie"
+                    placeholder={t('drawer.quizTitlePlaceholder')}
                   />
                 </div>
 
@@ -264,17 +266,17 @@ export function QuizQuestionsDrawer({
                 <div className="bg-sphera-surface p-4 rounded-xl border border-sphera-border/80 mb-4 space-y-3 shadow-sm">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-sphera-green uppercase tracking-wider flex items-center gap-1.5">
-                      <Sliders className="w-3.5 h-3.5" /> Réglage global pour toutes les questions
+                      <Sliders className="w-3.5 h-3.5" /> {t('drawer.bulkSettingsTitle')}
                     </span>
                     <span className="text-[11px] text-sphera-text-muted">
-                      {questions.length} question{questions.length > 1 ? 's' : ''}
+                      {t('drawer.questionsCount', { count: questions.length })}
                     </span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                     <div className="flex flex-col gap-1.5">
                       <label className="text-sphera-text-muted flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-blue-400" /> Temps par question :
+                        <Clock className="w-3 h-3 text-blue-400" /> {t('drawer.bulkTimeLabel')}
                       </label>
                       <div className="flex items-center gap-2">
                         <select
@@ -289,10 +291,10 @@ export function QuizQuestionsDrawer({
                           }}
                           className="flex-1 bg-sphera-bg border border-sphera-border text-white text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-sphera-green"
                         >
-                          {TIME_OPTIONS.map(t => (
-                            <option key={t} value={t}>{t}s</option>
+                          {TIME_OPTIONS.map(tOption => (
+                            <option key={tOption} value={tOption}>{tOption}s</option>
                           ))}
-                          <option value="custom">Personnalisé...</option>
+                          <option value="custom">{t('drawer.customOption')}</option>
                         </select>
                         {isCustomBulkTime && (
                           <div className="flex items-center gap-1">
@@ -313,7 +315,7 @@ export function QuizQuestionsDrawer({
 
                     <div className="flex flex-col gap-1.5">
                       <label className="text-sphera-text-muted flex items-center gap-1">
-                        <Award className="w-3 h-3 text-yellow-400" /> Points par question :
+                        <Award className="w-3 h-3 text-yellow-400" /> {t('drawer.bulkPointsLabel')}
                       </label>
                       <div className="flex items-center gap-2">
                         <select
@@ -331,7 +333,7 @@ export function QuizQuestionsDrawer({
                           {POINTS_OPTIONS.map(p => (
                             <option key={p} value={p}>{p} pts</option>
                           ))}
-                          <option value="custom">Personnalisé...</option>
+                          <option value="custom">{t('drawer.customOption')}</option>
                         </select>
                         {isCustomBulkPoints && (
                           <div className="flex items-center gap-1">
@@ -357,7 +359,7 @@ export function QuizQuestionsDrawer({
                     onClick={handleApplyBothToAll}
                     className="w-full py-2 px-3 rounded-lg bg-sphera-green/10 hover:bg-sphera-green/20 border border-sphera-green/30 text-sphera-green font-semibold text-xs transition-colors flex items-center justify-center gap-1.5"
                   >
-                    <Check className="w-3.5 h-3.5" /> Appliquer ce temps et ces points à toutes les questions ({questions.length})
+                    <Check className="w-3.5 h-3.5" /> {t('drawer.applyBothBtn', { count: questions.length })}
                   </button>
                 </div>
               </>
@@ -379,7 +381,7 @@ export function QuizQuestionsDrawer({
                         {qIndex + 1}
                       </span>
                       <span className="text-xs font-medium text-sphera-text-muted">
-                        Question {qIndex + 1} sur {questions.length}
+                        {t('drawer.questionNumber', { current: qIndex + 1, total: questions.length })}
                       </span>
                     </div>
 
@@ -408,10 +410,10 @@ export function QuizQuestionsDrawer({
                               }}
                               className="bg-sphera-bg border border-sphera-border text-white text-xs rounded px-2 py-1 focus:outline-none focus:border-sphera-green"
                             >
-                              {TIME_OPTIONS.map(t => (
-                                <option key={t} value={t}>{t}s</option>
+                              {TIME_OPTIONS.map(tOption => (
+                                <option key={tOption} value={tOption}>{tOption}s</option>
                               ))}
-                              <option value="custom">Perso...</option>
+                              <option value="custom">{t('drawer.customOption')}</option>
                             </select>
                             {!TIME_OPTIONS.includes(qTime) && (
                               <div className="flex items-center gap-0.5">
@@ -441,7 +443,7 @@ export function QuizQuestionsDrawer({
                               {POINTS_OPTIONS.map(p => (
                                 <option key={p} value={p}>{p} pts</option>
                               ))}
-                              <option value="custom">Perso...</option>
+                              <option value="custom">{t('drawer.customOption')}</option>
                             </select>
                             {!POINTS_OPTIONS.includes(qPts) && (
                               <div className="flex items-center gap-0.5">
@@ -462,7 +464,7 @@ export function QuizQuestionsDrawer({
                             <button
                               onClick={() => handleDeleteQuestion(qIndex)}
                               className="p-1 rounded text-sphera-text-muted hover:text-red-400 hover:bg-red-500/10 transition-colors ml-1"
-                              title="Supprimer cette question"
+                              title={t('drawer.deleteQuestionTooltip')}
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -483,7 +485,7 @@ export function QuizQuestionsDrawer({
                       onChange={(e) => handleQuestionTextChange(qIndex, e.target.value)}
                       rows={2}
                       className="w-full bg-sphera-bg border border-sphera-border focus:border-sphera-green rounded-xl p-3 text-white text-sm focus:outline-none mb-4 resize-none"
-                      placeholder="Énoncé de la question..."
+                      placeholder={t('drawer.questionPlaceholder')}
                     />
                   )}
 
@@ -530,7 +532,7 @@ export function QuizQuestionsDrawer({
                           <button
                             type="button"
                             onClick={() => handleCorrectIndexChange(qIndex, optIndex)}
-                            title={isCorrect ? "Bonne réponse" : "Définir comme bonne réponse"}
+                            title={isCorrect ? t('drawer.correctAnswerBadge') : t('drawer.setCorrectTooltip')}
                             className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-transform active:scale-90 ${
                               isCorrect
                                 ? 'bg-sphera-green text-black shadow-[0_0_10px_rgba(34,197,94,0.4)]'
@@ -544,7 +546,7 @@ export function QuizQuestionsDrawer({
                             value={opt}
                             onChange={(e) => handleOptionChange(qIndex, optIndex, e.target.value)}
                             className="flex-1 bg-transparent text-white text-xs sm:text-sm focus:outline-none"
-                            placeholder={`Option ${letter}`}
+                            placeholder={t('drawer.optionPlaceholder', { letter })}
                           />
                           {isCorrect && (
                             <Check className="w-4 h-4 text-sphera-green shrink-0 mr-1" />
@@ -564,7 +566,7 @@ export function QuizQuestionsDrawer({
                 className="w-full py-4 border-2 border-dashed border-sphera-border hover:border-sphera-green/50 rounded-2xl flex items-center justify-center gap-2 text-sphera-text-muted hover:text-sphera-green transition-colors group"
               >
                 <Plus className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                <span className="font-semibold text-sm">Ajouter une question</span>
+                <span className="font-semibold text-sm">{t('drawer.addQuestionBtn')}</span>
               </button>
             )}
           </div>
@@ -574,14 +576,14 @@ export function QuizQuestionsDrawer({
             {mode === 'view' ? (
               <>
                 <p className="text-xs text-sphera-text-muted">
-                  Astuce : vous pouvez ajuster les questions avant de lancer la partie.
+                  {t('drawer.footerTip')}
                 </p>
                 <button
                   onClick={() => setMode('edit')}
                   className="px-5 py-2.5 rounded-xl bg-sphera-green text-black font-bold text-sm hover:bg-sphera-green/90 transition-all hover:scale-105 active:scale-95 flex items-center gap-2 shadow-[0_0_20px_rgba(34,197,94,0.3)]"
                 >
                   <Edit3 className="w-4 h-4" />
-                  Modifier les questions
+                  {t('drawer.modifyQuestionsBtn')}
                 </button>
               </>
             ) : (
@@ -594,7 +596,7 @@ export function QuizQuestionsDrawer({
                   disabled={saving}
                   className="px-4 py-2.5 rounded-xl border border-sphera-border text-sphera-text-muted hover:text-white transition-colors text-sm font-semibold"
                 >
-                  Annuler
+                  {t('drawer.cancelBtn')}
                 </button>
                 <button
                   onClick={handleSave}
@@ -604,12 +606,12 @@ export function QuizQuestionsDrawer({
                   {saving ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Enregistrement...
+                      {t('drawer.saving')}
                     </>
                   ) : (
                     <>
                       <Save className="w-4 h-4" />
-                      Enregistrer les modifications
+                      {t('drawer.saveBtn')}
                     </>
                   )}
                 </button>

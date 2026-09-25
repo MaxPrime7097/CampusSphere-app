@@ -1,5 +1,6 @@
 import React from 'react'
 import { Sparkles, FileText, Lightbulb, BrainCircuit, SquareStack } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 export type SelectionActionType = 'expliquer' | 'resumer' | 'exemple' | 'quiz' | 'flashcards'
 
@@ -11,6 +12,7 @@ interface TextSelectionToolbarProps {
 }
 
 export function TextSelectionToolbar({ coords, selectedText, onAction, onClose }: TextSelectionToolbarProps) {
+  const { t } = useTranslation('study')
   if (!selectedText.trim()) return null
 
   // Ensure toolbar stays within screen bounds
@@ -20,31 +22,31 @@ export function TextSelectionToolbar({ coords, selectedText, onAction, onClose }
   const actions: { id: SelectionActionType; label: string; icon: React.ReactNode; color: string }[] = [
     {
       id: 'expliquer',
-      label: 'Expliquer',
+      label: t('modals.textSelection.explain'),
       icon: <Sparkles className="w-3.5 h-3.5" />,
       color: 'hover:text-sphera-green hover:bg-sphera-green/10',
     },
     {
       id: 'resumer',
-      label: 'Résumer',
+      label: t('modals.textSelection.summarize'),
       icon: <FileText className="w-3.5 h-3.5" />,
       color: 'hover:text-blue-400 hover:bg-blue-400/10',
     },
     {
       id: 'exemple',
-      label: 'Exemple',
+      label: t('modals.textSelection.example'),
       icon: <Lightbulb className="w-3.5 h-3.5" />,
       color: 'hover:text-amber-400 hover:bg-amber-400/10',
     },
     {
       id: 'quiz',
-      label: 'Quiz',
+      label: t('modals.textSelection.quiz'),
       icon: <BrainCircuit className="w-3.5 h-3.5" />,
       color: 'hover:text-purple-400 hover:bg-purple-400/10',
     },
     {
       id: 'flashcards',
-      label: 'Flashcard',
+      label: t('modals.textSelection.flashcard'),
       icon: <SquareStack className="w-3.5 h-3.5" />,
       color: 'hover:text-emerald-400 hover:bg-emerald-400/10',
     },
@@ -68,7 +70,7 @@ export function TextSelectionToolbar({ coords, selectedText, onAction, onClose }
           type="button"
           onClick={e => handleActionClick(e, action.id)}
           className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium text-sphera-text-muted hover:text-white transition-all ${action.color}`}
-          title={`${action.label} ce passage`}
+          title={t('modals.textSelection.actionTitle', { label: action.label })}
         >
           {action.icon}
           <span>{action.label}</span>

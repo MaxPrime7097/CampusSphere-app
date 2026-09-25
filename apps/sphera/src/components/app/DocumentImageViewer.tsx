@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ZoomIn, ZoomOut, RotateCcw, RotateCw, ExternalLink, ImageIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface DocumentImageViewerProps {
   src: string;
@@ -7,9 +8,13 @@ interface DocumentImageViewerProps {
   title?: string;
 }
 
-export function DocumentImageViewer({ src, alt = 'Aperçu du document', title }: DocumentImageViewerProps) {
+export function DocumentImageViewer({ src, alt, title }: DocumentImageViewerProps) {
+  const { t } = useTranslation('study');
   const [scale, setScale] = useState(1);
   const [rotation, setRotation] = useState(0);
+
+  const defaultAlt = alt || t('imageViewer.sourceImage');
+  const displayTitle = title || t('imageViewer.sourceImage');
 
   const handleZoomIn = () => {
     setScale(prev => Math.min(prev + 0.25, 3));
@@ -34,7 +39,7 @@ export function DocumentImageViewer({ src, alt = 'Aperçu du document', title }:
       <div className="h-12 border-b border-sphera-border bg-sphera-surface-2/90 px-4 flex items-center justify-between shrink-0 z-10">
         <div className="flex items-center gap-2 text-xs text-sphera-text-muted truncate max-w-[200px]">
           <ImageIcon className="w-3.5 h-3.5 text-sphera-green shrink-0" />
-          <span className="truncate">{title || 'Image source'}</span>
+          <span className="truncate">{displayTitle}</span>
         </div>
 
         <div className="flex items-center gap-1.5 bg-sphera-surface px-2 py-1 rounded-lg border border-sphera-border">
@@ -43,7 +48,7 @@ export function DocumentImageViewer({ src, alt = 'Aperçu du document', title }:
             onClick={handleZoomOut}
             disabled={scale <= 0.5}
             className="p-1 rounded text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2 transition-colors disabled:opacity-40"
-            title="Zoom arrière (-)"
+            title={t('imageViewer.zoomOut')}
           >
             <ZoomOut className="w-3.5 h-3.5" />
           </button>
@@ -57,7 +62,7 @@ export function DocumentImageViewer({ src, alt = 'Aperçu du document', title }:
             onClick={handleZoomIn}
             disabled={scale >= 3}
             className="p-1 rounded text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2 transition-colors disabled:opacity-40"
-            title="Zoom avant (+)"
+            title={t('imageViewer.zoomIn')}
           >
             <ZoomIn className="w-3.5 h-3.5" />
           </button>
@@ -68,7 +73,7 @@ export function DocumentImageViewer({ src, alt = 'Aperçu du document', title }:
             type="button"
             onClick={handleRotate}
             className="p-1 rounded text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2 transition-colors"
-            title="Pivoter de 90°"
+            title={t('imageViewer.rotate')}
           >
             <RotateCw className="w-3.5 h-3.5" />
           </button>
@@ -77,7 +82,7 @@ export function DocumentImageViewer({ src, alt = 'Aperçu du document', title }:
             type="button"
             onClick={handleReset}
             className="p-1 rounded text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2 transition-colors"
-            title="Réinitialiser l'affichage"
+            title={t('imageViewer.reset')}
           >
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
@@ -89,7 +94,7 @@ export function DocumentImageViewer({ src, alt = 'Aperçu du document', title }:
             target="_blank"
             rel="noopener noreferrer"
             className="p-1 rounded text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2 transition-colors"
-            title="Ouvrir l'image en grand dans un nouvel onglet"
+            title={t('imageViewer.openNewTab')}
           >
             <ExternalLink className="w-3.5 h-3.5" />
           </a>
@@ -113,7 +118,7 @@ export function DocumentImageViewer({ src, alt = 'Aperçu du document', title }:
         >
           <img
             src={src}
-            alt={alt}
+            alt={defaultAlt}
             className="max-h-[75vh] max-w-full object-contain rounded-lg shadow-2xl border border-sphera-border/60 bg-black/40"
             draggable={false}
           />

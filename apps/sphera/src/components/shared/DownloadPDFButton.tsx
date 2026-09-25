@@ -1,5 +1,7 @@
 import React from 'react'
 import { Download, Loader2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+
 interface DownloadPDFButtonProps {
   onDownload: () => void | Promise<void>
   isDownloading?: boolean
@@ -10,9 +12,12 @@ interface DownloadPDFButtonProps {
 const DownloadPDFButton = ({
   onDownload,
   isDownloading = false,
-  label = 'Télécharger en PDF',
+  label,
   className = '',
 }: DownloadPDFButtonProps) => {
+  const { t } = useTranslation('study')
+  const displayLabel = label || t('downloadPdf.label')
+
   return (
     <button
       onClick={onDownload}
@@ -29,12 +34,12 @@ const DownloadPDFButton = ({
       {isDownloading ? (
         <>
           <Loader2 className="w-4 h-4 animate-spin" />
-          <span>Génération...</span>
+          <span>{t('downloadPdf.generating')}</span>
         </>
       ) : (
         <>
           <Download className="w-4 h-4" />
-          <span>{label}</span>
+          <span>{displayLabel}</span>
         </>
       )}
     </button>

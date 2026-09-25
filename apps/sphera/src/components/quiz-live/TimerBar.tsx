@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { playSound } from '../../utils/audioManager';
 
 interface TimerBarProps {
@@ -7,6 +8,7 @@ interface TimerBarProps {
 }
 
 export function TimerBar({ duration, onExpire }: TimerBarProps) {
+  const { t } = useTranslation('live');
   const [secondsLeft, setSecondsLeft] = useState(duration);
   const barRef = useRef<HTMLDivElement>(null);
   const onExpireRef = useRef(onExpire);
@@ -75,7 +77,7 @@ export function TimerBar({ duration, onExpire }: TimerBarProps) {
   return (
     <div className="w-full">
       <div className="flex justify-between items-center text-sm text-sphera-text-muted mb-2 font-medium">
-        <span>Temps restant</span>
+        <span>{t('timer.timeRemaining')}</span>
         <span className={`font-mono text-2xl font-bold transition-colors duration-300 ${
           secondsLeft <= 3 
             ? 'text-red-500 animate-pulse' 

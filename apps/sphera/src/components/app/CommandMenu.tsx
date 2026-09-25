@@ -1,5 +1,6 @@
 import React from 'react'
 import { FileText, BrainCircuit, SquareStack, HelpCircle, AlignLeft, Sparkles, type LucideIcon } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 export interface Command {
   trigger: string
@@ -75,10 +76,31 @@ interface CommandMenuProps {
 }
 
 export function CommandMenu({ isVisible, filter, activeIndex, onSelect, onClose }: CommandMenuProps) {
+  const { t } = useTranslation('study')
   if (!isVisible) return null
 
+  const getTranslatedCommand = (cmd: Command): Command => {
+    switch (cmd.trigger) {
+      case '@fiche':
+        return { ...cmd, label: t('modals.commandMenu.ficheLabel'), description: t('modals.commandMenu.ficheDesc') }
+      case '@quiz':
+        return { ...cmd, label: t('modals.commandMenu.quizLabel'), description: t('modals.commandMenu.quizDesc') }
+      case '@flashcards':
+        return { ...cmd, label: t('modals.commandMenu.flashcardsLabel'), description: t('modals.commandMenu.flashcardsDesc') }
+      case '@expliquer':
+        return { ...cmd, label: t('modals.commandMenu.explainLabel'), description: t('modals.commandMenu.explainDesc') }
+      case '@résumer':
+        return { ...cmd, label: t('modals.commandMenu.resumeLabel'), description: t('modals.commandMenu.resumeDesc') }
+      case '@exemple':
+        return { ...cmd, label: t('modals.commandMenu.exampleLabel'), description: t('modals.commandMenu.exampleDesc') }
+      default:
+        return cmd
+    }
+  }
+
+  const translatedCommands = COMMANDS.map(getTranslatedCommand)
   const search = filter.toLowerCase().trim()
-  const filtered = COMMANDS.filter(cmd =>
+  const filtered = translatedCommands.filter(cmd =>
     cmd.trigger.toLowerCase().includes(search) ||
     cmd.label.toLowerCase().includes(search) ||
     cmd.description.toLowerCase().includes(search)
@@ -92,10 +114,10 @@ export function CommandMenu({ isVisible, filter, activeIndex, onSelect, onClose 
                     overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
       <div className="px-3 py-2 border-b border-sphera-border/50 flex items-center justify-between">
         <p className="text-[10px] text-sphera-text-muted font-semibold uppercase tracking-wider">
-          Commandes Sphera
+          {t('modals.commandMenu.title')}
         </p>
         <span className="text-[10px] text-sphera-text-muted/60">
-          ↑↓ pour naviguer • Entrée pour valider
+          {t('modals.commandMenu.shortcutHint')}
         </span>
       </div>
       <div className="max-h-64 overflow-y-auto divide-y divide-sphera-border/20">

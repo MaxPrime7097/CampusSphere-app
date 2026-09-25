@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { useNavigate } from 'react-router-dom'
 import { Search, X, FileText, BrainCircuit, FilePenLine, Zap, Calendar, ArrowRight, SquareStack } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 interface SearchModalProps {
   isOpen: boolean
@@ -10,6 +11,7 @@ interface SearchModalProps {
 }
 
 export function SearchModal({ isOpen, onClose, items }: SearchModalProps) {
+  const { t, i18n } = useTranslation('study')
   const [query, setQuery] = useState('')
   const navigate = useNavigate()
 
@@ -74,7 +76,7 @@ export function SearchModal({ isOpen, onClose, items }: SearchModalProps) {
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Rechercher parmi vos sessions, révisions et annales..."
+              placeholder={t('modals.search.placeholder')}
               className="flex-1 bg-transparent border-none text-sm text-white placeholder-sphera-text-muted outline-none focus:ring-0"
             />
             {query && (
@@ -82,7 +84,7 @@ export function SearchModal({ isOpen, onClose, items }: SearchModalProps) {
                 type="button"
                 onClick={() => setQuery('')}
                 className="p-1 rounded-md text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2 transition-colors"
-                title="Effacer la recherche"
+                title={t('modals.search.clear')}
               >
                 <X className="w-4 h-4" />
               </button>
@@ -95,16 +97,15 @@ export function SearchModal({ isOpen, onClose, items }: SearchModalProps) {
           {/* Search Results List */}
           <div className="flex-1 overflow-y-auto p-3 space-y-1.5 custom-scrollbar min-h-[160px]">
             <div className="px-2 py-1 flex items-center justify-between text-[11px] font-semibold text-sphera-text-muted uppercase tracking-wider">
-              <span>{query ? 'Résultats correspondants' : 'Toutes les discussions & révisions'}</span>
-              <span className="text-[10px] font-normal lowercase">{filteredItems.length} document{filteredItems.length > 1 ? 's' : ''}</span>
+              <span>{query ? t('modals.search.matchingResults') : t('modals.search.allDiscussions')}</span>
+              <span className="text-[10px] font-normal lowercase">{t('modals.search.docsCount', { count: filteredItems.length })}</span>
             </div>
 
             {filteredItems.length === 0 ? (
               <div className="p-10 text-center flex flex-col items-center justify-center">
                 <FileText className="w-10 h-10 text-sphera-text-muted/40 mb-3" />
-                <p className="text-white text-sm font-medium mb-1">Aucun document trouvé</p>
-                <p className="text-xs text-sphera-text-muted">
-                  Aucun résultat ne correspond à « <span className="text-white">{query}</span> ».
+                <p className="text-white text-sm font-medium mb-1">
+                  {query ? t('modals.search.noResults', { query }) : t('modals.search.noDocs')}
                 </p>
               </div>
             ) : (
@@ -113,8 +114,9 @@ export function SearchModal({ isOpen, onClose, items }: SearchModalProps) {
                 const subtitle = item.source_filename && item.resource_title && item.source_filename !== item.resource_title
                   ? item.source_filename
                   : null
+                const dateLocale = i18n.language === 'en' ? 'en-US' : 'fr-FR'
                 const dateStr = item.created_at || item.createdAt
-                  ? new Date(item.created_at || item.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+                  ? new Date(item.created_at || item.createdAt).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short' })
                   : null
 
                 return (
@@ -158,9 +160,7 @@ export function SearchModal({ isOpen, onClose, items }: SearchModalProps) {
           {/* Modal Footer */}
           <div className="px-4 py-2.5 border-t border-sphera-border bg-sphera-surface flex items-center justify-between text-xs text-sphera-text-muted">
             <span className="flex items-center gap-1.5">
-              <span>Appuyez sur</span>
-              <kbd className="px-1.5 py-0.5 bg-sphera-surface-2 border border-sphera-border rounded text-[10px] font-mono text-white">Échap</kbd>
-              <span>pour fermer</span>
+              <span>{t('modals.search.escToClose')}</span>
             </span>
             <span>Sphera Assistant</span>
           </div>

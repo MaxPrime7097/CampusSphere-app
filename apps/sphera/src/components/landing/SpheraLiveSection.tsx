@@ -1,8 +1,11 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { Zap, Users, Trophy, Clock, ArrowRight, Play, Sparkles } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 export function SpheraLiveSection() {
+  const { t } = useTranslation('landing')
+
   return (
     <section className="py-24 relative overflow-hidden bg-sphera-surface/60 border-y border-sphera-border">
       {/* Background ambient glow */}
@@ -15,15 +18,15 @@ export function SpheraLiveSection() {
           <div className="lg:col-span-6 space-y-6 text-left">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-sphera-green/10 border border-sphera-green/30 text-sphera-green text-xs font-bold uppercase tracking-wider">
               <Zap className="w-4 h-4 fill-sphera-green" />
-              Nouveau &bull; Mode Multijoueur
+              {t('liveSection.badge')}
             </div>
 
             <h2 className="font-display text-3xl md:text-5xl font-bold text-white tracking-tight leading-tight">
-              Sphera <span className="text-sphera-green">Live</span> : le quiz en direct sur grand écran
+              {t('liveSection.titlePrefix')} <span className="text-sphera-green">{t('liveSection.titleHighlight')}</span>{t('liveSection.titleSuffix')}
             </h2>
 
             <p className="text-base md:text-lg text-sphera-text-muted leading-relaxed">
-              Ne révisez plus jamais seuls. Projetez un quiz en amphi, lancez un défi en promo ou improvisez une session culture gé entre potes. Vos amis rejoignent avec un simple code sur smartphone, sans aucune inscription.
+              {t('liveSection.description')}
             </p>
 
             {/* Quick bullets */}
@@ -33,8 +36,8 @@ export function SpheraLiveSection() {
                   <Users className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-white">Rejoindre en 5s</h4>
-                  <p className="text-xs text-sphera-text-muted">Un code à 6 lettres et un pseudo suffisent.</p>
+                  <h4 className="text-sm font-bold text-white">{t('liveSection.bullet1Title')}</h4>
+                  <p className="text-xs text-sphera-text-muted">{t('liveSection.bullet1Desc')}</p>
                 </div>
               </div>
 
@@ -43,8 +46,8 @@ export function SpheraLiveSection() {
                   <Clock className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-white">Timer & Sons live</h4>
-                  <p className="text-xs text-sphera-text-muted">Adrénaline garantie avec chrono synchronisé.</p>
+                  <h4 className="text-sm font-bold text-white">{t('liveSection.bullet2Title')}</h4>
+                  <p className="text-xs text-sphera-text-muted">{t('liveSection.bullet2Desc')}</p>
                 </div>
               </div>
 
@@ -53,8 +56,8 @@ export function SpheraLiveSection() {
                   <Trophy className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-white">Podium & Confettis</h4>
-                  <p className="text-xs text-sphera-text-muted">Classement instantané après chaque réponse.</p>
+                  <h4 className="text-sm font-bold text-white">{t('liveSection.bullet3Title')}</h4>
+                  <p className="text-xs text-sphera-text-muted">{t('liveSection.bullet3Desc')}</p>
                 </div>
               </div>
 
@@ -63,8 +66,8 @@ export function SpheraLiveSection() {
                   <Sparkles className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-white">Tous les sujets</h4>
-                  <p className="text-xs text-sphera-text-muted">Cours, culture gé, ciné, sport ou manga.</p>
+                  <h4 className="text-sm font-bold text-white">{t('liveSection.bullet4Title')}</h4>
+                  <p className="text-xs text-sphera-text-muted">{t('liveSection.bullet4Desc')}</p>
                 </div>
               </div>
             </div>
@@ -76,7 +79,7 @@ export function SpheraLiveSection() {
                 className="sphera-primary-btn text-sm px-6 py-3 flex items-center gap-2 group"
               >
                 <Play className="w-4 h-4 fill-black" />
-                Lancer une partie
+                {t('liveSection.launchGame')}
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
 
@@ -84,7 +87,7 @@ export function SpheraLiveSection() {
                 to="/sphera-live"
                 className="btn btn-outline border-sphera-border text-white hover:border-sphera-green/50 hover:bg-sphera-surface-2 text-sm px-6 py-3 rounded-lg font-semibold transition-colors"
               >
-                En savoir plus
+                {t('liveSection.learnMore')}
               </Link>
             </div>
           </div>
@@ -100,13 +103,13 @@ export function SpheraLiveSection() {
                     <Zap className="w-5 h-5 text-sphera-green" />
                   </div>
                   <div>
-                    <span className="text-[11px] font-mono uppercase tracking-wider text-sphera-green font-bold block">Salle d'attente live</span>
-                    <h3 className="text-sm font-bold text-white">Quiz Culture & Sciences</h3>
+                    <span className="text-[11px] font-mono uppercase tracking-wider text-sphera-green font-bold block">{t('liveSection.mockup.waitingRoom')}</span>
+                    <h3 className="text-sm font-bold text-white">{t('liveSection.mockup.roomTitle')}</h3>
                   </div>
                 </div>
 
                 <div className="bg-sphera-bg border border-sphera-border px-3 py-1.5 rounded-xl text-right">
-                  <span className="text-[10px] text-sphera-text-muted block uppercase font-mono">Code PIN</span>
+                  <span className="text-[10px] text-sphera-text-muted block uppercase font-mono">{t('liveSection.mockup.pinCode')}</span>
                   <span className="font-mono text-base font-extrabold text-sphera-green tracking-widest">LIVE88</span>
                 </div>
               </div>
@@ -114,30 +117,30 @@ export function SpheraLiveSection() {
               {/* Question Simulation */}
               <div className="bg-sphera-bg rounded-2xl border border-sphera-border p-5 mb-5 relative overflow-hidden">
                 <div className="flex items-center justify-between text-xs text-sphera-text-muted mb-3 font-mono">
-                  <span>Question 4 / 10</span>
-                  <span className="text-sphera-green font-bold animate-pulse">08s restantes</span>
+                  <span>{t('liveSection.mockup.questionProgress')}</span>
+                  <span className="text-sphera-green font-bold animate-pulse">{t('liveSection.mockup.timeRemaining')}</span>
                 </div>
 
                 <h4 className="text-base sm:text-lg font-bold text-white mb-4">
-                  Quelle molécule transporte l'oxygène dans les hématies ?
+                  {t('liveSection.mockup.sampleQuestion')}
                 </h4>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs font-semibold">
                   <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-white flex items-center gap-2">
                     <span className="w-5 h-5 rounded-md bg-red-500/20 text-red-400 flex items-center justify-center text-[10px]">A</span>
-                    Insuline
+                    {t('liveSection.mockup.optionA')}
                   </div>
                   <div className="p-3 rounded-xl bg-sphera-green/20 border-2 border-sphera-green text-white flex items-center gap-2 shadow-[0_0_15px_rgba(34,197,94,0.3)]">
                     <span className="w-5 h-5 rounded-md bg-sphera-green text-black flex items-center justify-center text-[10px] font-bold">B</span>
-                    Hémoglobine
+                    {t('liveSection.mockup.optionB')}
                   </div>
                   <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/30 text-white flex items-center gap-2">
                     <span className="w-5 h-5 rounded-md bg-blue-500/20 text-blue-400 flex items-center justify-center text-[10px]">C</span>
-                    Myosine
+                    {t('liveSection.mockup.optionC')}
                   </div>
                   <div className="p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-white flex items-center gap-2">
                     <span className="w-5 h-5 rounded-md bg-yellow-500/20 text-yellow-400 flex items-center justify-center text-[10px]">D</span>
-                    Collagène
+                    {t('liveSection.mockup.optionD')}
                   </div>
                 </div>
               </div>
@@ -146,9 +149,9 @@ export function SpheraLiveSection() {
               <div className="bg-sphera-bg rounded-2xl border border-sphera-border p-4">
                 <div className="flex items-center justify-between text-xs text-sphera-text-muted mb-3">
                   <span className="font-bold text-white uppercase text-[11px] tracking-wider flex items-center gap-1.5">
-                    <Trophy className="w-3.5 h-3.5 text-yellow-400" /> Leaderboard en direct
+                    <Trophy className="w-3.5 h-3.5 text-yellow-400" /> {t('liveSection.mockup.liveLeaderboard')}
                   </span>
-                  <span>14 participants connectés</span>
+                  <span>{t('liveSection.mockup.connectedParticipants')}</span>
                 </div>
 
                 <div className="space-y-2 text-xs">
