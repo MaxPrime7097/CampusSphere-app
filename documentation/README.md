@@ -38,9 +38,14 @@ Ce dossier rassemble l'ensemble de la documentation technique, des spécificatio
 | [features/MODULE_EVENEMENTS.md](./features/MODULE_EVENEMENTS.md) | Module d'événements étudiants, billetterie et calendrier |
 | [features/AI_ROUTING_FINAL.md](./features/AI_ROUTING_FINAL.md) | Routage intelligent des modèles IA (DeepSeek V3.2, Claude Haiku, Groq) |
 | [features/BEDROCK_MIGRATION_CONTEXT.md](./features/BEDROCK_MIGRATION_CONTEXT.md) | Architecture et contexte d'intégration AWS Bedrock |
-| [features/AI_CONTEXT.md](./features/AI_CONTEXT.md) | Historique et journal technique pour les agents IA |
 
-### 4. Guides Développeur par Application
+### 4. Contexte & Mémoire pour Agents IA
+
+| Fichier | Description |
+|---|---|
+| [AI_CONTEXT.md](./AI_CONTEXT.md) | Journal d'historique technique, architecture et décisions pour les assistants IA |
+
+### 5. Guides Développeur par Application
 
 | Emplacement | Description |
 |---|---|
