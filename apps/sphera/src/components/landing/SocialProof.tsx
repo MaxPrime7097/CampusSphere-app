@@ -1,64 +1,61 @@
 import React from 'react'
-
-interface Testimonial {
-  text: string;
-  author: string;
-  role: string;
-}
-
-const testimonials: Testimonial[] = [
-  {
-    text: "Je mettais des heures à ficher mes cours de droit. Avec Sphera, c'est fait pendant que je vais me chercher un café.",
-    author: "Marc B.",
-    role: "L3 Droit"
-  },
-  {
-    text: "On a lancé un Sphera Live en amphi avant les examens, tout le monde était sur son téléphone à buzzer. L'ambiance et la mémorisation étaient folles !",
-    author: "Inès M.",
-    role: "L2 Informatique"
-  },
-  {
-    text: "Les quiz générés m'ont littéralement sauvé pour mes partiels de biologie. C'est le meilleur outil d'apprentissage.",
-    author: "Sarah N.",
-    role: "Master 1"
-  },
-  {
-    text: "Corriger les annales de l'année dernière en un clic, c'est un cheat code absolu pour les révisions.",
-    author: "Kevin T.",
-    role: "Prépa Ingé"
-  }
-];
+import { useTranslation } from '@cs/i18n'
 
 export function SocialProof() {
+  const { t } = useTranslation('landing')
+
+  const testimonials = [
+    {
+      text: t('socialProof.testimonials.marc.text'),
+      author: t('socialProof.testimonials.marc.author'),
+      role: t('socialProof.testimonials.marc.role')
+    },
+    {
+      text: t('socialProof.testimonials.ines.text'),
+      author: t('socialProof.testimonials.ines.author'),
+      role: t('socialProof.testimonials.ines.role')
+    },
+    {
+      text: t('socialProof.testimonials.sarah.text'),
+      author: t('socialProof.testimonials.sarah.author'),
+      role: t('socialProof.testimonials.sarah.role')
+    },
+    {
+      text: t('socialProof.testimonials.kevin.text'),
+      author: t('socialProof.testimonials.kevin.author'),
+      role: t('socialProof.testimonials.kevin.role')
+    }
+  ]
+
   return (
     <section className="py-24 bg-sphera-surface relative overflow-hidden border-t border-sphera-border">
       <div className="container mx-auto max-w-5xl px-4 text-center">
         
         <div className="inline-flex flex-col items-center mb-12">
           <h2 className="font-display text-3xl font-bold text-white mb-4">
-            Rejoins les Spherians
+            {t('socialProof.title')}
           </h2>
           <p className="text-sphera-text-muted text-lg">
-            Des milliers d'étudiants de l'IUC Douala et d'ailleurs l'utilisent déjà.
+            {t('socialProof.subtitle')}
           </p>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16">
           <div className="p-6 rounded-2xl bg-sphera-bg border border-sphera-border text-center">
             <div className="font-display text-3xl font-bold text-sphera-green mb-1">12K+</div>
-            <div className="text-sm text-sphera-text-muted">Sessions générées</div>
+            <div className="text-sm text-sphera-text-muted">{t('socialProof.statSessions')}</div>
           </div>
           <div className="p-6 rounded-2xl bg-sphera-bg border border-sphera-border text-center">
             <div className="font-display text-3xl font-bold text-sphera-green mb-1">4.8/5</div>
-            <div className="text-sm text-sphera-text-muted">Note moyenne</div>
+            <div className="text-sm text-sphera-text-muted">{t('socialProof.statRating')}</div>
           </div>
           <div className="p-6 rounded-2xl bg-sphera-bg border border-sphera-border text-center">
             <div className="font-display text-3xl font-bold text-sphera-green mb-1">50+</div>
-            <div className="text-sm text-sphera-text-muted">Filières couvertes</div>
+            <div className="text-sm text-sphera-text-muted">{t('socialProof.statFields')}</div>
           </div>
           <div className="p-6 rounded-2xl bg-sphera-bg border border-sphera-border text-center">
             <div className="font-display text-3xl font-bold text-sphera-green mb-1">30s</div>
-            <div className="text-sm text-sphera-text-muted">Temps moyen</div>
+            <div className="text-sm text-sphera-text-muted">{t('socialProof.statSpeed')}</div>
           </div>
         </div>
 

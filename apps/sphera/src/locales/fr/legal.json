@@ -1,0 +1,167 @@
+{
+  "lastUpdated": "Dernière mise à jour : 13 Septembre 2026",
+  "notice": {
+    "title": "Mentions Légales",
+    "seoTitle": "Mentions Légales — Sphera by CampusSphere",
+    "seoDesc": "Mentions légales de Sphera : éditeur, hébergeur cloud Render, Microsoft Azure, AWS et coordonnées légales.",
+    "sec1": {
+      "title": "1. Éditeur du service",
+      "p1": "L'application d'assistance académique <strong>Sphera</strong> est un service conçu, développé et opéré par l'équipe fondatrice <strong>CampusSphere</strong>.",
+      "service": "Service :",
+      "serviceVal": "Sphera (intégré à la plateforme CampusSphere)",
+      "location": "Localisation :",
+      "locationVal": "Douala, Cameroun",
+      "partners": "Partenariats & investisseurs :",
+      "support": "Support technique & académique :",
+      "legal": "Affaires juridiques & politiques :"
+    },
+    "sec2": {
+      "title": "2. Hébergement & Infrastructure cloud",
+      "p1": "L'infrastructure technique de Sphera et de CampusSphere s'appuie sur des hébergeurs cloud de premier rang :",
+      "frontend": "Frontend & CDN :",
+      "frontendVal": "Vercel Inc. (440 N Barranca Ave #4133, Covina, CA 91723, États-Unis).",
+      "backend": "Backend d'application :",
+      "backendVal": "Render Services, Inc. (525 Brannan St, San Francisco, CA 94107, États-Unis), avec une transition programmée vers Microsoft Azure pour accompagner l'augmentation du trafic.",
+      "storage": "Stockage sécurisé des fichiers :",
+      "storageVal": "Amazon Web Services (AWS) - Amazon S3 (Seattle, WA, États-Unis), chiffré au repos (AES-256).",
+      "ai": "Fournisseurs d'intelligence artificielle :",
+      "aiVal": "Amazon Web Services (AWS Bedrock), complété par Google AI (Gemini) et Groq Inc. Les données d'étude ne sont jamais exploitées pour l'entraînement public des modèles."
+    },
+    "sec3": {
+      "title": "3. Propriété intellectuelle",
+      "p1": "Les composants logiciels, les algorithmes de prompt, la structure des fiches de révision et des quiz, la marque et l'identité graphique de Sphera sont la propriété exclusive de CampusSphere. L'étudiant conserve la pleine propriété de ses supports de cours originaux téléversés."
+    },
+    "sec4": {
+      "title": "4. Contact & Réclamations",
+      "p1": "Pour toute réclamation, notification de contenu ou exercice de vos droits sur vos données personnelles :",
+      "p2": "Courriel :"
+    }
+  },
+  "terms": {
+    "title": "Conditions d'Utilisation",
+    "seoTitle": "Conditions Générales d'Utilisation — Sphera by CampusSphere",
+    "seoDesc": "Consultez les conditions générales d'utilisation de Sphera : règles de la plateforme, utilisation éthique de l'IA et engagements de service.",
+    "sec1": {
+      "title": "1. Acceptation des conditions & Âge Minimum (16 ans)",
+      "p1": "En accédant et en utilisant la plateforme Sphera (partie intégrante de l'écosystème CampusSphere), vous acceptez sans réserve les présentes Conditions Générales d'Utilisation. L'utilisation de Sphera est strictement réservée aux étudiants âgés d'au moins <strong>16 ans révolus</strong>. Si vous avez entre 16 et 18 ans, vous confirmez avoir reçu l'accord préalable de vos parents ou représentants légaux."
+    },
+    "sec2": {
+      "title": "2. Description du service",
+      "p1": "Sphera est un outil d'assistance à l'apprentissage utilisant des modèles avancés d'Intelligence Artificielle pour analyser des documents académiques afin de générer des fiches de révision structurées, des flashcards, des quiz interactifs, et de répondre à des questions ciblées sur vos cours. Sphera constitue un support méthodologique et ne remplace en aucun cas vos cours magistraux, travaux dirigés ou directives de vos professeurs."
+    },
+    "sec3": {
+      "title": "3. Utilisation acceptable & Licence de Traitement",
+      "p1": "Vous vous engagez à utiliser Sphera de manière légale et éthique. Il est strictement interdit de :",
+      "item1": "Téléverser des documents protégés par le droit d'auteur sans disposer des autorisations requises.",
+      "item2": "Utiliser la plateforme pour tricher lors d'examens officiels ou de contrôles de connaissances en direct.",
+      "item3": "Tenter de contourner les quotas d'utilisation, faire du scraping ou surcharger intentionnellement les API d'inférence.",
+      "p2": "Pour permettre la lecture et le parsing de vos fichiers, vous concédez à Sphera et CampusSphere une licence technique pour héberger et stocker temporairement vos documents sur Amazon Web Services (AWS S3)."
+    },
+    "sec4": {
+      "title": "4. Fiabilité des résultats générés par l'IA",
+      "p1": "Bien que nous utilisions les technologies les plus rigoureuses (AWS Bedrock, Google Gemini, Groq), l'IA peut occasionnellement produire des erreurs ou inexactitudes (« hallucinations »). L'étudiant demeure seul responsable de la vérification de ses connaissances à partir de ses cours officiels. CampusSphere décline toute responsabilité en cas de mauvaise note, d'échec à un examen ou de décision académique défavorable."
+    },
+    "sec5": {
+      "title": "5. Propriété intellectuelle",
+      "p1": "Vous conservez tous les droits d'auteur sur vos documents de cours originaux. Les fiches de révision et quiz générés vous appartiennent pour votre usage personnel d'étude. Toutefois, le code source, le design, les algorithmes de prompt et la marque Sphera restent la propriété exclusive de CampusSphere."
+    },
+    "sec6": {
+      "title": "6. Pass d'Étude, Abonnements & Mobile Money",
+      "p1": "En phase bêta, les fonctionnalités sont mises à disposition gratuitement. Les futures formules payantes (Pass Examen, abonnements récurrents) sont réglées en Francs CFA via <strong>Mobile Money (MTN MoMo, Orange Money)</strong>. Les conditions de vente, d'exécution immédiate et de non-rétractation après génération sont régies par nos Conditions Générales de Vente (CGV)."
+    },
+    "sec7": {
+      "title": "7. Modification des conditions & Juridiction",
+      "p1": "CampusSphere se réserve le droit de faire évoluer les présentes conditions à tout moment. Les présentes CGU sont soumises à la législation de la Cameroun. Tout litige non résolu à l'amiable sera soumis aux juridictions compétentes de Douala."
+    },
+    "sec8": {
+      "title": "8. Contact",
+      "p1": "Pour toute question relative aux présentes conditions ou pour toute demande d'assistance, contactez-nous :"
+    }
+  },
+  "sale": {
+    "title": "Conditions Générales de Vente",
+    "seoTitle": "Conditions Générales de Vente (CGV) — Sphera by CampusSphere",
+    "seoDesc": "Consultez les CGV de Sphera : abonnements d'assistance IA, pass d'examen, paiements Mobile Money via l'API Campay et conditions de rétractation.",
+    "sec1": {
+      "title": "1. Objet & Éligibilité",
+      "p1": "Les présentes Conditions Générales de Vente (CGV) régissent les souscriptions aux offres payantes, Pass Révision / Examen et abonnements de l'assistant d'étude <strong>Sphera</strong>, édité par CampusSphere.",
+      "p2": "L'utilisateur doit être âgé d'au moins <strong>16 ans révolus</strong> et avoir la capacité juridique requise pour contracter (avec accord préalable des parents ou tuteurs légaux pour les étudiants mineurs de 16 à 18 ans)."
+    },
+    "sec2": {
+      "title": "2. Formules d'accès & Tarification",
+      "p1": "Les prix des services sont affichés en <strong>Francs CFA (XAF)</strong> toutes taxes comprises.",
+      "item1Title": "Accès Bêta Ouverte (Actuel) :",
+      "item1Desc": "Gratuit (0 XAF) pendant toute la phase de test avec quotas équitables.",
+      "item2Title": "Pass d'Étude & Examen :",
+      "item2Desc": "Accès forfaitaire à durée fixe (sans tacite reconduction). Le pass expire automatiquement à sa date de fin sans facturation ultérieure.",
+      "item3Title": "Abonnements Récurrents :",
+      "item3Desc": "Formules avec renouvellement périodique, résiliables à tout moment en un clic depuis votre espace personnel."
+    },
+    "sec3": {
+      "title": "3. Modalités de paiement Mobile Money via l'API Campay",
+      "p1": "Pour garantir un règlement instantané et accessible sur tout le continent, les transactions de paiement sont opérées via la passerelle certifiée <strong>Campay</strong> (API Campay).",
+      "p2": "Les moyens de paiement supportés comprennent :",
+      "item1": "MTN Mobile Money (Cameroun et zone CEMAC)",
+      "item2": "Orange Money (Cameroun et zone CEMAC)",
+      "p3": "L'API Campay assure un chiffrement bancaire de haut niveau et la sécurisation directe des flux financiers. À aucun moment Sphera ou CampusSphere ne détient, ne traite ni ne stocke votre code PIN confidentiel ou vos identifiants Mobile Money."
+    },
+    "sec4": {
+      "title": "4. Exécution immédiate & Droit de rétractation",
+      "p1": "Les services Sphera consistent en la mise à disposition immédiate de puissance de calcul IA et de générations pédagogiques numériques personnalisées.",
+      "p2": "En confirmant votre paiement Mobile Money via Campay, vous demandez l'activation immédiate du service et vous renoncez expressément à votre droit de rétractation pour les unités de crédits ou périodes déjà consommées."
+    },
+    "sec5": {
+      "title": "5. Réclamations & Service client",
+      "p1": "En cas d'anomalie de paiement (débit Mobile Money confirmé par SMS sans déblocage des fonctionnalités sous 2 heures), veuillez contacter immédiatement notre support en précisant la référence de transaction Campay :",
+      "p2": "Courriel :",
+      "delay": "Délai de traitement moyen : 24 à 48 heures ouvrées."
+    }
+  },
+  "privacy": {
+    "title": "Politique de Confidentialité",
+    "seoTitle": "Politique de Confidentialité — Sphera by CampusSphere",
+    "seoDesc": "Consultez la politique de confidentialité de Sphera : protection de vos données personnelles, utilisation sécurisée de vos documents et respect de votre vie privée.",
+    "sec1": {
+      "title": "1. Introduction & Écosystème Unifié",
+      "p1": "Sphera est l'assistant académique d'intelligence artificielle intégré à <strong>CampusSphere</strong>. La protection de vos données personnelles et la confidentialité de vos supports d'études sont des priorités absolues. Cette politique vous informe sur la collecte, le traitement et la sécurisation de vos données lors de l'utilisation de Sphera."
+    },
+    "sec2": {
+      "title": "2. Données collectées & Âge Minimum (16 ans)",
+      "item1Title": "Âge minimum requis :",
+      "item1Desc": "L'utilisation de Sphera est réservée aux étudiants âgés d'au moins 16 ans révolus. Si vous êtes mineur (16-18 ans), vous certifiez détenir l'autorisation de vos parents ou tuteurs.",
+      "item2Title": "Compte unifié (SSO CampusSphere) :",
+      "item2Desc": "Nom, prénom, email étudiant ou personnel et établissement d'enseignement supérieur.",
+      "item3Title": "Données de contenu & supports d'études :",
+      "item3Desc": "Fichiers PDF, photographies de cours, textes et documents téléversés pour générer vos fiches, flashcards et quiz.",
+      "item4Title": "Données d'utilisation :",
+      "item4Desc": "Statistiques d'apprentissage, historiques de quiz et interactions pédagogiques avec l'IA."
+    },
+    "sec3": {
+      "title": "3. Utilisation de vos documents & Sécurité de l'IA",
+      "p1": "Vos supports de révision sont traités par des modèles d'Intelligence Artificielle de pointe via <strong>Amazon Web Services (AWS Bedrock)</strong>, complété par <strong>Google Gemini</strong> et <strong>Groq</strong>, dans le but strict et exclusif d'analyser vos cours et générer votre contenu pédagogique.",
+      "commitment": "Engagement ferme : Vos documents personnels et requêtes d'étude ne sont JAMAIS vendus, ni utilisés pour ré-entraîner les modèles d'IA publics de nos fournisseurs d'infrastructure."
+    },
+    "sec4": {
+      "title": "4. Hébergement & Sous-Traitants Cloud",
+      "p1": "Vos informations ne sont jamais cédées à des régies publicitaires. Les seuls partages techniques indispensables concernent nos prestataires d'infrastructure :",
+      "item1Title": "Serveurs Backend d'Application :",
+      "item1Desc": "Render Services, Inc. (avec migration progressive vers Microsoft Azure pour l'évolutivité haute performance).",
+      "item2Title": "Stockage Sécurisé :",
+      "item2Desc": "Amazon Web Services (AWS) - Amazon S3 (stockage chiffré au repos pour vos documents de cours).",
+      "item3Title": "Inférence IA :",
+      "item3Desc": "AWS Bedrock, Google AI et Groq Inc. (traitement temps réel sans rétention pour entraînement).",
+      "item4Title": "Hébergement Web & CDN :",
+      "item4Desc": "Vercel Inc.",
+      "item5Title": "Paiements Mobile Money :",
+      "item5Desc": "Passerelles agréées sécurisées (MTN MoMo, Orange Money) pour l'activation des pass d'étude."
+    },
+    "sec5": {
+      "title": "5. Sécurité",
+      "p1": "Nous mettons en œuvre des mesures de sécurité techniques (chiffrement TLS, stockage sécurisé, mots de passe hashés) et organisationnelles pour protéger vos données contre tout accès, altération, divulgation ou destruction non autorisés."
+    },
+    "sec6": {
+      "title": "6. Vos droits",
+      "p1": "Conformément à la réglementation (RGPD), vous disposez d'un droit d'accès, de rectification, de suppression et de portabilité de vos données. Vous pouvez supprimer toutes vos sessions d'études, ou votre compte entier, directement depuis les paramètres de l'application. Pour toute demande, contactez-nous à l'adresse suivante :"
+    }
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "dashboard": {
+    "welcome": "Hello {{name}}, ready to study?",
+    "subtitle1": "I am Sphera, your academic study assistant.",
+    "subtitle2": "Upload a document to instantly generate your study materials or correct your past exam papers.",
+    "pasteOrWrite": "Paste or write a lecture / study notes",
+    "or": "or",
+    "tabs": {
+      "sessions": "My sessions",
+      "annales": "My past papers"
+    },
+    "empty": {
+      "title": "No {{type}} found",
+      "desc": "Upload a document to start studying."
+    },
+    "annaleType": "past paper",
+    "sessionType": "session"
+  },
+  "upload": {
+    "dropzoneTitle": "Drop your course or past paper here",
+    "dropzoneSubtitle": "or click to select a file",
+    "supportedFormats": "PDF, DOCX, TXT, MD, Images (PNG, JPG, WEBP) · Max 50MB",
+    "readyForGeneration": "{{size}} MB • Ready for generation",
+    "changeFile": "Change file"
+  },
+  "createSession": {
+    "backToDashboard": "Back to dashboard",
+    "title": "Configure study session",
+    "studyMode": "Study a course",
+    "annaleMode": "Solve a past paper",
+    "annaleTypeLabel": "Correction type",
+    "annaleComplete": "Complete",
+    "annaleCompleteDesc": "Step-by-step detailed correction",
+    "annaleCompleteBadge": "Recommended",
+    "annaleRapide": "Quick",
+    "annaleRapideDesc": "Direct synthetic answers",
+    "annaleRapideBadge": "Express",
+    "directQaBtn": "Start in direct Q&A mode",
+    "initializing": "Initializing session...",
+    "generating": "Generation in progress...",
+    "generateCount": "Generate {{count}} tool",
+    "generateCount_plural": "Generate {{count}} tools",
+    "launchCorrection": "Launch correction",
+    "pdfPreviewTitle": "PDF Preview",
+    "interactiveText": "Interactive text",
+    "image": "Image",
+    "pdf": "PDF",
+    "fullscreen": "Fullscreen",
+    "showPreview": "Show preview"
+  },
+  "tools": {
+    "title": "Choose tools to generate",
+    "deselectAll": "Deselect all (Direct Q&A)",
+    "selectFiche": "Select Sheet",
+    "directQaNoticeTitle": "Direct Q&A mode selected",
+    "directQaNoticeDesc": "The session will be created immediately without generating sheets or quizzes (0 quota consumed). You can generate them on demand later!",
+    "fiche": {
+      "title": "Study Sheet",
+      "desc": "Key points, definitions, formulas"
+    },
+    "quiz": {
+      "title": "Interactive Quiz",
+      "desc": "Multiple choice with timer and score"
+    },
+    "flashcards": {
+      "title": "Flashcards",
+      "desc": "Front/back cards to memorize"
+    },
+    "mindmap": {
+      "title": "Mind Map",
+      "desc": "Visual representation of key concepts"
+    },
+    "audio": {
+      "title": "Audio Summary",
+      "desc": "Podcast-style dialogue to review"
+    },
+    "annale": {
+      "title": "Past Paper",
+      "desc": "Exam questions and solutions"
+    }
+  }
+}

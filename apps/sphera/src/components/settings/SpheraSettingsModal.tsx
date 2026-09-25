@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
+import { useTranslation, LanguageSwitcher } from '@cs/i18n'
 import {
   X,
   User,
@@ -41,48 +42,49 @@ interface SpheraSettingsModalProps {
 
 type TabType = 'profile' | 'generation' | 'tools' | 'quota' | 'stats' | 'appearance'
 
-const NAV_ITEMS: { id: TabType; label: string; icon: React.FC<{ className?: string }>; desc: string }[] = [
-  { id: 'profile', label: 'Mon Profil', icon: User, desc: 'Identité académique & SSO' },
-  { id: 'generation', label: 'Préférences IA', icon: Sparkles, desc: 'Langue, détail & tonalité' },
-  { id: 'tools', label: 'Quiz & Flashcards', icon: Layers, desc: 'Volume & temps par outil' },
-  { id: 'quota', label: 'Usage & Quota', icon: PieChart, desc: 'Consommation hebdomadaire' },
-  { id: 'stats', label: 'Activité & Streak', icon: Gauge, desc: 'Grille 14 semaines & stats' },
-  { id: 'appearance', label: 'Apparence', icon: SunMoon, desc: 'Thèmes sombre & clair' },
-]
-
-const TAB_CONFIG: Record<TabType, { title: string; desc: string }> = {
-  profile: {
-    title: 'Mon Profil Académique',
-    desc: 'Données académiques synchronisées en lecture seule depuis votre compte CampusSphere',
-  },
-  generation: {
-    title: 'Préférences de Génération IA',
-    desc: 'Personnalisez la langue, le niveau de détail et la posture pédagogique de votre tuteur Sphera',
-  },
-  tools: {
-    title: 'Paramètres par Outil (Quiz & Flashcards)',
-    desc: 'Définissez le volume par défaut de questions et cartes mémoires générées pour chaque cours',
-  },
-  quota: {
-    title: 'Usage & Quota Hebdomadaire',
-    desc: 'Consultez votre consommation en temps réel et le décompte des sessions IA',
-  },
-  stats: {
-    title: 'Activité & Streak d\'Étude',
-    desc: 'Historique de régularité et matrice d\'entraînement sur les 14 dernières semaines',
-  },
-  appearance: {
-    title: 'Apparence & Confort Visuel',
-    desc: 'Basculez entre le Mode Sombre Studio et le Mode Clair Nature selon vos préférences',
-  },
-}
-
 export const SpheraSettingsModal: React.FC<SpheraSettingsModalProps> = ({
   isOpen,
   onClose,
   initialTab = 'profile',
 }) => {
+  const { t } = useTranslation('settings')
   const [activeTab, setActiveTab] = useState<TabType>(initialTab)
+
+  const NAV_ITEMS: { id: TabType; label: string; icon: React.FC<{ className?: string }>; desc: string }[] = [
+    { id: 'profile', label: t('nav.profile.label'), icon: User, desc: t('nav.profile.desc') },
+    { id: 'generation', label: t('nav.generation.label'), icon: Sparkles, desc: t('nav.generation.desc') },
+    { id: 'tools', label: t('nav.tools.label'), icon: Layers, desc: t('nav.tools.desc') },
+    { id: 'quota', label: t('nav.quota.label'), icon: PieChart, desc: t('nav.quota.desc') },
+    { id: 'stats', label: t('nav.stats.label'), icon: Gauge, desc: t('nav.stats.desc') },
+    { id: 'appearance', label: t('nav.appearance.label'), icon: SunMoon, desc: t('nav.appearance.desc') },
+  ]
+
+  const TAB_CONFIG: Record<TabType, { title: string; desc: string }> = {
+    profile: {
+      title: t('tabs.profile.title'),
+      desc: t('tabs.profile.desc'),
+    },
+    generation: {
+      title: t('tabs.generation.title'),
+      desc: t('tabs.generation.desc'),
+    },
+    tools: {
+      title: t('tabs.tools.title'),
+      desc: t('tabs.tools.desc'),
+    },
+    quota: {
+      title: t('tabs.quota.title'),
+      desc: t('tabs.quota.desc'),
+    },
+    stats: {
+      title: t('tabs.stats.title'),
+      desc: t('tabs.stats.desc'),
+    },
+    appearance: {
+      title: t('tabs.appearance.title'),
+      desc: t('tabs.appearance.desc'),
+    },
+  }
   const [prefs, setPrefs] = useState<SpheraPreferencesData | null>(null)
   const [profile, setProfile] = useState<SpheraProfileData | null>(null)
   const [stats, setStats] = useState<SpheraStatsData | null>(null)
@@ -787,11 +789,27 @@ export const SpheraSettingsModal: React.FC<SpheraSettingsModalProps> = ({
 
                   return (
                     <div className="space-y-6 animate-in fade-in duration-150">
+                      {/* Setting 0: Langue de l'interface */}
+                      <div className="p-5 rounded-xl border border-sphera-border bg-sphera-surface-2 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <Globe className="w-4 h-4 text-sphera-green" />
+                              <h4 className="text-sm font-medium text-white">{t('appearance.interfaceLanguageTitle')}</h4>
+                            </div>
+                            <p className="text-xs text-sphera-text-muted mt-0.5">
+                              {t('appearance.interfaceLanguageDesc')}
+                            </p>
+                          </div>
+                          <LanguageSwitcher variant="dropdown" />
+                        </div>
+                      </div>
+
                       <div className="p-5 rounded-xl border border-sphera-border bg-sphera-surface-2 space-y-4">
                         <div>
-                          <h4 className="text-sm font-medium text-white">Thème d'affichage</h4>
+                          <h4 className="text-sm font-medium text-white">{t('appearance.themeTitle')}</h4>
                           <p className="text-xs text-sphera-text-muted mt-0.5">
-                            Sélectionnez l'environnement visuel le plus confortable pour vos sessions d'étude
+                            {t('appearance.themeDesc')}
                           </p>
                         </div>
 
@@ -828,10 +846,10 @@ export const SpheraSettingsModal: React.FC<SpheraSettingsModalProps> = ({
 
                               <div className="flex items-center justify-between pt-1">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-sm font-semibold text-white">Mode Sombre Studio</span>
+                                  <span className="text-sm font-semibold text-white">{t('appearance.darkTheme')}</span>
                                   {activeTheme === 'sombre' && (
                                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-sphera-green/20 text-sphera-green font-medium">
-                                      Actif
+                                      {t('appearance.activeBadge')}
                                     </span>
                                   )}
                                 </div>
@@ -839,7 +857,7 @@ export const SpheraSettingsModal: React.FC<SpheraSettingsModalProps> = ({
                               </div>
 
                               <p className="text-xs text-sphera-text-muted">
-                                Contraste sombre carbone (#0D0E10) pour les révisions nocturnes sans éblouissement
+                                {t('appearance.darkThemeDesc')}
                               </p>
                             </div>
 
@@ -884,10 +902,10 @@ export const SpheraSettingsModal: React.FC<SpheraSettingsModalProps> = ({
 
                               <div className="flex items-center justify-between pt-1">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-sm font-semibold text-white">Mode Clair Nature</span>
+                                  <span className="text-sm font-semibold text-white">{t('appearance.lightTheme')}</span>
                                   {activeTheme === 'clair' && (
                                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-sphera-green/20 text-sphera-green font-medium">
-                                      Actif
+                                      {t('appearance.activeBadge')}
                                     </span>
                                   )}
                                 </div>
@@ -895,7 +913,7 @@ export const SpheraSettingsModal: React.FC<SpheraSettingsModalProps> = ({
                               </div>
 
                               <p className="text-xs text-sphera-text-muted">
-                                Fond sauge doux (#F4FBF7), cartes blanches et texte forêt (#17301F) sans fatigue oculaire
+                                {t('appearance.lightThemeDesc')}
                               </p>
                             </div>
 

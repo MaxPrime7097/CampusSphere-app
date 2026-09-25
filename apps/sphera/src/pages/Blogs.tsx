@@ -1,12 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
+import { useTranslation } from 'react-i18next';
 import { SpheraHeader } from '../components/layout/SpheraHeader';
 import { SpheraFooter } from '../components/layout/SpheraFooter';
 import { Calendar, Clock, ArrowRight, Sparkles } from 'lucide-react';
 import { blogPosts } from '../data/blogs';
 
 export default function Blogs(): JSX.Element {
+  const { t } = useTranslation('blog');
   const [activeCategory, setActiveCategory] = useState<string>('Tous');
 
   useEffect(() => {
@@ -32,8 +34,8 @@ export default function Blogs(): JSX.Element {
   const collectionJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
-    name: 'Le Blog Sphera — Méthodes de révision & Réussite Universitaire',
-    description: 'Guides pratiques, sciences de la mémorisation (Active Recall, Pomodoro), stratégies d\'examen et utilisation de l\'IA pour les étudiants.',
+    name: t('seo.listTitle'),
+    description: t('seo.listDescription'),
     url: 'https://sphera.campussphere.app/blogs',
     publisher: {
       '@type': 'Organization',
@@ -54,29 +56,20 @@ export default function Blogs(): JSX.Element {
   return (
     <div className="flex flex-col min-h-screen bg-sphera-bg font-sans selection:bg-sphera-green/30">
       <Helmet>
-        <title>Le Blog Sphera — Méthodes de Révision, IA & Réussite Étudiante</title>
-        <meta
-          name="description"
-          content="Découvrez nos guides complets pour réviser efficacement vos examens : Active Recall, répétition espacée, révisions de partiels et utilisation intelligente de l'IA."
-        />
+        <title>{t('seo.listTitle')}</title>
+        <meta name="description" content={t('seo.listDescription')} />
         <link rel="canonical" href="https://sphera.campussphere.app/blogs" />
 
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://sphera.campussphere.app/blogs" />
-        <meta property="og:title" content="Le Blog Sphera — Méthodes de Révision & Réussite Étudiante" />
-        <meta
-          property="og:description"
-          content="Guides, méthodologies et astuces cognitives pour valider ses examens et réviser sans stress."
-        />
+        <meta property="og:title" content={t('seo.ogTitle')} />
+        <meta property="og:description" content={t('seo.ogDescription')} />
         <meta property="og:image" content="https://sphera.campussphere.app/sphera-logo-dark.png" />
 
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:url" content="https://sphera.campussphere.app/blogs" />
-        <meta name="twitter:title" content="Le Blog Sphera — Méthodes de Révision & Réussite Étudiante" />
-        <meta
-          name="twitter:description"
-          content="Guides, méthodologies et astuces cognitives pour valider ses examens et réviser sans stress."
-        />
+        <meta name="twitter:title" content={t('seo.ogTitle')} />
+        <meta name="twitter:description" content={t('seo.ogDescription')} />
         <meta name="twitter:image" content="https://sphera.campussphere.app/sphera-logo-dark.png" />
 
         {/* Schema.org CollectionPage */}
@@ -94,10 +87,10 @@ export default function Blogs(): JSX.Element {
           {/* Header */}
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-6">
-              Le Blog Sphera
+              {t('list.title')}
             </h1>
             <p className="text-xl text-sphera-text-muted max-w-2xl mx-auto">
-              Des guides complets et des méthodes prouvées par les sciences cognitives pour réussir vos partiels et réviser plus efficacement.
+              {t('list.subtitle')}
             </p>
           </div>
 
@@ -110,7 +103,7 @@ export default function Blogs(): JSX.Element {
               <div className="grid md:grid-cols-2">
                 <div className="h-64 md:h-auto overflow-hidden relative">
                   <div className="absolute top-4 left-4 z-10 flex items-center gap-1.5 bg-sphera-green text-black text-xs font-bold px-3.5 py-1.5 rounded-full shadow-lg">
-                    <Sparkles className="w-3.5 h-3.5" /> À la une
+                    <Sparkles className="w-3.5 h-3.5" /> {t('list.featured')}
                   </div>
                   <img
                     src={featuredPost.imageUrl}
@@ -153,7 +146,7 @@ export default function Blogs(): JSX.Element {
                     : 'bg-sphera-surface border border-sphera-border text-sphera-text-muted hover:text-white hover:border-sphera-green/30'
                 }`}
               >
-                {cat}
+                {cat === 'Tous' ? t('list.allCategory') : cat}
               </button>
             ))}
           </div>
@@ -161,7 +154,7 @@ export default function Blogs(): JSX.Element {
           {/* Articles Grid */}
           {filteredPosts.length === 0 ? (
             <div className="text-center py-20">
-              <p className="text-sphera-text-muted text-lg">Aucun article dans cette catégorie pour le moment.</p>
+              <p className="text-sphera-text-muted text-lg">{t('list.emptyCategory')}</p>
             </div>
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -205,7 +198,7 @@ export default function Blogs(): JSX.Element {
                       to={`/blogs/${post.slug}`} 
                       className="inline-flex items-center gap-2 text-sm font-semibold text-white group-hover:text-sphera-green transition-colors mt-auto"
                     >
-                      Lire l'article <ArrowRight className="w-4 h-4" />
+                      {t('list.readArticle')} <ArrowRight className="w-4 h-4" />
                     </Link>
                   </div>
                 </article>

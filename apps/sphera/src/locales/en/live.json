@@ -1,0 +1,30 @@
+{
+  "home": {
+    "title": "Sphera",
+    "titleHighlight": "Live",
+    "subtitle": "The interactive real-time multiplayer quiz experience.",
+    "hostTitle": "Host a Quiz",
+    "hostDesc": "Create a session on the big screen and invite your friends to join with a code.",
+    "hostStart": "Get Started",
+    "joinTitle": "Join a Game",
+    "joinDesc": "Got a code? Join a game lobby instantly from your phone.",
+    "joinPlay": "Play",
+    "recentSessions": "Recent Games",
+    "noSessions": "You haven't hosted any Sphera Live sessions yet.",
+    "deleteSession": "Delete session"
+  },
+  "join": {
+    "title": "Join a Game",
+    "enterPin": "Enter PIN code",
+    "enterPseudo": "Your nickname",
+    "joinBtn": "Join",
+    "waitingRoom": "Waiting for host..."
+  },
+  "host": {
+    "roomCode": "PIN Code",
+    "shareLink": "Copy invite link",
+    "participants": "Connected players",
+    "startQuiz": "Start game",
+    "waitingPlayers": "Waiting for players..."
+  }
+}

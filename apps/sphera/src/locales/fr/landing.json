@@ -1,0 +1,118 @@
+{
+  "header": {
+    "liveBannerNew": "Nouveau",
+    "liveBannerText": "Sphera Live : Découvrez le quiz multijoueur en temps réel !",
+    "liveBannerAction": "Explorer",
+    "beta": "Bêta",
+    "dashboard": "Dashboard",
+    "spheraLive": "Sphera Live",
+    "pricing": "Tarifs",
+    "blog": "Blog",
+    "campusSphere": "CampusSphere",
+    "login": "Se connecter",
+    "tryFree": "Essayer gratuitement",
+    "logout": "Se déconnecter",
+    "openMenu": "Ouvrir le menu"
+  },
+  "hero": {
+    "poweredBy": "Powered by",
+    "titleLine1": "Transforme n'importe quel cours en",
+    "titleHighlight": "révision intelligente",
+    "subtitle": "Upload ton cours PDF. Sphera génère instantanément fiche de révision, quiz, flashcards et répond à toutes tes questions sur le document.",
+    "ctaTryFree": "Essayer gratuitement",
+    "ctaLogin": "Se connecter"
+  },
+  "howItWorks": {
+    "title": "Comment ça marche",
+    "subtitle": "Trois étapes simples pour transformer tes documents en outils de révision puissants.",
+    "step1Title": "Upload",
+    "step1Desc": "Tu uploades ton cours PDF",
+    "step2Title": "Choisis",
+    "step2Desc": "Fiche, Quiz, Flashcards ou Annale",
+    "step3Title": "Révise",
+    "step3Desc": "Sphera génère en 30 secondes"
+  },
+  "features": {
+    "title": "Tout ce dont tu as besoin",
+    "subtitle": "Génère exactement le format d'apprentissage qui correspond à tes besoins, seul ou en équipe.",
+    "liveTitle": "Sphera Live (Multijoueur)",
+    "liveDesc": "Lance des parties en direct avec tes camarades. Rejoins avec un code PIN, affronte le timer et monte sur le podium en temps réel.",
+    "liveBadge": "Nouveau",
+    "sheetsTitle": "Fiches de révision structurées",
+    "sheetsDesc": "Points clés, définitions, théorèmes et formules extraits automatiquement de tes PDFs en quelques secondes.",
+    "quizTitle": "Quiz interactifs solo",
+    "quizDesc": "Questions ciblées avec timer, score immédiat et explications détaillées pour combler chaque lacune.",
+    "flashcardsTitle": "Flashcards intelligentes",
+    "flashcardsDesc": "Cartes recto/verso optimisées pour l'Active Recall et la répétition espacée, prêtes à être révisées.",
+    "annalesTitle": "Correction d'annales",
+    "annalesDesc": "Mode complet ou rapide selon ton timing pour t'entraîner sur les vrais sujets des années précédentes."
+  },
+  "campusSphere": {
+    "badge": "Pour les étudiants",
+    "title": "Découvre l'écosystème complet",
+    "description": "Sphera n'est que la pointe de l'iceberg. CampusSphere est le premier réseau social académique pour les étudiants. Retrouve tes camarades de l'IUC et d'ailleurs, accède à tes cours, partage tes notes et booste ta vie étudiante sur une seule plateforme.",
+    "cta": "Explorer CampusSphere"
+  },
+  "socialProof": {
+    "title": "Rejoins les Spherians",
+    "subtitle": "Des milliers d'étudiants de l'IUC Douala et d'ailleurs l'utilisent déjà.",
+    "statSessions": "Sessions générées",
+    "statRating": "Note moyenne",
+    "statFields": "Filières couvertes",
+    "statSpeed": "Temps de génération moyen",
+    "testimonials": {
+      "marc": {
+        "text": "Je mettais des heures à ficher mes cours de droit. Avec Sphera, c'est fait pendant que je vais me chercher un café.",
+        "author": "Marc B.",
+        "role": "L3 Droit"
+      },
+      "ines": {
+        "text": "On a lancé un Sphera Live en amphi avant les examens, tout le monde était sur son téléphone à buzzer. L'ambiance et la mémorisation étaient folles !",
+        "author": "Inès M.",
+        "role": "L2 Informatique"
+      },
+      "sarah": {
+        "text": "Les quiz générés m'ont littéralement sauvé pour mes partiels de biologie. C'est le meilleur outil d'apprentissage.",
+        "author": "Sarah N.",
+        "role": "Master 1"
+      },
+      "kevin": {
+        "text": "Corriger les annales de l'année dernière en un clic, c'est un cheat code absolu pour les révisions.",
+        "author": "Kevin T.",
+        "role": "Prépa Ingé"
+      }
+    }
+  },
+  "faq": {
+    "title": "Questions fréquentes",
+    "subtitle": "Tout ce que tu as besoin de savoir sur Sphera et Sphera Live.",
+    "q1": "Qu'est-ce que Sphera ?",
+    "a1": "Sphera est une assistante d'apprentissage intelligente basée sur l'intelligence artificielle. Elle analyse tes cours et documents pour générer automatiquement des fiches de révision structurées, des quiz interactifs et des flashcards, le tout conçu pour maximiser ta rétention d'information.",
+    "q2": "Qu'est-ce que Sphera Live et comment ça marche ?",
+    "a2": "Sphera Live est notre mode multijoueur en direct. Un hôte crée ou génère un quiz (à partir d'un PDF, d'un lien CampusSphere ou manuellement), puis lance une salle d'attente. Les participants entrent le code à 6 lettres sur leur téléphone ou ordinateur pour répondre en direct. Les questions défilent avec un timer synchronisé, un classement instantané et un podium final avec confettis.",
+    "q3": "Faut-il un compte pour utiliser Sphera et Sphera Live ?",
+    "a3": "Oui, un compte est nécessaire pour accéder à Sphera. Si tu es déjà inscrit sur CampusSphere, ton compte est directement synchronisé grâce au SSO en 1 clic (aucune réinscription requise). L'hôte comme les participants se connectent avec leur compte pour créer les sessions, rejoindre les parties en direct et retrouver leur historique.",
+    "q4": "Comment fonctionne la génération de fiches et quiz ?",
+    "a4": "Il suffit de téléverser ton document (PDF, DOCX, TXT) ou de coller un lien CampusSphere. Sphera l'analyse, extrait les concepts clés, formate les définitions et te propose une fiche de révision claire, un quiz ciblé et des flashcards recto/verso prêtes à être étudiées.",
+    "q5": "Est-ce que je peux partager mes fiches de révision ?",
+    "a5": "Oui, absolument ! Sphera te permet de créer des espaces de révision avec tous les outils nécessaires. Tu peux également générer un lien public pour partager une session de révision spécifique avec tes camarades de promotion.",
+    "q6": "Combien coûte l'utilisation de Sphera ?",
+    "a6": "Sphera propose un accès gratuit complet pour démarrer et tester tous les outils, y compris Sphera Live. Des formules premium avancées seront proposées pour les étudiants souhaitant des quotas illimités et des fonctionnalités analytiques poussées.",
+    "q7": "Mes documents sont-ils en sécurité ?",
+    "a7": "La sécurité et la confidentialité de tes données sont notre priorité absolue. Tes documents sont chiffrés et ne sont utilisés que pour générer ton matériel pédagogique personnel. Ils ne sont jamais revendus ni partagés avec des tiers.",
+    "q8": "Sphera fonctionne-t-il pour toutes les filières ?",
+    "a8": "Oui ! L'IA de Sphera s'adapte à tous les domaines d'études : droit, médecine, ingénierie, sciences économiques, lettres ou prépas. Elle comprend le vocabulaire technique propre à chaque discipline."
+  },
+  "footer": {
+    "slogan": "Upload. Revise. Succeed.",
+    "spheraLive": "Sphera Live",
+    "faq": "FAQ",
+    "pricing": "Tarifs",
+    "blog": "Blog",
+    "privacy": "Confidentialité",
+    "terms": "CGU",
+    "termsOfSale": "CGV",
+    "legalNotice": "Mentions Légales",
+    "poweredBy": "Powered by"
+  }
+}

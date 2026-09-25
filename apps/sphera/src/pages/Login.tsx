@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import { LanguageSwitcher } from '@cs/i18n'
 import { loginWithCS, getCurrentUser, setTokens, clearTokens } from '../services/spheraApi'
 import { useSpheraAuth } from '../contexts/SpheraAuthContext'
 import { SpheraAuthSidePanel } from '../components/auth/SpheraAuthSidePanel'
@@ -15,6 +17,7 @@ import {
 } from 'lucide-react'
 
 export default function Login() {
+  const { t } = useTranslation('auth')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
@@ -42,7 +45,7 @@ export default function Login() {
       }
       navigate('/dashboard')
     } catch (err: any) {
-      setError(err.message || 'Identifiants incorrects. Vérifie ton email et mot de passe.')
+      setError(err.message || t('login.defaultError'))
     } finally {
       setLoading(false)
     }
@@ -66,7 +69,7 @@ export default function Login() {
       navigate("/dashboard")
     } catch {
       clearTokens()
-      setError("La connexion SSO a échoué. Réessaie.")
+      setError(t('login.ssoError'))
       setSsoLoading(false)
     }
   }
@@ -77,7 +80,7 @@ export default function Login() {
       {/* ── Left Column: Auth Form ──────────────────────────────── */}
       <div className="flex flex-col justify-between p-6 sm:p-12 overflow-y-auto relative z-10">
         
-        {/* Top Header Bar: Rehaussement du Logo + Lien bascule */}
+        {/* Top Header Bar: Logo + Sélecteur de langue */}
         <div className="flex items-center justify-between w-full max-w-md mx-auto pt-2 pb-6 border-b border-sphera-border/40 mb-8">
           <Link to="/" className="inline-flex items-center gap-3 group">
             <img src="/sphera-logo-dark.png" alt="Sphera logo" className="h-9 w-auto group-hover:scale-105 transition-transform" />
@@ -87,24 +90,19 @@ export default function Login() {
             </span>
           </Link>
 
-          <div className="text-xs text-sphera-text-muted">
-            Pas de compte ?{' '}
-            <Link to="/register" className="font-semibold text-sphera-green hover:underline">
-              S'inscrire
-            </Link>
-          </div>
+          <LanguageSwitcher variant="toggle" />
         </div>
 
         {/* Center Form Body */}
         <div className="w-full max-w-md mx-auto my-auto py-2">
           
-          {/* Form Title (distinct et aéré par rapport au logo au-dessus) */}
+          {/* Form Title */}
           <div className="mb-8">
             <h1 className="font-display text-2xl sm:text-3xl font-bold text-white mb-2">
-              Connexion
+              {t('login.title')}
             </h1>
             <p className="text-sphera-text-muted text-xs sm:text-sm">
-              Accède à tes fiches de révision et sessions d'étude.
+              {t('login.subtitle')}
             </p>
           </div>
 
@@ -112,7 +110,7 @@ export default function Login() {
           {isRegisteredSuccess && (
             <div className="mb-6 p-3.5 rounded-xl bg-sphera-green/10 border border-sphera-green/30 text-sphera-green text-xs flex items-center gap-2.5">
               <CheckCircle2 className="w-4 h-4 shrink-0" />
-              <span>Compte créé avec succès ! Connecte-toi ci-dessous.</span>
+              <span>{t('login.registeredSuccess')}</span>
             </div>
           )}
 
@@ -135,17 +133,17 @@ export default function Login() {
               {ssoLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin text-slate-700" />
-                  <span className="text-xs sm:text-sm font-semibold">Connexion SSO en cours…</span>
+                  <span className="text-xs sm:text-sm font-semibold">{t('login.ssoLoading')}</span>
                 </>
               ) : (
                 <>
                   <img src="/CS.svg" alt="CampusSphere" className="h-5 w-5 object-contain" />
-                  <span className="text-xs sm:text-sm font-semibold">Continuer avec CampusSphere</span>
+                  <span className="text-xs sm:text-sm font-semibold">{t('login.ssoButton')}</span>
                 </>
               )}
             </button>
             <p className="text-center text-[11px] text-sphera-text-muted">
-              Connexion instantanée en 1 clic sans mot de passe à retenir.
+              {t('login.ssoHint')}
             </p>
           </div>
 
@@ -156,7 +154,7 @@ export default function Login() {
             </div>
             <div className="relative flex justify-center text-xs uppercase">
               <span className="px-3 bg-sphera-bg text-sphera-text-muted font-medium">
-                Ou avec identifiants
+                {t('login.orCredentials')}
               </span>
             </div>
           </div>
@@ -165,7 +163,7 @@ export default function Login() {
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-sphera-text-muted mb-1.5">
-                Email
+                {t('login.emailLabel')}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-sphera-text-muted">
@@ -177,7 +175,7 @@ export default function Login() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-sphera-surface border border-sphera-border rounded-xl pl-10 pr-4 py-2.5 text-white text-sm focus:outline-none focus:border-sphera-green focus:ring-1 focus:ring-sphera-green transition-all placeholder:text-neutral-600"
-                  placeholder="nom@exemple.com"
+                  placeholder={t('login.emailPlaceholder')}
                 />
               </div>
             </div>
@@ -185,7 +183,7 @@ export default function Login() {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="block text-xs font-semibold text-sphera-text-muted">
-                  Mot de passe
+                  {t('login.passwordLabel')}
                 </label>
               </div>
               <div className="relative">
@@ -198,7 +196,7 @@ export default function Login() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-sphera-surface border border-sphera-border rounded-xl pl-10 pr-10 py-2.5 text-white text-sm focus:outline-none focus:border-sphera-green focus:ring-1 focus:ring-sphera-green transition-all placeholder:text-neutral-600"
-                  placeholder="••••••••"
+                  placeholder={t('login.passwordPlaceholder')}
                 />
                 <button
                   type="button"
@@ -219,7 +217,7 @@ export default function Login() {
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="rounded border-sphera-border bg-sphera-surface text-sphera-green focus:ring-sphera-green"
                 />
-                Se souvenir de moi
+                {t('login.rememberMe')}
               </label>
             </div>
 
@@ -231,28 +229,28 @@ export default function Login() {
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Connexion en cours...
+                  {t('login.submittingButton')}
                 </>
               ) : (
-                'Se connecter'
+                t('login.submitButton')
               )}
             </button>
           </form>
 
           <p className="text-center text-xs text-sphera-text-muted mt-6">
-            Pas encore de compte ?{' '}
+            {t('login.noAccount')}{' '}
             <Link to="/register" className="text-sphera-green font-semibold hover:underline">
-              S'inscrire
+              {t('login.registerLink')}
             </Link>
           </p>
         </div>
 
         {/* Bottom Legal / Links */}
         <div className="text-center text-[11px] text-sphera-text-muted max-w-md mx-auto w-full pt-6 border-t border-sphera-border/40">
-          En continuant, tu acceptes les{' '}
-          <Link to="/terms" className="text-sphera-text hover:underline">Conditions d'utilisation</Link>{' '}
-          et la{' '}
-          <Link to="/privacy" className="text-sphera-text hover:underline">Politique de confidentialité</Link>.
+          {t('legalAgreement.byContinuing')}{' '}
+          <Link to="/terms" className="text-sphera-text hover:underline">{t('legalAgreement.terms')}</Link>{' '}
+          {t('legalAgreement.and')}{' '}
+          <Link to="/privacy" className="text-sphera-text hover:underline">{t('legalAgreement.privacy')}</Link>
         </div>
       </div>
 

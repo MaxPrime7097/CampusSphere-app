@@ -1,0 +1,69 @@
+{
+  "nav": {
+    "profile": { "label": "Mon Profil", "desc": "Identité académique & SSO" },
+    "generation": { "label": "Préférences IA", "desc": "Langue, détail & tonalité" },
+    "tools": { "label": "Quiz & Flashcards", "desc": "Volume & temps par outil" },
+    "quota": { "label": "Usage & Quota", "desc": "Consommation hebdomadaire" },
+    "stats": { "label": "Activité & Streak", "desc": "Grille 14 semaines & stats" },
+    "appearance": { "label": "Apparence", "desc": "Thèmes sombre & clair" }
+  },
+  "tabs": {
+    "profile": {
+      "title": "Mon Profil Académique",
+      "desc": "Données académiques synchronisées en lecture seule depuis votre compte CampusSphere"
+    },
+    "generation": {
+      "title": "Préférences de Génération IA",
+      "desc": "Personnalisez la langue, le niveau de détail et la posture pédagogique de votre tuteur Sphera"
+    },
+    "tools": {
+      "title": "Paramètres par Outil (Quiz & Flashcards)",
+      "desc": "Définissez le volume par défaut de questions et cartes mémoires générées pour chaque cours"
+    },
+    "quota": {
+      "title": "Usage & Quota Hebdomadaire",
+      "desc": "Consultez votre consommation en temps réel et le décompte des sessions IA"
+    },
+    "stats": {
+      "title": "Activité & Streak d'Étude",
+      "desc": "Historique de régularité et matrice d'entraînement sur les 14 dernières semaines"
+    },
+    "appearance": {
+      "title": "Apparence & Confort Visuel",
+      "desc": "Basculez entre le Mode Sombre Studio et le Mode Clair Nature selon vos préférences"
+    }
+  },
+  "generation": {
+    "defaultLanguage": "Langue par défaut",
+    "defaultLanguageDesc": "Contrôle la langue dans laquelle l'IA rédige ses réponses et fiches de cours",
+    "langAuto": "Automatique (Défaut)",
+    "langFr": "Français",
+    "langEn": "English",
+    "detailLevel": "Niveau de détail",
+    "detailLevelDesc": "Longueur des explications et granularité des résumés",
+    "detailConcise": "Synthétique",
+    "detailBalanced": "Équilibré",
+    "detailDetailed": "Approfondi",
+    "pedagogicalTone": "Posture pédagogique",
+    "pedagogicalToneDesc": "Régule la rigueur et la tonalité des explications générées",
+    "toneAcademic": "Académique & Rigoureux",
+    "toneSupportive": "Bienveillant & Accessible",
+    "toneSocratic": "Méthode Socratique"
+  },
+  "appearance": {
+    "themeTitle": "Sélection du thème visuel",
+    "themeDesc": "Choisissez l'ambiance visuelle adaptée à vos sessions de révision",
+    "darkTheme": "Mode Sombre Studio",
+    "darkThemeDesc": "Fond noir profond (#0D0D0F), surfaces carbone et accents émeraude (#22C55E)",
+    "lightTheme": "Mode Clair Nature",
+    "lightThemeDesc": "Fond sauge doux (#F4FBF7), cartes blanches et texte forêt (#17301F) sans fatigue oculaire",
+    "activeBadge": "Actif",
+    "interfaceLanguageTitle": "Langue de l'interface",
+    "interfaceLanguageDesc": "Choisissez la langue d'affichage globale de Sphera"
+  },
+  "buttons": {
+    "saving": "Enregistrement...",
+    "save": "Enregistrer les modifications",
+    "close": "Fermer"
+  }
+}

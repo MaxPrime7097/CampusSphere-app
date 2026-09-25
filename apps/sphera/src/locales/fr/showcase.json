@@ -1,0 +1,93 @@
+{
+  "seo": {
+    "title": "Sphera Live – Quiz Multijoueur en Temps Réel · CampusSphere",
+    "description": "Transformez n'importe quel sujet en quiz multijoueur en direct. Rejoignez avec un simple code PIN sur smartphone, affrontez vos amis et dominez le leaderboard."
+  },
+  "hero": {
+    "badge": "L'expérience multijoueur Sphera",
+    "titlePart1": "Le quiz multijoueur",
+    "titlePart2": "en direct et sans friction.",
+    "subtitle": "Que ce soit pour réviser un partiel de médecine en amphi ou pour improviser un blind-test ciné un samedi soir : créez votre partie en 30 secondes, partagez un code PIN et affrontez vos amis en temps réel.",
+    "hostCta": "Héberger une session",
+    "joinCta": "Rejoindre avec un code",
+    "pills": {
+      "sso": "Connexion instantanée via CampusSphere SSO",
+      "audio": "Sons & timer synchronisés",
+      "devices": "Fonctionne sur n'importe quel smartphone"
+    }
+  },
+  "mockup": {
+    "waitingRoom": "Salle d'attente active",
+    "quizTitle": "Quiz Général : Droit, Sciences & Culture Pop",
+    "joinCodeLabel": "Code pour rejoindre",
+    "questionLabel": "Question 7 sur 15",
+    "timeRemaining": "05s restantes",
+    "sampleQuestion": "En quelle année le premier modèle de langage GPT a-t-il été publié par OpenAI ?",
+    "topScorer": "Top Scoreur",
+    "secondPlace": "2ème Place",
+    "thirdPlace": "3ème Place"
+  },
+  "ways": {
+    "title": "3 façons simples de créer une partie",
+    "subtitle": "Générez votre quiz en quelques secondes selon votre inspiration.",
+    "way1": {
+      "title": "Générer par IA",
+      "description": "Glissez-déposez directement votre cours (PDF, Word, TXT) ou collez l'URL d'une ressource CampusSphere. L'IA extrait les points essentiels et fabrique le quiz instantanément.",
+      "tag": "Supporte PDF jusqu'à 50 Mo & liens directs"
+    },
+    "way2": {
+      "title": "Création manuelle",
+      "description": "Gardez le contrôle absolu : écrivez chaque question, vos 4 choix, réglez la réponse exacte et ajustez le temps imparti (de 10 à 60 secondes) selon la difficulté.",
+      "tag": "Idéal pour quiz sur mesure & blind-tests"
+    },
+    "way3": {
+      "title": "Importation JSON",
+      "description": "Importez un fichier JSON structuré. Sphera préremplit immédiatement l'éditeur visuel pour vous laisser prévisualiser et retoucher chaque question avant le grand départ.",
+      "tag": "Aperçu et édition pré-lancement inclus"
+    }
+  },
+  "universes": {
+    "title": "Deux univers, une même adrénaline",
+    "subtitle": "Sphera Live s'adapte aussi bien à vos examens qu'à vos soirées.",
+    "study": {
+      "badge": "Révisions académiques",
+      "title": "L'Active Recall en version collective",
+      "description": "Les neurosciences prouvent que répondre sous contrainte temporelle dans un cadre social multiplie par trois la mémorisation par rapport à la simple relecture passive.",
+      "item1": "Idéal pour les TD, amphis et groupes de travail en bibliothèque",
+      "item2": "Repérage instantané des concepts mal compris par le groupe",
+      "item3": "Simulation fidèle du stress du chrono d'examen",
+      "cta": "Lancer un quiz de révision"
+    },
+    "fun": {
+      "badge": "Culture, cinéma & loisirs",
+      "title": "Le jeu de société réinventé sur écran",
+      "description": "Vous avez 10 minutes devant vous ou une soirée entre amis ? Lancez un défi sur le foot, les animes, les records insolites ou la pop culture.",
+      "item1": "Questions insolites, cinéma, musique, sport, géographie",
+      "item2": "Tout le monde participe depuis son smartphone",
+      "item3": "Remportez la partie et montez sur la première marche du podium",
+      "cta": "Créer un quiz fun"
+    }
+  },
+  "features": {
+    "title": "Conçu pour une expérience sans accroc",
+    "subtitle": "Chaque détail est optimisé pour maximiser le plaisir de jeu et la simplicité d'organisation.",
+    "f1Title": "Rejoindre en 1 scan",
+    "f1Desc": "Un simple code PIN à 6 lettres et votre compte connecté pour rejoindre directement la partie.",
+    "f2Title": "Effets sonores & mute",
+    "f2Desc": "Des bruitages immersifs pour la tension du chrono, avec un bouton mute d'un clic pour l'amphi.",
+    "f3Title": "Podium & confettis",
+    "f3Desc": "Célébrez les 3 meilleurs joueurs à l'issue de la partie avec une pluie de confettis animée.",
+    "f4Title": "Points au millième",
+    "f4Desc": "Un algorithme précis qui récompense autant la rapidité de clic que la justesse de réponse.",
+    "f5Title": "Relance instantanée",
+    "f5Desc": "Rejouez la même session avec un nouveau groupe en un clic sans devoir re-saisir les questions.",
+    "f6Title": "IA générative connectée",
+    "f6Desc": "Transformez n'importe quel cours en quiz compétitif en quelques secondes grâce au moteur IA Sphera."
+  },
+  "finalCta": {
+    "title": "Prêt pour le grand frisson du buzzer ?",
+    "subtitle": "Créez votre première session Sphera Live en 30 secondes ou rejoignez vos camarades avec leur code.",
+    "cta": "Lancer mon premier quiz",
+    "blogCta": "Lire l'article de blog"
+  }
+}
