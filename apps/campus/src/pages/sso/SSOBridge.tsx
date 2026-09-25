@@ -8,12 +8,7 @@
  * Security: only whitelisted Sphera origins can receive the tokens.
  */
 import { useEffect } from "react";
-
-const ALLOWED_ORIGINS = [
-  "https://sphera.campussphere.app",
-  "http://localhost:5174",
-  "http://localhost:4173",
-];
+import { sendSsoTokens, sendSsoNone, isAllowedSpheraOrigin, SPHERA_ORIGINS } from "@cs/sso";
 
 export function SSOBridge(): null {
   useEffect(() => {
@@ -21,23 +16,21 @@ export function SSOBridge(): null {
     const params = new URLSearchParams(window.location.search);
     const requested = params.get("origin") || "";
 
-    const targetOrigin = ALLOWED_ORIGINS.includes(requested)
+    const targetOrigin = isAllowedSpheraOrigin(requested)
       ? requested
-      : ALLOWED_ORIGINS[0];
+      : SPHERA_ORIGINS[0];
 
     const access = localStorage.getItem("access");
     const refresh = localStorage.getItem("refresh");
 
     if (access) {
-      window.parent.postMessage(
-        { type: "cs_sso", access, refresh },
-        targetOrigin,
-      );
+      sendSsoTokens(window.parent, targetOrigin, { access, refresh });
     } else {
-      window.parent.postMessage({ type: "cs_sso_none" }, targetOrigin);
+      sendSsoNone(window.parent, targetOrigin);
     }
   }, []);
 
   // Nothing to render — this component lives inside a hidden iframe.
   return null;
 }
+

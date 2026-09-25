@@ -10,34 +10,26 @@
 import { useState, useEffect } from "react";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { supabaseSignIn, exchangeSupabaseToken } from "@/services/api";
-
-const ALLOWED_ORIGINS = [
-  "https://sphera.campussphere.app",
-  "http://localhost:5174",
-  "http://localhost:4173",
-];
+import { sendSsoTokens, isAllowedSpheraOrigin, SPHERA_ORIGINS } from "@cs/sso";
 
 function getOpenerOrigin(): string {
   try {
     if (document.referrer) {
       const origin = new URL(document.referrer).origin;
-      if (ALLOWED_ORIGINS.includes(origin)) return origin;
+      if (isAllowedSpheraOrigin(origin)) return origin;
     }
   } catch { /* ignore */ }
   // Fallback: check query param
   const params = new URLSearchParams(window.location.search);
   const requested = params.get("origin") || "";
-  if (ALLOWED_ORIGINS.includes(requested)) return requested;
-  return ALLOWED_ORIGINS[0];
+  if (isAllowedSpheraOrigin(requested)) return requested;
+  return SPHERA_ORIGINS[0];
 }
 
 function sendTokensAndClose(access: string, refresh: string | null) {
   const origin = getOpenerOrigin();
   if (window.opener) {
-    window.opener.postMessage(
-      { type: "cs_sso", access, refresh },
-      origin,
-    );
+    sendSsoTokens(window.opener, origin, { access, refresh });
     setTimeout(() => window.close(), 200);
   }
 }

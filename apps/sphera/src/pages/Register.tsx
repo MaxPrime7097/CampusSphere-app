@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { registerOnSphera, getCurrentUser, setTokens, clearTokens } from '../services/spheraApi'
 import { useSpheraAuth } from '../contexts/SpheraAuthContext'
 import { SpheraAuthSidePanel } from '../components/auth/SpheraAuthSidePanel'
+import { openSsoPopup } from '@cs/sso'
 import { 
   Eye, 
   EyeOff, 
@@ -12,13 +13,6 @@ import {
   Lock, 
   AlertCircle 
 } from 'lucide-react'
-
-// ─── Known CampusSphere origins (for postMessage security) ──────
-const CS_ORIGINS = [
-  "https://campussphere.app",
-  "https://www.campussphere.app",
-  "http://localhost:5173",
-]
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -74,54 +68,26 @@ export default function Register() {
   }
 
   // ─── 1-Click CampusSphere SSO ─────────────────────────────────
-  const handleCampusSphereSSO = () => {
+  const handleCampusSphereSSO = async () => {
     setSsoLoading(true)
     setError(null)
 
-    const isLocal = ["localhost", "127.0.0.1"].some(h => window.location.hostname.includes(h))
-    const myOrigin = window.location.origin
-    const popupUrl = isLocal
-      ? `http://localhost:5173/sso/popup?origin=${encodeURIComponent(myOrigin)}`
-      : `https://campussphere.app/sso/popup?origin=${encodeURIComponent(myOrigin)}`
-
-    const w = 420, h = 540
-    const left = window.screenX + (window.outerWidth - w) / 2
-    const top = window.screenY + (window.outerHeight - h) / 2
-
-    const popup = window.open(
-      popupUrl,
-      "cs_sso_popup",
-      `width=${w},height=${h},left=${left},top=${top},resizable=no,scrollbars=no`,
-    )
-
-    const handler = async (e: MessageEvent) => {
-      if (!CS_ORIGINS.includes(e.origin)) return
-      if (e.data?.type !== "cs_sso" || !e.data.access) return
-
-      window.removeEventListener("message", handler)
-      clearInterval(checkClosed)
-
-      setTokens(e.data.access, e.data.refresh || "")
-      try {
-        const user = await getCurrentUser()
-        setUser(user)
-        navigate("/dashboard")
-      } catch {
-        clearTokens()
-        setError("La connexion via CampusSphere a échoué. Réessaie.")
+    try {
+      const tokens = await openSsoPopup()
+      if (!tokens) {
         setSsoLoading(false)
+        return
       }
+
+      setTokens(tokens.access, tokens.refresh || "")
+      const user = await getCurrentUser()
+      setUser(user)
+      navigate("/dashboard")
+    } catch {
+      clearTokens()
+      setError("La connexion via CampusSphere a échoué. Réessaie.")
+      setSsoLoading(false)
     }
-
-    window.addEventListener("message", handler)
-
-    const checkClosed = setInterval(() => {
-      if (popup && popup.closed) {
-        clearInterval(checkClosed)
-        window.removeEventListener("message", handler)
-        setSsoLoading(false)
-      }
-    }, 500)
   }
 
   return (

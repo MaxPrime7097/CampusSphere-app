@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@cs/api-client": "workspace:*",
+    "@cs/sso": "workspace:*",
     "@cs/types": "workspace:*",
     "@cs/ui": "workspace:*",
     "@hookform/resolvers": "^3.10.0",

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { getCurrentUser, clearTokens, getToken, setTokens } from '../services/spheraApi'
+import { attemptSilentSso } from '@cs/sso'
 
 interface SpheraUser {
   id: number
@@ -21,61 +22,6 @@ interface SpheraAuthContextType {
 
 const SpheraAuthContext = createContext<SpheraAuthContextType | undefined>(undefined)
 
-// ─── Silent SSO via hidden iframe ───────────────────────────────
-// Loads campussphere.app/sso/bridge in a hidden iframe.
-// If the user is already logged in on CampusSphere, the bridge sends
-// the tokens back via postMessage and we can log them in automatically.
-
-const CS_ORIGINS = [
-  "https://campussphere.app",
-  "https://www.campussphere.app",
-  "http://localhost:5173",
-]
-
-function attemptSilentSSO(): Promise<{ access: string; refresh: string } | null> {
-  return new Promise((resolve) => {
-    const isLocal = ["localhost", "127.0.0.1"].some(h => window.location.hostname.includes(h))
-    const myOrigin = window.location.origin
-    const bridgeUrl = isLocal
-      ? `http://localhost:5173/sso/bridge?origin=${encodeURIComponent(myOrigin)}`
-      : `https://campussphere.app/sso/bridge?origin=${encodeURIComponent(myOrigin)}`
-
-    let settled = false
-
-    const iframe = document.createElement("iframe")
-    iframe.src = bridgeUrl
-    iframe.style.display = "none"
-
-    const cleanup = () => {
-      if (settled) return
-      settled = true
-      window.removeEventListener("message", handler)
-      clearTimeout(timer)
-      if (iframe.parentNode) iframe.parentNode.removeChild(iframe)
-    }
-
-    const handler = (e: MessageEvent) => {
-      if (!CS_ORIGINS.includes(e.origin)) return
-      if (e.data?.type === "cs_sso" && e.data.access) {
-        cleanup()
-        resolve({ access: e.data.access, refresh: e.data.refresh || "" })
-      } else if (e.data?.type === "cs_sso" || e.data?.type === "cs_sso_none") {
-        cleanup()
-        resolve(null)
-      }
-    }
-
-    // Give the iframe max 3 seconds to respond, then give up silently.
-    const timer = setTimeout(() => {
-      cleanup()
-      resolve(null)
-    }, 3000)
-
-    window.addEventListener("message", handler)
-    document.body.appendChild(iframe)
-  })
-}
-
 // ─── Provider ───────────────────────────────────────────────────
 export const SpheraAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<SpheraUser | null>(null)
@@ -89,7 +35,7 @@ export const SpheraAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       // 2. If not, try silent SSO from CampusSphere
       if (!token) {
         try {
-          const ssoResult = await attemptSilentSSO()
+          const ssoResult = await attemptSilentSso()
           if (ssoResult) {
             setTokens(ssoResult.access, ssoResult.refresh)
             token = ssoResult.access
