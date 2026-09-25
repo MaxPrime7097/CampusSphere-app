@@ -2,7 +2,7 @@
 
 > **Dernière mise à jour :** 25 Septembre 2026  
 > **Statut global :** ✅ Monorepo Turborepo + pnpm workspaces pleinement opérationnel.  
-> **Qualité & Tests :** 0 erreur ESLint | 16/16 Vitest passés | 7/7 packages TypeScript validés | Builds de production réussis.
+> **Qualité & Tests :** 0 erreur ESLint | 53/53 Vitest passés sur 4 packages | 7/7 packages TypeScript validés | Builds de production réussis | GitHub Actions CI Pipeline configuré.
 
 Ce fichier sert de **mémoire vive et de source de référence pour les agents IA** (Antigravity, Claude, Cursor, etc.). À lire impérativement au début de chaque session technique.
 
@@ -26,6 +26,7 @@ campussphere-monorepo/
 │   ├── types/               # @cs/types — Contrats de données TypeScript uniques (Single Source of Truth)
 │   ├── api-client/          # @cs/api-client — Client HTTP avec auto-refresh token mutexé
 │   └── sso/                 # @cs/sso — Handshake cross-domain postMessage (iframe bridge & popup)
+├── .github/workflows/ci.yml # Pipeline d'intégration continue GitHub Actions
 ├── documentation/           # Spécifications d'architecture et guides de déploiement
 │   └── features/            # Docs fonctionnelles (Quiz live, Audio, Mindmap, Routing IA, etc.)
 ├── turbo.json               # Pipeline de compilation et vérification
@@ -65,12 +66,13 @@ L'audit technique initial (`AUDIT_FRONTEND_CAMPUSSPHERE.md`) avait révélé plu
 - **Avant** : `apps/campus` embarquait toute la suite `reactflow` uniquement pour une vue de session peu visitée.
 - **Après** : Remplacement de `MindMapView` dans CampusSphere par une vue arborescente responsive en Tailwind pur + bouton CTA d'ouverture dans Sphera. Suppression de `reactflow` et de 209 dépendances transitives.
 
-### 4. Qualité de Code, Tests et Typage (Résolu)
-- **Avant** : 687 problèmes ESLint, `strict: false`, `vitest` cassé par manque de `jsdom`.
+### 4. Qualité de Code, Tests et CI/CD (Résolu)
+- **Avant** : 687 problèmes ESLint, `strict: false`, `vitest` cassé par manque de `jsdom`, aucun pipeline CI/CD automatisé.
 - **Après** :
   - **ESLint** : 0 erreur sur l'ensemble du monorepo.
-  - **Vitest** : 16/16 tests passés sans régression.
+  - **Vitest** : **53/53 tests passés** sans régression (`@cs/campus`: 16, `@cs/backend`: 24, `@cs/sso`: 9, `@cs/ui`: 4).
   - **TypeScript** : 7 packages sur 7 compilent rigoureusement via `turbo typecheck`.
+  - **CI/CD** : Pipeline GitHub Actions automatisé (`.github/workflows/ci.yml`) validant typecheck, lint, tests et builds sur chaque push/PR.
 
 ---
 
