@@ -2,6 +2,9 @@
   "name": "campussphere-monorepo",
   "private": true,
   "packageManager": "pnpm@10.20.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "dev": "turbo dev",
     "dev:campus": "pnpm --filter @cs/campus dev",
