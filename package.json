@@ -4,7 +4,12 @@
   "packageManager": "pnpm@10.20.0",
   "scripts": {
     "dev": "turbo dev",
+    "dev:campus": "pnpm --filter @cs/campus dev",
+    "dev:sphera": "pnpm --filter @cs/sphera dev",
+    "dev:backend": "pnpm --filter @cs/backend dev",
     "build": "turbo build",
+    "build:campus": "pnpm --filter @cs/campus build",
+    "build:sphera": "pnpm --filter @cs/sphera build",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "test": "turbo test"
