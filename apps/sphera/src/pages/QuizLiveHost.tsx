@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { QuizSetupForm } from '../components/quiz-live/QuizSetupForm';
 import { useQuizSocket } from '../hooks/useQuizSocket';
 import { TimerBar } from '../components/quiz-live/TimerBar';
@@ -14,6 +15,7 @@ import { getQuizSessionByCode, getQuizSessionHostDetails, resetQuizSession } fro
 import { QuizQuestionsDrawer } from '../components/quiz-live/QuizQuestionsDrawer';
 
 export default function QuizLiveHost() {
+  const { t } = useTranslation('live');
   const [isMuted, setIsMuted] = useState(getMuteState());
 
   useEffect(() => {
@@ -71,7 +73,7 @@ export default function QuizLiveHost() {
             }
           } catch (e2) {
             console.error(e2);
-            alert("Impossible de charger la session.");
+            alert(t('host.errorLoadSession'));
             navigate('/live');
           }
         } finally {
@@ -81,7 +83,7 @@ export default function QuizLiveHost() {
       
       prepareSession();
     }
-  }, [searchParams, setSearchParams]);
+  }, [searchParams, setSearchParams, navigate, t]);
 
   const {
     participants,
@@ -122,7 +124,7 @@ export default function QuizLiveHost() {
   };
 
   const handleStopQuiz = () => {
-    if (window.confirm("Êtes-vous sûr de vouloir arrêter le quiz et ramener tous les participants au salon d'attente ?")) {
+    if (window.confirm(t('host.stopQuizConfirm'))) {
       setCountdown(null);
       stopQuiz();
     }
@@ -216,7 +218,7 @@ export default function QuizLiveHost() {
             <Zap className="w-10 h-10 text-sphera-green -rotate-12" />
           </div>
           <h1 className="font-display text-4xl font-bold text-white tracking-widest uppercase">
-            Connexion...
+            {t('host.connecting')}
           </h1>
           <div className="mt-8 flex gap-2">
             <div className="w-2 h-2 bg-sphera-green rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -237,15 +239,15 @@ export default function QuizLiveHost() {
       }}></div>
       
       <Helmet>
-        <title>Héberger un Quiz · Sphera Live</title>
+        <title>{t('host.pageTitle')}</title>
       </Helmet>
 
-      {/* Back to Sphera Live Home button (Visible during setup and waiting lobby, hidden during active quiz) */}
+      {/* Back to Sphera Live Home button */}
       {(phase === 'setup' || phase === 'waiting') && (
         <Link
           to="/live"
           className="absolute top-6 left-6 z-50 inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-sphera-surface-2/90 backdrop-blur border border-sphera-border text-sphera-text-muted hover:text-white hover:border-sphera-green/50 transition-all text-xs font-semibold shadow-lg group"
-          title="Retour à Sphera Live"
+          title={t('host.backToLive')}
         >
           <ArrowLeft className="w-4 h-4 text-sphera-green group-hover:-translate-x-0.5 transition-transform" />
           <span>Sphera Live</span>
@@ -257,7 +259,7 @@ export default function QuizLiveHost() {
         <button 
           onClick={toggleSound}
           className="p-3 rounded-full bg-sphera-surface-2 border border-sphera-border text-white hover:bg-sphera-surface transition-colors shadow-lg"
-          title={isMuted ? "Activer le son" : "Couper le son"}
+          title={isMuted ? t('host.soundUnmute') : t('host.soundMute')}
         >
           {isMuted ? <VolumeX className="w-6 h-6 text-red-500" /> : <Volume2 className="w-6 h-6 text-sphera-green" />}
         </button>
@@ -267,10 +269,10 @@ export default function QuizLiveHost() {
           <button
             onClick={handleStopQuiz}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/40 hover:border-red-500 text-red-400 hover:text-red-300 transition-all text-xs font-semibold shadow-lg backdrop-blur group"
-            title="Arrêter la partie et revenir au salon d'attente"
+            title={t('host.stopQuizTooltip')}
           >
             <Square className="w-3.5 h-3.5 fill-red-400 text-red-400 group-hover:scale-110 transition-transform" />
-            <span className="hidden sm:inline">Arrêter le quiz</span>
+            <span className="hidden sm:inline">{t('host.stopQuiz')}</span>
           </button>
         )}
       </div>
@@ -291,7 +293,7 @@ export default function QuizLiveHost() {
 
         {phase === 'waiting' && (
           <div className="w-full max-w-3xl mx-auto text-center flex flex-col items-center">
-            <h2 className="text-2xl font-bold text-white mb-2 uppercase tracking-widest">Code pour rejoindre</h2>
+            <h2 className="text-2xl font-bold text-white mb-2 uppercase tracking-widest">{t('host.joinCodeTitle')}</h2>
             <div className="font-mono text-7xl sm:text-9xl font-bold tracking-[0.2em] text-sphera-green mb-8 select-all bg-sphera-surface-2 py-8 px-16 rounded-3xl border-2 border-sphera-green/50 shadow-[0_0_50px_rgba(34,197,94,0.3)]">
               {session?.roomCode}
             </div>
@@ -308,19 +310,19 @@ export default function QuizLiveHost() {
               className="inline-flex items-center gap-2 px-5 py-2.5 mb-8 rounded-full bg-sphera-surface-2 border border-sphera-border hover:border-sphera-green/50 text-sphera-text-muted hover:text-white transition-all text-sm font-semibold shadow-lg group"
             >
               <Eye className="w-4 h-4 text-sphera-green group-hover:scale-110 transition-transform" />
-              <span>Questions du quiz ({session?.questions?.length || 0})</span>
+              <span>{t('host.quizQuestionsBtn', { count: session?.questions?.length || 0 })}</span>
               <span className="text-xs text-sphera-green bg-sphera-green/10 border border-sphera-green/30 px-2.5 py-0.5 rounded-full ml-1 font-mono">
-                Voir / Modifier
+                {t('host.viewEditBadge')}
               </span>
             </button>
             
             <div className="w-full bg-sphera-surface-2/80 backdrop-blur-md border border-sphera-border rounded-2xl p-6 mb-8">
               <h3 className="text-xl font-bold text-white mb-6 uppercase tracking-wider text-sphera-text-muted">
-                Participants ({participants.length})
+                {t('host.participantsCount', { count: participants.length })}
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-left">
                 {participants.length === 0 ? (
-                  <p className="text-sphera-text-muted italic col-span-full text-center py-4">En attente de joueurs...</p>
+                  <p className="text-sphera-text-muted italic col-span-full text-center py-4">{t('host.waitingPlayers')}</p>
                 ) : (
                   participants.map((p, i) => (
                     <div key={i} className="flex items-center gap-3 px-4 py-3 bg-sphera-bg border border-sphera-border rounded-xl">
@@ -336,7 +338,7 @@ export default function QuizLiveHost() {
 
             <div className="flex flex-col items-center justify-center gap-3 mb-8 bg-sphera-surface px-6 py-4 rounded-xl border border-sphera-border">
               <label htmlFor="autoAdvance" className="text-white font-medium select-none text-center">
-                Enchaînement automatique :
+                {t('host.autoAdvance')}
               </label>
               <select
                 id="autoAdvance"
@@ -347,11 +349,11 @@ export default function QuizLiveHost() {
                 }}
                 className="bg-sphera-bg border border-sphera-border text-white px-4 py-2 rounded-lg focus:outline-none focus:border-sphera-green"
               >
-                <option value="manual">Désactivé (Manuel)</option>
-                <option value="0">Sans pause (Immédiat)</option>
-                <option value="3">3 secondes</option>
-                <option value="5">5 secondes</option>
-                <option value="10">10 secondes</option>
+                <option value="manual">{t('host.autoAdvanceOptions.manual')}</option>
+                <option value="0">{t('host.autoAdvanceOptions.immediate')}</option>
+                <option value="3">{t('host.autoAdvanceOptions.seconds', { count: 3 })}</option>
+                <option value="5">{t('host.autoAdvanceOptions.seconds', { count: 5 })}</option>
+                <option value="10">{t('host.autoAdvanceOptions.seconds', { count: 10 })}</option>
               </select>
             </div>
 
@@ -360,7 +362,7 @@ export default function QuizLiveHost() {
               disabled={participants.length === 0 || status !== 'connected'}
               className="sphera-primary-btn text-lg px-12 py-4 rounded-xl"
             >
-              Démarrer le quiz
+              {t('host.startQuizBtn')}
             </button>
           </div>
         )}
@@ -386,12 +388,12 @@ export default function QuizLiveHost() {
         {phase === 'results' && currentQuestion && questionResults && (
           <div className="w-full flex flex-col items-center">
             <div className="w-full max-w-4xl mb-8 flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-white">Résultats</h2>
+              <h2 className="text-2xl font-bold text-white">{t('host.resultsTitle')}</h2>
               <button
                 onClick={nextQuestion}
                 className="sphera-primary-btn"
               >
-                Question suivante
+                {t('host.nextQuestion')}
               </button>
             </div>
             <QuestionDisplay 
@@ -413,15 +415,15 @@ export default function QuizLiveHost() {
         {phase === 'finished' && (
           <div className="w-full flex flex-col items-center">
             <div className="mb-12 text-center">
-              <h2 className="text-4xl font-live font-bold text-white mb-2">Quiz terminé !</h2>
-              <p className="text-sphera-text-muted">Voici le classement final.</p>
+              <h2 className="text-4xl font-live font-bold text-white mb-2">{t('host.quizFinishedTitle')}</h2>
+              <p className="text-sphera-text-muted">{t('host.finalLeaderboardSubtitle')}</p>
             </div>
             <Leaderboard entries={leaderboard} />
             <button
               onClick={() => navigate('/live')}
               className="mt-12 sphera-primary-btn"
             >
-              Retour au dashboard
+              {t('host.backToDashboard')}
             </button>
           </div>
         )}

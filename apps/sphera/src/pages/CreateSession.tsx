@@ -32,8 +32,10 @@ import { CourseTextReader } from '../components/app/CourseTextReader'
 import { DocumentImageViewer } from '../components/app/DocumentImageViewer'
 import { AiMessageItem } from '../components/app/AiMessageItem'
 import { TextSelectionToolbar, type SelectionActionType } from '../components/app/TextSelectionToolbar'
+import { useTranslation } from 'react-i18next'
 
 export default function CreateSession() {
+  const { t } = useTranslation('study')
   const navigate = useNavigate()
   const [currentFile, setCurrentFile] = useState<File | null>(pendingUploadFile)
   const file = currentFile
@@ -736,19 +738,19 @@ export default function CreateSession() {
 
   const STUDY_TABS: ToolType[] = ['fiche', 'quiz', 'flashcards', 'mindmap', 'audio']
   const TOOL_LABELS: Record<string, string> = {
-    fiche: 'Fiche',
-    quiz: 'Quiz',
-    flashcards: 'Flashcards',
-    mindmap: 'Carte mentale',
-    audio: 'Résumé audio',
-    annale: 'Annale',
+    fiche: t('tools.fiche.title'),
+    quiz: t('tools.quiz.title'),
+    flashcards: t('tools.flashcards.title'),
+    mindmap: t('tools.mindmap.title'),
+    audio: t('tools.audio.title'),
+    annale: t('tools.annale.title'),
   }
 
-  const isToolGenerated = (t: string) => {
-    if (t === 'annale') {
+  const isToolGenerated = (tKey: string) => {
+    if (tKey === 'annale') {
       return Boolean(generatedContent && (generatedContent.sections || generatedContent.corrections || Object.keys(generatedContent).length > 0))
     }
-    return generatedContent && generatedContent[t] !== undefined
+    return generatedContent && generatedContent[tKey] !== undefined
   }
 
   return (
@@ -757,8 +759,8 @@ export default function CreateSession() {
       <div className="md:hidden flex items-center justify-between px-3 py-2 bg-sphera-surface-2 border-b border-sphera-border shrink-0 z-30">
         <button 
           onClick={() => navigate('/dashboard')} 
-          title="Retour au tableau de bord"
-          aria-label="Retour au tableau de bord"
+          title={t('createSession.backToDashboard')}
+          aria-label={t('createSession.backToDashboard')}
           className="p-1.5 text-sphera-text-muted hover:bg-sphera-surface hover:text-white rounded-md transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -774,7 +776,7 @@ export default function CreateSession() {
                 : 'text-sphera-text-muted hover:text-white'
             }`}
           >
-            {isImage ? 'Image' : isPdf ? 'PDF' : 'Document'}
+            {isImage ? t('createSession.image') : isPdf ? t('createSession.pdf') : t('createSession.document')}
           </button>
           <button
             type="button"
@@ -785,7 +787,7 @@ export default function CreateSession() {
                 : 'text-sphera-text-muted hover:text-white'
             }`}
           >
-            Espace d'étude
+            {t('createSession.studySpace')}
           </button>
         </div>
       </div>
@@ -796,8 +798,8 @@ export default function CreateSession() {
           <div className="flex items-center gap-3 min-w-0">
             <button 
               onClick={() => navigate('/dashboard')} 
-              title="Retour au tableau de bord"
-              aria-label="Retour au tableau de bord"
+              title={t('createSession.backToDashboard')}
+              aria-label={t('createSession.backToDashboard')}
               className="p-1.5 text-sphera-text-muted hover:bg-sphera-surface hover:text-white rounded-md transition-colors shrink-0"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -816,7 +818,7 @@ export default function CreateSession() {
                   docViewMode === 'doc' ? 'bg-sphera-green text-black shadow-sm' : 'text-sphera-text-muted hover:text-white'
                 }`}
               >
-                {isImage ? 'Image' : 'PDF'}
+                {isImage ? t('createSession.image') : t('createSession.pdf')}
               </button>
               <button
                 type="button"
@@ -827,7 +829,7 @@ export default function CreateSession() {
                 }`}
               >
                 <Sparkles className="w-3 h-3" />
-                <span>Texte interactif</span>
+                <span>{t('createSession.interactiveText')}</span>
               </button>
             </div>
           )}
@@ -844,7 +846,7 @@ export default function CreateSession() {
             <iframe 
               src={`${fileUrl}#toolbar=0&navpanes=0&scrollbar=0`} 
               className="w-full h-full border-none custom-scrollbar"
-              title="Aperçu du PDF"
+              title={t('createSession.pdfPreviewTitle')}
             />
           ) : textSource !== null ? (
             <CourseTextReader
@@ -859,7 +861,7 @@ export default function CreateSession() {
               <div className="w-24 h-32 rounded-lg border-2 border-dashed border-sphera-border flex flex-col items-center justify-center mb-6 bg-sphera-surface">
                 <FileText className="w-8 h-8 text-sphera-text-muted" />
               </div>
-              <p className="text-sm text-sphera-text-muted">Aperçu direct non disponible pour ce format.</p>
+              <p className="text-sm text-sphera-text-muted">{t('createSession.previewNotAvailable')}</p>
             </div>
           )}
         </div>
@@ -874,7 +876,7 @@ export default function CreateSession() {
             <button 
               onClick={() => setIsPdfExpanded(!isPdfExpanded)}
               className="p-1.5 rounded-md text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors"
-              title={isPdfExpanded ? "Plein écran" : "Afficher l'aperçu"}
+              title={isPdfExpanded ? t('createSession.fullscreen') : t('createSession.showPreview')}
             >
               {isPdfExpanded ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
             </button>
@@ -931,7 +933,7 @@ export default function CreateSession() {
           {!generatedContent ? (
             /* Settings View */
             <div className="p-6 sm:p-8 max-w-xl mx-auto w-full pb-8">
-              <h2 className="font-display text-2xl font-bold text-white mb-6">Paramétrer la session</h2>
+              <h2 className="font-display text-2xl font-bold text-white mb-6">{t('createSession.title')}</h2>
               
               {error && <div className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">{error}</div>}
 
@@ -945,7 +947,7 @@ export default function CreateSession() {
                       : 'text-sphera-text-muted hover:text-white border border-transparent'
                   }`}
                 >
-                  Réviser un cours
+                  {t('createSession.studyMode')}
                 </button>
                 <button
                   onClick={() => setGenerationMode('annale')}
@@ -955,7 +957,7 @@ export default function CreateSession() {
                       : 'text-sphera-text-muted hover:text-white border border-transparent'
                   }`}
                 >
-                  Corriger une annale
+                  {t('createSession.annaleMode')}
                 </button>
               </div>
 
@@ -968,7 +970,7 @@ export default function CreateSession() {
                 </div>
               ) : (
                 <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <label className="text-sm font-medium text-sphera-text-muted">Type de correction</label>
+                  <label className="text-sm font-medium text-sphera-text-muted">{t('createSession.annaleTypeLabel')}</label>
                   <div className="grid grid-cols-2 gap-4">
                     <button
                       onClick={() => setAnnaleMode('complete')}
@@ -979,11 +981,11 @@ export default function CreateSession() {
                       }`}
                     >
                       <div>
-                        <div className="font-semibold text-white mb-1">Complète</div>
-                        <div className="text-xs text-sphera-text-muted">Correction détaillée étape par étape</div>
+                        <div className="font-semibold text-white mb-1">{t('createSession.annaleComplete')}</div>
+                        <div className="text-xs text-sphera-text-muted">{t('createSession.annaleCompleteDesc')}</div>
                       </div>
                       <div className="mt-4 flex items-center gap-1.5 text-xs text-sphera-green">
-                        <BookOpen className="w-4 h-4" /> Recommandé
+                        <BookOpen className="w-4 h-4" /> {t('createSession.annaleCompleteBadge')}
                       </div>
                     </button>
                     <button
@@ -995,11 +997,11 @@ export default function CreateSession() {
                       }`}
                     >
                       <div>
-                        <div className="font-semibold text-white mb-1">Rapide</div>
-                        <div className="text-xs text-sphera-text-muted">Réponses synthétiques directes</div>
+                        <div className="font-semibold text-white mb-1">{t('createSession.annaleRapide')}</div>
+                        <div className="text-xs text-sphera-text-muted">{t('createSession.annaleRapideDesc')}</div>
                       </div>
                       <div className="mt-4 flex items-center gap-1.5 text-xs text-[#ff9800]">
-                        <Zap className="w-4 h-4" /> Express
+                        <Zap className="w-4 h-4" /> {t('createSession.annaleRapideBadge')}
                       </div>
                     </button>
                   </div>
@@ -1015,12 +1017,12 @@ export default function CreateSession() {
                   {generating ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>Initialisation de la session...</span>
+                      <span>{t('createSession.initializing')}</span>
                     </>
                   ) : (
                     <>
                       <MessageSquare className="w-5 h-5" />
-                      <span>Démarrer en mode Q&A direct</span>
+                      <span>{t('createSession.directQaBtn')}</span>
                     </>
                   )}
                 </button>
@@ -1034,15 +1036,15 @@ export default function CreateSession() {
                     {generating ? (
                       <>
                         <Loader2 className="w-5 h-5 animate-spin" />
-                        <span>Génération en cours...</span>
+                        <span>{t('createSession.generating')}</span>
                       </>
                     ) : (
                       <>
                         <Sparkles className="w-5 h-5" />
                         <span>
                           {generationMode === 'study'
-                            ? `Générer ${selectedTools.length} outil${selectedTools.length > 1 ? 's' : ''}`
-                            : 'Lancer la correction'}
+                            ? t('createSession.generateCount', { count: selectedTools.length })
+                            : t('createSession.launchCorrection')}
                         </span>
                       </>
                     )}
@@ -1056,7 +1058,7 @@ export default function CreateSession() {
                       className="w-full mt-3 py-2.5 px-4 text-xs font-semibold text-sphera-text-muted hover:text-white hover:bg-sphera-surface rounded-xl border border-sphera-border/60 hover:border-sphera-border transition-all flex items-center justify-center gap-2"
                     >
                       <MessageSquare className="w-3.5 h-3.5 text-sphera-green" />
-                      <span>Ou démarrer directement par le Q&A (sans générer d'outils)</span>
+                      <span>{t('createSession.directQaNotice')}</span>
                     </button>
                   )}
                 </>
@@ -1069,14 +1071,14 @@ export default function CreateSession() {
                 <div className="flex items-center justify-between mb-6 pb-4 border-b border-sphera-border">
                   <div>
                     <h2 className="text-lg font-bold text-white capitalize">{activeTab}</h2>
-                    <p className="text-xs text-sphera-text-muted">Généré depuis {file.name}</p>
+                    <p className="text-xs text-sphera-text-muted">{t('createSession.generatedFrom', { file: file.name })}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => navigate('/dashboard')}
                       className="px-3 py-1.5 rounded-lg bg-sphera-surface hover:bg-sphera-surface-2 border border-sphera-border text-xs font-semibold text-white transition-colors"
                     >
-                      Voir dans le dashboard
+                      {t('createSession.seeInDashboard')}
                     </button>
                   </div>
                 </div>
@@ -1085,14 +1087,14 @@ export default function CreateSession() {
               {/* Tool specific renders */}
               {activeTab !== 'chat' && !isToolGenerated(activeTab) ? (
                 <div className="p-8 text-center bg-sphera-surface-2 rounded-2xl border border-sphera-border">
-                  <p className="text-sphera-text-muted mb-4">Cet outil n'a pas encore été généré pour ce cours.</p>
+                  <p className="text-sphera-text-muted mb-4">{t('createSession.toolNotGenerated')}</p>
                   <button
                     onClick={() => handleAddTool(activeTab as ToolType)}
                     disabled={isGeneratingTool}
                     className="sphera-primary-btn py-2 px-4 text-xs inline-flex items-center gap-2"
                   >
                     {isGeneratingTool ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                    <span>Générer {TOOL_LABELS[activeTab] || activeTab}</span>
+                    <span>{t('createSession.generateTool', { tool: TOOL_LABELS[activeTab] || activeTab })}</span>
                   </button>
                   {toolError && <p className="text-red-400 text-sm mt-4 bg-red-500/10 p-3 rounded-lg border border-red-500/20">{toolError}</p>}
                 </div>
@@ -1111,8 +1113,8 @@ export default function CreateSession() {
                   {chatHistory.length === 0 ? (
                     <div className="text-center p-12 bg-sphera-surface-2 rounded-2xl border border-sphera-border">
                       <MessageSquare className="w-10 h-10 text-sphera-text-muted mx-auto mb-4 opacity-50" />
-                      <p className="text-white font-medium mb-1">Posez vos questions</p>
-                      <p className="text-sm text-sphera-text-muted">Demandez des éclaircissements sur ce document.</p>
+                      <p className="text-white font-medium mb-1">{t('createSession.qaEmptyTitle')}</p>
+                      <p className="text-sm text-sphera-text-muted">{t('createSession.qaEmptyDesc')}</p>
                     </div>
                   ) : (
                     chatHistory.map((msg, i) => (
@@ -1162,8 +1164,8 @@ export default function CreateSession() {
               <button
                 type="button"
                 onClick={handleToggleCommandMenu}
-                title="Commandes (@)"
-                aria-label="Ouvrir les commandes (@)"
+                title={t('createSession.commandsAt')}
+                aria-label={t('createSession.commandsAt')}
                 className={`p-1.5 rounded-full transition-colors shrink-0 ${
                   showCommandMenu 
                     ? 'bg-sphera-green text-black' 
@@ -1175,7 +1177,7 @@ export default function CreateSession() {
               <input 
                 ref={chatInputRef}
                 type="text" 
-                placeholder="Posez une question sur ce document... ou @ pour les commandes"
+                placeholder={t('createSession.inputPlaceholder')}
                 value={chatMessage}
                 onChange={e => handleChatInputChange(e.target.value)}
                 onKeyDown={handleChatKeyDown}
@@ -1186,8 +1188,8 @@ export default function CreateSession() {
                 <button 
                   type="button"
                   onClick={handleStopChat}
-                  title="Arrêter la réponse"
-                  aria-label="Arrêter la réponse"
+                  title={t('createSession.stopResponse')}
+                  aria-label={t('createSession.stopResponse')}
                   className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-red-500/90 hover:bg-red-500 text-white flex items-center justify-center transition-all flex-shrink-0 shadow-[0_0_15px_rgba(239,68,68,0.4)] animate-in fade-in"
                 >
                   <Square className="w-3.5 h-3.5 fill-current" />
@@ -1197,8 +1199,8 @@ export default function CreateSession() {
                   type="button"
                   onClick={handleSendChat}
                   disabled={!chatMessage.trim() || generating}
-                  title="Envoyer le message"
-                  aria-label="Envoyer le message"
+                  title={t('createSession.sendMessage')}
+                  aria-label={t('createSession.sendMessage')}
                   className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-sphera-green text-black flex items-center justify-center hover:bg-green-400 disabled:opacity-50 disabled:hover:bg-sphera-green transition-colors flex-shrink-0 shadow-[0_0_15px_rgba(34,197,94,0.3)]"
                 >
                   <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-0.5" />

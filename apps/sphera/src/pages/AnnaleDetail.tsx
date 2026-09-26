@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { getAnnale, askQuestion } from '../services/spheraApi'
 import { normalizeAiResponse } from '../utils/normalizeAiResponse'
 import { MessageSquare, Bot, User, Send, ArrowUp, Download, Loader2 } from 'lucide-react'
 import { useDownloadPDF } from '../hooks/useDownloadPDF'
 
 export default function AnnaleDetail() {
+  const { t, i18n } = useTranslation('study')
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [annale, setAnnale] = useState<any>(null)
@@ -27,7 +29,7 @@ export default function AnnaleDetail() {
       })
       .catch(() => navigate('/dashboard'))
       .finally(() => setLoading(false))
-  }, [id])
+  }, [id, navigate])
 
   if (loading) return (
     <div style={{ padding: '2rem', maxWidth: 860, margin: '0 auto' }}>
@@ -44,7 +46,10 @@ export default function AnnaleDetail() {
     qcm: 'var(--blue)', ouvert: 'var(--text-2)', code: 'var(--purple)', preuve: 'var(--green)', annale: 'var(--brand)',
   }
   const typeBadge: Record<string, string> = {
-    qcm: 'QCM', ouvert: 'Ouvert', code: 'Code', preuve: 'Preuve',
+    qcm: t('annaleDetail.badges.qcm'),
+    ouvert: t('annaleDetail.badges.ouvert'),
+    code: t('annaleDetail.badges.code'),
+    preuve: t('annaleDetail.badges.preuve'),
   }
 
   const handleSendChat = async () => {
@@ -68,7 +73,7 @@ export default function AnnaleDetail() {
     } catch (e) {
       setChatHistory(prev => {
         const newHist = [...prev]
-        newHist[newHist.length - 1].answer = "Erreur de connexion avec l'assistant."
+        newHist[newHist.length - 1].answer = t('createSession.chatError')
         return newHist
       })
     } finally {
@@ -79,11 +84,13 @@ export default function AnnaleDetail() {
   return (
     <div style={{ padding: '2rem 1.25rem 4rem', maxWidth: 860, margin: '0 auto' }}>
       <div className="animate-in" style={{ marginBottom: '2rem' }}>
-        <button onClick={() => navigate('/dashboard')} className="btn btn-ghost btn-sm" style={{ marginBottom: '0.75rem' }}>← Tableau de bord</button>
+        <button onClick={() => navigate('/dashboard')} className="btn btn-ghost btn-sm" style={{ marginBottom: '0.75rem' }}>
+          {t('annaleDetail.backToDashboard')}
+        </button>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
             <h1 style={{ fontSize: '1.5rem' }}>{annale.resource_title || annale.source_filename || `Annale #${annale.id}`}</h1>
-            <span className="badge badge-brand">{annale.mode === 'rapide' ? 'Rapide' : 'Complète'}</span>
+            <span className="badge badge-brand">{annale.mode === 'rapide' ? t('appPage.rapide') : t('appPage.complete')}</span>
           </div>
           <button
             onClick={() => generateAnnale(annale, annale.resource_title || annale.source_filename)}
@@ -92,12 +99,12 @@ export default function AnnaleDetail() {
             style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
           >
             {isDownloading ? <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} /> : <Download style={{ width: 14, height: 14 }} />}
-            Télécharger PDF
+            {t('annaleDetail.downloadPdf')}
           </button>
         </div>
         {annale.created_at && (
           <p style={{ color: 'var(--text-3)', fontSize: '0.8rem', marginTop: '0.25rem' }}>
-            {new Date(annale.created_at).toLocaleDateString('fr-FR', { dateStyle: 'long' })}
+            {new Date(annale.created_at).toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'fr-FR', { dateStyle: 'long' })}
           </p>
         )}
         {/* Tabs */}
@@ -112,7 +119,7 @@ export default function AnnaleDetail() {
               transition: 'all 0.2s',
             }}
           >
-            Correction
+            {t('annaleDetail.correctionTab')}
           </button>
           <button
             onClick={() => setActiveTab('chat')}
@@ -124,7 +131,7 @@ export default function AnnaleDetail() {
               transition: 'all 0.2s',
             }}
           >
-            Assistant
+            {t('annaleDetail.assistantTab')}
           </button>
         </div>
       </div>
@@ -147,7 +154,7 @@ export default function AnnaleDetail() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <span style={{ fontWeight: 700 }}>{sec.titre || sec.nom || sec.section || `Section ${si + 1}`}</span>
                     <span style={{ fontSize: '0.72rem', color: 'var(--text-3)' }}>
-                      {(sec.questions || []).length} question{(sec.questions || []).length !== 1 ? 's' : ''}
+                      {t('annaleDetail.questionsCount', { count: (sec.questions || []).length })}
                     </span>
                   </div>
                   <span style={{ fontSize: '1.2rem', color: 'var(--text-3)' }}>{openSections[si] ? '−' : '+'}</span>
@@ -192,7 +199,7 @@ export default function AnnaleDetail() {
                             background: 'var(--brand-dim)', borderRadius: 'var(--radius-sm)',
                             fontSize: '0.82rem', color: 'var(--brand)',
                           }}>
-                            À retenir : {q.a_retenir}
+                            {t('annaleDetail.toRemember')} {q.a_retenir}
                           </div>
                         )}
                       </div>
@@ -214,7 +221,7 @@ export default function AnnaleDetail() {
           </div>
         ) : (
           <div style={{ textAlign: 'center', padding: '3rem' }}>
-            <p style={{ color: 'var(--text-2)' }}>Correction non disponible.</p>
+            <p style={{ color: 'var(--text-2)' }}>{t('annaleDetail.notAvailable')}</p>
           </div>
         )}
           </>
@@ -227,8 +234,8 @@ export default function AnnaleDetail() {
                 borderRadius: 'var(--radius)', border: '1px solid var(--border)',
               }}>
                 <MessageSquare style={{ width: '2.5rem', height: '2.5rem', color: 'var(--text-3)', margin: '0 auto 1rem', opacity: 0.5 }} />
-                <p style={{ color: 'white', fontWeight: 600, marginBottom: '0.5rem' }}>Posez vos questions</p>
-                <p style={{ color: 'var(--text-2)', fontSize: '0.9rem' }}>Demandez des éclaircissements sur cette correction.</p>
+                <p style={{ color: 'white', fontWeight: 600, marginBottom: '0.5rem' }}>{t('annaleDetail.askAssistantEmpty')}</p>
+                <p style={{ color: 'var(--text-2)', fontSize: '0.9rem' }}>{t('annaleDetail.askAssistantEmptyDesc')}</p>
               </div>
             ) : (
               chatHistory.map((msg, i) => (
@@ -290,7 +297,7 @@ export default function AnnaleDetail() {
           <div style={{ maxWidth: 860, margin: '0 auto', display: 'flex', gap: '0.75rem' }}>
             <input
               type="text"
-              placeholder="Demandez n'importe quoi sur cette correction..."
+              placeholder={t('annaleDetail.inputPlaceholder')}
               value={chatMessage}
               onChange={e => setChatMessage(e.target.value)}
               style={{
@@ -312,7 +319,7 @@ export default function AnnaleDetail() {
               }}
             >
               <Send style={{ width: '1rem', height: '1rem' }} />
-              Envoyer
+              {t('annaleDetail.send')}
             </button>
           </div>
         </div>
@@ -320,4 +327,3 @@ export default function AnnaleDetail() {
     </div>
   )
 }
-

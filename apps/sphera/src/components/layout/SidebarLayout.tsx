@@ -16,11 +16,13 @@ import {
   HelpCircle,
   MoreVertical,
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useSpheraAuth } from '../../contexts/SpheraAuthContext'
 import { getMyQuizSessions, getSessions, getAnnales } from '../../services/spheraApi'
 import { QuotaIndicator } from '../app/QuotaIndicator'
 import { SearchModal } from '../app/SearchModal'
 import { SpheraSettingsModal } from '../settings/SpheraSettingsModal'
+
 interface UserProfileMenuProps {
   isOpen: boolean
   onClose: () => void
@@ -38,6 +40,7 @@ const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
   logout,
   className = '',
 }) => {
+  const { t } = useTranslation('navigation')
   if (!isOpen) return null
 
   return (
@@ -48,7 +51,7 @@ const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
       <div
         className={`z-50 bg-sphera-surface border border-sphera-border rounded-2xl shadow-2xl p-3.5 space-y-2.5 animate-in fade-in slide-in-from-bottom-2 duration-150 ${className}`}
         role="dialog"
-        aria-label="Menu profil utilisateur"
+        aria-label={t('sidebar.userMenuAria')}
       >
         {/* User identity & Close */}
         <div className="flex items-center justify-between pb-2 border-b border-sphera-border">
@@ -79,7 +82,7 @@ const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
             type="button"
             onClick={onClose}
             className="p-1 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2 transition-colors"
-            title="Fermer"
+            title={t('sidebar.close')}
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -99,8 +102,8 @@ const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
               <Sliders className="w-3.5 h-3.5" />
             </div>
             <div className="flex-1 truncate">
-              <div className="font-semibold">Paramètres Sphera</div>
-              <div className="text-[10px] text-sphera-text-muted truncate">Préférences, quotas & streak</div>
+              <div className="font-semibold">{t('sidebar.settingsTitle')}</div>
+              <div className="text-[10px] text-sphera-text-muted truncate">{t('sidebar.settingsDesc')}</div>
             </div>
           </button>
 
@@ -115,8 +118,8 @@ const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
               <ExternalLink className="w-3.5 h-3.5" />
             </div>
             <div className="flex-1 truncate">
-              <div className="font-semibold">CampusSphere</div>
-              <div className="text-[10px] text-sphera-text-muted truncate">Réseau social & profil</div>
+              <div className="font-semibold">{t('sidebar.campusSphereTitle')}</div>
+              <div className="text-[10px] text-sphera-text-muted truncate">{t('sidebar.campusSphereDesc')}</div>
             </div>
           </a>
 
@@ -131,8 +134,8 @@ const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
               <HelpCircle className="w-3.5 h-3.5" />
             </div>
             <div className="flex-1 truncate">
-              <div className="font-semibold">Aide & Support</div>
-              <div className="text-[10px] text-sphera-text-muted truncate">Assistance et retours</div>
+              <div className="font-semibold">{t('sidebar.helpTitle')}</div>
+              <div className="text-[10px] text-sphera-text-muted truncate">{t('sidebar.helpDesc')}</div>
             </div>
           </a>
         </div>
@@ -148,7 +151,7 @@ const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
             className="w-full flex items-center justify-center gap-2 px-2.5 py-1.5 rounded-xl text-xs font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
           >
             <LogOut className="w-3.5 h-3.5" />
-            <span>Déconnexion</span>
+            <span>{t('sidebar.logout')}</span>
           </button>
         </div>
       </div>
@@ -157,6 +160,7 @@ const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
 }
 
 export function SidebarLayout() {
+  const { t } = useTranslation('navigation')
   const { user, logout } = useSpheraAuth()
   const location = useLocation()
   const [recentSessions, setRecentSessions] = useState<any[]>([])
@@ -240,7 +244,7 @@ export function SidebarLayout() {
           type="button"
           onClick={() => setMobileDrawerOpen(true)}
           className="p-2 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors"
-          aria-label="Ouvrir le menu"
+          aria-label={t('sidebar.openMenu')}
         >
           <Menu className="w-5 h-5" />
         </button>
@@ -271,7 +275,7 @@ export function SidebarLayout() {
             type="button"
             onClick={() => setMobileDrawerOpen(false)}
             className="p-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors"
-            aria-label="Fermer le menu"
+            aria-label={t('sidebar.closeMenu')}
           >
             <X className="w-5 h-5" />
           </button>
@@ -290,7 +294,7 @@ export function SidebarLayout() {
           >
             <span className="flex items-center gap-2">
               <Search className="w-3.5 h-3.5 text-sphera-text-muted group-hover:text-sphera-green transition-colors" />
-              <span>Rechercher...</span>
+              <span>{t('sidebar.searchPlaceholder')}</span>
             </span>
             <kbd className="px-1.5 py-0.5 bg-sphera-bg border border-sphera-border rounded text-[9px] font-mono text-sphera-text-muted">
               ⌘K
@@ -302,14 +306,14 @@ export function SidebarLayout() {
             className="flex items-center gap-2.5 w-full px-3.5 py-2.5 bg-sphera-green text-black font-semibold rounded-xl text-xs hover:bg-sphera-green-hover transition-colors shadow-sm"
           >
             <Plus className="w-4 h-4 shrink-0" />
-            <span>Générer une session</span>
+            <span>{t('sidebar.generateSession')}</span>
           </Link>
           <Link
             to="/live"
             className="flex items-center gap-2.5 w-full px-3.5 py-2 rounded-lg border border-sphera-green/30 text-sphera-green hover:bg-sphera-green/10 transition-all text-xs font-medium sphera-live-pulse"
           >
             <Zap className="w-4 h-4 shrink-0" />
-            <span>Sphera Live</span>
+            <span>{t('sidebar.spheraLive')}</span>
           </Link>
           <QuotaIndicator className="w-full justify-center" />
         </div>
@@ -317,18 +321,18 @@ export function SidebarLayout() {
         {/* Mobile Drawer Recents (Scrollable) */}
         <div className="flex-1 overflow-y-auto px-3 py-3 min-h-0 custom-scrollbar">
           <div className="px-2 mb-2 flex items-center justify-between text-[11px] font-semibold text-sphera-text-muted uppercase tracking-wider">
-            <span>{isLivePage ? 'Quiz Récents' : 'Récents'}</span>
+            <span>{isLivePage ? t('sidebar.recentQuiz') : t('sidebar.recentSessions')}</span>
             {recentSessions.length > 0 && <span className="text-[10px] lowercase font-normal">{recentSessions.length}</span>}
           </div>
 
           <div className="space-y-1">
             {recentSessions.length === 0 ? (
               <div className="px-3 py-4 text-xs text-sphera-text-muted italic text-center">
-                Aucun document
+                {t('sidebar.noDocuments')}
               </div>
             ) : (
               recentSessions.map(session => {
-                const title = session.resource_title || session.title || session.source_filename || session.source_title || (session._type === 'annale' ? `Annale #${session.id}` : `Session #${session.id}`)
+                const title = session.resource_title || session.title || session.source_filename || session.source_title || (session._type === 'annale' ? t('sidebar.annaleItem', { id: session.id }) : t('sidebar.sessionItem', { id: session.id }))
                 if (isLivePage) {
                   return (
                     <Link
@@ -341,7 +345,7 @@ export function SidebarLayout() {
                       }`}
                     >
                       <Zap className="w-3.5 h-3.5 shrink-0 text-sphera-green" />
-                      <span className="truncate">{session.title || `Quiz #${session.roomCode}`}</span>
+                      <span className="truncate">{session.title || t('sidebar.quizItem', { code: session.roomCode })}</span>
                     </Link>
                   )
                 } else {
@@ -402,7 +406,7 @@ export function SidebarLayout() {
                   : user?.username}
               </p>
               <p className="text-[10px] text-sphera-text-muted truncate">
-                Paramètres & services
+                {t('sidebar.accountSettings')}
               </p>
             </div>
             <MoreVertical className="w-4 h-4 text-sphera-text-muted group-hover:text-white shrink-0" />
@@ -427,7 +431,7 @@ export function SidebarLayout() {
                   Sphera
                 </span>
                 <span className="text-[10px] font-medium text-sphera-text-muted mt-1 opacity-70 truncate">
-                  by CampusSphere
+                  {t('byCs')}
                 </span>
               </div>
             </Link>
@@ -444,8 +448,8 @@ export function SidebarLayout() {
             className={`p-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors ${
               isCollapsed ? 'hidden' : 'block'
             }`}
-            title="Réduire la barre latérale"
-            aria-label="Réduire la barre latérale"
+            title={t('sidebar.collapse')}
+            aria-label={t('sidebar.collapse')}
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -458,8 +462,8 @@ export function SidebarLayout() {
               type="button"
               onClick={toggleCollapse}
               className="p-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors w-full flex justify-center"
-              title="Agrandir la barre latérale"
-              aria-label="Agrandir la barre latérale"
+              title={t('sidebar.expand')}
+              aria-label={t('sidebar.expand')}
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -478,7 +482,7 @@ export function SidebarLayout() {
               >
                 <span className="flex items-center gap-2">
                   <Search className="w-3.5 h-3.5 text-sphera-text-muted group-hover:text-sphera-green transition-colors" />
-                  <span>Rechercher...</span>
+                  <span>{t('sidebar.searchPlaceholder')}</span>
                 </span>
                 <kbd className="inline-block px-1.5 py-0.5 bg-sphera-bg border border-sphera-border rounded text-[9px] font-mono text-sphera-text-muted group-hover:text-white">
                   ⌘K
@@ -491,7 +495,7 @@ export function SidebarLayout() {
                 className="flex items-center justify-center gap-2 w-full px-3 py-2 bg-sphera-green text-black font-semibold rounded-xl text-xs hover:bg-sphera-green-hover transition-colors shadow-sm"
               >
                 <Plus className="w-4 h-4 shrink-0" />
-                <span>Générer une session</span>
+                <span>{t('sidebar.generateSession')}</span>
               </Link>
 
               <Link
@@ -499,7 +503,7 @@ export function SidebarLayout() {
                 className="flex items-center justify-center gap-2 w-full px-3 py-1.5 rounded-lg border border-sphera-green/30 text-sphera-green hover:bg-sphera-green/10 transition-all text-xs font-medium sphera-live-pulse"
               >
                 <Zap className="w-3.5 h-3.5 shrink-0" />
-                <span>Sphera Live</span>
+                <span>{t('sidebar.spheraLive')}</span>
               </Link>
 
               <QuotaIndicator className="w-full justify-center text-[11px] py-1.5" />
@@ -510,7 +514,7 @@ export function SidebarLayout() {
                 type="button"
                 onClick={() => setIsSearchModalOpen(true)}
                 className="w-10 h-10 rounded-xl bg-sphera-surface hover:bg-sphera-surface-2 border border-sphera-border flex items-center justify-center text-sphera-text-muted hover:text-white transition-colors"
-                title="Rechercher (Ctrl+K)"
+                title={t('sidebar.searchTooltip')}
               >
                 <Search className="w-4 h-4" />
               </button>
@@ -518,7 +522,7 @@ export function SidebarLayout() {
               <Link
                 to="/dashboard"
                 className="w-10 h-10 rounded-xl bg-sphera-green hover:bg-sphera-green-hover text-black flex items-center justify-center shadow-sm transition-colors"
-                title="Générer une session"
+                title={t('sidebar.generateSession')}
               >
                 <Plus className="w-5 h-5" />
               </Link>
@@ -526,7 +530,7 @@ export function SidebarLayout() {
               <Link
                 to="/live"
                 className="w-10 h-10 rounded-xl border border-sphera-green/30 text-sphera-green hover:bg-sphera-green/10 flex items-center justify-center sphera-live-pulse transition-all"
-                title="Sphera Live"
+                title={t('sidebar.spheraLive')}
               >
                 <Zap className="w-4 h-4" />
               </Link>
@@ -539,18 +543,18 @@ export function SidebarLayout() {
           {!isCollapsed ? (
             <>
               <div className="px-2 mb-2 flex items-center justify-between text-[10px] font-semibold text-sphera-text-muted uppercase tracking-wider">
-                <span>{isLivePage ? 'Quiz Récents' : 'Récents'}</span>
+                <span>{isLivePage ? t('sidebar.recentQuiz') : t('sidebar.recentSessions')}</span>
                 {recentSessions.length > 0 && <span className="text-[10px] lowercase font-normal">{recentSessions.length}</span>}
               </div>
 
               <div className="space-y-1">
                 {recentSessions.length === 0 ? (
                   <div className="px-2 py-4 text-xs text-sphera-text-muted italic text-center">
-                    Aucun document
+                    {t('sidebar.noDocuments')}
                   </div>
                 ) : (
                   recentSessions.map(session => {
-                    const title = session.resource_title || session.title || session.source_filename || session.source_title || (session._type === 'annale' ? `Annale #${session.id}` : `Session #${session.id}`)
+                    const title = session.resource_title || session.title || session.source_filename || session.source_title || (session._type === 'annale' ? t('sidebar.annaleItem', { id: session.id }) : t('sidebar.sessionItem', { id: session.id }))
                     if (isLivePage) {
                       return (
                         <Link
@@ -561,10 +565,10 @@ export function SidebarLayout() {
                               ? 'bg-sphera-surface text-white'
                               : 'text-sphera-text-muted hover:bg-sphera-surface hover:text-white'
                           }`}
-                          title={session.title || `Quiz #${session.roomCode}`}
+                          title={session.title || t('sidebar.quizItem', { code: session.roomCode })}
                         >
                           <Zap className="w-3.5 h-3.5 shrink-0 text-sphera-green" />
-                          <span className="truncate">{session.title || `Quiz #${session.roomCode}`}</span>
+                          <span className="truncate">{session.title || t('sidebar.quizItem', { code: session.roomCode })}</span>
                         </Link>
                       )
                     } else {
@@ -601,7 +605,7 @@ export function SidebarLayout() {
                 const link = isLivePage
                   ? `/live/host?code=${session.roomCode}&reset=1`
                   : `/${session._type === 'annale' ? 'annales' : 'sessions'}/${session.id}`
-                const title = session.resource_title || session.title || session.source_filename || session.source_title || `Doc #${session.id}`
+                const title = session.resource_title || session.title || session.source_filename || session.source_title || t('sidebar.docItem', { id: session.id })
 
                 return (
                   <Link
@@ -660,7 +664,7 @@ export function SidebarLayout() {
                     : user?.username}
                 </p>
                 <p className="text-[10px] text-sphera-text-muted truncate">
-                  Mon compte & paramètres
+                  {t('sidebar.accountSettings')}
                 </p>
               </div>
               <MoreVertical className="w-4 h-4 text-sphera-text-muted group-hover:text-white shrink-0" />
@@ -671,7 +675,7 @@ export function SidebarLayout() {
                 type="button"
                 onClick={() => setIsUserMenuOpen(prev => !prev)}
                 className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:ring-2 hover:ring-sphera-green/40"
-                title="Mon compte & paramètres"
+                title={t('sidebar.myAccount')}
               >
                 {user?.avatar ? (
                   <img

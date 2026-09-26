@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { useTranslation } from '@cs/i18n'
+import { useTranslation } from 'react-i18next'
 import { FileText, BrainCircuit, Zap, ArrowRight, FilePenLine, SquareStack } from 'lucide-react'
 
 export function Features() {

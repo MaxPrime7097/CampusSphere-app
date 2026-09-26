@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useSpheraAuth } from '../contexts/SpheraAuthContext'
 import { UploadZone } from '../components/app/UploadZone'
 import { ToolSelector, type ToolType } from '../components/app/ToolSelector'
@@ -7,6 +8,7 @@ import { GenerateButton } from '../components/app/GenerateButton'
 import { SpheraHeader } from '../components/layout/SpheraHeader'
 
 export default function AppPage() {
+  const { t } = useTranslation('study')
   const { isAuthenticated } = useSpheraAuth()
   const navigate = useNavigate()
 
@@ -34,7 +36,7 @@ export default function AppPage() {
         } 
       })
     } catch (e: any) {
-      setError(e.message || 'Erreur lors de la génération. Le fichier est peut-être illisible.')
+      setError(e.message || t('appPage.generationError'))
     } finally {
       setGenerating(false)
     }
@@ -49,10 +51,10 @@ export default function AppPage() {
         {/* Header App */}
         <div className="mb-10 text-center md:text-left">
           <h1 className="font-display text-2xl md:text-3xl font-bold text-white mb-2">
-            Prêt à réviser ?
+            {t('appPage.title')}
           </h1>
           <p className="text-sphera-text-muted">
-            Choisis un document et la méthode qui te correspond.
+            {t('appPage.subtitle')}
           </p>
         </div>
 
@@ -89,7 +91,7 @@ export default function AppPage() {
                       : 'text-sphera-text-muted hover:text-white'
                   }`}
                 >
-                  Réviser un cours
+                  {t('appPage.studyMode')}
                 </button>
                 <button
                   onClick={() => setGenerationMode('annale')}
@@ -99,7 +101,7 @@ export default function AppPage() {
                       : 'text-sphera-text-muted hover:text-white'
                   }`}
                 >
-                  Corriger une annale
+                  {t('appPage.annaleMode')}
                 </button>
               </div>
 
@@ -110,7 +112,7 @@ export default function AppPage() {
                 />
               ) : (
                 <div className="flex flex-col gap-4">
-                  <h3 className="text-white font-medium text-lg px-1">Mode de correction</h3>
+                  <h3 className="text-white font-medium text-lg px-1">{t('appPage.correctionMode')}</h3>
                   <div className="p-4 rounded-xl bg-sphera-surface border border-sphera-border">
                     <div className="grid grid-cols-2 gap-3">
                       <button
@@ -121,7 +123,7 @@ export default function AppPage() {
                             : 'bg-sphera-bg border-sphera-border text-sphera-text-muted hover:bg-sphera-surface-2 hover:text-white'
                         }`}
                       >
-                        Complète
+                        {t('appPage.complete')}
                       </button>
                       <button
                         onClick={() => setAnnaleMode('rapide')}
@@ -131,13 +133,13 @@ export default function AppPage() {
                             : 'bg-sphera-bg border-sphera-border text-sphera-text-muted hover:bg-sphera-surface-2 hover:text-white'
                         }`}
                       >
-                        Rapide
+                        {t('appPage.rapide')}
                       </button>
                     </div>
                     <p className="text-xs text-sphera-text-muted mt-4 text-center">
                       {annaleMode === 'complete' 
-                        ? 'Génère une correction détaillée de chaque question avec des explications pas-à-pas. (Réponse + explication + chapitre + à retenir)' 
-                        : 'Fournit uniquement les réponses finales pour une vérification rapide. (Réponses directes, zéro blabla)'}
+                        ? t('appPage.completeDesc')
+                        : t('appPage.rapideDesc')}
                     </p>
                   </div>
                 </div>
@@ -154,15 +156,15 @@ export default function AppPage() {
               <div className="mt-6 text-center">
                 {!isAuthenticated ? (
                   <p className="text-xs text-sphera-text-muted">
-                    Mode invité : tes résultats ne seront pas sauvegardés.<br/>
+                    {t('appPage.guestWarning')}<br/>
                     <a href="/login" className="text-sphera-green hover:underline mt-1 inline-block">
-                      Connecte-toi pour tout conserver
+                      {t('appPage.guestLogin')}
                     </a>
                   </p>
                 ) : (
                   <p className="text-xs text-sphera-text-muted flex items-center justify-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-sphera-green inline-block"></span>
-                    Tes sessions sont automatiquement sauvegardées
+                    {t('appPage.savedNotice')}
                   </p>
                 )}
               </div>

@@ -333,6 +333,7 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
+    dedupe: ['react', 'react-dom', 'react-i18next', 'i18next'],
   },
   server: {
     port: 5174,

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Trophy } from 'lucide-react';
 
 interface LeaderboardProps {
@@ -7,6 +8,7 @@ interface LeaderboardProps {
 }
 
 export function Leaderboard({ entries, highlightUserId }: LeaderboardProps) {
+  const { t } = useTranslation('live');
   const sorted = [...entries].sort((a, b) => b.score - a.score);
 
   return (
@@ -14,7 +16,7 @@ export function Leaderboard({ entries, highlightUserId }: LeaderboardProps) {
       <div className="text-center mb-4">
         <h2 className="text-3xl font-live font-bold text-white flex items-center justify-center gap-3">
           <Trophy className="w-8 h-8 text-yellow-500" />
-          Classement
+          {t('leaderboard.title')}
         </h2>
       </div>
 
@@ -59,18 +61,18 @@ export function Leaderboard({ entries, highlightUserId }: LeaderboardProps) {
               <div className="flex items-center gap-4">
                 {rankBadge}
                 <span className={`font-medium text-lg ${isHighlighted ? 'text-white font-bold' : 'text-sphera-text'}`}>
-                  {entry.displayName} {isHighlighted && '(Vous)'}
+                  {entry.displayName} {isHighlighted && t('leaderboard.you')}
                 </span>
               </div>
               <div className="text-sphera-green font-bold text-xl">
-                {entry.score} <span className="text-sm font-normal text-sphera-text-muted">pts</span>
+                {entry.score} <span className="text-sm font-normal text-sphera-text-muted">{t('leaderboard.pts')}</span>
               </div>
             </div>
           );
         })}
         {sorted.length === 0 && (
           <div className="text-center p-8 text-sphera-text-muted bg-sphera-surface rounded-xl border border-sphera-border">
-            Aucun participant.
+            {t('leaderboard.empty')}
           </div>
         )}
       </div>

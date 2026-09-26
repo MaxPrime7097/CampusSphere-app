@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   createQuizManual,
   generateQuizQuestionsFromResource,
   generateQuizQuestionsFromUpload,
-  importQuizJson,
 } from '../../services/spheraApi';
 import { Loader2, Plus, Trash2, Upload, Sparkles, Clock, Award, CheckCircle2, X, Sliders, Check } from 'lucide-react';
 
@@ -23,6 +23,7 @@ const TIME_PRESETS = [10, 15, 20, 30, 45, 60, 90, 120];
 const POINTS_PRESETS = [500, 1000, 1500, 2000];
 
 export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
+  const { t } = useTranslation('live');
   const [activeTab, setActiveTab] = useState<'generate' | 'manual' | 'import'>('generate');
   const [title, setTitle] = useState('');
   const [loading, setLoading] = useState(false);
@@ -86,10 +87,10 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
 
         setQuestions(formattedQuestions);
         setActiveTab('manual');
-        setSuccessMessage(`JSON importé avec succès (${formattedQuestions.length} questions). Vous pouvez les prévisualiser ci-dessous.`);
+        setSuccessMessage(t('setup.jsonImportSuccess', { count: formattedQuestions.length }));
         setError(null);
       } catch (err) {
-        setError("Le fichier JSON n'est pas au bon format. Format attendu : liste de questions avec question, options, correctIndex.");
+        setError(t('setup.errorInvalidJson'));
       }
     };
     reader.readAsText(uploadedFile);
@@ -100,7 +101,7 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
    */
   const handleGenerateQuestions = async () => {
     if (!generateFile && !resourceInput.trim()) {
-      setError('Veuillez sélectionner un fichier ou indiquer le lien/identifiant d\'un document.');
+      setError(t('setup.errorNoFileOrId'));
       return;
     }
 
@@ -120,7 +121,7 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
         const urlMatch = raw.match(/\/(\d+)(?:\/|\?|$)/) || raw.match(/(\d+)/);
         const parsedId = urlMatch ? parseInt(urlMatch[1], 10) : parseInt(raw, 10);
         if (isNaN(parsedId)) {
-          throw new Error('Lien ou identifiant de document invalide. Entrez par exemple un numéro (ex: 12) ou un lien CampusSphere.');
+          throw new Error(t('setup.errorInvalidId'));
         }
 
         res = await generateQuizQuestionsFromResource(parsedId, title, effectiveTime, effectivePoints);
@@ -128,7 +129,7 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
 
       const payload = res?.data || res;
       if (!payload || !Array.isArray(payload.questions) || payload.questions.length === 0) {
-        throw new Error('L\'IA n\'a pas pu générer de questions à partir de ce document.');
+        throw new Error(t('setup.errorNoQuestionsGenerated'));
       }
 
       if (payload.title && !title.trim()) {
@@ -145,9 +146,9 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
 
       setQuestions(formatted);
       setActiveTab('manual');
-      setSuccessMessage(`${formatted.length} questions générées par Sphera ! Vous pouvez les prévisualiser, ajuster le temps et les points ci-dessous avant de lancer la session.`);
+      setSuccessMessage(t('setup.generatedSuccess', { count: formatted.length }));
     } catch (err: any) {
-      setError(err.message || 'Erreur lors de la génération avec Sphera.');
+      setError(err.message || t('setup.errorGeneration'));
     } finally {
       setIsGenerating(false);
     }
@@ -158,12 +159,12 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
    */
   const handleCreateSession = async () => {
     if (!title.trim()) {
-      setError('Veuillez entrer un titre pour la session.');
+      setError(t('setup.errorTitleRequired'));
       return;
     }
 
     if (questions.some(q => !q.question.trim() || q.options.some(o => !o.trim()))) {
-      setError('Veuillez remplir l\'énoncé et les 4 options pour chaque question.');
+      setError(t('setup.errorFillQuestions'));
       return;
     }
 
@@ -174,7 +175,7 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
       const session = (res as any)?.data || res;
       onSessionCreated({ ...session, questions: session.questions || questions, title: session.title || title });
     } catch (err: any) {
-      setError(err.message || 'Une erreur est survenue lors du lancement de la session.');
+      setError(err.message || t('setup.errorLaunch'));
     } finally {
       setLoading(false);
     }
@@ -182,26 +183,28 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
 
   // Appliquer le même temps / points à toutes les questions
   const handleApplyBulkToAll = () => {
-    const t = isCustomBulkTime ? (parseInt(customBulkTime, 10) || 30) : bulkTime;
-    const p = isCustomBulkPoints ? (parseInt(customBulkPoints, 10) || 1000) : bulkPoints;
-    setQuestions(prev => prev.map(q => ({ ...q, timeLimit: t, points: p })));
+    const tVal = isCustomBulkTime ? (parseInt(customBulkTime, 10) || 30) : bulkTime;
+    const pVal = isCustomBulkPoints ? (parseInt(customBulkPoints, 10) || 1000) : bulkPoints;
+    setQuestions(prev => prev.map(q => ({ ...q, timeLimit: tVal, points: pVal })));
   };
+
+  const totalPoints = questions.reduce((acc, q) => acc + (q.points || 1000), 0);
 
   return (
     <div className="w-full max-w-3xl mx-auto relative group overflow-hidden bg-sphera-surface-2/90 backdrop-blur-md border border-sphera-border rounded-3xl p-6 sm:p-10 shadow-2xl transition-all duration-500 animate-fade-in-up">
       <div className="absolute top-0 right-0 w-64 h-64 bg-sphera-green/5 rounded-bl-[150px] -z-10 transition-transform duration-700 group-hover:scale-110" />
       <h2 className="text-3xl font-display font-bold text-white mb-8 tracking-tight">
-        Créer une session <span className="text-sphera-green">Live</span>
+        {t('setup.title')} <span className="text-sphera-green">{t('setup.titleHighlight')}</span>
       </h2>
       
       {/* Titre de la session */}
       <div className="mb-8">
-        <label className="block text-sm font-medium text-sphera-text-muted mb-2">Titre de la session</label>
+        <label className="block text-sm font-medium text-sphera-text-muted mb-2">{t('setup.sessionTitleLabel')}</label>
         <input
           type="text"
           value={title}
           onChange={e => setTitle(e.target.value)}
-          placeholder="Ex: Révision Biologie Cellulaire — Chapitre 3"
+          placeholder={t('setup.sessionTitlePlaceholder')}
           className="w-full bg-sphera-surface border border-sphera-border rounded-xl px-4 py-3 text-white focus:outline-none focus:border-sphera-green transition-colors"
         />
       </div>
@@ -218,7 +221,7 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
           }`}
         >
           <Sparkles className="w-4 h-4 text-sphera-green" />
-          Générer avec Sphera
+          {t('setup.tabs.generate')}
         </button>
         <button
           type="button"
@@ -229,7 +232,7 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
               : 'text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2/50'
           }`}
         >
-          <span>Créer manuellement</span>
+          <span>{t('setup.tabs.manual')}</span>
           <span className="px-2 py-0.5 rounded-full text-xs bg-sphera-green/15 text-sphera-green font-bold">
             {questions.length}
           </span>
@@ -243,7 +246,7 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
               : 'text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2/50'
           }`}
         >
-          Importer un JSON
+          {t('setup.tabs.import')}
         </button>
       </div>
 
@@ -252,38 +255,38 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
         {activeTab === 'generate' && (
           <div className="space-y-6">
             <p className="text-sm text-sphera-text-muted leading-relaxed">
-              Sphera analyse votre document (PDF, Word, TXT ou photo de cours) et conçoit un ensemble de questions QCM prêtes pour le jeu.
+              {t('setup.generateDesc')}
             </p>
             
             {/* Option 1: URL/ID */}
             <div className={`transition-opacity ${generateFile ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
-              <label className="block text-sm font-medium text-white mb-2">Option 1 : Lien ou identifiant de document CampusSphere</label>
+              <label className="block text-sm font-medium text-white mb-2">{t('setup.optionResource')}</label>
               <input
                 type="text"
                 value={resourceInput}
                 onChange={e => setResourceInput(e.target.value)}
-                placeholder="Ex: 42 ou https://campussphere.app/resources/42"
+                placeholder={t('setup.optionResourcePlaceholder')}
                 className="w-full bg-sphera-surface border border-sphera-border rounded-xl px-4 py-3 text-white focus:outline-none focus:border-sphera-green transition-colors"
               />
             </div>
             
             <div className="relative flex items-center py-1">
               <div className="flex-grow border-t border-sphera-border"></div>
-              <span className="flex-shrink-0 mx-4 text-sphera-text-muted text-xs font-bold uppercase tracking-wider">ou</span>
+              <span className="flex-shrink-0 mx-4 text-sphera-text-muted text-xs font-bold uppercase tracking-wider">{t('setup.or')}</span>
               <div className="flex-grow border-t border-sphera-border"></div>
             </div>
 
             {/* Option 2: Upload direct */}
             <div className={`transition-opacity ${resourceInput.trim() ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
-              <label className="block text-sm font-medium text-white mb-2">Option 2 : Importer un fichier de cours</label>
+              <label className="block text-sm font-medium text-white mb-2">{t('setup.optionUpload')}</label>
               <div className="flex items-center justify-center w-full">
                 <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-sphera-border border-dashed rounded-xl cursor-pointer bg-sphera-surface hover:bg-sphera-surface-2 transition-colors">
                   <div className="flex flex-col items-center justify-center pt-4 pb-5">
                     <Upload className="w-7 h-7 text-sphera-green mb-2" />
                     <p className="mb-1 text-sm text-sphera-text-muted">
-                      <span className="font-semibold text-white">Cliquez pour choisir</span> ou glissez-déposez
+                      {t('setup.uploadDropzone')}
                     </p>
-                    <p className="text-xs text-sphera-text-muted">PDF, DOCX, TXT, Images (PNG, JPG, WEBP) · max 50 MB</p>
+                    <p className="text-xs text-sphera-text-muted">{t('setup.supportedFormats')}</p>
                   </div>
                   <input 
                     type="file" 
@@ -306,11 +309,11 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
             {/* Paramètres par défaut de la génération */}
             <div className="p-4 rounded-2xl bg-sphera-surface border border-sphera-border/60 space-y-3">
               <p className="text-xs font-semibold text-white uppercase tracking-wider flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-sphera-green" /> Paramètres de jeu par défaut
+                <Clock className="w-3.5 h-3.5 text-sphera-green" /> {t('setup.defaultSettings')}
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs text-sphera-text-muted mb-1.5">Temps par question :</label>
+                  <label className="block text-xs text-sphera-text-muted mb-1.5">{t('setup.defaultTimeLabel')}</label>
                   <div className="flex items-center gap-2">
                     <select
                       value={isCustomDefaultTime ? 'custom' : defaultTimeLimit}
@@ -324,15 +327,15 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
                       }}
                       className="flex-1 bg-sphera-bg border border-sphera-border rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-sphera-green"
                     >
-                      <option value={10}>10 secondes (Ultra-rapide)</option>
-                      <option value={15}>15 secondes</option>
-                      <option value={20}>20 secondes</option>
-                      <option value={30}>30 secondes (Standard)</option>
-                      <option value={45}>45 secondes</option>
-                      <option value={60}>60 secondes (Réflexion)</option>
-                      <option value={90}>90 secondes</option>
-                      <option value={120}>2 minutes (Calculs)</option>
-                      <option value="custom">Personnalisé...</option>
+                      <option value={10}>{t('setup.timePresets.10')}</option>
+                      <option value={15}>{t('setup.timePresets.15')}</option>
+                      <option value={20}>{t('setup.timePresets.20')}</option>
+                      <option value={30}>{t('setup.timePresets.30')}</option>
+                      <option value={45}>{t('setup.timePresets.45')}</option>
+                      <option value={60}>{t('setup.timePresets.60')}</option>
+                      <option value={90}>{t('setup.timePresets.90')}</option>
+                      <option value={120}>{t('setup.timePresets.120')}</option>
+                      <option value="custom">{t('setup.custom')}</option>
                     </select>
                     {isCustomDefaultTime && (
                       <div className="flex items-center gap-1">
@@ -351,7 +354,7 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs text-sphera-text-muted mb-1.5">Points par question :</label>
+                  <label className="block text-xs text-sphera-text-muted mb-1.5">{t('setup.defaultPointsLabel')}</label>
                   <div className="flex items-center gap-2">
                     <select
                       value={isCustomDefaultPoints ? 'custom' : defaultPoints}
@@ -365,10 +368,10 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
                       }}
                       className="flex-1 bg-sphera-bg border border-sphera-border rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-sphera-green"
                     >
-                      <option value={500}>500 points (Quiz court)</option>
-                      <option value={1000}>1 000 points (Standard)</option>
-                      <option value={2000}>2 000 points (Double points)</option>
-                      <option value="custom">Personnalisé...</option>
+                      <option value={500}>{t('setup.pointsPresets.500')}</option>
+                      <option value={1000}>{t('setup.pointsPresets.1000')}</option>
+                      <option value={2000}>{t('setup.pointsPresets.2000')}</option>
+                      <option value="custom">{t('setup.custom')}</option>
                     </select>
                     {isCustomDefaultPoints && (
                       <div className="flex items-center gap-1">
@@ -400,12 +403,12 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
               {isGenerating ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>Analyse &amp; Génération par Sphera...</span>
+                  <span>{t('setup.generatingBtn')}</span>
                 </>
               ) : (
                 <>
                   <Sparkles className="w-5 h-5" />
-                  <span>Générer les questions &amp; Prévisualiser</span>
+                  <span>{t('setup.generateBtn')}</span>
                 </>
               )}
             </button>
@@ -436,19 +439,19 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
             <div className="p-4 rounded-2xl bg-sphera-surface border border-sphera-border space-y-3">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <span className="text-xs font-bold text-sphera-green uppercase tracking-wider flex items-center gap-1.5">
-                  <Sliders className="w-3.5 h-3.5" /> Réglage global pour toutes les questions
+                  <Sliders className="w-3.5 h-3.5" /> {t('setup.bulkSettings')}
                 </span>
                 <div className="text-xs text-sphera-text-muted font-medium flex items-center gap-2">
-                  <span>{questions.length} question{questions.length > 1 ? 's' : ''}</span>
+                  <span>{t('drawer.questionsCount', { count: questions.length })}</span>
                   <span>•</span>
-                  <span>Total : {questions.reduce((acc, q) => acc + (q.points || 1000), 0)} pts</span>
+                  <span>{t('setup.totalPoints', { points: totalPoints })}</span>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-sphera-text-muted flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-blue-400" /> Temps pour toutes :
+                    <Clock className="w-3 h-3 text-blue-400" /> {t('setup.bulkTimeLabel')}
                   </label>
                   <div className="flex items-center gap-2">
                     <select
@@ -463,10 +466,10 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
                       }}
                       className="flex-1 bg-sphera-bg border border-sphera-border text-white text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-sphera-green"
                     >
-                      {TIME_PRESETS.map(t => (
-                        <option key={t} value={t}>{t}s</option>
+                      {TIME_PRESETS.map(tOption => (
+                        <option key={tOption} value={tOption}>{tOption}s</option>
                       ))}
-                      <option value="custom">Personnalisé...</option>
+                      <option value="custom">{t('setup.custom')}</option>
                     </select>
                     {isCustomBulkTime && (
                       <div className="flex items-center gap-1">
@@ -487,7 +490,7 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
 
                 <div className="flex flex-col gap-1.5">
                   <label className="text-sphera-text-muted flex items-center gap-1">
-                    <Award className="w-3 h-3 text-yellow-400" /> Points pour toutes :
+                    <Award className="w-3 h-3 text-yellow-400" /> {t('setup.bulkPointsLabel')}
                   </label>
                   <div className="flex items-center gap-2">
                     <select
@@ -505,7 +508,7 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
                       {POINTS_PRESETS.map(p => (
                         <option key={p} value={p}>{p} pts</option>
                       ))}
-                      <option value="custom">Personnalisé...</option>
+                      <option value="custom">{t('setup.custom')}</option>
                     </select>
                     {isCustomBulkPoints && (
                       <div className="flex items-center gap-1">
@@ -531,7 +534,7 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
                 onClick={handleApplyBulkToAll}
                 className="w-full py-2 px-3 rounded-lg bg-sphera-green/10 hover:bg-sphera-green/20 border border-sphera-green/30 text-sphera-green font-semibold text-xs transition-colors flex items-center justify-center gap-1.5"
               >
-                <Check className="w-3.5 h-3.5" /> Appliquer à toutes les questions ({questions.length})
+                <Check className="w-3.5 h-3.5" /> {t('setup.applyToAll', { count: questions.length })}
               </button>
             </div>
 
@@ -540,14 +543,14 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
               <div key={qIndex} className="p-5 border border-sphera-border rounded-2xl bg-sphera-surface relative space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-sphera-green/10 text-sphera-green border border-sphera-green/20">
-                    Question #{qIndex + 1}
+                    {t('setup.questionIndex', { num: qIndex + 1 })}
                   </span>
                   {questions.length > 1 && (
                     <button 
                       type="button"
                       onClick={() => setQuestions(questions.filter((_, i) => i !== qIndex))}
                       className="text-sphera-text-muted hover:text-red-400 transition-colors p-1"
-                      title="Supprimer la question"
+                      title={t('setup.deleteQuestion')}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -564,7 +567,7 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
                       newQ[qIndex].question = e.target.value;
                       setQuestions(newQ);
                     }}
-                    placeholder="Posez votre question ici..."
+                    placeholder={t('setup.questionPromptPlaceholder')}
                     className="w-full bg-sphera-bg border border-sphera-border rounded-xl px-3.5 py-2.5 text-white font-medium focus:outline-none focus:border-sphera-green"
                   />
                 </div>
@@ -612,7 +615,7 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
                 <div className="pt-2 border-t border-sphera-border/50 flex items-center justify-between flex-wrap gap-4 text-xs">
                   <div className="flex items-center gap-2">
                     <Clock className="w-3.5 h-3.5 text-blue-400" />
-                    <span className="text-sphera-text-muted">Temps :</span>
+                    <span className="text-sphera-text-muted">{t('setup.timeLabel')}</span>
                     <select 
                       value={TIME_PRESETS.includes(q.timeLimit) ? q.timeLimit : 'custom'}
                       onChange={e => {
@@ -624,10 +627,10 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
                       }}
                       className="bg-sphera-bg border border-sphera-border rounded-lg px-2 py-1 text-white text-xs focus:outline-none focus:border-sphera-green"
                     >
-                      {TIME_PRESETS.map(t => (
-                        <option key={t} value={t}>{t}s</option>
+                      {TIME_PRESETS.map(tOption => (
+                        <option key={tOption} value={tOption}>{tOption}s</option>
                       ))}
-                      <option value="custom">Perso...</option>
+                      <option value="custom">{t('setup.custom')}</option>
                     </select>
                     {!TIME_PRESETS.includes(q.timeLimit) && (
                       <div className="flex items-center gap-0.5">
@@ -650,7 +653,7 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
 
                   <div className="flex items-center gap-2">
                     <Award className="w-3.5 h-3.5 text-yellow-400" />
-                    <span className="text-sphera-text-muted">Points :</span>
+                    <span className="text-sphera-text-muted">{t('setup.pointsLabel')}</span>
                     <select 
                       value={POINTS_PRESETS.includes(q.points) ? q.points : 'custom'}
                       onChange={e => {
@@ -665,7 +668,7 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
                       {POINTS_PRESETS.map(p => (
                         <option key={p} value={p}>{p} pts</option>
                       ))}
-                      <option value="custom">Perso...</option>
+                      <option value="custom">{t('setup.custom')}</option>
                     </select>
                     {!POINTS_PRESETS.includes(q.points) && (
                       <div className="flex items-center gap-0.5">
@@ -704,7 +707,7 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
               ])}
               className="flex items-center gap-2 text-sphera-green hover:text-green-400 transition-colors text-sm font-semibold"
             >
-              <Plus className="w-4 h-4" /> Ajouter une question manuellement
+              <Plus className="w-4 h-4" /> {t('setup.addQuestionManual')}
             </button>
 
             {/* Bouton Créer/Lancer la session depuis l'onglet Manuel */}
@@ -716,7 +719,7 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
                 className="w-full bg-sphera-green text-black font-bold text-lg rounded-2xl px-6 py-4 hover:bg-sphera-green-hover transition-all duration-300 shadow-[0_0_20px_rgba(34,197,94,0.3)] hover:shadow-[0_0_30px_rgba(34,197,94,0.5)] disabled:opacity-50 flex justify-center items-center gap-2"
               >
                 {loading && <Loader2 className="w-6 h-6 animate-spin" />}
-                {loading ? 'Lancement de la session...' : 'Lancer la session Live'}
+                {loading ? t('setup.launching') : t('setup.launchSession')}
               </button>
             </div>
           </div>
@@ -726,10 +729,10 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
         {activeTab === 'import' && (
           <div className="space-y-4">
             <p className="text-sm text-sphera-text-muted leading-relaxed">
-              Importez un fichier JSON contenant votre questionnaire. Les questions seront chargées dans l'éditeur pour vérification avant le lancement.
+              {t('setup.importDesc')}
             </p>
             <p className="text-xs text-sphera-text-muted font-mono bg-sphera-surface p-3.5 rounded-xl border border-sphera-border">
-              Format attendu :<br/>
+              {t('setup.expectedFormat')}<br/>
               {`[{ "question": "...", "options": ["A","B","C","D"], "correctIndex": 0, "timeLimit": 30, "points": 1000 }]`}
             </p>
             <div className="flex items-center justify-center w-full">
@@ -737,9 +740,9 @@ export function QuizSetupForm({ onSessionCreated }: QuizSetupFormProps) {
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
                   <Upload className="w-8 h-8 text-sphera-text-muted mb-3" />
                   <p className="mb-2 text-sm text-sphera-text-muted">
-                    <span className="font-semibold text-white">Cliquez pour importer</span> ou glissez-déposez
+                    {t('setup.clickToImport')}
                   </p>
-                  <p className="text-xs text-sphera-text-muted">Fichier .json uniquement</p>
+                  <p className="text-xs text-sphera-text-muted">{t('setup.jsonOnly')}</p>
                 </div>
                 <input 
                   type="file" 

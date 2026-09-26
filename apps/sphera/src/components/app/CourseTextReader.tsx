@@ -6,6 +6,7 @@ import {
   Bookmark, Hash, Sparkles
 } from 'lucide-react';
 import { TextSelectionToolbar, type SelectionActionType } from './TextSelectionToolbar';
+import { useTranslation } from 'react-i18next';
 
 interface CourseTextReaderProps {
   initialText: string;
@@ -41,6 +42,7 @@ export function CourseTextReader({
   onSave,
   onSelectionAction,
 }: CourseTextReaderProps) {
+  const { t } = useTranslation('study');
   const [text, setText] = useState(initialText || '');
   const [mode, setMode] = useState<'view' | 'edit'>('view');
   const [isSaving, setIsSaving] = useState(false);
@@ -586,10 +588,10 @@ export function CourseTextReader({
                   ? 'bg-sphera-green text-black border-sphera-green font-bold shadow-sm'
                   : 'bg-sphera-surface hover:bg-sphera-surface-2 text-white border-sphera-border'
               }`}
-              title="Afficher le sommaire du cours"
+              title={t('reader.toc')}
             >
               <List className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Sommaire</span>
+              <span className="hidden sm:inline">{t('reader.toc')}</span>
               <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${isTocOpen ? 'bg-black/20 text-black' : 'bg-white/10 text-white/70'}`}>
                 {toc.length}
               </span>
@@ -599,12 +601,12 @@ export function CourseTextReader({
           <div className="hidden md:flex items-center gap-2 font-mono text-[11px]">
             <span className="flex items-center gap-1">
               <FileText className="w-3.5 h-3.5 text-sphera-green" />
-              {wordCount.toLocaleString()} mots
+              {t('reader.wordCount', { count: wordCount })}
             </span>
             <span>•</span>
             <span className="flex items-center gap-1">
               <Clock className="w-3.5 h-3.5 text-blue-400" />
-              ~{readTimeMin} min
+              {t('reader.readTime', { minutes: readTimeMin })}
             </span>
           </div>
         </div>
@@ -618,7 +620,7 @@ export function CourseTextReader({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Rechercher dans le texte..."
+              placeholder={t('reader.searchInText')}
               className="w-full pl-8 pr-8 py-1.5 bg-sphera-surface rounded-lg border border-sphera-border text-xs text-white placeholder:text-sphera-text-muted/60 focus:outline-none focus:border-sphera-green/60 transition-colors"
             />
             {searchQuery && (
@@ -633,7 +635,7 @@ export function CourseTextReader({
           </div>
           {searchQuery && (
             <div className="absolute top-full left-0 mt-1 px-2.5 py-1 rounded bg-zinc-900 border border-sphera-border text-[10px] text-sphera-text-muted flex items-center gap-2 z-20 shadow-lg">
-              <span className="font-semibold text-white font-mono">{matchCount}</span> occurrence{matchCount > 1 ? 's' : ''} trouvée{matchCount > 1 ? 's' : ''}
+              {t('reader.matchesFound', { count: matchCount })}
             </div>
           )}
         </div>
@@ -645,7 +647,7 @@ export function CourseTextReader({
             type="button"
             onClick={cycleFontSize}
             className="p-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface border border-sphera-border/50 text-xs font-semibold flex items-center gap-1 transition-colors"
-            title="Ajuster la taille du texte"
+            title={t('reader.fontSize')}
           >
             <Type className="w-3.5 h-3.5" />
             <span className="text-[10px] uppercase font-mono">{fontSize}</span>
@@ -654,7 +656,7 @@ export function CourseTextReader({
           {saveSuccess && (
             <span className="hidden sm:flex items-center gap-1 text-xs text-sphera-green font-medium animate-fade-in">
               <Check className="w-3.5 h-3.5" />
-              Enregistré
+              {t('reader.saved')}
             </span>
           )}
 
@@ -662,7 +664,7 @@ export function CourseTextReader({
             type="button"
             onClick={handleCopy}
             className="p-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface border border-sphera-border/50 transition-colors"
-            title="Copier l'intégralité du cours"
+            title={t('reader.copyText')}
           >
             {copied ? <Check className="w-4 h-4 text-sphera-green" /> : <Copy className="w-4 h-4" />}
           </button>
@@ -675,7 +677,7 @@ export function CourseTextReader({
                 className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-sphera-surface hover:bg-sphera-surface-2 text-white border border-sphera-border transition-colors flex items-center gap-1.5 cursor-pointer"
               >
                 <Edit3 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Modifier</span>
+                <span className="hidden sm:inline">{t('reader.editMode')}</span>
               </button>
             ) : (
               <div className="flex items-center gap-1.5">
@@ -687,7 +689,7 @@ export function CourseTextReader({
                   }}
                   className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-sphera-text-muted hover:text-white transition-colors"
                 >
-                  Annuler
+                  {t('reader.cancel')}
                 </button>
                 <button
                   type="button"
@@ -696,7 +698,7 @@ export function CourseTextReader({
                   className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-sphera-green text-black hover:bg-green-400 transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
                 >
                   {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                  <span>Enregistrer</span>
+                  <span>{isSaving ? t('reader.saving') : t('reader.save')}</span>
                 </button>
               </div>
             )
@@ -710,7 +712,7 @@ export function CourseTextReader({
           <div className="p-3 bg-sphera-surface border-b border-sphera-border flex items-center justify-between">
             <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
               <Compass className="w-4 h-4 text-sphera-green" />
-              Sommaire du cours
+              {t('reader.courseSummary')}
             </span>
             <button
               type="button"
@@ -759,7 +761,7 @@ export function CourseTextReader({
               <div className="mb-8 pb-4 border-b border-sphera-border">
                 <div className="flex items-center gap-2 text-xs font-bold text-sphera-green uppercase tracking-wider mb-2">
                   <Bookmark className="w-3.5 h-3.5" />
-                  <span>Document de Cours</span>
+                  <span>{t('reader.courseDoc')}</span>
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-white font-display tracking-tight leading-tight">
                   {title}
@@ -812,7 +814,7 @@ export function CourseTextReader({
                         <div key={idx} className="my-5 p-4 sm:p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 space-y-1.5 shadow-sm">
                           <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold uppercase tracking-wider">
                             <BookOpen className="w-4 h-4" />
-                            <span>{block.calloutTitle || 'Définition'}</span>
+                            <span>{block.calloutTitle || t('reader.callouts.definition')}</span>
                           </div>
                           <div className="text-white/95 leading-relaxed font-medium">
                             {renderHighlightedText(block.content)}
@@ -825,7 +827,7 @@ export function CourseTextReader({
                         <div key={idx} className="my-4 p-4 rounded-xl bg-blue-500/10 border border-blue-500/25 space-y-1.5">
                           <div className="flex items-center gap-2 text-blue-400 text-xs font-bold uppercase tracking-wider">
                             <Lightbulb className="w-4 h-4" />
-                            <span>{block.calloutTitle || 'Remarque'}</span>
+                            <span>{block.calloutTitle || t('reader.callouts.remarque')}</span>
                           </div>
                           <div className="text-white/85 leading-relaxed">
                             {renderHighlightedText(block.content)}
@@ -838,7 +840,7 @@ export function CourseTextReader({
                         <div key={idx} className="my-4 p-4 rounded-xl bg-purple-500/10 border border-purple-500/25 space-y-1.5">
                           <div className="flex items-center gap-2 text-purple-400 text-xs font-bold uppercase tracking-wider">
                             <FileText className="w-4 h-4" />
-                            <span>{block.calloutTitle || 'Exemple'}</span>
+                            <span>{block.calloutTitle || t('reader.callouts.exemple')}</span>
                           </div>
                           <div className="text-white/85 leading-relaxed">
                             {renderHighlightedText(block.content)}
@@ -851,7 +853,7 @@ export function CourseTextReader({
                         <div key={idx} className="my-5 p-4 sm:p-5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 space-y-1.5 shadow-sm">
                           <div className="flex items-center gap-2 text-cyan-400 text-xs font-bold uppercase tracking-wider">
                             <Compass className="w-4 h-4" />
-                            <span>{block.calloutTitle || 'Théorème / Propriété'}</span>
+                            <span>{block.calloutTitle || t('reader.callouts.theoreme')}</span>
                           </div>
                           <div className="text-white/95 leading-relaxed font-mono font-medium">
                             {renderHighlightedText(block.content)}
@@ -864,7 +866,7 @@ export function CourseTextReader({
                       <div key={idx} className="my-4 p-4 rounded-xl bg-[#ff9800]/10 border border-[#ff9800]/30 space-y-1.5">
                         <div className="flex items-center gap-2 text-[#ff9800] text-xs font-bold uppercase tracking-wider">
                           <AlertTriangle className="w-4 h-4" />
-                          <span>{block.calloutTitle || 'Important'}</span>
+                          <span>{block.calloutTitle || t('reader.callouts.important')}</span>
                         </div>
                         <div className="text-white/90 leading-relaxed font-medium">
                           {renderHighlightedText(block.content)}
@@ -967,7 +969,7 @@ export function CourseTextReader({
               value={text}
               onChange={(e) => setText(e.target.value)}
               className="w-full flex-1 bg-transparent text-white text-sm focus:outline-none leading-relaxed resize-none font-mono p-4 custom-scrollbar rounded-xl border border-sphera-border/50 bg-sphera-surface/30"
-              placeholder="Écrivez ou modifiez votre cours ici..."
+              placeholder={t('reader.editPlaceholder')}
             />
           </div>
         )}

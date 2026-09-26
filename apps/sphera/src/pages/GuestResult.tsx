@@ -1,11 +1,13 @@
 import React from 'react'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { SpheraHeader } from '../components/layout/SpheraHeader'
 import { FicheView, QuizView, FlashcardsView, AnnaleView } from '../components/app/ResultViews'
 import { ArrowLeft, Share2, Download, AlertCircle } from 'lucide-react'
 import { useSpheraAuth } from '../contexts/SpheraAuthContext'
 
 export default function GuestResult() {
+  const { t } = useTranslation('study')
   const location = useLocation()
   const navigate = useNavigate()
   const { isAuthenticated } = useSpheraAuth()
@@ -24,11 +26,11 @@ export default function GuestResult() {
 
   const getToolName = () => {
     switch(tool) {
-      case 'fiche': return 'Fiche de révision'
-      case 'quiz': return 'Quiz interactif'
-      case 'flashcards': return 'Flashcards'
-      case 'annale': return 'Correction d\'annale'
-      default: return 'Génération'
+      case 'fiche': return t('guestResult.toolNames.fiche')
+      case 'quiz': return t('guestResult.toolNames.quiz')
+      case 'flashcards': return t('guestResult.toolNames.flashcards')
+      case 'annale': return t('guestResult.toolNames.annale')
+      default: return t('guestResult.toolNames.default')
     }
   }
 
@@ -40,7 +42,13 @@ export default function GuestResult() {
         <div className="bg-orange-500/10 border-b border-orange-500/20 py-3 px-4 text-center">
           <p className="text-sm text-orange-400 flex items-center justify-center gap-2">
             <AlertCircle className="w-4 h-4" />
-            <span>Résultat non sauvegardé. <Link to="/login" className="font-bold underline hover:text-orange-300">Connecte-toi</Link> pour conserver tes révisions.</span>
+            <span>
+              {t('guestResult.notSavedWarning')}{' '}
+              <Link to="/login" className="font-bold underline hover:text-orange-300">
+                {t('guestResult.connectLink')}
+              </Link>{' '}
+              {t('guestResult.toKeepRevisions')}
+            </span>
           </p>
         </div>
       )}
@@ -54,7 +62,7 @@ export default function GuestResult() {
               onClick={() => navigate('/dashboard')}
               className="text-sm text-sphera-text-muted hover:text-white flex items-center gap-2 mb-3 transition-colors"
             >
-              <ArrowLeft className="w-4 h-4" /> Retour
+              <ArrowLeft className="w-4 h-4" /> {t('guestResult.back')}
             </button>
             <h1 className="font-display text-2xl font-bold text-white flex items-center gap-3">
               {filename}
@@ -65,17 +73,17 @@ export default function GuestResult() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button className="btn btn-outline border-sphera-border text-white hover:bg-sphera-surface-2 p-2 rounded-lg" title="Partager">
+            <button className="btn btn-outline border-sphera-border text-white hover:bg-sphera-surface-2 p-2 rounded-lg" title={t('guestResult.share')}>
               <Share2 className="w-5 h-5" />
             </button>
-            <button className="btn btn-outline border-sphera-border text-white hover:bg-sphera-surface-2 p-2 rounded-lg" title="Télécharger PDF">
+            <button className="btn btn-outline border-sphera-border text-white hover:bg-sphera-surface-2 p-2 rounded-lg" title={t('guestResult.download')}>
               <Download className="w-5 h-5" />
             </button>
             <button 
               onClick={() => navigate('/app')}
               className="sphera-primary-btn py-2 px-4 text-sm"
             >
-              Nouvelle génération
+              {t('guestResult.newGeneration')}
             </button>
           </div>
         </div>

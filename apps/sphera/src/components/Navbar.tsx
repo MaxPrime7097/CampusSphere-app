@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useTranslation, LanguageSwitcher } from '@cs/i18n'
+import { LanguageSwitcher } from '@cs/i18n'
+import { useTranslation } from 'react-i18next'
 import { useSpheraAuth } from '../contexts/SpheraAuthContext'
 import { logoutFromSphera } from '../services/spheraApi'
 

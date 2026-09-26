@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { FileText, BrainCircuit, List, CheckCircle2, HelpCircle, CircleSmall, Lightbulb, ChevronDown, ChevronRight, Timer, Trophy, XCircle, RotateCcw, RefreshCcw, Code2, Calculator, AlignLeft, Target, BookOpen, BookMarked, Award, Layers, Zap, GitFork, AudioLines, Play, Pause, Volume2, Download, LocateFixed, Sparkles, Maximize2, Minimize2, Network, Eye, Check, Copy, Search, ChevronsUpDown, Filter, X, ChevronUp } from 'lucide-react'
 import ReactFlow, { Background, Controls, type Node, type Edge, type ReactFlowInstance } from 'reactflow'
 import 'reactflow/dist/style.css'
@@ -69,6 +70,7 @@ const formatText = (text: any) => {
 };
 
 export function FicheView({ content, sourceName }: { content: any; sourceName?: string }) {
+  const { t, i18n } = useTranslation('study')
   const f = content?.fiche || content || {}
   const [openDef, setOpenDef] = useState<number | null>(null)
   const { isDownloading, generateFiche } = useDownloadPDF()
@@ -80,7 +82,7 @@ export function FicheView({ content, sourceName }: { content: any; sourceName?: 
         <DownloadPDFButton
           onDownload={() => generateFiche(content, sourceName)}
           isDownloading={isDownloading}
-          label="Télécharger la fiche"
+          label={t('resultViews.ficheDownload')}
         />
       </div>
 
@@ -90,8 +92,10 @@ export function FicheView({ content, sourceName }: { content: any; sourceName?: 
         <div className="flex items-center justify-between pb-4 border-b border-sphera-border">
           <div className="flex items-center gap-3">
             <div>
-              <p className="text-xs text-sphera-green font-semibold">Fiche de révision</p>
-              <p className="text-xs text-sphera-text-muted">Généré le {new Date().toLocaleDateString('fr-FR')}</p>
+              <p className="text-xs text-sphera-green font-semibold">{t('resultViews.ficheTitle')}</p>
+              <p className="text-xs text-sphera-text-muted">
+                {t('resultViews.generatedOn', { date: new Date().toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'fr-FR') })}
+              </p>
             </div>
           </div>
           <a
@@ -109,7 +113,7 @@ export function FicheView({ content, sourceName }: { content: any; sourceName?: 
         {f?.resume && (
           <div className="sphera-card p-6">
             <h3 className="text-blue-400 text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
-              <FileText className="w-4 h-4" /> Résumé
+              <FileText className="w-4 h-4" /> {t('resultViews.summary')}
             </h3>
             <div className="text-sphera-text-muted leading-relaxed">{formatText(f.resume)}</div>
           </div>
@@ -117,7 +121,7 @@ export function FicheView({ content, sourceName }: { content: any; sourceName?: 
         {Array.isArray(f?.points_cles) && f.points_cles.length > 0 && (
           <div className="sphera-card p-6">
             <h3 className="text-sphera-green text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4" /> Points clés
+              <CheckCircle2 className="w-4 h-4" /> {t('resultViews.keyPoints')}
             </h3>
             <ul className="flex flex-col gap-2">
               {f.points_cles.map((p: string, i: number) => (
@@ -131,7 +135,7 @@ export function FicheView({ content, sourceName }: { content: any; sourceName?: 
         {Array.isArray(f?.definitions) && f.definitions.length > 0 && (
           <div className="sphera-card p-6">
             <h3 className="text-purple-400 text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
-              <List className="w-4 h-4" /> Définitions
+              <List className="w-4 h-4" /> {t('resultViews.definitions')}
             </h3>
             <div className="flex flex-col gap-3">
               {f.definitions.map((d: any, i: number) => (
@@ -156,7 +160,7 @@ export function FicheView({ content, sourceName }: { content: any; sourceName?: 
         {Array.isArray(f?.formules) && f.formules.length > 0 && (
           <div className="sphera-card p-6">
             <h3 className="text-pink-400 text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
-              <Calculator className="w-4 h-4" /> Formules &amp; Concepts Abstraits
+              <Calculator className="w-4 h-4" /> {t('resultViews.formulesTitle')}
             </h3>
             <ul className="flex flex-col gap-3">
               {f.formules.map((p: string, i: number) => (
@@ -170,7 +174,7 @@ export function FicheView({ content, sourceName }: { content: any; sourceName?: 
         {Array.isArray(f?.a_retenir) && f.a_retenir.length > 0 && (
           <div className="sphera-card p-6">
             <h3 className="text-yellow-400 text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
-              <Lightbulb className="w-4 h-4" /> À retenir
+              <Lightbulb className="w-4 h-4" /> {t('resultViews.toRemember')}
             </h3>
             <ul className="flex flex-wrap gap-2">
               {f.a_retenir.map((p: string, i: number) => (
@@ -190,6 +194,7 @@ export function FicheView({ content, sourceName }: { content: any; sourceName?: 
 const TIMER_SECONDS = 30
 
 export function QuizView({ content }: { content: any }) {
+  const { t } = useTranslation('study')
   const qData = content?.quiz || content || {}
   const questions = Array.isArray(qData.questions) ? qData.questions : []
   
@@ -202,7 +207,7 @@ export function QuizView({ content }: { content: any }) {
   const [answers, setAnswers] = useState<Array<{ selected: string | null; correct: boolean }>>([])
   const [showExplanation, setShowExplanation] = useState(false)
 
-  if (!questions.length) return <p className="text-sphera-text-muted">Aucun quiz disponible.</p>
+  if (!questions.length) return <p className="text-sphera-text-muted">{t('resultViews.emptyQuiz')}</p>
 
   const total = questions.length
   const currentQuestion = questions[currentIndex]
@@ -264,10 +269,10 @@ export function QuizView({ content }: { content: any }) {
   if (finished) {
     const pct = Math.round((score / total) * 100);
     
-    let message = "Continue tes efforts !";
-    if (pct === 100) { message = "Parfait ! Un sans-faute absolu !"; }
-    else if (pct >= 80) { message = "Excellent travail !"; }
-    else if (pct >= 60) { message = "Bon score, mais tu peux faire mieux !"; }
+    let message = t('resultViews.quizMessageKeepGoing');
+    if (pct === 100) { message = t('resultViews.quizMessagePerfect'); }
+    else if (pct >= 80) { message = t('resultViews.quizMessageGreat'); }
+    else if (pct >= 60) { message = t('resultViews.quizMessageGood'); }
 
     return (
       <div className="space-y-6 max-w-2xl mx-auto pb-8">
@@ -279,14 +284,14 @@ export function QuizView({ content }: { content: any }) {
           <p className="text-3xl font-bold text-white mb-2">
             {score} <span className="text-sphera-text-muted font-normal text-xl">/ {total}</span>
           </p>
-          <p className="text-sphera-text-muted">{pct}% de réussite</p>
+          <p className="text-sphera-text-muted">{t('resultViews.successRate', { pct })}</p>
           <div className="h-2 w-full bg-sphera-bg rounded-full overflow-hidden mt-6">
             <div className="h-full bg-sphera-green transition-all" style={{ width: `${pct}%` }} />
           </div>
         </div>
 
         <div className="space-y-3">
-          <h3 className="font-semibold text-white mb-4">Récapitulatif</h3>
+          <h3 className="font-semibold text-white mb-4">{t('resultViews.recapTitle')}</h3>
           {answers.map((ans, i) => (
             <div key={i} className={`flex flex-col sm:flex-row gap-3 rounded-xl p-4 border text-sm ${ans.correct ? "border-sphera-green/30 bg-sphera-green/5" : "border-red-500/30 bg-red-500/5"}`}>
               <div className="flex items-center gap-3 w-full">
@@ -305,7 +310,7 @@ export function QuizView({ content }: { content: any }) {
         </div>
 
         <button onClick={handleRestart} className="sphera-primary-btn w-full justify-center py-3 mt-4">
-          <RotateCcw className="h-4 w-4 mr-2" /> Recommencer le quiz
+          <RotateCcw className="h-4 w-4 mr-2" /> {t('resultViews.quizRestartBtn')}
         </button>
       </div>
     );
@@ -322,7 +327,7 @@ export function QuizView({ content }: { content: any }) {
         </span>
         <div className="bg-sphera-surface px-3 py-1.5 rounded-full border border-sphera-border flex items-center gap-2">
           <Trophy className="h-3.5 w-3.5 text-yellow-500" />
-          <span className="text-white font-semibold">{score} point{score > 1 ? "s" : ""}</span>
+          <span className="text-white font-semibold">{t('resultViews.points', { count: score })}</span>
         </div>
       </div>
 
@@ -387,7 +392,7 @@ export function QuizView({ content }: { content: any }) {
       {/* Timeout feedback */}
       {selectedOption === "__timeout__" && (
         <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 text-sm text-yellow-500">
-          ⏰ <strong>Temps écoulé !</strong> La bonne réponse était l'option <strong>{currentQuestion.bonne_reponse}</strong>.
+          {t('resultViews.timeoutMsg', { answer: currentQuestion.bonne_reponse })}
         </div>
       )}
 
@@ -403,12 +408,12 @@ export function QuizView({ content }: { content: any }) {
             {selectedOption === currentQuestion.bonne_reponse ? (
               <>
                 <CheckCircle2 className="w-5 h-5 text-sphera-green" />
-                <span>Bonne réponse !</span>
+                <span>{t('resultViews.correctAnswer')}</span>
               </>
             ) : (
               <>
                 <XCircle className="w-5 h-5 text-red-400" />
-                <span>Réponse incorrecte</span>
+                <span>{t('resultViews.incorrectAnswer')}</span>
               </>
             )}
           </p>
@@ -419,9 +424,9 @@ export function QuizView({ content }: { content: any }) {
       {selectedOption !== null && (
         <button onClick={handleNext} className="sphera-primary-btn w-full justify-center py-4 mt-4 text-base">
           {currentIndex + 1 >= total ? (
-            <span className="flex items-center gap-2"><Trophy className="h-5 w-5" /> Voir mon score</span>
+            <span className="flex items-center gap-2"><Trophy className="h-5 w-5" /> {t('resultViews.quizSeeResults')}</span>
           ) : (
-            <span className="flex items-center gap-2">Question suivante <ChevronRight className="h-5 w-5" /></span>
+            <span className="flex items-center gap-2">{t('resultViews.quizNextQuestion')} <ChevronRight className="h-5 w-5" /></span>
           )}
         </button>
       )}
@@ -430,6 +435,7 @@ export function QuizView({ content }: { content: any }) {
 }
 
 export function FlashcardsView({ content }: { content: any }) {
+  const { t } = useTranslation('study')
   const fData = content?.flashcards || content || {}
   const cartes = Array.isArray(fData.cartes) ? fData.cartes : []
   const total = cartes.length
@@ -440,7 +446,7 @@ export function FlashcardsView({ content }: { content: any }) {
   const [review, setReview] = useState<Set<number>>(new Set())
   const [finished, setFinished] = useState(false)
 
-  if (!total) return <p className="text-sphera-text-muted">Aucune flashcard générée.</p>
+  if (!total) return <p className="text-sphera-text-muted">{t('resultViews.emptyFlashcards')}</p>
 
   const currentCard = cartes[currentIndex]
 
@@ -491,10 +497,10 @@ export function FlashcardsView({ content }: { content: any }) {
             {knownCount === total ? <Trophy className="w-8 h-8" /> : <BookOpen className="w-8 h-8" />}
           </div>
           <p className="text-3xl font-bold text-white mb-2">
-            {knownCount} <span className="text-sphera-text-muted font-normal text-xl">/ {total} mémorisées</span>
+            {knownCount} <span className="text-sphera-text-muted font-normal text-xl">/ {total} {t('resultViews.memorized', { count: total })}</span>
           </p>
           <p className="text-sphera-text-muted">
-            {reviewCount > 0 ? `${reviewCount} carte${reviewCount > 1 ? "s" : ""} à revoir` : "Toutes les cartes sont maîtrisées !"}
+            {reviewCount > 0 ? t('resultViews.cardsToReview', { count: reviewCount }) : t('resultViews.allMastered')}
           </p>
           <div className="h-2 w-full bg-sphera-bg rounded-full overflow-hidden mt-6">
             <div className="h-full bg-sphera-green transition-all" style={{ width: `${(knownCount / total) * 100}%` }} />
@@ -504,7 +510,7 @@ export function FlashcardsView({ content }: { content: any }) {
         {reviewCards.length > 0 && (
           <div className="space-y-3">
             <h3 className="font-semibold text-white flex items-center gap-2 mb-4">
-              <RefreshCcw className="h-5 w-5 text-yellow-500" /> Cartes à revoir
+              <RefreshCcw className="h-5 w-5 text-yellow-500" /> {t('resultViews.flashcardsToReview')}
             </h3>
             {reviewCards.map((card: any, i: number) => (
               <div key={i} className="border border-red-500/30 bg-red-500/5 rounded-xl p-4">
@@ -517,11 +523,11 @@ export function FlashcardsView({ content }: { content: any }) {
 
         <div className="flex flex-col sm:flex-row gap-3 pt-4">
           <button onClick={handleRestart} className="flex-1 py-3 px-4 rounded-xl bg-sphera-surface border border-sphera-border text-white font-medium flex justify-center items-center gap-2 hover:bg-sphera-surface-2 transition-colors">
-            <RotateCcw className="h-4 w-4" /> Tout recommencer
+            <RotateCcw className="h-4 w-4" /> {t('resultViews.restartAll')}
           </button>
           {reviewCards.length > 0 && (
             <button onClick={handleRestartReview} className="flex-1 py-3 px-4 rounded-xl bg-sphera-green text-black font-semibold flex justify-center items-center gap-2 hover:bg-green-400 transition-colors">
-              <RefreshCcw className="h-4 w-4" /> Revoir {reviewCount} carte{reviewCount > 1 ? "s" : ""}
+              <RefreshCcw className="h-4 w-4" /> {t('resultViews.reviewCardsBtn', { count: reviewCount })}
             </button>
           )}
         </div>
@@ -539,12 +545,12 @@ export function FlashcardsView({ content }: { content: any }) {
         <div className="flex gap-2">
           {known.size > 0 && (
             <span className="bg-sphera-green/10 text-sphera-green border border-sphera-green/20 px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-              <CheckCircle2 className="h-3.5 w-3.5" /> {known.size} sues
+              <CheckCircle2 className="h-3.5 w-3.5" /> {t('resultViews.knownBadge', { count: known.size })}
             </span>
           )}
           {review.size > 0 && (
             <span className="bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-              ↩ {review.size} à revoir
+              ↩ {t('resultViews.reviewBadge', { count: review.size })}
             </span>
           )}
         </div>
@@ -566,7 +572,7 @@ export function FlashcardsView({ content }: { content: any }) {
           <div className="absolute inset-0 backface-hidden rounded-2xl p-8 flex flex-col items-center justify-center text-center bg-gradient-to-br from-sphera-surface to-sphera-surface-2 border-2 border-sphera-border shadow-xl hover:border-sphera-border/80">
             <div className="absolute top-6">
               <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-sphera-border text-sphera-text-muted">
-                Question / Terme
+                {t('resultViews.questionTerm')}
               </span>
             </div>
             
@@ -575,7 +581,7 @@ export function FlashcardsView({ content }: { content: any }) {
             </div>
 
             <p className="absolute bottom-6 text-xs text-sphera-text-muted font-medium flex items-center gap-2">
-              Cliquez pour retourner <RotateCcw className="w-3 h-3" />
+              {t('resultViews.clickToFlip')} <RotateCcw className="w-3 h-3" />
             </p>
           </div>
 
@@ -583,7 +589,7 @@ export function FlashcardsView({ content }: { content: any }) {
           <div className="absolute inset-0 backface-hidden rotate-y-180 rounded-2xl p-8 flex flex-col items-center justify-center text-center bg-gradient-to-br from-sphera-green/10 to-sphera-surface-2 border-2 border-sphera-green/50 shadow-[0_0_40px_rgba(34,197,94,0.15)]">
             <div className="absolute top-6">
               <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-sphera-green/30 text-sphera-green">
-                Réponse / Définition
+                {t('resultViews.answerDef')}
               </span>
             </div>
             
@@ -602,13 +608,13 @@ export function FlashcardsView({ content }: { content: any }) {
               onClick={(e) => { e.stopPropagation(); handleReview(); }}
               className="flex-1 py-3.5 rounded-xl border-2 border-red-500/40 text-red-400 font-semibold hover:bg-red-500/10 hover:border-red-500 transition-colors flex justify-center items-center gap-2"
             >
-              ↩ À revoir
+              ↩ {t('resultViews.toReview')}
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); handleKnew(); }}
               className="flex-1 py-3.5 rounded-xl bg-sphera-green text-black font-bold hover:bg-green-400 transition-colors flex justify-center items-center gap-2"
             >
-              <CheckCircle2 className="h-5 w-5" /> Je savais !
+              <CheckCircle2 className="h-5 w-5" /> {t('resultViews.iKnewIt')}
             </button>
           </div>
         ) : (
@@ -616,7 +622,7 @@ export function FlashcardsView({ content }: { content: any }) {
             onClick={() => setFlipped(true)}
             className="w-full py-3.5 rounded-xl border border-sphera-border text-white bg-sphera-surface hover:bg-sphera-surface-2 font-medium transition-colors flex justify-center items-center gap-2"
           >
-            <RotateCcw className="h-4 w-4" /> Retourner la carte
+            <RotateCcw className="h-4 w-4" /> {t('resultViews.flipCard')}
           </button>
         )}
       </div>
@@ -1016,6 +1022,7 @@ function QuestionCard({
 }
 
 export function AnnaleView({ annale, sourceName }: { annale: any; sourceName?: string }) {
+  const { t } = useTranslation('study')
   const rawAnnale = annale || {};
   let content = rawAnnale.content !== undefined ? rawAnnale.content : rawAnnale;
   if (typeof content === 'string') {
@@ -1113,7 +1120,7 @@ export function AnnaleView({ annale, sourceName }: { annale: any; sourceName?: s
             className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-sphera-surface hover:bg-sphera-surface-2 text-white border border-sphera-border transition-colors cursor-pointer"
           >
             <ChevronsUpDown className="w-3.5 h-3.5 text-[#ff9800]" />
-            <span>{areAllExpanded ? 'Tout replier' : 'Tout déplier'}</span>
+            <span>{areAllExpanded ? t('resultViews.collapseAll') : t('resultViews.expandAll')}</span>
           </button>
         </div>
 
@@ -1121,7 +1128,7 @@ export function AnnaleView({ annale, sourceName }: { annale: any; sourceName?: s
           <DownloadPDFButton
             onDownload={() => generateAnnale(annale, sourceName || content?.titre)}
             isDownloading={isDownloading}
-            label="Télécharger la correction"
+            label={t('resultViews.downloadCorrection')}
           />
         </div>
       </div>
@@ -1132,13 +1139,13 @@ export function AnnaleView({ annale, sourceName }: { annale: any; sourceName?: s
           <div className="flex items-center gap-3">
             <div>
               <p className="text-xs text-[#ff9800] font-semibold flex items-center gap-2">
-                <span>Correction d'annale d'examen</span>
+                <span>{t('resultViews.examCorrection')}</span>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-sphera-surface border border-sphera-border text-sphera-text-muted font-normal">
-                  {mode === 'complete' ? 'Mode complet' : 'Mode rapide'}
+                  {mode === 'complete' ? t('resultViews.completeMode') : t('resultViews.rapidMode')}
                 </span>
               </p>
               <p className="text-xs text-sphera-text-muted mt-1">
-                {totalQuestions} question{totalQuestions > 1 ? 's' : ''} corrigée{totalQuestions > 1 ? 's' : ''}
+                {t('resultViews.questionsCorrected', { count: totalQuestions })}
               </p>
             </div>
           </div>
@@ -1146,7 +1153,7 @@ export function AnnaleView({ annale, sourceName }: { annale: any; sourceName?: s
         </div>
 
         <h2 className="text-xl sm:text-2xl font-bold text-white font-display">
-          {content?.titre || rawAnnale?.source_title || rawAnnale?.source_filename || "Correction d'annale"}
+          {content?.titre || rawAnnale?.source_title || rawAnnale?.source_filename || t('resultViews.annaleTitle')}
         </h2>
 
         {/* Filter and Search Bar */}
@@ -1158,7 +1165,7 @@ export function AnnaleView({ annale, sourceName }: { annale: any; sourceName?: s
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Rechercher une question, une notion, un mot-clé..."
+              placeholder={t('resultViews.searchQuestionPlaceholder')}
               className="w-full pl-10 pr-9 py-2 bg-sphera-surface rounded-xl border border-sphera-border text-xs sm:text-sm text-white placeholder:text-sphera-text-muted/60 focus:outline-none focus:border-[#ff9800]/50 transition-colors"
             />
             {searchQuery && (
@@ -1175,7 +1182,7 @@ export function AnnaleView({ annale, sourceName }: { annale: any; sourceName?: s
           {/* Type Filter Pills */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
             {[
-              { id: 'all', label: 'Tous', count: typeCounts.all },
+              { id: 'all', label: t('resultViews.allQuestions'), count: typeCounts.all },
               { id: 'qcm', label: 'QCM', count: typeCounts.qcm },
               { id: 'code', label: 'Code', count: typeCounts.code },
               { id: 'preuve', label: 'Preuve', count: typeCounts.preuve },
@@ -1342,6 +1349,7 @@ function getBranchColor(couleurStr?: string, index: number = 0) {
 }
 
 export function MindmapView({ content }: { content: any }) {
+  const { t } = useTranslation('study')
   const mapData = content?.mindmap || content || {};
   const centralNode = mapData?.noeud_central || mapData?.titre || "Concept Central";
   const branches: any[] = Array.isArray(mapData?.branches) ? mapData.branches : [];
@@ -1409,7 +1417,7 @@ export function MindmapView({ content }: { content: any }) {
               {centralNode}
             </span>
             <span className="text-[10px] text-emerald-400/60 mt-1 font-mono">
-              {branches.length} thèmes · Cliquer pour tout plier/déplier
+              {t('resultViews.themesCount', { count: branches.length })}
             </span>
           </div>
         ),
@@ -1614,7 +1622,7 @@ export function MindmapView({ content }: { content: any }) {
                 }`}
               >
                 <Network className="w-3.5 h-3.5" />
-                <span>Carte Visuelle</span>
+                <span>{t('resultViews.canvasMode')}</span>
               </button>
               <button
                 type="button"
@@ -1626,7 +1634,7 @@ export function MindmapView({ content }: { content: any }) {
                 }`}
               >
                 <List className="w-3.5 h-3.5" />
-                <span>Plan Structuré</span>
+                <span>{t('resultViews.treeMode')}</span>
               </button>
             </div>
 
@@ -1635,17 +1643,17 @@ export function MindmapView({ content }: { content: any }) {
               type="button"
               onClick={expandAll}
               className="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-sphera-surface text-sphera-text-muted hover:text-white border border-sphera-border transition-colors"
-              title="Déplier toutes les branches"
+              title={t('resultViews.expandAll')}
             >
-              Tout déplier
+              {t('resultViews.expandAll')}
             </button>
             <button
               type="button"
               onClick={collapseAll}
               className="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-sphera-surface text-sphera-text-muted hover:text-white border border-sphera-border transition-colors"
-              title="Replier toutes les branches"
+              title={t('resultViews.collapseAll')}
             >
-              Tout replier
+              {t('resultViews.collapseAll')}
             </button>
 
             {viewMode === 'canvas' && (
@@ -1655,10 +1663,10 @@ export function MindmapView({ content }: { content: any }) {
                   type="button"
                   onClick={handleRecenter}
                   className="px-3 py-1.5 text-xs font-medium rounded-lg bg-sphera-surface text-emerald-400 hover:bg-emerald-500/10 border border-emerald-500/30 transition-colors inline-flex items-center gap-1.5"
-                  title="Centrer la carte mentale"
+                  title={t('resultViews.recenter')}
                 >
                   <LocateFixed className="w-3.5 h-3.5" />
-                  <span>Centrer</span>
+                  <span>{t('resultViews.recenter')}</span>
                 </button>
 
                 <button
@@ -1831,6 +1839,7 @@ function normalizeSpeaker(rawSpeaker: unknown, index: number = 0): 'A' | 'B' {
 }
 
 export function AudioSummaryView({ content }: { content: any }) {
+  const { t } = useTranslation('study')
   const audioData = content?.audio || content || {};
   const dialogue: Array<{ speaker: string; text: string }> = Array.isArray(audioData?.dialogue) ? audioData.dialogue : [];
   const audioUrl: string | undefined = audioData?.audioUrl;
@@ -1953,7 +1962,7 @@ export function AudioSummaryView({ content }: { content: any }) {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <AudioLines className="w-5 h-5 text-teal-400" />
-            <span className="text-xs font-bold uppercase tracking-wider text-teal-400">Podcast & Résumé Audio</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-teal-400">{t('resultViews.podcastTitle')}</span>
           </div>
           {audioUrl && (
             <a
@@ -1962,7 +1971,7 @@ export function AudioSummaryView({ content }: { content: any }) {
               target="_blank"
               rel="noopener noreferrer"
               className="p-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors"
-              title="Télécharger l'audio MP3"
+              title={t('resultViews.downloadMp3')}
             >
               <Download className="w-4 h-4" />
             </a>
@@ -2022,8 +2031,8 @@ export function AudioSummaryView({ content }: { content: any }) {
             <div className="flex items-center gap-3">
               <Volume2 className="w-5 h-5 text-teal-400" />
               <div>
-                <p className="text-sm font-semibold text-white">Lecture audio du dialogue</p>
-                <p className="text-xs text-sphera-text-muted">Écouter la synthèse vocale des 2 étudiants</p>
+                <p className="text-sm font-semibold text-white">{t('resultViews.webSpeechTitle')}</p>
+                <p className="text-xs text-sphera-text-muted">{t('resultViews.webSpeechSub')}</p>
               </div>
             </div>
             <button
@@ -2032,7 +2041,7 @@ export function AudioSummaryView({ content }: { content: any }) {
               className="sphera-primary-btn py-2 px-4 text-xs inline-flex items-center gap-2"
             >
               {isSpeakingWebSpeech ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-              <span>{isSpeakingWebSpeech ? 'Arrêter la lecture' : 'Lancer la voix'}</span>
+              <span>{isSpeakingWebSpeech ? t('resultViews.stopPlayback') : t('resultViews.startVoice')}</span>
             </button>
           </div>
         )}
@@ -2041,16 +2050,18 @@ export function AudioSummaryView({ content }: { content: any }) {
       {/* Dialogue Script */}
       <div className="space-y-4">
         <div className="flex items-center justify-between px-1">
-          <h3 className="font-bold text-white text-base">Script du dialogue ({dialogue.length} répliques)</h3>
-          <span className="text-xs text-sphera-text-muted">~{Math.max(1, Math.round(dialogue.length * 0.4))} min de discussion</span>
+          <h3 className="font-bold text-white text-base">{t('resultViews.scriptTitle', { count: dialogue.length })}</h3>
+          <span className="text-xs text-sphera-text-muted">
+            {t('resultViews.discussionTime', { minutes: Math.max(1, Math.round(dialogue.length * 0.4)) })}
+          </span>
         </div>
 
         {normalizedDialogue.length === 0 ? (
           <div className="p-8 text-center bg-sphera-surface-2 rounded-2xl border border-sphera-border opacity-60">
             <AudioLines className="w-12 h-12 text-sphera-text-muted mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-white mb-1">Aucun dialogue audio</h3>
+            <h3 className="text-lg font-medium text-white mb-1">{t('resultViews.noAudioDialogue')}</h3>
             <p className="text-sm text-sphera-text-muted max-w-md mx-auto">
-              Le script de discussion n'a pas été généré pour ce cours.
+              {t('resultViews.noAudioDialogueDesc')}
             </p>
           </div>
         ) : (
@@ -2077,7 +2088,7 @@ export function AudioSummaryView({ content }: { content: any }) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-bold text-white">
-                      {isSpeakerA ? 'Étudiant A (Explicateur)' : 'Étudiant B (Curieux)'}
+                      {isSpeakerA ? t('resultViews.speakerA') : t('resultViews.speakerB')}
                     </span>
                     <span className="text-[10px] text-sphera-text-muted font-mono">#{idx + 1}</span>
                   </div>

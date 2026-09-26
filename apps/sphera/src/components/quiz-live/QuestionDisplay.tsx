@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface QuestionDisplayProps {
   question: string;
@@ -23,6 +24,7 @@ export function QuestionDisplay({
   onAnswer,
   isHost = false
 }: QuestionDisplayProps) {
+  const { t } = useTranslation('live');
   
   const colors = [
     'bg-red-500',
@@ -35,11 +37,11 @@ export function QuestionDisplay({
     <div className="w-full max-w-4xl mx-auto flex flex-col gap-6">
       <div className="text-center flex items-center justify-center gap-3">
         <span className="text-sphera-text-muted text-sm font-medium uppercase tracking-wider">
-          Question {questionIndex + 1} / {totalQuestions}
+          {t('questionDisplay.questionCounter', { current: questionIndex + 1, total: totalQuestions })}
         </span>
         {points !== undefined && (
           <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sphera-green/10 text-sphera-green border border-sphera-green/30">
-            {points} pts
+            {points} {t('questionDisplay.pts')}
           </span>
         )}
       </div>

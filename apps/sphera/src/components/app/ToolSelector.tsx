@@ -1,5 +1,5 @@
 import React from 'react'
-import { useTranslation } from '@cs/i18n'
+import { useTranslation } from 'react-i18next'
 import { FileText, SquareStack, BrainCircuit, CheckCircle2, Layers, GitFork, AudioLines, MessageSquare } from 'lucide-react'
 import type { ToolType } from '../../services/spheraApi'
 export type { ToolType }

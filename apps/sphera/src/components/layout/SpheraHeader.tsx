@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useTranslation, LanguageSwitcher } from '@cs/i18n'
+import { LanguageSwitcher } from '@cs/i18n'
+import { useTranslation } from 'react-i18next'
 import { useSpheraAuth } from '../../contexts/SpheraAuthContext'
 import { LogOut, Menu, X, Zap, ArrowRight } from 'lucide-react'
 import { QuotaIndicator } from '../app/QuotaIndicator'

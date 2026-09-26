@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useQuizSocket } from '../hooks/useQuizSocket';
 import { TimerBar } from '../components/quiz-live/TimerBar';
 import { QuestionDisplay } from '../components/quiz-live/QuestionDisplay';
@@ -12,6 +13,7 @@ import confetti from 'canvas-confetti';
 import { playSound, preloadSounds, toggleMute, getMuteState } from '../utils/audioManager';
 
 export default function QuizLiveJoin() {
+  const { t } = useTranslation('live');
   const [isMuted, setIsMuted] = useState(getMuteState());
 
   const toggleSound = () => {
@@ -52,7 +54,7 @@ export default function QuizLiveJoin() {
 
   const handleJoin = async () => {
     if (!roomCodeInput.trim() || !displayName.trim()) {
-      setJoinError('Veuillez entrer un code et un pseudo.');
+      setJoinError(t('join.errorMissingFields'));
       return;
     }
     
@@ -64,10 +66,10 @@ export default function QuizLiveJoin() {
       if (res && (res as any).data) {
         setJoinedRoomCode(code);
       } else {
-        setJoinError('Session introuvable.');
+        setJoinError(t('join.errorNotFound'));
       }
     } catch (err: any) {
-      setJoinError(err.message || 'Session introuvable ou erreur de connexion.');
+      setJoinError(err.message || t('join.errorConnection'));
     } finally {
       setJoining(false);
     }
@@ -172,15 +174,15 @@ export default function QuizLiveJoin() {
       }}></div>
 
       <Helmet>
-        <title>Rejoindre un Quiz · Sphera Live</title>
+        <title>{t('join.pageTitle')}</title>
       </Helmet>
 
-      {/* Back to Sphera Live Home button (Visible during join and waiting lobby, hidden during active quiz) */}
+      {/* Back to Sphera Live Home button */}
       {(phase === 'join' || phase === 'waiting') && (
         <Link
           to="/live"
           className="absolute top-6 left-6 z-50 inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-sphera-surface-2/90 backdrop-blur border border-sphera-border text-sphera-text-muted hover:text-white hover:border-sphera-green/50 transition-all text-xs font-semibold shadow-lg group"
-          title="Retour à Sphera Live"
+          title={t('join.backToLive')}
         >
           <ArrowLeft className="w-4 h-4 text-sphera-green group-hover:-translate-x-0.5 transition-transform" />
           <span>Sphera Live</span>
@@ -191,7 +193,7 @@ export default function QuizLiveJoin() {
       <button 
         onClick={toggleSound}
         className="absolute top-6 right-6 z-50 p-3 rounded-full bg-sphera-surface-2 border border-sphera-border text-white hover:bg-sphera-surface transition-colors shadow-lg"
-        title={isMuted ? "Activer le son" : "Couper le son"}
+        title={isMuted ? t('join.soundUnmute') : t('join.soundMute')}
       >
         {isMuted ? <VolumeX className="w-6 h-6 text-red-500" /> : <Volume2 className="w-6 h-6 text-sphera-green" />}
       </button>
@@ -208,29 +210,29 @@ export default function QuizLiveJoin() {
               </div>
             </div>
 
-            <h2 className="text-3xl font-display font-bold text-white mb-2 text-center tracking-tight">Rejoindre</h2>
-            <p className="text-sphera-text-muted text-center mb-8">Entrez le code de la partie pour commencer.</p>
+            <h2 className="text-3xl font-display font-bold text-white mb-2 text-center tracking-tight">{t('join.title')}</h2>
+            <p className="text-sphera-text-muted text-center mb-8">{t('join.subtitle')}</p>
             
             <div className="space-y-5 mb-8">
               <div>
-                <label className="block text-xs font-bold text-sphera-text-muted mb-2 uppercase tracking-wider">Code de la session</label>
+                <label className="block text-xs font-bold text-sphera-text-muted mb-2 uppercase tracking-wider">{t('join.sessionCodeLabel')}</label>
                 <input
                   type="text"
                   value={roomCodeInput}
                   onChange={e => setRoomCodeInput(e.target.value.toUpperCase())}
-                  placeholder="EX: ABCDEF"
+                  placeholder={t('join.codePlaceholder')}
                   maxLength={6}
                   className="w-full font-mono text-center text-3xl tracking-[0.3em] bg-sphera-surface border-2 border-sphera-border rounded-2xl px-4 py-4 text-white focus:outline-none focus:border-sphera-green transition-colors uppercase shadow-inner"
                 />
               </div>
               
               <div>
-                <label className="block text-xs font-bold text-sphera-text-muted mb-2 uppercase tracking-wider">Votre pseudo</label>
+                <label className="block text-xs font-bold text-sphera-text-muted mb-2 uppercase tracking-wider">{t('join.pseudoLabel')}</label>
                 <input
                   type="text"
                   value={displayName}
                   onChange={e => setDisplayName(e.target.value)}
-                  placeholder="Pseudo"
+                  placeholder={t('join.pseudoPlaceholder')}
                   maxLength={20}
                   className="w-full text-center text-xl bg-sphera-surface border-2 border-sphera-border rounded-2xl px-4 py-4 text-white focus:outline-none focus:border-sphera-green transition-colors shadow-inner"
                 />
@@ -248,7 +250,7 @@ export default function QuizLiveJoin() {
               disabled={joining}
               className="w-full bg-sphera-green text-black font-bold text-lg rounded-2xl px-6 py-4 hover:bg-sphera-green-hover transition-all duration-300 shadow-[0_0_20px_rgba(34,197,94,0.3)] hover:shadow-[0_0_30px_rgba(34,197,94,0.5)] hover:-translate-y-1 flex justify-center items-center gap-2"
             >
-              {joining ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Rejoindre la partie'}
+              {joining ? <Loader2 className="w-6 h-6 animate-spin" /> : t('join.joinBtn')}
             </button>
           </div>
         )}
@@ -263,18 +265,18 @@ export default function QuizLiveJoin() {
 
         {phase === 'waiting' && (
           <div className="w-full max-w-3xl mx-auto text-center flex flex-col items-center">
-            <h2 className="text-2xl font-bold text-white mb-2 uppercase tracking-widest">Code pour rejoindre</h2>
+            <h2 className="text-2xl font-bold text-white mb-2 uppercase tracking-widest">{t('join.joinCodeTitle')}</h2>
             <div className="font-mono text-7xl sm:text-9xl font-bold tracking-[0.2em] text-sphera-green mb-12 select-all bg-sphera-surface-2 py-8 px-16 rounded-3xl border-2 border-sphera-green/50 shadow-[0_0_50px_rgba(34,197,94,0.3)]">
               {joinedRoomCode}
             </div>
             
             <div className="w-full bg-sphera-surface-2/80 backdrop-blur-md border border-sphera-border rounded-2xl p-6 mb-8">
               <h3 className="text-xl font-bold text-white mb-6 uppercase tracking-wider text-sphera-text-muted">
-                Participants ({participants.length})
+                {t('join.participantsCount', { count: participants.length })}
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-left">
                 {participants.length === 0 ? (
-                  <p className="text-sphera-text-muted italic col-span-full text-center py-4">En attente de joueurs...</p>
+                  <p className="text-sphera-text-muted italic col-span-full text-center py-4">{t('join.waitingPlayers')}</p>
                 ) : (
                   participants.map((p, i) => (
                     <div key={i} className="flex items-center gap-3 px-4 py-3 bg-sphera-bg border border-sphera-border rounded-xl">
@@ -292,7 +294,7 @@ export default function QuizLiveJoin() {
               <div className="inline-flex items-center justify-center p-4 bg-sphera-surface-2 rounded-full mb-4 sphera-live-pulse">
                 <Loader2 className="w-8 h-8 text-sphera-green animate-spin" />
               </div>
-              <p className="text-sphera-text-muted uppercase tracking-widest text-lg font-bold">En attente de l'hôte...</p>
+              <p className="text-sphera-text-muted uppercase tracking-widest text-lg font-bold">{t('join.waitingRoom')}</p>
             </div>
           </div>
         )}
@@ -320,12 +322,12 @@ export default function QuizLiveJoin() {
             <div className="mb-8 text-center">
               {answerResult ? (
                   answerResult.correct ? (
-                      <h2 className="text-4xl font-bold text-sphera-green mb-2 animate-bounce">+ {answerResult.pointsEarned} pts</h2>
+                      <h2 className="text-4xl font-bold text-sphera-green mb-2 animate-bounce">{t('join.pointsEarned', { points: answerResult.pointsEarned })}</h2>
                   ) : (
-                      <h2 className="text-3xl font-bold text-red-500 mb-2 animate-pulse">Mauvaise réponse</h2>
+                      <h2 className="text-3xl font-bold text-red-500 mb-2 animate-pulse">{t('join.wrongAnswer')}</h2>
                   )
               ) : (
-                  <h2 className="text-3xl font-bold text-sphera-text-muted mb-2">Temps écoulé</h2>
+                  <h2 className="text-3xl font-bold text-sphera-text-muted mb-2">{t('join.timeExpired')}</h2>
               )}
             </div>
 
@@ -348,7 +350,7 @@ export default function QuizLiveJoin() {
         {phase === 'finished' && (
           <div className="w-full flex flex-col items-center">
             <div className="mb-12 text-center">
-              <h2 className="text-4xl font-live font-bold text-white mb-2">Quiz terminé !</h2>
+              <h2 className="text-4xl font-live font-bold text-white mb-2">{t('join.quizFinishedTitle')}</h2>
             </div>
             <Leaderboard entries={leaderboard} highlightUserId={user?.id} />
           </div>

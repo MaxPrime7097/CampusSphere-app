@@ -1,5 +1,5 @@
 import React from 'react'
-import { useTranslation } from '@cs/i18n'
+import { useTranslation } from 'react-i18next'
 import { Upload, MousePointerClick, BookOpen } from 'lucide-react'
 
 export function HowItWorks() {

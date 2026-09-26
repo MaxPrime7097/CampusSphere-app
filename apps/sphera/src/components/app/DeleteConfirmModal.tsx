@@ -1,13 +1,14 @@
 import React from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { X, Trash2, AlertTriangle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export function DeleteConfirmModal({
   isOpen,
   setIsOpen,
   onConfirm,
-  title = "Supprimer la session ?",
-  description = "Cette action est irréversible. Toutes les données associées à cette session (fiches, quiz, Q&A) seront définitivement supprimées."
+  title,
+  description,
 }: {
   isOpen: boolean;
   setIsOpen: (o: boolean) => void;
@@ -15,6 +16,10 @@ export function DeleteConfirmModal({
   title?: string;
   description?: string;
 }) {
+  const { t } = useTranslation('study');
+  const resolvedTitle = title || t('modals.deleteConfirm.defaultTitle');
+  const resolvedDesc = description || t('modals.deleteConfirm.defaultDesc');
+
   return (
     <Dialog.Root open={isOpen} onOpenChange={setIsOpen}>
       <Dialog.Portal>
@@ -25,7 +30,7 @@ export function DeleteConfirmModal({
               <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 shrink-0">
                 <AlertTriangle className="w-5 h-5" />
               </div>
-              <Dialog.Title className="text-lg font-semibold">{title}</Dialog.Title>
+              <Dialog.Title className="text-lg font-semibold">{resolvedTitle}</Dialog.Title>
             </div>
             <Dialog.Close className="text-sphera-text-muted hover:text-white transition-colors bg-sphera-surface hover:bg-sphera-border p-1.5 rounded-full">
               <X className="w-4 h-4" />
@@ -33,12 +38,12 @@ export function DeleteConfirmModal({
           </div>
 
           <Dialog.Description className="text-sm text-sphera-text-muted leading-relaxed pl-13 mt-2">
-            {description}
+            {resolvedDesc}
           </Dialog.Description>
 
           <div className="flex items-center justify-end gap-3 mt-4">
             <Dialog.Close className="px-4 py-2 text-sm font-medium text-sphera-text-muted hover:text-white bg-sphera-surface hover:bg-sphera-border rounded-lg transition-colors">
-              Annuler
+              {t('modals.deleteConfirm.cancel')}
             </Dialog.Close>
             <button 
               onClick={() => {
@@ -47,7 +52,7 @@ export function DeleteConfirmModal({
               }}
               className="px-4 py-2 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors flex items-center gap-2"
             >
-              <Trash2 className="w-4 h-4" /> Supprimer
+              <Trash2 className="w-4 h-4" /> {t('modals.deleteConfirm.delete')}
             </button>
           </div>
         </Dialog.Content>

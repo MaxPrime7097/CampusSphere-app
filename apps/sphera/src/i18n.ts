@@ -72,6 +72,9 @@ i18n
   .init({
     fallbackLng: DEFAULT_LANGUAGE,
     supportedLngs: ['fr', 'en'],
+    load: 'languageOnly',
+    cleanCode: true,
+    nonExplicitSupportedLngs: true,
     defaultNS: 'common',
     ns: [
       'common',
@@ -94,6 +97,9 @@ i18n
     },
     interpolation: {
       escapeValue: false,
+    },
+    react: {
+      useSuspense: false,
     },
   });
 

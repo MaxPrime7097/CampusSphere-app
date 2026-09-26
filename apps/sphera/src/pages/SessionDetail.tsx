@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { getSession, getAnnale, askQuestion, deleteSession, deleteAnnale, shareSession, shareAnnale, updateSessionText, addToolToSession, createFromSelection, API_BASE, type ToolType } from '../services/spheraApi'
 import { normalizeAiResponse } from '../utils/normalizeAiResponse'
 import { FileText, ArrowLeft, Maximize2, Minimize2, Send, Square, MessageSquare, Bot, User, BrainCircuit, Columns, Share2, Trash2, Check, AtSign, Plus, Loader2, AlertCircle, Sparkles, GitFork, AudioLines } from 'lucide-react'
@@ -14,6 +15,7 @@ import { AiMessageItem } from '../components/app/AiMessageItem'
 import { TextSelectionToolbar, type SelectionActionType } from '../components/app/TextSelectionToolbar'
 
 export default function SessionDetail({ type = 'session' }: { type?: 'session' | 'annale' }) {
+  const { t } = useTranslation('study')
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [session, setSession] = useState<any>(null)
@@ -91,7 +93,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
       setSession(payload)
       setActiveTab(tool)
     } catch (e: any) {
-      setToolError(e.message || `Erreur lors de la génération de ${tool}.`)
+      setToolError(e.message || t('sessionDetail.generateToolError', { tool: TOOL_LABELS[tool] || tool }))
     } finally {
       setIsGeneratingTool(false)
     }
@@ -103,7 +105,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
       else await deleteSession(id as string);
       navigate('/dashboard');
     } catch (e) {
-      alert("Erreur lors de la suppression.");
+      alert(t('sessionDetail.deleteError'));
     }
   }
 
@@ -116,7 +118,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
       }
       setIsShareModalOpen(true);
     } catch (e) {
-      alert("Impossible d'ouvrir le partage.");
+      alert(t('sessionDetail.shareError'));
     }
   }
 
@@ -164,12 +166,12 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
   const isAnnale = type === 'annale' || session.mode !== undefined || session.sections !== undefined
   const STUDY_TOOLS: ToolType[] = ['fiche', 'quiz', 'flashcards', 'mindmap', 'audio']
   const TOOL_LABELS: Record<string, string> = {
-    fiche: 'Fiche',
-    quiz: 'Quiz',
-    flashcards: 'Flashcards',
-    mindmap: 'Carte mentale',
-    audio: 'Résumé audio',
-    annale: 'Annale',
+    fiche: t('sessionDetail.tools.fiche'),
+    quiz: t('sessionDetail.tools.quiz'),
+    flashcards: t('sessionDetail.tools.flashcards'),
+    mindmap: t('sessionDetail.tools.mindmap'),
+    audio: t('sessionDetail.tools.audio'),
+    annale: t('sessionDetail.tools.annale'),
   }
   const tabList = isAnnale ? ['annale'] : STUDY_TOOLS
   const content = session.content || {}
@@ -283,7 +285,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
       const newHist = [...prev];
       for (let i = newHist.length - 1; i >= 0; i--) {
         if (newHist[i].answer === '...') {
-          newHist[i].answer = "*(Génération interrompue)*";
+          newHist[i].answer = t('sessionDetail.interrupted');
           break;
         }
       }
@@ -330,7 +332,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
       setChatHistory(prev => {
         const newHist = [...prev];
         if (newHist[index] && newHist[index].answer === '...') {
-          newHist[index].answer = "Erreur de connexion avec l'assistant.";
+          newHist[index].answer = t('sessionDetail.connectionError');
         }
         return newHist;
       });
@@ -382,7 +384,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
       setChatHistory(prev => {
         const newHist = [...prev];
         if (newHist[index] && newHist[index].answer === '...') {
-          newHist[index].answer = "Erreur de connexion avec l'assistant.";
+          newHist[index].answer = t('sessionDetail.connectionError');
         }
         return newHist;
       });
@@ -419,12 +421,12 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
       const rest = match[2].trim();
       const foundCmd = COMMANDS.find(c => c.trigger.toLowerCase() === cmdTrigger);
       if (foundCmd && foundCmd.prefix) {
-        queryForAi = foundCmd.prefix + (rest || 'les points essentiels.');
+        queryForAi = foundCmd.prefix + (rest || t('sessionDetail.promptDefaultEssential'));
         displayQuestion = rest || foundCmd.label;
       } else if (foundCmd && foundCmd.toolType) {
         queryForAi = rest 
-          ? `En lien avec le cours, donne-moi les éléments nécessaires sur "${rest}".` 
-          : `Résume les points essentiels du cours.`;
+          ? t('sessionDetail.promptRelatedToCourse', { text: rest }) 
+          : t('sessionDetail.promptSummarizePoints');
       } else {
         queryForAi = rest || raw;
       }
@@ -456,7 +458,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
       setChatHistory(prev => {
         const newHist = [...prev];
         if (newHist.length > 0 && newHist[newHist.length - 1].answer === '...') {
-          newHist[newHist.length - 1].answer = "Erreur de connexion avec l'assistant.";
+          newHist[newHist.length - 1].answer = t('sessionDetail.connectionError');
         }
         return newHist;
       });
@@ -472,7 +474,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
     if ((action === 'quiz' || action === 'flashcards') && type === 'session' && id) {
       setMobileActiveView('workspace');
       setActionFeedback({
-        message: action === 'quiz' ? 'Génération du quiz sur la sélection...' : 'Génération des flashcards...',
+        message: action === 'quiz' ? t('sessionDetail.selectionGeneratingQuiz') : t('sessionDetail.selectionGeneratingFlashcards'),
         type: 'loading',
       });
       try {
@@ -485,15 +487,15 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
         const count = res?.data?.count || (res?.data?.created_items?.length) || 1;
         setActionFeedback({
           message: action === 'quiz' 
-            ? `✨ ${count} question${count > 1 ? 's' : ''} ajoutée${count > 1 ? 's' : ''} avec succès au Quiz !` 
-            : `✨ ${count} flashcard${count > 1 ? 's' : ''} ajoutée${count > 1 ? 's' : ''} avec succès au paquet !`,
+            ? t('sessionDetail.selectionAddedQuiz', { count }) 
+            : t('sessionDetail.selectionAddedFlashcards', { count }),
           type: 'success',
         });
         setTimeout(() => setActionFeedback(null), 4000);
         return;
       } catch (err: any) {
         setActionFeedback({
-          message: err?.message || 'Erreur lors de la création de l\'élément.',
+          message: err?.message || t('sessionDetail.selectionError'),
           type: 'error',
         });
         setTimeout(() => setActionFeedback(null), 4000);
@@ -505,20 +507,20 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
     let display = ''
 
     if (action === 'expliquer') {
-      display = `Expliquer : "${selectedText}"`
-      prompt = `Explique-moi ce passage de cours de manière claire, concise et pédagogique :\n\n> "${selectedText}"`
+      display = t('sessionDetail.explainAction', { text: selectedText })
+      prompt = t('sessionDetail.explainPrompt', { text: selectedText })
     } else if (action === 'resumer') {
-      display = `Résumer : "${selectedText}"`
-      prompt = `Résume les points essentiels de ce passage en quelques puces claires :\n\n> "${selectedText}"`
+      display = t('sessionDetail.summarizeAction', { text: selectedText })
+      prompt = t('sessionDetail.summarizePrompt', { text: selectedText })
     } else if (action === 'exemple') {
-      display = `Exemple pour : "${selectedText}"`
-      prompt = `Donne-moi un exemple concret ou une mise en situation pratique illustrant ce concept :\n\n> "${selectedText}"`
+      display = t('sessionDetail.exampleAction', { text: selectedText })
+      prompt = t('sessionDetail.examplePrompt', { text: selectedText })
     } else if (action === 'quiz') {
-      display = `Quiz sur : "${selectedText}"`
-      prompt = `Génère une question de quiz à choix multiples (avec 4 options A, B, C, D, la bonne réponse et une brève explication) basée sur ce passage :\n\n> "${selectedText}"`
+      display = t('sessionDetail.quizAction', { text: selectedText })
+      prompt = t('sessionDetail.quizPrompt', { text: selectedText })
     } else if (action === 'flashcards') {
-      display = `Flashcard pour : "${selectedText}"`
-      prompt = `Crée une flashcard recto/verso (Question clé au recto, Réponse synthétique au verso) basée sur ce concept :\n\n> "${selectedText}"`
+      display = t('sessionDetail.flashcardAction', { text: selectedText })
+      prompt = t('sessionDetail.flashcardPrompt', { text: selectedText })
     }
 
     setMobileActiveView('workspace')
@@ -547,7 +549,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
       setChatHistory(prev => {
         const newHist = [...prev]
         if (newHist.length > 0 && newHist[newHist.length - 1].answer === '...') {
-          newHist[newHist.length - 1].answer = "Erreur de connexion avec l'assistant."
+          newHist[newHist.length - 1].answer = t('sessionDetail.connectionError')
         }
         return newHist
       })
@@ -575,7 +577,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
         <button
           onClick={() => navigate('/dashboard')}
           className="p-1.5 text-sphera-text-muted hover:bg-sphera-surface hover:text-white rounded-md transition-colors shrink-0"
-          title="Retour au tableau de bord"
+          title={t('sessionDetail.backToDashboard')}
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
@@ -590,7 +592,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
                 : 'text-sphera-text-muted hover:text-white'
             }`}
           >
-            {isImage ? 'Image' : isPdf ? 'PDF' : 'Document'}
+            {isImage ? t('sessionDetail.image') : isPdf ? t('sessionDetail.pdf') : t('sessionDetail.document')}
           </button>
           <button
             type="button"
@@ -601,7 +603,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
                 : 'text-sphera-text-muted hover:text-white'
             }`}
           >
-            Espace d'étude
+            {t('sessionDetail.studySpace')}
           </button>
         </div>
       </div>
@@ -613,12 +615,12 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
             <button
               onClick={() => navigate('/dashboard')}
               className="p-1.5 text-sphera-text-muted hover:bg-sphera-surface hover:text-white rounded-md transition-colors shrink-0"
-              title="Retour au tableau de bord"
+              title={t('sessionDetail.backToDashboard')}
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
             <span className="text-sm font-semibold text-white truncate">
-              {session.resource_title || session.source_filename || `Session #${session.id}`}
+              {session.resource_title || session.source_filename || t('sessionDetail.defaultSessionTitle', { id: session.id })}
             </span>
           </div>
 
@@ -632,18 +634,18 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
                   docViewMode === 'doc' ? 'bg-sphera-green text-black shadow-sm' : 'text-sphera-text-muted hover:text-white'
                 }`}
               >
-                {isImage ? 'Image' : 'PDF'}
+                {isImage ? t('sessionDetail.image') : t('sessionDetail.pdf')}
               </button>
               <button
                 type="button"
                 onClick={() => setDocViewMode('text')}
-                title="Texte extrait interactif (surlignage et IA)"
+                title={t('sessionDetail.interactiveTextTooltip')}
                 className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors flex items-center gap-1.5 ${
                   docViewMode === 'text' ? 'bg-sphera-green text-black shadow-sm' : 'text-sphera-text-muted hover:text-white'
                 }`}
               >
                 <Sparkles className="w-3 h-3" />
-                <span>Texte interactif</span>
+                <span>{t('sessionDetail.interactiveText')}</span>
               </button>
             </div>
           )}
@@ -654,14 +656,14 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
           {docViewMode === 'doc' && isImage && fileUrl ? (
             <DocumentImageViewer
               src={fileUrl}
-              alt={session.resource_title || 'Document'}
+              alt={session.resource_title || t('sessionDetail.document')}
               title={session.resource_title || session.source_filename}
             />
           ) : docViewMode === 'doc' && isPdf && fileUrl ? (
             <iframe 
               src={`${fileUrl}#toolbar=0&navpanes=0&scrollbar=0`} 
               className="w-full h-full border-none custom-scrollbar" 
-              title="Aperçu du document"
+              title={t('sessionDetail.documentPreview')}
             />
           ) : session.extracted_text ? (
             <CourseTextReader
@@ -680,14 +682,14 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
             <iframe 
               src={`${fileUrl}#toolbar=0&navpanes=0&scrollbar=0`} 
               className="w-full h-full border-none custom-scrollbar" 
-              title="Aperçu du document"
+              title={t('sessionDetail.documentPreview')}
             />
           ) : (
             <div className="flex-1 p-8 flex flex-col items-center justify-center text-center opacity-60 h-full">
               <FileText className="w-16 h-16 text-sphera-text-muted mb-4" />
-              <p className="text-white font-medium mb-1">Aperçu non disponible</p>
+              <p className="text-white font-medium mb-1">{t('sessionDetail.previewUnavailable')}</p>
               <p className="text-sm text-sphera-text-muted max-w-sm">
-                Le document original n'a pas été trouvé.
+                {t('sessionDetail.originalDocNotFound')}
               </p>
             </div>
           )}
@@ -703,7 +705,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
             <button
               onClick={() => setIsPdfExpanded(!isPdfExpanded)}
               className="p-1.5 rounded-md text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors"
-              title={isPdfExpanded ? "Plein écran" : "Afficher l'aperçu"}
+              title={isPdfExpanded ? t('sessionDetail.fullscreen') : t('sessionDetail.showPreview')}
             >
               {isPdfExpanded ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
             </button>
@@ -716,21 +718,21 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
 
           <div className="flex items-center gap-4">
             <div className="flex gap-1 bg-sphera-bg p-1 rounded-md overflow-x-auto">
-              {tabList.map(t => {
-                const isGenerated = isToolGenerated(t);
+              {tabList.map(tKey => {
+                const isGenerated = isToolGenerated(tKey);
                 return (
                   <button
-                    key={t}
-                    onClick={() => setActiveTab(t)}
+                    key={tKey}
+                    onClick={() => setActiveTab(tKey)}
                     className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors flex items-center gap-1.5 whitespace-nowrap ${
-                      activeTab === t
+                      activeTab === tKey
                         ? 'bg-sphera-surface text-white shadow-sm'
                         : isGenerated
                           ? 'text-sphera-text-muted hover:text-white'
                           : 'text-sphera-text-muted/50 hover:text-sphera-text-muted/90'
                     }`}
                   >
-                    {TOOL_LABELS[t] || (t.charAt(0).toUpperCase() + t.slice(1))}
+                    {TOOL_LABELS[tKey] || (tKey.charAt(0).toUpperCase() + tKey.slice(1))}
                     {!isGenerated && !isAnnale && (
                       <span className="text-[9px] bg-sphera-surface-2 px-1.5 rounded-full border border-sphera-border text-sphera-text-muted">+</span>
                     )}
@@ -750,14 +752,14 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
               <button
                 onClick={handleOpenShare}
                 className={`p-1.5 rounded transition-colors text-sphera-text-muted hover:text-white hover:bg-sphera-surface`}
-                title="Partager le lien public"
+                title={t('sessionDetail.sharePublicLink')}
               >
                 <Share2 className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setIsDeleteModalOpen(true)}
                 className="p-1.5 rounded text-red-500/60 hover:text-red-500 hover:bg-red-500/10 transition-colors"
-                title="Supprimer la session"
+                title={t('sessionDetail.deleteSession')}
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -774,14 +776,14 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
           <div className="p-4 sm:p-6 md:p-8 max-w-3xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500 pb-6">
             {activeTab !== 'chat' && !isToolGenerated(activeTab) ? (
               <div className="p-8 text-center bg-sphera-surface-2 rounded-2xl border border-sphera-border">
-                <p className="text-sphera-text-muted mb-4">Cet outil n'a pas encore été généré pour ce cours.</p>
+                <p className="text-sphera-text-muted mb-4">{t('sessionDetail.toolNotGenerated')}</p>
                 <button
                   onClick={() => handleAddTool(activeTab as ToolType)}
                   disabled={isGeneratingTool}
                   className="sphera-primary-btn py-2 px-4 text-xs inline-flex items-center gap-2"
                 >
                   {isGeneratingTool ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                  <span>Générer {TOOL_LABELS[activeTab] || activeTab}</span>
+                  <span>{t('sessionDetail.generateTool', { tool: TOOL_LABELS[activeTab] || activeTab })}</span>
                 </button>
                 {toolError && <p className="text-red-400 text-sm mt-4 bg-red-500/10 p-3 rounded-lg border border-red-500/20">{toolError}</p>}
               </div>
@@ -800,8 +802,8 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
                 {chatHistory.length === 0 ? (
                   <div className="text-center p-12 bg-sphera-surface-2 rounded-2xl border border-sphera-border">
                     <MessageSquare className="w-10 h-10 text-sphera-text-muted mx-auto mb-4 opacity-50" />
-                    <p className="text-white font-medium mb-1">Posez vos questions</p>
-                    <p className="text-sm text-sphera-text-muted">Demandez des éclaircissements sur ce document.</p>
+                    <p className="text-white font-medium mb-1">{t('sessionDetail.askQuestionsTitle')}</p>
+                    <p className="text-sm text-sphera-text-muted">{t('sessionDetail.askQuestionsSubtitle')}</p>
                   </div>
                 ) : (
                   chatHistory.map((msg, i) => (
@@ -848,8 +850,8 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
               <button
                 type="button"
                 onClick={handleToggleCommandMenu}
-                title="Commandes (@)"
-                aria-label="Ouvrir les commandes (@)"
+                title={t('sessionDetail.commandsTooltip')}
+                aria-label={t('sessionDetail.commandsAria')}
                 className={`p-1.5 rounded-full transition-colors shrink-0 ${
                   showCommandMenu 
                     ? 'bg-sphera-green text-black' 
@@ -861,7 +863,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
               <input
                 ref={chatInputRef}
                 type="text"
-                placeholder="Demandez n'importe quoi sur ce cours... ou @ pour les commandes"
+                placeholder={t('sessionDetail.chatPlaceholder')}
                 value={chatMessage}
                 onChange={e => handleChatInputChange(e.target.value)}
                 onKeyDown={handleChatKeyDown}
@@ -871,8 +873,8 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
                 <button
                   type="button"
                   onClick={handleStopChat}
-                  title="Arrêter la réponse"
-                  aria-label="Arrêter la réponse"
+                  title={t('sessionDetail.stopResponse')}
+                  aria-label={t('sessionDetail.stopResponse')}
                   className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-red-500/90 hover:bg-red-500 text-white flex items-center justify-center transition-all flex-shrink-0 shadow-[0_0_15px_rgba(239,68,68,0.4)] animate-in fade-in"
                 >
                   <Square className="w-3.5 h-3.5 fill-current" />
@@ -882,8 +884,8 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
                   type="button"
                   onClick={handleSendChat}
                   disabled={!chatMessage.trim() || !id}
-                  title="Envoyer le message"
-                  aria-label="Envoyer le message"
+                  title={t('sessionDetail.sendMessage')}
+                  aria-label={t('sessionDetail.sendMessage')}
                   className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-sphera-green text-black flex items-center justify-center hover:bg-green-400 disabled:opacity-50 disabled:hover:bg-sphera-green transition-colors flex-shrink-0 shadow-[0_0_15px_rgba(34,197,94,0.3)]"
                 >
                   <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-0.5" />
