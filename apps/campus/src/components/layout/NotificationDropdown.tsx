@@ -45,7 +45,7 @@ export function NotificationDropdown() {
             id: String(notification.id),
             type: notificationType,
             user: {
-              name: notification.data?.sender_name || notification.data?.user_name || notification.title || "Notification",
+              name: notification.data?.sender_name || notification.data?.user_name || (notificationType === "system" ? "CampusSphere" : (notification.title || "CampusSphere")),
               avatar: notification.data?.sender_avatar || notification.data?.user_avatar || null,
             },
             content: notification.message || notification.title || "",
@@ -141,12 +141,18 @@ export function NotificationDropdown() {
               onClick={() => void handleNotificationClick(notif)}
             >
               <div className="flex gap-3">
-                <Avatar className="h-10 w-10 flex-shrink-0">
-                  <AvatarImage src={notif.user.avatar || undefined} />
-                  <AvatarFallback className="font-bold">
-                    {(notif.user.name || "...").slice(0, 1).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
+                {notif.type === "system" || (!notif.user.avatar && !notif.senderId && !notif.profileUsername) ? (
+                  <div className="h-10 w-10 rounded-full bg-muted/60 p-1.5 flex items-center justify-center flex-shrink-0 border border-border/40 overflow-hidden">
+                    <img src="/CS.svg" alt="CampusSphere" className="h-full w-full object-contain" />
+                  </div>
+                ) : (
+                  <Avatar className="h-10 w-10 flex-shrink-0">
+                    <AvatarImage src={notif.user.avatar || undefined} />
+                    <AvatarFallback className="font-bold">
+                      {(notif.user.name || "CS").slice(0, 1).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
 
                 <div className="flex-1 min-w-0">
                   <p className="text-sm">

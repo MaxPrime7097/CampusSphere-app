@@ -40,7 +40,7 @@ export function MobileNavigation({ user: externalUser }: { user?: NavigationUser
                 <div className="flex items-center justify-center w-full h-full relative">
                   <button
                     type="button"
-                    className="absolute bottom-3 flex items-center justify-center h-12 w-12 rounded-full campus-gradient text-white shadow-lg hover:shadow-xl transition-all active:scale-95"
+                    className="absolute bottom-3 flex items-center justify-center h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:bg-primary/90 active:scale-95"
                     aria-label={item.title}
                     onClick={() => setIsCreatePostModalOpen(true)}
                   >
@@ -60,7 +60,7 @@ export function MobileNavigation({ user: externalUser }: { user?: NavigationUser
               <div key={item.title} className="flex items-center justify-center w-full h-full relative">
                 <button 
                   type="button" 
-                  className="absolute bottom-3 flex items-center justify-center h-12 w-12 rounded-full bg-muted text-muted-foreground shadow-sm opacity-80" 
+                  className="absolute bottom-3 flex items-center justify-center h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:bg-primary/90 active:scale-95" 
                   aria-label={item.title}
                   onClick={() => {
                     toast({

@@ -31,7 +31,7 @@ export default function Countdown() {
       <h1 className="text-3xl font-bold font-raleway text-primary mb-4">🚀 CampusSphere arrive dans :</h1>
       <div className="flex gap-4 text-2xl font-semibold font-automata">
         {["Jours", "Heures", "Minutes", "Secondes"].map((label, i) => (
-          <div key={label} className="bg-transparent p-2 rounded-xl h-20 campus-glow min-w-[80px]">
+          <div key={label} className="bg-transparent p-2 rounded-xl h-20 min-w-[80px]">
             <div>
               {Object.values(timeLeft)[i].toString().padStart(2, "0")}
             </div>

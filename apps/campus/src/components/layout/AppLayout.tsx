@@ -1,4 +1,4 @@
-import { ReactNode, Suspense, lazy, useEffect, useState } from "react";
+import { ReactNode, Suspense, lazy, useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
@@ -11,6 +11,7 @@ import { MobileTopBar } from "./MobileTopBar";
 import { ProfileBubble } from "./ProfileBubble";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CookieBanner } from "./CookieBanner";
+import { OfflineBanner } from "./OfflineBanner";
 import { getCurrentUser } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { SearchDropdown } from "./SearchDropdown";
@@ -34,9 +35,22 @@ export function AppLayout({ children }: AppLayoutProps) {
   const counts = useUnreadCounts();
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchDropdownVisible, setIsSearchDropdownVisible] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [darkMode, setDarkMode] = useState(false);
   const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
   const [isCreatePostModalOpen, setIsCreatePostModalOpen] = useState(false);
+
+  // ⌘K / Ctrl+K keyboard shortcut to focus search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   useEffect(() => {
     const handleOpen = () => setIsVerificationModalOpen(true);
@@ -172,7 +186,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background overflow-x-hidden">
+      <div className="min-h-screen flex w-full bg-background overflow-x-clip">
         <div className="hidden md:block shrink-0">
           <AppSidebar user={user} />
         </div>
@@ -183,45 +197,44 @@ export function AppLayout({ children }: AppLayoutProps) {
           
           {/* Desktop Top Navigation - Fixed */}
           <header className="hidden md:flex h-14 w-full border-b border-border/60 bg-card/80 backdrop-blur-md fixed top-0 right-0 left-0 z-40">
-            <div className="flex items-center justify-between px-4 h-full w-full">
-              <div className="flex items-center gap-3">
-                <SidebarTrigger className="hover:bg-accent text-muted-foreground hover:text-foreground" />
-                <button onClick={() => navigate(`/`)} className="flex items-center gap-2 hover:opacity-75 transition-opacity">
-                  <img src="/CS.svg" alt="Logo CampusSphere" className="h-8 w-8"/>
-                  <span className="text-xl font-bold campus-gradient-text font-automata tracking-wide">
-                    CampusSphere
-                  </span>
-                </button>
-                <form onSubmit={handleSearch} className="pl-8 flex items-center gap-2 flex-1 max-w-sm relative">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
-                    <Input
-                      placeholder="Rechercher..."
-                      className="pl-9 h-8 text-sm bg-muted/50 border-0 focus-visible:ring-1 focus-visible:ring-primary/40 rounded-[var(--radius-sm)]"
-                      value={searchQuery}
-                      onChange={(e) => {
-                        setSearchQuery(e.target.value);
-                        setIsSearchDropdownVisible(e.target.value.length > 0);
-                      }}
-                      onFocus={() => {
-                        if (searchQuery.length > 0) setIsSearchDropdownVisible(true);
-                      }}
-                    />
-                    <SearchDropdown
-                      query={searchQuery}
-                      isVisible={isSearchDropdownVisible}
-                      onClose={() => setIsSearchDropdownVisible(false)}
-                    />
-                  </div>
-                </form>
-              </div>
+            <div className="flex items-center justify-between px-4 h-full w-full gap-4">
+              <button onClick={() => navigate(`/`)} className="flex items-center gap-2 hover:opacity-75 transition-opacity shrink-0">
+                <img src="/CS.svg" alt="Logo CampusSphere" className="h-8 w-8"/>
+                <span className="text-xl font-bold font-automata tracking-wide text-primary">
+                  CampusSphere
+                </span>
+              </button>
 
-              <div className="flex items-center gap-1.5">
+              <form onSubmit={handleSearch} className="flex-1 max-w-xl lg:max-w-2xl xl:max-w-3xl relative mx-2">
+                <div className="relative w-full">
+                  <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
+                  <Input
+                    ref={searchInputRef}
+                    placeholder="Rechercher"
+                    className="pl-10 pr-4 h-9.5 text-sm bg-muted/40 hover:bg-muted/60 focus:bg-background border border-border/40 focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary/20 rounded-xl transition-all w-full"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setIsSearchDropdownVisible(e.target.value.length > 0);
+                    }}
+                    onFocus={() => {
+                      if (searchQuery.length > 0) setIsSearchDropdownVisible(true);
+                    }}
+                  />
+                  <SearchDropdown
+                    query={searchQuery}
+                    isVisible={isSearchDropdownVisible}
+                    onClose={() => setIsSearchDropdownVisible(false)}
+                  />
+                </div>
+              </form>
+
+              <div className="flex items-center gap-1.5 shrink-0">
                 {isAuthenticated && (
                   <>
                     {isVerified ? (
                       <>
-                        <Button variant="ghost" size="sm" onClick={() => setIsCreatePostModalOpen(true)} className="text-muted-foreground hover:text-foreground">
+                        <Button variant="primary" size="sm" onClick={() => setIsCreatePostModalOpen(true)}>
                           <Plus className="h-4 w-4 mr-1.5" />
                           Publier
                         </Button>
@@ -235,7 +248,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                         )}
                       </>
                     ) : (
-                      <Button variant="ghost" size="sm" onClick={(e) => handleCreateAction(e as any, () => {})} className="text-muted-foreground hover:text-foreground">
+                      <Button variant="primary" size="sm" onClick={(e) => handleCreateAction(e as any, () => {})}>
                         <Plus className="h-4 w-4 mr-1.5" />
                         Publier
                       </Button>
@@ -244,7 +257,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                     <Button variant="ghost" size="icon-sm" onClick={() => navigate('/notifications')} className="relative text-muted-foreground hover:text-foreground">
                       <Bell className="h-4 w-4" />
                       {counts.notifications > 0 && (
-                        <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-primary text-primary-foreground text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">
+                        <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">
                           {counts.notifications > 99 ? "99+" : counts.notifications}
                         </span>
                       )}
@@ -258,7 +271,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           </header>
 
           {/* Main Content */}
-          <main className={`flex-1 overflow-hidden ${hideNavOnMobile ? 'pt-0 pb-0' : 'pt-0 pb-16'} md:pb-0 md:pt-14`}>
+          <main className={`flex-1 ${hideNavOnMobile ? 'pt-0 pb-0' : 'pt-0 pb-16'} md:pb-0 md:pt-14`}>
             {children}
           </main>
           
@@ -267,6 +280,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </div>
       </div>
       <CookieBanner />
+      <OfflineBanner />
       {isVerificationModalOpen && (
         <Suspense fallback={<ModalLoadingFallback />}>
           <VerificationModal

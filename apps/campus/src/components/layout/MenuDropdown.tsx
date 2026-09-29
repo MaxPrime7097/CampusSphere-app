@@ -2,7 +2,6 @@ import {
   Menu, Shield, ExternalLink, BadgeCheck
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -65,46 +64,40 @@ export function MenuDropdown({ user: externalUser }: { user?: NavigationUser }) 
       </SheetTrigger>
       <SheetContent className="pt-5 overflow-y-auto" onClickCapture={handleContainerClickCapture}>
         <SheetHeader>
-          <h1 className="text-2xl font-bold tracking-tight text-white">
+          <h1 className="text-xl font-bold tracking-tight text-foreground">
             Menu
           </h1>
         </SheetHeader>
         
         {isAuthenticated ? (
-          <Card
-            className="campus-card mt-5 cursor-pointer"
+          <div
+            className="mt-5 p-3 rounded-xl border border-border/40 hover:bg-muted/40 cursor-pointer transition-colors"
             onClick={() => {
               closeMenu();
               navigate(profileUrl);
             }}
           >
-            <CardContent className="pt-4 md:pt-6 p-4 md:p-6">
-              <div 
-                className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-              >
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={avatarUrl} />
-                  <AvatarFallback className="bg-input text-muted-foreground font-semibold">
-                    {displayName.charAt(0) || "U"}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-semibold text-sm hover:underline">{displayName}</h4>
-                    {user?.isVerified && (
-                      <BadgeCheck className="h-4 w-4 text-primary fill-primary/10" />
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-xs text-muted-foreground">{displayUsername}</p>
-                  </div>
+            <div className="flex items-center gap-3">
+              <Avatar className="h-10 w-10 flex-shrink-0">
+                <AvatarImage src={avatarUrl} />
+                <AvatarFallback className="bg-input text-muted-foreground font-semibold">
+                  {displayName.charAt(0) || "U"}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <h4 className="font-semibold text-sm truncate">{displayName}</h4>
+                  {user?.isVerified && (
+                    <BadgeCheck className="h-4 w-4 text-primary fill-primary/10 flex-shrink-0" />
+                  )}
                 </div>
+                <p className="text-xs text-muted-foreground truncate">{displayUsername}</p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         ) : (
           <div className="mt-6 flex flex-col gap-3">
-            <Button onClick={() => { closeMenu(); navigate('/login'); }} className="campus-gradient text-white w-full">
+            <Button onClick={() => { closeMenu(); navigate('/login'); }} className="bg-secondary hover:bg-muted text-secondary-foreground border border-border/60 w-full">
               Se connecter
             </Button>
             <Button variant="outline" onClick={() => { closeMenu(); navigate('/register'); }} className="w-full">
