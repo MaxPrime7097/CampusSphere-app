@@ -1,3 +1,4 @@
+import { parseSlugId, encodeHashId } from "@/lib/hashids";
 import React, { useEffect, useState, Suspense, lazy } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
@@ -33,7 +34,9 @@ const TAB_STYLE =
   "rounded-none border-b-2 border-transparent data-[state=active]:border-[#ff9800] data-[state=active]:bg-transparent data-[state=active]:shadow-none py-3 px-1 data-[state=active]:text-[#ff9800] text-muted-foreground transition-colors";
 
 export const StudySessionDetail: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id: rawId } = useParams<{ id: string }>();
+  const realId = parseSlugId(rawId) ?? rawId;
+  const id = realId ? String(realId) : undefined;
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -53,14 +56,46 @@ export const StudySessionDetail: React.FC = () => {
   const [isGeneratingTool, setIsGeneratingTool] = useState(false);
   const [toolError, setToolError] = useState<string | null>(null);
 
+  // Pré-remplacement immédiat de l'URL si elle contient un ID numérique brut
+  React.useLayoutEffect(() => {
+    if (rawId && /^\d+$/.test(rawId)) {
+      const hash = encodeHashId(Number(rawId));
+      if (hash && typeof window !== "undefined" && window.history.replaceState) {
+        const canonicalBase = `/sphera/sessions/${hash}`;
+        if (window.location.pathname !== canonicalBase) {
+          window.history.replaceState(null, "", canonicalBase);
+        }
+      }
+    }
+  }, [rawId]);
+
   useEffect(() => {
     if (!id) return;
     (async () => {
       try {
         setLoading(true);
         const res = await getStudySession(id);
-        if (res.success && res.data) setSession(res.data);
-        else setError("Impossible de charger la session.");
+        if (res.success && res.data) {
+          setSession(res.data);
+          const hash = encodeHashId(res.data.id);
+          const titleText = res.data.resource_title || res.data.source_filename || "session";
+          const slug = titleText
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-+|-+$/g, "")
+            .slice(0, 50);
+
+          if (hash && typeof window !== "undefined" && window.history.replaceState) {
+            const canonicalUrl = `/sphera/sessions/${slug ? `${slug}-${hash}` : hash}`;
+            if (window.location.pathname !== canonicalUrl) {
+              window.history.replaceState(null, "", canonicalUrl);
+            }
+          }
+        } else {
+          setError("Impossible de charger la session.");
+        }
       } catch (err: any) {
         setError(err.message || "Une erreur est survenue.");
       } finally {

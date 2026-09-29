@@ -1,4 +1,7 @@
-import { useState, useMemo } from "react";
+import { Helmet } from "react-helmet-async";
+import { parseSlugId, encodeHashId } from "@/lib/hashids";
+import { getEventUrl, getSphereUrl } from "@/lib/utils";
+import { useState, useMemo, useEffect, useLayoutEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -63,11 +66,27 @@ function getUserInitial(user: any, fallback = "U"): string {
 }
 
 export function EventDetail() {
-  const { id } = useParams<{ id: string }>();
+  const { id: rawParam } = useParams<{ id: string }>();
+  const realId = parseSlugId(rawParam) ?? rawParam;
+  const id = realId ? String(realId) : undefined;
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
+
+  // Pre-emptive immediate address bar rewrite if rawParam is pure numeric
+  useLayoutEffect(() => {
+    if (typeof window === "undefined" || !rawParam) return;
+    if (/^\d+$/.test(rawParam)) {
+      const parsed = Number(rawParam);
+      if (Number.isInteger(parsed) && parsed > 0) {
+        const hash = encodeHashId(parsed);
+        if (hash && window.location.pathname !== `/events/${hash}`) {
+          window.history.replaceState(null, "", `/events/${hash}`);
+        }
+      }
+    }
+  }, [rawParam]);
 
   const [isAttendeesOpen, setIsAttendeesOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
@@ -472,7 +491,10 @@ export function EventDetail() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => navigate(`/spheres/${event.sphereId || event.sphere?.id}`)}
+                  onClick={() => {
+                    const target = event.sphere ? getSphereUrl(event.sphere) : (event.sphereId ? `/spheres/${encodeHashId(event.sphereId) || event.sphereId}` : "/spheres");
+                    navigate(target);
+                  }}
                   className="rounded-lg text-xs font-medium shrink-0"
                 >
                   Visiter la sphère
