@@ -11,19 +11,26 @@ import {
   RefreshCw,
   Search,
   Filter,
+  LayoutGrid,
+  List,
+  MapPin,
+  ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs } from "@/components/ui/tabs";
 import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
 import { EventCard } from "@/components/events/EventCard";
+import { EventTile } from "@/components/events/EventTile";
+import { EventCarousel } from "@/components/events/EventCarousel";
 import { EventFiltersBar } from "@/components/events/EventFiltersBar";
+import { getEventCategoryMeta } from "@/constants/eventCategories";
 import { EventShareModal } from "@/components/events/EventShareModal";
 import { EmptyState } from "@/components/ui/empty-state";
 import { getEvents } from "@/services/eventService";
 import { useAuth } from "@/contexts/AuthContext";
 import { openVerificationModal } from "@/lib/events";
-import { getEventUrl } from "@/lib/utils";
+import { getEventUrl, cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import type { Event, EventFilters, AttendeeStatus } from "@/types/events.types";
 
@@ -33,6 +40,7 @@ export function Events() {
   const { user: currentUser } = useAuth();
 
   const [activeTab, setActiveTab] = useState<string>("upcoming");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [filters, setFilters] = useState<EventFilters>({
     category: "all",
     search: "",
@@ -49,8 +57,19 @@ export function Events() {
   } = useQuery({
     queryKey: ["events", filters],
     queryFn: () => getEvents(filters),
-    staleTime: 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
+
+  const isInitialLoading = isLoading && rawEvents.length === 0;
+
+  // Upcoming events for horizontal Spotify-style carousel
+  const upcomingCarouselEvents = useMemo(() => {
+    const now = new Date();
+    return rawEvents.filter((e) => new Date(e.startDate) >= now);
+  }, [rawEvents]);
 
   // Filter events based on active tab
   const filteredEvents = useMemo(() => {
@@ -135,7 +154,7 @@ export function Events() {
       {/* ─── Top Header (Parfaitement aligné avec Sphères & Ressources) ─── */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 campus-animate-fade-in">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-white">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
             Événements Campus
           </h1>
           <p className="text-muted-foreground mt-2 text-sm">
@@ -166,77 +185,97 @@ export function Events() {
         </div>
       </div>
 
-      {/* ─── Featured Spotlight Banner (Épuré, SANS emoji) ─── */}
-      {featuredEvent && activeTab !== "past" && (
-        <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-card p-5 shadow-sm hover:border-primary/40 transition-all">
-          <div className="flex flex-col lg:flex-row items-center gap-6">
-            {featuredEvent.coverImage && (
-              <div className="relative h-44 w-full lg:w-72 rounded-xl overflow-hidden shrink-0 bg-muted">
-                <img
-                  src={featuredEvent.coverImage}
-                  alt={featuredEvent.title}
-                  className="h-full w-full object-cover"
-                />
-                <div className="absolute top-2.5 left-2.5">
-                  <Badge className="bg-primary text-primary-foreground font-semibold text-[11px] flex items-center gap-1 shadow-sm">
-                    <Sparkles className="h-3 w-3" />
-                    À la une
+      {/* ─── Spotlight Event Banner (Pleine largeur, minimaliste & moderne) ─── */}
+      {featuredEvent && activeTab !== "past" && !filters.search && filters.category === "all" && (
+        <div
+          onClick={() => navigate(getEventUrl(featuredEvent))}
+          className="group relative w-full overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-card via-card to-muted/30 p-5 sm:p-6 shadow-xs hover:border-border transition-all cursor-pointer mb-6"
+        >
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="flex items-start gap-4 sm:gap-5 min-w-0 flex-1">
+              {/* Date Box / Cover Image */}
+              {featuredEvent.coverImage ? (
+                <div className="relative h-24 w-24 sm:h-28 sm:w-28 rounded-xl overflow-hidden shrink-0 bg-muted border border-border/40">
+                  <img
+                    src={featuredEvent.coverImage}
+                    alt={featuredEvent.title}
+                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <div className="absolute top-1.5 left-1.5">
+                    <Badge className="bg-background/90 backdrop-blur-md text-foreground font-semibold text-[10px] px-1.5 py-0.5 border border-border/40 shadow-xs">
+                      À la une
+                    </Badge>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-20 w-20 sm:h-24 sm:w-24 rounded-2xl bg-muted/80 border border-border/50 shrink-0">
+                  <span className="text-xl sm:text-2xl font-bold text-foreground leading-none">
+                    {new Date(featuredEvent.startDate).getDate()}
+                  </span>
+                  <span className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase leading-none mt-1">
+                    {new Date(featuredEvent.startDate).toLocaleDateString("fr-FR", { month: "short" }).toUpperCase()}
+                  </span>
+                </div>
+              )}
+
+              {/* Event Content */}
+              <div className="min-w-0 flex-1 space-y-1.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge variant="outline" className="text-[11px] font-medium text-foreground bg-muted/40 border-border/60">
+                    {getEventCategoryMeta(featuredEvent.category).label}
                   </Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(featuredEvent.startDate).toLocaleDateString("fr-FR", {
+                      weekday: "long",
+                      day: "numeric",
+                      month: "long",
+                    })} · {new Date(featuredEvent.startDate).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+                  </span>
                 </div>
-              </div>
-            )}
 
-            <div className="flex-1 space-y-2">
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-primary border-primary/30 text-xs font-medium">
-                  {featuredEvent.category === "party"
-                    ? "Soirée & Cérémonie"
-                    : featuredEvent.category === "competition"
-                    ? "Compétition"
-                    : "Événement Campus"}
-                </Badge>
-                <span className="text-xs text-muted-foreground">
-                  {new Date(featuredEvent.startDate).toLocaleDateString("fr-FR", {
-                    weekday: "long",
-                    day: "numeric",
-                    month: "long",
-                  })}
-                </span>
-              </div>
+                <h2 className="text-base sm:text-lg md:text-xl font-bold text-foreground leading-snug group-hover:underline">
+                  {featuredEvent.title}
+                </h2>
 
-              <h2 className="text-lg md:text-xl font-bold text-foreground">
-                {featuredEvent.title}
-              </h2>
+                {featuredEvent.description && (
+                  <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 leading-relaxed max-w-3xl">
+                    {featuredEvent.description.replace(/[#*`_]/g, "")}
+                  </p>
+                )}
 
-              <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                {featuredEvent.description?.replace(/[#*`_]/g, "")}
-              </p>
-
-              <div className="flex flex-wrap items-center gap-4 pt-1 text-xs text-muted-foreground">
-                <div className="flex items-center gap-1.5 font-medium">
-                  <Users className="h-3.5 w-3.5 text-primary" />
-                  <span>{featuredEvent.attendeesCount} participants</span>
-                </div>
-                <div>•</div>
-                <div className="font-medium text-foreground">
-                  {featuredEvent.location}
+                <div className="flex items-center gap-3 pt-1 text-xs text-muted-foreground flex-wrap">
+                  <span className="flex items-center gap-1 font-medium">
+                    <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span>{featuredEvent.attendeesCount || 0} participant{Number(featuredEvent.attendeesCount || 0) > 1 ? "s" : ""}</span>
+                  </span>
+                  <span>·</span>
+                  <span className="flex items-center gap-1">
+                    <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span>{featuredEvent.isOnline ? "En ligne" : (featuredEvent.location || "Campus")}</span>
+                  </span>
                 </div>
               </div>
             </div>
 
-            <div className="shrink-0 w-full lg:w-auto">
+            {/* CTA Action */}
+            <div className="shrink-0 w-full md:w-auto pt-2 md:pt-0">
               <Button
-                onClick={() => navigate(getEventUrl(featuredEvent))}
-                className="w-full lg:w-auto rounded-xl font-semibold bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
+                size="sm"
+                className="w-full md:w-auto font-medium text-xs rounded-xl"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(getEventUrl(featuredEvent));
+                }}
               >
                 Découvrir l'événement
+                <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
               </Button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ─── Standard Shared Tabs (Lignes de soulignement comme Sphères/Ressources) ─── */}
+      {/* ─── Standard Shared Tabs ─── */}
       <Tabs
         value={activeTab}
         onValueChange={setActiveTab}
@@ -257,16 +296,74 @@ export function Events() {
           totalCount={filteredEvents.length}
         />
 
-        {/* ─── Events Grid & Loading / Empty states ─── */}
-        {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 pt-2">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div
-                key={i}
-                className="h-80 rounded-2xl border border-border/60 bg-muted/30 animate-pulse"
-              />
-            ))}
+        {/* View Mode Switcher Toolbar */}
+        <div className="flex items-center justify-between pt-1 pb-1">
+          <span className="text-xs text-muted-foreground font-medium">
+            {filteredEvents.length} {filteredEvents.length > 1 ? "événements trouvés" : "événement trouvé"}
+          </span>
+          <div className="flex items-center gap-1 bg-muted/40 p-0.5 rounded-lg border border-border/40">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "h-7 px-2.5 rounded-md text-xs gap-1.5 transition-all",
+                viewMode === "grid"
+                  ? "bg-background text-foreground shadow-xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+              onClick={() => setViewMode("grid")}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Grille</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "h-7 px-2.5 rounded-md text-xs gap-1.5 transition-all",
+                viewMode === "list"
+                  ? "bg-background text-foreground shadow-xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+              onClick={() => setViewMode("list")}
+            >
+              <List className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Liste</span>
+            </Button>
           </div>
+        </div>
+
+        {/* ─── Events Grid / List & Loading / Empty states ─── */}
+        {isInitialLoading ? (
+          viewMode === "grid" ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 pt-2">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="flex flex-col gap-2.5 animate-pulse">
+                  <div className="aspect-[16/10] w-full rounded-2xl bg-muted/60" />
+                  <div className="space-y-1.5 pt-1">
+                    <div className="h-4 w-3/4 bg-muted/60 rounded" />
+                    <div className="h-3 w-1/2 bg-muted/60 rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col pt-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="h-16 border-b border-border/40 py-3.5 px-3 flex items-center gap-4 animate-pulse"
+                >
+                  <div className="w-12 h-12 rounded-lg bg-muted/60 shrink-0" />
+                  <div className="space-y-2 flex-1">
+                    <div className="h-4 w-1/3 bg-muted/60 rounded" />
+                    <div className="h-3 w-1/4 bg-muted/60 rounded" />
+                  </div>
+                  <div className="w-20 h-8 rounded-lg bg-muted/60 shrink-0" />
+                </div>
+              ))}
+            </div>
+          )
         ) : filteredEvents.length === 0 ? (
           <div className="py-14 text-center">
             <EmptyState
@@ -284,15 +381,26 @@ export function Events() {
               action={
                 <Button
                   onClick={activeTab === "mine" ? () => setActiveTab("upcoming") : handleResetFilters}
-                  className="mt-4 rounded-xl font-semibold bg-primary text-primary-foreground text-xs"
+                  className="mt-4 rounded-xl font-semibold bg-secondary text-secondary-foreground hover:bg-muted border border-border/60 text-xs"
                 >
                   {activeTab === "mine" ? "Explorer les événements" : "Réinitialiser les filtres"}
                 </Button>
               }
             />
           </div>
+        ) : viewMode === "grid" ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 pt-2">
+            {filteredEvents.map((event) => (
+              <EventTile
+                key={event.id}
+                event={event}
+                onStatusChange={handleStatusChange}
+                onShare={setShareEvent}
+              />
+            ))}
+          </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 pt-2">
+          <div className="flex flex-col pt-2">
             {filteredEvents.map((event) => (
               <EventCard
                 key={event.id}

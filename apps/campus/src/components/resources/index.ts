@@ -13,3 +13,4 @@ export { ResourcesFilterBar } from "./ResourcesFilterBar";
 export { ResourcesFolderSection } from "./ResourcesFolderSection";
 export { ResourcesFilteredGrid } from "./ResourcesFilteredGrid";
 export { ResourcesCategoryCarousels } from "./ResourcesCategoryCarousels";
+export { ResourceTile } from "./ResourceTile";

@@ -175,8 +175,8 @@ export function ResourcesFilterBar({
               className={cn(
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer",
                 isSelected
-                  ? "bg-primary text-primary-foreground shadow-xs"
-                  : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  ? "bg-primary/15 text-primary border border-primary/30 shadow-xs font-semibold"
+                  : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent"
               )}
             >
               <span>{chip.label}</span>

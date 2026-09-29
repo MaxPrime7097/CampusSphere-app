@@ -1,4 +1,3 @@
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, Loader2 } from "lucide-react";
 
@@ -24,8 +23,7 @@ export function ResourcePreview({
   onDownload,
 }: ResourcePreviewProps) {
   return (
-    <Card className="campus-card mb-4">
-      <CardContent className="p-4 md:p-6 space-y-4">
+    <div className="py-4 border-b border-border/40 space-y-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <h3 className="font-semibold text-lg">Aperçu du document</h3>
@@ -85,7 +83,6 @@ export function ResourcePreview({
             Chargement de l’aperçu du document...
           </div>
         )}
-      </CardContent>
-    </Card>
+    </div>
   );
 }

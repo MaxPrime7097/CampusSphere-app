@@ -25,6 +25,7 @@ interface SphereCardProps {
   membership?: "active" | "pending" | "none";
   onJoin?: () => void;
   className?: string;
+  layout?: "list" | "grid";
 }
 
 const SPHERE_TYPE_META: Record<
@@ -70,6 +71,7 @@ export const SphereCard = React.memo(
     membership = "none",
     onJoin,
     className,
+    layout = "list",
   }: SphereCardProps) => {
     const navigate = useNavigate();
 
@@ -94,148 +96,202 @@ export const SphereCard = React.memo(
       }
     };
 
+    if (layout === "grid") {
+      return (
+        <div
+          onClick={() => navigate(getSphereUrl(sphere))}
+          className={cn("group flex flex-col cursor-pointer transition-all", className)}
+        >
+          {/* Visual Banner Tile (Spotify-style, no heavy card container) */}
+          <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl bg-muted/60 border border-border/30">
+            {bannerImage ? (
+              <img
+                src={bannerImage}
+                alt={sphere.name}
+                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                loading="lazy"
+              />
+            ) : (
+              <div className={cn("h-full w-full flex items-center justify-center bg-gradient-to-br", meta.gradient, "opacity-90")}>
+                <IconComponent className="h-10 w-10 text-white/90" />
+              </div>
+            )}
+
+            {/* Category badge floating top-right */}
+            <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
+              <span className="rounded-lg bg-background/85 backdrop-blur-md px-2 py-0.5 text-[10px] font-medium text-foreground border border-border/40 shadow-2xs">
+                {meta.label}
+              </span>
+            </div>
+
+            {/* Lock indicator */}
+            {(sphere.is_private || sphere.require_approval) && (
+              <div className="absolute top-2.5 left-2.5 rounded-lg bg-background/85 backdrop-blur-md p-1.5 text-muted-foreground border border-border/40 shadow-2xs">
+                <Lock className="h-3 w-3" />
+              </div>
+            )}
+
+            {isMember && (
+              <div className="absolute bottom-2.5 left-2.5">
+                <span className="flex items-center gap-1 rounded-lg bg-emerald-500/90 text-white backdrop-blur-md px-2 py-0.5 text-[10px] font-semibold shadow-xs">
+                  <Check className="h-3 w-3" /> Membre
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Typography underneath */}
+          <div className="pt-2.5 space-y-1 min-w-0">
+            <h3 className="font-semibold text-sm text-foreground line-clamp-1 group-hover:underline">
+              {sphere.name}
+            </h3>
+
+            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+              {sphere.description || sphere.objective || "Sphère d'échange et de travail collaboratif."}
+            </p>
+
+            <div className="flex items-center justify-between pt-1">
+              <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                <Users className="h-3 w-3" />
+                <span>{memberCount} membre{memberCount > 1 ? "s" : ""}</span>
+              </span>
+
+              <div onClick={(e) => e.stopPropagation()}>
+                {isMember ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-2 text-[11px] font-medium border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 rounded-lg"
+                    onClick={handleActionClick}
+                  >
+                    <Check className="h-3 w-3 mr-1" />
+                    <span>Ouvrir</span>
+                  </Button>
+                ) : isPending ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled
+                    className="h-7 px-2 text-[11px] text-muted-foreground rounded-lg font-normal"
+                  >
+                    <Clock className="h-3 w-3 mr-1" />
+                    <span>Envoyée</span>
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="h-7 px-2 text-[11px] bg-secondary hover:bg-muted text-secondary-foreground border border-border/50 rounded-lg font-normal"
+                    onClick={handleActionClick}
+                    disabled={isJoining}
+                  >
+                    {isJoining ? "..." : "Rejoindre"}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div
         onClick={() => navigate(getSphereUrl(sphere))}
         className={cn(
-          "group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/70 bg-card text-card-foreground shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg cursor-pointer",
+          "group flex items-center justify-between gap-3 sm:gap-4 py-3.5 px-3 sm:px-4 rounded-xl border-b border-border/30 hover:bg-muted/40 transition-colors cursor-pointer",
           className
         )}
       >
-        {/* Top Banner / Cover */}
-        <div className="relative h-36 w-full overflow-hidden bg-muted">
+        {/* Left: Avatar or Icon */}
+        <div className="relative shrink-0">
           {bannerImage ? (
             <img
               src={bannerImage}
               alt={sphere.name}
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              className="h-11 w-11 rounded-lg object-cover border border-border/50"
               loading="lazy"
             />
           ) : (
-            <div
-              className={`h-full w-full bg-gradient-to-br ${meta.gradient} opacity-90 flex items-center justify-center`}
-            >
-              <IconComponent className="h-14 w-14 text-white/30" />
+            <div className={cn("h-11 w-11 rounded-lg flex items-center justify-center border border-border/50", `bg-gradient-to-br ${meta.gradient} opacity-90`)}>
+              <IconComponent className="h-5 w-5 text-white" />
             </div>
           )}
-
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-
-          {/* Sphere Type Badge (Top Left) */}
-          <div className="absolute left-3 top-3">
-            <Badge
-              variant="secondary"
-              className="flex items-center gap-1.5 backdrop-blur-md bg-background/90 text-foreground font-semibold px-2.5 py-1 text-xs shadow-xs border border-border/40"
-            >
-              <IconComponent className="h-3.5 w-3.5 text-primary" />
-              <span>{meta.label}</span>
-            </Badge>
-          </div>
-
-          {/* Privacy Lock Badge (Top Right) */}
           {(sphere.is_private || sphere.require_approval) && (
-            <div className="absolute right-3 top-3">
-              <Badge
-                variant="outline"
-                className="bg-black/60 text-white backdrop-blur-md border-white/20 text-[10px] font-medium px-2 py-0.5"
-              >
-                <Lock className="h-3 w-3 mr-1" />
-                Privée
-              </Badge>
+            <div className="absolute -bottom-1 -right-1 bg-background rounded-full p-0.5 border border-border">
+              <Lock className="h-2.5 w-2.5 text-muted-foreground" />
             </div>
           )}
+        </div>
 
-          {/* Target Audience / Status on Cover bottom */}
-          <div className="absolute bottom-2.5 left-3 right-3 flex items-center justify-between text-white text-xs">
-            {sphere.target_audience && sphere.target_audience !== "Tous les étudiants" ? (
-              <span className="truncate text-[11px] font-medium text-white/90 bg-black/50 backdrop-blur-xs px-2 py-0.5 rounded-md">
-                {sphere.target_audience}
-              </span>
-            ) : (
-              <span />
-            )}
-
+        {/* Center: Info */}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="font-semibold text-sm text-foreground truncate group-hover:underline">
+              {sphere.name}
+            </h3>
+            <Badge variant="muted" size="sm" className="text-[10px] font-normal py-0">
+              {meta.label}
+            </Badge>
             {isMember && (
-              <span className="flex items-center gap-1 rounded-full bg-emerald-500/90 text-white text-[10px] font-bold px-2 py-0.5 shadow-xs backdrop-blur-xs">
+              <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
                 <Check className="h-3 w-3" /> Membre
               </span>
             )}
             {isPending && (
-              <span className="flex items-center gap-1 rounded-full bg-primary/90 text-primary-foreground text-[10px] font-bold px-2 py-0.5 shadow-xs backdrop-blur-xs">
+              <span className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
                 <Clock className="h-3 w-3" /> En attente
               </span>
             )}
           </div>
-        </div>
 
-        {/* Card Body */}
-        <div className="flex flex-1 flex-col p-4">
-          {/* Title */}
-          <h3 className="line-clamp-1 text-base font-bold tracking-tight text-foreground transition-colors group-hover:text-primary">
-            {sphere.name}
-          </h3>
-
-          {/* Description */}
-          <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground leading-relaxed flex-1">
+          <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
             {sphere.description || sphere.objective || "Sphère d'échange et de travail collaboratif."}
           </p>
 
-          {/* Footer Info: Creator & Member Count */}
-          <div className="mt-4 pt-3 border-t border-border/50 flex items-center justify-between gap-2">
-            {/* Creator */}
-            <div className="flex items-center gap-2 min-w-0">
-              <Avatar className="h-6 w-6 border border-border shrink-0">
-                <AvatarImage src={creator?.avatar || undefined} />
-                <AvatarFallback className="text-[9px] font-bold">
-                  {creatorName.slice(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <span className="text-xs text-muted-foreground truncate font-medium">
-                {creatorName}
-              </span>
-            </div>
-
-            {/* Member count */}
-            <div className="flex items-center gap-1 text-xs font-semibold text-muted-foreground shrink-0">
-              <Users className="h-3.5 w-3.5 text-primary" />
-              <span>{memberCount}</span>
-            </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1 flex-wrap">
+            <span className="truncate max-w-[120px]">Par {creatorName}</span>
+            <span>·</span>
+            <span className="flex items-center gap-1">
+              <Users className="h-3 w-3" />
+              {memberCount} membre{memberCount > 1 ? "s" : ""}
+            </span>
           </div>
+        </div>
 
-          {/* Action Button */}
-          <div className="mt-3">
-            {isMember ? (
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-semibold text-xs"
-                onClick={handleActionClick}
-              >
-                <Check className="h-3.5 w-3.5 mr-1.5" />
-                Accéder à la sphère
-              </Button>
-            ) : isPending ? (
-              <Button
-                variant="outline"
-                size="sm"
-                disabled
-                className="w-full border-primary/30 text-primary font-semibold text-xs"
-              >
-                <Clock className="h-3.5 w-3.5 mr-1.5" />
-                Demande envoyée
-              </Button>
-            ) : (
-              <Button
-                size="sm"
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs transition-all"
-                onClick={handleActionClick}
-                disabled={isJoining}
-              >
-                {isJoining ? "Connexion..." : "Rejoindre la sphère"}
-                <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
-              </Button>
-            )}
-          </div>
+        {/* Right: Action */}
+        <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+          {isMember ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 px-2.5 text-xs border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-medium"
+              onClick={handleActionClick}
+            >
+              <Check className="h-3.5 w-3.5 mr-1" />
+              <span>Ouvrir</span>
+            </Button>
+          ) : isPending ? (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled
+              className="h-8 px-2.5 text-xs text-muted-foreground font-normal"
+            >
+              <Clock className="h-3.5 w-3.5 mr-1" />
+              <span>Envoyée</span>
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="secondary"
+              className="h-8 px-2.5 text-xs bg-secondary hover:bg-muted text-secondary-foreground border border-border/60 font-normal"
+              onClick={handleActionClick}
+              disabled={isJoining}
+            >
+              {isJoining ? "..." : "Rejoindre"}
+            </Button>
+          )}
         </div>
       </div>
     );

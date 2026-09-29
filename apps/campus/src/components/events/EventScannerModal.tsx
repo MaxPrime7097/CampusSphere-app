@@ -89,7 +89,7 @@ export function EventScannerModal({
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-2 text-lg font-bold">
-              <QrCode className="h-5 w-5 text-primary" />
+              <QrCode className="h-5 w-5 text-muted-foreground" />
               <span>Contrôle d'accès & Check-in</span>
             </DialogTitle>
             <Badge variant="secondary" className="text-xs font-semibold">
@@ -102,9 +102,9 @@ export function EventScannerModal({
         {/* Camera Viewfinder Simulation */}
         <div className="relative h-48 rounded-2xl overflow-hidden bg-slate-950 border border-border flex flex-col items-center justify-center text-white space-y-2">
           {/* Animated scanning line */}
-          <div className="absolute inset-x-8 h-0.5 bg-primary/80 animate-pulse shadow-md top-1/2" />
+          <div className="absolute inset-x-8 h-0.5 bg-emerald-500/80 animate-pulse shadow-md top-1/2" />
 
-          <Camera className="h-10 w-10 text-primary/70 mb-1" />
+          <Camera className="h-10 w-10 text-muted-foreground mb-1" />
           <span className="text-xs font-bold tracking-wide">
             Viseur de scan actif
           </span>
@@ -131,9 +131,10 @@ export function EventScannerModal({
               />
             </div>
             <Button
+              variant="secondary"
               onClick={() => handleValidateTicket()}
               disabled={isProcessing || !ticketInput.trim()}
-              className="rounded-xl font-bold text-xs bg-primary hover:bg-primary/90 text-primary-foreground shrink-0"
+              className="rounded-xl font-bold text-xs shrink-0"
             >
               {isProcessing ? "Validation..." : "Valider"}
             </Button>

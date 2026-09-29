@@ -238,7 +238,7 @@ export function SphereOverview({ sphereId, sphereType, objective, onTabChange }:
                   <MessageSquare className="h-5 w-5 text-blue-500" />
                 </div>
                 <p className="text-sm font-semibold">{data.unread_messages} message{data.unread_messages > 1 ? "s" : ""} non lu{data.unread_messages > 1 ? "s" : ""}</p>
-                <Button size="sm" className="campus-gradient text-white" onClick={() => onTabChange("chat")}>Voir les messages</Button>
+                <Button size="sm" className="bg-secondary text-secondary-foreground hover:bg-muted border border-border/60" onClick={() => onTabChange("chat")}>Voir les messages</Button>
               </>
             ) : (
               <p className="text-xs text-muted-foreground">Vous êtes à jour ✓</p>

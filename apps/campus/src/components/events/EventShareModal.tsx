@@ -57,7 +57,7 @@ export function EventShareModal({ open, onOpenChange, event }: EventShareModalPr
       <DialogContent className="max-w-md rounded-2xl p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg font-bold">
-            <Share2 className="h-5 w-5 text-primary" />
+            <Share2 className="h-5 w-5 text-muted-foreground" />
             <span>Partager l'événement</span>
           </DialogTitle>
           <p className="text-xs text-muted-foreground line-clamp-1">{event.title}</p>
@@ -73,8 +73,9 @@ export function EventShareModal({ open, onOpenChange, event }: EventShareModalPr
             />
             <Button
               size="sm"
+              variant="secondary"
               onClick={handleCopy}
-              className="shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs rounded-xl"
+              className="shrink-0 font-semibold text-xs rounded-xl"
             >
               {copied ? (
                 <>

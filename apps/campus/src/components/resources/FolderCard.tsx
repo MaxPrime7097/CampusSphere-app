@@ -43,38 +43,41 @@ export function FolderCard({
   return (
     <div
       className={cn(
-        "group relative bg-card border border-border/70 rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 shadow-xs hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md",
-        isSelected && "ring-2 ring-primary shadow-md border-primary/50"
+        "group relative flex flex-col justify-between p-4 rounded-xl border border-border/60 bg-card/60 hover:bg-muted/40 hover:border-border transition-all cursor-pointer text-left min-h-[120px]",
+        isSelected && "bg-muted/80 border-primary/50 ring-1 ring-primary/40"
       )}
       onClick={() => onOpen(folder)}
     >
-      {/* Header — compact with subtle primary tint */}
-      <div className="h-14 flex items-center justify-center bg-muted/40 border-b border-border/40">
-        {isSelected ? (
-          <FolderOpen className="h-6 w-6 text-primary" />
-        ) : (
-          <Folder className="h-6 w-6 text-primary/80 group-hover:text-primary transition-colors duration-200" />
-        )}
-      </div>
+      {/* Top Header: Folder Icon & Actions */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="h-10 w-10 rounded-xl bg-primary/15 text-primary border border-primary/25 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+          {isSelected ? <FolderOpen className="h-5 w-5" /> : <Folder className="h-5 w-5" />}
+        </div>
 
-      <div className="p-3 space-y-2">
-        {/* Name + options */}
-        <div className="flex items-start justify-between gap-1">
-          <div className="min-w-0 flex-1">
-            <h3 className="font-bold text-xs truncate text-foreground group-hover:text-primary transition-colors">
-              {folder.name}
-            </h3>
-            {folder.description && (
-              <p className="text-[10px] text-muted-foreground truncate">{folder.description}</p>
+        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 px-2 text-[11px] font-medium gap-1 text-muted-foreground hover:text-foreground"
+            onClick={handleDownload}
+            disabled={isDownloading || folder.resource_count === 0}
+            title={folder.resource_count === 0 ? "Dossier vide" : "Télécharger en ZIP"}
+          >
+            {isDownloading ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <Download className="h-3 w-3" />
             )}
-          </div>
+            <span>ZIP</span>
+          </Button>
+
           {folder.can_edit && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 -mr-1"
+                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
                 >
                   <MoreVertical className="h-3.5 w-3.5" />
                 </Button>
@@ -87,7 +90,7 @@ export function FolderCard({
                   }}
                   className="text-xs"
                 >
-                  <Pencil className="h-3 w-3 mr-2" /> Renommer
+                  <Pencil className="h-3.5 w-3.5 mr-2" /> Renommer
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-xs text-destructive font-medium"
@@ -96,35 +99,22 @@ export function FolderCard({
                     onDelete?.(folder.id);
                   }}
                 >
-                  <Trash2 className="h-3 w-3 mr-2" /> Supprimer
+                  <Trash2 className="h-3.5 w-3.5 mr-2" /> Supprimer
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )}
         </div>
+      </div>
 
-        {/* Meta row */}
-        <div className="flex items-center justify-between pt-1 border-t border-border/40">
-          <span className="text-[10px] font-medium text-muted-foreground">
-            {folder.resource_count} {folder.resource_count > 1 ? "fichiers" : "fichier"}
-          </span>
-
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-6 px-2 text-[10px] font-semibold gap-1 text-primary hover:bg-primary/10"
-            onClick={handleDownload}
-            disabled={isDownloading || folder.resource_count === 0}
-            title={folder.resource_count === 0 ? "Dossier vide" : "Télécharger en ZIP"}
-          >
-            {isDownloading ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <Download className="h-3 w-3" />
-            )}
-            <span>ZIP</span>
-          </Button>
-        </div>
+      {/* Bottom Content: Name & Item count */}
+      <div className="mt-3">
+        <h3 className="font-semibold text-sm truncate text-foreground group-hover:underline">
+          {folder.name}
+        </h3>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          {folder.resource_count} {folder.resource_count > 1 ? "fichiers" : "fichier"}
+        </p>
       </div>
     </div>
   );

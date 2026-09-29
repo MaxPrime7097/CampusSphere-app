@@ -5,7 +5,6 @@ import { SPHERE_AUDIENCE_OPTIONS } from "@/constants/sphereCategories";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { NetflixCarousel } from "@/components/ui/netflix-carousel";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Globe,
@@ -24,6 +23,8 @@ import {
   Sparkles,
   GraduationCap,
   ShieldCheck,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { openVerificationModal } from "@/lib/events";
@@ -63,6 +64,7 @@ export function Spheres() {
   const [filterAudience, setFilterAudience] = useState<string>("all");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [isCreateSphereOpen, setIsCreateSphereOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const [userJoinedSpheres, setUserJoinedSpheres] = useState<string[]>([]);
   const [pendingJoinRequests, setPendingJoinRequests] = useState<string[]>([]);
@@ -77,8 +79,8 @@ export function Spheres() {
   const spheresQuery = useQuery({
     queryKey: ["spheres"],
     queryFn: () => listSpheres(),
-    staleTime: 2 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
   });
@@ -87,8 +89,8 @@ export function Spheres() {
     queryKey: ["user-spheres"],
     queryFn: () => getUserSpheres(),
     enabled: Boolean(currentUser?.id),
-    staleTime: 2 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
   });
@@ -122,7 +124,11 @@ export function Spheres() {
     }
   }, [spheresQuery.data, spheresQuery.error]);
 
-  const isSpheresLoading = isAuthLoading || userSpheresQuery.isLoading || spheresQuery.isLoading;
+  const isSpheresLoading =
+    isAuthLoading ||
+    ((userSpheresQuery.isLoading || spheresQuery.isLoading) &&
+      allSpheres.length === 0 &&
+      !spheresQuery.data);
 
   const refreshMembershipState = async () => {
     const [spheresRes, mySpheresRes] = await Promise.all([
@@ -271,7 +277,7 @@ export function Spheres() {
         {/* ─── Top Header (Standardisé & Épuré) ─── */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2 campus-animate-fade-in">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-white">
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">
               Sphères Collaboratives
             </h1>
             <p className="text-muted-foreground mt-2 text-sm">
@@ -450,8 +456,8 @@ export function Spheres() {
                   className={cn(
                     "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer",
                     isSelected
-                      ? "bg-primary text-primary-foreground shadow-xs"
-                      : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+                      ? "bg-primary/15 text-primary border border-primary/30 shadow-xs font-semibold"
+                      : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent"
                   )}
                 >
                   <span>{chip.label}</span>
@@ -461,21 +467,62 @@ export function Spheres() {
           </div>
         </div>
 
-        {/* ─── Main Content (Filtered Grid or Dashboard Carousels) ─── */}
+        {/* View Mode Switcher Toolbar */}
+        <div className="flex items-center justify-between pt-1 pb-1">
+          <span className="text-xs text-muted-foreground font-medium">
+            {isFiltering
+              ? `${filteredSpheres.length} ${filteredSpheres.length > 1 ? "sphères trouvées" : "sphère trouvée"}`
+              : `${allSpheres.length} ${allSpheres.length > 1 ? "sphères disponibles" : "sphère disponible"}`}
+          </span>
+          <div className="flex items-center gap-1 bg-muted/40 p-0.5 rounded-lg border border-border/40">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "h-7 px-2.5 rounded-md text-xs gap-1.5 transition-all",
+                viewMode === "grid"
+                  ? "bg-background text-foreground shadow-xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+              onClick={() => setViewMode("grid")}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Grille</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "h-7 px-2.5 rounded-md text-xs gap-1.5 transition-all",
+                viewMode === "list"
+                  ? "bg-background text-foreground shadow-xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+              onClick={() => setViewMode("list")}
+            >
+              <List className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Liste</span>
+            </Button>
+          </div>
+        </div>
+
+        {/* ─── Main Content (Filtered Grid or Dashboard Sections) ─── */}
         {isFiltering ? (
           <div className="space-y-4 pt-2">
-            <div className="flex items-center justify-between px-1">
-              <span className="text-xs font-bold text-muted-foreground">
-                {filteredSpheres.length} {filteredSpheres.length > 1 ? "sphères trouvées" : "sphère trouvée"}
-              </span>
-            </div>
-
             {isSpheresLoading ? (
-              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <SphereSkeleton key={i} />
-                ))}
-              </div>
+              viewMode === "grid" ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 pt-2">
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <SphereSkeleton key={i} layout="grid" />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col pt-2">
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <SphereSkeleton key={i} layout="list" />
+                  ))}
+                </div>
+              )
             ) : filteredSpheres.length === 0 ? (
               <EmptyState
                 icon={Globe}
@@ -488,12 +535,26 @@ export function Spheres() {
                   setFilterAudience("all");
                 }}
               />
-            ) : (
-              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            ) : viewMode === "grid" ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 pt-2">
                 {filteredSpheres.map((sphere) => (
                   <SphereCard
                     key={sphere.id}
                     sphere={sphere}
+                    layout="grid"
+                    membership={getUnifiedMembershipState(sphere)}
+                    isJoining={isJoining === String(sphere.id)}
+                    onJoin={() => handleJoinSphere(String(sphere.id), sphere.name)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col pt-2">
+                {filteredSpheres.map((sphere) => (
+                  <SphereCard
+                    key={sphere.id}
+                    sphere={sphere}
+                    layout="list"
                     membership={getUnifiedMembershipState(sphere)}
                     isJoining={isJoining === String(sphere.id)}
                     onJoin={() => handleJoinSphere(String(sphere.id), sphere.name)}
@@ -503,7 +564,7 @@ export function Spheres() {
             )}
           </div>
         ) : (
-          <div className="flex flex-col gap-10 mt-6 pb-12">
+          <div className="flex flex-col gap-8 mt-6 pb-12">
             {/* Row 1: Mes Sphères */}
             {(() => {
               const mySpheres = allSpheres.filter(
@@ -511,30 +572,51 @@ export function Spheres() {
               );
               if (mySpheres.length === 0 && !isSpheresLoading) return null;
               return (
-                <section>
-                  <h2 className="text-base sm:text-lg font-bold mb-3 px-1 text-foreground">
-                    Mes Sphères ({mySpheres.length})
-                  </h2>
-                  <NetflixCarousel className="gap-4">
-                    {isSpheresLoading ? (
-                      Array.from({ length: 4 }).map((_, i) => (
-                        <div key={i} className="cs-scroll-item w-[240px] sm:w-[280px]">
-                          <SphereSkeleton />
-                        </div>
-                      ))
-                    ) : (
-                      mySpheres.map((sphere) => (
-                        <div key={sphere.id} className="cs-scroll-item w-[240px] sm:w-[280px]">
+                <section className="space-y-3">
+                  <div className="flex justify-between items-center pb-2 border-b border-border/40 px-1">
+                    <h2 className="text-sm font-semibold tracking-wide text-foreground">
+                      Mes Sphères ({mySpheres.length})
+                    </h2>
+                  </div>
+                  {viewMode === "grid" ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 pt-2">
+                      {isSpheresLoading ? (
+                        Array.from({ length: 4 }).map((_, i) => (
+                          <SphereSkeleton key={i} layout="grid" />
+                        ))
+                      ) : (
+                        mySpheres.slice(0, 8).map((sphere) => (
                           <SphereCard
+                            key={sphere.id}
                             sphere={sphere}
+                            layout="grid"
                             membership={getUnifiedMembershipState(sphere)}
                             isJoining={isJoining === String(sphere.id)}
                             onJoin={() => handleJoinSphere(String(sphere.id), sphere.name)}
                           />
-                        </div>
-                      ))
-                    )}
-                  </NetflixCarousel>
+                        ))
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col pt-2">
+                      {isSpheresLoading ? (
+                        Array.from({ length: 3 }).map((_, i) => (
+                          <SphereSkeleton key={i} layout="list" />
+                        ))
+                      ) : (
+                        mySpheres.slice(0, 4).map((sphere) => (
+                          <SphereCard
+                            key={sphere.id}
+                            sphere={sphere}
+                            layout="list"
+                            membership={getUnifiedMembershipState(sphere)}
+                            isJoining={isJoining === String(sphere.id)}
+                            onJoin={() => handleJoinSphere(String(sphere.id), sphere.name)}
+                          />
+                        ))
+                      )}
+                    </div>
+                  )}
                 </section>
               );
             })()}
@@ -549,34 +631,55 @@ export function Spheres() {
                   const progressB = Math.min(100, Number(b.progression) || 0);
                   return membersB * 0.5 + progressB * 0.5 - (membersA * 0.5 + progressA * 0.5);
                 })
-                .slice(0, 10);
+                .slice(0, 8);
 
               if (topSpheres.length === 0 && !isSpheresLoading) return null;
               return (
-                <section>
-                  <h2 className="text-base sm:text-lg font-bold mb-3 px-1 text-foreground">
-                    Sphères Populaires & Tendances
-                  </h2>
-                  <NetflixCarousel className="gap-4">
-                    {isSpheresLoading ? (
-                      Array.from({ length: 4 }).map((_, i) => (
-                        <div key={i} className="cs-scroll-item w-[240px] sm:w-[280px]">
-                          <SphereSkeleton />
-                        </div>
-                      ))
-                    ) : (
-                      topSpheres.map((sphere) => (
-                        <div key={sphere.id} className="cs-scroll-item w-[240px] sm:w-[280px]">
+                <section className="space-y-3">
+                  <div className="flex justify-between items-center pb-2 border-b border-border/40 px-1">
+                    <h2 className="text-sm font-semibold tracking-wide text-foreground">
+                      Sphères Populaires & Tendances
+                    </h2>
+                  </div>
+                  {viewMode === "grid" ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 pt-2">
+                      {isSpheresLoading ? (
+                        Array.from({ length: 4 }).map((_, i) => (
+                          <SphereSkeleton key={i} layout="grid" />
+                        ))
+                      ) : (
+                        topSpheres.map((sphere) => (
                           <SphereCard
+                            key={sphere.id}
                             sphere={sphere}
+                            layout="grid"
                             membership={getUnifiedMembershipState(sphere)}
                             isJoining={isJoining === String(sphere.id)}
                             onJoin={() => handleJoinSphere(String(sphere.id), sphere.name)}
                           />
-                        </div>
-                      ))
-                    )}
-                  </NetflixCarousel>
+                        ))
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col pt-2">
+                      {isSpheresLoading ? (
+                        Array.from({ length: 3 }).map((_, i) => (
+                          <SphereSkeleton key={i} layout="list" />
+                        ))
+                      ) : (
+                        topSpheres.map((sphere) => (
+                          <SphereCard
+                            key={sphere.id}
+                            sphere={sphere}
+                            layout="list"
+                            membership={getUnifiedMembershipState(sphere)}
+                            isJoining={isJoining === String(sphere.id)}
+                            onJoin={() => handleJoinSphere(String(sphere.id), sphere.name)}
+                          />
+                        ))
+                      )}
+                    </div>
+                  )}
                 </section>
               );
             })()}
@@ -595,16 +698,16 @@ export function Spheres() {
               });
               if (catSpheres.length === 0 && !isSpheresLoading) return null;
               return (
-                <section key={typeObj.value}>
-                  <div className="flex justify-between items-center mb-3 px-1">
-                    <h2 className="text-base sm:text-lg font-bold text-foreground">
+                <section key={typeObj.value} className="space-y-3">
+                  <div className="flex justify-between items-center pb-2 border-b border-border/40 px-1">
+                    <h2 className="text-sm font-semibold tracking-wide text-foreground">
                       {typeObj.label}
                     </h2>
                     {catSpheres.length > 4 && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-xs text-muted-foreground hover:text-foreground font-semibold"
+                        className="text-xs text-muted-foreground hover:text-foreground font-medium h-7 px-2"
                         onClick={() => {
                           setFilterType(typeObj.value);
                         }}
@@ -613,26 +716,45 @@ export function Spheres() {
                       </Button>
                     )}
                   </div>
-                  <NetflixCarousel className="gap-4">
-                    {isSpheresLoading ? (
-                      Array.from({ length: 4 }).map((_, i) => (
-                        <div key={i} className="cs-scroll-item w-[240px] sm:w-[280px]">
-                          <SphereSkeleton />
-                        </div>
-                      ))
-                    ) : (
-                      catSpheres.map((sphere) => (
-                        <div key={sphere.id} className="cs-scroll-item w-[240px] sm:w-[280px]">
+                  {viewMode === "grid" ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 pt-2">
+                      {isSpheresLoading ? (
+                        Array.from({ length: 4 }).map((_, i) => (
+                          <SphereSkeleton key={i} layout="grid" />
+                        ))
+                      ) : (
+                        catSpheres.slice(0, 8).map((sphere) => (
                           <SphereCard
+                            key={sphere.id}
                             sphere={sphere}
+                            layout="grid"
                             membership={getUnifiedMembershipState(sphere)}
                             isJoining={isJoining === String(sphere.id)}
                             onJoin={() => handleJoinSphere(String(sphere.id), sphere.name)}
                           />
-                        </div>
-                      ))
-                    )}
-                  </NetflixCarousel>
+                        ))
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col pt-2">
+                      {isSpheresLoading ? (
+                        Array.from({ length: 3 }).map((_, i) => (
+                          <SphereSkeleton key={i} layout="list" />
+                        ))
+                      ) : (
+                        catSpheres.slice(0, 4).map((sphere) => (
+                          <SphereCard
+                            key={sphere.id}
+                            sphere={sphere}
+                            layout="list"
+                            membership={getUnifiedMembershipState(sphere)}
+                            isJoining={isJoining === String(sphere.id)}
+                            onJoin={() => handleJoinSphere(String(sphere.id), sphere.name)}
+                          />
+                        ))
+                      )}
+                    </div>
+                  )}
                 </section>
               );
             })}

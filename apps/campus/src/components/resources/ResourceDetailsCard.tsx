@@ -1,4 +1,3 @@
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatFrenchDate } from "@/lib/date";
 import { formatFileSize } from "@/lib/utils";
@@ -22,9 +21,8 @@ export function ResourceDetailsCard({
   tags,
 }: ResourceDetailsCardProps) {
   return (
-    <Card className="campus-card mb-4">
-      <CardContent className="p-4 md:p-6">
-        <h3 className="font-semibold text-lg mb-4">Détails</h3>
+    <div className="py-4 border-b border-border/40 space-y-4">
+      <h3 className="font-semibold text-base">Détails</h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
           <div>
@@ -60,8 +58,7 @@ export function ResourceDetailsCard({
               <EmptyField />
             )}
           </div>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
