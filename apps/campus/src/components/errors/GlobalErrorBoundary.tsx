@@ -41,8 +41,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
         <div className="min-h-screen w-full flex items-center justify-center bg-background p-6">
           <div className="max-w-md w-full flex flex-col items-center text-center space-y-6 animate-in fade-in duration-300">
             <div className="relative">
-              <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
-              <img src="/CS.svg" alt="CampusSphere" className="h-16 w-16 relative" />
+              <img src="/CS.svg" alt="CampusSphere" className="h-14 w-14" />
             </div>
 
             <div className="space-y-2">
@@ -68,7 +67,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
                 Actualiser
               </Button>
               <Button
-                className="w-full sm:w-1/2 campus-gradient text-white gap-2"
+                className="w-full sm:w-1/2 bg-secondary hover:bg-muted text-secondary-foreground border border-border/60 gap-2"
                 onClick={this.handleGoHome}
               >
                 <Home className="h-4 w-4" />
