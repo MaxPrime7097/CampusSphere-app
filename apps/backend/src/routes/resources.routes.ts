@@ -1,3 +1,4 @@
+import { parseSlugId } from "../lib/hashids.js";
 /**
  * Resources and folders — mounted at /api/resources/. API_CONTRACT §3.5.
  *
@@ -70,11 +71,8 @@ async function resourceIdOf(req: Request): Promise<number> {
   const raw = String(req.params.id ?? "").trim();
   if (!raw) throw notFound("Resource not found.");
 
-  const match = raw.match(/^(\d+)(?:-.*)?$/);
-  if (match) {
-    const num = Number(match[1]);
-    if (Number.isInteger(num) && num > 0) return num;
-  }
+  const parsed = parseSlugId(raw);
+  if (parsed && Number.isInteger(parsed) && parsed > 0) return parsed;
 
   const cleaned = raw.replace(/-/g, " ");
   const resource = await prisma.resource.findFirst({

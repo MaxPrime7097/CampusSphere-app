@@ -1,3 +1,4 @@
+import { parseSlugId } from "../lib/hashids.js";
 /**
  * Events and Attendees routes — mounted at /api/events/.
  *
@@ -292,8 +293,8 @@ eventsRouter.get("/", async (req, res) => {
  */
 eventsRouter.get("/:id", async (req, res) => {
   const rawId = String(req.params.id ?? "").trim();
-  const match = rawId.match(/^(\d+)(?:-.*)?$/);
-  const numId = match ? Number(match[1]) : NaN;
+  const parsed = parseSlugId(rawId);
+  const numId = parsed ?? NaN;
   const isNumeric = Number.isInteger(numId) && numId > 0;
   const user = currentUser(req);
 

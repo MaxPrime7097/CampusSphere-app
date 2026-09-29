@@ -1,3 +1,4 @@
+import { parseSlugId } from "../lib/hashids.js";
 /**
  * Posts and comments — mounted at /api/posts/. API_CONTRACT §3.4.
  *
@@ -82,8 +83,8 @@ async function decorate(posts: Array<{ id: number; sphereId: number | null; auth
 }
 
 function postIdOf(req: Request): number {
-  const id = Number(req.params.id);
-  if (!Number.isInteger(id) || id <= 0) throw notFound("Post not found.");
+  const id = parseSlugId(req.params.id);
+  if (!id || !Number.isInteger(id) || id <= 0) throw notFound("Post not found.");
   return id;
 }
 
