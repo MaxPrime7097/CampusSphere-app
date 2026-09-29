@@ -280,7 +280,7 @@ export function AddMemberModal({ children, onMemberAdded, sphereId, sphereName, 
             <Button
               onClick={submitMembers}
               disabled={selectedUsers.length === 0 || isAdding}
-              className="flex-1 campus-gradient text-white hover:opacity-90"
+              className="flex-1 bg-secondary text-secondary-foreground hover:bg-muted border border-border/60"
             >
               {isAdding ? (
                 <>

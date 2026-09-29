@@ -142,7 +142,7 @@ export function ImageUploadModal({
 
           <DialogFooter className="mt-4">
             <Button variant="outline" onClick={() => setSelectedImageSrc(null)} disabled={isProcessing}>Annuler</Button>
-            <Button onClick={handleApplyCrop} disabled={isProcessing} className="campus-gradient text-white">
+            <Button onClick={handleApplyCrop} disabled={isProcessing} className="bg-secondary text-secondary-foreground hover:bg-muted border border-border/60">
               {isProcessing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : "Appliquer"}
             </Button>
           </DialogFooter>
@@ -197,7 +197,7 @@ export function ImageUploadModal({
 
         <DialogFooter>
           <Button variant="ghost" onClick={handleClose}>Annuler</Button>
-          <Button onClick={handleSave} disabled={!finalFile || isProcessing} className="campus-gradient text-white">
+          <Button onClick={handleSave} disabled={!finalFile || isProcessing} className="bg-secondary text-secondary-foreground hover:bg-muted border border-border/60">
             {isProcessing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : "Enregistrer"}
           </Button>
         </DialogFooter>

@@ -1,8 +1,6 @@
 import { Suspense, lazy, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { openVerificationModal } from "@/lib/events";
 import { Button } from "@/components/ui/button";
@@ -16,39 +14,33 @@ interface CreatePostProps {
 }
 
 export function CreatePost({ onPostCreated }: CreatePostProps) {
-  const isMobile = useIsMobile();
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
   const { user: currentUser } = useAuth();
-
-  const cardClasses = cn(
-    "transition-all duration-200",
-    isMobile 
-      ? "rounded-none border-x-0 border-t-0 shadow-none bg-card" 
-      : "cs-card"
-  );
 
   const { toast } = useToast();
   const isVerified = currentUser?.isVerified ?? false;
 
   const content = (
     <>
-      <Card className={cardClasses} onClick={() => {
-        if (isVerified) {
-          setIsCreatePostOpen(true);
-          return;
-        }
-        toast({
-          title: "Compte non certifié",
-          description: "Certifiez votre compte pour publier sur le campus.",
-          variant: "destructive",
-          action: (
-            <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>Vérifier</Button>
-          )
-        });
-      }}>
-      <CardContent className="p-4">
-        <div className="flex gap-3 items-center">
-          <Avatar className="h-10 w-10">
+      <div
+        className="p-3.5 sm:p-4 rounded-2xl border border-border/40 bg-card/50 hover:bg-muted/30 transition-all cursor-pointer shadow-xs mb-3"
+        onClick={() => {
+          if (isVerified) {
+            setIsCreatePostOpen(true);
+            return;
+          }
+          toast({
+            title: "Compte non certifié",
+            description: "Certifiez votre compte pour publier sur le campus.",
+            variant: "destructive",
+            action: (
+              <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>Vérifier</Button>
+            )
+          });
+        }}
+      >
+        <div className="flex gap-3.5 items-center">
+          <Avatar className="h-10 w-10 shrink-0">
             <AvatarImage src={currentUser?.avatar || "/placeholder-avatar.jpg"} />
             <AvatarFallback className="bg-input text-muted-foreground font-semibold">
               {currentUser?.name?.slice(0, 1).toUpperCase() || '...'}
@@ -56,13 +48,13 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
           </Avatar>
           
           <div 
-            className="flex-1 px-4 py-3 bg-muted/50 rounded-full text-muted-foreground cursor-pointer hover:bg-muted transition-colors"
+            className="flex-1 px-4 py-2.5 bg-muted/40 hover:bg-muted/70 rounded-full text-muted-foreground text-sm transition-colors border border-border/40 flex items-center justify-between"
           >
-            Quoi de neuf sur le campus ?
+            <span>Quoi de neuf sur le campus ?</span>
+            <span className="hidden sm:inline-block text-xs font-semibold text-primary">Publier</span>
           </div>
         </div>
-      </CardContent>
-      </Card>
+      </div>
       {isVerified && isCreatePostOpen && (
         <Suspense fallback={<ModalLoadingFallback />}>
           <CreatePostModal

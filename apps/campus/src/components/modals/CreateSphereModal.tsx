@@ -192,7 +192,7 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
                 key={s}
                 className={cn(
                   "h-1 flex-1 rounded-full transition-all duration-300",
-                  s <= step ? "campus-gradient" : "bg-muted"
+                  s <= step ? "bg-muted-foreground/60" : "bg-muted"
                 )}
               />
             ))}
@@ -233,8 +233,8 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
                       <p className="text-xs text-muted-foreground mt-0.5">{option.description}</p>
                     </div>
                     {sphereType === option.value && (
-                      <div className="ml-auto flex-shrink-0 h-5 w-5 rounded-full campus-gradient flex items-center justify-center">
-                        <Check className="h-3 w-3 text-white" />
+                      <div className="ml-auto flex-shrink-0 h-5 w-5 rounded-full bg-secondary border border-border flex items-center justify-center">
+                        <Check className="h-3 w-3 text-secondary-foreground" />
                       </div>
                     )}
                   </button>
@@ -245,7 +245,7 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
                 <Button
                   onClick={() => setStep(1)}
                   disabled={!sphereType}
-                  className="campus-gradient text-white gap-2"
+                  className="bg-secondary text-secondary-foreground hover:bg-muted border border-border/60 gap-2"
                 >
                   Suivant <ArrowRight className="h-4 w-4" />
                 </Button>
@@ -304,7 +304,7 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
                   <Button
                     onClick={handleSubmit}
                     disabled={!name || !description || isCreating}
-                    className="campus-gradient text-white hover:opacity-90 px-8"
+                    className="bg-secondary text-secondary-foreground hover:bg-muted border border-border/60 px-8"
                   >
                     {isCreating ? (
                       <>
@@ -322,7 +322,7 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
                   <Button
                     onClick={() => setStep(2)}
                     disabled={!name || !description}
-                    className="campus-gradient text-white gap-2"
+                    className="bg-secondary text-secondary-foreground hover:bg-muted border border-border/60 gap-2"
                   >
                     Suivant <ArrowRight className="h-4 w-4" />
                   </Button>
@@ -388,7 +388,7 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
                           className={cn(
                             "text-[10px] h-7 py-0 px-2",
                             collaborationType.includes(type)
-                              ? "campus-gradient text-white border-none"
+                              ? "bg-secondary text-secondary-foreground hover:bg-muted border border-border/60 border-none"
                               : "text-muted-foreground"
                           )}
                         >
@@ -414,7 +414,7 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
                 <Button
                   onClick={handleSubmit}
                   disabled={isCreating}
-                  className="campus-gradient text-white hover:opacity-90 px-8"
+                  className="bg-secondary text-secondary-foreground hover:bg-muted border border-border/60 px-8"
                 >
                   {isCreating ? (
                     <>

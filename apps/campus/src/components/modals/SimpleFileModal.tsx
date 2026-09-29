@@ -180,7 +180,7 @@ export function SimpleFileModal({ children, onFileUploaded }: SimpleFileModalPro
           <Button
             onClick={handleUpload}
             disabled={isUploading || !fileName.trim() || !file}
-            className="campus-gradient text-white hover:opacity-90"
+            className="bg-secondary text-secondary-foreground hover:bg-muted border border-border/60"
           >
             {isUploading ? (
               <>

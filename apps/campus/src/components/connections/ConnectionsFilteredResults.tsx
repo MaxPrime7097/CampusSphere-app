@@ -25,8 +25,8 @@ export function ConnectionsFilteredResults({
     <div className="mt-6 space-y-8">
       {connections.length > 0 && (
         <section>
-          <h2 className="text-lg font-semibold mb-4 px-1">Résultats de vos connexions</h2>
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 cursor-pointer">
+          <h2 className="text-sm font-semibold mb-2 pb-2 border-b border-border/40 px-1">Résultats de vos connexions</h2>
+          <div className="flex flex-col">
             {connections.map((connection) => (
               <ConnectionCard
                 key={connection.id}
@@ -41,8 +41,8 @@ export function ConnectionsFilteredResults({
 
       {suggestions.length > 0 && (
         <section>
-          <h2 className="text-lg font-semibold mb-4 px-1">Résultats des suggestions</h2>
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 cursor-pointer">
+          <h2 className="text-sm font-semibold mb-2 pb-2 border-b border-border/40 px-1">Résultats des suggestions</h2>
+          <div className="flex flex-col">
             {suggestions.map((suggestion) => (
               <SuggestionCard
                 key={suggestion.id}

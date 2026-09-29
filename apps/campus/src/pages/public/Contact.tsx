@@ -131,8 +131,8 @@ export function Contact(): JSX.Element {
             </div>
 
             <div className="relative hidden lg:block campus-animate-slide-up">
-              <div className="absolute inset-0 campus-gradient opacity-30 blur-3xl"></div>
-              <div className="relative campus-glass rounded-3xl p-8 campus-glow">
+              <div className="absolute inset-0 campus-gradient opacity-15 blur-3xl"></div>
+              <div className="relative campus-glass rounded-3xl p-8 shadow-sm">
                 <img
                   src="/Illustrations/Contact us-amico.svg"
                   alt="Contact CampusSphere"
@@ -151,14 +151,14 @@ export function Contact(): JSX.Element {
           <div className="grid lg:grid-cols-2 gap-12">
             <div className="space-y-6 campus-animate-fade-in">
               <h2 className="font-raleway text-3xl font-bold mb-6">Envoyez-nous <span className="campus-gradient bg-clip-text text-transparent">un message</span></h2>
-              <p className="font-nunito font-semibold text-lg text-muted-foreground leading-relaxed">
+              <p className="font-semibold text-lg text-muted-foreground leading-relaxed">
                 Vous avez des questions, suggestions ou souhaitez collaborer avec nous ?
                 Remplissez le formulaire ci-contre et nous vous répondrons dans les plus brefs délais.
               </p>
 
-              <div className="campus-card p-6">
-                <h5 className="font-poppins font-semibold mb-4 text-foreground">Conseils pour un message efficace :</h5>
-                <ul className="font-nunito font-semibold space-y-3 text-sm text-muted-foreground">
+              <div className="cs-card p-6">
+                <h5 className="font-semibold mb-4 text-foreground">Conseils pour un message efficace :</h5>
+                <ul className="font-medium space-y-3 text-sm text-muted-foreground">
                   <li className="flex items-start gap-2">
                     <CheckCircle className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
                     <span>Précisez clairement le sujet de votre demande</span>
@@ -179,7 +179,7 @@ export function Contact(): JSX.Element {
               </div>
             </div>
 
-            <div className="p-0 campus-animate-slide-up animation-delay-2s lg:campus-card">
+            <div className="p-0 campus-animate-slide-up animation-delay-2s lg:cs-card">
               <form onSubmit={handleSubmit} className="font-poppins space-y-6 p-0 md:p-8">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
@@ -298,7 +298,7 @@ export function Contact(): JSX.Element {
       {/* FAQ Link Section */}
       <section className="py-12 md:py-20 px-0">
         <div className="container mx-auto max-w-9xl px-4 sm:px-6 lg:px-8 text-center">
-          <div className="campus-card p-6 sm:p-10 md:p-12 rounded-3xl border border-border/60 campus-animate-fade-in">
+          <div className="cs-card p-6 sm:p-10 md:p-12 rounded-3xl border border-border/60 campus-animate-fade-in">
             <h2 className="font-raleway text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
               Questions <span className="campus-gradient bg-clip-text text-transparent">fréquentes ?</span>
             </h2>

@@ -63,8 +63,8 @@ export function CookiePolicy(): JSX.Element {
             </div>
 
             <div className="relative hidden lg:block campus-animate-slide-up">
-              <div className="absolute inset-0 campus-gradient opacity-30 blur-3xl"></div>
-              <div className="relative campus-glass flex justify-center align-items-center h-96 rounded-3xl p-8 campus-glow">
+              <div className="absolute inset-0 campus-gradient opacity-15 blur-3xl"></div>
+              <div className="relative campus-glass flex justify-center align-items-center h-96 rounded-3xl p-8 shadow-sm">
               <img
                   src="/icons/cookies.png"
                   alt="CampusSphere illustration"

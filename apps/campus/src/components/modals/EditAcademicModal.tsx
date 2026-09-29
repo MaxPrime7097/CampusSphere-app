@@ -126,7 +126,7 @@ export function EditAcademicModal({ children, initialData, onSuccess, open: cont
           <Button variant="outline" onClick={() => setOpen(false)} disabled={isSubmitting}>
             Annuler
           </Button>
-          <Button onClick={handleSave} disabled={isSubmitting} className="campus-gradient text-white">
+          <Button onClick={handleSave} disabled={isSubmitting} className="bg-secondary text-secondary-foreground hover:bg-muted border border-border/60">
             {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
             Enregistrer
           </Button>

@@ -313,8 +313,8 @@ export function FAQ(): JSX.Element {
             </div>
 
             <div className="relative hidden lg:block campus-animate-slide-up">
-              <div className="absolute inset-0 campus-gradient opacity-30 blur-3xl"></div>
-              <div className="relative campus-glass rounded-3xl p-8 campus-glow">
+              <div className="absolute inset-0 campus-gradient opacity-15 blur-3xl"></div>
+              <div className="relative campus-glass rounded-3xl p-8 shadow-sm">
                 <img
                   src="/Illustrations/FAQs-amico.svg"
                   alt="Questions Fréquentes CampusSphere"
@@ -395,7 +395,7 @@ export function FAQ(): JSX.Element {
 
           {/* Contact CTA Section */}
           <div className="mt-20 text-center">
-            <div className="campus-card p-6 sm:p-10 md:p-12 rounded-3xl border border-border/60 campus-animate-fade-in">
+            <div className="cs-card p-6 sm:p-10 md:p-12 rounded-3xl border border-border/60 campus-animate-fade-in">
               <h2 className="font-raleway text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
                 Vous ne trouvez pas <span className="campus-gradient bg-clip-text text-transparent">votre réponse ?</span>
               </h2>

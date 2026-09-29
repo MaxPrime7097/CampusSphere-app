@@ -415,18 +415,18 @@ export function Settings() {
     <div className="min-h-screen bg-background">
       <div className="container max-w-4xl mx-auto py-6 md:py-8 px-4 sm:px-6 space-y-6 animate-in fade-in duration-300">
         {/* Header */}
-        <div className="mb-6 campus-animate-fade-in">
+        <div className="mb-4 campus-animate-fade-in pb-4 border-b border-border/40">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-white">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
               Paramètres
             </h1>
-            <p className="text-sm text-muted-foreground mt-2">
+            <p className="text-sm text-muted-foreground mt-1">
               Gérez vos préférences, vos options de confidentialité et votre compte
             </p>
           </div>
         </div>
 
-        <div className="grid gap-4 md:gap-6">
+        <div className="flex flex-col">
           {/* Notifications */}
           <SettingsNotificationsCard />
 

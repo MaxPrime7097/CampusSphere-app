@@ -92,10 +92,10 @@ export function ChatMessageItem({
 
         {/* Bubble */}
         <div
-          className={`group/bubble relative inline-block max-w-full px-3 py-2 rounded-2xl text-sm break-words overflow-wrap-anywhere shadow-sm ${
+          className={`group/bubble relative inline-block max-w-full px-3.5 py-2 rounded-2xl text-sm break-words overflow-wrap-anywhere ${
             isCurrentUser
-              ? "campus-gradient text-white rounded-br-sm"
-              : "bg-card border rounded-bl-sm"
+              ? "bg-secondary text-secondary-foreground border border-border/60 rounded-br-sm"
+              : "bg-muted/50 text-foreground border border-border/30 rounded-bl-sm"
           }`}
         >
           {isEditing ? (
@@ -114,7 +114,7 @@ export function ChatMessageItem({
               <div className="flex gap-1.5 justify-end">
                 <Button
                   size="sm"
-                  className="h-6 text-xs campus-gradient text-white"
+                  className="h-6 text-xs bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border/60"
                   onClick={onSaveEdit}
                 >
                   OK
@@ -174,7 +174,7 @@ export function ChatMessageItem({
             {/* Quick Actions */}
             <div className="flex items-center gap-0.5">
               <button
-                className="h-6 w-6 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground/60 hover:text-primary"
+                className="h-6 w-6 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground/60 hover:text-foreground"
                 title="Réagir"
                 onClick={() => onToggleEmojiPicker(message.id)}
               >
@@ -184,7 +184,7 @@ export function ChatMessageItem({
               {(canEdit || canDelete) && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="h-6 w-6 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground/60 hover:text-primary">
+                    <button className="h-6 w-6 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground/60 hover:text-foreground">
                       <MoreVertical className="h-3.5 w-3.5" />
                     </button>
                   </DropdownMenuTrigger>
@@ -240,7 +240,7 @@ export function ChatMessageItem({
           }`}
         >
           {formatRelativeTime(message.timestamp)}
-          {isCurrentUser && <CheckCheck className="h-2.5 w-2.5 text-primary/60" />}
+          {isCurrentUser && <CheckCheck className="h-2.5 w-2.5 text-muted-foreground" />}
         </p>
       </div>
     </div>

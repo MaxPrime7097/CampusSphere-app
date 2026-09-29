@@ -15,7 +15,6 @@ import { Heart, Send, Reply, MoreHorizontal, Smile, AtSign, Loader2, Zap, Pencil
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -453,12 +452,7 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
             <div className={`${depth === 0 ? "bg-muted" : "bg-muted/50"} rounded-lg p-3`}>
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-xs text-muted-foreground">@{comment.author.username}</span>
-                {depth === 0 && comment.author.impactScore && (
-                  <Badge variant="outline" className="text-xs flex items-center gap-1">
-                    <Zap className="h-3 w-3" />
-                    {comment.author.impactScore}
-                  </Badge>
-                )}
+                
               </div>
               <p className="text-sm whitespace-pre-wrap">{renderMentionText(comment.content)}</p>
             </div>
@@ -560,7 +554,7 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
 
             {/* Emoji Picker */}
             {showEmojiPicker && (
-              <Card className="p-3">
+              <div className="p-3 rounded-xl border border-border/40 bg-popover text-popover-foreground">
                 <div className="grid grid-cols-8 gap-2">
                   {['😀', '😂', '🥰', '😎', '🤔', '👍', '🎉', '🔥', '💯', '✨', '🚀', '❤️', '👏', '🙌', '💪', '🎯'].map((emoji) => (
                     <Button
@@ -573,11 +567,11 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
                     </Button>
                   ))}
                 </div>
-              </Card>
+              </div>
             )}
 
               {showMentions && (
-                <Card className="p-3">
+                <div className="p-3 rounded-xl border border-border/40 bg-popover text-popover-foreground">
                   <div className="space-y-2">
                     {availableUsers.map((user) => (
                       <Button key={user.id} variant="ghost" className="w-full justify-start" onClick={() => insertMention(user.username)}>
@@ -585,7 +579,7 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
                       </Button>
                     ))}
                   </div>
-                </Card>
+                </div>
               )}
 
               <div className="flex gap-3">
@@ -625,7 +619,7 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
                       </Button>
                     </div>
                     <span className="text-xs text-muted-foreground">{newComment.length}/500 caractères</span>
-                    <Button onClick={handleSubmit} disabled={!newComment.trim() || isSubmitting} className="campus-gradient text-white hover:opacity-90">
+                    <Button onClick={handleSubmit} disabled={!newComment.trim() || isSubmitting} className="bg-secondary text-secondary-foreground hover:bg-muted border border-border/60">
                       {isSubmitting ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />

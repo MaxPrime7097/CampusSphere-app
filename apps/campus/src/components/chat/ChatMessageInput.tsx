@@ -52,7 +52,7 @@ export function ChatMessageInput({
         </div>
         <Button
           onClick={onSend}
-          className="campus-gradient text-white hover:opacity-90 h-9 w-9 p-0 flex-shrink-0"
+          className="bg-secondary hover:bg-muted text-secondary-foreground border border-border/60 h-9 w-9 p-0 flex-shrink-0"
           disabled={!value.trim() || isSending}
           aria-label="Send message"
         >

@@ -489,7 +489,7 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
               {t('modals.uploadResource.cancel')}
             </Button>
             <Button 
-              className="flex-1 campus-gradient text-white hover:opacity-90" 
+              className="flex-1 bg-secondary text-secondary-foreground hover:bg-muted border border-border/60" 
               onClick={handleSubmit} 
               disabled={!title || !type || !file || isUploading}
             >

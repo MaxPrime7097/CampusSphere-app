@@ -16,7 +16,6 @@ import {
   isApiRequestErrorStatus,
   acceptConnection,
 } from "@/services/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn, formatFileSize } from "@/lib/utils";
@@ -226,7 +225,10 @@ export function Profile() {
     queryKey: ["profile-user", username],
     queryFn: () => getUserByUsername(username!),
     enabled: Boolean(username),
-    staleTime: 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
     retry: false,
   });
 
@@ -234,7 +236,7 @@ export function Profile() {
     if (!username) return;
 
     if (targetUserQuery.isLoading) {
-      setLoading(true);
+      if (!targetUser) setLoading(true);
       return;
     }
 
@@ -268,7 +270,10 @@ export function Profile() {
     queryKey: ["profile-posts", targetUser?.id],
     queryFn: () => getUserPosts(targetUser!.id),
     enabled: Boolean(targetUser?.id),
-    staleTime: 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
   useEffect(() => {
@@ -306,7 +311,10 @@ export function Profile() {
     queryKey: ["profile-connections", targetUser?.id],
     queryFn: () => getUserConnections(targetUser!.id),
     enabled: Boolean(targetUser?.id),
-    staleTime: 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
   useEffect(() => {
@@ -323,7 +331,10 @@ export function Profile() {
     queryKey: ["profile-resources", targetUser?.id],
     queryFn: () => getUserResources(targetUser!.id),
     enabled: Boolean(targetUser?.id),
-    staleTime: 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
     retry: false,
   });
 
@@ -341,7 +352,10 @@ export function Profile() {
     queryKey: ["profile-relation", targetUser?.id],
     queryFn: () => getUserConnectionRelation(targetUser!.id),
     enabled: Boolean(targetUser?.id && currentUser?.id && !isOwnProfile),
-    staleTime: 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
     retry: false,
   });
 
@@ -565,8 +579,8 @@ export function Profile() {
   };
 
   const cardClasses = cn(
-    "transition-all duration-300",
-    isMobile ? "rounded-none border-x-0 border-t-0 shadow-none bg-card" : "cs-card hover:shadow-[var(--shadow-sm)]"
+    "transition-all duration-200",
+    isMobile ? "rounded-none border-x-0 border-t-0 shadow-none bg-card" : "border border-border/40 rounded-2xl bg-card/40 overflow-hidden"
   );
 
   if (loading) {
@@ -585,18 +599,14 @@ export function Profile() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
         <div className="container max-w-4xl mx-auto py-6 px-4">
-          <Card className="campus-card mobile-card">
-            <CardHeader>
-              <CardTitle>Erreur de chargement</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                {profileUnavailableDueToOnboarding
-                  ? "Ce profil n’est pas encore accessible : l’onboarding de ce compte n’est pas terminé."
-                  : "Le profil reçu est invalide ou obsolète. Veuillez recharger la page."}
-              </p>
-            </CardContent>
-          </Card>
+          <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-6 text-center space-y-2">
+            <h2 className="text-base font-semibold text-destructive">Erreur de chargement</h2>
+            <p className="text-sm text-muted-foreground">
+              {profileUnavailableDueToOnboarding
+                ? "Ce profil n’est pas encore accessible : l’onboarding de ce compte n’est pas terminé."
+                : "Le profil reçu est invalide ou obsolète. Veuillez recharger la page."}
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -662,7 +672,7 @@ export function Profile() {
 
         {/* Custom Tabs Bar */}
         <div className="mt-4 campus-animate-slide-up w-full overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <ul className="inline-grid grid-flow-col text-center border-b border-gray-200 text-gray-500 min-w-full">
+          <ul className="inline-grid grid-flow-col text-center border-b border-border/40 text-muted-foreground min-w-full">
             {[
               { id: "posts", label: "Posts" },
               { id: "about", label: "À propos" },

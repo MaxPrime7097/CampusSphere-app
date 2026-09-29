@@ -170,7 +170,7 @@ export function AddEducationModal({ children, onEducationAdded, existingEducatio
           <Button
             onClick={handleSubmit}
             disabled={isSubmitting || !degree.trim() || !school.trim() || !year.trim()}
-            className="campus-gradient text-white hover:opacity-90"
+            className="bg-secondary text-secondary-foreground hover:bg-muted border border-border/60"
           >
             {isSubmitting ? (
               <>

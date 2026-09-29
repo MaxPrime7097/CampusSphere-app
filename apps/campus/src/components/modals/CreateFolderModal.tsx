@@ -146,7 +146,7 @@ export function CreateFolderModal({
                 Annuler
               </Button>
               <Button
-                className="flex-1 campus-gradient text-white"
+                className="flex-1 bg-secondary text-secondary-foreground hover:bg-muted border border-border/60"
                 onClick={handleSubmit}
                 disabled={isSaving || !name.trim()}
               >

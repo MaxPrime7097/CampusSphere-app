@@ -1,6 +1,5 @@
 import { Users, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { NetflixCarousel } from "@/components/ui/netflix-carousel";
 import { ConnectionSkeleton } from "@/components/ui/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ConnectionCard } from "./ConnectionCard";
@@ -34,59 +33,56 @@ export function ConnectionsDashboardSections({
   onConnectSuggestion,
 }: ConnectionsDashboardSectionsProps) {
   return (
-    <div className="flex flex-col gap-10 mt-8 pb-12">
+    <div className="flex flex-col gap-10 mt-6 pb-12">
       {/* Row 1: Demandes (Only if > 0) */}
       {pendingRequests.length > 0 && (
-        <section>
-          <div className="flex justify-between items-center mb-4 px-1">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
+        <section className="space-y-1">
+          <div className="flex justify-between items-center pb-2 border-b border-border/40 px-1">
+            <h2 className="text-sm font-semibold tracking-wide flex items-center gap-2">
               Demandes en attente ({pendingRequests.length})
             </h2>
             {pendingRequests.length > 4 && (
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-muted-foreground hover:text-foreground"
+                className="text-xs text-muted-foreground hover:text-foreground font-medium h-7 px-2"
                 onClick={() => onViewAll("requests")}
               >
                 Voir tout
               </Button>
             )}
           </div>
-          <NetflixCarousel className="gap-3 pb-1">
+          <div className="flex flex-col">
             {loading ? (
               Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="cs-scroll-item w-[280px] sm:w-[320px]">
-                  <ConnectionSkeleton />
-                </div>
+                <ConnectionSkeleton key={i} />
               ))
             ) : (
-              pendingRequests.map((request) => (
-                <div key={request.id} className="cs-scroll-item w-[280px] sm:w-[320px]">
-                  <PendingRequestCard
-                    request={request}
-                    onNavigateProfile={onNavigateProfile}
-                    onAccept={onAcceptRequest}
-                    onReject={onRejectRequest}
-                  />
-                </div>
+              pendingRequests.slice(0, 4).map((request) => (
+                <PendingRequestCard
+                  key={request.id}
+                  request={request}
+                  onNavigateProfile={onNavigateProfile}
+                  onAccept={onAcceptRequest}
+                  onReject={onRejectRequest}
+                />
               ))
             )}
-          </NetflixCarousel>
+          </div>
         </section>
       )}
 
       {/* Row 2: Mes Connexions */}
-      <section>
-        <div className="flex justify-between items-center mb-4 px-1">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
+      <section className="space-y-1">
+        <div className="flex justify-between items-center pb-2 border-b border-border/40 px-1">
+          <h2 className="text-sm font-semibold tracking-wide flex items-center gap-2">
             Mes Connexions ({connections.length})
           </h2>
-          {connections.length > 4 && (
+          {connections.length > 5 && (
             <Button
               variant="ghost"
               size="sm"
-              className="text-muted-foreground hover:text-foreground"
+              className="text-xs text-muted-foreground hover:text-foreground font-medium h-7 px-2"
               onClick={() => onViewAll("connections")}
             >
               Voir tout
@@ -94,7 +90,7 @@ export function ConnectionsDashboardSections({
           )}
         </div>
         {loading ? (
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          <div className="flex flex-col">
             {Array.from({ length: 3 }).map((_, i) => (
               <ConnectionSkeleton key={i} />
             ))}
@@ -106,31 +102,30 @@ export function ConnectionsDashboardSections({
             description="Commencez à vous connecter avec d'autres étudiants !"
           />
         ) : (
-          <NetflixCarousel className="gap-3 pb-1">
-            {connections.map((connection) => (
-              <div key={connection.id} className="cs-scroll-item w-[280px] sm:w-[320px]">
-                <ConnectionCard
-                  connection={connection}
-                  onNavigateProfile={onNavigateProfile}
-                  onNavigateMessage={onNavigateMessage}
-                />
-              </div>
+          <div className="flex flex-col">
+            {connections.slice(0, 5).map((connection) => (
+              <ConnectionCard
+                key={connection.id}
+                connection={connection}
+                onNavigateProfile={onNavigateProfile}
+                onNavigateMessage={onNavigateMessage}
+              />
             ))}
-          </NetflixCarousel>
+          </div>
         )}
       </section>
 
       {/* Row 3: Suggestions */}
-      <section>
-        <div className="flex justify-between items-center mb-4 px-1">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
+      <section className="space-y-1">
+        <div className="flex justify-between items-center pb-2 border-b border-border/40 px-1">
+          <h2 className="text-sm font-semibold tracking-wide flex items-center gap-2">
             Suggestions ({suggestions.length})
           </h2>
-          {suggestions.length > 4 && (
+          {suggestions.length > 5 && (
             <Button
               variant="ghost"
               size="sm"
-              className="text-muted-foreground hover:text-foreground"
+              className="text-xs text-muted-foreground hover:text-foreground font-medium h-7 px-2"
               onClick={() => onViewAll("suggestions")}
             >
               Voir tout
@@ -138,7 +133,7 @@ export function ConnectionsDashboardSections({
           )}
         </div>
         {loading ? (
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          <div className="flex flex-col">
             {Array.from({ length: 3 }).map((_, i) => (
               <ConnectionSkeleton key={i} />
             ))}
@@ -150,17 +145,16 @@ export function ConnectionsDashboardSections({
             description="Revenez plus tard, de nouveaux étudiants rejoignent la plateforme."
           />
         ) : (
-          <NetflixCarousel className="gap-3 pb-1">
-            {suggestions.map((suggestion) => (
-              <div key={suggestion.id} className="cs-scroll-item w-[280px] sm:w-[320px]">
-                <SuggestionCard
-                  suggestion={suggestion}
-                  onNavigateProfile={onNavigateProfile}
-                  onConnect={onConnectSuggestion}
-                />
-              </div>
+          <div className="flex flex-col">
+            {suggestions.slice(0, 5).map((suggestion) => (
+              <SuggestionCard
+                key={suggestion.id}
+                suggestion={suggestion}
+                onNavigateProfile={onNavigateProfile}
+                onConnect={onConnectSuggestion}
+              />
             ))}
-          </NetflixCarousel>
+          </div>
         )}
       </section>
     </div>

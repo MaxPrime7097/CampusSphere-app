@@ -196,7 +196,7 @@ export function CreateGroupConversationModal({ children, onGroupCreated, open: c
           <Button
             onClick={handleCreate}
             disabled={isCreating || !name.trim() || selectedMembers.length < 2}
-            className="campus-gradient text-white hover:opacity-90"
+            className="bg-secondary text-secondary-foreground hover:bg-muted border border-border/60"
           >
             {isCreating
               ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Création...</>

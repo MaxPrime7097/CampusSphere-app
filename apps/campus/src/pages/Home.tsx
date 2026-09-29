@@ -3,10 +3,10 @@ import { PostCard } from "@/components/feed/PostCard";
 import { FriendSuggestions } from "@/components/feed/FriendSuggestions";
 import { FeedSidebar } from "@/components/layout/FeedSidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { listPosts, listSpheres } from "@/services/api";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { HomeIcon, RefreshCw, Loader2, Users, MessageCircle, BookOpen, ArrowRight, Sparkles } from "lucide-react";
@@ -38,13 +38,12 @@ export function Home() {
   });
 
   const [posts, setPosts] = useState<PostCardData[]>([]);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
+
   const postsQuery = useQuery({
     queryKey: ["home", "posts"],
     queryFn: () => listPosts(),
-    staleTime: 60 * 1000,
-    gcTime: 5 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     select: (data) => (data || []).map(mapPostToCard),
@@ -53,28 +52,20 @@ export function Home() {
   useEffect(() => {
     if (Array.isArray(postsQuery.data)) {
       setPosts(postsQuery.data);
-      setLoadError(null);
-      setIsInitialLoading(false);
-      return;
     }
+  }, [postsQuery.data]);
 
-    if (postsQuery.isLoading) {
-      setIsInitialLoading(true);
-      return;
-    }
+  const loadError = postsQuery.error
+    ? (postsQuery.error as any)?.message || "Erreur de chargement du fil d'actualité"
+    : null;
 
-    if (postsQuery.error) {
-      setLoadError((postsQuery.error as any)?.message || "Erreur de chargement du fil d'actualité");
-      setIsInitialLoading(false);
-    }
-  }, [postsQuery.data, postsQuery.error, postsQuery.isLoading]);
+  const isInitialLoading = postsQuery.isLoading && posts.length === 0 && !postsQuery.data;
 
   const popularSpheres = spheresQuery.data || [];
 
   const fetchPosts = async () => {
     const result = await postsQuery.refetch();
     setPosts((result.data || []) as any[]);
-    setLoadError(null);
   };
 
   const handleLoadMore = () => {
@@ -111,39 +102,43 @@ export function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className={isMobile ? "" : "container max-w-7xl mx-auto"}>
-        <div className={isMobile ? "w-full" : "grid grid-cols-1 lg:grid-cols-12 gap-5 py-4 md:py-5 px-3 md:px-4"}>
-          {/* Main Feed - Center */}
-          <div className={isMobile ? "w-full" : "lg:col-span-8 xl:col-span-7 space-y-4 md:space-y-6"}>
+      <div className={isMobile ? "w-full pt-3.5 pb-8" : "container max-w-7xl mx-auto"}>
+        <div className={isMobile ? "w-full" : "grid grid-cols-1 lg:grid-cols-12 gap-6 px-4"}>
+          {/* Main Feed - Center (Global scroll, no internal scrollbar) */}
+          <div className={isMobile ? "w-full space-y-4" : "lg:col-span-8 xl:col-span-7 py-6 space-y-4 md:space-y-6"}>
 
             {/* Create Post */}
-            <div className="campus-animate-slide-up">
+            <div className={cn("campus-animate-slide-up mb-2", isMobile && "px-3.5 sm:px-4")}>
               <CreatePost onPostCreated={handlePostCreated} />
             </div>
 
             {/* Posts Feed */}
-            <div className={isMobile ? "space-y-0" : "space-y-4"}>
+            <div>
               {loadError && (
-                <Card className="border-destructive/30">
-                  <CardContent className="py-4 text-sm text-destructive">{loadError}</CardContent>
-                </Card>
+                <div className={cn("mb-3", isMobile && "px-3.5 sm:px-4")}>
+                  <div className="py-3 px-4 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive">
+                    {loadError}
+                  </div>
+                </div>
               )}
               {isInitialLoading ? (
-                <>
+                <div className={cn(isMobile && "px-3.5 sm:px-4 space-y-4")}>
                   <PostSkeleton />
                   <PostSkeleton />
                   <PostSkeleton />
-                </>
+                </div>
               ) : posts.length === 0 ? (
-                <EmptyState
-                  icon={HomeIcon}
-                  title="Fil d'actualité vide"
-                  description="Il n'y a pas encore de posts à afficher. Soyez le premier à partager quelque chose !"
-                  actionLabel="Créer un post"
-                  onAction={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                />
+                <div className={cn(isMobile && "px-3.5 sm:px-4")}>
+                  <EmptyState
+                    icon={HomeIcon}
+                    title="Fil d'actualité vide"
+                    description="Il n'y a pas encore de posts à afficher. Soyez le premier à partager quelque chose !"
+                    actionLabel="Créer un post"
+                    onAction={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                  />
+                </div>
               ) : (
-                posts.map((post, index) => (
+                posts.map((post) => (
                   <div
                     key={post.id}
                     className="campus-animate-fade-in"
@@ -174,11 +169,13 @@ export function Home() {
             </div>
           </div>
 
-          {/* Right Sidebar - Desktop Only */}
+          {/* Right Sidebar - Desktop Only (Fixed sticky to viewport below header) */}
           {!isMobile && (
-            <div className="hidden lg:block lg:col-span-4 xl:col-span-5">
-              <FeedSidebar />
-            </div>
+            <aside className="hidden lg:block lg:col-span-4 xl:col-span-5 relative">
+              <div className="sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto overscroll-contain py-6 pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden hover:[scrollbar-width:thin] hover:[&::-webkit-scrollbar]:block">
+                <FeedSidebar />
+              </div>
+            </aside>
           )}
         </div>
       </div>
