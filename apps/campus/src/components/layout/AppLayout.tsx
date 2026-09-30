@@ -19,7 +19,7 @@ import { useUnreadCounts, refreshCounts } from "@/hooks/useUnreadCounts";
 import { useAuth } from "@/contexts/AuthContext";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
 
-const CreatePostModal = lazy(() => import("@/components/modals/CreatePostModal").then((module) => ({ default: module.CreatePostModal })));
+const CreateHubModal = lazy(() => import("@/components/modals/CreateHubModal").then((module) => ({ default: module.CreateHubModal })));
 const VerificationModal = lazy(() => import("@/components/modals/VerificationModal").then((module) => ({ default: module.VerificationModal })));
 
 
@@ -38,7 +38,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [darkMode, setDarkMode] = useState(false);
   const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
-  const [isCreatePostModalOpen, setIsCreatePostModalOpen] = useState(false);
+  const [isCreateHubModalOpen, setIsCreateHubModalOpen] = useState(false);
 
   // ⌘K / Ctrl+K keyboard shortcut to focus search
   useEffect(() => {
@@ -232,26 +232,17 @@ export function AppLayout({ children }: AppLayoutProps) {
               <div className="flex items-center gap-1.5 shrink-0">
                 {isAuthenticated && (
                   <>
-                    {isVerified ? (
-                      <>
-                        <Button variant="primary" size="sm" onClick={() => setIsCreatePostModalOpen(true)}>
-                          <Plus className="h-4 w-4 mr-1.5" />
-                          Publier
-                        </Button>
-                        {isCreatePostModalOpen && (
-                          <Suspense fallback={<ModalLoadingFallback />}>
-                            <CreatePostModal
-                              open={isCreatePostModalOpen}
-                              onOpenChange={setIsCreatePostModalOpen}
-                            />
-                          </Suspense>
-                        )}
-                      </>
-                    ) : (
-                      <Button variant="primary" size="sm" onClick={(e) => handleCreateAction(e as any, () => {})}>
-                        <Plus className="h-4 w-4 mr-1.5" />
-                        Publier
-                      </Button>
+                    <Button variant="primary" size="sm" onClick={() => setIsCreateHubModalOpen(true)}>
+                      <Plus className="h-4 w-4 mr-1.5" />
+                      Créer
+                    </Button>
+                    {isCreateHubModalOpen && (
+                      <Suspense fallback={<ModalLoadingFallback />}>
+                        <CreateHubModal
+                          open={isCreateHubModalOpen}
+                          onOpenChange={setIsCreateHubModalOpen}
+                        />
+                      </Suspense>
                     )}
 
                     <Button variant="ghost" size="icon-sm" onClick={() => navigate('/notifications')} className="relative text-muted-foreground hover:text-foreground">

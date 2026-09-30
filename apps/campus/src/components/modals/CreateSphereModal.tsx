@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Check, ArrowLeft, ArrowRight, BookOpen, Target, Globe } from "lucide-react";
+import { Loader2, Check, ArrowLeft, ArrowRight, BookOpen, Target, Globe, ChevronDown, ChevronUp, SlidersHorizontal } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { createSphere } from "@/services/api";
@@ -21,6 +22,7 @@ interface CreateSphereModalProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
+
 const sphereSchema = z.object({
   name: z.string().min(3, "Le nom doit contenir au moins 3 caractères").max(50),
   description: z.string().min(10, "La description doit contenir au moins 10 caractères").max(500),
@@ -30,21 +32,21 @@ const sphereSchema = z.object({
   }),
 });
 
-type Step = 0 | 1 | 2;
+type Step = 0 | 1;
 
 export function CreateSphereModal({ children, onSphereCreated, open: controlledOpen, onOpenChange: setControlledOpen }: CreateSphereModalProps) {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState<Step>(0);
 
-  // Step 0 — type
+  // Basics
   const [sphereType, setSphereType] = useState<SphereType | "">("");
-
-  // Step 1 — basics
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [objective, setObjective] = useState("");
 
-  // Step 2 — advanced
+  // Advanced options (collapsible)
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [targetAudience, setTargetAudience] = useState("");
   const [expectedDuration, setExpectedDuration] = useState("");
   const [collaborationType, setCollaborationType] = useState<string[]>([]);
@@ -120,11 +122,18 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
       toast({
         title: "Sphère créée avec succès !",
         description: `${name} est maintenant disponible.`,
-        duration: 4000,
+        duration: 3000,
       });
 
+      const createdId = (sphereData as any)?.id ?? (sphereData as any)?.data?.id;
       resetForm();
       setOpen(false);
+
+      if (createdId) {
+        navigate(`/spheres/${createdId}`);
+      } else {
+        navigate('/spheres');
+      }
     } catch (error) {
       setIsCreating(false);
       if (error instanceof z.ZodError) {
@@ -154,14 +163,11 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
     setTargetAudience("");
     setExpectedDuration("");
     setCollaborationType([]);
+    setShowAdvanced(false);
     setIsCreating(false);
   };
 
-  const stepTitles = [
-    "Quel type de sphère ?",
-    "Informations de base",
-    "Paramètres avancés",
-  ];
+  const selectedOption = SPHERE_TYPE_OPTIONS_V1.find((o) => o.value === sphereType);
 
   const open = controlledOpen !== undefined ? controlledOpen : isOpen;
   const setOpen = setControlledOpen ?? setIsOpen;
@@ -169,25 +175,29 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => { setOpen(nextOpen); if (!nextOpen) resetForm(); }}>
       {children ? <DialogTrigger asChild>{children}</DialogTrigger> : null}
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-3">
             {step > 0 && (
               <button
-                onClick={() => setStep((prev) => (prev - 1) as Step)}
-                className="text-muted-foreground hover:text-foreground transition-colors"
+                type="button"
+                onClick={() => setStep(0)}
+                className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-full hover:bg-muted"
+                title="Changer de type"
               >
                 <ArrowLeft className="h-4 w-4" />
               </button>
             )}
             <div>
-              <DialogTitle>{stepTitles[step]}</DialogTitle>
-              <p className="text-xs text-muted-foreground mt-0.5">Étape {step + 1} / 3</p>
+              <DialogTitle className="text-base sm:text-lg">
+                {step === 0 ? "Quel type de sphère ?" : selectedOption ? selectedOption.label : "Créer une sphère"}
+              </DialogTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">Étape {step + 1} / 2</p>
             </div>
           </div>
           {/* Progress bar */}
-          <div className="flex gap-1 mt-2">
-            {[0, 1, 2].map((s) => (
+          <div className="flex gap-1.5 mt-2">
+            {[0, 1].map((s) => (
               <div
                 key={s}
                 className={cn(
@@ -199,222 +209,207 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
           </div>
         </DialogHeader>
 
-        <div className="space-y-5 mt-2">
-          {/* ─── ÉTAPE 0 : Sélection du type ─── */}
+        <div className="space-y-4 mt-2">
+          {/* ÉTAPE 0 : Les 3 propositions (Cours, Projet, Communauté) */}
           {step === 0 && (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Choisissez le type de sphère adapté à votre usage.
+            <div className="space-y-3.5">
+              <p className="text-xs text-muted-foreground">
+                Choisissez le type d'espace adapté à votre usage :
               </p>
+
               <div className="grid gap-3">
                 {SPHERE_TYPE_OPTIONS_V1.map((option) => (
                   <button
                     key={option.value}
                     type="button"
-                    onClick={() => setSphereType(option.value)}
+                    onClick={() => {
+                      setSphereType(option.value);
+                      setStep(1);
+                    }}
                     className={cn(
-                      "w-full text-left border-2 rounded-2xl p-4 flex items-center gap-4 transition-all duration-200",
+                      "w-full text-left border rounded-xl p-3.5 sm:p-4 flex items-center gap-3.5 transition-all duration-200 group hover:border-primary/40 hover:bg-muted/30 cursor-pointer",
                       sphereType === option.value
-                        ? "border-primary bg-primary/5 ring-2 ring-primary ring-offset-2 ring-offset-background"
-                        : "border-border hover:border-primary/50 hover:bg-muted/50"
+                        ? "border-primary bg-primary/5 ring-1 ring-primary"
+                        : "border-border"
                     )}
                   >
                     <div className={cn(
-                      "h-12 w-12 rounded-xl flex items-center justify-center text-white flex-shrink-0 bg-gradient-to-br",
-                      option.gradient,
-                      "shadow-sm"
+                      "h-11 w-11 rounded-xl flex items-center justify-center text-white shrink-0 bg-gradient-to-br shadow-sm",
+                      option.gradient
                     )}>
-                      {option.iconName === 'book-open' && <BookOpen className="h-6 w-6" />}
-                      {option.iconName === 'target' && <Target className="h-6 w-6" />}
-                      {option.iconName === 'globe' && <Globe className="h-6 w-6" />}
+                      {option.iconName === 'book-open' && <BookOpen className="h-5 w-5" />}
+                      {option.iconName === 'target' && <Target className="h-5 w-5" />}
+                      {option.iconName === 'globe' && <Globe className="h-5 w-5" />}
                     </div>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="font-semibold text-sm text-foreground">{option.label}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{option.description}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{option.description}</p>
                     </div>
-                    {sphereType === option.value && (
-                      <div className="ml-auto flex-shrink-0 h-5 w-5 rounded-full bg-secondary border border-border flex items-center justify-center">
-                        <Check className="h-3 w-3 text-secondary-foreground" />
-                      </div>
-                    )}
+                    <ArrowRight className="h-4 w-4 text-muted-foreground/50 group-hover:text-foreground group-hover:translate-x-0.5 transition-all shrink-0" />
                   </button>
                 ))}
               </div>
 
               <div className="flex justify-end pt-2">
                 <Button
-                  onClick={() => setStep(1)}
-                  disabled={!sphereType}
-                  className="bg-secondary text-secondary-foreground hover:bg-muted border border-border/60 gap-2"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => { resetForm(); setOpen(false); }}
+                  className="text-xs sm:text-sm h-9 text-muted-foreground hover:text-foreground"
                 >
-                  Suivant <ArrowRight className="h-4 w-4" />
+                  Annuler
                 </Button>
               </div>
             </div>
           )}
 
-          {/* ─── ÉTAPE 1 : Informations de base ─── */}
+          {/* ÉTAPE 1 : Formulaire de la sphère + Volet Options en bas */}
           {step === 1 && (
             <div className="space-y-4">
               {/* Nom */}
               <div>
-                <Label htmlFor="name">Nom de la Sphère *</Label>
+                <Label htmlFor="name" className="text-xs font-medium">Nom de la Sphère *</Label>
                 <Input
                   id="name"
-                  placeholder="Ex: Projet IA 2025"
+                  placeholder="Ex: Algorithmique L2, Projet Web 2025..."
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   maxLength={50}
-                  className="mt-2"
+                  className="mt-1 h-9 text-xs sm:text-sm"
                 />
-                <p className="text-xs text-muted-foreground mt-1">{name.length}/50 caractères</p>
+                <p className="text-[10px] text-muted-foreground mt-1 text-right">{name.length}/50</p>
               </div>
 
               {/* Description */}
               <div>
-                <Label htmlFor="description">Description *</Label>
+                <Label htmlFor="description" className="text-xs font-medium">Description *</Label>
                 <Textarea
                   id="description"
                   placeholder="Décrivez votre sphère et son contexte..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   maxLength={500}
-                  className="mt-2 min-h-[100px]"
+                  className="mt-1 min-h-[75px] resize-none text-xs sm:text-sm"
                 />
-                <p className="text-xs text-muted-foreground mt-1">{description.length}/500 caractères</p>
+                <p className="text-[10px] text-muted-foreground mt-1 text-right">{description.length}/500</p>
               </div>
 
               {/* Objectif */}
               <div>
-                <Label htmlFor="objective">
-                  Objectif <span className="text-muted-foreground">(optionnel)</span>
+                <Label htmlFor="objective" className="text-xs font-medium">
+                  Objectif <span className="text-muted-foreground font-normal">(optionnel)</span>
                 </Label>
-                <Textarea
+                <Input
                   id="objective"
-                  placeholder="Quel est l'objectif principal ?"
+                  placeholder="Ex: Réussir l'examen final, Développer un MVP..."
                   value={objective}
                   onChange={(e) => setObjective(e.target.value)}
                   maxLength={300}
-                  className="mt-2 min-h-[60px]"
+                  className="mt-1 h-9 text-xs sm:text-sm"
                 />
               </div>
 
-                            <div className="flex justify-end">
-                {sphereType === 'communaute' || sphereType === 'cours' ? (
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={!name || !description || isCreating}
-                    className="bg-secondary text-secondary-foreground hover:bg-muted border border-border/60 px-8"
-                  >
-                    {isCreating ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Création...
-                      </>
-                    ) : (
-                      <>
-                        <Check className="h-4 w-4 mr-2" />
-                        Créer la Sphère
-                      </>
-                    )}
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() => setStep(2)}
-                    disabled={!name || !description}
-                    className="bg-secondary text-secondary-foreground hover:bg-muted border border-border/60 gap-2"
-                  >
-                    Suivant <ArrowRight className="h-4 w-4" />
-                  </Button>
+              {/* Volet repliable Options en bas */}
+              <div className="pt-1">
+                <Button 
+                  type="button"
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setShowAdvanced(!showAdvanced)}
+                  className={cn(
+                    "text-xs font-semibold tracking-tight h-8 px-3 rounded-full gap-1.5 transition-all border border-border/40",
+                    showAdvanced ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <SlidersHorizontal className="h-3.5 w-3.5" />
+                  <span>Options</span>
+                  {showAdvanced ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                </Button>
+
+                {showAdvanced && (
+                  <div className="space-y-3.5 p-3.5 mt-2 rounded-xl border border-border/50 bg-muted/10 campus-animate-slide-up">
+                    {/* Public cible et Durée */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="targetAudience" className="text-xs font-medium">
+                          Public cible <span className="text-muted-foreground font-normal">(optionnel)</span>
+                        </Label>
+                        <Select value={targetAudience} onValueChange={setTargetAudience}>
+                          <SelectTrigger className="mt-1 h-9 text-xs">
+                            <SelectValue placeholder="Tous les étudiants" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {targetAudienceOptions.map((audience) => (
+                              <SelectItem key={audience} value={audience} className="text-xs">{audience}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="expectedDuration" className="text-xs font-medium">
+                          Durée attendue <span className="text-muted-foreground font-normal">(optionnel)</span>
+                        </Label>
+                        <Select value={expectedDuration} onValueChange={setExpectedDuration}>
+                          <SelectTrigger className="mt-1 h-9 text-xs">
+                            <SelectValue placeholder="Flexible" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {durationOptions.map((duration) => (
+                              <SelectItem key={duration} value={duration} className="text-xs">{duration}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Types de collaboration */}
+                    <div>
+                      <Label className="text-xs font-medium">
+                        Collaboration <span className="text-muted-foreground font-normal">(optionnel)</span>
+                      </Label>
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {collaborationTypes.map((type) => (
+                          <Button
+                            key={type}
+                            type="button"
+                            variant={collaborationType.includes(type) ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => toggleCollaborationType(type)}
+                            className={cn(
+                              "text-[11px] h-7 py-0 px-2.5 rounded-full transition-colors",
+                              collaborationType.includes(type)
+                                ? "bg-secondary text-secondary-foreground hover:bg-muted border border-border/60"
+                                : "text-muted-foreground hover:text-foreground"
+                            )}
+                          >
+                            {type}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
-            </div>
-          )}
-
-          {/* ─── ÉTAPE 2 : Options avancées + création ─── */}
-          {step === 2 && (
-            <div className="space-y-4">
-
-              {sphereType !== 'cours' && (
-                <>
-                  {/* Public cible et Durée */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="targetAudience">
-                        Public cible <span className="text-muted-foreground">(optionnel)</span>
-                      </Label>
-                      <Select value={targetAudience} onValueChange={setTargetAudience}>
-                        <SelectTrigger className="mt-2">
-                          <SelectValue placeholder="Tous les étudiants" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {targetAudienceOptions.map((audience) => (
-                            <SelectItem key={audience} value={audience}>{audience}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="expectedDuration">
-                        Durée attendue <span className="text-muted-foreground">(optionnel)</span>
-                      </Label>
-                      <Select value={expectedDuration} onValueChange={setExpectedDuration}>
-                        <SelectTrigger className="mt-2">
-                          <SelectValue placeholder="Flexible" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {durationOptions.map((duration) => (
-                            <SelectItem key={duration} value={duration}>{duration}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  {/* Types de collaboration */}
-                  <div>
-                    <Label>
-                      Collaboration <span className="text-muted-foreground">(optionnel)</span>
-                    </Label>
-                    <div className="flex flex-wrap gap-1.5 mt-2">
-                      {collaborationTypes.map((type) => (
-                        <Button
-                          key={type}
-                          type="button"
-                          variant={collaborationType.includes(type) ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => toggleCollaborationType(type)}
-                          className={cn(
-                            "text-[10px] h-7 py-0 px-2",
-                            collaborationType.includes(type)
-                              ? "bg-secondary text-secondary-foreground hover:bg-muted border border-border/60 border-none"
-                              : "text-muted-foreground"
-                          )}
-                        >
-                          {type}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
 
               <Separator />
 
               {/* Actions */}
-              <div className="flex justify-end gap-2">
+              <div className="flex justify-between items-center pt-1">
                 <Button
-                  variant="outline"
-                  onClick={() => { resetForm(); setOpen(false); }}
-                  disabled={isCreating}
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setStep(0)}
+                  className="text-xs gap-1.5 h-9 text-muted-foreground hover:text-foreground"
                 >
-                  Annuler
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  <span>Retour</span>
                 </Button>
                 <Button
                   onClick={handleSubmit}
-                  disabled={isCreating}
-                  className="bg-secondary text-secondary-foreground hover:bg-muted border border-border/60 px-8"
+                  disabled={!name.trim() || !description.trim() || isCreating}
+                  className="bg-secondary text-secondary-foreground hover:bg-muted border border-border/60 text-xs sm:text-sm h-9 px-6"
                 >
                   {isCreating ? (
                     <>
@@ -436,10 +431,3 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
     </Dialog>
   );
 }
-
-
-
-
-
-
-
