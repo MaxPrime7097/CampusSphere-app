@@ -66,7 +66,7 @@
     --accent-foreground: 220 15% 15%;
 
     /* ── Borders & Inputs ───────────────────── */
-    --border: 220 13% 91%; /* Bordure presque invisible (espace blanc structurant) */
+    --border: 220 13% 86%; /* Bordure définie, neutre et élégante */
     --input: 220 13% 89%;
     --ring: 220 13% 70%;
 
@@ -165,7 +165,7 @@
     --accent-foreground: 220 10% 85%;
 
     /* ── Borders & Inputs ───────────────── */
-    --border: 222 18% 13%; /* Bordure presque invisible */
+    --border: 222 18% 19%; /* Bordure visible et contrastée sur fond sombre */
     --input: 222 18% 20%;
     --ring: 220 13% 50%;
 
