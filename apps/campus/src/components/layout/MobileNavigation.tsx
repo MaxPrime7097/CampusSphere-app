@@ -8,11 +8,11 @@ import { openVerificationModal } from "@/lib/events";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
 import { useAuth } from "@/contexts/AuthContext";
 
-const CreatePostModal = lazy(() => import("@/components/modals/CreatePostModal").then((module) => ({ default: module.CreatePostModal })));
+const CreateHubModal = lazy(() => import("@/components/modals/CreateHubModal").then((module) => ({ default: module.CreateHubModal })));
 
 export function MobileNavigation({ user: externalUser }: { user?: NavigationUser }) {
   const { toast } = useToast();
-  const [isCreatePostModalOpen, setIsCreatePostModalOpen] = useState(false);
+  const [isCreateHubModalOpen, setIsCreateHubModalOpen] = useState(false);
   const { user: authUser } = useAuth();
   const user = externalUser || authUser || {};
   const { mobileItems } = getNavigationSections(user);
@@ -32,50 +32,28 @@ export function MobileNavigation({ user: externalUser }: { user?: NavigationUser
           const baseStyles = "flex flex-col items-center justify-center w-full h-full transition-colors";
           const inactiveStyles = "text-muted-foreground hover:text-foreground";
 
-          const isVerified = (user as any)?.isVerified;
-
           if (item.url === "#create-post") {
-            return isVerified ? (
+            return (
               <Fragment key={item.title}>
                 <div className="flex items-center justify-center w-full h-full relative">
                   <button
                     type="button"
                     className="absolute bottom-3 flex items-center justify-center h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:bg-primary/90 active:scale-95"
                     aria-label={item.title}
-                    onClick={() => setIsCreatePostModalOpen(true)}
+                    onClick={() => setIsCreateHubModalOpen(true)}
                   >
                     <item.icon className="h-6 w-6" />
                   </button>
                 </div>
-                {isCreatePostModalOpen && (
+                {isCreateHubModalOpen && (
                   <Suspense fallback={<ModalLoadingFallback />}>
-                    <CreatePostModal
-                      open={isCreatePostModalOpen}
-                      onOpenChange={setIsCreatePostModalOpen}
+                    <CreateHubModal
+                      open={isCreateHubModalOpen}
+                      onOpenChange={setIsCreateHubModalOpen}
                     />
                   </Suspense>
                 )}
               </Fragment>
-            ) : (
-              <div key={item.title} className="flex items-center justify-center w-full h-full relative">
-                <button 
-                  type="button" 
-                  className="absolute bottom-3 flex items-center justify-center h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:bg-primary/90 active:scale-95" 
-                  aria-label={item.title}
-                  onClick={() => {
-                    toast({
-                      title: "Compte non vérifié",
-                      description: "Vous devez certifier votre compte pour publier.",
-                      variant: "destructive",
-                      action: (
-                        <button className="text-xs font-bold underline" onClick={() => openVerificationModal()}>Vérifier</button>
-                      )
-                    });
-                  }}
-                >
-                  <item.icon className="h-6 w-6" />
-                </button>
-              </div>
             );
           }
 

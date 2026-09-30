@@ -76,7 +76,7 @@ export function EventTicketModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md w-[95vw] rounded-3xl p-0 overflow-hidden border-border/80 bg-card shadow-2xl">
+      <DialogContent className="sm:max-w-md sm:rounded-3xl p-0 overflow-hidden border-border/80 bg-card shadow-2xl">
         {/* Printable Container */}
         <div id="ticket-printable" className="w-full flex flex-col bg-card">
           {/* Ticket Header Banner */}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { getPostComments, createComment, updateComment, deleteComment, likeComment, normalizeUser, searchUsers } from "@/services/api";
 import {
@@ -11,7 +11,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Heart, Send, Reply, MoreHorizontal, Smile, AtSign, Loader2, Zap, Pencil, Trash2 } from "lucide-react";
+import { Heart, Send, Reply, MoreHorizontal, Smile, AtSign, Loader2, Zap, Pencil, Trash2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +26,7 @@ import { findInvalidMentions, getActiveMentionQuery, renderMentionText } from "@
 import { CommentSkeleton } from "@/components/ui/skeletons";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
 
 const MAX_COMMENT_THREAD_DEPTH = 4;
 
@@ -87,6 +88,9 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyingToComment, setReplyingToComment] = useState<Comment | null>(null);
+  const [expandedReplies, setExpandedReplies] = useState<Record<string, number>>({});
+  const inputRef = useRef<HTMLInputElement>(null);
   const [replyContent, setReplyContent] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showMentions, setShowMentions] = useState(false);
@@ -309,16 +313,54 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
   const startReply = (comment: Comment) => {
     if (replyingTo === comment.id) {
       setReplyingTo(null);
+      setReplyingToComment(null);
       return;
     }
 
-    const mentionPrefix = `@${comment.author.username} `;
     setReplyingTo(comment.id);
-    setReplyContent((prev) => (prev.includes(mentionPrefix) ? prev : `${mentionPrefix}${prev}`));
+    setReplyingToComment(comment);
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 50);
+  };
+
+  const cancelReply = () => {
+    setReplyingTo(null);
+    setReplyingToComment(null);
+    setReplyContent("");
+  };
+
+  const toggleReplies = (commentId: string) => {
+    setExpandedReplies((prev) => {
+      const current = prev[commentId] || 0;
+      if (current === 0) {
+        return { ...prev, [commentId]: 10 };
+      } else {
+        const next = { ...prev };
+        delete next[commentId];
+        return next;
+      }
+    });
+  };
+
+  const loadMoreReplies = (commentId: string) => {
+    setExpandedReplies((prev) => ({
+      ...prev,
+      [commentId]: (prev[commentId] || 10) + 10,
+    }));
+  };
+
+  const hideReplies = (commentId: string) => {
+    setExpandedReplies((prev) => {
+      const next = { ...prev };
+      delete next[commentId];
+      return next;
+    });
   };
 
   const handleReply = async (parentId: string) => {
-    if (!replyContent.trim()) return;
+    const content = replyContent.trim() || newComment.trim();
+    if (!content) return;
     const parentDepth = findCommentDepth(comments, parentId);
     if (parentDepth !== null && parentDepth >= MAX_COMMENT_THREAD_DEPTH) {
       toast({
@@ -332,7 +374,7 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
     setIsSubmitting(true);
 
     try {
-      const result = await createComment(postId, { content: replyContent, parent: parentId });
+      const result = await createComment(postId, { content, parent: parentId });
       const normalizedCurrentUser = normalizeCommentAuthor(currentUser);
 
       const newReply: Comment = {
@@ -341,7 +383,7 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
         canEdit: true,
         canDelete: true,
         author: normalizedCurrentUser,
-        content: replyContent,
+        content,
         timestamp: result.created_at || new Date().toISOString(),
         likes: 0,
         isLiked: false,
@@ -351,7 +393,13 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
 
       setComments((prev) => addReplyToTree(prev, parentId, newReply));
       setReplyContent("");
+      setNewComment("");
       setReplyingTo(null);
+      setReplyingToComment(null);
+      setExpandedReplies((prev) => ({
+        ...prev,
+        [parentId]: Math.max(prev[parentId] || 0, 10),
+      }));
       toast({ title: "Réponse ajoutée", description: "Votre réponse a été publiée avec succès" });
     } catch (error: any) {
       toast({
@@ -437,55 +485,83 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
 
   const renderComment = (comment: Comment, depth = 0) => {
     const visualDepth = Math.min(depth, MAX_COMMENT_THREAD_DEPTH - 1);
-    const depthOffset = visualDepth === 0 ? 0 : 16 + (visualDepth - 1) * 20;
+    const depthOffset = visualDepth === 0 ? 0 : 16 + (visualDepth - 1) * 16;
     const canReply = depth < MAX_COMMENT_THREAD_DEPTH;
 
+    const totalReplies = comment.replies?.length || 0;
+    const shownRepliesCount = expandedReplies[comment.id] || 0;
+    const isRepliesExpanded = shownRepliesCount > 0;
+
     return (
-      <div key={comment.id} className="space-y-3" style={{ marginLeft: `${depthOffset}px` }}>
-        <div className="flex gap-3">
-          <Avatar className={`${depth === 0 ? "h-10 w-10" : "h-8 w-8"} flex-shrink-0`}>
-            <AvatarImage src={comment.author.avatar} />
-            <AvatarFallback>{comment.author.name?.[0]?.toUpperCase() || "U"}</AvatarFallback>
+      <div key={comment.id} className="space-y-2.5" style={{ marginLeft: `${depthOffset}px` }}>
+        <div className="flex gap-2.5 items-start group">
+          <Avatar className={`${depth === 0 ? "h-8 w-8" : "h-7 w-7"} flex-shrink-0 mt-0.5`}>
+            <AvatarImage src={comment.author.avatar || undefined} />
+            <AvatarFallback className="text-[11px] font-semibold bg-muted">
+              {comment.author.name?.[0]?.toUpperCase() || "U"}
+            </AvatarFallback>
           </Avatar>
 
-          <div className="flex-1">
-            <div className={`${depth === 0 ? "bg-muted" : "bg-muted/50"} rounded-lg p-3`}>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-xs text-muted-foreground">@{comment.author.username}</span>
-                
+          <div className="flex-1 min-w-0">
+            {/* Comment bubble */}
+            <div className="bg-muted/40 rounded-2xl px-3.5 py-2.5">
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <span className="text-xs font-semibold text-foreground truncate">
+                  {comment.author.name}
+                </span>
+                <span className="text-[11px] text-muted-foreground/70">
+                  @{comment.author.username}
+                </span>
               </div>
-              <p className="text-sm whitespace-pre-wrap">{renderMentionText(comment.content)}</p>
+              <p className="text-sm text-foreground/90 whitespace-pre-wrap break-words leading-relaxed">
+                {renderMentionText(comment.content)}
+              </p>
             </div>
 
-            <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-              <span>{formatRelativeTime(comment.timestamp)}</span>
-              <button className={`flex items-center gap-1 hover:text-primary ${comment.isLiked ? "text-red-500" : ""}`} aria-label="Like comment" onClick={() => handleLikeComment(comment.id)}>
+            {/* Actions bar under comment */}
+            <div className="flex items-center gap-3.5 mt-1.5 px-1 text-xs text-muted-foreground">
+              <span className="text-[11px] text-muted-foreground/70">
+                {formatRelativeTime(comment.timestamp)}
+              </span>
+
+              <button
+                type="button"
+                className={`flex items-center gap-1 hover:text-primary transition-colors ${comment.isLiked ? "text-red-500 font-medium" : ""}`}
+                aria-label="Aimer"
+                onClick={() => handleLikeComment(comment.id)}
+              >
                 <Heart className={`h-3 w-3 ${comment.isLiked ? "fill-current" : ""}`} />
-                {comment.likes}
+                <span>{comment.likes}</span>
               </button>
+
               {canReply && (
                 <button
-                  className="hover:text-primary flex items-center gap-1"
+                  type="button"
+                  className="hover:text-foreground font-medium transition-colors"
                   onClick={() => startReply(comment)}
                 >
-                  <Reply className="h-3 w-3" />
                   Répondre
                 </button>
               )}
+
               {canManageComment(comment) && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="hover:text-primary" aria-label="More options" title="Plus d'options">
-                      <MoreHorizontal className="h-3 w-3" />
+                    <button
+                      type="button"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity hover:text-foreground p-0.5 ml-auto"
+                      aria-label="Plus d'options"
+                    >
+                      <MoreHorizontal className="h-3.5 w-3.5" />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="end" className="w-36">
                     <DropdownMenuItem onClick={() => openEditComment(comment)}>
-                      <Pencil className="h-4 w-4 mr-2" />
+                      <Pencil className="h-3.5 w-3.5 mr-2" />
                       Modifier
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="text-destructive" onClick={() => setCommentToDelete(comment)}>
-                      <Trash2 className="h-4 w-4 mr-2" />
+                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setCommentToDelete(comment)}>
+                      <Trash2 className="h-3.5 w-3.5 mr-2" />
                       Supprimer
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -493,34 +569,51 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
               )}
             </div>
 
-            {replyingTo === comment.id && (
-              <div className="mt-3 ml-4">
-                <div className="flex gap-2">
-                  <Textarea
-                    placeholder="Répondre au commentaire..."
-                    value={replyContent}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setReplyContent(value);
-                      const activeQuery = getActiveMentionQuery(value, e.target.selectionStart ?? value.length);
-                      if (activeQuery !== null) {
-                        setMentionQuery(activeQuery);
-                        setShowMentions(true);
-                      } else {
-                        setShowMentions(false);
-                        setMentionQuery("");
-                      }
-                    }}
-                    className="min-h-[60px] resize-none"
-                  />
-                  <Button size="sm" onClick={() => handleReply(comment.id)} disabled={!replyContent.trim() || isSubmitting}>
-                    {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                  </Button>
-                </div>
+            {/* Replies section (Instagram style: hidden by default, 10 max per batch) */}
+            {totalReplies > 0 && (
+              <div className="mt-2 pl-2">
+                {!isRepliesExpanded ? (
+                  <button
+                    type="button"
+                    onClick={() => toggleReplies(comment.id)}
+                    className="flex items-center gap-2.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors group"
+                  >
+                    <span className="w-6 h-[1.5px] bg-border group-hover:bg-foreground/40 transition-colors" />
+                    <span>
+                      Voir les {totalReplies} {totalReplies > 1 ? "réponses" : "réponse"}
+                    </span>
+                  </button>
+                ) : (
+                  <div className="space-y-2.5 pt-1 border-l-1.5 border-border/40 pl-3">
+                    {/* Render up to shownRepliesCount replies */}
+                    {comment.replies!.slice(0, shownRepliesCount).map((reply) => renderComment(reply, depth + 1))}
+
+                    {/* Pagination or hide */}
+                    <div className="flex items-center gap-3 pt-1">
+                      {shownRepliesCount < totalReplies ? (
+                        <button
+                          type="button"
+                          onClick={() => loadMoreReplies(comment.id)}
+                          className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors group"
+                        >
+                          <span className="w-5 h-[1.5px] bg-border group-hover:bg-foreground/40 transition-colors" />
+                          <span>
+                            Voir plus de réponses ({totalReplies - shownRepliesCount} restantes)
+                          </span>
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={() => hideReplies(comment.id)}
+                        className="text-xs text-muted-foreground/70 hover:text-foreground transition-colors"
+                      >
+                        Masquer
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
-
-            {comment.replies && comment.replies.length > 0 && <div className="space-y-3">{comment.replies.map((reply) => renderComment(reply, depth + 1))}</div>}
           </div>
         </div>
       </div>
@@ -530,12 +623,25 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col p-0 bg-popover">
-        <DialogHeader className="px-6 py-4 border-b">
-          <DialogTitle>{t('modals.comments.title')}</DialogTitle>
+      <DialogContent className="p-0 border-border/40 gap-0 overflow-hidden flex flex-col sm:max-w-xl sm:h-[650px] sm:max-h-[82vh] sm:rounded-2xl bg-background">
+        {/* Modal Header */}
+        <DialogHeader className="px-5 py-3.5 border-b border-border/40 shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <DialogTitle className="text-base font-semibold tracking-tight text-foreground">
+                {t('modals.comments.title') || "Commentaires"}
+              </DialogTitle>
+              {comments.length > 0 && (
+                <span className="text-xs text-muted-foreground font-normal">
+                  ({comments.length})
+                </span>
+              )}
+            </div>
+          </div>
         </DialogHeader>
         
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+        {/* Scrollable comments list */}
+        <div className="flex-1 overflow-y-auto px-4 py-3 sm:px-5 sm:py-4 space-y-4">
           {isLoading ? (
             <>
               <CommentSkeleton />
@@ -543,102 +649,137 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
               <CommentSkeleton />
             </>
           ) : comments.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">Soyez le premier à commenter!</p>
+            <div className="text-center py-12 space-y-1">
+              <p className="text-sm font-medium text-foreground">Aucun commentaire</p>
+              <p className="text-xs text-muted-foreground">Soyez le premier à commenter !</p>
+            </div>
           ) : (
             comments.map((comment) => renderComment(comment))
           )}
         </div>
 
-        <div className="border-t p-4">
-          <div className="space-y-3">          
+        {/* Compact bottom input bar with safe area */}
+        <div className="border-t border-border/40 px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:p-4 bg-background shrink-0">
+          {/* Mention autocomplete dropdown */}
+          {showMentions && availableUsers.length > 0 && (
+            <div className="mb-2 p-1.5 rounded-xl border border-border/50 bg-popover shadow-md max-h-36 overflow-y-auto space-y-1">
+              {availableUsers.map((user) => (
+                <button
+                  key={user.id}
+                  type="button"
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs hover:bg-muted text-left transition-colors"
+                  onClick={() => insertMention(user.username)}
+                >
+                  <span className="font-semibold text-foreground">@{user.username}</span>
+                  {user.name && <span className="text-muted-foreground truncate">({user.name})</span>}
+                </button>
+              ))}
+            </div>
+          )}
 
-            {/* Emoji Picker */}
-            {showEmojiPicker && (
-              <div className="p-3 rounded-xl border border-border/40 bg-popover text-popover-foreground">
-                <div className="grid grid-cols-8 gap-2">
-                  {['😀', '😂', '🥰', '😎', '🤔', '👍', '🎉', '🔥', '💯', '✨', '🚀', '❤️', '👏', '🙌', '💪', '🎯'].map((emoji) => (
-                    <Button
-                      key={emoji}
-                      variant="ghost"
-                      className="text-2xl p-2 h-auto"
-                      onClick={() => insertEmoji(emoji)}
-                    >
-                      {emoji}
-                    </Button>
-                  ))}
-                </div>
+          {/* Replying-to chip */}
+          {replyingToComment && (
+            <div className="flex items-center justify-between px-3 py-1.5 mb-2.5 bg-muted/40 rounded-xl text-xs text-muted-foreground border border-border/30">
+              <div className="flex items-center gap-1.5 truncate">
+                <Reply className="h-3 w-3 shrink-0 text-primary" />
+                <span className="truncate">
+                  Répondre à <strong className="text-foreground font-semibold">@{replyingToComment.author.username}</strong>
+                </span>
               </div>
-            )}
+              <button
+                type="button"
+                onClick={cancelReply}
+                className="p-1 hover:text-foreground text-muted-foreground/70 rounded-full hover:bg-muted transition-colors shrink-0"
+                title="Annuler"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
 
-              {showMentions && (
-                <div className="p-3 rounded-xl border border-border/40 bg-popover text-popover-foreground">
-                  <div className="space-y-2">
-                    {availableUsers.map((user) => (
-                      <Button key={user.id} variant="ghost" className="w-full justify-start" onClick={() => insertMention(user.username)}>
-                        @{user.username}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              )}
+          {/* Minimalist single-line rounded bar */}
+          <div className="flex items-center gap-2.5">
+            <Avatar className="h-8 w-8 shrink-0">
+              <AvatarImage src={currentUser?.avatar || "/placeholder-avatar.jpg"} />
+              <AvatarFallback className="text-xs bg-muted font-semibold">
+                {currentUser?.name?.slice(0, 1).toUpperCase() || 'U'}
+              </AvatarFallback>
+            </Avatar>
 
-              <div className="flex gap-3">
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={currentUser?.avatar || "/placeholder-avatar.jpg"} />
-                    <AvatarFallback className="bg-input text-muted-foreground font-semibold">
-                    {currentUser?.name?.slice(0, 1).toUpperCase() || '...'}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 space-y-2">
-                  <Textarea
-                    placeholder={t("modals.comments.placeholder")}
-                    value={newComment}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setNewComment(value);
-                      const activeQuery = getActiveMentionQuery(value, e.target.selectionStart ?? value.length);
-                      if (activeQuery !== null) {
-                        setMentionQuery(activeQuery);
-                        setShowMentions(true);
-                      } else {
-                        setShowMentions(false);
-                        setMentionQuery("");
-                      }
-                    }}
-                    onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), handleSubmit())}
-                    className="min-h-[80px] resize-none"
-                    maxLength={500}
-                  />
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm" onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="gap-2">
-                        <Smile className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => setShowMentions(!showMentions)} className="gap-2">
-                        <AtSign className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <span className="text-xs text-muted-foreground">{newComment.length}/500 caractères</span>
-                    <Button onClick={handleSubmit} disabled={!newComment.trim() || isSubmitting} className="bg-secondary text-secondary-foreground hover:bg-muted border border-border/60">
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Envoi...
-                        </>
-                      ) : (
-                        <>
-                          <Send className="h-4 w-4 mr-2" />
-                          Publier
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </div>
+            <div className="flex-1 flex items-center bg-muted/30 border border-border/50 rounded-full px-3.5 py-1.5 focus-within:border-border focus-within:bg-background transition-all">
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder={replyingToComment ? `Répondre à @${replyingToComment.author.username}...` : "Ajouter un commentaire..."}
+                value={replyingToComment ? replyContent : newComment}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (replyingToComment) {
+                    setReplyContent(val);
+                  } else {
+                    setNewComment(val);
+                  }
+                  const activeQuery = getActiveMentionQuery(val, e.target.selectionStart ?? val.length);
+                  if (activeQuery !== null) {
+                    setMentionQuery(activeQuery);
+                    setShowMentions(true);
+                  } else {
+                    setShowMentions(false);
+                    setMentionQuery("");
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    if (replyingToComment) {
+                      handleReply(replyingToComment.id);
+                    } else {
+                      handleSubmit();
+                    }
+                  }
+                }}
+                className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/60 outline-none min-w-0"
+                maxLength={500}
+              />
+
+              <button
+                type="button"
+                onClick={() => setShowMentions(!showMentions)}
+                className={`p-1 transition-colors shrink-0 ${showMentions ? "text-primary" : "text-muted-foreground/70 hover:text-foreground"}`}
+                title="Mentionner"
+              >
+                <AtSign className="h-4 w-4" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (replyingToComment) {
+                    handleReply(replyingToComment.id);
+                  } else {
+                    handleSubmit();
+                  }
+                }}
+                disabled={(!replyingToComment ? !newComment.trim() : !replyContent.trim()) || isSubmitting}
+                className={cn(
+                  "p-1.5 rounded-full shrink-0 transition-all",
+                  (!replyingToComment ? newComment.trim() : replyContent.trim())
+                    ? "text-primary hover:bg-primary/10 active:scale-95"
+                    : "text-muted-foreground/30 cursor-not-allowed"
+                )}
+                title="Publier"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </button>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </DialogContent>
+    </Dialog>
 
             {/* Edit Comment Dialog */}
       <Dialog 
