@@ -53,7 +53,7 @@ export function ConversationList({
     >
       <div className="p-3 md:p-4 border-b flex-shrink-0">
         <div className="flex items-center justify-between mb-3 md:mb-4">
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
             Messages
           </h2>
           <div className="flex items-center gap-2">
@@ -147,7 +147,7 @@ export function ConversationList({
                     </AvatarFallback>
                   </Avatar>
                   {conversation.isOnline && (
-                    <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-background rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse" />
+                    <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-background rounded-full" />
                   )}
                 </div>
 
@@ -158,7 +158,7 @@ export function ConversationList({
                         {conversation.name || "Utilisateur"}
                       </h3>
                       {conversation.type === "group" && (
-                        <span className="flex-shrink-0 text-[9px] font-medium bg-primary/10 text-primary px-1 py-0 rounded">
+                        <span className="flex-shrink-0 text-[9px] font-medium bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
                           Groupe
                         </span>
                       )}

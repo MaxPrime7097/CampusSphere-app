@@ -122,110 +122,84 @@ export const ResourceCard = React.memo(
             }
           }}
           className={cn(
-            "group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/70 bg-card text-card-foreground shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-md cursor-pointer",
+            "group flex items-center justify-between gap-3 py-3.5 px-3 sm:px-4 rounded-xl border-b border-border/30 hover:bg-muted/40 transition-colors cursor-pointer",
             className
           )}
         >
-          {/* TOP: Compact Thumbnail Area */}
-          <div
-            className={cn(
-              "relative h-20 w-full flex items-center justify-center transition-colors duration-300 border-b",
-              style.bg
-            )}
-          >
-            {/* Category / Type Badge (Top Left) */}
-            <div className="absolute left-2 top-2">
-              <Badge
-                variant="secondary"
-                className="flex items-center gap-1 backdrop-blur-md bg-background/90 text-foreground font-semibold px-2 py-0.5 text-[9px] shadow-xs border border-border/40"
-              >
-                {getFileIcon(resource.type, cn("h-2.5 w-2.5", style.icon))}
-                <span>{style.label}</span>
-              </Badge>
+          {/* Left: Document Icon & Info */}
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className={cn("h-9 w-9 rounded-lg flex items-center justify-center shrink-0 border", style.bg, style.icon)}>
+              {getFileIcon(resource.type, "w-4 h-4")}
             </div>
 
-            {/* Central Soft Icon */}
-            <div className={cn("transition-transform duration-500 group-hover:scale-110", style.icon)}>
-              {getFileIcon(resource.type, "w-8 h-8 opacity-70")}
-            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <h3 className="font-medium text-sm text-foreground truncate group-hover:underline">
+                  {resource.title}
+                </h3>
+                <Badge variant="muted" size="sm" className="hidden sm:inline-flex text-[10px] shrink-0 font-normal">
+                  {style.label}
+                </Badge>
+              </div>
 
-            {/* Floating Action Buttons (Top Right) */}
-            <div
-              className="absolute top-1.5 right-1.5 flex items-center gap-1"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Button
-                size="icon"
-                variant="secondary"
-                className={cn(
-                  "h-6 w-6 rounded-full shadow-xs bg-background/90 backdrop-blur-md hover:bg-background border border-border/40",
-                  isSaved ? "text-primary fill-primary" : "text-muted-foreground"
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                <span className="truncate max-w-[120px]">{(resource as any).subject || "Général"}</span>
+                <span>·</span>
+                <span className="truncate max-w-[100px]">{(resource as any).authorName || (resource as any).author?.name || "Étudiant"}</span>
+                {((resource as any).fileSize || (resource as any).file_size) && (
+                  <>
+                    <span>·</span>
+                    <span className="font-mono text-[10px]">{formatFileSize((resource as any).fileSize || (resource as any).file_size)}</span>
+                  </>
                 )}
-                onClick={onSave}
-                title="Sauvegarder"
-              >
-                <Bookmark className={cn("h-3 w-3", isSaved && "fill-current")} />
-              </Button>
-
-              <Button
-                size="icon"
-                variant="secondary"
-                className="h-6 w-6 rounded-full shadow-xs bg-background/90 backdrop-blur-md hover:bg-background text-primary border border-border/40"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setStudyOpen(true);
-                }}
-                title="Réviser avec l'IA"
-              >
-                <SpheraIcon size="sm" />
-              </Button>
+              </div>
             </div>
           </div>
 
-          {/* MIDDLE: Information Content */}
-          <div className="p-2.5 flex-1 flex flex-col justify-between">
-            <div>
-              <h3 className="font-semibold text-xs leading-snug line-clamp-2 text-foreground group-hover:text-primary transition-colors">
-                {resource.title}
-              </h3>
-              {resource.description && (
-                <p className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5">
-                  {resource.description}
-                </p>
-              )}
-            </div>
-
-            {/* Micro details: Subject + File details */}
-            <div className="flex items-center justify-between text-[9px] sm:text-[10px] text-muted-foreground pt-2 mt-2 border-t border-border/40">
-              <span className="font-medium text-foreground/80 truncate max-w-[90px]">
-                {(resource as any).subject || "Général"}
-              </span>
-              <span className="font-mono text-[9px]">{formatFileSize((resource as any).fileSize || (resource as any).file_size)}</span>
-            </div>
-          </div>
-
-          {/* BOTTOM: Action Bar */}
+          {/* Right: Actions */}
           <div
-            className="px-2.5 py-1.5 bg-muted/20 border-t border-border/40 flex items-center justify-between gap-1.5"
+            className="flex items-center gap-1 shrink-0"
             onClick={(e) => e.stopPropagation()}
           >
-            <span className="text-[9px] sm:text-[10px] text-muted-foreground truncate max-w-[80px]">
-              {(resource as any).authorName || (resource as any).author?.name || "Étudiant"}
-            </span>
+            <Button
+              size="icon"
+              variant="ghost"
+              className={cn(
+                "h-8 w-8 rounded-lg hover:bg-muted text-muted-foreground",
+                isSaved && "text-foreground fill-foreground"
+              )}
+              onClick={onSave}
+              title="Sauvegarder"
+            >
+              <Bookmark className={cn("h-4 w-4", isSaved && "fill-current")} />
+            </Button>
+
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground"
+              onClick={(e) => {
+                e.stopPropagation();
+                setStudyOpen(true);
+              }}
+              title="Réviser avec l'IA"
+            >
+              <SpheraIcon size="sm" />
+            </Button>
 
             <Button
               size="sm"
-              variant="outline"
-              className="h-6 text-[10px] px-2 gap-1 rounded-md border-border/80 hover:border-primary/50"
+              variant="secondary"
+              className="h-8 text-xs px-2.5 gap-1.5 rounded-lg border border-border/60 hover:bg-muted font-normal text-secondary-foreground"
               onClick={onDownload}
               disabled={isDownloading}
             >
               {isDownloading ? (
-                <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                <Loader2 className="h-3 w-3 animate-spin" />
               ) : (
-                <Download className="h-2.5 w-2.5" />
+                <Download className="h-3 w-3" />
               )}
-              <span>Télécharger</span>
+              <span className="hidden sm:inline">Télécharger</span>
             </Button>
           </div>
         </div>

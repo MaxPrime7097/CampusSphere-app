@@ -154,8 +154,8 @@ export function About(): JSX.Element {
             </div>
 
             <div className="relative hidden lg:block campus-animate-slide-up">
-              <div className="absolute inset-0 campus-gradient opacity-30 blur-3xl"></div>
-              <div className="relative campus-glass rounded-3xl p-8 campus-glow">
+              <div className="absolute inset-0 campus-gradient opacity-15 blur-3xl"></div>
+              <div className="relative campus-glass rounded-3xl p-8 shadow-sm">
                 <img
                   src="/Illustrations/About us page-amico.svg"
                   alt="CampusSphere illustration"
@@ -300,64 +300,64 @@ export function About(): JSX.Element {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="campus-card p-6 group hover:scale-105 transition-all duration-300 campus-animate-slide-up">
+            <div className="cs-card p-6 group hover:scale-[1.02] transition-all duration-300 campus-animate-slide-up">
               <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-lg flex items-center justify-center group-hover:animate-pulse-glow">
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center">
                   <img src="/icons/collaboration.png" alt="Collaboration" />
                 </div>
-                <h3 className="font-poppins font-semibold text-lg">Collaboration</h3>
+                <h3 className="font-semibold text-lg">Collaboration</h3>
               </div>
-              <p className="text-muted-foreground font-nunito font-semibold">Nous croyons en la force du travail d'équipe et de l'entraide mutuelle.</p>
+              <p className="text-muted-foreground">Nous croyons en la force du travail d'équipe et de l'entraide mutuelle.</p>
             </div>
 
-            <div className="campus-card p-6 group hover:scale-105 transition-all duration-300 campus-animate-slide-up animation-delay-1s">
+            <div className="cs-card p-6 group hover:scale-[1.02] transition-all duration-300 campus-animate-slide-up animation-delay-1s">
               <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-lg flex items-center justify-center group-hover:animate-pulse-glow">
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center">
                   <img src="/icons/qualite.png" alt="Quality" />
                 </div>
-                <h3 className="font-poppins font-semibold text-lg">Qualité</h3>
+                <h3 className="font-semibold text-lg">Qualité</h3>
               </div>
-              <p className="text-muted-foreground font-nunito font-semibold">Nous maintenons des standards élevés pour toutes nos ressources partagées.</p>
+              <p className="text-muted-foreground">Nous maintenons des standards élevés pour toutes nos ressources partagées.</p>
             </div>
 
-            <div className="campus-card p-6 group hover:scale-105 transition-all duration-300 campus-animate-slide-up animation-delay-2s">
+            <div className="cs-card p-6 group hover:scale-[1.02] transition-all duration-300 campus-animate-slide-up animation-delay-2s">
               <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-lg flex items-center justify-center group-hover:animate-pulse-glow">
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center">
                   <img src="/icons/inclusion.png" alt="Inclusion" />
                 </div>
-                <h3 className="font-poppins font-semibold text-lg">Inclusion</h3>
+                <h3 className="font-semibold text-lg">Inclusion</h3>
               </div>
-              <p className="text-muted-foreground font-nunito font-semibold">Ouvert à tous les étudiants, peu importe leur filière ou niveau d'études.</p>
+              <p className="text-muted-foreground">Ouvert à tous les étudiants, peu importe leur filière ou niveau d'études.</p>
             </div>
 
-            <div className="campus-card p-6 group hover:scale-105 transition-all duration-300 campus-animate-slide-up animation-delay-3s">
+            <div className="cs-card p-6 group hover:scale-[1.02] transition-all duration-300 campus-animate-slide-up animation-delay-3s">
               <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-lg flex items-center justify-center group-hover:animate-pulse-glow">
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center">
                   <img src="/icons/innovation.png" alt="Innovation" />
                 </div>
-                <h3 className="font-poppins font-semibold text-lg">Innovation</h3>
+                <h3 className="font-semibold text-lg">Innovation</h3>
               </div>
-              <p className="text-muted-foreground font-nunito font-semibold">Nous repoussons constamment les limites pour améliorer l'expérience utilisateur.</p>
+              <p className="text-muted-foreground">Nous repoussons constamment les limites pour améliorer l'expérience utilisateur.</p>
             </div>
 
-            <div className="campus-card p-6 group hover:scale-105 transition-all duration-300 campus-animate-slide-up animation-delay-4s">
+            <div className="cs-card p-6 group hover:scale-[1.02] transition-all duration-300 campus-animate-slide-up animation-delay-4s">
               <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-lg flex items-center justify-center group-hover:animate-pulse-glow">
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center">
                   <img src="/icons/le-respect.png" alt="Respect" />
                 </div>
-                <h3 className="font-poppins font-semibold text-lg">Respect</h3>
+                <h3 className="font-semibold text-lg">Respect</h3>
               </div>
-              <p className="text-muted-foreground font-nunito font-semibold">Nous cultivons un environnement respectueux où chaque voix compte et est écoutée.</p>
+              <p className="text-muted-foreground">Nous cultivons un environnement respectueux où chaque voix compte et est écoutée.</p>
             </div>
 
-            <div className="campus-card p-6 group hover:scale-105 transition-all duration-300 campus-animate-slide-up animation-delay-5s">
+            <div className="cs-card p-6 group hover:scale-[1.02] transition-all duration-300 campus-animate-slide-up animation-delay-5s">
               <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-lg flex items-center justify-center group-hover:animate-pulse-glow">
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center">
                   <img src="/icons/excellence.png" alt="Excellence" />
                 </div>
-                <h3 className="font-poppins font-semibold text-lg">Excellence</h3>
+                <h3 className="font-semibold text-lg">Excellence</h3>
               </div>
-              <p className="text-muted-foreground font-nunito font-semibold">Nous visons l'excellence dans tout ce que nous entreprenons et proposons.</p>
+              <p className="text-muted-foreground">Nous visons l'excellence dans tout ce que nous entreprenons et proposons.</p>
             </div>
           </div>
         </div>

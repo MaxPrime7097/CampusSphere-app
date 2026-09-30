@@ -191,7 +191,7 @@ export function ProfileHeader({
                       variant={isFollowing ? "outline" : "default"}
                       onClick={onFollow}
                       disabled={isFollowingLoading || relationActionUnavailable}
-                      className={!isFollowing ? "campus-gradient text-white hover:opacity-90" : ""}
+                      className={!isFollowing ? "bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 font-medium shadow-none" : ""}
                       size="sm"
                     >
                       {isFollowingLoading ? (
@@ -265,7 +265,7 @@ export function ProfileHeader({
                 <div className="flex items-center gap-2">
                   <h1 className="text-2xl font-bold">{user.name}</h1>
                   {user.isVerified && (
-                    <BadgeCheck className="h-6 w-6 text-primary fill-primary/10" />
+                    <BadgeCheck className="h-5 w-5 text-amber-500 fill-amber-500/20" />
                   )}
                 </div>
                 <p className="text-muted-foreground">@{user.username}</p>
@@ -276,10 +276,10 @@ export function ProfileHeader({
               </p>
 
               {/* Impact Score et Mood */}
-              <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-4 p-2.5 sm:p-3 bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg">
+              <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-4 p-2.5 sm:p-3 bg-muted/40 border border-border/40 rounded-xl">
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center shrink-0">
-                    <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-muted rounded-lg flex items-center justify-center shrink-0">
+                    <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-foreground" />
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-1">
@@ -287,7 +287,7 @@ export function ProfileHeader({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-4 w-4 sm:h-5 sm:w-5 p-0 rounded-full hover:bg-primary/20 transition-colors shrink-0"
+                        className="h-4 w-4 sm:h-5 sm:w-5 p-0 rounded-full hover:bg-muted transition-colors shrink-0"
                         onClick={() =>
                           toast({
                             title: "Score d'impact",
@@ -296,13 +296,13 @@ export function ProfileHeader({
                           })
                         }
                       >
-                        <Info className="h-3 w-3 text-primary/60" />
+                        <Info className="h-3 w-3 text-muted-foreground" />
                       </Button>
                     </div>
                     <div className="flex items-center gap-2">
                       <p
                         className={cn(
-                          "text-sm sm:text-lg font-bold text-primary truncate transition-all duration-300",
+                          "text-sm sm:text-lg font-bold text-foreground truncate transition-all duration-300",
                           animateScore && "animate-pop"
                         )}
                       >
@@ -328,8 +328,8 @@ export function ProfileHeader({
                   className="flex items-center gap-2 sm:gap-3 cursor-pointer hover:bg-muted/50 rounded-lg p-1 sm:p-2 -m-1 sm:-m-2 transition-colors min-w-0"
                   onClick={() => isOwnProfile && onOpenMoodModal()}
                 >
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center shrink-0">
-                    <Smile className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-muted rounded-lg flex items-center justify-center shrink-0">
+                    <Smile className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-foreground" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-[11px] sm:text-sm font-semibold">Mood du moment</p>
@@ -364,7 +364,7 @@ export function ProfileHeader({
                 {user.badges.map((badge: any) => (
                   <Badge
                     key={badge.id || badge}
-                    className={`gap-1 ${badge.id === "admin" ? "campus-gradient text-white border-0" : ""}`}
+                    className={`gap-1 ${badge.id === "admin" ? "bg-secondary text-secondary-foreground border border-border/60" : ""}`}
                     variant={badge.id === "admin" ? "default" : "secondary"}
                   >
                     {badge.id === "admin" && <Shield className="h-3 w-3" />}

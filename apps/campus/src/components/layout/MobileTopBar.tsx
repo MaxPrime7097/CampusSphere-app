@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Search, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ interface MobileTopBarProps {
 export function MobileTopBar({ onMenuClick, user, isLoading }: MobileTopBarProps) {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const location = useLocation();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchDropdownVisible, setIsSearchDropdownVisible] = useState(false);
@@ -80,8 +81,8 @@ export function MobileTopBar({ onMenuClick, user, isLoading }: MobileTopBarProps
               </Button>
             ) : (
               <button onClick={() => navigate(`/`)} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                <img src="/CS.svg" alt="CampusSphere" className="hidden h-8 w-8" />
-                <span className="text-lg font-bold font-automata campus-gradient bg-clip-text text-transparent">
+                <img src="/CS.svg" alt="CampusSphere" className="h-7 w-7" />
+                <span className="text-lg font-bold font-automata tracking-wide text-primary">
                   CampusSphere
                 </span>
               </button>
@@ -99,7 +100,19 @@ export function MobileTopBar({ onMenuClick, user, isLoading }: MobileTopBarProps
             </Button>
             
             <ProfileBubble user={user} isLoading={isLoading} />
-            <MenuDropdown user={user} />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { if (location.pathname === "/menu") { navigate(-1); } else { navigate("/menu"); } }}
+              className="h-9 w-9 p-0 rounded-full hover:bg-muted text-foreground"
+              aria-label="Menu"
+            >
+              {location.pathname === "/menu" ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
+            </Button>
             
           </div>
         </div>

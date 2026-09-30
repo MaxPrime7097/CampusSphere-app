@@ -112,8 +112,8 @@ export function Policies(): JSX.Element {
             </div>
 
             <div className="relative hidden lg:block campus-animate-slide-up">
-              <div className="absolute inset-0 campus-gradient opacity-30 blur-3xl"></div>
-              <div className="relative campus-glass rounded-3xl p-8 campus-glow">
+              <div className="absolute inset-0 campus-gradient opacity-15 blur-3xl"></div>
+              <div className="relative campus-glass rounded-3xl p-8 shadow-sm">
                 <img
                   src="/Illustrations/Policies-amico.svg"
                   alt="CampusSphere illustration"
@@ -135,17 +135,17 @@ export function Policies(): JSX.Element {
               <div
                 key={policy.slug}
                 onClick={() => navigate(policy.slug)}
-                className="campus-card group p-5 sm:p-6 rounded-2xl border border-border/60 hover:border-primary/50 transition-all duration-300 hover:shadow-md cursor-pointer flex items-center justify-between gap-4 sm:gap-6"
+                className="cs-card group p-5 sm:p-6 rounded-2xl border border-border/60 hover:border-primary/50 transition-all duration-300 hover:shadow-md cursor-pointer flex items-center justify-between gap-4 sm:gap-6"
               >
                 <div className="space-y-1.5 flex-1 min-w-0">
                   <h2 className="font-raleway text-lg sm:text-xl md:text-2xl font-bold text-foreground group-hover:text-primary transition-colors">
                     {policy.title}
                   </h2>
-                  <p className="font-nunito font-semibold text-sm sm:text-base text-muted-foreground leading-relaxed">
+                  <p className="font-medium text-sm sm:text-base text-muted-foreground leading-relaxed">
                     {policy.description}
                   </p>
                 </div>
-                <div className="flex items-center text-primary font-poppins font-semibold text-sm gap-1.5 shrink-0 group-hover:translate-x-1 transition-transform">
+                <div className="flex items-center text-primary font-semibold text-sm gap-1.5 shrink-0 group-hover:translate-x-1 transition-transform">
                   <span className="hidden sm:inline">Consulter</span>
                   <ChevronRight className="w-5 h-5" />
                 </div>
@@ -159,38 +159,38 @@ export function Policies(): JSX.Element {
               <h2 className="font-raleway text-2xl sm:text-3xl font-bold mb-3">
                 Nos Piliers & <span className="campus-gradient bg-clip-text text-transparent">Engagements</span>
               </h2>
-              <p className="font-nunito font-semibold text-muted-foreground text-sm sm:text-base">
+              <p className="font-medium text-muted-foreground text-sm sm:text-base">
                 Les principes fondamentaux qui garantissent la protection et l'intégrité de vos données sur CampusSphere et Sphera.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="campus-card p-6 sm:p-8 rounded-2xl border border-border/60 text-center space-y-4">
+              <div className="cs-card p-6 sm:p-8 rounded-2xl border border-border/60 text-center space-y-4">
                 <div className="w-12 h-12 mx-auto rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                   <Lock className="w-6 h-6" />
                 </div>
                 <h3 className="font-raleway font-bold text-lg text-foreground">Chiffrement & Sécurité</h3>
-                <p className="font-nunito font-semibold text-sm text-muted-foreground leading-relaxed">
+                <p className="font-medium text-sm text-muted-foreground leading-relaxed">
                   Communications chiffrées en transit via TLS 1.3 et stockage sécurisé AES-256 sur nos infrastructures cloud et AWS S3.
                 </p>
               </div>
 
-              <div className="campus-card p-6 sm:p-8 rounded-2xl border border-border/60 text-center space-y-4">
+              <div className="cs-card p-6 sm:p-8 rounded-2xl border border-border/60 text-center space-y-4">
                 <div className="w-12 h-12 mx-auto rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                   <ShieldCheck className="w-6 h-6" />
                 </div>
                 <h3 className="font-raleway font-bold text-lg text-foreground">Zéro Revente Publicitaire</h3>
-                <p className="font-nunito font-semibold text-sm text-muted-foreground leading-relaxed">
+                <p className="font-medium text-sm text-muted-foreground leading-relaxed">
                   Vos données académiques et personnelles ne sont jamais revendues, louées ni cédées à des régies publicitaires.
                 </p>
               </div>
 
-              <div className="campus-card p-6 sm:p-8 rounded-2xl border border-border/60 text-center space-y-4">
+              <div className="cs-card p-6 sm:p-8 rounded-2xl border border-border/60 text-center space-y-4">
                 <div className="w-12 h-12 mx-auto rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                   <Sparkles className="w-6 h-6" />
                 </div>
                 <h3 className="font-raleway font-bold text-lg text-foreground">IA Éthique & Confidentielle</h3>
-                <p className="font-nunito font-semibold text-sm text-muted-foreground leading-relaxed">
+                <p className="font-medium text-sm text-muted-foreground leading-relaxed">
                   Vos cours analysés sur Sphera restent strictement votre propriété et ne servent à aucun entraînement de modèle public.
                 </p>
               </div>
@@ -199,7 +199,7 @@ export function Policies(): JSX.Element {
 
           {/* Contact CTA Section */}
           <div className="text-center">
-            <div className="campus-card p-6 sm:p-10 md:p-12 rounded-3xl border border-border/60 campus-animate-fade-in">
+            <div className="cs-card p-6 sm:p-10 md:p-12 rounded-3xl border border-border/60 campus-animate-fade-in">
               <h2 className="font-raleway text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
                 Une question sur nos <span className="campus-gradient bg-clip-text text-transparent">politiques ?</span>
               </h2>

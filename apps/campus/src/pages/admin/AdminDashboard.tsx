@@ -158,7 +158,7 @@ export function AdminDashboard() {
             { label: "Ressources", value: stats?.totalResources, icon: FileText },
             { label: "Signalements", value: stats?.reportedContent, icon: Flag },
           ].map((item) => (
-            <Card key={item.label} className="campus-card">
+            <Card key={item.label} className="cs-card">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs text-muted-foreground">{item.label}</p>
@@ -175,7 +175,7 @@ export function AdminDashboard() {
         </div>
 
         {adminError && (
-          <Card className="campus-card border-destructive/40 mb-6">
+          <Card className="cs-card border-destructive/40 mb-6">
             <CardContent className="py-4 text-sm text-destructive">{adminError}</CardContent>
           </Card>
         )}
@@ -187,7 +187,7 @@ export function AdminDashboard() {
           </SharedTabsList>
 
           <TabsContent value="resources" className="space-y-4">
-            <Card className="campus-card">
+            <Card className="cs-card">
               <CardHeader>
                 <CardTitle className="text-base md:text-lg">Ressources en attente de validation</CardTitle>
                 <CardDescription>File de modération des ressources partagées.</CardDescription>
@@ -243,7 +243,7 @@ export function AdminDashboard() {
           </TabsContent>
 
           <TabsContent value="reports" className="space-y-4">
-            <Card className="campus-card">
+            <Card className="cs-card">
               <CardHeader>
                 <CardTitle className="text-base md:text-lg flex items-center gap-2">
                   <AlertCircle className="h-5 w-5 text-red-600" />

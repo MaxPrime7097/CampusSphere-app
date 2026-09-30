@@ -34,10 +34,16 @@
 @layer base {
   :root {
     /* ── Brand ─────────────────────────────── */
-    --primary: 33 100% 51%;          /* #ff9800 — used ONLY on CTAs, active states, badges */
+    --primary: 33 100% 51%;          /* Orange Sphera pour les éléments importants (CTA, Navbar active) */
     --primary-foreground: 0 0% 100%;
     --primary-light: 33 100% 63%;
     --primary-glow: 33 100% 75%;
+    --primary-transparent: 33 100% 51% / 0.50;
+    --primary-half: 33 100% 51% / 0.50;
+    --primary-subtle: 33 100% 51% / 0.15;
+    --primary-muted: 33 100% 51% / 0.25;
+    
+    --brand-orange: 33 100% 51%;     /* Conservé au cas où une touche de marque est requise */
 
     /* ── Surfaces ───────────────────────────── */
     --background: 30 20% 98%;        /* Off-white with a very slight warm tint */
@@ -60,9 +66,9 @@
     --accent-foreground: 220 15% 15%;
 
     /* ── Borders & Inputs ───────────────────── */
-    --border: 220 13% 89%;
+    --border: 220 13% 91%; /* Bordure presque invisible (espace blanc structurant) */
     --input: 220 13% 89%;
-    --ring: 33 100% 51%;
+    --ring: 220 13% 70%;
 
     /* ── Semantic ───────────────────────────── */
     --success: 142 71% 35%;
@@ -104,7 +110,6 @@
     --leading-normal: 1.6;
 
     /* ── Shadows — 4 intentional levels ────── */
-    --shadow-xs:  0 1px 2px hsl(220 15% 10% / 0.04);
     --shadow-sm:  0 2px 6px hsl(220 15% 10% / 0.06), 0 1px 2px hsl(220 15% 10% / 0.04);
     --shadow-md:  0 4px 12px hsl(220 15% 10% / 0.08), 0 2px 4px hsl(220 15% 10% / 0.05);
     --shadow-lg:  0 8px 24px hsl(220 15% 10% / 0.10), 0 4px 8px hsl(220 15% 10% / 0.06);
@@ -131,8 +136,14 @@
     /* ── Brand stays identical in dark ───── */
     --primary: 33 100% 51%;
     --primary-foreground: 0 0% 100%;
-    --primary-light: 33 100% 60%;
+    --primary-light: 33 95% 48%;
     --primary-glow: 33 100% 70%;
+    --primary-transparent: 33 100% 51% / 0.50;
+    --primary-half: 33 100% 51% / 0.50;
+    --primary-subtle: 33 100% 51% / 0.15;
+    --primary-muted: 33 100% 51% / 0.25;
+    
+    --brand-orange: 33 100% 51%;
 
     /* ── Surfaces ───────────────────────── */
     --background: 222 24% 9%;        /* Deep blue-dark */
@@ -147,16 +158,16 @@
     --secondary-foreground: 220 10% 80%;
 
     --muted: 222 20% 16%;
-    --muted-foreground: 220 10% 58%;
+    --muted-foreground: 220 10% 62%;
 
     /* ── Accent — dark warm ─────────────── */
     --accent: 222 18% 20%;
     --accent-foreground: 220 10% 85%;
 
     /* ── Borders & Inputs ───────────────── */
-    --border: 222 18% 20%;
+    --border: 222 18% 13%; /* Bordure presque invisible */
     --input: 222 18% 20%;
-    --ring: 33 100% 51%;
+    --ring: 220 13% 50%;
 
     /* ── Semantic ───────────────────────── */
     --success: 142 71% 42%;
@@ -174,15 +185,14 @@
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 222 20% 17%;
     --sidebar-accent-foreground: 220 10% 82%;
-    --sidebar-border: 222 18% 18%;
+    --sidebar-border: 222 18% 20%;
     --sidebar-ring: 33 100% 51%;
 
     /* ── Shadows (dark) ─────────────────── */
-    --shadow-xs:  0 1px 2px hsl(222 30% 4% / 0.25);
     --shadow-sm:  0 2px 6px hsl(222 30% 4% / 0.35), 0 1px 2px hsl(222 30% 4% / 0.20);
     --shadow-md:  0 4px 12px hsl(222 30% 4% / 0.40), 0 2px 4px hsl(222 30% 4% / 0.25);
     --shadow-lg:  0 8px 24px hsl(222 30% 4% / 0.50), 0 4px 8px hsl(222 30% 4% / 0.30);
-    --shadow-glow: 0 0 20px hsl(33 100% 51% / 0.25);
+    --shadow-glow: 0 0 16px hsl(33 100% 51% / 0.12);
 
     /* ── Gradients ──────────────────────── */
     --gradient-primary: linear-gradient(135deg, hsl(33 100% 51%), hsl(33 100% 60%));
@@ -203,7 +213,7 @@
     font-family: 'Raleway', ui-sans-serif, system-ui, sans-serif;
     font-size: var(--text-body);
     line-height: var(--leading-normal);
-    overflow-x: hidden;
+    overflow-x: clip;
   }
 
   /* ── Typographic element defaults ──── */
@@ -260,23 +270,10 @@
   ────────────────────────────────────── */
   .cs-card {
     background-color: hsl(var(--card));
-    border: 1px solid hsl(var(--border));
-    border-radius: var(--radius);
-    box-shadow: var(--shadow-xs);
-    transition: var(--transition-base);
-  }
-
-  .cs-card-raised {
-    background-color: hsl(var(--card));
-    border: 1px solid hsl(var(--border));
+    border: 1px solid transparent; /* Bordure transparente pour le minimalisme */
     border-radius: var(--radius);
     box-shadow: var(--shadow-sm);
     transition: var(--transition-base);
-  }
-  .cs-card-raised:hover {
-    box-shadow: var(--shadow-md);
-    transform: translateY(-2px);
-    border-color: hsl(var(--border) / 0.8);
   }
 
   .cs-card-ghost {
@@ -300,27 +297,6 @@
       margin-left: 0 !important;
       margin-right: 0 !important;
     }
-  }
-
-  /* ── Legacy aliases (backwards compat) ──
-     campus-card/campus-glow still referenced in ~50 files.
-     They now map to the new clean design system values.
-  ────────────────────────────────────────── */
-  .campus-card {
-    background-color: hsl(var(--card));
-    border: 1px solid hsl(var(--border));
-    border-radius: var(--radius);
-    box-shadow: var(--shadow-xs);
-    transition: var(--transition-base);
-  }
-  .campus-card:hover {
-    box-shadow: var(--shadow-sm);
-  }
-  .campus-glow {
-    box-shadow: var(--shadow-sm);
-  }
-  .campus-hero-gradient {
-    background: var(--gradient-primary);
   }
 
   /* ── Horizontal scroll section ──────
@@ -367,10 +343,6 @@
     border: 1px solid hsl(var(--border) / 0.6);
   }
 
-  /* ── Orange glow — reserved for brand moments ── */
-  .campus-glow {
-    box-shadow: var(--shadow-glow);
-  }
 
   /* ── Animations ──────────────────── */
   .campus-animate-fade-in {
@@ -460,4 +432,15 @@
   }
   .interactive:hover { opacity: 0.85; }
   .interactive:active { transform: scale(0.97); }
+
+  /* ── Accessibility: Reduced motion ── */
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
+

@@ -93,6 +93,7 @@ export function serializeUser(
     username: user.username,
     email: user.email,
     full_name: `${user.firstName} ${user.lastName}`.trim(),
+    name: `${user.firstName} ${user.lastName}`.trim() || user.username,
     phone_number: user.phoneNumber,
     date_of_birth: user.dateOfBirth ? user.dateOfBirth.toISOString().slice(0, 10) : null,
     avatar: user.avatar,

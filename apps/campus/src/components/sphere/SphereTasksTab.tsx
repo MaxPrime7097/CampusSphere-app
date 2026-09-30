@@ -57,7 +57,7 @@ export function SphereTasksTab({
           <>
             <Button
               size="sm"
-              className="campus-gradient text-white"
+              className="bg-secondary text-secondary-foreground hover:bg-muted border border-border/60"
               onClick={() => setIsCreateTaskOpen(true)}
             >
               <Plus className="mr-1 h-4 w-4" /> Tâche
@@ -77,7 +77,7 @@ export function SphereTasksTab({
         ) : (
           <Button
             size="sm"
-            className="campus-gradient text-white"
+            className="bg-secondary text-secondary-foreground hover:bg-muted border border-border/60"
             onClick={() => {
               toast({
                 title: "Compte non certifié",

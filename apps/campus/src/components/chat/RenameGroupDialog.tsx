@@ -46,7 +46,7 @@ export function RenameGroupDialog({
             <Button
               onClick={onConfirm}
               disabled={!value.trim() || isUpdating}
-              className="campus-gradient text-white"
+              className="bg-secondary hover:bg-muted text-secondary-foreground border border-border/60"
             >
               {isUpdating ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

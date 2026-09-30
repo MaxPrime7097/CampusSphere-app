@@ -80,7 +80,7 @@ export function AnnouncementsTab({ sphereId: _sphereId, canModerate }: Announcem
         {canModerate && (
           <Button
             size="sm"
-            className="campus-gradient text-white gap-1.5 text-xs"
+            className="bg-secondary text-secondary-foreground hover:bg-muted border border-border/60 gap-1.5 text-xs"
             onClick={() => setShowForm(!showForm)}
           >
             <Plus className="h-3.5 w-3.5" />
@@ -130,7 +130,7 @@ export function AnnouncementsTab({ sphereId: _sphereId, canModerate }: Announcem
             </Button>
             <Button
               size="sm"
-              className="campus-gradient text-white text-xs"
+              className="bg-secondary text-secondary-foreground hover:bg-muted border border-border/60 text-xs"
               disabled={!newTitle.trim() || !newContent.trim()}
               onClick={handleCreate}
             >

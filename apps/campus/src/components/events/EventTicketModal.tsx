@@ -112,10 +112,10 @@ export function EventTicketModal({
               <div className="flex items-center gap-3">
                 <Avatar className="h-10 w-10 border border-border">
                   <AvatarImage src={currentUser?.avatar || undefined} />
-                  <AvatarFallback className="font-bold text-xs">
-                    {currentUser?.name?.slice(0, 2).toUpperCase() ||
-                      currentUser?.username?.slice(0, 2).toUpperCase() ||
-                      "ET"}
+                  <AvatarFallback className="font-bold text-xs bg-muted text-muted-foreground">
+                    {currentUser?.name?.slice(0, 1).toUpperCase() ||
+                      currentUser?.username?.slice(0, 1).toUpperCase() ||
+                      "E"}
                   </AvatarFallback>
                 </Avatar>
                 <div>
@@ -123,7 +123,7 @@ export function EventTicketModal({
                     <span className="text-xs font-bold text-foreground">
                       {currentUser?.name || currentUser?.username || "Étudiant Campus"}
                     </span>
-                    <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+                    <ShieldCheck className="h-3.5 w-3.5 text-amber-500 fill-amber-500/20" />
                   </div>
                   <p className="text-[11px] text-muted-foreground font-medium">
                     {facultyFormatted}
@@ -169,7 +169,7 @@ export function EventTicketModal({
               {event.isOnline ? (
                 <Globe className="h-4 w-4 text-blue-500 shrink-0" />
               ) : (
-                <MapPin className="h-4 w-4 text-primary shrink-0" />
+                <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
               )}
               <span className="font-medium text-foreground truncate">
                 {event.isOnline ? "Événement en ligne" : event.location || "Grand Amphi, Campus IUC"}
@@ -189,8 +189,9 @@ export function EventTicketModal({
               </Button>
               <Button
                 size="sm"
+                variant="outline"
                 onClick={() => onOpenChange(false)}
-                className="flex-1 rounded-xl text-xs font-bold bg-primary text-primary-foreground"
+                className="flex-1 rounded-xl text-xs font-semibold"
               >
                 Fermer
               </Button>

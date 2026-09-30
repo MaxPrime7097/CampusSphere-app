@@ -19,6 +19,7 @@ import { badRequest } from "../lib/errors.js";
 import { currentUser, requireAuth } from "../middleware/auth.js";
 import { postsVisibleTo, resourcesVisibleTo, spheresVisibleTo } from "../lib/visibility.js";
 import { serializeUserSummary, userSelect } from "../serializers/user.js";
+import { normalizeFileEntry } from "../serializers/post.js";
 
 export const searchRouter: Router = Router();
 
@@ -159,6 +160,7 @@ async function searchPosts(q: string, limit: number, viewerId: number) {
     visibility: p.visibility.toLowerCase(),
     subject: p.subject,
     tags: p.tags,
+    files: Array.isArray(p.files) ? (p.files as any[]).map(normalizeFileEntry) : [],
     impact_score: p.impactScore,
     created_at: p.createdAt.toISOString(),
   }));

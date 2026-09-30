@@ -99,7 +99,7 @@ export function ProfileMoodModal({
           <Button
             onClick={handleSubmit}
             disabled={!moodText.trim() || isSaving}
-            className="campus-gradient text-white hover:opacity-90"
+            className="bg-secondary hover:bg-muted text-secondary-foreground border border-border/60"
           >
             {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
             {isSaving ? "Mise à jour..." : "Mettre à jour"}

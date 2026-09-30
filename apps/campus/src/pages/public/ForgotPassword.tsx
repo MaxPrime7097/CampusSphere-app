@@ -36,7 +36,7 @@ export function ForgotPassword() {
           <ArrowLeft className="h-4 w-4 mr-2" />Retour
         </Button>
 
-        <Card className="campus-card">
+        <Card className="cs-card">
           <CardHeader className="text-center">
             <div className="w-16 h-16 campus-gradient rounded-2xl flex items-center justify-center mx-auto mb-4">
               {sent ? <Check className="h-8 w-8 text-white" /> : <Mail className="h-8 w-8 text-white" />}

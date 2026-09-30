@@ -188,7 +188,7 @@ export function AddExperienceModal({ children, onExperienceAdded, existingExperi
           <Button
             onClick={handleSubmit}
             disabled={isSubmitting || !title.trim() || !company.trim() || !duration.trim() || !description.trim()}
-            className="campus-gradient text-white hover:opacity-90"
+            className="bg-secondary text-secondary-foreground hover:bg-muted border border-border/60"
           >
             {isSubmitting ? (
               <>

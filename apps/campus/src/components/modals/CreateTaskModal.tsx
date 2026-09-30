@@ -164,7 +164,7 @@ export function CreateTaskModal({ children, onTaskCreated, sphereMembers = [], s
             <Button
               onClick={handleSubmit}
               disabled={!title.trim() || !assignedTo || isSubmitting}
-              className="flex-1 campus-gradient text-white"
+              className="flex-1 bg-secondary text-secondary-foreground hover:bg-muted border border-border/60"
             >
               {isSubmitting
                 ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Création...</>

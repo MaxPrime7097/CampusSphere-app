@@ -166,7 +166,7 @@ export function AdminModerationQueue() {
           </p>
         </div>
 
-        <Card className="campus-card">
+        <Card className="cs-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ShieldAlert className="h-5 w-5 text-red-600" />
@@ -261,7 +261,7 @@ export function AdminModerationQueue() {
           </CardContent>
         </Card>
 
-        <Card className="campus-card">
+        <Card className="cs-card">
           <CardHeader>
             <CardTitle>Journal des décisions</CardTitle>
             <CardDescription>Acteur, motif, horodatage et objet ciblé pour chaque décision.</CardDescription>

@@ -16,6 +16,8 @@ import { Button } from "@/components/ui/button";
 import { normalizeResourceType } from "@/constants/resourceTypes";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { LayoutGrid, List } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { Resource, ResourceFolder, ResourceCardData } from "@/types";
 import {
   ResourcesPageHeader,
@@ -56,6 +58,7 @@ export function Resources() {
   const [selectedFileFormat, setSelectedFileFormat] = useState<string>("all");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [isUploadResourceOpen, setIsUploadResourceOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const [viewAllCategory, setViewAllCategory] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -75,8 +78,8 @@ export function Resources() {
   const resourcesQuery = useQuery({
     queryKey: ["resources"],
     queryFn: () => listResources(),
-    staleTime: 2 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
   });
@@ -87,8 +90,8 @@ export function Resources() {
     queryFn: () => listFolders(),
     enabled: Boolean(currentUser?.id),
     retry: false,
-    staleTime: 2 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
   });
@@ -99,8 +102,8 @@ export function Resources() {
     queryFn: () => getSavedResources(),
     enabled: Boolean(currentUser?.id),
     retry: false,
-    staleTime: 2 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
   });
@@ -124,7 +127,8 @@ export function Resources() {
   }, [savedResourcesQuery.data]);
 
   const folders = foldersQuery.data || [];
-  const foldersLoading = foldersQuery.isLoading;
+  const foldersLoading = foldersQuery.isLoading && folders.length === 0 && !foldersQuery.data;
+  const isResourcesLoading = resourcesQuery.isLoading && resources.length === 0 && !resourcesQuery.data;
 
   const handleOpenFolder = async (folder: any) => {
     setSelectedFolder(folder);
@@ -309,17 +313,58 @@ export function Resources() {
           onResetFilters={handleResetFilters}
         />
 
+        {/* View Mode Switcher Toolbar */}
+        <div className="flex items-center justify-between pt-1 pb-1">
+          <span className="text-xs text-muted-foreground font-medium">
+            {isFiltering
+              ? `${filteredResources.length} ${filteredResources.length > 1 ? "ressources trouvées" : "ressource trouvée"}`
+              : `${resources.length} ${resources.length > 1 ? "ressources disponibles" : "ressource disponible"}`}
+          </span>
+          <div className="flex items-center gap-1 bg-muted/40 p-0.5 rounded-lg border border-border/40">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "h-7 px-2.5 rounded-md text-xs gap-1.5 transition-all",
+                viewMode === "grid"
+                  ? "bg-background text-foreground shadow-xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+              onClick={() => setViewMode("grid")}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Grille</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "h-7 px-2.5 rounded-md text-xs gap-1.5 transition-all",
+                viewMode === "list"
+                  ? "bg-background text-foreground shadow-xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+              onClick={() => setViewMode("list")}
+            >
+              <List className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Liste</span>
+            </Button>
+          </div>
+        </div>
+
         {/* Main Content */}
         {isFiltering ? (
           <ResourcesFilteredGrid
             resources={filteredResources}
-            isLoading={resourcesQuery.isLoading}
+            isLoading={isResourcesLoading}
             downloadingIds={downloadingIds}
             savedResources={savedResources}
             onDownload={handleDownload}
             onSave={handleSave}
             onPreview={handlePreview}
             onResetFilters={handleResetFilters}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
           />
         ) : (
           <div className="flex flex-col gap-10 mt-6 pb-12">
@@ -383,7 +428,7 @@ export function Resources() {
             {/* Suggestions & Catégories */}
             <ResourcesCategoryCarousels
               resources={filteredResources}
-              isLoading={resourcesQuery.isLoading}
+              isLoading={isResourcesLoading}
               viewAllCategory={viewAllCategory}
               onSelectCategory={setViewAllCategory}
               downloadingIds={downloadingIds}
@@ -391,6 +436,7 @@ export function Resources() {
               onDownload={handleDownload}
               onSave={handleSave}
               onPreview={handlePreview}
+              viewMode={viewMode}
             />
           </div>
         )}

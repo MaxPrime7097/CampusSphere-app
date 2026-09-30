@@ -42,7 +42,7 @@ export function ConnectionsViewAllSection({
         </h2>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+      <div className="flex flex-col">
         {viewAllSection === "requests" &&
           pendingRequests.map((request) => (
             <PendingRequestCard

@@ -76,7 +76,7 @@ export const EVENT_CATEGORY_LABEL_MAP: Record<string, string> = Object.fromEntri
 );
 
 export const EVENT_CATEGORY_BADGE_MAP: Record<string, string> = Object.fromEntries(
-  EVENT_CATEGORY_OPTIONS.map((cat) => [cat.value, (cat as any).badgeClass || "bg-primary/10 text-primary"])
+  EVENT_CATEGORY_OPTIONS.map((cat) => [cat.value, (cat as any).badgeClass || "bg-muted text-muted-foreground border-border/50"])
 );
 
 export function getEventCategoryMeta(category: string | undefined | null) {

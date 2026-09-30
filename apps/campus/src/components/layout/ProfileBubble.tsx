@@ -46,10 +46,10 @@ export function ProfileBubble({ user: externalUser, isLoading: externalLoading }
   if (!user) {
     return (
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" onClick={() => navigate("/login")} className="hidden sm:inline-flex">
+        <Button size="sm" onClick={() => navigate("/login")} className="hidden sm:inline-flex bg-primary/15 text-primary hover:bg-primary/25 border border-primary/30 font-medium">
           Connexion
         </Button>
-        <Button size="sm" onClick={() => navigate("/register")} className="campus-gradient text-white">
+        <Button size="sm" onClick={() => navigate("/register")} className="bg-secondary hover:bg-muted text-secondary-foreground border border-border/60">
           S'inscrire
         </Button>
       </div>

@@ -104,7 +104,7 @@ export function SphereUploadResourceModal({ sphereId, children, onUploaded, open
           <div className="flex gap-2">
             <Button variant="outline" className="flex-1" onClick={() => setOpen(false)} disabled={uploading}>Annuler</Button>
             <Button
-              className="flex-1 campus-gradient text-white"
+              className="flex-1 bg-secondary text-secondary-foreground hover:bg-muted border border-border/60"
               onClick={handleSubmit}
               disabled={!file || !title.trim() || uploading}
             >

@@ -47,6 +47,7 @@ const Onboarding = lazy(() => import("./pages/public/Onboarding").then(m => ({ d
 const Privacy = lazy(() => import("./pages/public/Privacy").then(m => ({ default: m.Privacy })));
 const Terms = lazy(() => import("./pages/public/Terms").then(m => ({ default: m.Terms })));
 const Connections = lazy(() => import("./pages/Connections").then(m => ({ default: m.Connections })));
+const MobileMenu = lazy(() => import("./pages/MobileMenu").then(m => ({ default: m.MobileMenu })));
 const SpheraHome = lazy(() => import("./sphera/pages/SpheraHome").then(m => ({ default: m.SpheraHome })));
 const SpheraSSORedirect = lazy(() => import("./sphera/pages/SpheraSSORedirect").then(m => ({ default: m.SpheraSSORedirect })));
 const SSOBridge = lazy(() => import("./pages/sso/SSOBridge").then(m => ({ default: m.SSOBridge })));
@@ -89,7 +90,7 @@ const PageLoader = () => (
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 60 * 1000,
+      staleTime: 5 * 60 * 1000,
       gcTime: 30 * 60 * 1000,
       refetchOnWindowFocus: false,
       refetchOnMount: false,
@@ -102,30 +103,7 @@ const Protected = ({ children, requireCompleteProfile = true }: { children: Reac
   const { user, isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-background to-accent/20">
-        <div className="relative flex flex-col items-center gap-6 animate-in fade-in duration-700">
-          <div className="relative">
-            <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full animate-pulse" />
-            <img
-              src="/CS.svg"
-              alt="CampusSphere"
-              className="w-16 h-16 md:w-20 md:h-20 relative animate-bounce duration-[2000ms]"
-            />
-          </div>
-
-          <div className="flex flex-col items-center gap-2">
-            <span className="text-2xl md:text-3xl font-bold font-automata campus-gradient bg-clip-text text-transparent">
-              CampusSphere
-            </span>
-            <div className="flex items-center gap-2 text-muted-foreground text-sm font-medium">
-              <Loader2 className="h-4 w-4 animate-spin text-primary" />
-              <span>Chargement de votre univers...</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <PageLoader />;
   }
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
@@ -322,33 +300,21 @@ const App = (): React.ReactElement => (
                 </AppLayout>
               </Protected>
             } />
-            {/* ─── Sphera V2 ─── */}
-            <Route path="/sphera" element={
-              <Protected>
-                <AppLayout>
-                  <SpheraHome />
-                </AppLayout>
-              </Protected>
+            {/* ─── Mobile Menu ─── */}
+            <Route path="/menu" element={
+              <AppLayout>
+                <MobileMenu />
+              </AppLayout>
             } />
+
+            {/* ─── Sphera SSO Direct Redirect ─── */}
+            <Route path="/sphera" element={<Navigate to="/sphera/sso" replace />} />
             <Route path="/sphera/sso" element={
               <Protected>
                 <SpheraSSORedirect />
               </Protected>
             } />
-            <Route path="/sphera/sessions/:id" element={
-              <Protected>
-                <AppLayout>
-                  <StudySessionDetail />
-                </AppLayout>
-              </Protected>
-            } />
-            <Route path="/sphera/annales/:id" element={
-              <Protected>
-                <AppLayout>
-                  <AnnaleDetail />
-                </AppLayout>
-              </Protected>
-            } />
+            <Route path="/sphera/*" element={<Navigate to="/sphera/sso" replace />} />
 
             {/* Rétrocompatibilité : anciennes URLs → nouvelles */}
             <Route path="/study-sessions" element={<Navigate to="/sphera" replace />} />

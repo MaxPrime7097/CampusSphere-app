@@ -15,7 +15,6 @@ import {
   Loader2,
   X,
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -108,12 +107,12 @@ export function ResourceHeader({
   };
 
   return (
-    <Card className="campus-card mb-4">
-      <CardContent className="p-4 md:p-6">
+    <div className="pb-6 mb-4 border-b border-border/40">
+      <div>
         {/* Title & Badges */}
         <div className="mb-4">
           <div className="flex flex-wrap items-center gap-2 mb-3">
-            <Badge className="campus-gradient text-white">
+            <Badge variant="secondary" className="font-semibold">
               {getTypeLabel(resource.type)}
             </Badge>
             <Badge variant="secondary">{getSubjectLabel(resource.subject)}</Badge>
@@ -146,8 +145,8 @@ export function ResourceHeader({
             <Bookmark className="h-4 w-4" />
             {resource.stats.saves}
           </span>
-          <div className="flex items-center gap-2 px-2 py-1 bg-primary/10 text-primary rounded-full ml-auto group relative">
-            <Zap className="h-3 w-3 fill-current" />
+          <div className="flex items-center gap-2 px-2.5 py-1 bg-muted text-foreground border border-border/50 rounded-full ml-auto group relative">
+            <Zap className="h-3 w-3 fill-current text-muted-foreground" />
             <span className="text-xs font-bold">{resource.impactScore || 0}</span>
             <Button
               variant="ghost"
@@ -323,7 +322,7 @@ export function ResourceHeader({
             </Button>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

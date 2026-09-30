@@ -3,7 +3,6 @@ import { Heart, MessageCircle, Share, Bookmark, MoreVertical, Zap, Copy, Flag, E
 import { FaFacebook, FaTwitter, FaInstagram, FaWhatsapp, FaLinkedin } from 'react-icons/fa';
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { getCategoryLabel } from "@/lib/resourceMetadata";
@@ -352,10 +351,6 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
     });
   };
 
-  const handleOpenPost = () => {
-    navigate(`/posts/${post.id}`);
-  };
-
   const handleSubmitReport = async (reason: string) => {
     if (isReporting) return;
 
@@ -455,12 +450,6 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
 
 
   const categoryLabel = getCategoryLabel(post.category);
-  const cardClasses = cn(
-    "transition-all duration-200",
-    isMobile
-      ? "rounded-none border-x-0 border-t-0 shadow-none bg-card"
-      : "cs-card hover:shadow-[var(--shadow-sm)]"
-  );
 
   if (isDeleted) {
     return null;
@@ -468,38 +457,43 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
 
   return (
     <>
-      <Card className={cardClasses}>
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between">
+      <article className="border-b border-border/40 py-5 transition-colors hover:bg-muted/[0.02]">
+        <div className="pb-3 px-3.5 sm:px-5 md:px-6">
+          <div className="flex items-start justify-between gap-3">
             <div
-              className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+              className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity min-w-0"
               onClick={handleProfileClick}
             >
-              <Avatar className="h-10 w-10">
+              <Avatar className="h-10 w-10 shrink-0">
                 <AvatarImage src={post.author.avatar} />
-                <AvatarFallback className="bg-input text-muted-foreground font-semibold">
+                <AvatarFallback className="bg-muted text-muted-foreground font-semibold text-xs">
                   {post.author.name.slice(0, 1).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h4 className="font-semibold text-sm hover:underline">{post.author.name}</h4>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <h4 className="font-semibold text-sm hover:underline truncate">{post.author.name}</h4>
                   {post.author.isVerified && (
-                    <BadgeCheck className="h-4 w-4 text-primary fill-primary/10" />
+                    <BadgeCheck className="h-3.5 w-3.5 text-amber-500 fill-amber-500/20 shrink-0" />
                   )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <p className="text-xs text-muted-foreground">@{post.author.username}</p>
-                  <span className="text-xs text-muted-foreground">•</span>
-                  <p className="text-xs text-muted-foreground">
+                  <span className="text-xs text-muted-foreground/50">·</span>
+                  <span className="text-xs text-muted-foreground shrink-0">
                     {post.createdAt ? formatRelativeTime(post.createdAt) : post.timestamp || "Date inconnue"}
-                  </p>
+                  </span>
+                  {categoryLabel && categoryLabel.toLowerCase() !== "général" && categoryLabel.toLowerCase() !== "general" && (
+                    <>
+                      <span className="text-xs text-muted-foreground/50">·</span>
+                      <span className="text-[10px] font-medium text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded shrink-0">
+                        {categoryLabel}
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground shrink-0">
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -539,21 +533,17 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        </CardHeader>
+        </div>
 
-        <CardContent className="pt-0">
+        <div className="pt-0.5">
           <div className="space-y-3">
-            <div onClick={handleOpenPost} className="cursor-pointer">
-              <div className="flex items-center justify-between mb-2">
-                <Badge variant="secondary" className="text-xs">
-                  {categoryLabel}
-                </Badge>
+            <div>
+              <div className="px-3.5 sm:px-5 md:px-6">
+                <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-foreground/90">{renderMentionText(content)}</p>
               </div>
 
-              <p className="text-sm leading-relaxed whitespace-pre-wrap">{renderMentionText(content)}</p>
-
               {attachments.length > 0 && (
-                <div className="space-y-0">
+                <div className="mt-3 w-full">
                   {imageAttachments.length > 0 && (() => {
                     const visible = imageAttachments.slice(0, 4);
                     const extra = imageAttachments.length - 4;
@@ -564,7 +554,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                           count === 3 ? "grid-cols-2" :
                             "grid-cols-2";
                     return (
-                      <div className={cn(isMobile ? "-mx-4" : "", "grid gap-0.5", gridClass)}>
+                      <div className={cn("grid gap-0.5 w-full overflow-hidden rounded-none sm:rounded-2xl", gridClass)}>
                         {visible.map((file, i) => {
                           const isLast = i === 3 && extra > 0;
                           const spanFull = count === 3 && i === 0;
@@ -572,32 +562,30 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                             <div
                               key={file.id ?? file.url}
                               className={cn(
-                                "relative overflow-hidden cursor-pointer",
-                                !isMobile && i === 0 && "rounded-tl-lg",
-                                !isMobile && i === 1 && count <= 2 && "rounded-tr-lg",
-                                !isMobile && i === count - 1 && count <= 2 && "rounded-br-lg",
-                                !isMobile && i === count - 2 && count <= 2 && "rounded-bl-lg",
+                                "relative overflow-hidden cursor-pointer w-full",
                                 spanFull && "col-span-2",
-                                count === 1 ? "max-h-[500px]" : (spanFull ? "aspect-video" : "aspect-square")
+                                count === 1 ? "w-full" : (spanFull ? "aspect-video" : "aspect-square")
                               )}
-                              onClick={() => setLightboxIndex(i)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setLightboxIndex(i);
+                              }}
                             >
-                              <OptimizedImage
+                              <img
                                 src={file.url}
                                 alt={file.name || "media"}
                                 className={cn(
-                                  "w-full h-full hover:scale-105 transition-transform duration-300",
-                                  count === 1 ? "object-contain bg-muted" : "object-cover"
+                                  "w-full block rounded-none sm:rounded-2xl transition-all duration-300",
+                                  count === 1
+                                    ? "w-full h-auto max-h-[650px] object-cover hover:opacity-95"
+                                    : "w-full h-full object-cover hover:scale-105"
                                 )}
-                                containerClassName="w-full h-full"
-                                onDoubleClick={handleImageDoubleClick}
                               />
                               {isLast && (
                                 <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                                   <span className="text-white text-2xl font-bold">+{extra + 1}</span>
                                 </div>
                               )}
-
                             </div>
                           );
                         })}
@@ -606,19 +594,19 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                   })()}
 
                   {videoAttachments.length > 0 && (
-                    <div className="space-y-2">
+                    <div className="space-y-2 mt-2 w-full">
                       {videoAttachments.map((file) => (
-                        <div key={file.id ?? file.url} className={cn("overflow-hidden bg-muted", isMobile ? "-mx-4" : "rounded-lg")}>
-                          <video src={file.url} controls preload="metadata" className="w-full" onClick={(e) => e.stopPropagation()} />
+                        <div key={file.id ?? file.url} className="overflow-hidden bg-black w-full rounded-none sm:rounded-2xl">
+                          <video src={file.url} controls preload="metadata" className="w-full block" onClick={(e) => e.stopPropagation()} />
                         </div>
                       ))}
                     </div>
                   )}
 
                   {documentAttachments.length > 0 && (
-                    <div className="space-y-2">
+                    <div className="space-y-2 mt-3 px-3.5 sm:px-5 md:px-6">
                       {documentAttachments.map((file) => (
-                        <div key={file.id ?? file.url} className="flex items-center justify-between gap-3 rounded-lg border bg-muted/40 px-3 py-2">
+                        <div key={file.id ?? file.url} className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-muted/40 px-3.5 py-2.5">
                           <div className="min-w-0 flex items-center gap-2">
                             <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
                             <div className="min-w-0">
@@ -642,87 +630,77 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
               )}
             </div>
 
-            {/* Impact Score Rating */}
-
-
-                        <div className="flex flex-row items-center justify-between gap-1 sm:gap-4 pt-2 border-t overflow-x-auto">
-              <div className="flex items-center gap-1 sm:gap-2 md:gap-4 shrink-0">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleLike}
-                  className={`gap-1.5 sm:gap-2 h-9 px-2 sm:px-3 transition-all active:scale-95 ${isLiked ? 'text-red-500 hover:text-red-600' : 'hover:text-red-500'}`}
-                >
-                  <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
-                  <span className="text-sm font-medium">{likesCount}</span>
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-1.5 sm:gap-2 h-9 px-2 sm:px-3 hover:text-foreground transition-all active:scale-95"
-                  onClick={() => requireAuth(() => setCommentsOpen(true))}
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  <span className="text-sm font-medium">{post.comments}</span>
-                </Button>
-
-                <Button variant="ghost" size="sm" className="h-9 px-2 sm:px-3 hover:text-foreground transition-all active:scale-95" onClick={handleShare}>
-                  <Share className="h-4 w-4" />
-                </Button>
-              </div>
-
-              <div className="flex items-center gap-0.5 sm:gap-2 rounded-lg bg-muted/50 p-0.5 sm:p-1 shrink-0">
-                <div className="flex items-center">
+            {/* Impact Score, Comment, Share (Subtle light-gray pill buttons) */}
+            <div className="flex items-center justify-between pt-2.5 mt-1 border-t border-border/30 px-3.5 sm:px-5 md:px-6">
+              {/* Left: Impact Score Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 w-6 sm:h-8 sm:w-8 p-0 hover:bg-background/80"
-                    onClick={() => handleImpactRate(Math.max((userImpactRating ?? 0) - 1, 1))}
-                    disabled={userImpactRating === null}
+                    className="gap-1.5 h-8 md:h-7.5 px-3 md:px-2.5 rounded-full bg-muted/40 hover:bg-muted/70 text-xs font-medium text-muted-foreground hover:text-foreground border border-border/20 transition-all active:scale-95"
                   >
-                    <Minus className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                    <Zap className={cn("h-3.5 w-3.5", userImpactRating ? "text-amber-500 fill-amber-500" : "")} />
+                    <span>{impactScore}</span>
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 sm:h-8 sm:w-8 p-0 hover:bg-background/80"
-                    onClick={() => handleImpactRate(Math.min((userImpactRating ?? 0) + 1, 5))}
-                  >
-                    <Plus className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 sm:h-8 sm:w-8 p-0 hover:bg-background/80"
-                    onClick={() => handleImpactRate(null)}
-                    disabled={userImpactRating === null}
-                  >
-                    <X className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                  </Button>
-                </div>
-                <div className="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-3 py-0.5 sm:py-1 bg-background rounded-md shadow-sm border">
-                  <Zap className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
-                  <span className="text-xs sm:text-sm font-bold text-foreground">{impactScore}</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-4 w-4 sm:h-5 sm:w-5 p-0 rounded-full hover:bg-muted transition-colors ml-0.5 sm:ml-1 hidden sm:flex"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toast({
-                        title: "Score d'impact",
-                        description: "Le Score d'Impact mesure l'utilité et la pertinence de ce contenu pour la communauté CampusSphere. Il est calculé en fonction des interactions et des retours des étudiants.",
-                      });
-                    }}
-                  >
-                    <Info className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-muted-foreground" />
-                  </Button>
-                </div>
-              </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56 p-3">
+                  <div className="space-y-3">
+                    <div className="text-xs font-medium text-muted-foreground">
+                      Score d'impact — évaluez l'utilité de ce post
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      {[1, 2, 3, 4, 5].map((value) => (
+                        <Button
+                          key={value}
+                          variant={userImpactRating === value ? "default" : "outline"}
+                          size="sm"
+                          className="h-9 w-9 p-0"
+                          onClick={() => handleImpactRate(value)}
+                        >
+                          {value}
+                        </Button>
+                      ))}
+                    </div>
+                    {userImpactRating !== null && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full text-xs text-muted-foreground"
+                        onClick={() => handleImpactRate(null)}
+                      >
+                        Retirer mon vote
+                      </Button>
+                    )}
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Middle: Comments */}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1.5 h-8 md:h-7.5 px-3 md:px-2.5 rounded-full bg-muted/40 hover:bg-muted/70 text-xs font-medium text-muted-foreground hover:text-foreground border border-border/20 transition-all active:scale-95"
+                onClick={() => requireAuth(() => setCommentsOpen(true))}
+              >
+                <MessageCircle className="h-3.5 w-3.5" />
+                <span>{post.comments}</span>
+              </Button>
+
+              {/* Right: Share */}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1.5 h-8 md:h-7.5 px-3 md:px-2.5 rounded-full bg-muted/40 hover:bg-muted/70 text-xs font-medium text-muted-foreground hover:text-foreground border border-border/20 transition-all active:scale-95"
+                onClick={handleShare}
+                title="Partager ce post"
+              >
+                <Share className="h-3.5 w-3.5" />
+              </Button>
             </div>
-        </div></CardContent>
-      </Card>
+          </div>
+        </div>
+      </article>
 
       {commentsOpen && (
         <Suspense fallback={<ModalLoadingFallback />}>
@@ -1000,7 +978,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-primary fill-current" />
+              <Zap className="h-5 w-5 text-foreground fill-current" />
               Rejoignez CampusSphere
             </DialogTitle>
             <DialogDescription>
@@ -1009,7 +987,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-3 mt-4">
-            <Button onClick={() => navigate("/register")} className="campus-gradient text-white w-full">
+            <Button onClick={() => navigate("/register")} className="bg-secondary hover:bg-muted text-secondary-foreground border border-border/60 w-full">
               Créer un compte gratuitement
             </Button>
             <Button variant="outline" onClick={() => navigate("/login")} className="w-full">

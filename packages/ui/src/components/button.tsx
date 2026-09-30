@@ -26,15 +26,15 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        /* Primary — orange, used sparingly */
+        /* Primary — action principale */
         primary:
           "rounded-[var(--radius-sm)] bg-primary text-primary-foreground shadow-sm " +
           "hover:bg-primary/90 active:bg-primary/95",
 
-        /* Default alias for primary (backwards compat) */
+        /* Default — Minimaliste (Secondary/Ghost feel) */
         default:
-          "rounded-[var(--radius-sm)] bg-primary text-primary-foreground shadow-sm " +
-          "hover:bg-primary/90 active:bg-primary/95",
+          "rounded-[var(--radius-sm)] bg-secondary/60 text-secondary-foreground " +
+          "hover:bg-secondary/90 active:bg-secondary",
 
         /* Secondary — neutral, frequent use */
         secondary:

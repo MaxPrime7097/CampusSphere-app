@@ -229,12 +229,12 @@ export function MiniChat({ sphereId, sphereName, isExpanded, onToggleExpanded, c
       : "bg-muted-foreground";
 
   return (
-    <Card className={`campus-card transition-all duration-300 ${className}`}>
+    <Card className={`cs-card transition-all duration-300 ${className}`}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
-              <MessageCircle className="h-3.5 w-3.5 text-white" />
+            <div className="w-7 h-7 bg-muted rounded-lg flex items-center justify-center">
+              <MessageCircle className="h-3.5 w-3.5 text-foreground" />
             </div>
             <div>
               <CardTitle className="text-base">Chat · {sphereName}</CardTitle>
@@ -290,7 +290,7 @@ export function MiniChat({ sphereId, sphereName, isExpanded, onToggleExpanded, c
                   {!msg.isMe && (
                     <span className="text-[10px] text-muted-foreground mb-0.5">{msg.sender}</span>
                   )}
-                  <div className={`rounded-lg px-2.5 py-1.5 text-sm ${msg.isMe ? "campus-gradient text-white" : "bg-card border"}`}>
+                  <div className={`rounded-lg px-2.5 py-1.5 text-sm ${msg.isMe ? "bg-secondary text-secondary-foreground border border-border/60" : "bg-muted/50 text-foreground border border-border/30"}`}>
                     {renderMentionText(msg.content)}
                   </div>
 
@@ -319,7 +319,7 @@ export function MiniChat({ sphereId, sphereName, isExpanded, onToggleExpanded, c
             />
             <Button
               size="sm"
-              className="campus-gradient text-white h-8 w-8 p-0 flex-shrink-0"
+              className="bg-secondary hover:bg-muted text-secondary-foreground border border-border/60 h-8 w-8 p-0 flex-shrink-0"
               onClick={handleSend}
               disabled={!newMessage.trim() || isSending}
             >

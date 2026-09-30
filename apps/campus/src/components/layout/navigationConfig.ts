@@ -16,6 +16,7 @@ import {
   Plus,
   Link,
   Calendar,
+  Search,
 } from "lucide-react";
 import { SpheraIcon } from "@/components/ui/sphera-icon";
 
@@ -82,13 +83,13 @@ export function getNavigationSections(user?: NavigationUser | null): NavigationS
     quickActions.push(
       { title: "Connexions", url:"/connections", icon: Link },
       { title: "Messages", url: "/messages", icon: MessageSquare },
-      { title: "Assistante Sphera", url: "/sphera", icon: SpheraIcon },
       { title: "Enregistrements", url: "/saved", icon: Bookmark },
       { title: "Paramètres", url: "/settings", icon: Settings }
     );
   }
 
   const utilities: NavigationItem[] = [
+    { title: "Ouvrir Sphera", url: "/sphera/sso", icon: SpheraIcon, external: true },
     ...adminEntry,
     { title: "À propos", url: "/cs-inc/about", icon: Info, external: true },
     { title: "Politiques", url: "/cs-inc/policies", icon: Scale, external: true },
@@ -98,18 +99,10 @@ export function getNavigationSections(user?: NavigationUser | null): NavigationS
   const mobileItems: NavigationItem[] = [
     { title: "Accueil", url: "/", icon: Home },
     { title: "Ressources", url: "/resources", icon: FolderOpen },
+    { title: "Publier", url: newPost, icon: Plus },
+    { title: "Sphères", url: "/spheres", icon: Globe },
+    { title: "Notifications", url: "/notifications", icon: Bell },
   ];
-
-  if (isAuthenticated) {
-    mobileItems.push(
-      { title: "NouveauPost", url: newPost, icon: Plus },
-      { title: "Sphères", url: "/spheres", icon: Globe },
-      { title: "Notifications", url: "/notifications", icon: Bell }
-    );
-  } else {
-    // For guests on mobile, maybe add a search or info icon
-    mobileItems.push({ title: "À propos", url: "/cs-inc/about", icon: Info });
-  }
 
   return {
     navigationItems,

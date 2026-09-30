@@ -19,7 +19,7 @@ export function ResponsiveCard({
 }: ResponsiveCardProps) {
   return (
     <Card className={cn(
-      "campus-card w-full max-w-full overflow-hidden",
+      "cs-card w-full max-w-full overflow-hidden",
       // Mobile optimizations
       "sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl",
       // Ensure cards don't exceed screen width

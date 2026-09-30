@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   Users,
   Search,
@@ -19,10 +19,9 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { exportAttendeesCsv, checkInAttendee } from "@/services/eventService";
 import { useToast } from "@/hooks/use-toast";
-import { formatSlugToLabel } from "@/lib/utils";
+import { formatSlugToLabel, cn } from "@/lib/utils";
 import type { EventAttendee } from "@/types/events.types";
 
 interface EventAttendeesModalProps {
@@ -36,6 +35,17 @@ interface EventAttendeesModalProps {
   onAttendeeUpdated?: (updated: EventAttendee) => void;
 }
 
+function getAttendeeName(user: any, fallback = "Participant"): string {
+  if (!user) return fallback;
+  return (
+    user.name ||
+    user.full_name ||
+    `${user.firstName || user.first_name || ""} ${user.lastName || user.last_name || ""}`.trim() ||
+    user.username ||
+    fallback
+  );
+}
+
 export function EventAttendeesModal({
   open,
   onOpenChange,
@@ -46,25 +56,31 @@ export function EventAttendeesModal({
   onOpenScanner,
   onAttendeeUpdated,
 }: EventAttendeesModalProps) {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "going" | "attended">("all");
   const [isExporting, setIsExporting] = useState(false);
 
   // We consider registered / going attendees and checked-in attendees
-  const attendedAttendees = attendees.filter((a) => a.status === "attended" || a.isCheckedIn);
+  const attendedAttendees = attendees.filter((a) => a.status === "attended" || Boolean(a.isCheckedIn));
   const goingAttendees = attendees.filter((a) => a.status === "going" && !a.isCheckedIn);
 
   const filterList = (list: EventAttendee[]) => {
     if (!search.trim()) return list;
     const q = search.toLowerCase();
-    return list.filter(
-      (a) =>
-        a.user.name?.toLowerCase().includes(q) ||
-        a.user.username?.toLowerCase().includes(q) ||
-        a.user.faculty?.toLowerCase().includes(q) ||
-        a.user.university?.toLowerCase().includes(q)
-    );
+    return list.filter((a) => {
+      const name = getAttendeeName(a.user, "").toLowerCase();
+      const username = (a.user?.username || "").toLowerCase();
+      const faculty = (a.user?.faculty || "").toLowerCase();
+      const university = (a.user?.university || "").toLowerCase();
+      return (
+        name.includes(q) ||
+        username.includes(q) ||
+        faculty.includes(q) ||
+        university.includes(q)
+      );
+    });
   };
 
   const displayedList =
@@ -72,7 +88,23 @@ export function EventAttendeesModal({
       ? filterList(attendedAttendees)
       : activeTab === "going"
       ? filterList(goingAttendees)
-      : filterList(attendees.filter(a => a.status === "going" || a.status === "attended" || a.isCheckedIn));
+      : filterList(attendees.filter(a => a.status === "going" || a.status === "attended" || Boolean(a.isCheckedIn)));
+
+  const handleAttendeeClick = (e: React.MouseEvent, username?: string) => {
+    e.preventDefault();
+    if (!username) return;
+    onOpenChange(false);
+    setTimeout(() => {
+      navigate(`/profile/${username}`);
+    }, 100);
+  };
+
+  const handleOpenScanner = () => {
+    onOpenChange(false);
+    setTimeout(() => {
+      onOpenScanner?.();
+    }, 100);
+  };
 
   const handleExportCsv = async () => {
     if (!eventId) return;
@@ -101,7 +133,7 @@ export function EventAttendeesModal({
       onAttendeeUpdated?.(res.attendee);
       toast({
         title: "Présence validée",
-        description: `Entrée validée pour ${attendee.user.name || attendee.user.username}.`,
+        description: `Entrée validée pour ${getAttendeeName(attendee.user)}.`,
       });
     } catch (err: any) {
       toast({
@@ -112,7 +144,7 @@ export function EventAttendeesModal({
     }
   };
 
-  const totalRegistered = attendees.filter(a => a.status === "going" || a.status === "attended" || a.isCheckedIn).length;
+  const totalRegistered = attendees.filter(a => a.status === "going" || a.status === "attended" || Boolean(a.isCheckedIn)).length;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -120,7 +152,7 @@ export function EventAttendeesModal({
         <DialogHeader className="shrink-0 space-y-1 pb-2">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <DialogTitle className="flex items-center gap-2 text-base sm:text-lg font-bold">
-              <Users className="h-5 w-5 text-primary" />
+              <Users className="h-5 w-5 text-muted-foreground" />
               <span>Participants ({totalRegistered})</span>
             </DialogTitle>
 
@@ -129,13 +161,10 @@ export function EventAttendeesModal({
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => {
-                    onOpenChange(false);
-                    onOpenScanner();
-                  }}
+                  onClick={handleOpenScanner}
                   className="rounded-xl text-xs font-semibold h-8"
                 >
-                  <QrCode className="h-3.5 w-3.5 mr-1 text-primary" />
+                  <QrCode className="h-3.5 w-3.5 mr-1" />
                   Scanner
                 </Button>
               )}
@@ -143,9 +172,10 @@ export function EventAttendeesModal({
               {isOrganizer && (
                 <Button
                   size="sm"
+                  variant="outline"
                   onClick={handleExportCsv}
                   disabled={isExporting}
-                  className="rounded-xl text-xs font-bold bg-primary text-primary-foreground h-8"
+                  className="rounded-xl text-xs font-semibold h-8"
                 >
                   <Download className="h-3.5 w-3.5 mr-1" />
                   {isExporting ? "Export..." : "CSV"}
@@ -158,25 +188,50 @@ export function EventAttendeesModal({
 
         {/* Tabs & Search */}
         <div className="space-y-3 shrink-0">
-          <Tabs
-            value={activeTab}
-            onValueChange={(val) => setActiveTab(val as any)}
-            className="w-full"
-          >
-            <TabsList className="grid w-full grid-cols-3 h-9">
-              <TabsTrigger value="all" className="text-xs">
-                Tous ({totalRegistered})
-              </TabsTrigger>
-              <TabsTrigger value="going" className="text-xs flex items-center justify-center gap-1">
-                <Check className="h-3 w-3 text-primary" />
-                <span className="truncate">Inscrits ({goingAttendees.length})</span>
-              </TabsTrigger>
-              <TabsTrigger value="attended" className="text-xs flex items-center justify-center gap-1">
-                <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                <span className="truncate">Présents ({attendedAttendees.length})</span>
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          {/* Segmented Control Navigation */}
+          <div className="grid grid-cols-3 p-1 rounded-xl bg-muted/60 border border-border/50 text-xs">
+            <button
+              type="button"
+              onClick={() => setActiveTab("all")}
+              className={cn(
+                "flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-medium transition-all text-xs cursor-pointer",
+                activeTab === "all"
+                  ? "bg-background text-foreground font-semibold shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <span>Tous</span>
+              <span className="text-[11px] opacity-70">({totalRegistered})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("going")}
+              className={cn(
+                "flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-medium transition-all text-xs cursor-pointer",
+                activeTab === "going"
+                  ? "bg-background text-foreground font-semibold shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Check className="h-3 w-3 text-muted-foreground shrink-0" />
+              <span className="truncate">Inscrits</span>
+              <span className="text-[11px] opacity-70">({goingAttendees.length})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("attended")}
+              className={cn(
+                "flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-medium transition-all text-xs cursor-pointer",
+                activeTab === "attended"
+                  ? "bg-background text-foreground font-semibold shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
+              <span className="truncate">Présents</span>
+              <span className="text-[11px] opacity-70">({attendedAttendees.length})</span>
+            </button>
+          </div>
 
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -197,41 +252,49 @@ export function EventAttendeesModal({
             </div>
           ) : (
             displayedList.map((attendee) => {
-              const isChecked = attendee.status === "attended" || attendee.isCheckedIn;
-              const formattedFaculty = attendee.user.faculty
+              const isChecked = attendee.status === "attended" || Boolean(attendee.isCheckedIn);
+              const attName = getAttendeeName(attendee.user);
+              const initial = attName.slice(0, 1).toUpperCase();
+              const formattedFaculty = attendee.user?.faculty
                 ? formatSlugToLabel(attendee.user.faculty)
-                : attendee.user.university || `@${attendee.user.username}`;
+                : attendee.user?.university || (attendee.user?.username ? `@${attendee.user.username}` : "");
 
               return (
                 <div
                   key={attendee.id}
-                  className="flex items-center justify-between gap-3 p-3 rounded-2xl border border-border/50 bg-card hover:bg-accent/40 transition-colors"
+                  className="flex items-center justify-between gap-3 p-3 rounded-2xl border border-border/50 bg-card hover:bg-muted/40 transition-colors"
                 >
-                  <Link
-                    to={`/profile/${attendee.user.username}`}
-                    onClick={() => onOpenChange(false)}
-                    className="flex items-center gap-3 min-w-0 flex-1"
+                  <div
+                    onClick={(e) => handleAttendeeClick(e, attendee.user?.username)}
+                    className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer group"
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        handleAttendeeClick(e as any, attendee.user?.username);
+                      }
+                    }}
                   >
-                    <Avatar className="h-9 w-9 border border-border shrink-0">
-                      <AvatarImage src={attendee.user.avatar || undefined} />
-                      <AvatarFallback className="text-xs font-bold">
-                        {attendee.user.name?.slice(0, 2).toUpperCase() || "US"}
+                    <Avatar className="h-9 w-9 border border-border/60 shrink-0">
+                      <AvatarImage src={attendee.user?.avatar || undefined} alt={attName} />
+                      <AvatarFallback className="text-xs font-semibold bg-muted text-muted-foreground">
+                        {initial}
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0">
-                      <div className="flex items-center gap-1">
-                        <span className="text-xs font-bold text-foreground truncate">
-                          {attendee.user.name || attendee.user.username}
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-semibold text-foreground truncate group-hover:underline">
+                          {attName}
                         </span>
-                        {attendee.user.isVerified && (
-                          <ShieldCheck className="h-3.5 w-3.5 text-primary shrink-0" />
+                        {attendee.user?.isVerified && (
+                          <ShieldCheck className="h-3.5 w-3.5 text-amber-500 fill-amber-500/20 shrink-0" />
                         )}
                       </div>
                       <p className="text-[11px] text-muted-foreground truncate">
                         {formattedFaculty}
                       </p>
                     </div>
-                  </Link>
+                  </div>
 
                   <div className="flex items-center gap-2 shrink-0">
                     {isChecked ? (
@@ -245,8 +308,8 @@ export function EventAttendeesModal({
                     ) : (
                       <div className="flex items-center gap-1.5">
                         <Badge
-                          variant="secondary"
-                          className="bg-primary/10 text-primary border-primary/20 text-[10px] font-semibold"
+                          variant="outline"
+                          className="text-[10px] font-medium text-muted-foreground border-border/50 bg-muted/40"
                         >
                           Inscrit
                         </Badge>
@@ -255,7 +318,7 @@ export function EventAttendeesModal({
                             size="sm"
                             variant="outline"
                             onClick={() => handleManualCheckIn(attendee)}
-                            className="h-6 text-[10px] rounded-lg px-2"
+                            className="h-6 text-[10px] rounded-lg px-2 text-muted-foreground hover:text-foreground"
                           >
                             Valider
                           </Button>

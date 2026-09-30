@@ -82,7 +82,7 @@ export function SpheraEventAssistantModal({
       <DialogContent className="max-w-2xl rounded-2xl p-6">
         <DialogHeader>
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-primary/10 text-primary">
+            <div className="p-2 rounded-xl bg-muted text-foreground">
               <SpheraIcon size="md" />
             </div>
             <div>
@@ -113,7 +113,7 @@ export function SpheraEventAssistantModal({
                   }}
                   className="rounded-lg border border-border/70 bg-card hover:bg-accent px-2.5 py-1.5 text-xs text-left transition-colors flex items-center gap-1.5"
                 >
-                  <Sparkles className="h-3 w-3 text-primary shrink-0" />
+                  <Sparkles className="h-3 w-3 text-muted-foreground shrink-0" />
                   <span className="font-medium text-foreground">{preset.title}</span>
                 </button>
               ))}
@@ -155,9 +155,9 @@ export function SpheraEventAssistantModal({
 
           {/* Preview of generated content */}
           {generatedDraft && (
-            <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3 animate-in fade-in duration-300">
+            <div className="rounded-xl border border-border/80 bg-muted/30 p-4 space-y-3 animate-in fade-in duration-300">
               <div className="flex items-center justify-between">
-                <Badge variant="outline" className="text-[11px] font-semibold border-primary/40 text-primary flex items-center gap-1">
+                <Badge variant="outline" className="text-[11px] font-semibold border-border/60 text-muted-foreground flex items-center gap-1">
                   <Sparkles className="h-3 w-3" /> Proposition Sphera
                 </Badge>
                 <Button

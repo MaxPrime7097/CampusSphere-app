@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
   Upload, 
@@ -203,8 +202,8 @@ export function FileUpload({
   return (
     <div className={`space-y-4 ${className}`}>
       {/* Zone de drop */}
-      <Card 
-        className={`border-2 border-dashed transition-colors cursor-pointer ${
+      <div 
+        className={`border-2 border-dashed rounded-xl transition-colors cursor-pointer flex flex-col items-center justify-center py-8 px-4 ${
           isDragging 
             ? "border-primary bg-primary/5" 
             : "border-muted-foreground/25 hover:border-primary/50"
@@ -214,26 +213,24 @@ export function FileUpload({
         onDragLeave={handleDragLeave}
         onClick={() => fileInputRef.current?.click()}
       >
-        <CardContent className="flex flex-col items-center justify-center py-8">
-          <Upload className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold mb-2">
-            {isDragging ? "Déposez vos fichiers ici" : "Glissez-déposez vos fichiers"}
-          </h3>
-          <p className="text-sm text-muted-foreground text-center mb-4">
-            ou cliquez pour sélectionner des fichiers
-          </p>
-          <div className="flex flex-wrap gap-2 justify-center">
-            {acceptedTypes.map(type => (
-              <Badge key={type} variant="secondary" className="text-xs">
-                {type === "*/*" ? "Tous types" : type}
-              </Badge>
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            Max {maxSize}MB par fichier • {maxFiles} fichiers max
-          </p>
-        </CardContent>
-      </Card>
+        <Upload className="h-10 w-10 text-muted-foreground mb-3" />
+        <h3 className="text-base font-semibold mb-1 text-foreground">
+          {isDragging ? "Déposez vos fichiers ici" : "Glissez-déposez vos fichiers"}
+        </h3>
+        <p className="text-xs text-muted-foreground text-center mb-3">
+          ou cliquez pour sélectionner des fichiers
+        </p>
+        <div className="flex flex-wrap gap-1.5 justify-center">
+          {acceptedTypes.map(type => (
+            <Badge key={type} variant="secondary" className="text-xs font-normal">
+              {type === "*/*" ? "Tous types" : type}
+            </Badge>
+          ))}
+        </div>
+        <p className="text-[11px] text-muted-foreground mt-2">
+          Max {maxSize}MB par fichier • {maxFiles} fichiers max
+        </p>
+      </div>
 
       {/* Input file caché */}
       <input
@@ -250,7 +247,7 @@ export function FileUpload({
         <div className="space-y-2">
           <h4 className="font-medium text-sm">Fichiers sélectionnés ({uploadedFiles.length})</h4>
           {uploadedFiles.map((uploadedFile) => (
-            <Card key={uploadedFile.id} className="p-3">
+            <div key={uploadedFile.id} className="p-3 rounded-lg border border-border/40 hover:bg-muted/30 transition-colors">
               <div className="flex items-center gap-3">
                 <div className="flex-shrink-0">
                   {getFileIcon(uploadedFile.file)}
@@ -297,7 +294,7 @@ export function FileUpload({
                   <X className="h-4 w-4" />
                 </Button>
               </div>
-            </Card>
+            </div>
           ))}
         </div>
       )}
@@ -307,7 +304,7 @@ export function FileUpload({
         <div className="flex justify-end">
           <Button
             onClick={() => onUploadComplete(completedFiles.map(f => f.file))}
-            className="campus-gradient text-white hover:opacity-90"
+            className="bg-secondary hover:bg-muted text-secondary-foreground border border-border/60"
           >
             <Check className="h-4 w-4 mr-2" />
             Finaliser l'upload ({completedFiles.length})

@@ -46,7 +46,7 @@ export function SphereFilesTab({
         <>
           <Button
             size="sm"
-            className="campus-gradient text-white gap-1"
+            className="bg-secondary text-secondary-foreground hover:bg-muted border border-border/60 gap-1"
             onClick={() => setIsUploadResourceOpen(true)}
           >
             <Plus className="h-4 w-4" /> Partager

@@ -1,8 +1,6 @@
 import { Suspense, lazy } from "react";
 import { User, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
 
 const EditAccountModal = lazy(() =>
@@ -36,22 +34,25 @@ export function SettingsAccountCard({
   onToast,
 }: SettingsAccountCardProps) {
   return (
-    <Card className="campus-card">
-      <CardHeader className="p-4 md:p-6">
-        <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-          <User className="h-4 w-4 md:h-5 md:w-5" />
-          Compte
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-1 p-4 md:p-6 pt-0">
+    <div className="py-5 border-b border-border/40 space-y-3">
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 rounded-lg bg-secondary/60 flex items-center justify-center text-muted-foreground flex-shrink-0">
+          <User className="h-4 w-4" />
+        </div>
+        <div>
+          <h2 className="text-base font-semibold tracking-tight text-foreground">Compte</h2>
+          <p className="text-xs text-muted-foreground">Informations personnelles et sécurité d'accès</p>
+        </div>
+      </div>
+      <div className="divide-y divide-border/40 pt-1">
         <div>
           <Button
             variant="ghost"
-            className="w-full justify-between h-auto p-3 md:p-4 text-sm md:text-base"
+            className="w-full justify-between h-auto py-3 px-2 text-sm hover:bg-muted/40 font-normal rounded-lg transition-colors"
             onClick={() => onOpenEditAccount(true)}
           >
-            <span>Informations personnelles</span>
-            <ChevronRight className="h-3 w-3 md:h-4 md:w-4" />
+            <span className="text-foreground/90">Informations personnelles</span>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
           </Button>
           {isEditAccountOpen && (
             <Suspense fallback={<ModalLoadingFallback />}>
@@ -67,29 +68,28 @@ export function SettingsAccountCard({
             </Suspense>
           )}
         </div>
-        <Separator />
         <div>
           <Button
             variant="ghost"
-            className="w-full justify-between h-auto p-3 md:p-4 text-sm md:text-base"
+            className="w-full justify-between h-auto py-3 px-2 text-sm hover:bg-muted/40 font-normal rounded-lg transition-colors"
             onClick={onOpenPasswordModal}
           >
-            <span>Mot de passe</span>
-            <ChevronRight className="h-3 w-3 md:h-4 md:w-4" />
+            <span className="text-foreground/90">Mot de passe</span>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
           </Button>
         </div>
-        <Separator />
         <div>
           <Button
             variant="ghost"
-            className="w-full justify-between h-auto p-3 md:p-4 text-sm md:text-base"
+            className="w-full justify-between h-auto py-3 px-2 text-sm hover:bg-muted/40 font-normal rounded-lg transition-colors"
             onClick={onOpenEmailModal}
           >
-            <span>Email et authentification</span>
-            <ChevronRight className="h-3 w-3 md:h-4 md:w-4" />
+            <span className="text-foreground/90">Email et authentification</span>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
           </Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
+

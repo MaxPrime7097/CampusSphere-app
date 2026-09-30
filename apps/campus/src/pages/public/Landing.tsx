@@ -227,8 +227,8 @@ export function Landing() {
             </div>
             {/* Image de campus */}
             <div className="relative hidden lg:block campus-animate-slide-up pb-5">
-              <div className="absolute inset-0 campus-gradient opacity-30 blur-3xl"></div>
-              <div className="relative campus-glass rounded-3xl p-8 campus-glow">
+              <div className="absolute inset-0 campus-gradient opacity-15 blur-3xl"></div>
+              <div className="relative campus-glass rounded-3xl p-8 shadow-sm">
                 <img
                   src="/Illustrations/Students-amico.svg"
                   alt="CampusSphere illustration"

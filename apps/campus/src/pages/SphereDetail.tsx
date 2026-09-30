@@ -67,7 +67,6 @@ export function SphereDetail() {
   const [showBannerModal, setShowBannerModal] = useState(false);
   const [isCopyingLink, setIsCopyingLink] = useState(false);
 
-  const [loading, setLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [taskState, setTaskState] = useState<"ready" | "forbidden" | "server_error">("ready");
   const [processingMemberIds, setProcessingMemberIds] = useState<Record<string, boolean>>({});
@@ -137,21 +136,30 @@ export function SphereDetail() {
     queryKey: ["sphere", id],
     queryFn: () => getSphere(String(id)),
     enabled: Boolean(id),
-    staleTime: 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
   const membersQuery = useQuery({
     queryKey: ["sphere-members", id],
     queryFn: () => listSphereMembers(String(id)),
     enabled: Boolean(id),
-    staleTime: 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
   const tasksQuery = useQuery({
     queryKey: ["sphere-tasks", id],
     queryFn: () => listSphereTasks(String(id)),
     enabled: Boolean(id),
-    staleTime: 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
     retry: false,
   });
 
@@ -159,8 +167,14 @@ export function SphereDetail() {
     queryKey: ["sphere-files", id],
     queryFn: () => getSphereFiles(String(id)),
     enabled: Boolean(id),
-    staleTime: 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
+
+  const isInitialLoading =
+    (sphereQuery.isLoading || membersQuery.isLoading) && !sphereQuery.data && !sphere;
 
   const loadSphereData = async () => {
     await Promise.all([
@@ -174,23 +188,16 @@ export function SphereDetail() {
   useEffect(() => {
     if (!id) return;
 
-    const isFetchingMain = sphereQuery.isLoading || membersQuery.isLoading;
-    if (isFetchingMain) {
-      setLoading(true);
-      return;
-    }
-
     if (sphereQuery.error) {
       setLoadError((sphereQuery.error as any)?.message || "Erreur de chargement");
-      setLoading(false);
       return;
     }
 
-    setLoading(false);
     setLoadError(null);
 
     const sphereData = sphereQuery.data;
     const rawMembersData = membersQuery.data;
+    if (!sphereData) return;
 
     setCurrentUserId(currentUser?.id ? String(currentUser.id) : null);
     setSphere(sphereData);
@@ -495,7 +502,7 @@ export function SphereDetail() {
     }
   };
 
-  if (loading) {
+  if (isInitialLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">

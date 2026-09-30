@@ -1,7 +1,6 @@
 import { Suspense, lazy } from "react";
 import { Folder, FolderOpen, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { NetflixCarousel } from "@/components/ui/netflix-carousel";
 import { FolderCard } from "@/components/resources/FolderCard";
 import { ResourceCard } from "@/components/resources/ResourceCard";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
@@ -78,74 +77,74 @@ export function ResourcesFolderSection({
         </Button>
       </div>
 
-      <NetflixCarousel className="gap-4 pb-1">
-        {foldersLoading ? (
-          Array.from({ length: 4 }).map((_, i) => (
+      {foldersLoading ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="cs-scroll-item w-[220px] sm:w-[260px] h-32 bg-muted/40 rounded-2xl animate-pulse"
+              className="h-28 bg-muted/40 rounded-xl animate-pulse"
             />
-          ))
-        ) : folders.length === 0 ? (
-          <div
-            className="cs-scroll-item w-[220px] sm:w-[260px] h-32 border border-border/70 rounded-2xl flex flex-col items-center justify-center text-muted-foreground hover:bg-muted/30 hover:border-primary/40 cursor-pointer transition-all bg-card/50"
-            onClick={onOpenCreateFolder}
-          >
-            <Folder className="h-6 w-6 mb-2 text-primary/70" />
-            <span className="text-xs font-semibold">Créer un dossier</span>
-          </div>
-        ) : (
-          folders.map((folder) => (
-            <div key={folder.id} className="cs-scroll-item w-[220px] sm:w-[260px]">
-              <FolderCard
-                folder={folder}
-                isSelected={selectedFolder?.id === folder.id}
-                onOpen={onOpenFolder}
-                onDownloadZip={onDownloadZip}
-                onEdit={onEditFolder}
-                onDelete={onDeleteFolder}
-              />
-            </div>
-          ))
-        )}
-      </NetflixCarousel>
+          ))}
+        </div>
+      ) : folders.length === 0 ? (
+        <div
+          className="border border-dashed border-border/70 rounded-xl p-5 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:bg-muted/30 hover:border-border cursor-pointer transition-colors min-h-[120px]"
+          onClick={onOpenCreateFolder}
+        >
+          <Folder className="h-6 w-6 text-muted-foreground/70" />
+          <span className="text-xs font-medium">Créer un premier dossier</span>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          {folders.map((folder) => (
+            <FolderCard
+              key={folder.id}
+              folder={folder}
+              isSelected={selectedFolder?.id === folder.id}
+              onOpen={onOpenFolder}
+              onDownloadZip={onDownloadZip}
+              onEdit={onEditFolder}
+              onDelete={onDeleteFolder}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Expanded Selected Folder */}
       {selectedFolder && (
-        <div className="mt-4 bg-muted/30 p-4 rounded-2xl border border-border/60 space-y-3">
-          <div className="flex items-center justify-between border-b border-border/50 pb-2">
+        <div className="mt-3 py-3 border-t border-b border-border/40 space-y-2">
+          <div className="flex items-center justify-between pb-2">
             <div className="flex items-center gap-2">
-              <FolderOpen className="h-4 w-4 text-primary" />
-              <h3 className="font-bold text-sm text-foreground">{selectedFolder.name}</h3>
+              <FolderOpen className="h-4 w-4 text-muted-foreground" />
+              <h3 className="font-semibold text-sm text-foreground">{selectedFolder.name}</h3>
             </div>
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 text-xs px-2"
+              className="h-7 text-xs px-2 text-muted-foreground hover:text-foreground"
               onClick={onCloseFolder}
             >
               Fermer
             </Button>
           </div>
           {folderResources.length === 0 ? (
-            <div className="py-6 text-center text-muted-foreground text-xs">
+            <div className="py-4 text-center text-muted-foreground text-xs">
               Ce dossier est actuellement vide.
             </div>
           ) : (
-            <NetflixCarousel className="gap-3 pb-1">
+            <div className="flex flex-col">
               {folderResources.map((resource) => (
-                <div key={resource.id} className="cs-scroll-item w-[160px] sm:w-[185px] md:w-[200px]">
-                  <ResourceCard
-                    resource={resource}
-                    isDownloading={downloadingIds.has(String(resource.id))}
-                    isSaved={savedResources.has(String(resource.id))}
-                    onDownload={(e) => onDownloadResource(e, String(resource.id))}
-                    onSave={(e) => onSaveResource(e, String(resource.id))}
-                    onPreview={(e) => onPreviewResource(e, String(resource.id))}
-                  />
-                </div>
+                <ResourceCard
+                  key={resource.id}
+                  resource={resource}
+                  isDownloading={downloadingIds.has(String(resource.id))}
+                  isSaved={savedResources.has(String(resource.id))}
+                  onDownload={(e) => onDownloadResource(e, String(resource.id))}
+                  onSave={(e) => onSaveResource(e, String(resource.id))}
+                  onPreview={(e) => onPreviewResource(e, String(resource.id))}
+                />
               ))}
-            </NetflixCarousel>
+            </div>
           )}
         </div>
       )}

@@ -4,8 +4,7 @@ import { Helmet } from "react-helmet-async";
 import { useParams, useNavigate } from "react-router-dom";
 import { getPost } from "@/services/api";
 import { PostCard } from "@/components/feed/PostCard";
-import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, ChevronLeft, Zap } from "lucide-react";
+import { ChevronLeft, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { mapPostToCard } from "@/lib/postCardMapper";
@@ -23,12 +22,15 @@ export function PostDetail() {
     queryKey: ["post", id],
     queryFn: () => getPost(id!),
     enabled: Boolean(id),
-    staleTime: 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
   useEffect(() => {
     if (postQuery.isLoading) {
-      setLoading(true);
+      if (!post) setLoading(true);
       return;
     }
     if (postQuery.data) {
@@ -43,20 +45,31 @@ export function PostDetail() {
     setLoading(false);
   }, [postQuery.data, postQuery.isLoading, postQuery.error, toast]);
 
+  const handleBack = () => {
+    if (window.history.length > 2) {
+      navigate(-1);
+    } else {
+      navigate("/home");
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
-      <div className="container max-w-3xl mx-auto py-6 px-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate(-1)}
-          className="mb-4"
-        >
-          <ChevronLeft className="h-4 w-4 mr-2" /> Retour
-        </Button>
+    <div className="min-h-screen bg-background">
+      <div className="max-w-2xl mx-auto py-5 px-3.5 sm:px-4 space-y-4">
+        <div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleBack}
+            className="gap-1.5 text-muted-foreground hover:text-foreground -ml-2 h-9 px-3 rounded-xl transition-colors"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            <span>Retour au fil d'actualité</span>
+          </Button>
+        </div>
 
         {loading ? (
-          <div className="campus-animate-fade-in">
+          <div className="campus-animate-fade-in space-y-4">
             <PostSkeleton />
           </div>
         ) : post ? (
@@ -70,46 +83,42 @@ export function PostDetail() {
               <meta property="og:url" content={`https://campussphere.app/posts/${id}`} />
               <meta property="og:image" content={post.images?.[0] || "https://campussphere-storage-bucket.s3.us-east-1.amazonaws.com/CampusSphere-banner.png"} />
             </Helmet>
+
             <PostCard post={post} />
-            
-            {/* Guest CTA Banner */}
+
+            {/* Guest CTA Banner for shared external visitors */}
             {!localStorage.getItem("access") && (
-              <Card className="mt-8 border-primary/50 bg-primary/5 campus-animate-slide-up overflow-hidden relative">
-                <div className="absolute top-0 right-0 p-2 opacity-10">
-                  <Zap className="h-24 w-24 text-primary fill-current -rotate-12 translate-x-8 -translate-y-8" />
+              <div className="mt-6 p-5 sm:p-6 rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <h3 className="text-base font-semibold text-foreground">Cette discussion vous intéresse ?</h3>
+                  <p className="text-muted-foreground text-xs sm:text-sm max-w-md leading-relaxed">
+                    Rejoignez CampusSphere pour liker, commenter et participer aux échanges avec les étudiants de votre campus.
+                  </p>
                 </div>
-                <CardContent className="p-6 relative z-10">
-                  <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                    <div className="flex items-center gap-4">
-                      <div className="h-14 w-14 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                        <Zap className="h-7 w-7 text-primary fill-current" />
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-bold">Cette discussion vous intéresse ?</h3>
-                        <p className="text-muted-foreground text-sm max-w-md">
-                          Rejoignez CampusSphere pour liker, commenter et participer aux échanges avec les autres étudiants de votre campus.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                      <Button onClick={() => navigate("/register")} className="campus-gradient text-white px-8 h-11">
-                        S'inscrire gratuitement
-                      </Button>
-                      <Button variant="outline" onClick={() => navigate("/login")} className="h-11">
-                        Connexion
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0">
+                  <Button onClick={() => navigate("/register")} className="h-9 px-4 rounded-xl text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm">
+                    S'inscrire
+                  </Button>
+                  <Button variant="outline" onClick={() => navigate("/login")} className="h-9 px-4 rounded-xl text-xs font-medium border-border/60 hover:bg-muted/50">
+                    Connexion
+                  </Button>
+                </div>
+              </div>
             )}
           </>
         ) : (
-          <Card className="campus-card">
-            <CardContent className="p-8 text-center text-muted-foreground">
-              Post introuvable.
-            </CardContent>
-          </Card>
+          <div className="py-20 text-center space-y-3">
+            <div className="w-12 h-12 rounded-full bg-muted/60 flex items-center justify-center mx-auto text-muted-foreground">
+              <FileText className="h-6 w-6" />
+            </div>
+            <h3 className="text-base font-semibold text-foreground">Post introuvable</h3>
+            <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+              Ce post a peut-être été supprimé ou n'est plus accessible.
+            </p>
+            <Button variant="outline" size="sm" onClick={() => navigate("/home")} className="rounded-xl mt-2">
+              Retour à l'accueil
+            </Button>
+          </div>
         )}
       </div>
     </div>

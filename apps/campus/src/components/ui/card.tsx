@@ -6,9 +6,8 @@ import { cn } from "@/lib/utils";
    Card System — 3 intentional variants
    
    default  : Standard card. Most UI elements.
-   raised   : Floats above the surface. Hover lift.
    ghost    : No background. Border only. For subtle containers.
-   flat     : No border, no shadow. For nested contexts.
+   flat     : No border, no shadow. For nested/embedded contexts.
 ────────────────────────────────────────────── */
 
 const cardVariants = cva(
@@ -17,7 +16,7 @@ const cardVariants = cva(
     variants: {
       variant: {
         default: "cs-card",
-        raised:  "cs-card-raised",
+        raised:  "cs-card",
         ghost:   "cs-card-ghost",
         flat:    "bg-card border-0 shadow-none",
       },

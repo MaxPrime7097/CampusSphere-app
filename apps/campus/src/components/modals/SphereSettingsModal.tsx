@@ -398,7 +398,7 @@ export function SphereSettingsModal({
                       className={cn(
                         "text-[10px] h-7 py-0 px-2",
                         (settings.collaborationTypes || []).includes(type)
-                          ? "campus-gradient text-white border-none"
+                          ? "bg-secondary text-secondary-foreground hover:bg-muted border border-border/60 border-none"
                           : "text-muted-foreground"
                       )}
                     >
@@ -505,7 +505,7 @@ export function SphereSettingsModal({
             <Button
               onClick={handleSave}
               disabled={!settings.name.trim() || isSaving || isDeleting}
-              className="flex-1 campus-gradient text-white hover:opacity-90"
+              className="flex-1 bg-secondary text-secondary-foreground hover:bg-muted border border-border/60"
             >
               {isSaving ? (
                 <>

@@ -118,169 +118,90 @@ export function EventCard({ event, onStatusChange, onShare, className = "" }: Ev
     }
   };
 
+  const dayNumber = startDate.getDate();
+  const monthName = startDate.toLocaleDateString("fr-FR", { month: "short" }).toUpperCase().replace(".", "");
+
   return (
     <div
       onClick={() => navigate(getEventUrl(event))}
-      className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/70 bg-card text-card-foreground shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl cursor-pointer ${className}`}
+      className={`group flex items-center justify-between gap-3 sm:gap-4 py-4 px-3 sm:px-4 rounded-xl border-b border-border/30 hover:bg-muted/40 transition-colors cursor-pointer ${className}`}
     >
-      {/* Top Banner / Image */}
-      <div className="relative h-44 w-full overflow-hidden bg-muted">
-        {event.coverImage ? (
-          <img
-            src={event.coverImage}
-            alt={event.title}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-            loading="lazy"
-          />
-        ) : (
-          <div className={`h-full w-full bg-gradient-to-br ${meta.gradient} opacity-85 flex items-center justify-center`}>
-            <IconComponent className="h-16 w-16 text-white/40" />
-          </div>
-        )}
-
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-
-        {/* Category Badge */}
-        <div className="absolute left-3 top-3">
-          <Badge
-            variant="secondary"
-            className="flex items-center gap-1.5 backdrop-blur-md bg-background/90 text-foreground font-semibold px-2.5 py-1 text-xs shadow-sm border border-border/40"
-          >
-            <IconComponent className="h-3.5 w-3.5 text-primary" />
-            <span>{meta.shortLabel}</span>
-          </Badge>
-        </div>
-
-        {/* Share Button */}
-        <div className="absolute right-3 top-3">
-          <Button
-            size="icon"
-            variant="secondary"
-            className="h-8 w-8 rounded-full bg-background/80 backdrop-blur-md hover:bg-background text-foreground shadow-sm"
-            onClick={handleShareClick}
-            aria-label="Partager"
-          >
-            <Share2 className="h-4 w-4" />
-          </Button>
-        </div>
-
-        {/* Date Ribbon on Cover */}
-        <div className="absolute bottom-3 left-3 flex items-center gap-2 text-white">
-          <div className="flex items-center gap-1.5 rounded-lg bg-black/60 px-2.5 py-1 text-xs font-semibold backdrop-blur-md">
-            <Calendar className="h-3.5 w-3.5 text-primary" />
-            <span className="capitalize">{formattedDate}</span>
-            <span className="opacity-60">•</span>
-            <Clock className="h-3 w-3 text-white/80" />
-            <span>{formattedTime}</span>
-          </div>
-        </div>
-
-        {/* Status Indicator if user registered */}
-        {localStatus === "going" && (
-          <div className="absolute bottom-3 right-3">
-            <span className="flex items-center gap-1 rounded-full bg-emerald-500/90 text-white text-[11px] font-bold px-2.5 py-0.5 shadow-md backdrop-blur-sm">
-              <Check className="h-3 w-3" /> Inscrit
-            </span>
-          </div>
-        )}
+      {/* Left: Compact Date Badge */}
+      <div className="w-12 h-12 rounded-lg bg-muted/60 border border-border/50 flex flex-col items-center justify-center shrink-0 text-center">
+        <span className="text-[10px] font-semibold text-muted-foreground leading-none">{monthName}</span>
+        <span className="text-base font-bold text-foreground leading-tight">{dayNumber}</span>
       </div>
 
-      {/* Body Content */}
-      <div className="flex flex-1 flex-col p-4">
-        {/* Title */}
-        <h3 className="line-clamp-2 text-base font-bold tracking-tight text-foreground transition-colors group-hover:text-primary">
-          {event.title}
-        </h3>
-
-        {/* Description snippet */}
-        {event.description && (
-          <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground leading-relaxed">
-            {event.description.replace(/[#*`_]/g, "")}
-          </p>
-        )}
-
-        {/* Location & Sphere */}
-        <div className="mt-3 flex flex-col gap-1.5 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1.5">
-            {event.isOnline ? (
-              <Globe className="h-3.5 w-3.5 text-blue-500 shrink-0" />
-            ) : (
-              <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
-            )}
-            <span className="truncate font-medium">
-              {event.isOnline ? "En ligne" : event.location || "Campus IUC Douala"}
+      {/* Middle: Details */}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <h3 className="font-semibold text-sm text-foreground truncate group-hover:underline">
+            {event.title}
+          </h3>
+          <Badge variant="muted" size="sm" className="text-[10px] font-normal py-0">
+            {meta.shortLabel}
+          </Badge>
+          {localStatus === "going" && (
+            <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+              <Check className="h-3 w-3" /> Inscrit
             </span>
-          </div>
-
-          {event.sphere && (
-            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/80">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary/80" />
-              <span className="truncate">Sphère : <strong className="text-foreground">{event.sphere.name}</strong></span>
-            </div>
           )}
         </div>
 
-        {/* Footer info: Organizer & Attendees & Action */}
-        <div className="mt-4 pt-3 border-t border-border/50 flex items-center justify-between gap-2">
-          {/* Organizer */}
-          <div className="flex items-center gap-2 min-w-0">
-            <Avatar className="h-6 w-6 border border-border">
-              <AvatarImage src={event.organizer.avatar || undefined} />
-              <AvatarFallback className="text-[9px] font-bold">
-                {event.organizer.name?.slice(0, 2).toUpperCase() || "EV"}
-              </AvatarFallback>
-            </Avatar>
-            <div className="truncate text-xs">
-              <span className="text-muted-foreground block truncate">
-                {event.organizer.name || event.organizer.username}
-              </span>
-            </div>
-          </div>
-
-          {/* Attendees count */}
-          <div className="flex items-center gap-1 text-xs font-semibold text-muted-foreground shrink-0">
-            <Users className="h-3.5 w-3.5 text-primary" />
-            <span>{attendeesCount}</span>
-            {event.maxAttendees && (
-              <span className="text-muted-foreground/60 text-[10px]">/{event.maxAttendees}</span>
-            )}
-          </div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1 flex-wrap">
+          <span className="flex items-center gap-1">
+            <Clock className="h-3 w-3" />
+            {formattedTime}
+          </span>
+          <span>·</span>
+          <span className="flex items-center gap-1 truncate max-w-[150px]">
+            {event.isOnline ? <Globe className="h-3 w-3 text-sky-500" /> : <MapPin className="h-3 w-3" />}
+            {event.isOnline ? "En ligne" : event.location || "Campus"}
+          </span>
+          <span>·</span>
+          <span className="flex items-center gap-1">
+            <Users className="h-3 w-3" />
+            {attendeesCount}
+          </span>
         </div>
+      </div>
 
-        {/* Action Button */}
-        <div className="mt-3 flex gap-2">
-          {isPast ? (
-            <Button variant="outline" size="sm" className="w-full text-xs text-muted-foreground" disabled>
-              Événement terminé
-            </Button>
-          ) : localStatus === "going" || localStatus === "attended" ? (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-semibold text-xs"
-                onClick={handleQuickRegister}
-                disabled={isRegistering}
-              >
-                <Check className="h-3.5 w-3.5 mr-1.5" />
-                {isRegistering ? "Mise à jour..." : "Inscrit (Gérer)"}
-              </Button>
-              <Button size="icon" variant="outline" className="shrink-0">
-                <Ticket className="h-4 w-4" />
-              </Button>
-            </>
-          ) : (
-            <Button
-              size="sm"
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs transition-all"
-              onClick={handleQuickRegister}
-              disabled={isRegistering}
-            >
-              <Check className="h-3.5 w-3.5 mr-1.5" />
-              {isRegistering ? "Inscription..." : "Je participe"}
-            </Button>
-          )}
-        </div>
+      {/* Right: Actions */}
+      <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-8 w-8 text-muted-foreground hover:text-foreground hidden sm:inline-flex"
+          onClick={handleShareClick}
+          aria-label="Partager"
+        >
+          <Share2 className="h-4 w-4" />
+        </Button>
+
+        {isPast ? (
+          <span className="text-xs text-muted-foreground italic px-2">Terminé</span>
+        ) : localStatus === "going" || localStatus === "attended" ? (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 px-2.5 text-xs border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-medium"
+            onClick={handleQuickRegister}
+            disabled={isRegistering}
+          >
+            <Check className="h-3.5 w-3.5 mr-1" />
+            <span>Inscrit</span>
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            variant="secondary"
+            className="h-8 px-2.5 text-xs bg-secondary hover:bg-muted text-secondary-foreground border border-border/60 font-normal"
+            onClick={handleQuickRegister}
+            disabled={isRegistering}
+          >
+            {isRegistering ? "..." : "Participer"}
+          </Button>
+        )}
       </div>
     </div>
   );

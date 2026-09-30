@@ -146,7 +146,7 @@ export function VerificationModal({ children, onSuccess, open: controlledOpen, o
                   </div>
                 </div>
 
-                <Button className="w-full campus-gradient h-12 text-lg" onClick={() => setStep(2)}>
+                <Button className="w-full bg-secondary text-secondary-foreground hover:bg-muted border border-border/60 h-11 text-base font-semibold" onClick={() => setStep(2)}>
                   Commencer la certification
                 </Button>
               </div>
@@ -223,7 +223,7 @@ export function VerificationModal({ children, onSuccess, open: controlledOpen, o
                     Retour
                   </Button>
                   <Button 
-                    className="flex-[2] campus-gradient" 
+                    className="flex-[2] bg-secondary text-secondary-foreground hover:bg-muted border border-border/60" 
                     onClick={handleSubmit} 
                     disabled={isSubmitting || !matricule || !image}
                   >

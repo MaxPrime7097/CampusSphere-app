@@ -281,7 +281,7 @@ export function SphereHeader({
                 <Button
                   onClick={onJoinSphere}
                   disabled={isPendingRequest || isJoining || isCancellingRequest}
-                  className="campus-gradient text-white font-bold gap-2"
+                  className="bg-secondary text-secondary-foreground hover:bg-muted border border-border/60 font-bold gap-2"
                 >
                   {isJoining ? (
                     <Loader2 className="h-4 w-4 animate-spin" />

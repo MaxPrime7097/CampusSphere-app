@@ -6,7 +6,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -634,7 +633,7 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
 
           {/* Emoji/Mentions Popups */}
           {showEmojiPicker && (
-            <Card className="p-0 shadow-xl campus-animate-slide-up w-full max-w-[320px] md:max-w-[480px] overflow-hidden">
+            <div className="p-0 border border-border/40 bg-popover text-popover-foreground shadow-md campus-animate-slide-up w-full max-w-[320px] md:max-w-[480px] overflow-hidden rounded-xl">
               {/* Pack Navigation */}
               <div className="flex items-center justify-between px-2 py-1 bg-muted/30 border-b">
                 {EMOJI_PACKS.map((pack) => (
@@ -685,11 +684,11 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
                   </div>
                 </div>
               </div>
-            </Card>
+            </div>
           )}
 
           {showMentions && (
-            <Card className="border-primary/10 shadow-xl max-h-48 overflow-y-auto campus-animate-slide-up">
+            <div className="border border-border/40 bg-popover text-popover-foreground rounded-xl shadow-md max-h-48 overflow-y-auto campus-animate-slide-up">
               <div className="p-1">
                 {availableUsers.map((user) => (
                   <Button key={user.id} variant="ghost" className="w-full justify-start gap-3 h-11 px-3" onClick={() => insertMention(user.username)}>
@@ -704,7 +703,7 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
                   </Button>
                 ))}
               </div>
-            </Card>
+            </div>
           )}
 
           {/* Footer Actions */}
@@ -715,7 +714,7 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
             <Button 
               onClick={handleSubmit}
               disabled={!content.trim() || content.length > 500 || isSubmitting}
-              className="campus-gradient text-white hover:opacity-90 px-8"
+              className="bg-secondary text-secondary-foreground hover:bg-muted border border-border/60 px-8"
             >
               {isSubmitting ? (
                 <>

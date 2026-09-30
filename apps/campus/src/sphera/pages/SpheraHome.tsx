@@ -197,7 +197,7 @@ export const SpheraHome: React.FC = () => {
                     className={cn(
                       "flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-colors",
                       filter === opt.value
-                        ? "bg-primary border-primary text-primary-foreground"
+                        ? "bg-primary/15 border-primary/30 text-primary font-semibold"
                         : "border-border bg-card text-muted-foreground hover:bg-accent hover:text-foreground"
                     )}
                   >
@@ -231,14 +231,13 @@ export const SpheraHome: React.FC = () => {
                   </Button>
                 </div>
               ) : (
-                <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-1 sm:gap-3">
+                <div className="flex flex-col">
                   {filteredSessions.map((session) => (
                     <StudySessionCard
                       key={session.id}
                       session={session}
                       onResume={(id) => navigate(`/sphera/sessions/${id}`)}
                       onDelete={handleDeleteSession}
-                      className="rounded-none sm:rounded-xl border-x-0 sm:border-x"
                     />
                   ))}
                 </div>
@@ -269,14 +268,13 @@ export const SpheraHome: React.FC = () => {
                   </Button>
                 </div>
               ) : (
-                <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-1 sm:gap-3">
+                <div className="flex flex-col">
                   {annales.map((session) => (
                     <AnnaleCard
                       key={session.id}
                       annale={session}
                       onOpen={(id) => navigate(`/sphera/annales/${id}`)}
                       onDelete={handleDeleteAnnale}
-                      className="rounded-none sm:rounded-xl border-x-0 sm:border-x"
                     />
                   ))}
                 </div>

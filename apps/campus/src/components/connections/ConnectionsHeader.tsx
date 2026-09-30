@@ -6,7 +6,7 @@ export function ConnectionsHeader({ mutualCountStatus }: ConnectionsHeaderProps)
   return (
     <div className="mb-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-white">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">
           Connexions
         </h1>
         <p className="text-sm text-muted-foreground mt-2">
