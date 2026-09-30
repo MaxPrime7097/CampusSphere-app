@@ -12,7 +12,7 @@ import { getSavedPosts, getSavedResources, savePost, saveResource, downloadResou
 import { normalizeResourceType, normalizeSubject } from "@/lib/resourceMetadata";
 import { ResourceSkeleton } from "@/components/ui/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
-import { getResourceUrl } from "@/lib/utils";
+import { getResourceUrl, getPostUrl } from "@/lib/utils";
 import { formatRelativeTime } from "@/lib/date";
 
 function SavedPostSkeleton() {
@@ -274,7 +274,7 @@ export function SavedItems() {
                 <SavedPostItem
                   key={post.id}
                   post={post}
-                  onClick={() => navigate(`/posts/${post.id}`)}
+                  onClick={() => navigate(getPostUrl(post))}
                   onUnsave={(e) => handleUnsavePost(e, post.id)}
                 />
               ))

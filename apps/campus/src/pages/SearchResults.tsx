@@ -29,7 +29,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { cn, formatSlugToLabel } from "@/lib/utils";
+import { cn, formatSlugToLabel, getPostUrl, getEventUrl, getResourceUrl, getSphereUrl } from "@/lib/utils";
 import { formatRelativeTime } from "@/lib/date";
 import {
   DEFAULT_SORT,
@@ -634,7 +634,7 @@ export function SearchResults() {
                     return (
                       <div
                         key={evt.id}
-                        onClick={() => navigate(`/events/${evt.id}`)}
+                        onClick={() => navigate(getEventUrl(evt))}
                         className="p-4 rounded-2xl border border-border/40 bg-card hover:border-border transition-all cursor-pointer space-y-3 flex flex-col justify-between"
                       >
                         <div className="space-y-2.5">
@@ -696,7 +696,7 @@ export function SearchResults() {
                   {discoverySpheresQuery.data.map((sphere: any) => (
                     <div
                       key={sphere.id}
-                      onClick={() => navigate(`/spheres/${sphere.id}`)}
+                      onClick={() => navigate(getSphereUrl(sphere))}
                       className="p-4 rounded-2xl border border-border/40 bg-card hover:border-border transition-all cursor-pointer space-y-3 flex flex-col justify-between"
                     >
                       <div className="space-y-2">
@@ -750,7 +750,7 @@ export function SearchResults() {
                   {discoveryResourcesQuery.data.map((res: any) => (
                     <div
                       key={res.id}
-                      onClick={() => navigate(`/resources/${res.id}`)}
+                      onClick={() => navigate(getResourceUrl(res))}
                       className="p-4 rounded-2xl border border-border/40 bg-card hover:border-border transition-all cursor-pointer space-y-3 flex flex-col justify-between"
                     >
                       <div className="space-y-2">
@@ -836,7 +836,7 @@ export function SearchResults() {
                       {sortedResults.posts.slice(0, 3).map((post) => (
                         <div
                           key={post.id}
-                          onClick={() => navigate(`/posts/${post.id}`)}
+                          onClick={() => navigate(getPostUrl(post))}
                           className="group flex items-start justify-between gap-3 sm:gap-4 p-3.5 sm:p-4 rounded-xl border border-border/50 bg-card/40 hover:bg-muted/30 hover:border-border transition-all cursor-pointer"
                         >
                           <div className="flex items-start gap-3 min-w-0 flex-1">
@@ -935,7 +935,7 @@ export function SearchResults() {
                         return (
                           <div
                             key={evt.id}
-                            onClick={() => navigate(`/events/${evt.id}`)}
+                            onClick={() => navigate(getEventUrl(evt))}
                             className="p-4 rounded-2xl border border-border/40 bg-card hover:border-border transition-all cursor-pointer space-y-3 flex flex-col justify-between"
                           >
                             <div className="space-y-2.5">
@@ -1070,7 +1070,7 @@ export function SearchResults() {
                       {sortedResults.spheres.slice(0, 3).map((sphere) => (
                         <div
                           key={sphere.id}
-                          onClick={() => navigate(`/spheres/${sphere.id}`)}
+                          onClick={() => navigate(getSphereUrl(sphere))}
                           className="p-4 rounded-2xl border border-border/40 bg-card hover:border-border transition-all cursor-pointer space-y-3 flex flex-col justify-between"
                         >
                           <div className="space-y-2">
@@ -1132,7 +1132,7 @@ export function SearchResults() {
                       {sortedResults.resources.slice(0, 6).map((res) => (
                         <div
                           key={res.id}
-                          onClick={() => navigate(`/resources/${res.id}`)}
+                          onClick={() => navigate(getResourceUrl(res))}
                           className="p-4 rounded-2xl border border-border/40 bg-card hover:border-border transition-all cursor-pointer space-y-3 flex flex-col justify-between"
                         >
                           <div className="space-y-2">
@@ -1169,7 +1169,7 @@ export function SearchResults() {
                 {sortedResults.posts.map((post) => (
                   <div
                     key={post.id}
-                    onClick={() => navigate(`/posts/${post.id}`)}
+                    onClick={() => navigate(getPostUrl(post))}
                     className="group flex items-start justify-between gap-3 sm:gap-4 p-3.5 sm:p-4 rounded-xl border border-border/50 bg-card/40 hover:bg-muted/30 hover:border-border transition-all cursor-pointer"
                   >
                     <div className="flex items-start gap-3 min-w-0 flex-1">
@@ -1251,7 +1251,7 @@ export function SearchResults() {
                   return (
                     <div
                       key={evt.id}
-                      onClick={() => navigate(`/events/${evt.id}`)}
+                      onClick={() => navigate(getEventUrl(evt))}
                       className="p-4 rounded-2xl border border-border/40 bg-card hover:border-border transition-all cursor-pointer space-y-3 flex flex-col justify-between"
                     >
                       <div className="space-y-2.5">
@@ -1352,7 +1352,7 @@ export function SearchResults() {
                 {sortedResults.resources.map((res) => (
                   <div
                     key={res.id}
-                    onClick={() => navigate(`/resources/${res.id}`)}
+                    onClick={() => navigate(getResourceUrl(res))}
                     className="p-4 rounded-2xl border border-border/40 bg-card hover:border-border transition-all cursor-pointer space-y-3 flex flex-col justify-between"
                   >
                     <div className="space-y-2">
@@ -1391,7 +1391,7 @@ export function SearchResults() {
                 {sortedResults.spheres.map((sphere) => (
                   <div
                     key={sphere.id}
-                    onClick={() => navigate(`/spheres/${sphere.id}`)}
+                    onClick={() => navigate(getSphereUrl(sphere))}
                     className="p-4 rounded-2xl border border-border/40 bg-card hover:border-border transition-all cursor-pointer space-y-3 flex flex-col justify-between"
                   >
                     <div className="space-y-2">

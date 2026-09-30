@@ -14,6 +14,7 @@ import {
   Tag,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { getResourceUrl } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -272,7 +273,7 @@ export function AdminResourcesPage() {
 
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       <Button asChild size="sm" variant="ghost" className="h-7 w-7 p-0 rounded-lg" title="Voir sur l'application">
-                        <Link to={`/resources/${r.id}`}>
+                        <Link to={getResourceUrl(r)}>
                           <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
                         </Link>
                       </Button>
@@ -382,7 +383,7 @@ export function AdminResourcesPage() {
 
               <div className="flex gap-2 pt-2 border-t">
                 <Button asChild className="flex-1 rounded-xl text-xs h-9 gap-1.5">
-                  <Link to={`/resources/${inspectingResource.id}`}>
+                  <Link to={getResourceUrl(inspectingResource)}>
                     <ExternalLink className="h-3.5 w-3.5" />
                     Ouvrir la ressource
                   </Link>

@@ -1,3 +1,4 @@
+import { UniversalShareModal } from "@/components/shared/UniversalShareModal";
 import { Suspense, lazy, useEffect, useState } from "react";
 import { Heart, MessageCircle, Share, Bookmark, MoreVertical, Zap, Copy, Flag, ExternalLink, Users, Plus, Minus, X, Pencil, Trash2, Loader2, FileText, Download, ChevronLeft, ChevronRight, Search, Facebook, Instagram, Twitter, Linkedin, Info, BadgeCheck } from "lucide-react";
 import { FaFacebook, FaTwitter, FaInstagram, FaWhatsapp, FaLinkedin } from 'react-icons/fa';
@@ -23,7 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { cn } from "@/lib/utils";
+import { cn, getPostUrl } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { impactRatePost, likePost, savePost, reportPost, updatePost, deletePost, getUserConnections, getUserConversations, createPrivateConversation, sendMessage } from "@/services/api";
 import { formatRelativeTime } from "@/lib/date";
@@ -229,39 +230,14 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
     });
   };
 
-  const handleShare = async () => {
-    requireAuth(async () => {
-      const postUrl = `${window.location.origin}/posts/${post.id}`;
-
-      // On utilise directement notre modal pour plus de contrôle et éviter les échecs du partage natif
+  const handleShare = () => {
+    requireAuth(() => {
       setShowShareDialog(true);
-      setShareSearch("");
-      if (shareConnections.length === 0) {
-        setLoadingShareConnections(true);
-        if (!currentUser?.id) {
-          setLoadingShareConnections(false);
-          return;
-        }
-        getUserConnections(currentUser.id).then((conns) => {
-          const mapped = (conns || []).map((conn: any) => {
-            const isRequester = String(conn.requester) === String(currentUser.id);
-            const counterpart = isRequester ? conn.recipient_info : conn.requester_info;
-            const counterpartId = isRequester ? conn.recipient : conn.requester;
-            return {
-              id: String(counterpart?.id || counterpartId),
-              name: counterpart?.full_name || counterpart?.name || counterpart?.username || "Utilisateur",
-              username: counterpart?.username || "",
-              avatar: counterpart?.avatar || "/placeholder-avatar.jpg",
-            };
-          }).filter((c: any) => c.id);
-          setShareConnections(mapped);
-        }).catch((): void => {}).finally(() => setLoadingShareConnections(false));
-      }
     });
   };
 
   const handleSocialShare = (platform: string) => {
-    const postUrl = encodeURIComponent(`${window.location.origin}/posts/${post.id}`);
+    const postUrl = encodeURIComponent(`${window.location.origin}${getPostUrl(post)}`);
     const postText = encodeURIComponent(post.content.length > 100 ? post.content.substring(0, 100) + "..." : post.content);
 
     let url = "";
@@ -292,7 +268,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
   const handleShareToFriend = async (contactId: string, contactName: string) => {
     if (sendingToUserId) return;
     setSendingToUserId(contactId);
-    const postUrl = `${window.location.origin}/posts/${post.id}`;
+    const postUrl = `${window.location.origin}${getPostUrl(post)}`;
     const messageContent = `Post partagé par ${post.author.name} :\n${postUrl}`;
     try {
       // Rechercher d'abord si une conversation existe déjà (plus robuste)
@@ -325,7 +301,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
     if (isCopyingLink) return;
     setIsCopyingLink(true);
 
-    const postUrl = `${window.location.origin}/posts/${post.id}`;
+    const postUrl = `${window.location.origin}${getPostUrl(post)}`;
     try {
       await navigator.clipboard.writeText(postUrl);
       toast({
@@ -748,149 +724,23 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
         </Dialog>
       )}
 
-      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Partager ce post</DialogTitle>
-            <DialogDescription>
-              Choisissez comment vous souhaitez partager ce contenu avec votre réseau.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="grid grid-cols-3 gap-3 py-2">
-            <Button
-              variant="outline"
-              className="flex flex-col h-20 gap-2 hover:bg-accent"
-              onClick={() => handleSocialShare("whatsapp")}
-            >
-              <div className="h-7 w-7 rounded-full bg-green-500 flex items-center justify-center text-white">
-                <FaWhatsapp className="h-5 w-5" />
-              </div>
-              <span className="text-[10px] font-semibold tracking-wider">WhatsApp</span>
-            </Button>
-
-            <Button
-              variant="outline"
-              className="flex flex-col h-20 gap-2 hover:bg-accent"
-              onClick={() => handleSocialShare("twitter")}
-            >
-              <div className="h-7 w-7 rounded-full bg-sky-500 flex items-center justify-center text-white">
-                <FaTwitter className="h-5 w-5" />
-              </div>
-              <span className="text-[10px] font-semibold tracking-wider">Twitter / X</span>
-            </Button>
-
-            <Button
-              variant="outline"
-              className="flex flex-col h-20 gap-2 hover:bg-accent"
-              onClick={() => handleSocialShare("facebook")}
-            >
-              <div className="h-7 w-7 rounded-full bg-blue-600 flex items-center justify-center text-white">
-                <FaFacebook className="h-5 w-5" />
-              </div>
-              <span className="text-[10px] font-semibold tracking-wider">Facebook</span>
-            </Button>
-
-            <Button
-              variant="outline"
-              className="flex flex-col h-20 gap-2 hover:bg-accent"
-              onClick={() => handleSocialShare("linkedin")}
-            >
-              <div className="h-7 w-7 rounded-full bg-blue-700 flex items-center justify-center text-white">
-                <FaLinkedin className="h-5 w-5" />
-              </div>
-              <span className="text-[10px] font-semibold tracking-wider">LinkedIn</span>
-            </Button>
-
-            <Button
-              variant="outline"
-              className="flex flex-col h-20 gap-2 hover:bg-accent"
-              onClick={() => handleSocialShare("instagram")}
-            >
-              <div className="h-7 w-7 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 flex items-center justify-center text-white">
-                <FaInstagram className="h-5 w-5" />
-              </div>
-              <span className="text-[10px] font-semibold tracking-wider">Instagram</span>
-            </Button>
-
-            <Button
-              variant="outline"
-              className="flex flex-col h-20 gap-2 hover:bg-accent"
-              onClick={handleCopyLink}
-              disabled={isCopyingLink}
-            >
-              <div className="h-7 w-7 rounded-full bg-gray-200 flex items-center justify-center text-gray-700">
-                <Copy className="h-5 w-5" />
-              </div>
-              <span className="text-[10px] font-semibold tracking-wider">{isCopyingLink ? "Copié !" : "Lien"}</span>
-            </Button>
-          </div>
-
-          <Separator />
-
-          <div className="space-y-4 pt-2">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-bold flex items-center gap-2">
-                <Users className="h-5 w-5 text-muted-foreground" /> Envoyer à un ami sur CampusSphere
-              </p>
-            </div>
-
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Rechercher un contact..."
-                className="pl-9 bg-muted/30 border-none"
-                value={shareSearch}
-                onChange={(e) => setShareSearch(e.target.value)}
-              />
-            </div>
-
-            <div className="max-h-48 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
-              {loadingShareConnections ? (
-                <div className="space-y-2 py-2">
-                  {[1, 2, 3].map(i => <div key={i} className="h-10 w-full bg-muted animate-pulse rounded-md" />)}
-                </div>
-              ) : shareConnections.filter((c) => {
-                const q = shareSearch.toLowerCase();
-                return !q || c.name.toLowerCase().includes(q) || c.username.toLowerCase().includes(q);
-              }).length === 0 ? (
-                <div className="text-center py-6 text-muted-foreground italic text-sm">
-                  Aucun ami trouvé.
-                </div>
-              ) : (
-                shareConnections
-                  .filter((c) => {
-                    const q = shareSearch.toLowerCase();
-                    return !q || c.name.toLowerCase().includes(q) || c.username.toLowerCase().includes(q);
-                  })
-                  .map((contact) => (
-                    <div key={contact.id} className="flex items-center justify-between gap-2 p-2 rounded-lg hover:bg-accent transition-colors group">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <Avatar className="h-9 w-9 flex-shrink-0 border">
-                          <AvatarImage src={contact.avatar} />
-                          <AvatarFallback className="bg-muted text-muted-foreground">{(contact.name || "U").slice(0, 1).toUpperCase()}</AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold truncate group-hover:text-foreground transition-colors">{contact.name}</p>
-                          {contact.username && <p className="text-[10px] text-muted-foreground">@{contact.username}</p>}
-                        </div>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="rounded-full px-4 h-8 active:scale-95 border-none"
-                        onClick={() => handleShareToFriend(contact.id, contact.name)}
-                        disabled={sendingToUserId === contact.id}
-                      >
-                        {sendingToUserId === contact.id ? <Loader2 className="h-3 w-3 animate-spin" /> : "Envoyer"}
-                      </Button>
-                    </div>
-                  ))
-              )}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {showShareDialog && (
+        <UniversalShareModal
+          open={showShareDialog}
+          onOpenChange={setShowShareDialog}
+          type="post"
+          url={getPostUrl(post)}
+          title={post.content ? (post.content.length > 60 ? post.content.substring(0, 60) + "..." : post.content) : "Post"}
+          preview={{
+            title: post.content ? (post.content.length > 70 ? post.content.substring(0, 70) + "..." : post.content) : "Post de discussion",
+            description: post.content ? (post.content.length > 140 ? post.content.substring(0, 140) + "..." : post.content) : undefined,
+            subtitle: post.author?.name ? `Par ${post.author.name}` : "Discussion étudiante",
+            badge: "Post",
+            imageUrl: imageAttachments[0]?.url || null,
+          }}
+          allowDirectShare={true}
+        />
+      )}
 
       {/* Modal de signalement */}
       <Dialog open={showReportDialog} onOpenChange={setShowReportDialog}>

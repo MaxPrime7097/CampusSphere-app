@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+import { parseSlugId, encodeHashId } from "@/lib/hashids";
+import { getResourceUrl } from "@/lib/utils";
+import { useState, useEffect, useLayoutEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Helmet } from "react-helmet-async";
 import { useParams, useNavigate } from "react-router-dom";
@@ -35,9 +37,25 @@ import {
 } from "@/components/resources";
 
 export function ResourceDetail() {
-  const { id } = useParams();
+  const { id: rawParam } = useParams();
+  const realId = parseSlugId(rawParam) ?? rawParam;
+  const id = realId ? String(realId) : undefined;
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Pre-emptive immediate address bar rewrite if rawParam is pure numeric
+  useLayoutEffect(() => {
+    if (typeof window === "undefined" || !rawParam) return;
+    if (/^\d+$/.test(rawParam)) {
+      const parsed = Number(rawParam);
+      if (Number.isInteger(parsed) && parsed > 0) {
+        const hash = encodeHashId(parsed);
+        if (hash && window.location.pathname !== `/resources/${hash}`) {
+          window.history.replaceState(null, "", `/resources/${hash}`);
+        }
+      }
+    }
+  }, [rawParam]);
 
   const [isDownloading, setIsDownloading] = useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
@@ -170,6 +188,12 @@ export function ResourceDetail() {
       };
 
       setResource(resourcePayload);
+      if (typeof window !== "undefined" && window.history.replaceState) {
+        const canonicalUrl = getResourceUrl(resourcePayload);
+        if (canonicalUrl && window.location.pathname !== canonicalUrl) {
+          window.history.replaceState(null, "", canonicalUrl);
+        }
+      }
       setIsSaved(Boolean(resourcePayload.isSaved));
       setDraftTitle(resourcePayload.title);
       setDraftDescription(resourcePayload.description || "");
@@ -523,7 +547,8 @@ export function ResourceDetail() {
               : "Consultez cette ressource sur CampusSphere."
           }
         />
-        <link rel="canonical" href={`https://campussphere.app/resources/${id}`} />
+        <link rel="canonical" href={`https://campussphere.app${getResourceUrl(resource)}`} />
+        <meta property="og:url" content={`https://campussphere.app${getResourceUrl(resource)}`} />
         <meta property="og:title" content={`${resource.title} - Ressource CampusSphere`} />
         <meta
           property="og:description"

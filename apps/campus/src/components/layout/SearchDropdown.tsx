@@ -5,7 +5,7 @@ import { getEvents } from "@/services/eventService";
 import { Loader2, BadgeCheck, FileText, BookOpen, FileCode, Zap } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { cn, getPostUrl, getEventUrl, getResourceUrl, getSphereUrl } from "@/lib/utils";
 import { formatRelativeTime } from "@/lib/date";
 import { getSphereCategoryLabel } from "@/constants/sphereCategories";
 import { useQuery } from "@tanstack/react-query";
@@ -191,7 +191,7 @@ export function SearchDropdown({ query, isVisible, onClose }: SearchDropdownProp
                     <button
                       key={post.id}
                       type="button"
-                      onClick={() => handleResultClick(`/posts/${post.id}`)}
+                      onClick={() => handleResultClick(getPostUrl(post))}
                       className="w-full p-2 rounded-xl hover:bg-muted/50 transition-colors text-left group cursor-pointer space-y-1"
                     >
                       <p className="text-xs text-foreground line-clamp-2 leading-relaxed group-hover:underline">
@@ -229,7 +229,7 @@ export function SearchDropdown({ query, isVisible, onClose }: SearchDropdownProp
                       <button
                         key={evt.id}
                         type="button"
-                        onClick={() => handleResultClick(`/events/${evt.id}`)}
+                        onClick={() => handleResultClick(getEventUrl(evt))}
                         className="w-full flex items-center gap-2.5 p-2 rounded-xl hover:bg-muted/50 transition-colors text-left group cursor-pointer"
                       >
                         <div className="flex flex-col items-center justify-center h-8 w-8 rounded-lg bg-muted border border-border/40 shrink-0">
@@ -264,7 +264,7 @@ export function SearchDropdown({ query, isVisible, onClose }: SearchDropdownProp
                       <button
                         key={res.id}
                         type="button"
-                        onClick={() => handleResultClick(`/resources/${res.id}`)}
+                        onClick={() => handleResultClick(getResourceUrl(res))}
                         className="w-full flex items-center gap-2.5 p-2 rounded-xl hover:bg-muted/50 transition-colors text-left group cursor-pointer"
                       >
                         <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center shrink-0 border", style.bg, style.icon)}>
@@ -294,7 +294,7 @@ export function SearchDropdown({ query, isVisible, onClose }: SearchDropdownProp
                     <button
                       key={sphere.id}
                       type="button"
-                      onClick={() => handleResultClick(`/spheres/${sphere.id}`)}
+                      onClick={() => handleResultClick(getSphereUrl(sphere))}
                       className="w-full flex items-center gap-2.5 p-2 rounded-xl hover:bg-muted/50 transition-colors text-left group cursor-pointer"
                     >
                       <Avatar className="h-8 w-8 rounded-lg shrink-0 border border-border/40">

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Helmet } from "react-helmet-async";
 import { useParams, useNavigate } from "react-router-dom";
@@ -9,19 +9,36 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { mapPostToCard } from "@/lib/postCardMapper";
 import { PostSkeleton } from "@/components/ui/skeletons";
+import { parseSlugId, encodeHashId } from "@/lib/hashids";
+import { getPostUrl } from "@/lib/utils";
 
 export function PostDetail() {
-  const { id } = useParams();
+  const { id: rawParam } = useParams();
+  const realId = parseSlugId(rawParam) ?? rawParam;
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Pre-emptive immediate address bar rewrite if rawParam is pure numeric
+  useLayoutEffect(() => {
+    if (typeof window === "undefined" || !rawParam) return;
+    if (/^\d+$/.test(rawParam)) {
+      const parsed = Number(rawParam);
+      if (Number.isInteger(parsed) && parsed > 0) {
+        const hash = encodeHashId(parsed);
+        if (hash && window.location.pathname !== `/posts/${hash}`) {
+          window.history.replaceState(null, "", `/posts/${hash}`);
+        }
+      }
+    }
+  }, [rawParam]);
 
   const [post, setPost] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const postQuery = useQuery({
-    queryKey: ["post", id],
-    queryFn: () => getPost(id!),
-    enabled: Boolean(id),
+    queryKey: ["post", realId],
+    queryFn: () => getPost(String(realId)),
+    enabled: Boolean(realId),
     staleTime: 5 * 60 * 1000,
     gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -34,7 +51,16 @@ export function PostDetail() {
       return;
     }
     if (postQuery.data) {
-      setPost(mapPostToCard(postQuery.data));
+      const mapped = mapPostToCard(postQuery.data);
+      setPost(mapped);
+
+      // Replace URL with canonical slug + hashid
+      if (typeof window !== "undefined" && window.history.replaceState) {
+        const canonicalUrl = getPostUrl(mapped);
+        if (canonicalUrl && window.location.pathname !== canonicalUrl) {
+          window.history.replaceState(null, "", canonicalUrl);
+        }
+      }
     } else if (postQuery.error) {
       toast({
         title: "Erreur",
@@ -52,6 +78,8 @@ export function PostDetail() {
       navigate("/home");
     }
   };
+
+  const canonicalUrl = post ? getPostUrl(post) : `/posts/${rawParam}`;
 
   return (
     <div className="min-h-screen bg-background">
@@ -77,10 +105,10 @@ export function PostDetail() {
             <Helmet>
               <title>{post.content ? (post.content.length > 50 ? post.content.substring(0, 50) + "..." : post.content) : "Post"} - CampusSphere</title>
               <meta name="description" content={post.content ? (post.content.length > 160 ? post.content.substring(0, 160) + "..." : post.content) : "Découvrez ce post sur CampusSphere."} />
-              <link rel="canonical" href={`https://campussphere.app/posts/${id}`} />
+              <link rel="canonical" href={`https://campussphere.app${canonicalUrl}`} />
               <meta property="og:title" content={`Discussion sur CampusSphere - ${post.author?.name || "Étudiant"}`} />
               <meta property="og:description" content={post.content ? post.content.substring(0, 160) : "Rejoignez la discussion sur CampusSphere."} />
-              <meta property="og:url" content={`https://campussphere.app/posts/${id}`} />
+              <meta property="og:url" content={`https://campussphere.app${canonicalUrl}`} />
               <meta property="og:image" content={post.images?.[0] || "https://campussphere-storage-bucket.s3.us-east-1.amazonaws.com/CampusSphere-banner.png"} />
             </Helmet>
 

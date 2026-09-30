@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Globe, Search, Loader2, RefreshCw, ExternalLink, Users, Calendar, Eye, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
+import { getSphereUrl } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -129,7 +130,7 @@ export function AdminSpheresPage() {
                     </span>
 
                     <Button asChild size="sm" variant="ghost" className="h-7 text-xs gap-1 text-primary">
-                      <Link to={`/spheres/${s.id}`}>
+                      <Link to={getSphereUrl(s)}>
                         Voir la sphère
                         <ExternalLink className="h-3 w-3" />
                       </Link>

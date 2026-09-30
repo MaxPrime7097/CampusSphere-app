@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import { parseSlugId, encodeHashId } from "@/lib/hashids";
+import React, { useEffect, useState, useLayoutEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { ArrowLeft, Share2, AlertCircle, Loader2, Check } from "lucide-react";
@@ -20,9 +21,25 @@ import { AnnaleCorrection } from "../components/AnnaleCorrection";
 import type { AnnaleSession } from "../types/sphera.types";
 
 export const AnnaleDetail: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id: rawId } = useParams<{ id: string }>();
+  const realId = parseSlugId(rawId) ?? rawId;
+  const id = realId ? String(realId) : undefined;
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Pre-emptive immediate address bar rewrite if rawId is pure numeric
+  useLayoutEffect(() => {
+    if (typeof window === "undefined" || !rawId) return;
+    if (/^\d+$/.test(rawId)) {
+      const parsed = Number(rawId);
+      if (Number.isInteger(parsed) && parsed > 0) {
+        const hash = encodeHashId(parsed);
+        if (hash && window.location.pathname !== `/sphera/annales/${hash}`) {
+          window.history.replaceState(null, "", `/sphera/annales/${hash}`);
+        }
+      }
+    }
+  }, [rawId]);
 
   const [annale, setAnnale] = useState<AnnaleSession | null>(null);
   const [loading, setLoading] = useState(true);
