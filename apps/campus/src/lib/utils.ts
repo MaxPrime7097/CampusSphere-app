@@ -1,3 +1,5 @@
+import { encodeHashId, decodeHashId, parseSlugId } from "./hashids";
+export { encodeHashId, decodeHashId, parseSlugId };
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -131,16 +133,30 @@ export function toSlug(text: string | null | undefined): string {
 
 export function getSphereUrl(sphere: { id: string | number; name?: string; slug?: string }): string {
   if (sphere.slug) return `/spheres/${sphere.slug}`;
+  const hash = encodeHashId(sphere.id);
   const slug = toSlug(sphere.name);
-  return slug ? `/spheres/${sphere.id}-${slug}` : `/spheres/${sphere.id}`;
+  if (!hash) return `/spheres/${sphere.id}`;
+  return slug ? `/spheres/${slug}-${hash}` : `/spheres/${hash}`;
 }
 
 export function getResourceUrl(resource: { id: string | number; title?: string }): string {
+  const hash = encodeHashId(resource.id);
   const slug = toSlug(resource.title);
-  return slug ? `/resources/${resource.id}-${slug}` : `/resources/${resource.id}`;
+  if (!hash) return `/resources/${resource.id}`;
+  return slug ? `/resources/${slug}-${hash}` : `/resources/${hash}`;
 }
 
 export function getEventUrl(event: { id: string | number; title?: string }): string {
+  const hash = encodeHashId(event.id);
   const slug = toSlug(event.title);
-  return slug ? `/events/${event.id}-${slug}` : `/events/${event.id}`;
+  if (!hash) return `/events/${event.id}`;
+  return slug ? `/events/${slug}-${hash}` : `/events/${hash}`;
+}
+
+export function getPostUrl(post: { id: string | number; content?: string }): string {
+  const hash = encodeHashId(post.id);
+  if (!hash) return `/posts/${post.id}`;
+  const rawWords = (post.content || "").trim().split(/\s+/).slice(0, 5).join(" ");
+  const slug = toSlug(rawWords);
+  return slug ? `/posts/${slug}-${hash}` : `/posts/post-${hash}`;
 }

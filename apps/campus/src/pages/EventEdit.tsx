@@ -26,6 +26,7 @@ import { EVENT_CATEGORY_OPTIONS } from "@/constants/eventCategories";
 import { getEventById, updateEvent } from "@/services/eventService";
 import { getUserSpheres } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
+import { getEventUrl, encodeHashId } from "@/lib/utils";
 import type { EventCategory, UpdateEventInput } from "@/types/events.types";
 
 export function EventEdit() {
@@ -90,7 +91,8 @@ export function EventEdit() {
         title: "Modifications enregistrées ! ✨",
         description: "L'événement a été mis à jour avec succès.",
       });
-      navigate(`/events/${id}`);
+      const canonicalTarget = event ? getEventUrl(event) : (id ? `/events/${encodeHashId(id) || id}` : "/events");
+      navigate(canonicalTarget);
     },
     onError: (err: any) => {
       toast({
@@ -138,7 +140,10 @@ export function EventEdit() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate(`/events/${id}`)}
+          onClick={() => {
+            const canonicalTarget = event ? getEventUrl(event) : (id ? `/events/${encodeHashId(id) || id}` : "/events");
+            navigate(canonicalTarget);
+          }}
           className="rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4 mr-1.5" />

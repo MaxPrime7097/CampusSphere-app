@@ -1,4 +1,5 @@
 import { CanonicalNotificationType, NOTIFICATION_TYPE_SET } from "@/constants/notificationTypes";
+import { encodeHashId } from "@/lib/hashids";
 
 const LEGACY_TYPE_MAP: Record<string, CanonicalNotificationType> = {
   sphere_invite: "sphere_invitation",
@@ -65,15 +66,15 @@ export const buildActionUrl = (type: CanonicalNotificationType, data: Normalized
     case "post_like":
     case "post_comment":
     case "comment_reply":
-      return data.postId ? `/posts/${data.postId}` : null;
+      return data.postId ? `/posts/${encodeHashId(data.postId) || data.postId}` : null;
     case "sphere_invitation":
     case "sphere_join_request":
-      return data.sphereId ? `/spheres/${data.sphereId}` : null;
+      return data.sphereId ? `/spheres/${encodeHashId(data.sphereId) || data.sphereId}` : null;
     case "task_assigned":
     case "task_completed":
       return data.taskId ? `/tasks/${data.taskId}` : null;
     case "resource_shared":
-      return data.resourceId ? `/resources/${data.resourceId}` : null;
+      return data.resourceId ? `/resources/${encodeHashId(data.resourceId) || data.resourceId}` : null;
     case "connection_request":
     case "connection_accepted":
       return data.profileUsername ? `/profile/${data.profileUsername}` : null;

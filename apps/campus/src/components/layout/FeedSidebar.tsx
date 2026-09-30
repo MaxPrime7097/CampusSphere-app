@@ -31,7 +31,7 @@ import {
   normalizeResourceType,
   normalizeSubject,
 } from "@/lib/resourceMetadata";
-import { cn, formatSlugToLabel } from "@/lib/utils";
+import { cn, formatSlugToLabel, getSphereUrl, getEventUrl, getResourceUrl, encodeHashId } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -218,16 +218,35 @@ export function FeedSidebar() {
     }
   };
 
-  const openSphere = (sphereId: string | number) => {
-    navigate(`/spheres/${sphereId}`);
+  const openSphere = (sphere: any) => {
+    if (typeof sphere === "object") {
+      navigate(getSphereUrl(sphere));
+    } else {
+      const hash = encodeHashId(sphere);
+      navigate(hash ? `/spheres/${hash}` : `/spheres/${sphere}`);
+    }
   };
 
-  const openResource = (resourceId?: string | number) => {
-    navigate(resourceId ? `/resources/${resourceId}` : "/resources");
+  const openResource = (resource?: any) => {
+    if (!resource) {
+      navigate("/resources");
+      return;
+    }
+    if (typeof resource === "object") {
+      navigate(getResourceUrl(resource));
+    } else {
+      const hash = encodeHashId(resource);
+      navigate(hash ? `/resources/${hash}` : `/resources/${resource}`);
+    }
   };
 
-  const openEvent = (eventId: string | number) => {
-    navigate(`/events/${eventId}`);
+  const openEvent = (event: any) => {
+    if (typeof event === "object") {
+      navigate(getEventUrl(event));
+    } else {
+      const hash = encodeHashId(event);
+      navigate(hash ? `/events/${hash}` : `/events/${event}`);
+    }
   };
 
   return (
@@ -264,7 +283,7 @@ export function FeedSidebar() {
             <button
               key={sphere.id}
               type="button"
-              onClick={() => openSphere(sphere.id)}
+              onClick={() => openSphere(sphere)}
               className="w-full flex items-center justify-between gap-3 px-2.5 py-2 rounded-xl hover:bg-muted/40 transition-colors text-left group cursor-pointer"
             >
               <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -337,7 +356,7 @@ export function FeedSidebar() {
               <button
                 key={evt.id}
                 type="button"
-                onClick={() => openEvent(evt.id)}
+                onClick={() => openEvent(evt)}
                 className="w-full flex items-center gap-3 px-2.5 py-2 rounded-xl hover:bg-muted/40 transition-colors text-left group cursor-pointer"
               >
                 <div className="flex flex-col items-center justify-center h-8 w-8 rounded-lg bg-muted border border-border/40 shrink-0">
@@ -459,7 +478,7 @@ export function FeedSidebar() {
               <button
                 key={resource.id}
                 type="button"
-                onClick={() => openResource(resource.id)}
+                onClick={() => openResource(resource)}
                 className="w-full flex items-center justify-between gap-3 px-2.5 py-2 rounded-xl hover:bg-muted/40 transition-colors text-left group cursor-pointer"
               >
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">

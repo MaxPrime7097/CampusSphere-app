@@ -17,7 +17,8 @@ import { normalizeResourceType } from "@/constants/resourceTypes";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { LayoutGrid, List } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getResourceUrl } from "@/lib/utils";
+import { parseSlugId, encodeHashId } from "@/lib/hashids";
 import type { Resource, ResourceFolder, ResourceCardData } from "@/types";
 import {
   ResourcesPageHeader,
@@ -210,9 +211,21 @@ export function Resources() {
     }
   };
 
-  const handlePreview = (e: React.MouseEvent, resourceId: string) => {
+  const handlePreview = (e: React.MouseEvent, resourceIdOrObj: string | any) => {
     e.stopPropagation();
-    navigate(`/resources/${resourceId}`);
+    if (typeof resourceIdOrObj === "object" && resourceIdOrObj?.id) {
+      navigate(getResourceUrl(resourceIdOrObj));
+      return;
+    }
+    const idStr = String(resourceIdOrObj || "");
+    const found = (resourcesQuery.data || []).find((r: any) => String(r.id) === idStr);
+    if (found) {
+      navigate(getResourceUrl(found));
+      return;
+    }
+    const parsed = parseSlugId(idStr);
+    const hash = parsed ? encodeHashId(parsed) : null;
+    navigate(hash ? `/resources/${hash}` : `/resources/${idStr}`);
   };
 
   const handleRefresh = async () => {

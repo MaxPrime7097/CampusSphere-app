@@ -1,4 +1,6 @@
-import { Suspense, lazy, useState, useEffect, useMemo } from "react";
+import { parseSlugId, encodeHashId } from "@/lib/hashids";
+import { getSphereUrl } from "@/lib/utils";
+import { Suspense, lazy, useState, useEffect, useMemo, useLayoutEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -44,12 +46,37 @@ const ImageUploadModal = lazy(() =>
 );
 
 export function SphereDetail() {
-  const { id } = useParams();
+  const { id: rawParam } = useParams();
+  const realId = parseSlugId(rawParam) ?? rawParam;
+  const id = realId ? String(realId) : undefined;
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
 
+  // Pre-emptive immediate address bar rewrite if rawParam is pure numeric
+  useLayoutEffect(() => {
+    if (typeof window === "undefined" || !rawParam) return;
+    if (/^\d+$/.test(rawParam)) {
+      const parsed = Number(rawParam);
+      if (Number.isInteger(parsed) && parsed > 0) {
+        const hash = encodeHashId(parsed);
+        if (hash && window.location.pathname !== `/spheres/${hash}`) {
+          window.history.replaceState(null, "", `/spheres/${hash}`);
+        }
+      }
+    }
+  }, [rawParam]);
+
   const [sphere, setSphere] = useState<any | null>(null);
+
+  // Full canonical sync once sphere data is loaded
+  useEffect(() => {
+    if (!sphere || typeof window === "undefined" || !window.history.replaceState) return;
+    const canonicalUrl = getSphereUrl(sphere);
+    if (canonicalUrl && window.location.pathname !== canonicalUrl) {
+      window.history.replaceState(null, "", canonicalUrl);
+    }
+  }, [sphere]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [members, setMembers] = useState<any[]>([]);
   const [pendingMembers, setPendingMembers] = useState<any[]>([]);

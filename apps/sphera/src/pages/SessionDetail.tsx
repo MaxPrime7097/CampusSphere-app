@@ -1,3 +1,4 @@
+import { parseSlugId, encodeHashId } from "../lib/hashids";
 import React, { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -16,10 +17,27 @@ import { TextSelectionToolbar, type SelectionActionType } from '../components/ap
 
 export default function SessionDetail({ type = 'session' }: { type?: 'session' | 'annale' }) {
   const { t } = useTranslation('study')
-  const { id } = useParams<{ id: string }>()
+  const { id: rawId } = useParams<{ id: string }>();
+  const parsedId = parseSlugId(rawId);
+  const id = parsedId ? String(parsedId) : rawId;
   const navigate = useNavigate()
   const [session, setSession] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+
+  // Pré-remplacement immédiat de l'URL si elle contient un ID numérique brut (ex: /sessions/123)
+  // pour éviter tout flash d'ID numérique dans la barre d'adresse avant le chargement des données
+  React.useLayoutEffect(() => {
+    if (rawId && /^\d+$/.test(rawId)) {
+      const hash = encodeHashId(Number(rawId));
+      if (hash && typeof window !== "undefined" && window.history.replaceState) {
+        const canonicalBase = `/${type === "annale" ? "annales" : "sessions"}/${hash}`;
+        if (window.location.pathname !== canonicalBase) {
+          window.history.replaceState(null, "", canonicalBase);
+        }
+      }
+    }
+  }, [rawId, type]);
+
   const [activeTab, setActiveTab] = useState<string>('')
 
   const [isGeneratingTool, setIsGeneratingTool] = useState(false)
@@ -129,6 +147,22 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
       .then(r => {
         const payload = r?.data ?? r;
         setSession(payload);
+        const hash = encodeHashId(payload.id);
+        const titleText = payload.title || payload.name || payload.resource_title || payload.source_filename || type;
+        const slug = titleText
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "")
+          .slice(0, 50);
+
+        if (hash && typeof window !== "undefined" && window.history.replaceState) {
+          const canonicalUrl = `/${type === "annale" ? "annales" : "sessions"}/${slug ? `${slug}-${hash}` : hash}`;
+          if (window.location.pathname !== canonicalUrl) {
+            window.history.replaceState(null, "", canonicalUrl);
+          }
+        }
         const isAnnaleSession = type === 'annale' || payload.mode !== undefined || payload.sections !== undefined;
         const types = payload.tool_types || (isAnnaleSession ? ['annale'] : ['fiche']);
         if (types.length) setActiveTab(types[0]);

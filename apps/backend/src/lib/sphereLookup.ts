@@ -1,3 +1,4 @@
+import { parseSlugId } from "./hashids.js";
 /**
  * Reusable sphere ID resolver.
  *
@@ -16,12 +17,8 @@ export async function resolveSphereId(raw: unknown): Promise<number> {
   const str = String(raw ?? "").trim();
   if (!str) throw notFound("Sphere not found.");
 
-  // Matches leading id in slug: "1", "1-b-eng-cse-2", "5-max-prime"
-  const match = str.match(/^(\d+)(?:-.*)?$/);
-  if (match) {
-    const num = Number(match[1]);
-    if (Number.isInteger(num) && num > 0) return num;
-  }
+  const parsed = parseSlugId(str);
+  if (parsed && Number.isInteger(parsed) && parsed > 0) return parsed;
 
   // Fallback: search sphere by name
   const cleaned = str.replace(/-/g, " ");
