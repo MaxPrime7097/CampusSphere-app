@@ -75,7 +75,7 @@ export function VerificationModal({ children, onSuccess, open: controlledOpen, o
       
       if (isVerified) {
         toast({
-          title: "Félicitations ! 🎉",
+          title: "Félicitations !",
           description: "L'IA a certifié ton statut instantanément. Tu es désormais un étudiant certifié !",
         });
       } else {
