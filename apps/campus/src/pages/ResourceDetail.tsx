@@ -144,9 +144,9 @@ export function ResourceDetail() {
 
     if (resourceQuery.data) {
       const data = resourceQuery.data;
-      const author = data.author ?? null;
+      const author = (data as any).author_info ?? data.author ?? null;
       const uploaderContributions =
-        author?.contributions_count ?? author?.stats?.contributions ?? 0;
+        author?.stats?.contributions ?? author?.contributions_count ?? author?.contributionsCount ?? 1;
 
       const resourcePayload = {
         id: String(data.id),
@@ -160,14 +160,12 @@ export function ResourceDetail() {
         level: normalizeAudience(data.level || data.audience || data.courseLevel),
         pages: Number(data.pages || data.page_count || 0),
         uploader: {
-          name: author?.name || data.author_name || "Utilisateur",
-          username: author?.username || data.author_username || "",
+          name: author?.name || (data as any).author_name || "Utilisateur",
+          username: author?.username || (data as any).author_username || "",
           avatar: author?.avatar || "/placeholder-avatar.jpg",
-          verified: author?.isVerified || author?.is_verified || false,
+          verified: author?.isVerified || (author as any)?.is_verified || false,
           level: author?.level || "",
-          contributions: Number.isFinite(Number(uploaderContributions))
-            ? Number(uploaderContributions)
-            : 0,
+          contributions: Math.max(1, Number(uploaderContributions) || 1),
         },
         uploadDate: data.createdAt || data.created_at || data.uploaded_at || null,
         stats: {
@@ -279,7 +277,7 @@ export function ResourceDetail() {
       setIsDownloading(true);
       void (async () => {
         try {
-          const result = await downloadResource(id);
+          const result = await downloadResource(id, undefined, { triggerDownload: false });
           const objectUrl = window.URL.createObjectURL(result.blob);
           const link = document.createElement("a");
           link.href = objectUrl;

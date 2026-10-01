@@ -200,8 +200,8 @@ export function SearchDropdown({ query, isVisible, onClose }: SearchDropdownProp
                       <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
                         <span className="truncate">Par {post.author_info?.name || post.author_info?.username || "Auteur"}</span>
                         <span>·</span>
-                        <span className="inline-flex items-center gap-0.5">
-                          <Zap className="h-3 w-3 text-amber-500" />
+                        <span className="inline-flex items-center gap-0.5 text-foreground/80 font-medium">
+                          <Zap className="h-3 w-3 text-primary fill-primary" />
                           {post.impact_score || 0}
                         </span>
                       </div>

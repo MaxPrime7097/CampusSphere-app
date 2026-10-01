@@ -11,7 +11,17 @@ import type { Prisma, Resource, ResourceFolder } from "@prisma/client";
 import { serializeUser, userSelect, type SerializableUser } from "./user.js";
 
 export const resourceInclude = {
-  author: { select: userSelect },
+  author: {
+    select: {
+      ...userSelect,
+      _count: {
+        select: {
+          resources: true,
+          posts: true,
+        },
+      },
+    },
+  },
   folder: { select: { id: true, name: true } },
 } satisfies Prisma.ResourceInclude;
 
@@ -29,12 +39,20 @@ export function serializeResource(resource: SerializableResource, ctx: ResourceV
   const { viewerId } = ctx;
   const mine = viewerId !== null && resource.authorId === viewerId;
 
+  const authorCounts = (resource.author as any)?._count;
+  const authorContributions = authorCounts
+    ? ((authorCounts.resources ?? 0) + (authorCounts.posts ?? 0))
+    : 1;
+
   return {
     id: resource.id,
     title: resource.title,
     description: resource.description,
     author: resource.authorId,
-    author_info: serializeUser(resource.author, { viewerId }),
+    author_info: serializeUser(resource.author, {
+      viewerId,
+      counts: { contributions: Math.max(1, authorContributions) },
+    }),
     file: resource.fileUrl,
     file_info: {
       id: String(resource.id),

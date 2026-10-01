@@ -301,6 +301,7 @@ export function Register() {
         first_name: formData.firstName,
         last_name: formData.lastName,
         username: formData.username,
+        date_of_birth: formData.dateOfBirth,
       });
 
       setResendCooldownRemaining(RESEND_COOLDOWN_SECONDS);

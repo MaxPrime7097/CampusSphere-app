@@ -100,8 +100,8 @@ export function getNavigationSections(user?: NavigationUser | null): NavigationS
     { title: "Accueil", url: "/", icon: Home },
     { title: "Ressources", url: "/resources", icon: FolderOpen },
     { title: "Publier", url: newPost, icon: Plus },
+    { title: "Événements", url: "/events", icon: Calendar },
     { title: "Sphères", url: "/spheres", icon: Globe },
-    { title: "Notifications", url: "/notifications", icon: Bell },
   ];
 
   return {

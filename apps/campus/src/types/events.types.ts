@@ -95,13 +95,6 @@ export interface EventFilters {
   timeframe?: "all" | "today" | "this_week" | "this_month" | "past";
 }
 
-export interface SpheraEventDraft {
-  title: string;
-  description: string;
-  suggestedSchedule?: string;
-  tips?: string[];
-  category: EventCategory;
-}
 
 export interface CheckInResult {
   success: boolean;

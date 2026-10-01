@@ -63,7 +63,15 @@ const CommandList = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <CommandPrimitive.List
     ref={ref}
-    className={cn("max-h-[300px] overflow-y-auto overflow-x-hidden", className)}
+    className={cn("max-h-[300px] overflow-y-auto overflow-x-hidden touch-auto overscroll-contain", className)}
+    onWheel={(e) => {
+      e.stopPropagation();
+      props.onWheel?.(e);
+    }}
+    onTouchMove={(e) => {
+      e.stopPropagation();
+      props.onTouchMove?.(e);
+    }}
     {...props}
   />
 ));

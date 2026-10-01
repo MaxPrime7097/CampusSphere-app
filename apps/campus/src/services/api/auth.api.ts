@@ -18,7 +18,12 @@ import {
 export async function supabaseSignUp(
   email: string,
   password: string,
-  metadata: { first_name: string; last_name: string; username: string }
+  metadata: {
+    first_name: string;
+    last_name: string;
+    username: string;
+    date_of_birth?: string;
+  }
 ) {
   const { data, error } = await supabase.auth.signUp({
     email,

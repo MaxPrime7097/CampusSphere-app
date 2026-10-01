@@ -187,7 +187,11 @@ export async function deleteResource(id: number | string, token?: string) {
   });
 }
 
-export async function downloadResource(id: number | string, token?: string) {
+export async function downloadResource(
+  id: number | string,
+  token?: string,
+  options: { triggerDownload?: boolean } = { triggerDownload: true }
+) {
   const url = `${API_BASE_URL.replace(/\/$/, "")}/api/resources/${id}/download/`;
   const effectiveToken = token || getAccessToken();
 
@@ -212,6 +216,17 @@ export async function downloadResource(id: number | string, token?: string) {
   const disposition = response.headers.get("content-disposition") || "";
   const filenameMatch = disposition.match(/filename="?([^"]+)"?/i);
   const filename = filenameMatch?.[1] || `resource-${id}`;
+
+  if (options.triggerDownload !== false && typeof window !== "undefined") {
+    const objectUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => window.URL.revokeObjectURL(objectUrl), 1000);
+  }
 
   return { blob, filename };
 }
@@ -271,3 +286,18 @@ export async function trackResourceShare(
     token: token || getAccessToken(),
   });
 }
+
+export async function impactRateResource(
+  id: number | string,
+  value: number | null,
+  previous?: number | null,
+  token?: string
+) {
+  const response = await apiFetch<any>(`api/resources/${id}/impact-rate/`, {
+    method: "POST",
+    body: { value, previous },
+    token: token || getAccessToken(),
+  });
+  return unwrapItem<{ impactScore: number; userImpactRating: number | null }>(response);
+}
+

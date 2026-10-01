@@ -524,20 +524,46 @@ resourcesRouter.delete("/:id/", requireAuth, async (req, res) => {
 resourcesRouter.post("/:id/download/", async (req, res) => {
   const resource = await loadVisibleResource(req, req.user?.id ?? null);
 
-  const key = resource.storageKey ?? keyFromUrl(resource.fileUrl);
-  if (!key) throw notFound("File not found or corrupted.");
+  const fileExt = resource.fileUrl ? resource.fileUrl.split(".").pop()?.split("?")[0] : "";
+  let filename = resource.title.replace(/[^\w.-]+/g, "_");
+  if (fileExt && !filename.toLowerCase().endsWith(`.${fileExt.toLowerCase()}`)) {
+    filename += `.${fileExt}`;
+  }
 
-  let buffer: Buffer;
-  try {
-    buffer = await storage.get(key);
-  } catch {
+  const key = resource.storageKey ?? keyFromUrl(resource.fileUrl);
+  let buffer: Buffer | null = null;
+  if (key) {
+    try {
+      buffer = await storage.get(key);
+    } catch {
+      buffer = null;
+    }
+  }
+
+  if (!buffer && resource.fileUrl && (resource.fileUrl.startsWith("http://") || resource.fileUrl.startsWith("https://"))) {
+    try {
+      const resp = await fetch(resource.fileUrl);
+      if (resp.ok) {
+        const arrayBuf = await resp.arrayBuffer();
+        buffer = Buffer.from(arrayBuf);
+      }
+    } catch {
+      buffer = null;
+    }
+  }
+
+  if (!buffer) {
+    if (resource.fileUrl && (resource.fileUrl.startsWith("http://") || resource.fileUrl.startsWith("https://"))) {
+      await prisma.resource.update({ where: { id: resource.id }, data: { downloadsCount: { increment: 1 } } });
+      return res.redirect(resource.fileUrl);
+    }
     throw notFound("File not found or corrupted.");
   }
 
   await prisma.resource.update({ where: { id: resource.id }, data: { downloadsCount: { increment: 1 } } });
 
   res.setHeader("Content-Type", resource.fileType || "application/octet-stream");
-  res.setHeader("Content-Disposition", `attachment; filename="${resource.title.replace(/[^\w.-]+/g, "_")}"`);
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
   res.send(buffer);
 });
 
@@ -650,4 +676,43 @@ resourcesRouter.post("/:id/share/", async (req, res) => {
     },
   });
   created(res, null, "Share event recorded.");
+});
+
+const resourceImpactRateSchema = z.object({
+  value: z.number().int().min(1).max(5).nullable(),
+  previous: z.number().int().min(1).max(5).nullable().optional(),
+});
+
+resourcesRouter.post("/:id/impact-rate/", requireAuth, async (req, res) => {
+  const me = currentUser(req);
+  const resource = await loadVisibleResource(req, me.id);
+  const { value, previous } = resourceImpactRateSchema.parse(req.body ?? {});
+
+  const prevVal = previous ?? 0;
+  const currVal = value ?? 0;
+  const delta = currVal - prevVal;
+
+  if (delta !== 0) {
+    await prisma.$transaction([
+      prisma.resource.update({
+        where: { id: resource.id },
+        data: { impactScore: { increment: delta } },
+      }),
+      prisma.user.update({
+        where: { id: resource.authorId },
+        data: { impactScore: { increment: delta } },
+      }),
+    ]);
+  }
+
+  const fresh = await prisma.resource.findUniqueOrThrow({
+    where: { id: resource.id },
+    select: { impactScore: true },
+  });
+
+  ok(res, {
+    impactScore: Math.max(0, fresh.impactScore),
+    userImpactRating: value,
+    message: value === null ? "Impact rating removed" : "Impact rating saved",
+  });
 });

@@ -412,7 +412,7 @@ export function ProfileAboutTab({
           {user.interests && user.interests.length > 0 ? (
             <div className="flex flex-wrap gap-2 pt-1">
               {user.interests.map((interest: any, index: number) => (
-                <Badge key={`${interest}-${index}`} variant="outline" className="text-xs font-normal">
+                <Badge key={`${interest}-${index}`} variant="secondary" className="text-xs font-normal">
                   {typeof interest === "string"
                     ? formatSlugToLabel(interest)
                     : formatSlugToLabel(interest?.name) || <EmptyField />}

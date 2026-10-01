@@ -75,6 +75,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   const isInConversation = location.pathname.startsWith('/messages/') && location.pathname.split('/').length > 2;
   const hideNavOnMobile = isMobile && isInConversation;
+  const isMenuPage = isMobile && location.pathname === '/menu';
   
   const toggleTheme = () => {
     const nextMode = !darkMode;
@@ -262,12 +263,12 @@ export function AppLayout({ children }: AppLayoutProps) {
           </header>
 
           {/* Main Content */}
-          <main className={`flex-1 ${hideNavOnMobile ? 'pt-0 pb-0' : 'pt-0 pb-16'} md:pb-0 md:pt-14`}>
+          <main className={`flex-1 ${hideNavOnMobile || isMenuPage ? 'pt-0 pb-0' : 'pt-0 pb-24'} md:pb-0 md:pt-14`}>
             {children}
           </main>
           
           {/* Mobile Bottom Navigation - Fixed */}
-          {!hideNavOnMobile && <MobileNavigation user={user} />}
+          {!hideNavOnMobile && !isMenuPage && <MobileNavigation user={user} />}
         </div>
       </div>
       <CookieBanner />

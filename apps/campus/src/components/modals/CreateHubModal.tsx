@@ -1,4 +1,5 @@
 import { useState, useEffect, Suspense, lazy } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -8,7 +9,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { PenLine, Upload, Users, MessageSquare, ArrowRight } from "lucide-react";
+import { PenLine, Upload, Users, Calendar, MessageSquare, ArrowRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { openVerificationModal } from "@/lib/events";
@@ -37,7 +38,7 @@ interface CreateHubModalProps {
   onSphereCreated?: (sphereData: unknown) => void;
 }
 
-type ActionType = "post" | "resource" | "sphere" | "message";
+type ActionType = "post" | "resource" | "sphere" | "event" | "message";
 
 export function CreateHubModal({
   children,
@@ -47,6 +48,7 @@ export function CreateHubModal({
   onResourceUploaded,
   onSphereCreated,
 }: CreateHubModalProps) {
+  const navigate = useNavigate();
   const [internalOpen, setInternalOpen] = useState(false);
   const [selectedAction, setSelectedAction] = useState<ActionType | null>(null);
   const { user } = useAuth();
@@ -79,6 +81,13 @@ export function CreateHubModal({
           </button>
         ),
       });
+      return;
+    }
+
+    if (type === "event") {
+      setSelectedAction(null);
+      setOpen(false);
+      navigate("/events/create");
       return;
     }
 
@@ -116,6 +125,14 @@ export function CreateHubModal({
       icon: Users,
       iconColor: "text-violet-500 dark:text-violet-400",
       iconBg: "bg-violet-500/10 border-violet-500/20",
+    },
+    {
+      id: "event" as const,
+      title: "Créer un événement",
+      description: "Organisez une soirée, un atelier, un hackathon ou une conférence",
+      icon: Calendar,
+      iconColor: "text-rose-500 dark:text-rose-400",
+      iconBg: "bg-rose-500/10 border-rose-500/20",
     },
     {
       id: "message" as const,

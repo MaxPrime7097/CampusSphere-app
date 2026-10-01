@@ -77,6 +77,14 @@ export async function supabaseExchange(req: Request, res: Response): Promise<voi
   if (!user) {
     isNewUser = true;
     const { firstName, lastName } = namesFromMetadata(claims.userMetadata, claims.email);
+    const rawDob =
+      typeof claims.userMetadata.date_of_birth === "string"
+        ? claims.userMetadata.date_of_birth
+        : typeof claims.userMetadata.dateOfBirth === "string"
+        ? claims.userMetadata.dateOfBirth
+        : null;
+    const dateOfBirth = parseDateOfBirth(rawDob);
+
     user = await prisma.user.create({
       data: {
         supabaseUid: claims.sub,
@@ -84,6 +92,7 @@ export async function supabaseExchange(req: Request, res: Response): Promise<voi
         username: await reserveUsername(usernameSeed(claims.userMetadata, claims.email, claims.sub)),
         firstName,
         lastName,
+        dateOfBirth,
         // No local password: this account authenticates through Supabase only.
         passwordHash: null,
       },
@@ -139,6 +148,17 @@ const completeProfileSchema = z.object({
   portfolio_links: jsonArray.optional(),
 });
 
+const MINIMUM_AGE = 16;
+
+function getAgeFromDate(birthDate: Date, today = new Date()): number {
+  let age = today.getUTCFullYear() - birthDate.getUTCFullYear();
+  const hasHadBirthdayThisYear =
+    today.getUTCMonth() > birthDate.getUTCMonth() ||
+    (today.getUTCMonth() === birthDate.getUTCMonth() && today.getUTCDate() >= birthDate.getUTCDate());
+  if (!hasHadBirthdayThisYear) age -= 1;
+  return age;
+}
+
 /** Accept the several date shapes the clients have historically sent. */
 function parseDateOfBirth(value: string | null | undefined): Date | null {
   if (!value?.trim()) return null;
@@ -186,7 +206,15 @@ export async function supabaseCompleteProfile(req: Request, res: Response): Prom
   if (input.previous_education !== undefined) data.previousEducation = input.previous_education as Prisma.InputJsonValue;
   if (input.experiences !== undefined) data.experiences = input.experiences as Prisma.InputJsonValue;
   if (input.portfolio_links !== undefined) data.portfolioLinks = input.portfolio_links as Prisma.InputJsonValue;
-  if (input.date_of_birth !== undefined) data.dateOfBirth = parseDateOfBirth(input.date_of_birth);
+  if (input.date_of_birth !== undefined) {
+    const parsed = parseDateOfBirth(input.date_of_birth);
+    if (parsed && getAgeFromDate(parsed) < MINIMUM_AGE) {
+      throw badRequest(`Vous devez avoir au moins ${MINIMUM_AGE} ans.`, {
+        date_of_birth: [`Vous devez avoir au moins ${MINIMUM_AGE} ans.`],
+      });
+    }
+    data.dateOfBirth = parsed;
+  }
   if (input.language !== undefined) {
     data.language = Array.isArray(input.language) ? input.language : [input.language];
   }

@@ -11,6 +11,7 @@ import { LanguageCombobox } from "@/components/forms/LanguageCombobox";
 import { updateUserProfile } from "@/services/api";
 import { Badge } from "@/components/ui/badge";
 import { formatSlugToLabel } from "@/lib/utils";
+import { getBirthDateMax, validateBirthDate } from "@/lib/date";
 
 interface EditPersonalModalProps {
   children?: React.ReactNode;
@@ -39,6 +40,16 @@ export function EditPersonalModal({ children, initialData, onSuccess, open: cont
   const setOpen = setControlledOpen ?? setIsOpen;
 
   const handleSave = async () => {
+    const dobValidation = validateBirthDate(dateOfBirth);
+    if (!dobValidation.valid) {
+      toast({
+        title: "Date de naissance invalide",
+        description: dobValidation.error || "Vous devez avoir au moins 16 ans",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await updateUserProfile({
@@ -90,23 +101,25 @@ export function EditPersonalModal({ children, initialData, onSuccess, open: cont
 
         <div className="space-y-4 py-4">
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Date de naissance</Label>
-              <Input 
-                type="date"
-                value={dateOfBirth} 
-                onChange={(e) => setDateOfBirth(e.target.value)} 
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Téléphone</Label>
-              <Input 
-                value={phoneNumber} 
-                onChange={(e) => setPhoneNumber(e.target.value)} 
-                placeholder="6xx xxx xxx"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="dob">Date de naissance *</Label>
+            <Input 
+              id="dob"
+              type="date"
+              max={getBirthDateMax()}
+              value={dateOfBirth} 
+              onChange={(e) => setDateOfBirth(e.target.value)} 
+            />
+            <p className="text-xs text-muted-foreground">Âge minimum requis : 16 ans</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Téléphone</Label>
+            <Input 
+              value={phoneNumber} 
+              onChange={(e) => setPhoneNumber(e.target.value)} 
+              placeholder="6xx xxx xxx"
+            />
           </div>
 
           <div className="space-y-2">

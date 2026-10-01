@@ -103,7 +103,7 @@ export function getFullUrl(path: string | null | undefined): string {
 
 export function getAccessToken(): string | undefined {
   try {
-    const token = localStorage.getItem("access");
+    const token = localStorage.getItem("access") || localStorage.getItem("access_token");
     return token || undefined;
   } catch {
     return undefined;
@@ -112,7 +112,7 @@ export function getAccessToken(): string | undefined {
 
 export function getRefreshToken(): string | undefined {
   try {
-    const token = localStorage.getItem("refresh");
+    const token = localStorage.getItem("refresh") || localStorage.getItem("refresh_token");
     return token || undefined;
   } catch {
     return undefined;
@@ -123,14 +123,18 @@ export function setTokens(access?: string | null, refresh?: string | null) {
   try {
     if (access == null) {
       localStorage.removeItem("access");
+      localStorage.removeItem("access_token");
     } else {
       localStorage.setItem("access", access);
+      localStorage.setItem("access_token", access);
     }
 
     if (refresh == null) {
       localStorage.removeItem("refresh");
+      localStorage.removeItem("refresh_token");
     } else {
       localStorage.setItem("refresh", refresh);
+      localStorage.setItem("refresh_token", refresh);
     }
   } catch {
     // ignore storage errors
@@ -141,6 +145,8 @@ export function clearTokens() {
   try {
     localStorage.removeItem("access");
     localStorage.removeItem("refresh");
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
   } catch {
     // ignore
   }

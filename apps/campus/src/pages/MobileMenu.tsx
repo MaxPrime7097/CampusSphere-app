@@ -21,6 +21,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SpheraIcon } from "@/components/ui/sphera-icon";
+import { formatSlugToLabel } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { getNavigationSections } from "@/components/layout/navigationConfig";
 
@@ -78,7 +79,7 @@ export function MobileMenu() {
                     {user.name || user.username}
                   </span>
                   {user.isVerified && (
-                    <BadgeCheck className="h-4 w-4 text-amber-500 fill-amber-500/20 shrink-0" />
+                    <BadgeCheck className="h-4 w-4 text-primary fill-primary/20 shrink-0" />
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground truncate">
@@ -86,7 +87,7 @@ export function MobileMenu() {
                 </p>
                 {(user.faculty || user.university) && (
                   <p className="text-[11px] text-muted-foreground/80 truncate mt-0.5">
-                    {user.faculty || user.university}
+                    {formatSlugToLabel(user.faculty) || formatSlugToLabel(user.university)}
                   </p>
                 )}
               </div>
@@ -147,25 +148,30 @@ export function MobileMenu() {
           href="/sphera/sso"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-between p-3.5 rounded-xl border border-primary/30 bg-primary/10 hover:bg-primary/15 transition-all group shadow-xs cursor-pointer"
+          className="flex items-center justify-between p-3 rounded-2xl border border-border/50 bg-card hover:border-primary/40 hover:bg-muted/30 transition-all group shadow-none cursor-pointer"
         >
           <div className="flex items-center gap-3 min-w-0">
-            <div className="p-2 rounded-lg bg-background shadow-xs shrink-0">
-              <SpheraIcon size="md" />
+            <div className="h-10 w-10 rounded-xl bg-primary/15 border border-primary/25 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <SpheraIcon size="md" variant="primary" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-foreground">Ouvrir Sphera</span>
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-primary/30 text-primary">
+                <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
+                  Ouvrir Sphera
+                </span>
+                <Badge
+                  variant="secondary"
+                  className="text-[10px] px-1.5 py-0 h-4 font-semibold text-primary bg-primary/10 border border-primary/20"
+                >
                   IA
                 </Badge>
               </div>
-              <p className="text-[11px] text-muted-foreground truncate">
+              <p className="text-[11px] text-muted-foreground truncate mt-0.5">
                 Fiches, quiz, flashcards & corrections
               </p>
             </div>
           </div>
-          <ExternalLink className="h-4 w-4 text-primary shrink-0 transition-transform group-hover:translate-x-0.5" />
+          <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary shrink-0 transition-all group-hover:translate-x-0.5" />
         </a>
 
         {/* Section: Fonctionnalités clés (Non présentes dans la barre inférieure) */}

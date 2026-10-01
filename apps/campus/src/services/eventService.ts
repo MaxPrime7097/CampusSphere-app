@@ -5,7 +5,6 @@ import type {
   UpdateEventInput,
   EventFilters,
   AttendeeStatus,
-  SpheraEventDraft,
   EventCategory,
 } from "@/types/events.types";
 
@@ -224,64 +223,3 @@ export async function getMyEvents(): Promise<{ created: Event[]; registered: Eve
   return result || { created: [], registered: [] };
 }
 
-/**
- * Sphera AI Assistant — Générateur de description & programme d'événement
- */
-export async function generateSpheraEventDraft(
-  prompt: string,
-  category: EventCategory
-): Promise<SpheraEventDraft> {
-  await new Promise((resolve) => setTimeout(resolve, 600));
-
-  if (category === "party" || prompt.toLowerCase().includes("welcome")) {
-    return {
-      category: "party",
-      title: "Welcome Ceremony 2026 — Soirée d'Intégration CampusSphere",
-      description: `Le rendez-vous incontournable de la rentrée universitaire.\n\nVenez célébrer le début d'une nouvelle année lors de la Welcome Ceremony officielle. Rencontrez d'autres étudiants, découvrez les sphères étudiantes et profitez des animations sur le campus.\n\nPoints forts :\n- Village associatif & présentation des projets étudiants\n- Performances artistiques & DJ set\n- Stand photo & animations connectées CampusSphere\n- Collation d'accueil et rafraîchissements offerts`,
-      suggestedSchedule: `18:00 : Accueil & Check-in des participants\n19:00 : Mot de bienvenue & Présentation des sphères\n20:30 : Concerts & Animations interactives\n22:00 : DJ Set`,
-      tips: [
-        "Carte étudiante ou justificatif recommandé à l'entrée",
-        "Invitez vos camarades de promotion via le lien de partage",
-        "Retrouvez les temps forts de l'événement sur CampusSphere",
-      ],
-    };
-  }
-
-  if (category === "competition" || prompt.toLowerCase().includes("math")) {
-    return {
-      category: "competition",
-      title: "MathScam 2026 — Le Grand Défi Mathématique & Logique",
-      description: `Testez votre intuition mathématique et votre rapidité analytique.\n\nLe MathScam rassemble les passionnés de sciences, de logique et d'algorithmique pour une compétition conviviale et stimulante.\n\nRécompenses & Distinctions :\n- Prix d'Excellence pour les 3 meilleurs scores\n- Badges de reconnaissance sur les profils CampusSphere\n- Opportunités de stages auprès de nos partenaires académiques`,
-      suggestedSchedule: `09:30 : Installation & Briefing des règles\n10:00 - 12:00 : Épreuve individuelle (Logique & Calcul)\n14:00 - 16:30 : Épreuve en équipe (Résolution de problèmes complexes)\n17:30 : Cérémonie de remise des prix`,
-      tips: [
-        "Calculatrice autorisée selon les règles de la session",
-        "Équipes de 2 à 3 personnes",
-        "Consultez les annales d'entraînement sur l'onglet Ressources",
-      ],
-    };
-  }
-
-  if (category === "hackathon") {
-    return {
-      category: "hackathon",
-      title: "Campus Hackathon 2026 — 48H pour Innover",
-      description: `Transformez vos idées en prototypes fonctionnels.\n\nRejoignez des développeurs, designers et chefs de projet pour un sprint d'innovation de 48 heures. Choisissez une thématique (IA, Éducation, Climat, Fintech) et concevez une solution concrète.`,
-      suggestedSchedule: `Vendredi 18h : Lancement des sujets & Formation des équipes\nSamedi : Sprint de développement & Sessions de mentorat\nDimanche 14h : Pitchs finaux devant le jury\nDimanche 17h : Annonce des lauréats`,
-      tips: [
-        "Préparez vos environnements de développement à l'avance",
-        "Des mentors seront disponibles pour vous orienter",
-      ],
-    };
-  }
-
-  return {
-    category,
-    title: prompt ? `Événement : ${prompt}` : "Conférence & Échange Étudiant",
-    description: `Rejoignez-nous pour cet événement sur le campus.\n\nUne occasion d'apprendre, de partager vos idées et d'élargir votre réseau universitaire. Des intervenants seront présents pour répondre à vos questions.`,
-    suggestedSchedule: `14:00 : Ouverture & Accueil\n14:30 : Conférence principale\n16:00 : Session Q&A et échanges ouverts\n17:00 : Clôture & Networking`,
-    tips: [
-      "Préparez vos questions pour les intervenants",
-      "Places limitées selon la capacité de la salle",
-    ],
-  };
-}

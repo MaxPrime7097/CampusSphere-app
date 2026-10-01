@@ -65,7 +65,7 @@ export function EditInterestsModal({ children, initialInterests, onSuccess, open
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {children ? <DialogTrigger asChild>{children}</DialogTrigger> : null}
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Smile className="h-5 w-5 text-primary" />
@@ -96,7 +96,7 @@ export function EditInterestsModal({ children, initialInterests, onSuccess, open
             </div>
             <div className="flex flex-wrap gap-2 mt-4 p-3 rounded-xl bg-muted/20 min-h-[100px]">
               {interests.map((it, i) => (
-                <Badge key={i} variant="outline" className="gap-1 pl-3 pr-1 py-1.5 bg-background">
+                <Badge key={i} variant="secondary" className="gap-1 pl-3 pr-1 py-1.5">
                   {formatSlugToLabel(it)}
                   <button onClick={() => removeInterest(it)} className="hover:bg-muted-foreground/20 rounded-full p-0.5">
                     <X className="h-3 w-3" />

@@ -40,8 +40,8 @@ export function SuggestionCard({
               <span>{truncate(formatSlugToLabel(suggestion.university), 20)}</span>
             )}
             {suggestion.university && <span>·</span>}
-            <span className="flex items-center gap-0.5">
-              <Zap className="h-3 w-3 text-muted-foreground" />
+            <span className="flex items-center gap-0.5 text-foreground/80 font-medium">
+              <Zap className="h-3 w-3 text-primary fill-primary" />
               {suggestion.impactScore ?? 0}
             </span>
           </div>
