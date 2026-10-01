@@ -143,8 +143,12 @@ export const ResourceCard = React.memo(
               </div>
 
               <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                <span className="truncate max-w-[120px]">{(resource as any).subject || "Général"}</span>
-                <span>·</span>
+                {(resource as any).subject && !["general", "général", "autre", "other"].includes(String((resource as any).subject).toLowerCase()) && (
+                  <>
+                    <span className="truncate max-w-[120px]">{(resource as any).subject}</span>
+                    <span>·</span>
+                  </>
+                )}
                 <span className="truncate max-w-[100px]">{(resource as any).authorName || (resource as any).author?.name || "Étudiant"}</span>
                 {((resource as any).fileSize || (resource as any).file_size) && (
                   <>

@@ -1,29 +1,33 @@
 import { CreatePost } from "@/components/feed/CreatePost";
 import { PostCard } from "@/components/feed/PostCard";
 import { FriendSuggestions } from "@/components/feed/FriendSuggestions";
+import { ResourceFeedCard } from "@/components/feed/ResourceFeedCard";
 import { FeedSidebar } from "@/components/layout/FeedSidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
-import { listPosts, listSpheres } from "@/services/api";
+import { useState, useEffect, useMemo } from "react";
+import { listPosts, listSpheres, listResources } from "@/services/api";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { HomeIcon, RefreshCw, Loader2, Users, MessageCircle, BookOpen, ArrowRight, Sparkles } from "lucide-react";
+import { HomeIcon, RefreshCw, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
 import { mapPostToCard } from "@/lib/postCardMapper";
 import { PostSkeleton } from "@/components/ui/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useQuery } from "@tanstack/react-query";
 import type { PostCardData, Sphere } from "@/types";
+import type { Resource } from "@/types";
+
+// ─── Feed item union type ────────────────────────────────────────────────────
+type FeedPost = { kind: "post"; data: PostCardData; date: string };
+type FeedResource = { kind: "resource"; data: Resource; date: string };
+type FeedItem = FeedPost | FeedResource;
 
 export function Home() {
   const isMobile = useIsMobile();
   const { toast } = useToast();
-  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
+
   const spheresQuery = useQuery({
     queryKey: ["home", "popular-spheres"],
     queryFn: () => listSpheres(),
@@ -49,19 +53,47 @@ export function Home() {
     select: (data) => (data || []).map(mapPostToCard),
   });
 
+  const resourcesQuery = useQuery({
+    queryKey: ["home", "recent-resources"],
+    queryFn: () => listResources({ limit: 10 }),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  });
+
   useEffect(() => {
     if (Array.isArray(postsQuery.data)) {
       setPosts(postsQuery.data);
     }
   }, [postsQuery.data]);
 
+  // ─── Merge posts + resources sorted by date ──────────────────────────────
+  const feedItems = useMemo<FeedItem[]>(() => {
+    const postItems: FeedPost[] = posts.map((p) => ({
+      kind: "post",
+      data: p,
+      date: (p as any).createdAt || "",
+    }));
+
+    const resourceItems: FeedResource[] = ((resourcesQuery.data as Resource[]) || []).map((r) => ({
+      kind: "resource",
+      data: r,
+      date: r.createdAt || "",
+    }));
+
+    return [...postItems, ...resourceItems].sort((a, b) => {
+      if (!a.date) return 1;
+      if (!b.date) return -1;
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    });
+  }, [posts, resourcesQuery.data]);
+
   const loadError = postsQuery.error
-    ? (postsQuery.error as any)?.message || "Erreur de chargement du fil d'actualité"
+    ? (postsQuery.error as any)?.message || "Erreur de chargement du fil d'actualite"
     : null;
 
   const isInitialLoading = postsQuery.isLoading && posts.length === 0 && !postsQuery.data;
-
-  const popularSpheres = spheresQuery.data || [];
 
   const fetchPosts = async () => {
     const result = await postsQuery.refetch();
@@ -76,18 +108,18 @@ export function Home() {
     setIsLoading(true);
 
     try {
-      await fetchPosts();
+      await Promise.all([fetchPosts(), resourcesQuery.refetch()]);
       setLastRefresh(new Date());
 
       toast({
-        title: "Feed actualisé",
-        description: "Les posts ont été mis à jour",
+        title: "Feed actualise",
+        description: "Les contenus ont ete mis a jour",
         duration: 2000,
       });
     } catch (e: any) {
       toast({
         title: "Erreur",
-        description: e?.message || "Impossible de rafraîchir le feed",
+        description: e?.message || "Impossible de rafraichir le feed",
         variant: "destructive",
       });
     } finally {
@@ -104,7 +136,7 @@ export function Home() {
     <div className="min-h-screen bg-background">
       <div className={isMobile ? "w-full pt-3.5 pb-8" : "container max-w-7xl mx-auto"}>
         <div className={isMobile ? "w-full" : "grid grid-cols-1 lg:grid-cols-12 gap-6 px-4"}>
-          {/* Main Feed - Center (Global scroll, no internal scrollbar) */}
+          {/* Main Feed */}
           <div className={isMobile ? "w-full space-y-4" : "lg:col-span-8 xl:col-span-7 py-6 space-y-4 md:space-y-6"}>
 
             {/* Create Post */}
@@ -112,7 +144,12 @@ export function Home() {
               <CreatePost onPostCreated={handlePostCreated} />
             </div>
 
-            {/* Posts Feed */}
+            {/* Suggestions carousel (mobile and screens without sidebar) */}
+            <div className={cn(isMobile ? "block" : "lg:hidden")}>
+              <FriendSuggestions />
+            </div>
+
+            {/* Feed */}
             <div>
               {loadError && (
                 <div className={cn("mb-3", isMobile && "px-3.5 sm:px-4")}>
@@ -127,23 +164,27 @@ export function Home() {
                   <PostSkeleton />
                   <PostSkeleton />
                 </div>
-              ) : posts.length === 0 ? (
+              ) : feedItems.length === 0 ? (
                 <div className={cn(isMobile && "px-3.5 sm:px-4")}>
                   <EmptyState
                     icon={HomeIcon}
-                    title="Fil d'actualité vide"
-                    description="Il n'y a pas encore de posts à afficher. Soyez le premier à partager quelque chose !"
-                    actionLabel="Créer un post"
-                    onAction={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                    title="Fil d'actualite vide"
+                    description="Il n'y a pas encore de contenus a afficher. Soyez le premier a partager quelque chose !"
+                    actionLabel="Creer un post"
+                    onAction={() => window.scrollTo({ top: 0, behavior: "smooth" })}
                   />
                 </div>
               ) : (
-                posts.map((post) => (
+                feedItems.map((item) => (
                   <div
-                    key={post.id}
+                    key={item.kind === "post" ? `post-${item.data.id}` : `resource-${item.data.id}`}
                     className="campus-animate-fade-in"
                   >
-                    <PostCard post={post} />
+                    {item.kind === "post" ? (
+                      <PostCard post={item.data} />
+                    ) : (
+                      <ResourceFeedCard resource={item.data} />
+                    )}
                   </div>
                 ))
               )}
@@ -163,13 +204,13 @@ export function Home() {
                     Chargement...
                   </>
                 ) : (
-                  "Charger plus de posts..."
+                  "Charger plus..."
                 )}
               </Button>
             </div>
           </div>
 
-          {/* Right Sidebar - Desktop Only (Fixed sticky to viewport below header) */}
+          {/* Right Sidebar - Desktop Only */}
           {!isMobile && (
             <aside className="hidden lg:block lg:col-span-4 xl:col-span-5 relative">
               <div className="sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto overscroll-contain py-6 pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden hover:[scrollbar-width:thin] hover:[&::-webkit-scrollbar]:block">

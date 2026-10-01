@@ -11,6 +11,7 @@ import {
   GraduationCap,
   Sparkles,
   Eye,
+  Zap,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -213,8 +214,12 @@ export const ResourceTile = React.memo(
             </h3>
 
             <p className="text-xs text-muted-foreground truncate">
-              <span>{(resource as any).subject || "Général"}</span>
-              <span> · </span>
+              {(resource as any).subject && !["general", "général", "autre", "other"].includes(String((resource as any).subject).toLowerCase()) && (
+                <>
+                  <span>{(resource as any).subject}</span>
+                  <span> · </span>
+                </>
+              )}
               <span>{(resource as any).authorName || (resource as any).author?.name || "Étudiant"}</span>
             </p>
 
@@ -223,7 +228,10 @@ export const ResourceTile = React.memo(
               {resource.impactScore ? (
                 <>
                   <span>·</span>
-                  <span className="text-amber-500 font-medium">★ {resource.impactScore}</span>
+                  <span className="text-primary font-medium inline-flex items-center gap-0.5">
+                    <Zap className="h-3 w-3 text-primary fill-primary" />
+                    {resource.impactScore}
+                  </span>
                 </>
               ) : null}
             </div>
