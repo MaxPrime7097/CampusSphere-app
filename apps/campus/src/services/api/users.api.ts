@@ -13,11 +13,14 @@ import {
 // ============================================================================
 
 export async function getCurrentUser(token?: string) {
-  const response = await apiFetch<{ success: boolean; data: any; timestamp: string }>(
+  const response = await apiFetch<{ success: boolean; authenticated?: boolean; data: any; timestamp: string }>(
     "api/users/auth/me/",
     { token: token || getAccessToken() }
   );
-  return normalizeUser(response?.data ?? response);
+  if (!response || (response as any).authenticated === false || !response.data) {
+    return null;
+  }
+  return normalizeUser(response.data);
 }
 
 export async function getUser(id: number | string, token?: string) {

@@ -23,6 +23,7 @@ import { LanguageCombobox } from "@/components/forms/LanguageCombobox";
 import { formatSlugToLabel } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { compressImageFile } from "@/lib/imageCompression";
+import { getBirthDateMax, validateBirthDate } from "@/lib/date";
 
 export function EditProfile() {
   const navigate = useNavigate();
@@ -104,6 +105,18 @@ export function EditProfile() {
   }, [currentUser, isAuthLoading, navigate, toast]);
 
   const handleSave = async () => {
+    if (dateOfBirth) {
+      const dobValidation = validateBirthDate(dateOfBirth);
+      if (!dobValidation.valid) {
+        toast({
+          title: "Date de naissance invalide",
+          description: dobValidation.error || "Vous devez avoir au moins 16 ans",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     setIsSaving(true);
     try {
       const updateData: any = {
@@ -112,6 +125,7 @@ export function EditProfile() {
         username: username,
         bio: bio,
         town: town,
+        date_of_birth: dateOfBirth || undefined,
         language: languages.join(", "),
         university: university,
         faculty: faculty,
@@ -184,11 +198,12 @@ export function EditProfile() {
               <Input id="lastName" value={lastName} onChange={(e) => setLastName(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="dob">Date de naissance</Label>
+              <Label htmlFor="dob">Date de naissance *</Label>
               <div className="relative">
                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input id="dob" type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} className="pl-10" />
+                <Input id="dob" type="date" max={getBirthDateMax()} value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} className="pl-10" />
               </div>
+              <p className="text-xs text-muted-foreground">Âge minimum requis : 16 ans</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="username">Nom d'utilisateur</Label>
