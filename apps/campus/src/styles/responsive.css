@@ -1,0 +1,19 @@
+/* ─────────────────────────────────────────────
+   Responsive & Container Utilities
+   Minimal, non-conflicting overrides
+───────────────────────────────────────────── */
+
+/* Prevent accidental horizontal overflow */
+.content-wrapper {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/* Fallback thin scrollbars */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

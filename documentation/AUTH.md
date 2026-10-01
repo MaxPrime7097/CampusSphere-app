@@ -236,3 +236,22 @@ Si les emails de vérification sont bloqués (erreur 429) :
 1. Aller dans **Authentication → Rate limits** dans le dashboard Supabase
 2. Augmenter progressivement les quotas signup/resend
 3. Le frontend gère déjà un cooldown de 60 secondes sur le bouton "Renvoyer l'email"
+
+---
+
+## Authentification Cross-Domain & SSO Sphera (`@cs/sso`)
+
+Pour permettre à un étudiant connecté sur CampusSphere (`campussphere.app`) d'accéder à Sphera (`sphera.campussphere.app`) sans ressaisir ses identifiants :
+
+### 1. Silent SSO (Iframe Bridge)
+- Sphera charge une iframe cachée pointant vers `/sso/bridge?origin=...` sur CampusSphere via `attemptSilentSso()`.
+- Le bridge vérifie l'origine dans la liste blanche (`isAllowedSpheraOrigin`).
+- Si un token existe dans le `localStorage` de CampusSphere, il est envoyé via `postMessage` sécurisé à Sphera (`cs_sso`).
+- Sphera enregistre les tokens dans son propre `localStorage` (`sphera_access`, `sphera_refresh`) et authentifie l'utilisateur de manière transparente.
+
+### 2. Popup SSO (Google-style)
+- Dans les navigateurs qui bloquent le stockage partitionné dans les iframes tierces :
+- L'utilisateur clique sur « Se connecter via CampusSphere » sur la page de connexion de Sphera.
+- `openSsoPopup()` ouvre une fenêtre popup vers `/sso/popup?origin=...` sur CampusSphere.
+- La popup transmet les tokens via `window.opener.postMessage` et se ferme immédiatement.
+

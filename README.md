@@ -1,171 +1,116 @@
-# CampusSphere V1
+# CampusSphere & Sphera — Monorepo
 
-Plateforme collaborative étudiante — frontend React/Vite + backend Node/Express avec authentification Supabase (email + OAuth), sphères de collaboration, ressources, tâches, messagerie, notifications et **Sphera** (assistant IA académique).
+Plateforme collaborative étudiante et suite d'apprentissage par IA propulsée par un monorepo **pnpm workspaces** et **Turborepo**.
 
-## Stack technique
+- **CampusSphere** : Réseau social étudiant, sphères de collaboration, documents, cours, tâches, messagerie, notifications et modal de génération d'outils d'étude 1-clic.
+- **Sphera** : Application interactive dédiée à l'apprentissage (cartes mentales interactives, quiz solo/multijoueur en direct, fiches mémo, synthèses audio de cours, annales d'examens).
+- **Backend Node/Express** : API centrale commune avec Prisma 5, PostgreSQL, Redis et connecteurs LLM (Claude Haiku, Gemini Flash, Groq Llama).
 
-| Couche | Technologies |
-|--------|-------------|
-| Frontend | React 18, TypeScript, Vite, Tailwind CSS, Shadcn/UI |
-| Backend | Node 22, Express 5, TypeScript (ESM), Prisma 5 |
-| Auth | Supabase Auth (email/password + Google/Facebook OAuth) → JWT applicatif |
-| Base de données | PostgreSQL (Supabase, via le pooler Supavisor) |
-| État partagé | Redis — diffusion WebSocket, rate limiting, élection des jobs |
-| Temps réel | WebSocket natif (`ws`) sur le même écouteur HTTP |
-| Stockage | S3 (`USE_S3=true` obligatoire en production) |
-| Déploiement | Vercel (frontend) + Render (backend, conteneur Docker) |
-| IA (Sphera) | Claude Haiku → Gemini Flash → Groq Llama (fallback chain) |
+---
 
-## Structure du projet
+## Architecture du Monorepo
 
 ```
-CampusSphere/
-├── frontend/
-│   ├── src/sphera/        # Intégration Sphera dans l'app principale
-│   └── sphera-app/        # Application Sphera standalone (Vite + React)
-├── backend/               # API Node/Express + TypeScript (Prisma, PostgreSQL)
-│   ├── prisma/            # Schéma de base de données
-│   ├── src/               # Application Express
-│   └── tests/contract/    # Suite de tests de contrat (boîte noire, HTTP)
-├── legacy/
-│   └── django-backend/    # Ancien backend Django — référence, non déployé
-├── documentation/         # Documentation complète
-├── SPHERA_DOCUMENTATION.md  # Docs techniques Sphera V2 (SSO, PDF, déploiement)
-└── README.md
+campussphere-monorepo/
+├── apps/
+│   ├── campus/              # @cs/campus — Application CampusSphere (Vite + React 18)
+│   ├── sphera/              # @cs/sphera — Application Sphera dédiée (Vite + React 18)
+│   └── backend/             # @cs/backend — API Node 22 / Express 5 + Prisma (inchangé)
+├── packages/
+│   ├── ui/                  # @cs/ui — Design system partagé (Button, Dialog, Tabs, cn...)
+│   ├── types/               # @cs/types — Types TypeScript de domaine partagés
+│   ├── api-client/          # @cs/api-client — Client API unifié avec auto-refresh JWT
+│   └── sso/                 # @cs/sso — Handshake SSO cross-domain, bridge iframe & popup
+├── turbo.json               # Pipeline d'orchestration Turborepo (build, lint, typecheck, test)
+├── pnpm-workspace.yaml      # Configuration des packages du workspace
+└── package.json             # Scripts racine
 ```
 
-> **Migration Django → Node/Express : terminée sur cette branche, pas encore déployée.**
-> `backend/` est l'implémentation courante ; l'ancienne est conservée sous
-> `legacy/django-backend/` comme référence comportementale. Les 143 routes sont portées,
-> la suite de contrat passe, et le chemin de déploiement (`./backend`) est inchangé — le
-> service Render, son URL, son plan et son health check restent identiques.
->
-> Trois variables doivent être renseignées avant le premier déploiement Node : `DIRECT_URL`,
-> `REDIS_URL` (ou `SINGLE_INSTANCE=true`) et `USE_S3=true`. Le serveur **refuse de démarrer**
-> sans elles. Voir [DEPLOYMENT.md](./documentation/DEPLOYMENT.md) §2bis.
->
-> Voir [API_CONTRACT.md](./documentation/API_CONTRACT.md) et
-> [API_INVENTORY.md](./documentation/API_INVENTORY.md).
+---
 
-## Démarrage rapide
+## Démarrage Rapide
 
-### Backend
+### Prérequis
+- Node.js >= 20.x
+- pnpm >= 9.x (recommandé v10)
 
 ```bash
-cd backend
-cp .env.example .env           # renseigner au minimum DATABASE_URL
-npm install
-npx prisma generate
-npx prisma migrate deploy      # jamais `migrate dev` — voir backend/README.md
-npm run dev                    # http://127.0.0.1:3000
+# Installation de toutes les dépendances du monorepo
+pnpm install
 ```
 
-Redis est optionnel en local (`REDIS_URL=redis://127.0.0.1:6379`) mais **obligatoire en
-production** : il porte la diffusion WebSocket entre instances, les compteurs de
-rate limiting et l'élection des tâches planifiées. Sans lui le serveur refuse de démarrer
-en production — à moins de poser explicitement `SINGLE_INSTANCE=true`, qui n'est correct
-que pour exactement une instance. Détails dans [backend/README.md](./backend/README.md).
-
-L'ancien backend Django reste exécutable depuis `legacy/django-backend/` pour comparaison.
-
-### Frontend
+### Développement local
 
 ```bash
-cd frontend
-npm install
+# Lancer les applications frontend simultanément
+pnpm dev
 
-# Créer le fichier .env
-echo VITE_API_URL=http://127.0.0.1:3000 > .env
-echo VITE_SUPABASE_URL=https://your-project.supabase.co >> .env
-echo VITE_SUPABASE_ANON_KEY=your-anon-key >> .env
-
-npm run dev
+# Ou lancer une application spécifique :
+pnpm dev:campus    # CampusSphere -> http://localhost:5173
+pnpm dev:sphera    # Sphera App   -> http://localhost:5174 ou 4173
+pnpm dev:backend   # API Backend  -> http://localhost:3000
 ```
 
-> `VITE_API_URL` doit **toujours** être défini, en local comme en production. Sans lui le
-> frontend devine l'URL du backend d'après le hostname, et son repli local pointe sur
-> `127.0.0.1:8000` — le port de Django, pas celui du backend Node (`3000`). En production,
-> utiliser `https://api.campussphere.app`. Voir
-> [FRONTEND_CHANGES.md](./documentation/FRONTEND_CHANGES.md) `FE-10`.
-
-## Documentation
-
-Toute la documentation est dans le dossier [`documentation/`](./documentation/) :
-
-| Fichier | Contenu |
-|---------|---------|
-| [ARCHITECTURE.md](./documentation/ARCHITECTURE.md) | Architecture technique, structure des dossiers, flux de données |
-| [API.md](./documentation/API.md) | Référence complète des endpoints API |
-| [COMPONENTS.md](./documentation/COMPONENTS.md) | Guide des composants frontend |
-| [AUTH.md](./documentation/AUTH.md) | Flux d'authentification (email + OAuth) |
-| [DEPLOYMENT.md](./documentation/DEPLOYMENT.md) | Guide de déploiement production : variables Render, Redis, checklist |
-| [API_CONTRACT.md](./documentation/API_CONTRACT.md) | **Spécification faisant autorité** : formes des requêtes/réponses, écarts marqués `[CHANGE]` (en anglais) |
-| [API_INVENTORY.md](./documentation/API_INVENTORY.md) | Les 143 routes, leur statut et leurs appelants (en anglais) |
-| [FRONTEND_CHANGES.md](./documentation/FRONTEND_CHANGES.md) | Ce que le frontend doit adapter (`FE-01` … `FE-10`, en anglais) |
-| [backend/README.md](./backend/README.md) | Backend Node : exécution, scale-out, jobs, tests |
-| [IMPACT_POLICY.md](./documentation/IMPACT_POLICY.md) | Règles de calcul du score d'impact |
-| [CACHE_POLICY.md](./documentation/CACHE_POLICY.md) | Politique de cache API |
-
-Documentation Sphera :
-
-| Fichier | Contenu |
-|---------|---------|
-| [SPHERA_DOCUMENTATION.md](./SPHERA_DOCUMENTATION.md) | Architecture SSO, moteur PDF, déploiement Sphera standalone |
-
-## Endpoints API principaux
-
-```
-Auth:
-  POST /api/users/auth/register/
-  POST /api/users/auth/login/
-  GET  /api/users/auth/me/
-  POST /api/auth/refresh/
-  POST /api/users/auth/supabase/exchange-token/
-  POST /api/users/auth/supabase/complete-profile/
-
-Ressources:
-  /api/users/...
-  /api/spheres/...
-  /api/posts/...
-  /api/resources/...
-  /api/tasks/...
-  /api/conversations/...
-  /api/notifications/...
-
-SpheraIA:
-  POST /api/sphera/generate/from-resource/   # Générer fiche/quiz/flashcards depuis une ressource
-  POST /api/sphera/generate/from-upload/     # Générer depuis un fichier uploadé
-  POST /api/sphera/generate/annale/          # Corriger une annale
-  GET  /api/sphera/sessions/                 # Mes sessions de révision
-  GET  /api/sphera/sessions/<id>/            # Détails d'une session
-  POST /api/sphera/sessions/<id>/ask/        # Q&A sur le cours
-  GET  /api/sphera/sessions/<id>/suggestions/ # Suggestions de questions
-  POST /api/sphera/sessions/<id>/share/      # Partager dans une sphère
-  GET  /api/sphera/annales/                  # Mes sessions d'annales
-  POST /api/sphera/annales/<id>/ask/         # Q&A sur l'annale
-  POST /api/sphera/annales/<id>/share/       # Partager l'annale dans une sphère
-  GET  /api/sphera/sphere/<id>/              # Sessions partagées dans une sphère
-  GET  /api/sphera/sphere/<id>/annales/      # Annales partagées dans une sphère
-  POST /api/sphera/guest/generate/           # Génération invité (sans auth, 5/h)
-
-Santé:
-  GET /api/health/
-```
-
-### Sphera Standalone
+### Vérifications & Qualité
 
 ```bash
-cd frontend/sphera-app
-npm install
-npm run dev
+pnpm typecheck     # Vérification TypeScript sur l'ensemble des 7 packages (turbo)
+pnpm lint          # Linting ESLint (turbo)
+pnpm test          # Tests unitaires Vitest (turbo)
+pnpm build         # Build de production de tous les packages (turbo)
 ```
 
-Variables `.env` requises :
-```
-VITE_API_URL=http://127.0.0.1:3000
-```
+---
 
-Variables supplémentaires sur l'app principale pour activer le SSO :
-```
-VITE_SPHERA_STANDALONE_URL=http://localhost:4173
-```
+## Déploiement Vercel
+
+Le déploiement des deux frontends s'effectue sur les **2 projets Vercel existants** sans interruption :
+
+### 1. Projet Vercel : CampusSphere (`campussphere.app`)
+- **Root Directory** : `apps/campus`
+- **Build Command** : `pnpm build` (ou laisser Vercel détecter automatiquement via Turborepo)
+- **Output Directory** : `dist`
+- **Install Command** : `pnpm install`
+
+### 2. Projet Vercel : Sphera (`sphera.campussphere.app`)
+- **Root Directory** : `apps/sphera`
+- **Build Command** : `pnpm build`
+- **Output Directory** : `dist`
+- **Install Command** : `pnpm install`
+
+### Variables d'environnement essentielles
+
+| Variable | Apps | Description |
+|---|---|---|
+| `VITE_API_URL` | campus, sphera | URL de l'API backend (`https://api.campussphere.app` en prod) |
+| `VITE_SUPABASE_URL` | campus | URL de l'instance Supabase Auth |
+| `VITE_SUPABASE_ANON_KEY` | campus | Clé anonyme Supabase |
+| `VITE_SPHERA_STANDALONE_URL` | campus | URL de Sphera (`https://sphera.campussphere.app` en prod) |
+
+---
+
+## Packages Partagés
+
+### `@cs/ui`
+Composants UI partagés basés sur Tailwind CSS et Radix Primitives :
+`Button`, `Badge`, `Dialog`, `Tabs`, `SharedTabs`, `Progress`, `Skeleton`, `Alert`, `Select`, `SpheraIcon`, et utilitaire `cn`.
+
+### `@cs/types`
+Modèles canoniques partagés entre frontends et backend :
+`StudySession`, `AnnaleSession`, `ToolType`, `GenerationQuota`, `SpheraProfileData`, `ApiResponse<T>`, etc.
+
+### `@cs/api-client`
+Client HTTP unifié configuré avec gestion des tokens, mutex anti-refresh race conditions, et méthodes typées pour les endpoints `/api/sphera/*`.
+
+### `@cs/sso`
+Module d'authentification cross-application :
+- Validation stricte des origines (`campussphere.app`, `sphera.campussphere.app`, dev localhost).
+- Iframe bridge pour le SSO silencieux transparent.
+- Helper popup Google-style pour les navigateurs bloquant les cookies/stockages tiers.
+
+---
+
+## Base de Données & Backend
+
+- **0 modification de schéma de base de données** nécessaire.
+- Le backend (`apps/backend`) reste la source de vérité unique pour les données utilisateur, les sphères, et les sessions Sphera IA.

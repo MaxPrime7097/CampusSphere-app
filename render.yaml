@@ -12,8 +12,8 @@ services:
     name: campus-sphere-backend
     runtime: docker
     plan: free
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
+    dockerfilePath: ./apps/backend/Dockerfile
+    dockerContext: ./apps/backend
 
     envVars:
       - key: PORT
