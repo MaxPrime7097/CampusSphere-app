@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { ChevronDown, FileText } from 'lucide-react'
+import { CaretDown as ChevronDown, FileText } from "@phosphor-icons/react";
 
 interface FicheResultProps {
   data: any;

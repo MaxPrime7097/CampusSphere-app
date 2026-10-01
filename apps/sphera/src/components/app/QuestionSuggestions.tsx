@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { getSuggestions } from '../../services/spheraApi'
-import { Sparkles } from 'lucide-react'
+import { Sparkle as Sparkles } from "@phosphor-icons/react";
 import { useTranslation } from 'react-i18next'
 
 interface QuestionSuggestionsProps {

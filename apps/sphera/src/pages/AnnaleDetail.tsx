@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { getAnnale, askQuestion } from '../services/spheraApi'
 import { normalizeAiResponse } from '../utils/normalizeAiResponse'
-import { MessageSquare, Bot, User, Send, ArrowUp, Download, Loader2 } from 'lucide-react'
+import { ChatCircle as MessageSquare, Robot as Bot, User, PaperPlaneTilt as Send, ArrowUp, Download, Spinner as Loader2 } from "@phosphor-icons/react";
 import { useDownloadPDF } from '../hooks/useDownloadPDF'
 
 export default function AnnaleDetail() {

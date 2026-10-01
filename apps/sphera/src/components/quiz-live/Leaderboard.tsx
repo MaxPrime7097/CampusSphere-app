@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Trophy } from 'lucide-react';
+import { Trophy } from "@phosphor-icons/react";
 
 interface LeaderboardProps {
   entries: { displayName: string; score: number; userId?: number }[];

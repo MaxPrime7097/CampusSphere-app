@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { RotateCcw, Check, X, Undo2 } from 'lucide-react'
+import { ArrowCounterClockwise as RotateCcw, Check, X, ArrowCounterClockwise as Undo2 } from "@phosphor-icons/react";
 
 interface FlashcardsResultProps {
   data: any;

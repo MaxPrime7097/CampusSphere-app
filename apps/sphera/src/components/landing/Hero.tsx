@@ -1,16 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { 
-  ArrowRight, 
-  FileText, 
-  ArrowLeft, 
-  MessageSquare, 
-  Share2, 
-  CheckCircle2, 
-  List, 
-  Maximize2 
-} from 'lucide-react'
+import { ArrowRight, FileText, ArrowLeft, ChatCircle as MessageSquare, ShareNetwork as Share2, CheckCircle as CheckCircle2, List, ArrowsOut as Maximize2 } from "@phosphor-icons/react";
 
 export function Hero() {
   const { t } = useTranslation('landing')

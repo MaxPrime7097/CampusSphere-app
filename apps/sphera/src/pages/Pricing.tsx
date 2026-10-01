@@ -4,7 +4,7 @@ import { Helmet } from 'react-helmet-async'
 import { useTranslation } from 'react-i18next'
 import { SpheraHeader } from '../components/layout/SpheraHeader'
 import { SpheraFooter } from '../components/layout/SpheraFooter'
-import { Sparkles, Check, BrainCircuit, FileText, SquareStack, MessageSquare, Bell, ScanEye, FilePenLine } from 'lucide-react'
+import { Sparkle as Sparkles, Check, Brain as BrainCircuit, FileText, Stack as SquareStack, ChatCircle as MessageSquare, Bell, Scan as ScanEye, NotePencil as FilePenLine } from "@phosphor-icons/react";
 
 export default function Pricing() {
   const { t } = useTranslation('pricing')

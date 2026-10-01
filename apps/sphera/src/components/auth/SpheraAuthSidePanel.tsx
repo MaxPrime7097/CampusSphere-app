@@ -1,6 +1,6 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import { BookOpen, BrainCircuit, MessageSquare } from 'lucide-react'
+import { BookOpen, Brain as BrainCircuit, ChatCircle as MessageSquare } from "@phosphor-icons/react";
 
 export function SpheraAuthSidePanel() {
   const { t } = useTranslation('auth')

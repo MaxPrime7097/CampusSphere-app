@@ -7,7 +7,7 @@ import { QuestionDisplay } from '../components/quiz-live/QuestionDisplay';
 import { Leaderboard } from '../components/quiz-live/Leaderboard';
 import { getQuizSessionByCode, getQuizParticipants } from '../services/spheraApi';
 import { useSpheraAuth } from '../contexts/SpheraAuthContext';
-import { Loader2, LogIn, ArrowLeft, Volume2, VolumeX } from 'lucide-react';
+import { Spinner as Loader2, SignIn as LogIn, ArrowLeft, SpeakerHigh as Volume2, SpeakerSimpleX as VolumeX } from "@phosphor-icons/react";
 import { Helmet } from 'react-helmet-async';
 import confetti from 'canvas-confetti';
 import { playSound, preloadSounds, toggleMute, getMuteState } from '../utils/audioManager';

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, FileText, ArrowRight, AlertCircle, Sparkles } from 'lucide-react';
+import { X, FileText, ArrowRight, WarningCircle as AlertCircle, Sparkle as Sparkles } from "@phosphor-icons/react";
 import { useTranslation } from 'react-i18next';
 
 interface PasteTextModalProps {

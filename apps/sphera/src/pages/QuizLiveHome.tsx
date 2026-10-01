@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Zap, Plus, LogIn, Loader2, ArrowRight, Trash2 } from 'lucide-react';
+import { Lightning as Zap, Plus, SignIn as LogIn, Spinner as Loader2, ArrowRight, Trash as Trash2 } from "@phosphor-icons/react";
 import { getMyQuizSessions, deleteQuizSession } from '../services/spheraApi';
 import { DeleteConfirmModal } from '../components/app/DeleteConfirmModal';
 import { Helmet } from 'react-helmet-async';

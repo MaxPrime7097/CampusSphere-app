@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { X, Copy, Check } from 'lucide-react';
+import { X, Copy, Check } from "@phosphor-icons/react";
 import { useTranslation } from 'react-i18next';
 
 export function ShareModal({ 

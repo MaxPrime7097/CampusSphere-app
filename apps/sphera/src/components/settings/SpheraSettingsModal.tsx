@@ -2,24 +2,7 @@ import React, { useState, useEffect } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { LanguageSwitcher } from '@cs/i18n'
 import { useTranslation } from 'react-i18next'
-import {
-  X,
-  User,
-  Sliders,
-  Sparkles,
-  Layers,
-  PieChart,
-  SunMoon,
-  ExternalLink,
-  Check,
-  Loader2,
-  HelpCircle,
-  Clock,
-  MessageSquare,
-  Globe,
-  Gauge,
-  Info,
-} from 'lucide-react'
+import { X, User, Sliders, Sparkle as Sparkles, Stack as Layers, ChartPie as PieChart, SunHorizon as SunMoon, ArrowSquareOut as ExternalLink, Check, Spinner as Loader2, Question as HelpCircle, Clock, ChatCircle as MessageSquare, Globe, Gauge, Info } from "@phosphor-icons/react";
 import {
   getSpheraPreferences,
   updateSpheraPreferences,

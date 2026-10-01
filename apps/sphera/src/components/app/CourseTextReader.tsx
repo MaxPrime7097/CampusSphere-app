@@ -1,10 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import {
-  Edit3, Eye, Copy, Check, Save, Loader2, FileText, Clock,
-  Search, X, ChevronDown, ChevronUp, BookOpen, Lightbulb,
-  AlertTriangle, List, ArrowDown, ArrowUp, Type, Compass,
-  Bookmark, Hash, Sparkles
-} from 'lucide-react';
+import { PencilSimple as Edit3, Eye, Copy, Check, FloppyDisk as Save, Spinner as Loader2, FileText, Clock, MagnifyingGlass as Search, X, CaretDown as ChevronDown, CaretUp as ChevronUp, BookOpen, Lightbulb, Warning as AlertTriangle, List, ArrowDown, ArrowUp, TextT as Type, Compass, Bookmark, Hash, Sparkle as Sparkles } from "@phosphor-icons/react";
 import { TextSelectionToolbar, type SelectionActionType } from './TextSelectionToolbar';
 import { useTranslation } from 'react-i18next';
 

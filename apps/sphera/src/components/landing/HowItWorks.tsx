@@ -1,6 +1,6 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import { Upload, MousePointerClick, BookOpen } from 'lucide-react'
+import { Upload, CursorClick as MousePointerClick, BookOpen } from "@phosphor-icons/react";
 
 export function HowItWorks() {
   const { t } = useTranslation('landing')
