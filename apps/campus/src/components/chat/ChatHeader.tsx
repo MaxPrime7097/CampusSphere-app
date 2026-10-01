@@ -12,7 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Users, Phone, Video, EllipsisVertical, Camera } from "lucide-react";
+import { UsersThree as Users, Phone, Video, DotsThreeVertical as EllipsisVertical, Camera } from "@phosphor-icons/react";
 import type { Conversation } from "@/types";
 
 interface ChatHeaderProps {

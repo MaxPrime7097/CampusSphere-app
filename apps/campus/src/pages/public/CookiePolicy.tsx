@@ -1,7 +1,7 @@
 import React from "react";
 import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
-import { Cookie, AlertCircle, CheckCircle, XCircle, Shield, Heart, Facebook, Twitter, Linkedin, Instagram, Youtube, ChevronDown, User, BookLock, Mail } from "lucide-react";
+import { Cookie, WarningCircle as AlertCircle, CheckCircle, XCircle, Shield, Heart, FacebookLogo as Facebook, TwitterLogo as Twitter, LinkedinLogo as Linkedin, InstagramLogo as Instagram, YoutubeLogo as Youtube, CaretDown as ChevronDown, User, LockKey as BookLock, Envelope as Mail } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

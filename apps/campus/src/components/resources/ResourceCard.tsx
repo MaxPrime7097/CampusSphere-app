@@ -2,17 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  FileText,
-  Download,
-  Bookmark,
-  FileCode,
-  Archive,
-  Loader2,
-  BookOpen,
-  GraduationCap,
-  Sparkles,
-} from "lucide-react";
+import { FileText, Download, BookmarkSimple, FileCode, Archive, Spinner as Loader2, BookOpen, GraduationCap, Sparkle as Sparkles } from "@phosphor-icons/react";
 import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { formatFileSize, cn, getResourceUrl } from "@/lib/utils";
 import { StudyToolsModal } from "@/sphera/components/study/StudyToolsModal";
@@ -175,7 +165,7 @@ export const ResourceCard = React.memo(
               onClick={onSave}
               title="Sauvegarder"
             >
-              <Bookmark className={cn("h-4 w-4", isSaved && "fill-current")} />
+              <BookmarkSimple className="h-4 w-4" weight={isSaved ? "fill" : "regular"} />
             </Button>
 
             <Button

@@ -1,19 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Download,
-  Eye,
-  Bookmark,
-  Zap,
-  BadgeCheck,
-  Pencil,
-  FolderInput,
-  Trash2,
-  Share2,
-  Flag,
-  Loader2,
-  X,
-} from "lucide-react";
+import { Download, Eye, BookmarkSimple, Lightning as Zap, SealCheck as BadgeCheck, Pencil, FolderSimplePlus as FolderInput, Trash as Trash2, ShareNetwork as Share2, Flag, Spinner as Loader2, X } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -323,7 +310,7 @@ export function ResourceHeader({
             {resource.stats.views}
           </span>
           <span className="flex items-center gap-1">
-            <Bookmark className="h-4 w-4" />
+            <BookmarkSimple className="h-4 w-4" />
             {resource.stats.saves}
           </span>
 
@@ -400,7 +387,7 @@ export function ResourceHeader({
                   : "Cliquer pour +1 Impact ou maintenir pour evaluer de 1 a 5"
               }
             >
-              <Zap className={cn("h-4 w-4", userImpactRating ? "text-primary fill-primary" : "text-primary fill-primary")} />
+              <Zap className="h-4 w-4 text-primary" weight={userImpactRating ? "fill" : "regular"} />
               <span className="text-xs font-bold text-primary">{impactScore}</span>
               <span className="text-xs text-muted-foreground hidden sm:inline">Impact</span>
             </button>
@@ -424,7 +411,7 @@ export function ResourceHeader({
               <div className="flex items-center gap-2">
                 <p className="font-medium">{resource.uploader.name}</p>
                 {resource.uploader.verified && (
-                  <BadgeCheck className="h-4 w-4 text-primary fill-primary/10" />
+                  <BadgeCheck className="h-4 w-4 text-primary" weight="fill" />
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
@@ -442,7 +429,7 @@ export function ResourceHeader({
               className="gap-2"
               aria-label={isSaved ? "Retirer des enregistrements" : "Enregistrer la ressource"}
             >
-              <Bookmark className={cn("h-4 w-4", isSaved && "fill-current")} />
+              <BookmarkSimple className="h-4 w-4" weight={isSaved ? "fill" : "regular"} />
               <span className="hidden md:inline">
                 {isSaved ? "Enregistré" : "Enregistrer"}
               </span>

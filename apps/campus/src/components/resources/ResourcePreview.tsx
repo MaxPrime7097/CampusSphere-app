@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Spinner as Loader2 } from "@phosphor-icons/react";
 
 interface ResourcePreviewProps {
   title: string;

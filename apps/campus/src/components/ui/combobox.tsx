@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Check, ChevronsUpDown, Plus } from "lucide-react"
+import { Check, CaretUpDown as ChevronsUpDown, Plus } from "@phosphor-icons/react";
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"

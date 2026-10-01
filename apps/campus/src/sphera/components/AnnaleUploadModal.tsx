@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, Upload, BookOpen, Zap, FileText, Loader2, ChevronDown } from "lucide-react";
+import { X, Upload, BookOpen, Lightning as Zap, FileText, Spinner as Loader2, CaretDown as ChevronDown } from "@phosphor-icons/react";
 import { generateAnnale, getStudySessions } from "../services/spheraService";
 import type { AnnaleMode } from "../types/sphera.types";
 import {

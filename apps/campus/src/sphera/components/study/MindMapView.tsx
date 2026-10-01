@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { GitFork, Sparkles, FolderPlus, FolderMinus, ExternalLink, ChevronRight, Layers } from "lucide-react";
+import { GitFork, Sparkle as Sparkles, FolderPlus, FolderMinus, ArrowSquareOut as ExternalLink, CaretRight as ChevronRight, Stack as Layers } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { SPHERA_ORIGINS } from "@cs/sso";

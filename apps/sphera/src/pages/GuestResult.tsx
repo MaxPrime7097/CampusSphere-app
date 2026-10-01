@@ -3,7 +3,7 @@ import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { SpheraHeader } from '../components/layout/SpheraHeader'
 import { FicheView, QuizView, FlashcardsView, AnnaleView } from '../components/app/ResultViews'
-import { ArrowLeft, Share2, Download, AlertCircle } from 'lucide-react'
+import { ArrowLeft, ShareNetwork as Share2, Download, WarningCircle as AlertCircle } from "@phosphor-icons/react";
 import { useSpheraAuth } from '../contexts/SpheraAuthContext'
 
 export default function GuestResult() {

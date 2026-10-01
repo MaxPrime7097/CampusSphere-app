@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Image, Users, X, Lock, Globe, Video, FileText, AtSign, Calendar, Hash, Loader2, CheckCircle, SlidersHorizontal } from "lucide-react";
+import { Plus, Image, UsersThree as Users, X, Lock, Globe, Video, FileText, At as AtSign, Calendar, Hash, Spinner as Loader2, CheckCircle, SlidersHorizontal } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { findInvalidMentions, getActiveMentionQuery, renderMentionText } from "@/lib/mentions";
 import { cn } from "@/lib/utils";

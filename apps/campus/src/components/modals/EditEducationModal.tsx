@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Input, REGISTRATION_MAX_LENGTHS } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BookOpen, Loader2, Check, Plus, X } from "lucide-react";
+import { BookOpen, Spinner as Loader2, Check, Plus, X } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { DegreeCombobox } from "@/components/forms/DegreeCombobox";
 import { InstitutionCombobox } from "@/components/forms/InstitutionCombobox";

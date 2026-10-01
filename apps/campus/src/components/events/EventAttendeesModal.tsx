@@ -1,14 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Users,
-  Search,
-  Check,
-  ShieldCheck,
-  Download,
-  QrCode,
-  CheckCircle2,
-} from "lucide-react";
+import { UsersThree as Users, MagnifyingGlass as Search, Check, ShieldCheck, Download, QrCode, CheckCircle as CheckCircle2, SealCheck as BadgeCheck } from "@phosphor-icons/react";
 import {
   Dialog,
   DialogContent,
@@ -287,7 +279,7 @@ export function EventAttendeesModal({
                           {attName}
                         </span>
                         {attendee.user?.isVerified && (
-                          <ShieldCheck className="h-3.5 w-3.5 text-amber-500 fill-amber-500/20 shrink-0" />
+                          <BadgeCheck className="h-3.5 w-3.5 text-primary shrink-0" weight="fill" />
                         )}
                       </div>
                       <p className="text-[11px] text-muted-foreground truncate">

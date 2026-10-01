@@ -4,7 +4,7 @@ import { Helmet } from "react-helmet-async";
 import { useParams, useNavigate } from "react-router-dom";
 import { getPost } from "@/services/api";
 import { PostCard } from "@/components/feed/PostCard";
-import { ChevronLeft, FileText } from "lucide-react";
+import { CaretLeft as ChevronLeft, FileText } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { mapPostToCard } from "@/lib/postCardMapper";

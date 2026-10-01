@@ -1,5 +1,5 @@
 import React from 'react'
-import { Sparkles, FileText, Lightbulb, BrainCircuit, SquareStack } from 'lucide-react'
+import { Sparkle as Sparkles, FileText, Lightbulb, Brain as BrainCircuit, Stack as SquareStack } from "@phosphor-icons/react";
 import { useTranslation } from 'react-i18next'
 
 export type SelectionActionType = 'expliquer' | 'resumer' | 'exemple' | 'quiz' | 'flashcards'

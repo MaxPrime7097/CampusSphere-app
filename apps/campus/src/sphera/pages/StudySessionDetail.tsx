@@ -11,7 +11,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Share2, AlertCircle, Loader2, Check, MessageCircleQuestion, BookOpen, BrainCircuit, SquareStack, GitFork, AudioLines } from "lucide-react";
+import { ArrowLeft, ShareNetwork as Share2, WarningCircle as AlertCircle, Spinner as Loader2, Check, Question as MessageCircleQuestion, BookOpen, Brain as BrainCircuit, Stack as SquareStack, GitFork, Waveform as AudioLines } from "@phosphor-icons/react";
 import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Loader2 } from "lucide-react";
+import { Spinner as Loader2 } from "@phosphor-icons/react";
 import { SPHERA_ORIGINS } from "@cs/sso";
 
 export function SpheraSSORedirect() {

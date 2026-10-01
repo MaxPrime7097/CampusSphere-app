@@ -9,7 +9,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { PenLine, Upload, Users, Calendar, MessageSquare, ArrowRight } from "lucide-react";
+import { Pen as PenLine, Upload, UsersThree as Users, Calendar, ChatCircle as MessageSquare, ArrowRight } from "@phosphor-icons/react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { openVerificationModal } from "@/lib/events";

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Folder, FolderOpen, Download, Loader2, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Folder, FolderOpen, Download, Spinner as Loader2, DotsThreeVertical as MoreVertical, Pencil, Trash as Trash2 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,

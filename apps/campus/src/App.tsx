@@ -9,7 +9,7 @@ import { AppLayout } from "./components/layout/AppLayout";
 import { RequireAdminRole } from "./components/auth/RequireAdminRole";
 import { AdminLayout } from "./admin/components/AdminLayout";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { Loader2 } from "lucide-react";
+import { Spinner as Loader2 } from "@phosphor-icons/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { GlobalErrorBoundary } from "./components/errors/GlobalErrorBoundary";
 
@@ -62,6 +62,7 @@ const LegalNotice = lazy(() => import("./pages/public/LegalNotice").then(m => ({
 const TermsOfSale = lazy(() => import("./pages/public/TermsOfSale").then(m => ({ default: m.TermsOfSale })));
 const Waitinglist = lazy(() => import("./pages/public/Waitinglist").then(m => ({ default: m.Waitinglist })));
 const Policies = lazy(() => import("./pages/public/Policies").then(m => ({ default: m.Policies })));
+const ImpactScoreInfo = lazy(() => import("./pages/public/ImpactScoreInfo").then(m => ({ default: m.ImpactScoreInfo })));
 const Forbidden = lazy(() => import("./pages/public/Forbidden"));
 const AdminDashboardPage = lazy(() => import("./admin/pages/AdminDashboardPage").then(m => ({ default: m.AdminDashboardPage })));
 const AdminUsersPage = lazy(() => import("./admin/pages/AdminUsersPage").then(m => ({ default: m.AdminUsersPage })));
@@ -130,9 +131,14 @@ const HomeOrLanding = () => {
 
 const ScrollToTop = (): null => {
   const { pathname } = useLocation();
+  const { isAuthenticated } = useAuth();
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-  }, [pathname]);
+    const isPublic = pathname.startsWith('/cs-inc') || pathname === '/login' || pathname === '/register' || pathname === '/forgot-password' || pathname === '/onboarding' || pathname === '/waitinglist' || (!isAuthenticated && pathname === '/');
+    if (isPublic) {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [pathname, isAuthenticated]);
   return null;
 };
 
@@ -359,6 +365,8 @@ const App = (): React.ReactElement => (
             {/* Public pages */}
             <Route path="/cs-inc" element={<Landing />} />
             <Route path="/cs-inc/about" element={<About />} />
+            <Route path="/cs-inc/impact-score" element={<ImpactScoreInfo />} />
+            <Route path="/impact-score" element={<Navigate to="/cs-inc/impact-score" replace />} />
             <Route path="/contact" element={<Navigate to="/cs-inc/contact" replace />} />
             <Route path="/cs-inc/contact" element={<Contact />} />
             <Route path="/cs-inc/faq" element={<FAQ />} />

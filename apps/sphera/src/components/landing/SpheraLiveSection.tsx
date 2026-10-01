@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { Zap, Users, Trophy, Clock, ArrowRight, Play, Sparkles } from 'lucide-react'
+import { Lightning as Zap, Users, Trophy, Clock, ArrowRight, Play, Sparkle as Sparkles } from "@phosphor-icons/react";
 import { useTranslation } from 'react-i18next'
 
 export function SpheraLiveSection() {

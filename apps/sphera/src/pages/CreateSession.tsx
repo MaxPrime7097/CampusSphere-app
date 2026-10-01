@@ -1,24 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import {
-  FileText,
-  ArrowLeft,
-  Maximize2,
-  Minimize2,
-  Send,
-  Square,
-  MessageSquare,
-  Bot,
-  User,
-  AtSign,
-  Sparkles,
-  BookOpen,
-  Zap,
-  Loader2,
-  Plus,
-  AlertCircle,
-  Check
-} from 'lucide-react'
+import { FileText, ArrowLeft, ArrowsOut as Maximize2, ArrowsIn as Minimize2, PaperPlaneTilt as Send, Square, ChatCircle as MessageSquare, Robot as Bot, User, At as AtSign, Sparkle as Sparkles, BookOpen, Lightning as Zap, Spinner as Loader2, Plus, WarningCircle as AlertCircle, Check } from "@phosphor-icons/react";
 import { ToolSelector, type ToolType } from '../components/app/ToolSelector'
 import { GenerateButton } from '../components/app/GenerateButton'
 import { pendingUploadFile } from '../store/fileStore'

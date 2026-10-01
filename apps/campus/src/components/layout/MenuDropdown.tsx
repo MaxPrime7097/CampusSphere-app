@@ -1,6 +1,4 @@
-import {
-  Menu, Shield, ExternalLink, BadgeCheck
-} from "lucide-react";
+import { List as Menu, Shield, ArrowSquareOut as ExternalLink, SealCheck as BadgeCheck } from "@phosphor-icons/react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -88,7 +86,7 @@ export function MenuDropdown({ user: externalUser }: { user?: NavigationUser }) 
                 <div className="flex items-center gap-2">
                   <h4 className="font-semibold text-sm truncate">{displayName}</h4>
                   {user?.isVerified && (
-                    <BadgeCheck className="h-4 w-4 text-primary fill-primary/10 flex-shrink-0" />
+                    <BadgeCheck className="h-4 w-4 text-primary flex-shrink-0" weight="fill" />
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground truncate">{displayUsername}</p>

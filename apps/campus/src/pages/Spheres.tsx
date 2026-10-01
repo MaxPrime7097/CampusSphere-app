@@ -6,26 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  Globe,
-  Search,
-  Users,
-  TrendingUp,
-  Clock,
-  Loader2,
-  Check,
-  RefreshCw,
-  Plus,
-  X,
-  Filter,
-  BookOpen,
-  FolderGit2,
-  Sparkles,
-  GraduationCap,
-  ShieldCheck,
-  LayoutGrid,
-  List,
-} from "lucide-react";
+import { Sphere as SphereIcon, MagnifyingGlass as Search, UsersThree as Users, TrendUp as TrendingUp, Clock, Spinner as Loader2, Check, ArrowClockwise as RefreshCw, Plus, X, Funnel as Filter, BookOpen, FolderSimple as FolderGit2, Sparkle as Sparkles, GraduationCap, ShieldCheck, GridFour as LayoutGrid, List } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { openVerificationModal } from "@/lib/events";
 import { SphereCard } from "@/components/sphere/SphereCard";
@@ -45,7 +26,7 @@ const CreateSphereModal = lazy(() =>
 );
 
 export const SPHERE_TYPE_CHIPS = [
-  { value: "all", label: "Toutes les sphères", icon: Globe },
+  { value: "all", label: "Toutes les sphères", icon: SphereIcon },
   { value: "cours", label: "Cours & TD", icon: BookOpen },
   { value: "projet", label: "Projets & Groupes", icon: FolderGit2 },
   { value: "communaute", label: "Communautés", icon: Users },
@@ -525,7 +506,7 @@ export function Spheres() {
               )
             ) : filteredSpheres.length === 0 ? (
               <EmptyState
-                icon={Globe}
+                icon={SphereIcon}
                 title="Aucune sphère trouvée"
                 description="Essayez d'ajuster vos filtres pour trouver ce que vous cherchez."
                 actionLabel="Tout réinitialiser"

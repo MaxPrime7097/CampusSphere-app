@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { UploadCloud, File, X } from 'lucide-react'
+import { CloudArrowUp as UploadCloud, File, X } from "@phosphor-icons/react";
 
 interface UploadZoneProps {
   onFileSelect: (file: File | null) => void;

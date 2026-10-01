@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FileText, LayoutGrid, List } from "lucide-react";
+import { FileText, GridFour as LayoutGrid, List } from "@phosphor-icons/react";
 import { ResourceCard } from "@/components/resources/ResourceCard";
 import { ResourceTile } from "@/components/resources/ResourceTile";
 import { ResourceSkeleton } from "@/components/ui/skeletons";

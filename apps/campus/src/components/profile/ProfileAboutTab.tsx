@@ -1,5 +1,5 @@
 import { Suspense, lazy, useState } from "react";
-import { Pencil, ExternalLink } from "lucide-react";
+import { Pencil, ArrowSquareOut as ExternalLink } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";

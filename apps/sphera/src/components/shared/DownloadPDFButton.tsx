@@ -1,5 +1,5 @@
 import React from 'react'
-import { Download, Loader2 } from 'lucide-react'
+import { Download, Spinner as Loader2 } from "@phosphor-icons/react";
 import { useTranslation } from 'react-i18next'
 
 interface DownloadPDFButtonProps {

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input, REGISTRATION_MAX_LENGTHS } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { User, Loader2, Check, Plus, X } from "lucide-react";
+import { User, Spinner as Loader2, Check, Plus, X } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { CityCombobox } from "@/components/forms/CityCombobox";
 import { LanguageCombobox } from "@/components/forms/LanguageCombobox";

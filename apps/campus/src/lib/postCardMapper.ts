@@ -23,6 +23,7 @@ export function mapPostToCard(post: Post | any): PostCardData {
     isSaved: Boolean(post.isSaved ?? post.is_saved),
     canEdit: Boolean(post.canEdit ?? post.can_edit),
     canDelete: Boolean(post.canDelete ?? post.can_delete),
+    allowComments: post.allowComments !== false && (post as any).allow_comments !== false,
     files: post.files ?? [],
   };
 }

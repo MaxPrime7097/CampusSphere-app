@@ -1,10 +1,5 @@
 import { useState } from "react";
-import {
-  Calendar,
-  Search,
-  Filter,
-  X,
-} from "lucide-react";
+import { Calendar, MagnifyingGlass as Search, Funnel as Filter, X } from "@phosphor-icons/react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {

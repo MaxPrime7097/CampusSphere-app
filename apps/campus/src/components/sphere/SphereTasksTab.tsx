@@ -1,5 +1,5 @@
 import { Suspense, lazy, useState } from "react";
-import { Plus, Shield, AlertCircle } from "lucide-react";
+import { Plus, Shield, WarningCircle as AlertCircle } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { KanbanBoard, type KanbanTask } from "@/components/kanban/KanbanBoard";

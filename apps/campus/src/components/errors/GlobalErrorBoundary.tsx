@@ -1,6 +1,6 @@
 import React, { Component, type ErrorInfo, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, RotateCcw, Home } from "lucide-react";
+import { Warning as AlertTriangle, ArrowCounterClockwise as RotateCcw, House as Home } from "@phosphor-icons/react";
 
 interface Props {
   children: ReactNode;

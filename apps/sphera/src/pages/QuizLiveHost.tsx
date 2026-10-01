@@ -10,7 +10,7 @@ import { Helmet } from 'react-helmet-async';
 import { useSpheraAuth } from '../contexts/SpheraAuthContext';
 import confetti from 'canvas-confetti';
 import { playSound, preloadSounds, toggleMute, getMuteState } from '../utils/audioManager';
-import { Volume2, VolumeX, Zap, Eye, ArrowLeft, Square } from 'lucide-react';
+import { SpeakerHigh as Volume2, SpeakerSimpleX as VolumeX, Lightning as Zap, Eye, ArrowLeft, Square } from "@phosphor-icons/react";
 import { getQuizSessionByCode, getQuizSessionHostDetails, resetQuizSession } from '../services/spheraApi';
 import { QuizQuestionsDrawer } from '../components/quiz-live/QuizQuestionsDrawer';
 

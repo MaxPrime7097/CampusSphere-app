@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Copy, Check, ThumbsUp, ThumbsDown, Pencil, RotateCcw } from 'lucide-react'
+import { Copy, Check, ThumbsUp, ThumbsDown, Pencil, ArrowCounterClockwise as RotateCcw } from "@phosphor-icons/react";
 import { useTranslation } from 'react-i18next'
 import { MarkdownRenderer } from './MarkdownRenderer'
 

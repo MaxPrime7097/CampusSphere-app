@@ -1,16 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  ChevronRight,
-  Users,
-  BadgeCheck,
-  FileText,
-  BookOpen,
-  FileCode,
-  GraduationCap,
-  Sparkles,
-  Archive,
-} from "lucide-react";
+import { CaretRight as ChevronRight, UsersThree as Users, SealCheck as BadgeCheck, FileText, BookOpen, FileCode, GraduationCap, Sparkle as Sparkles, Archive } from "@phosphor-icons/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -95,19 +85,21 @@ export function FeedSidebar() {
         .slice(0, 3),
   });
 
-  // Upcoming Events query with fallback to recent events
+  // Upcoming Events query (single fast request with client-side sort & 3 items limit)
   const eventsQuery = useQuery({
     queryKey: ["sidebar", "upcoming-events"],
     queryFn: async () => {
       try {
-        const events = await getEvents({ upcoming: true });
-        if (Array.isArray(events) && events.length > 0) {
-          const future = events.filter((e) => new Date(e.startDate) >= new Date());
-          if (future.length > 0) return future.slice(0, 2);
-          return events.slice(0, 2);
-        }
         const allEvents = await getEvents();
-        return Array.isArray(allEvents) ? allEvents.slice(0, 2) : [];
+        if (!Array.isArray(allEvents) || allEvents.length === 0) return [];
+        const now = new Date();
+        const future = allEvents
+          .filter((e) => e.startDate && new Date(e.startDate) >= now)
+          .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+        if (future.length > 0) return future.slice(0, 3);
+        return allEvents
+          .sort((a, b) => new Date(b.startDate || 0).getTime() - new Date(a.startDate || 0).getTime())
+          .slice(0, 3);
       } catch {
         return [];
       }
@@ -267,19 +259,16 @@ export function FeedSidebar() {
         </div>
 
         <div className="space-y-1">
-          {isLoading && (
+          {isLoading ? (
             <div className="space-y-2 py-1">
               {[...Array(3)].map((_, i) => (
                 <div key={i} className="h-11 rounded-xl bg-muted animate-pulse" />
               ))}
             </div>
-          )}
-
-          {!isLoading && popularSpheres.length === 0 && (
+          ) : popularSpheres.length === 0 ? (
             <p className="text-xs text-muted-foreground py-3 text-center">Aucune sphère à afficher.</p>
-          )}
-
-          {popularSpheres.map((sphere) => (
+          ) : (
+            popularSpheres.map((sphere) => (
             <button
               key={sphere.id}
               type="button"
@@ -313,7 +302,8 @@ export function FeedSidebar() {
                 <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
               </div>
             </button>
-          ))}
+          ))
+          )}
         </div>
       </div>
 
@@ -333,19 +323,16 @@ export function FeedSidebar() {
         </div>
 
         <div className="space-y-1.5">
-          {eventsQuery.isLoading && (
+          {eventsQuery.isLoading ? (
             <div className="space-y-2 py-1">
-              {[...Array(2)].map((_, i) => (
+              {[...Array(3)].map((_, i) => (
                 <div key={i} className="h-11 rounded-xl bg-muted animate-pulse" />
               ))}
             </div>
-          )}
-
-          {!eventsQuery.isLoading && upcomingEvents.length === 0 && (
+          ) : upcomingEvents.length === 0 ? (
             <p className="text-xs text-muted-foreground py-3 text-center">Aucun événement prévu.</p>
-          )}
-
-          {upcomingEvents.map((evt) => {
+          ) : (
+            upcomingEvents.map((evt) => {
             const startDate = evt.startDate ? new Date(evt.startDate) : new Date();
             const day = !isNaN(startDate.getTime()) ? startDate.getDate() : 1;
             const month = !isNaN(startDate.getTime())
@@ -373,7 +360,8 @@ export function FeedSidebar() {
                 </div>
               </button>
             );
-          })}
+          })
+          )}
         </div>
       </div>
 
@@ -415,7 +403,7 @@ export function FeedSidebar() {
                         {student.name}
                       </span>
                       {student.isVerified && (
-                        <BadgeCheck className="h-3.5 w-3.5 text-amber-500 fill-amber-500/20 shrink-0" />
+                        <BadgeCheck className="h-3.5 w-3.5 text-primary shrink-0" weight="fill" />
                       )}
                     </div>
                     <p className="text-[11px] text-muted-foreground truncate">
@@ -460,19 +448,16 @@ export function FeedSidebar() {
         </div>
 
         <div className="space-y-1">
-          {isLoading && (
+          {isLoading ? (
             <div className="space-y-2 py-1">
               {[...Array(3)].map((_, i) => (
                 <div key={i} className="h-11 rounded-xl bg-muted animate-pulse" />
               ))}
             </div>
-          )}
-
-          {!isLoading && recentResources.length === 0 && (
+          ) : recentResources.length === 0 ? (
             <p className="text-xs text-muted-foreground py-3 text-center">Aucune ressource récente.</p>
-          )}
-
-          {recentResources.map((resource) => {
+          ) : (
+            recentResources.map((resource) => {
             const style = getResourceStyle(resource.type);
             return (
               <button
@@ -499,7 +484,8 @@ export function FeedSidebar() {
                 <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" />
               </button>
             );
-          })}
+          })
+          )}
         </div>
       </div>
 

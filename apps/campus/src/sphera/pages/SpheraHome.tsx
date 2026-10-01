@@ -1,9 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
-import {
-  BookOpen, BrainCircuit, SquareStack, Upload, Loader2,
-  FileText, Plus, Scroll,
-} from "lucide-react";
+import { BookOpen, Brain as BrainCircuit, Stack as SquareStack, Upload, Spinner as Loader2, FileText, Plus, Scroll } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { Badge } from "@/components/ui/badge";

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Sparkles, AlertCircle } from 'lucide-react'
+import { Sparkle as Sparkles, WarningCircle as AlertCircle } from "@phosphor-icons/react";
 import { useTranslation } from 'react-i18next'
 import { getQuota, type GenerationQuota } from '../../services/spheraApi'
 import { useSpheraAuth } from '../../contexts/SpheraAuthContext'

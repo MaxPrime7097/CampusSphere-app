@@ -1,15 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import {
-  Play,
-  Pause,
-  Download,
-  AudioLines,
-  ChevronDown,
-  ChevronUp,
-  Volume2,
-  FileText,
-  RotateCcw,
-} from "lucide-react";
+import { Play, Pause, Download, Waveform as AudioLines, CaretDown as ChevronDown, CaretUp as ChevronUp, SpeakerHigh as Volume2, FileText, ArrowCounterClockwise as RotateCcw } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import type { AudioContent, DialogueTurn } from "../../types/sphera.types";
 

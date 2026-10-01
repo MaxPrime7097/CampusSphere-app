@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
-import { Mail, MapPin, Clock, Send, Sparkles, Heart, CheckCircle, ChevronDown, Loader2 } from "lucide-react";
+import { Envelope as Mail, MapPin, Clock, PaperPlaneTilt as Send, Sparkle as Sparkles, Heart, CheckCircle, CaretDown as ChevronDown, Spinner as Loader2 } from "@phosphor-icons/react";
 import { FaFacebook, FaInstagram, FaLinkedin, FaTiktok } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";

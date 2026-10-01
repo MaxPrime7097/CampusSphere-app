@@ -4,21 +4,7 @@ import { getEventUrl, getSphereUrl } from "@/lib/utils";
 import { useState, useMemo, useEffect, useLayoutEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  Calendar,
-  Check,
-  ArrowLeft,
-  Sparkles,
-  Trophy,
-  Code,
-  Mic,
-  BookOpen,
-  Compass,
-  AlertCircle,
-  Ticket,
-  CheckCircle2,
-  BadgeCheck,
-} from "lucide-react";
+import { Calendar, Check, ArrowLeft, Sparkle as Sparkles, Trophy, Code, Microphone as Mic, BookOpen, Compass, WarningCircle as AlertCircle, Ticket, CheckCircle as CheckCircle2, SealCheck as BadgeCheck } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -439,7 +425,7 @@ export function EventDetail() {
                     {getUserDisplayName(event.organizer, "Organisateur")}
                   </span>
                   {event.organizer.isVerified && (
-                    <BadgeCheck className="h-4 w-4 text-amber-500 fill-amber-500/20 shrink-0" />
+                    <BadgeCheck className="h-4 w-4 text-primary shrink-0" weight="fill" />
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground truncate">

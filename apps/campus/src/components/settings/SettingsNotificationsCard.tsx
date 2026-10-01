@@ -1,4 +1,4 @@
-import { Bell } from "lucide-react";
+import { Bell } from "@phosphor-icons/react";
 import { NotificationSettings } from "@/components/NotificationSettings";
 
 export function SettingsNotificationsCard() {

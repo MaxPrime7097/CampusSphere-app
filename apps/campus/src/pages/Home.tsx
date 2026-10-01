@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { useState, useEffect, useMemo } from "react";
 import { listPosts, listSpheres, listResources } from "@/services/api";
 import { Button } from "@/components/ui/button";
-import { HomeIcon, RefreshCw, Loader2 } from "lucide-react";
+import { House as HomeIcon, ArrowClockwise as RefreshCw, Spinner as Loader2 } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { mapPostToCard } from "@/lib/postCardMapper";
 import { PostSkeleton } from "@/components/ui/skeletons";
@@ -213,7 +213,7 @@ export function Home() {
           {/* Right Sidebar - Desktop Only */}
           {!isMobile && (
             <aside className="hidden lg:block lg:col-span-4 xl:col-span-5 relative">
-              <div className="sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto overscroll-contain py-6 pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden hover:[scrollbar-width:thin] hover:[&::-webkit-scrollbar]:block">
+              <div className="sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto overscroll-contain py-6 pr-2 [scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:transparent_transparent] hover:[scrollbar-color:hsl(var(--border))_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-border/70 [&::-webkit-scrollbar-thumb]:rounded-full transition-colors">
                 <FeedSidebar />
               </div>
             </aside>

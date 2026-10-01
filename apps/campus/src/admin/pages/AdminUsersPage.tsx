@@ -1,22 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import {
-  Users,
-  Search,
-  Ban,
-  Loader2,
-  RefreshCw,
-  ShieldCheck,
-  ShieldAlert,
-  UserCheck,
-  UserX,
-  Mail,
-  Calendar,
-  ExternalLink,
-  Eye,
-  CheckCircle2,
-  XCircle,
-  Filter,
-} from "lucide-react";
+import { UsersThree as Users, MagnifyingGlass as Search, Prohibit as Ban, Spinner as Loader2, ArrowClockwise as RefreshCw, ShieldCheck, ShieldWarning as ShieldAlert, UserCheck, UserMinus as UserX, Envelope as Mail, Calendar, ArrowSquareOut as ExternalLink, Eye, CheckCircle as CheckCircle2, XCircle, Funnel as Filter } from "@phosphor-icons/react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";

@@ -1,9 +1,10 @@
 import { UniversalShareModal } from "@/components/shared/UniversalShareModal";
 import { Suspense, lazy, useEffect, useState, useRef } from "react";
-import { Heart, MessageCircle, Share, Bookmark, MoreVertical, Zap, Copy, Flag, ExternalLink, Users, Plus, Minus, X, Pencil, Trash2, Loader2, FileText, Download, ChevronLeft, ChevronRight, Search, Facebook, Instagram, Twitter, Linkedin, Info, BadgeCheck } from "lucide-react";
+import { Heart, ChatTeardrop, Share, BookmarkSimple, UsersThree as Users, DotsThreeVertical as MoreVertical, Lightning as Zap, Copy, Flag, ArrowSquareOut as ExternalLink, Plus, Minus, X, Pencil, Trash as Trash2, Spinner as Loader2, FileText, Download, CaretLeft as ChevronLeft, CaretRight as ChevronRight, MagnifyingGlass as Search, FacebookLogo as Facebook, InstagramLogo as Instagram, TwitterLogo as Twitter, LinkedinLogo as Linkedin, Info, SealCheck as BadgeCheck } from "@phosphor-icons/react";
 import { FaFacebook, FaTwitter, FaInstagram, FaWhatsapp, FaLinkedin } from 'react-icons/fa';
 
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { getCategoryLabel } from "@/lib/resourceMetadata";
@@ -67,6 +68,12 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
   const [content, setContent] = useState(post.content);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [allowComments, setAllowComments] = useState<boolean>(
+    post.allowComments !== false && (post as any).allow_comments !== false
+  );
+  const [editingAllowComments, setEditingAllowComments] = useState(
+    post.allowComments !== false && (post as any).allow_comments !== false
+  );
   const [editingContent, setEditingContent] = useState(post.content);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -121,8 +128,9 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
     // Pessimistic update: keep old UI until API confirms.
     setIsUpdating(true);
     try {
-      const updated = await updatePost(post.id, { content: nextContent });
+      const updated = await updatePost(post.id, { content: nextContent, allow_comments: editingAllowComments });
       setContent(updated?.content ?? nextContent);
+      setAllowComments(editingAllowComments);
       setShowEditDialog(false);
       toast({ title: "Post modifié", description: "Votre post a été mis à jour avec succès." });
     } catch (error: any) {
@@ -531,7 +539,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <h4 className="font-semibold text-sm hover:underline truncate">{post.author.name}</h4>
                   {post.author.isVerified && (
-                    <BadgeCheck className="h-3.5 w-3.5 text-amber-500 fill-amber-500/20 shrink-0" />
+                    <BadgeCheck className="h-3.5 w-3.5 text-primary shrink-0" weight="fill" />
                   )}
                   <span className="text-xs text-muted-foreground/50">·</span>
                   <span className="text-xs text-muted-foreground shrink-0">
@@ -556,7 +564,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={handleSave} disabled={isSaving}>
-                  <Bookmark className="h-4 w-4 mr-2" />
+                  <BookmarkSimple className="h-4 w-4 mr-2" weight={isSaved ? "fill" : "regular"} />
                   {isSaving
                     ? "Mise à jour..."
                     : isSaved
@@ -611,7 +619,8 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                           count === 3 ? "grid-cols-2" :
                             "grid-cols-2";
                     return (
-                      <div className={cn("grid gap-0.5 w-full overflow-hidden rounded-none sm:rounded-2xl", gridClass)}>
+                      <div className="px-0 sm:px-5 md:px-6">
+                        <div className={cn("grid gap-0.5 w-full overflow-hidden rounded-none sm:rounded-2xl", gridClass)}>
                         {visible.map((file, i) => {
                           const isLast = i === 3 && extra > 0;
                           const spanFull = count === 3 && i === 0;
@@ -647,11 +656,12 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                           );
                         })}
                       </div>
+                      </div>
                     );
                   })()}
 
                   {videoAttachments.length > 0 && (
-                    <div className="space-y-2 mt-2 w-full">
+                    <div className="space-y-2 mt-2 w-full px-0 sm:px-5 md:px-6">
                       {videoAttachments.map((file) => (
                         <div key={file.id ?? file.url} className="overflow-hidden bg-black w-full rounded-none sm:rounded-2xl">
                           <video src={file.url} controls preload="metadata" className="w-full block" onClick={(e) => e.stopPropagation()} />
@@ -688,7 +698,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
             </div>
 
             {/* Impact Score, Comment, Share (3 equal-sized full-width pills with light gray background) */}
-            <div className="grid grid-cols-3 gap-2 pt-2 mt-1 border-t border-border/30 px-2 sm:px-4">
+            <div className={cn("grid gap-2 pt-2 mt-1 border-t border-border/30 px-2 sm:px-4", allowComments ? "grid-cols-3" : "grid-cols-2")}>
               {/* Left: Impact Score with Option A (1-Tap quick vote + Long-press / Hover 1-5 picker) */}
               <div
                 className="relative w-full"
@@ -767,22 +777,24 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                   )}
                   title={userImpactRating ? `Impact attribue (${userImpactRating}/5) — Cliquer pour retirer` : "Cliquer pour +1 Impact ou maintenir pour evaluer de 1 a 5"}
                 >
-                  <Zap className={cn("h-5 w-5 shrink-0 transition-transform", userImpactRating ? "text-primary fill-primary" : "")} />
+                  <Zap className={cn("h-5 w-5 shrink-0 transition-transform", userImpactRating ? "text-primary scale-110" : "text-muted-foreground group-hover:text-primary")} weight={userImpactRating ? "fill" : "regular"} />
                   <span>{impactScore}</span>
                   <span className="hidden sm:inline">Impact</span>
                 </Button>
               </div>
 
               {/* Middle: Comments */}
-              <Button
+              {allowComments && (
+<Button
                 variant="ghost"
                 className="w-full h-9 sm:h-9.5 px-2 flex items-center justify-center gap-1.5 sm:gap-2 rounded-full text-xs sm:text-sm font-medium bg-muted/50 hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border/30 transition-all active:scale-95"
                 onClick={() => requireAuth(() => setCommentsOpen(true))}
               >
-                <MessageCircle className="h-5 w-5 shrink-0" />
+                <ChatTeardrop className="h-5 w-5 shrink-0" />
                 <span>{post.comments}</span>
                 <span className="hidden sm:inline">{post.comments > 1 ? "Commentaires" : "Commentaire"}</span>
               </Button>
+              )}
 
               {/* Right: Share */}
               <Button
@@ -799,12 +811,13 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
         </div>
       </article>
 
-      {commentsOpen && (
+      {commentsOpen && allowComments && (
         <Suspense fallback={<ModalLoadingFallback />}>
           <CommentsModal
-            open={commentsOpen}
+            open={commentsOpen && allowComments}
             onOpenChange={setCommentsOpen}
             postId={post.id}
+            allowComments={allowComments}
           />
         </Suspense>
       )}
@@ -919,6 +932,16 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
           </DialogHeader>
           <div className="space-y-3">
             <Textarea value={editingContent} onChange={(e) => setEditingContent(e.target.value)} className="min-h-[120px]" maxLength={2000} />
+            <div className="flex items-center justify-between py-1 px-1">
+              <label htmlFor="edit-allow-comments" className="text-sm font-medium cursor-pointer">
+                Autoriser les commentaires
+              </label>
+              <Switch
+                id="edit-allow-comments"
+                checked={editingAllowComments}
+                onCheckedChange={setEditingAllowComments}
+              />
+            </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setShowEditDialog(false)} disabled={isUpdating}>Annuler</Button>
               <Button onClick={handleConfirmEdit} disabled={isUpdating}>
@@ -949,7 +972,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-foreground fill-current" />
+              <Zap className="h-5 w-5 text-foreground" weight="fill" />
               Rejoignez CampusSphere
             </DialogTitle>
             <DialogDescription>

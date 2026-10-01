@@ -1,4 +1,4 @@
-import { Users, UserPlus } from "lucide-react";
+import { UsersThree as Users, UserPlus } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { ConnectionSkeleton } from "@/components/ui/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";

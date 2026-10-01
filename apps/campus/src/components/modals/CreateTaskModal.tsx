@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckSquare, Loader2, CheckCircle } from "lucide-react";
+import { CheckSquare, Spinner as Loader2, CheckCircle } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { createTask } from "@/services/api";
 

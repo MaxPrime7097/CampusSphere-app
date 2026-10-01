@@ -6,15 +6,7 @@ import { registerOnSphera, getCurrentUser, setTokens, clearTokens } from '../ser
 import { useSpheraAuth } from '../contexts/SpheraAuthContext'
 import { SpheraAuthSidePanel } from '../components/auth/SpheraAuthSidePanel'
 import { openSsoPopup } from '@cs/sso'
-import { 
-  Eye, 
-  EyeOff, 
-  Loader2, 
-  User, 
-  Mail, 
-  Lock, 
-  AlertCircle 
-} from 'lucide-react'
+import { Eye, EyeSlash as EyeOff, Spinner as Loader2, User, Envelope as Mail, Lock, WarningCircle as AlertCircle } from "@phosphor-icons/react";
 
 export default function Register() {
   const { t } = useTranslation('auth')

@@ -412,6 +412,7 @@ export function Profile() {
       isSaved: Boolean(post.isSaved ?? post.is_saved),
       canEdit: Boolean(post.canEdit ?? post.can_edit),
       canDelete: Boolean(post.canDelete ?? post.can_delete),
+      allowComments: post.allowComments !== false && (post as any).allow_comments !== false,
       files: post.files || [],
       image: post.image || null,
     }));
@@ -586,10 +587,8 @@ export function Profile() {
   if (loading) {
     return (
       <div className="min-h-screen w-full bg-gradient-to-br from-background to-accent/20">
-        <div className="container max-w-4xl mx-auto py-0 px-0 sm:py-4">
-          <div className={cardClasses}>
-            <ProfileSkeleton />
-          </div>
+        <div className="container max-w-4xl mx-auto py-0 px-0 sm:py-4 space-y-4">
+          <ProfileSkeleton cardClasses={cardClasses} />
         </div>
       </div>
     );
@@ -695,7 +694,7 @@ export function Profile() {
             ))}
           </ul>
 
-          {activeTab === "posts" && <ProfilePostsTab isOwnProfile={isOwnProfile} posts={userPostsData} />}
+          {activeTab === "posts" && <ProfilePostsTab isOwnProfile={isOwnProfile} posts={userPostsData} isLoading={postsQuery.isLoading} />}
 
           {activeTab === "connections" && (
             <ProfileConnectionsTab connections={userConnections} onViewProfile={handleViewProfile} />

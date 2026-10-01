@@ -1,18 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  FileText,
-  Download,
-  Bookmark,
-  FileCode,
-  Archive,
-  Loader2,
-  BookOpen,
-  GraduationCap,
-  Sparkles,
-  Eye,
-  Zap,
-} from "lucide-react";
+import { FileText, Download, BookmarkSimple, FileCode, Archive, Spinner as Loader2, BookOpen, GraduationCap, Sparkle as Sparkles, Eye, Lightning as Zap } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SpheraIcon } from "@/components/ui/sphera-icon";
@@ -154,7 +142,7 @@ export const ResourceTile = React.memo(
                 }}
                 title="Sauvegarder"
               >
-                <Bookmark className={cn("h-3.5 w-3.5", isSaved && "fill-current")} />
+                <BookmarkSimple className="h-3.5 w-3.5" weight={isSaved ? "fill" : "regular"} />
               </Button>
             </div>
 
@@ -229,7 +217,7 @@ export const ResourceTile = React.memo(
                 <>
                   <span>·</span>
                   <span className="text-primary font-medium inline-flex items-center gap-0.5">
-                    <Zap className="h-3 w-3 text-primary fill-primary" />
+                    <Zap className="h-3 w-3 text-primary" weight="fill" />
                     {resource.impactScore}
                   </span>
                 </>

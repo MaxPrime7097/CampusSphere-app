@@ -3,7 +3,7 @@ import { getConversationMessages, getUserConversations, sendMessage, listSphereM
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Maximize2, MessageCircle, Minimize2, Send, Users } from "lucide-react";
+import { Spinner as Loader2, ArrowsOut as Maximize2, ChatCircleDots as MessageCircle, ArrowsIn as Minimize2, PaperPlaneTilt as Send, Users } from "@phosphor-icons/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatRelativeTime } from "@/lib/date";
 import { renderMentionText } from "@/lib/mentions";

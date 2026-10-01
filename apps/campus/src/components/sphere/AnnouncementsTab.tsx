@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Megaphone, Plus, Pin, Clock, User } from "lucide-react";
+import { Megaphone, Plus, PushPin as Pin, Clock, User } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";

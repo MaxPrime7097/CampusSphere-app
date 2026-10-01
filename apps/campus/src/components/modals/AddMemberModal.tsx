@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { UserPlus, Search, Loader2, CheckCircle, Users, UserCheck, X } from "lucide-react";
+import { UserPlus, MagnifyingGlass as Search, Spinner as Loader2, CheckCircle, UsersThree as Users, UserCheck, X } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { addSphereMember, searchUsers } from "@/services/api";
 import { useQuery } from "@tanstack/react-query";

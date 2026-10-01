@@ -1,7 +1,7 @@
 import React from "react";
 import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
-import { BookLock, Lock, Eye, Database, UserCheck, Shield, Heart, Facebook, Twitter, Linkedin, Instagram, Youtube, ChevronDown, Mail } from "lucide-react";
+import { LockKey as BookLock, Lock, Eye, Database, UserCheck, Shield, Heart, FacebookLogo as Facebook, TwitterLogo as Twitter, LinkedinLogo as Linkedin, InstagramLogo as Instagram, YoutubeLogo as Youtube, CaretDown as ChevronDown, Envelope as Mail } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

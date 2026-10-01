@@ -1,5 +1,5 @@
 import React from "react";
-import { BookOpen, BrainCircuit, Share2, Trash2, SquareStack } from "lucide-react";
+import { BookOpen, Brain as BrainCircuit, ShareNetwork as Share2, Trash as Trash2, Stack as SquareStack } from "@phosphor-icons/react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale/fr";
 import { cn } from "@/lib/utils";

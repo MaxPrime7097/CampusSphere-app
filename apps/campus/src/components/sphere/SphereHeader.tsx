@@ -1,19 +1,5 @@
 import { Suspense, lazy, useState } from "react";
-import {
-  Users,
-  FileText,
-  Settings,
-  MoreVertical,
-  Loader2,
-  UserPlus,
-  UserCheck,
-  Camera,
-  Share2,
-  Target,
-  Globe,
-  Trophy,
-  BookOpen,
-} from "lucide-react";
+import { UsersThree as Users, FileText, Gear as Settings, DotsThreeVertical as MoreVertical, Spinner as Loader2, UserPlus, UserCheck, Camera, ShareNetwork as Share2, Target, Sphere, Trophy, BookOpen } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -183,7 +169,7 @@ export function SphereHeader({
                   const iconName = SPHERE_TYPE_ICONS[sphere.sphere_type as SphereType];
                   if (iconName === "BookOpen") return <BookOpen className="h-3.5 w-3.5" />;
                   if (iconName === "Target") return <Target className="h-3.5 w-3.5" />;
-                  if (iconName === "Globe") return <Globe className="h-3.5 w-3.5" />;
+                  if (iconName === "Globe") return <Sphere className="h-3.5 w-3.5" />;
                   if (iconName === "Trophy") return <Trophy className="h-3.5 w-3.5" />;
                   if (iconName === "Pencil") return <FileText className="h-3.5 w-3.5" />;
                   return null;

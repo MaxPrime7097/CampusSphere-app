@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronRight, Loader2, UserCircle, Camera } from "lucide-react";
+import { CaretRight as ChevronRight, Spinner as Loader2, UserCircle, Camera } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input, REGISTRATION_MAX_LENGTHS } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

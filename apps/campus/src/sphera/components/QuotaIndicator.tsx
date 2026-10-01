@@ -2,7 +2,7 @@ import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getGenerationQuota } from "../services/spheraService";
 import { Progress } from "@/components/ui/progress";
-import { Sparkles, AlertCircle } from "lucide-react";
+import { Sparkle as Sparkles, WarningCircle as AlertCircle } from "@phosphor-icons/react";
 
 export const QuotaIndicator: React.FC<{ className?: string }> = ({ className }) => {
   const { data: response, isLoading } = useQuery({

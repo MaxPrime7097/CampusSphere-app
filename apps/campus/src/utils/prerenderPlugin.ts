@@ -405,6 +405,12 @@ ${JSON.stringify(landingJsonLd, null, 2)}
           desc: 'Mentions légales relatives à l\'éditeur CampusSphere, l\'hébergement et l\'infrastructure.'
         },
         {
+          dir: 'cs-inc/impact-score',
+          canonical: 'https://campussphere.app/cs-inc/impact-score',
+          title: "Impact Score : Le Système d'Engagement Académique | CampusSphere",
+          desc: "Découvrez l'Impact Score de CampusSphere : barème de points, système d'entraide, badges de réputation et valorisation du travail collaboratif."
+        },
+        {
           dir: 'cs-inc/waitlist',
           canonical: 'https://campussphere.app/cs-inc/waitlist',
           title: 'Liste d\'Attente | CampusSphere',

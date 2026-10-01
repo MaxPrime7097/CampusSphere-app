@@ -1,15 +1,5 @@
 import type { AdminNavigationItem } from "../types/common";
-import {
-  LayoutDashboard,
-  Users,
-  ShieldCheck,
-  Globe,
-  FileText,
-  ShieldAlert,
-  Activity,
-  Mail,
-  Sparkles,
-} from "lucide-react";
+import { SquaresFour as LayoutDashboard, UsersThree as Users, ShieldCheck, Sphere, FileText, ShieldWarning as ShieldAlert, Pulse as Activity, Envelope as Mail, Sparkle as Sparkles } from "@phosphor-icons/react";
 
 export const ADMIN_NAVIGATION: AdminNavigationItem[] = [
   {
@@ -42,7 +32,7 @@ export const ADMIN_NAVIGATION: AdminNavigationItem[] = [
     label: "Sphères",
     to: "/admin/spheres",
     description: "Groupes & communautés",
-    icon: Globe,
+    icon: Sphere,
     group: "Communauté & Contenu",
   },
   {

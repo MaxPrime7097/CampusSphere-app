@@ -1,4 +1,4 @@
-import { Shield, ChevronRight } from "lucide-react";
+import { Shield, CaretRight as ChevronRight } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 
 interface SettingsPrivacyCardProps {

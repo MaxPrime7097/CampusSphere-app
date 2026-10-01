@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Flame, Trophy, Sparkles, BookOpen, Layers, Info } from 'lucide-react'
+import { Flame, Trophy, Sparkle as Sparkles, BookOpen, Stack as Layers, Info } from "@phosphor-icons/react";
 import type { SpheraStatsData } from '../../services/spheraApi'
 
 interface ActivityStreakGridProps {

@@ -1,5 +1,5 @@
 import React from "react";
-import { Scroll, Zap, BookOpen, Trash2 } from "lucide-react";
+import { Scroll, Lightning as Zap, BookOpen, Trash as Trash2 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import type { AnnaleSessionListItem } from "../types/sphera.types";
 

@@ -1,5 +1,5 @@
 import React from 'react'
-import { CheckCircle2, ChevronRight, AlertTriangle } from 'lucide-react'
+import { CheckCircle as CheckCircle2, CaretRight as ChevronRight, Warning as AlertTriangle } from "@phosphor-icons/react";
 
 interface AnnaleResultProps {
   data: any;

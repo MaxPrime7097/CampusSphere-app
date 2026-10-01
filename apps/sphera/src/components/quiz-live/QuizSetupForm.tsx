@@ -5,7 +5,7 @@ import {
   generateQuizQuestionsFromResource,
   generateQuizQuestionsFromUpload,
 } from '../../services/spheraApi';
-import { Loader2, Plus, Trash2, Upload, Sparkles, Clock, Award, CheckCircle2, X, Sliders, Check } from 'lucide-react';
+import { Spinner as Loader2, Plus, Trash as Trash2, Upload, Sparkle as Sparkles, Clock, Medal as Award, CheckCircle as CheckCircle2, X, Sliders, Check } from "@phosphor-icons/react";
 
 interface QuizSetupFormProps {
   onSessionCreated: (session: any) => void;

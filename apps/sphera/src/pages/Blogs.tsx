@@ -4,7 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import { useTranslation } from 'react-i18next';
 import { SpheraHeader } from '../components/layout/SpheraHeader';
 import { SpheraFooter } from '../components/layout/SpheraFooter';
-import { Calendar, Clock, ArrowRight, Sparkles } from 'lucide-react';
+import { Calendar, Clock, ArrowRight, Sparkle as Sparkles } from "@phosphor-icons/react";
 import { blogPosts } from '../data/blogs';
 
 export default function Blogs(): JSX.Element {
