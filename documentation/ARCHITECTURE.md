@@ -1,271 +1,169 @@
-# Architecture CampusSphere
+# Architecture Monorepo CampusSphere & Sphera
 
 ## Vue d'ensemble
 
-CampusSphere est une plateforme collaborative étudiante full-stack. Le frontend React communique avec le backend Node/Express via une API REST et des WebSockets. L'authentification est gérée par Supabase Auth, dont les tokens sont échangés contre des JWT signés par le backend.
+CampusSphere est une plateforme collaborative étudiante full-stack et Sphera est son application d'apprentissage par IA dédiée. Les deux applications frontend sont organisées en **monorepo pnpm workspaces + Turborepo** et consomment une API centrale commune Node/Express.
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                     FRONTEND (Vercel)                    │
-│              React 18 + TypeScript + Vite                │
-└──────────────────────┬──────────────────────────────────┘
-                       │ HTTPS / REST + WebSocket
-┌──────────────────────▼──────────────────────────────────┐
-│              BACKEND (Render, N instances)               │
-│        Node 22 + Express 5 + TypeScript + Prisma         │
-└───┬──────────────┬──────────────┬───────────────┬────────┘
-    │              │              │               │
-┌───▼────────┐ ┌───▼────────┐ ┌───▼─────────┐ ┌───▼──────────┐
-│ PostgreSQL │ │   Redis    │ │  Supabase   │ │  S3 (fichiers)│
-│ (Supabase, │ │ fan-out WS │ │    Auth     │ │              │
-│  Supavisor)│ │ rate limit │ │ email+OAuth │ │              │
-│            │ │ jobs lock  │ │             │ │              │
-└────────────┘ └────────────┘ └─────────────┘ └──────────────┘
+┌────────────────────────────┐    SSO Bridge    ┌────────────────────────────┐
+│    CampusSphere (Vercel)   │◄──(postMessage)─►│       Sphera (Vercel)      │
+│   campussphere.app         │                  │   sphera.campussphere.app  │
+│   apps/campus (@cs/campus) │                  │   apps/sphera (@cs/sphera) │
+└─────────────┬──────────────┘                  └─────────────┬──────────────┘
+              │                                               │
+              │             Packages Partagés (packages/)     │
+              ├───────────────────────┬───────────────────────┤
+              │ • @cs/ui              │ • @cs/types           │
+              │ • @cs/api-client      │ • @cs/sso             │
+              │                       │                       │
+              └───────────────┬───────┴───────────────────────┘
+                              │ HTTPS / REST + WebSockets
+                              ▼
+              ┌───────────────────────────────────────────────┐
+              │             BACKEND API (Render)              │
+              │          apps/backend (@cs/backend)           │
+              │   Node 22 + Express 5 + TypeScript + Prisma   │
+              └───┬──────────────┬──────────────┬─────────────┘
+                  │              │              │
+              ┌───▼────────┐ ┌───▼────────┐ ┌───▼─────────┐
+              │ PostgreSQL │ │   Redis    │ │  Supabase   │
+              │ (Supabase, │ │ fan-out WS │ │    Auth     │
+              │  Supavisor)│ │ rate limit │ │ email+OAuth │
+              └────────────┘ └────────────┘ └─────────────┘
 ```
 
-**Pourquoi Redis est structurant.** Tout ce qui doit être partagé *entre* instances y vit :
-la diffusion des événements WebSocket, les compteurs de rate limiting et le verrou qui
-désigne l'instance chargée d'exécuter les tâches planifiées. Sans lui, chaque instance
-retombe sur un état local — correct pour une seule instance, silencieusement faux au-delà
-(messages livrés aux seuls clients de la même instance, limites multipliées par le nombre
-d'instances, jobs exécutés N fois). Le serveur refuse donc de démarrer en production sans
-`REDIS_URL`, sauf `SINGLE_INSTANCE=true` posé explicitement.
+**Rôle de Redis :**
+Tout ce qui doit être partagé entre les instances du backend y vit : la diffusion des événements WebSocket, les compteurs de rate limiting et le verrou de leadership pour les tâches planifiées.
 
-Aucune session collante n'est nécessaire : les WebSockets partagent l'écouteur HTTP et la
-diffusion passe par Redis.
+---
 
-## Structure Frontend
+## Structure du Monorepo
 
 ```
-frontend/src/
+campussphere-monorepo/
+├── apps/
+│   ├── campus/              # @cs/campus — Réseau social étudiant & hub de cours
+│   ├── sphera/              # @cs/sphera — Application d'étude interactive (Mindmaps, Audio, Quiz live)
+│   └── backend/             # @cs/backend — API Node 22 / Express 5 + Prisma 5
+├── packages/
+│   ├── ui/                  # @cs/ui — Design system partagé (Button, Badge, Dialog, Tabs, cn...)
+│   ├── types/               # @cs/types — Modèles de données canoniques
+│   ├── api-client/          # @cs/api-client — Client HTTP unifié avec auto-refresh token
+│   └── sso/                 # @cs/sso — Handshake cross-domain SSO (iframe bridge + popup)
+├── documentation/           # Spécifications techniques et guides
+│   └── features/            # Documentation des fonctionnalités spécifiques
+├── turbo.json               # Orchestration des builds, lints, typechecks et tests
+├── pnpm-workspace.yaml      # Définition des workspaces pnpm
+└── package.json             # Scripts racine
+```
+
+---
+
+## 1. Application CampusSphere (`apps/campus`)
+
+Application principale sous React 18, TypeScript, Tailwind CSS, et Vite :
+
+```
+apps/campus/src/
 ├── admin/                    # Panel d'administration
-│   ├── components/
-│   ├── hooks/
-│   ├── pages/
-│   ├── services/
-│   └── types/
 ├── components/
-│   ├── auth/                 # Composants d'authentification
+│   ├── auth/                 # Formulaires et flow d'auth
 │   ├── chat/                 # MiniChat intégré aux sphères
-│   ├── errors/               # Error boundaries
-│   ├── feed/                 # CreatePost, PostCard, FriendSuggestions
-│   ├── forms/                # Combobox (université, filière, niveau, etc.)
-│   ├── kanban/               # KanbanBoard pour les tâches
+│   ├── feed/                 # Posts, commentaires, suggestions
+│   ├── forms/                # Combobox (université, filière, niveau)
+│   ├── kanban/               # Gestionnaire de tâches Kanban
 │   ├── layout/               # AppLayout, Sidebar, Navigation
-│   ├── modals/               # Modales (création, édition, upload)
-│   ├── sphere/               # SphereOverview
-│   ├── ui/                   # Composants Shadcn/UI de base
-│   └── upload/               # FileUpload
-├── config/                   # Feature flags
-├── constants/                # Types de ressources, notifications, etc.
-├── hooks/                    # Hooks personnalisés
-├── i18n/                     # Internationalisation (fr/en)
-├── lib/                      # Utilitaires (supabase, utils, date, etc.)
+│   ├── modals/               # Modales de création, édition, upload
+│   └── ui/                   # Re-exports de @cs/ui + composants spécifiques
 ├── pages/
-│   ├── admin/                # Pages admin
-│   ├── public/               # Login, Register, CompleteProfile, Landing, etc.
-│   ├── Home.tsx
-│   ├── Profile.tsx
-│   ├── Spheres.tsx
-│   ├── SphereDetail.tsx
-│   ├── Resources.tsx
-│   ├── Messages.tsx
-│   ├── Notifications.tsx
-│   ├── Settings.tsx
+│   ├── public/               # Landing, Login, Register, CompleteProfile
+│   ├── sso/                  # SSOBridge (iframe bridge) & SSOPopup
+│   ├── Home.tsx              # Fil d'actualité
+│   ├── Spheres.tsx           # Sphères étudiantes
 │   └── ...
-├── services/
-│   └── api.ts                # Toutes les fonctions d'appel API
-├── styles/
-└── types/                    # Types TypeScript partagés
+├── services/                 # Appels API (@cs/api-client & api.ts)
+└── sphera/                   # Intégration légère de Sphera
+    ├── components/study/     # StudyToolsModal (génération 1-clic depuis les cours)
+    └── pages/                # Redirection vers Sphera Standalone
 ```
 
-## Structure Backend
+### Rôle de CampusSphere vis-à-vis de Sphera :
+- **Génération rapide 1-clic** : L'étudiant peut déclencher la génération d'outils d'étude directement depuis une fiche de cours ou un document dans une sphère via `StudyToolsModal`.
+- **Aperçu léger** : Les fiches mémo et résumés s'affichent instantanément.
+- **Redirection SSO** : Les outils lourds (Mindmaps interactives 2D, lecteurs audio, quiz multijoueurs en direct) renvoient via un bouton « Ouvrir dans Sphera » directement dans l'application dédiée avec session pré-chargée.
+
+---
+
+## 2. Application Sphera (`apps/sphera`)
+
+Application d'étude interactive dédiée sous React 18, TypeScript, Tailwind CSS, et Vite :
 
 ```
-backend/
+apps/sphera/src/
+├── components/
+│   ├── app/                  # ResultViews (MindmapView, AudioSummaryView, FicheView...)
+│   ├── auth/                 # Panneaux d'authentification Sphera
+│   ├── common/               # Composants partagés (Navbar, Footer, SEO)
+│   ├── live/                 # Quiz multijoueur en direct (Host, Join, Lobby, LivePlay)
+│   └── study/                # Mindmap React Flow, Flashcards interactives
+├── contexts/
+│   └── SpheraAuthContext.tsx # Context d'auth avec silent SSO automatique (@cs/sso)
+├── pages/
+│   ├── Dashboard.tsx         # Tableau de bord des sessions de révision
+│   ├── CreateSession.tsx     # Création guidée avec upload & sélection d'outils
+│   ├── SessionDetail.tsx     # Espace de travail interactif multi-outils
+│   ├── AnnaleDetail.tsx      # Correction détaillée d'annales d'examen
+│   ├── QuizLiveHost.tsx      # Animation de session quiz en direct
+│   ├── QuizLiveJoin.tsx      # Participation joueur avec code PIN
+│   └── ...
+└── services/
+    └── spheraApi.ts          # Service API Sphera basé sur @cs/types & @cs/api-client
+```
+
+---
+
+## 3. Packages Partagés (`packages/`)
+
+### `@cs/ui`
+- Contient les composants de base : `Button`, `Badge`, `Dialog`, `Tabs`, `SharedTabs`, `Progress`, `Skeleton`, `Alert`, `Select`, `SpheraIcon`.
+- Export de la fonction utilitaire `cn` (`clsx` + `twMerge`).
+- Assure une cohérence visuelle parfaite entre CampusSphere et Sphera.
+
+### `@cs/types`
+- Centralise les interfaces et types du domaine : `StudySession`, `AnnaleSession`, `ToolType`, `GenerationQuota`, `ApiResponse<T>`, `SpheraProfileData`, `SpheraPreferencesData`, etc.
+
+### `@cs/api-client`
+- Client Axios / fetch unifié avec gestion automatique de l'expiration JWT, mutex de rafraîchissement (`performRefreshRaw`), et méthodes typées pour les routes `/api/sphera/*`.
+
+### `@cs/sso`
+- Protocole de messagerie sécurisé `postMessage` avec liste blanche stricte des origines autorisées (`campussphere.app`, `sphera.campussphere.app`, et localhost).
+- `attemptSilentSso()` : Iframe cachée interrogeant automatiquement le localStorage de CampusSphere.
+- `openSsoPopup()` : Fallback popup Google-style pour les navigateurs restreignant les iframes cross-origin.
+
+---
+
+## 4. API Backend (`apps/backend`)
+
+API centrale Node 22 / Express 5 avec ORM Prisma :
+
+```
+apps/backend/
 ├── prisma/
-│   ├── schema.prisma         # 33 modèles — source de vérité du schéma
-│   └── migrations/           # Appliquées par `prisma migrate deploy`
+│   ├── schema.prisma         # 33 modèles relationnels PostgreSQL
+│   └── migrations/           # Migrations de production
 ├── src/
-│   ├── app.ts                # Assemblage Express (middlewares, montage des routes)
-│   ├── server.ts             # Écouteur HTTP + attachement WebSocket + démarrage jobs
-│   ├── config/
-│   │   └── env.ts            # Lecture/validation des variables (assertProductionConfig)
-│   ├── routes/               # Un routeur par domaine
-│   │   ├── auth.routes.ts        users.routes.ts      spheres.routes.ts
-│   │   ├── posts.routes.ts       resources.routes.ts  tasks.routes.ts
-│   │   ├── messaging.routes.ts   notifications.routes.ts
-│   │   ├── sphera.routes.ts      uploads.routes.ts    search.routes.ts
-│   │   ├── admin.routes.ts       health.routes.ts     supabaseAuth.ts
-│   │   └── index.ts              # Montage sous /api
-│   ├── middleware/           # requireAuth, rate limiting, erreurs, upload
-│   ├── serializers/          # Formes de réponse (contrat API)
-│   ├── services/             # Logique métier
-│   │   ├── ai/               # Chaîne Claude → Gemini → Groq, prompts, parsing JSON
-│   │   ├── impact.ts         # Score d'impact
-│   │   ├── extraction.ts     # Texte depuis PDF/DOCX/images (pdftotext, tesseract)
-│   │   ├── email.ts          # SMTP + templates HTML
-│   │   └── verification.ts
-│   ├── realtime/
-│   │   ├── hub.ts            # Abstraction de canaux, diffusion via Redis
-│   │   └── websocket.ts      # Upgrade, autorisation, /ws/chat|conversations|notifications
-│   ├── jobs/                 # Tâches planifiées + verrou de leadership
-│   └── lib/                  # prisma, redis, rateLimit, visibility, storage…
-└── tests/
-    ├── contract/             # Boîte noire HTTP contre un serveur déjà lancé
-    ├── integration/          # Démarrent leur propre serveur (rate limits actifs)
-    └── unit/
+│   ├── app.ts                # Montage Express
+│   ├── server.ts             # Écouteur HTTP + WebSockets + jobs
+│   ├── config/env.ts         # Validation stricte des variables d'environnement
+│   ├── routes/               # Routes modulaires (/api/users, /api/spheres, /api/sphera...)
+│   ├── services/
+│   │   ├── ai/               # Chaîne de fallback IA (DeepSeek V3.2, Claude Haiku, Groq)
+│   │   ├── extraction.ts     # Extraction de texte PDF/DOCX (poppler, tesseract)
+│   │   └── impact.ts         # Calcul du score d'impact étudiant
+│   └── realtime/
+│       ├── hub.ts            # Diffusion multi-instances Redis
+│       └── websocket.ts      # Gestionnaires de sockets temps réel
 ```
 
-La correspondance avec les anciennes apps Django est directe : `users/` → `users.routes.ts`
-+ `auth.routes.ts`, `spheres/` → `spheres.routes.ts`, etc. Les routes conservent leurs URLs.
-
-## Modèle de données principal
-
-Source de vérité : [`backend/prisma/schema.prisma`](../backend/prisma/schema.prisma) — 33 modèles.
-
-Le schéma est une **refonte, pas un miroir** du schéma Django : pas de `django_content_type`,
-pas de `auth_permission`, pas de nommage `users_user`, pas de ledger de migrations Django. Les
-tables s'appellent `users`, `spheres`, `posts`… Les identifiants restent des entiers, parce que
-toutes les routes du contrat matchent `<int:pk>` et sérialisent les ids en nombres — passer en
-UUID casserait l'API. `UploadedFile` garde un UUID, sa route étant `<uuid:pk>`.
-
-### User → table `users`
-```prisma
-model User {
-  id, email @unique, username @unique, firstName, lastName
-  passwordHash            // argon2id. Null pour les comptes Supabase-only
-  supabaseUid @unique
-
-  university, faculty, studyYear, studentId, campus, town
-  bio, avatar, coverPhoto, phoneNumber, dateOfBirth, language (Json)
-
-  profileVisibility, postVisibility   // enum ProfileVisibility
-  impactScore, currentMood
-
-  skills, interests, previousEducation, experiences, portfolioLinks  // Json
-}
-```
-
-`is_profile_complete` n'est **pas** une colonne : il est calculé à la lecture sur
-`university` + `faculty` + `study_year`. Django stockait le drapeau avec une liste de champs
-requis vide, si bien que `all([])` valait toujours vrai et que le profil était déclaré complet
-dès la première connexion. Voir [API_CONTRACT.md](./API_CONTRACT.md) §3.1.
-
-### Sphere → table `spheres`
-```prisma
-model Sphere {
-  name, description, category (enum), sphereType (enum)
-  color, icon, bannerImage
-  isPrivate, requireApproval
-  objective, targetAudience
-  duration, expiresAt, autoDeleteOnExpiry
-  collaborationTypes (Json)
-  memberCount        // dénormalisé — recalculé à chaque mutation d'adhésion
-  impactScore
-  createdById → User
-}
-```
-
-Les sphères expirées sont supprimées par une tâche planifiée horaire quand
-`autoDeleteOnExpiry` est vrai (`src/jobs/`), et non plus au hasard d'une requête.
-
-## Flux d'authentification
-
-Voir [AUTH.md](./AUTH.md) pour le détail complet.
-
-**Inscription email** :
-```
-Étape 1 (infos perso + mdp) → Supabase signUp → Email vérification
-→ Retour sur /register?verified=true → Exchange token → Étapes 2-3
-→ completeSupabaseProfile → is_profile_complete = True → /
-```
-
-**Inscription OAuth (Google/Facebook)** :
-```
-Clic OAuth → Supabase OAuth → /auth/callback
-→ Exchange token → needs_profile_completion = True
-→ /complete-profile (3 étapes sans mdp) → /
-```
-
-## Routing Frontend
-
-| Route | Composant | Accès |
-|-------|-----------|-------|
-| `/` | Home | Protégé |
-| `/login` | Login | Public |
-| `/register` | Register | Public |
-| `/auth/callback` | AuthCallback | Public |
-| `/complete-profile` | CompleteProfile | Public |
-| `/register/complete` | CompleteProfile | Public |
-| `/profile` | Profile | Protégé |
-| `/profile/:username` | Profile | Protégé |
-| `/spheres` | Spheres | Protégé |
-| `/spheres/:id` | SphereDetail | Protégé |
-| `/resources` | Resources | Protégé |
-| `/messages` | Messages | Protégé |
-| `/notifications` | Notifications | Protégé |
-| `/settings` | Settings | Protégé |
-| `/admin/*` | AdminLayout | Admin |
-| `/cs-inc` | Landing | Public |
-
-## Variables d'environnement
-
-### Frontend (.env)
-```env
-VITE_API_URL=http://127.0.0.1:3000       # prod : https://api.campussphere.app
-VITE_APP_NAME=CampusSphere
-VITE_APP_ENV=development
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
-```
-
-`VITE_API_URL` doit toujours être défini : à défaut le frontend devine l'URL du backend
-d'après le hostname, et son repli local vise `127.0.0.1:8000` — le port de Django.
-
-### Backend (.env)
-
-Référence complète et commentée : [`backend/.env.example`](../backend/.env.example).
-Les **noms sont identiques à ceux de Django**, de sorte que la configuration Render existante
-est reprise telle quelle ; `DIRECT_URL` et `SINGLE_INSTANCE` sont les seuls ajouts.
-
-```env
-# Base de données — deux endpoints du même PostgreSQL Supabase
-DATABASE_URL=postgresql://…@…pooler.supabase.com:6543/postgres?pgbouncer=true  # pooled
-DIRECT_URL=postgresql://…@…pooler.supabase.com:5432/postgres                   # session
-
-SECRET_KEY=…
-DEBUG=true
-PORT=3000
-ALLOWED_HOSTS=localhost,127.0.0.1
-CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:8080
-FRONTEND_URL=http://localhost:8080
-
-SUPABASE_URL=…
-SUPABASE_JWT_SECRET=…
-SUPABASE_SERVICE_ROLE_KEY=…
-
-ANTHROPIC_API_KEY=…   GEMINI_API_KEY=…   GROQ_API_KEY=…
-
-USE_S3=false          # doit valoir true en production
-AWS_ACCESS_KEY_ID=…   AWS_SECRET_ACCESS_KEY=…
-AWS_STORAGE_BUCKET_NAME=…   AWS_S3_REGION_NAME=eu-west-1
-
-REDIS_URL=            # obligatoire en production, sauf SINGLE_INSTANCE=true
-SINGLE_INSTANCE=
-
-EMAIL_HOST_USER=…     EMAIL_HOST_PASSWORD=…
-DISABLE_RATE_LIMITS=  # dev/test uniquement — refusé en production
-```
-
-**Pourquoi deux URLs de base de données.** `DATABASE_URL` vise le pooler en mode transaction
-(port 6543), ce qui permet à N instances de partager un budget de connexions ; `pgbouncer=true`
-y est obligatoire, sans quoi les *prepared statements* de Prisma cassent. `DIRECT_URL` vise le
-mode session (port 5432) et ne sert qu'à `prisma migrate deploy`, qui a besoin d'un état de
-session (verrous consultatifs, DDL transactionnel) qu'un pooler en mode transaction ne fournit
-pas. Ne pas utiliser l'hôte direct `db.<ref>.supabase.co` : il ne résout qu'en IPv6 et reste
-donc injoignable depuis Render.
-
-Le serveur valide sa configuration au démarrage (`assertProductionConfig`) et refuse de démarrer
-en production avec une `SECRET_KEY` de développement, `DEBUG=true`, `USE_S3=false`,
-`DISABLE_RATE_LIMITS` posé, ou sans `REDIS_URL` ni `SINGLE_INSTANCE`.
+- **Compatibilité absolue** : 0 modification de schéma de base de données nécessaire lors du passage en monorepo.
+- **Docker & Render** : Le fichier `Dockerfile` dans `apps/backend/` est autonome et déployé via `render.yaml`.

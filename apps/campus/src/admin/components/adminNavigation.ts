@@ -1,0 +1,81 @@
+import type { AdminNavigationItem } from "../types/common";
+import { SquaresFour as LayoutDashboard, UsersThree as Users, ShieldCheck, Sphere, FileText, ShieldWarning as ShieldAlert, Pulse as Activity, Envelope as Mail, Sparkle as Sparkles } from "@phosphor-icons/react";
+
+export const ADMIN_NAVIGATION: AdminNavigationItem[] = [
+  {
+    key: "dashboard",
+    label: "Dashboard",
+    to: "/admin/dashboard",
+    description: "Statistiques & Pilotage",
+    icon: LayoutDashboard,
+    group: "Vue d'ensemble",
+  },
+  {
+    key: "users",
+    label: "Utilisateurs",
+    to: "/admin/users",
+    description: "Gestion des comptes & rôles",
+    icon: Users,
+    group: "Communauté & Contenu",
+  },
+  {
+    key: "verification",
+    label: "Vérification Étudiante",
+    to: "/admin/verification",
+    description: "Cartes & certifications",
+    icon: ShieldCheck,
+    group: "Communauté & Contenu",
+    badgeKey: "pendingVerification",
+  },
+  {
+    key: "spheres",
+    label: "Sphères",
+    to: "/admin/spheres",
+    description: "Groupes & communautés",
+    icon: Sphere,
+    group: "Communauté & Contenu",
+  },
+  {
+    key: "resources",
+    label: "Ressources",
+    to: "/admin/resources",
+    description: "Documents & cours partagés",
+    icon: FileText,
+    group: "Communauté & Contenu",
+  },
+  {
+    key: "sphera",
+    label: "Sphera IA",
+    to: "/admin/sphera",
+    description: "AWS Bedrock & Quotas",
+    icon: Sparkles,
+    group: "Communauté & Contenu",
+  },
+  {
+    key: "moderation",
+    label: "Modération",
+    to: "/admin/moderation",
+    description: "Signalements & contenus",
+    icon: ShieldAlert,
+    group: "Sécurité & Audit",
+    badgeKey: "pendingReports",
+  },
+  {
+    key: "contact",
+    label: "Messages de Contact",
+    to: "/admin/contact",
+    description: "Demandes & support",
+    icon: Mail,
+    group: "Sécurité & Audit",
+    badgeKey: "unreadContact",
+  },
+  {
+    key: "logs",
+    label: "Journal d'Audit",
+    to: "/admin/logs",
+    description: "Historique des actions",
+    icon: Activity,
+    group: "Sécurité & Audit",
+  },
+];
+

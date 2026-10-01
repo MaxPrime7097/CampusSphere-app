@@ -1,0 +1,64 @@
+{
+  "seo": {
+    "title": "Tarifs Sphera — Accès 100% Gratuit Bêta & Outils de Révision IA",
+    "description": "Sphera est actuellement 100% gratuit pendant toute la période de bêta ouverte. Profitez de générations illimitées de fiches, quiz interactifs et flashcards par IA.",
+    "ogTitle": "Tarifs Sphera — Accès Gratuit Bêta Ouverte",
+    "ogDescription": "Accédez gratuitement à tous les outils de révision IA : fiches, quiz, flashcards et corrections d'annales sans limite.",
+    "twitterTitle": "Tarifs Sphera — Accès 100% Gratuit Bêta",
+    "twitterDescription": "Générez vos fiches de révision, quiz et flashcards gratuitement avec Sphera pendant la bêta."
+  },
+  "hero": {
+    "badge": "Bêta ouverte — accès 100% gratuit",
+    "titlePart1": "Gratuit pendant",
+    "titlePart2": "toute la bêta",
+    "subtitle": "Sphera est en bêta ouverte. Profitez de 5 générations complètes offertes chaque semaine (Fiches, Quiz, Flashcards, Annales) et du Q&A IA illimité, sans carte bancaire. Le plan illimité complet viendra très prochainement."
+  },
+  "card": {
+    "badge": "Actuellement disponible",
+    "price": "0 XAF",
+    "pricePeriod": "pendant toute la durée de la bêta",
+    "features": [
+      "5 générations complètes offertes / semaine (Bêta)",
+      "Q&A illimité avec l'IA sur tous tes cours",
+      "Tous les outils — Fiches, Quiz, Flashcards, Annales",
+      "Partage public de sessions et export PDF",
+      "Support pour PDFs scannés et photos (OCR)",
+      "Aucune carte bancaire requise"
+    ],
+    "cta": "Commencer gratuitement →"
+  },
+  "features": {
+    "title": "Tout ce qui est inclus gratuitement",
+    "items": {
+      "sheets": {
+        "title": "Fiches de révision",
+        "description": "Résumé structuré + points clés + définitions générés automatiquement."
+      },
+      "quiz": {
+        "title": "Quiz interactif",
+        "description": "Des QCM avec explications pour te tester avant l'examen."
+      },
+      "flashcards": {
+        "title": "Flashcards",
+        "description": "Cartes recto/verso pour mémoriser en mode actif."
+      },
+      "qa": {
+        "title": "Q&A avec l'IA",
+        "description": "Pose n'importe quelle question sur ton cours, Sphera répond depuis le document."
+      },
+      "annales": {
+        "title": "Correction d'annales",
+        "description": "Upload ton épreuve, Sphera la corrige section par section avec explications."
+      },
+      "ocr": {
+        "title": "OCR pour scans",
+        "description": "Sphera lit même les PDFs scannés et photos de cours."
+      }
+    }
+  },
+  "waitlist": {
+    "title": "Sois notifié à l'arrivée du Premium",
+    "subtitle": "Laisse ton email. Quand le plan premium sortira, tu seras dans les premiers — avec une offre de lancement réservée aux bêta-testeurs.",
+    "noSpam": "Aucun spam. Désabonnement en un clic."
+  }
+}
