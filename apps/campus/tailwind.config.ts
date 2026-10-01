@@ -13,15 +13,22 @@ export default {
   theme: {
     container: {
       center: true,
-      padding: "2rem",
+      padding: {
+        DEFAULT: "1rem",
+        sm: "1.5rem",
+        lg: "2rem",
+      },
       screens: {
         "2xl": "1400px",
       },
     },
     extend: {
       fontFamily: {
-        'automata': ['Automata', 'sans-serif'],
+        automata: ['Automata', 'sans-serif'],
         raleway: ['Raleway', 'sans-serif'],
+        poppins: ['Poppins', 'sans-serif'],
+        nunito: ['"Nunito Sans"', 'sans-serif'],
+        sans: ['Inter', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border) / <alpha-value>)",
