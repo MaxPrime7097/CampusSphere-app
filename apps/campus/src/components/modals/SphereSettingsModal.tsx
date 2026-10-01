@@ -6,15 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  Settings, 
-  Save, 
-  Loader2, 
-  Globe,
-  Shield,
-  Trash2,
-  Clock3,
-} from "lucide-react";
+import { Gear as Settings, FloppyDisk as Save, Spinner as Loader2, Sphere, Shield, Trash as Trash2, Clock as Clock3 } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { deleteSphere, extendSphereDuration, updateSphere } from "@/services/api";
 import { cn } from "@/lib/utils";
@@ -283,7 +275,7 @@ export function SphereSettingsModal({
           {/* Informations générales */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Globe className="h-4 w-4" />
+              <Sphere className="h-4 w-4" />
               Informations générales
             </h3>
             

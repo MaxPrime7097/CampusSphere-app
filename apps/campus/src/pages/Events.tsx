@@ -1,21 +1,7 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Calendar,
-  Sparkles,
-  Plus,
-  Compass,
-  Users,
-  Trophy,
-  RefreshCw,
-  Search,
-  Filter,
-  LayoutGrid,
-  List,
-  MapPin,
-  ArrowRight,
-} from "lucide-react";
+import { Calendar, Sparkle as Sparkles, Plus, Compass, UsersThree as Users, Trophy, ArrowClockwise as RefreshCw, MagnifyingGlass as Search, Funnel as Filter, GridFour as LayoutGrid, List, MapPin, ArrowRight } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs } from "@/components/ui/tabs";

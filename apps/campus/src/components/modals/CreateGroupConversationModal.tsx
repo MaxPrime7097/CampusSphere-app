@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Users, Search, Loader2, Check, MessageSquare, X } from "lucide-react";
+import { UsersThree as Users, MagnifyingGlass as Search, Spinner as Loader2, Check, ChatCircle as MessageSquare, X } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { createGroupConversation, getUserConnections } from "@/services/api";
 import { z } from "zod";

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Zap, Loader2, Check, Plus, X } from "lucide-react";
+import { Lightning as Zap, Spinner as Loader2, Check, Plus, X } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { SkillsCombobox } from "@/components/forms/SkillsCombobox";
 import { updateUserProfile } from "@/services/api";

@@ -4,7 +4,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { Button } from "@/components/ui/button";
 import { openVerificationModal } from "@/lib/events";
-import { Moon, Sun, Search, Plus, Bell } from "lucide-react";
+import { Moon, Sun, MagnifyingGlass as Search, Plus, Bell } from "@phosphor-icons/react";
 import { Input } from "@/components/ui/input";
 import { MobileNavigation } from "./MobileNavigation";
 import { MobileTopBar } from "./MobileTopBar";
@@ -71,7 +71,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       document.documentElement.classList.toggle('dark', prefersDark);
       setDarkMode(prefersDark);
     }
-  }, []);
+  }, [location.pathname]);
 
   const isInConversation = location.pathname.startsWith('/messages/') && location.pathname.split('/').length > 2;
   const hideNavOnMobile = isMobile && isInConversation;
@@ -246,10 +246,15 @@ export function AppLayout({ children }: AppLayoutProps) {
                       </Suspense>
                     )}
 
-                    <Button variant="ghost" size="icon-sm" onClick={() => navigate('/notifications')} className="relative text-muted-foreground hover:text-foreground">
-                      <Bell className="h-4 w-4" />
+                    <Button
+                      variant="ghost"
+                      onClick={() => navigate('/notifications')}
+                      className="relative h-10 w-10 p-0 rounded-full hover:bg-muted text-foreground flex items-center justify-center transition-colors"
+                      aria-label="Notifications"
+                    >
+                      <Bell className="h-6 w-6" weight={counts.notifications > 0 ? "fill" : "regular"} />
                       {counts.notifications > 0 && (
-                        <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">
+                        <span className="absolute top-1.5 right-1.5 min-w-[16px] h-4 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1 ring-2 ring-background">
                           {counts.notifications > 99 ? "99+" : counts.notifications}
                         </span>
                       )}

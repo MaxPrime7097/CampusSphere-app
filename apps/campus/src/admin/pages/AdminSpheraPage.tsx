@@ -1,25 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  Sparkles,
-  Bot,
-  Zap,
-  AlertTriangle,
-  CheckCircle2,
-  DollarSign,
-  Layers,
-  TrendingDown,
-  Users,
-  GraduationCap,
-  Building,
-  Clock,
-  RefreshCw,
-  FileText,
-  HelpCircle,
-  BrainCircuit,
-  Cpu,
-  ShieldCheck,
-  ShieldAlert,
-} from "lucide-react";
+import { Sparkle as Sparkles, Robot as Bot, Lightning as Zap, Warning as AlertTriangle, CheckCircle as CheckCircle2, CurrencyDollar as DollarSign, Stack as Layers, TrendDown as TrendingDown, Users, GraduationCap, Building, Clock, ArrowClockwise as RefreshCw, FileText, Question as HelpCircle, Brain as BrainCircuit, Cpu, ShieldCheck, ShieldWarning as ShieldAlert } from "@phosphor-icons/react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

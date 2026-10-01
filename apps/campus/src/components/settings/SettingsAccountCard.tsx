@@ -1,5 +1,5 @@
 import { Suspense, lazy } from "react";
-import { User, ChevronRight } from "lucide-react";
+import { User, CaretRight as ChevronRight } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
 

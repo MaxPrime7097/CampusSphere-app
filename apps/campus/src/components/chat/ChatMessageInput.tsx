@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { Send, Loader2 } from "lucide-react";
+import { PaperPlaneTilt as Send, Spinner as Loader2 } from "@phosphor-icons/react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 

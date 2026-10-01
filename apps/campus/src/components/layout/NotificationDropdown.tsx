@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bell } from "lucide-react";
+import { Bell } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";

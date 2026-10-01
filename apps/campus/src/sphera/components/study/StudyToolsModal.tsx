@@ -7,19 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  BookOpen,
-  Loader2,
-  Share2,
-  AlertCircle,
-  ChevronLeft,
-  Check,
-  BrainCircuit,
-  GitFork,
-  AudioLines,
-  SquareStack,
-  Clock,
-} from "lucide-react";
+import { BookOpen, Spinner as Loader2, ShareNetwork as Share2, WarningCircle as AlertCircle, CaretLeft as ChevronLeft, Check, Brain as BrainCircuit, GitFork, Waveform as AudioLines, Stack as SquareStack, Clock } from "@phosphor-icons/react";
 import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { FicheRevision } from "./FicheRevision";
 import { QuizInteractif } from "./QuizInteractif";

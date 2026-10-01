@@ -1,21 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Zap,
-  Download,
-  FileText,
-  BookOpen,
-  FileCode,
-  GraduationCap,
-  Sparkles,
-  Archive,
-  ArrowRight,
-  MoreVertical,
-  Share,
-  Bookmark,
-  BadgeCheck,
-  X,
-} from "lucide-react";
+import { Lightning as Zap, Download, FileText, BookOpen, FileCode, GraduationCap, Sparkle as Sparkles, Archive, ArrowRight, DotsThreeVertical as MoreVertical, Share, BookmarkSimple, SealCheck as BadgeCheck, X } from "@phosphor-icons/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -373,7 +358,7 @@ export function ResourceFeedCard({ resource }: ResourceFeedCardProps) {
                     {authorName}
                   </h4>
                   {isAuthorVerified && (
-                    <BadgeCheck className="h-3.5 w-3.5 text-primary fill-primary/20 shrink-0" />
+                    <BadgeCheck className="h-3.5 w-3.5 text-primary shrink-0" weight="fill" />
                   )}
                   <span className="text-xs text-muted-foreground/50">·</span>
                   <span className="text-xs text-muted-foreground shrink-0">
@@ -400,7 +385,7 @@ export function ResourceFeedCard({ resource }: ResourceFeedCardProps) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={handleSave}>
-                  <Bookmark className={cn("h-4 w-4 mr-2", isSaved && "fill-current")} />
+                  <BookmarkSimple className="h-4 w-4 mr-2" weight={isSaved ? "fill" : "regular"} />
                   {isSaved ? "Retirer des sauvegardes" : "Enregistrer"}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleShare}>
@@ -449,7 +434,7 @@ export function ResourceFeedCard({ resource }: ResourceFeedCardProps) {
 
                   {impactScore > 0 ? (
                     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-primary/10 border border-primary/20 rounded-full text-[10px] font-bold text-primary">
-                      <Zap className="h-3 w-3 text-primary fill-primary" />
+                      <Zap className="h-3 w-3 text-primary" weight="fill" />
                       {impactScore}
                     </span>
                   ) : null}
@@ -552,7 +537,7 @@ export function ResourceFeedCard({ resource }: ResourceFeedCardProps) {
                 )}
                 title={userImpactRating ? `Impact attribue (${userImpactRating}/5) — Cliquer pour retirer` : "Cliquer pour +1 Impact ou maintenir pour evaluer de 1 a 5"}
               >
-                <Zap className={cn("h-5 w-5 shrink-0 transition-transform", userImpactRating ? "text-primary fill-primary" : "")} />
+                <Zap className={cn("h-5 w-5 shrink-0 transition-transform", userImpactRating ? "text-primary scale-110" : "text-muted-foreground group-hover:text-primary")} weight={userImpactRating ? "fill" : "regular"} />
                 <span>{impactScore}</span>
                 <span className="hidden sm:inline">Impact</span>
               </Button>

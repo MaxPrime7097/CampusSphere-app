@@ -9,7 +9,7 @@ import { AppLayout } from "./components/layout/AppLayout";
 import { RequireAdminRole } from "./components/auth/RequireAdminRole";
 import { AdminLayout } from "./admin/components/AdminLayout";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { Loader2 } from "lucide-react";
+import { Spinner as Loader2 } from "@phosphor-icons/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { GlobalErrorBoundary } from "./components/errors/GlobalErrorBoundary";
 

@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Input, REGISTRATION_MAX_LENGTHS } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GraduationCap, Loader2, Check } from "lucide-react";
+import { GraduationCap, Spinner as Loader2, Check } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { UniversityCombobox } from "@/components/forms/UniversityCombobox";
 import { FacultyCombobox } from "@/components/forms/FacultyCombobox";

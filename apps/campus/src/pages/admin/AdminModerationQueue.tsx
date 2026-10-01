@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Clock3, FileWarning, Loader2, ShieldAlert } from "lucide-react";
+import { Warning as AlertTriangle, Clock as Clock3, FileX as FileWarning, Spinner as Loader2, ShieldWarning as ShieldAlert } from "@phosphor-icons/react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

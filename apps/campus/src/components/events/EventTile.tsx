@@ -1,15 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Calendar,
-  Clock,
-  MapPin,
-  Globe,
-  Users,
-  Check,
-  Share2,
-  Sparkles,
-} from "lucide-react";
+import { Calendar, Clock, MapPin, Globe, UsersThree as Users, Check, ShareNetwork as Share2, Sparkle as Sparkles } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getEventCategoryMeta } from "@/constants/eventCategories";

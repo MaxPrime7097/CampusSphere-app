@@ -1,4 +1,4 @@
-import { UserCheck, Zap, BadgeCheck } from "lucide-react";
+import { UserCheck, Lightning as Zap, SealCheck as BadgeCheck } from "@phosphor-icons/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { formatSlugToLabel, truncate } from "@/lib/utils";
@@ -31,7 +31,7 @@ export function ConnectionCard({
           <div className="flex items-center gap-1.5">
             <h3 className="font-medium text-sm truncate hover:underline">{connection.name}</h3>
             {connection.isVerified && (
-              <BadgeCheck className="h-3.5 w-3.5 text-amber-500 fill-amber-500/20 shrink-0" />
+              <BadgeCheck className="h-3.5 w-3.5 text-primary shrink-0" weight="fill" />
             )}
           </div>
           <p className="text-xs text-muted-foreground truncate">@{connection.username}</p>
@@ -41,7 +41,7 @@ export function ConnectionCard({
             )}
             {connection.university && <span>·</span>}
             <span className="flex items-center gap-0.5 text-foreground/80 font-medium">
-              <Zap className="h-3 w-3 text-primary fill-primary" />
+              <Zap className="h-3 w-3 text-primary" weight="fill" />
               {connection.impactScore ?? 0}
             </span>
             {connection.mutualFriends ? (

@@ -1,4 +1,4 @@
-import { Loader2, TriangleAlert, UserX } from "lucide-react";
+import { Spinner as Loader2, Warning as TriangleAlert, UserMinus as UserX } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";

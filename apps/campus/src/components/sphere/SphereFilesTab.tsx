@@ -1,5 +1,5 @@
 import { Suspense, lazy, useState, useMemo } from "react";
-import { Plus, Search, FileText, ExternalLink, Download, X } from "lucide-react";
+import { Plus, MagnifyingGlass as Search, FileText, ArrowSquareOut as ExternalLink, Download, X } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { OptimizedImage } from "@/components/ui/optimized-image";

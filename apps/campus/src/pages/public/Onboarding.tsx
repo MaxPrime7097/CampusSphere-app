@@ -1,19 +1,6 @@
 import { Suspense, lazy, useState, useRef, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
-import {
-  ChevronRight,
-  Check,
-  Loader2,
-  Plus,
-  X,
-  Camera,
-  Info,
-  ExternalLink,
-  Sparkles,
-  Briefcase,
-  Heart,
-  Zap,
-} from "lucide-react";
+import { CaretRight as ChevronRight, Check, Spinner as Loader2, Plus, X, Camera, Info, ArrowSquareOut as ExternalLink, Sparkle as Sparkles, Briefcase, Heart, Lightning as Zap } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input, REGISTRATION_MAX_LENGTHS } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

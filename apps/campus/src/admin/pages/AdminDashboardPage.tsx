@@ -1,23 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import {
-  Users,
-  ShieldCheck,
-  ShieldAlert,
-  Globe,
-  FileText,
-  Mail,
-  TrendingUp,
-  ArrowRight,
-  RefreshCw,
-  Loader2,
-  Clock,
-  Activity,
-  CheckCircle2,
-  AlertTriangle,
-  Repeat,
-  Zap,
-  UserCheck2,
-} from "lucide-react";
+import { UsersThree as Users, ShieldCheck, ShieldWarning as ShieldAlert, Globe, FileText, Envelope as Mail, TrendUp as TrendingUp, ArrowRight, ArrowClockwise as RefreshCw, Spinner as Loader2, Clock, Pulse as Activity, CheckCircle as CheckCircle2, Warning as AlertTriangle, Repeat, Lightning as Zap, UserCheck as UserCheck2 } from "@phosphor-icons/react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

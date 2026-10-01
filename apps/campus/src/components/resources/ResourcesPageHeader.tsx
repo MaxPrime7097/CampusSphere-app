@@ -1,5 +1,5 @@
 import { Suspense, lazy } from "react";
-import { RefreshCw, Upload } from "lucide-react";
+import { ArrowClockwise as RefreshCw, Upload } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";

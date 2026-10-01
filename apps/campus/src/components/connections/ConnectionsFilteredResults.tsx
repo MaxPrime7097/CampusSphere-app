@@ -1,4 +1,4 @@
-import { Search } from "lucide-react";
+import { MagnifyingGlass as Search } from "@phosphor-icons/react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ConnectionCard } from "./ConnectionCard";
 import { SuggestionCard } from "./SuggestionCard";

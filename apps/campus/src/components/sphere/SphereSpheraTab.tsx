@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FileText, BookOpen, Loader2 } from "lucide-react";
+import { FileText, BookOpen, Spinner as Loader2 } from "@phosphor-icons/react";
 import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { Button } from "@/components/ui/button";
 import { StudyToolsModal } from "@/sphera/components/study/StudyToolsModal";

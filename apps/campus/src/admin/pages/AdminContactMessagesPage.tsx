@@ -1,18 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import {
-  Mail,
-  Loader2,
-  RefreshCw,
-  Trash2,
-  CheckCircle,
-  Search,
-  Eye,
-  Reply,
-  Inbox,
-  User,
-  Calendar,
-  Sparkles,
-} from "lucide-react";
+import { Envelope as Mail, Spinner as Loader2, ArrowClockwise as RefreshCw, Trash as Trash2, CheckCircle, MagnifyingGlass as Search, Eye, ArrowUUpLeft as Reply, Tray as Inbox, User, Calendar, Sparkle as Sparkles } from "@phosphor-icons/react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

@@ -1,6 +1,6 @@
 import { UniversalShareModal } from "@/components/shared/UniversalShareModal";
 import { Suspense, lazy, useEffect, useState, useRef } from "react";
-import { Heart, MessageCircle, Share, Bookmark, MoreVertical, Zap, Copy, Flag, ExternalLink, Users, Plus, Minus, X, Pencil, Trash2, Loader2, FileText, Download, ChevronLeft, ChevronRight, Search, Facebook, Instagram, Twitter, Linkedin, Info, BadgeCheck } from "lucide-react";
+import { Heart, ChatTeardrop, Share, BookmarkSimple, UsersThree as Users, DotsThreeVertical as MoreVertical, Lightning as Zap, Copy, Flag, ArrowSquareOut as ExternalLink, Plus, Minus, X, Pencil, Trash as Trash2, Spinner as Loader2, FileText, Download, CaretLeft as ChevronLeft, CaretRight as ChevronRight, MagnifyingGlass as Search, FacebookLogo as Facebook, InstagramLogo as Instagram, TwitterLogo as Twitter, LinkedinLogo as Linkedin, Info, SealCheck as BadgeCheck } from "@phosphor-icons/react";
 import { FaFacebook, FaTwitter, FaInstagram, FaWhatsapp, FaLinkedin } from 'react-icons/fa';
 
 import { Button } from "@/components/ui/button";
@@ -531,7 +531,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <h4 className="font-semibold text-sm hover:underline truncate">{post.author.name}</h4>
                   {post.author.isVerified && (
-                    <BadgeCheck className="h-3.5 w-3.5 text-amber-500 fill-amber-500/20 shrink-0" />
+                    <BadgeCheck className="h-3.5 w-3.5 text-primary shrink-0" weight="fill" />
                   )}
                   <span className="text-xs text-muted-foreground/50">·</span>
                   <span className="text-xs text-muted-foreground shrink-0">
@@ -556,7 +556,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={handleSave} disabled={isSaving}>
-                  <Bookmark className="h-4 w-4 mr-2" />
+                  <BookmarkSimple className="h-4 w-4 mr-2" weight={isSaved ? "fill" : "regular"} />
                   {isSaving
                     ? "Mise à jour..."
                     : isSaved
@@ -767,7 +767,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                   )}
                   title={userImpactRating ? `Impact attribue (${userImpactRating}/5) — Cliquer pour retirer` : "Cliquer pour +1 Impact ou maintenir pour evaluer de 1 a 5"}
                 >
-                  <Zap className={cn("h-5 w-5 shrink-0 transition-transform", userImpactRating ? "text-primary fill-primary" : "")} />
+                  <Zap className={cn("h-5 w-5 shrink-0 transition-transform", userImpactRating ? "text-primary scale-110" : "text-muted-foreground group-hover:text-primary")} weight={userImpactRating ? "fill" : "regular"} />
                   <span>{impactScore}</span>
                   <span className="hidden sm:inline">Impact</span>
                 </Button>
@@ -779,7 +779,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                 className="w-full h-9 sm:h-9.5 px-2 flex items-center justify-center gap-1.5 sm:gap-2 rounded-full text-xs sm:text-sm font-medium bg-muted/50 hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border/30 transition-all active:scale-95"
                 onClick={() => requireAuth(() => setCommentsOpen(true))}
               >
-                <MessageCircle className="h-5 w-5 shrink-0" />
+                <ChatTeardrop className="h-5 w-5 shrink-0" />
                 <span>{post.comments}</span>
                 <span className="hidden sm:inline">{post.comments > 1 ? "Commentaires" : "Commentaire"}</span>
               </Button>
@@ -949,7 +949,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-foreground fill-current" />
+              <Zap className="h-5 w-5 text-foreground" weight="fill" />
               Rejoignez CampusSphere
             </DialogTitle>
             <DialogDescription>

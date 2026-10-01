@@ -1,4 +1,4 @@
-import { Mail, Loader2 } from "lucide-react";
+import { Envelope as Mail, Spinner as Loader2 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";

@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { listSphereMembers, updateSphereMember, removeSphereMember } from "@/services/api";
 import { formatRelativeTime } from "@/lib/date";
-import { Users, Search, Loader2, CheckCircle, Crown, Shield, User, UserMinus, UserCheck, UserX } from "lucide-react";
+import { UsersThree as Users, MagnifyingGlass as Search, Spinner as Loader2, CheckCircle, Crown, Shield, User, UserMinus, UserCheck, UserMinus as UserX } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Props {

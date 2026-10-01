@@ -1,15 +1,5 @@
 import { useState } from "react";
-import {
-  QrCode,
-  CheckCircle2,
-  AlertTriangle,
-  XCircle,
-  Search,
-  Users,
-  Camera,
-  RefreshCw,
-  Sparkles,
-} from "lucide-react";
+import { QrCode, CheckCircle as CheckCircle2, Warning as AlertTriangle, XCircle, MagnifyingGlass as Search, Users, Camera, ArrowClockwise as RefreshCw, Sparkle as Sparkles } from "@phosphor-icons/react";
 import {
   Dialog,
   DialogContent,

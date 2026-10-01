@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Zap } from "lucide-react";
+import { Lightning as Zap } from "@phosphor-icons/react";
 
 interface ResourceAuthModalProps {
   open: boolean;
@@ -20,7 +20,7 @@ export function ResourceAuthModal({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-primary fill-current" />
+            <Zap className="h-5 w-5 text-primary" weight="fill" />
             Rejoignez CampusSphere
           </DialogTitle>
           <DialogDescription>

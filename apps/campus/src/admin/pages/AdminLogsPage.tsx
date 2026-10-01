@@ -1,18 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import {
-  Activity,
-  Search,
-  Loader2,
-  RefreshCw,
-  User,
-  Shield,
-  FileText,
-  Ban,
-  CheckCircle2,
-  Trash2,
-  Eye,
-  Calendar,
-} from "lucide-react";
+import { Pulse as Activity, MagnifyingGlass as Search, Spinner as Loader2, ArrowClockwise as RefreshCw, User, Shield, FileText, Prohibit as Ban, CheckCircle as CheckCircle2, Trash as Trash2, Eye, Calendar } from "@phosphor-icons/react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";

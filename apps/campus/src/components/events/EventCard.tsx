@@ -1,22 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {
-  Calendar,
-  Clock,
-  MapPin,
-  Globe,
-  Users,
-  Check,
-  Share2,
-  Sparkles,
-  Trophy,
-  Code,
-  Mic,
-  BookOpen,
-  Compass,
-  ArrowRight,
-  Ticket,
-} from "lucide-react";
+import { Calendar, Clock, MapPin, Globe, UsersThree as Users, Check, ShareNetwork as Share2, Sparkle as Sparkles, Trophy, Code, Microphone as Mic, BookOpen, Compass, ArrowRight, Ticket } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";

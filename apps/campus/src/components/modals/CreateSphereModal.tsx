@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Check, ArrowLeft, ArrowRight, BookOpen, Target, Globe, ChevronDown, ChevronUp, SlidersHorizontal } from "lucide-react";
+import { Spinner as Loader2, Check, ArrowLeft, ArrowRight, BookOpen, Target, Globe, CaretDown as ChevronDown, CaretUp as ChevronUp, SlidersHorizontal } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { createSphere } from "@/services/api";

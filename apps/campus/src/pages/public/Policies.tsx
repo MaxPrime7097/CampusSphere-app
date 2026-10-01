@@ -1,7 +1,7 @@
 import React from "react";
 import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, Lock, ShieldCheck, Sparkles } from "lucide-react";
+import { CaretRight as ChevronRight, Lock, ShieldCheck, Sparkle as Sparkles } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";

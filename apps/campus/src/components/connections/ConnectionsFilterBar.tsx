@@ -1,4 +1,4 @@
-import { Search, Filter } from "lucide-react";
+import { MagnifyingGlass as Search, Funnel as Filter } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";

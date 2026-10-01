@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Upload, FileText, X, Loader2, Check, ChevronDown, ChevronUp, SlidersHorizontal } from "lucide-react";
+import { Upload, FileText, X, Spinner as Loader2, Check, CaretDown as ChevronDown, CaretUp as ChevronUp, SlidersHorizontal } from "@phosphor-icons/react";
 import {
   Dialog,
   DialogContent,

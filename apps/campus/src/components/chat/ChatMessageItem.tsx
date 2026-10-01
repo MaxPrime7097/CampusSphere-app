@@ -8,7 +8,7 @@ import {
   DropdownMenuPortal,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Smile, MoreVertical, Pencil, Trash, CheckCheck } from "lucide-react";
+import { Smiley as Smile, DotsThreeVertical as MoreVertical, Pencil, Trash, Checks as CheckCheck } from "@phosphor-icons/react";
 import { formatRelativeTime } from "@/lib/date";
 import type { Message } from "@/types";
 

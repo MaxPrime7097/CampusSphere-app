@@ -1,4 +1,4 @@
-import { FileText } from "lucide-react";
+import { FileText } from "@phosphor-icons/react";
 import { ResourceCard } from "@/components/resources/ResourceCard";
 import { ResourceSkeleton } from "@/components/ui/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";

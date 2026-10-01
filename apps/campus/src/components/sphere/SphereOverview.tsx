@@ -3,7 +3,7 @@ import { getSphereOverview } from "@/services/api";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, CheckCircle2, FileText, MessageSquare, RefreshCw, Users, Zap, Clock, Loader2 } from "lucide-react";
+import { Warning as AlertTriangle, CheckCircle as CheckCircle2, FileText, ChatCircle as MessageSquare, ArrowClockwise as RefreshCw, UsersThree as Users, Lightning as Zap, Clock, Spinner as Loader2 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -64,7 +64,7 @@ export function SphereOverview({ sphereId, sphereType, objective, onTabChange }:
             {[
               { icon: <MessageSquare className="h-5 w-5 text-blue-500" />, label: "Annonces",    value: data?.announcement_count ?? 0, sub: "officielles" },
               { icon: <FileText className="h-5 w-5 text-purple-500" />,   label: "Ressources",  value: data?.resource_count ?? 0, sub: "fichiers" },
-              { icon: <Zap className="h-5 w-5 text-[#ff9800]" />,          label: "Sessions IA", value: data?.study_sessions_count ?? 0, sub: "générées" },
+              { icon: <Zap className="h-5 w-5 text-[#ff9800]" weight="fill" />,          label: "Sessions IA", value: data?.study_sessions_count ?? 0, sub: "générées" },
               { icon: <Users className="h-5 w-5 text-primary" />,          label: "Membres",     value: data?.member_count ?? 0, sub: "étudiants" },
             ].map((s) => (
               <div key={s.label} className="bg-card border rounded-xl p-3 space-y-1 hover:border-primary/30 transition-colors">
@@ -193,7 +193,7 @@ export function SphereOverview({ sphereId, sphereType, objective, onTabChange }:
               {/* Sphera Quick Action (Exclusif cours) */}
               <div className="bg-card border rounded-xl p-4 space-y-3 flex flex-col justify-center items-center text-center">
                  <div className="h-10 w-10 rounded-full bg-[#ff9800]/10 flex items-center justify-center">
-                   <Zap className="h-5 w-5 text-[#ff9800] fill-current" />
+                   <Zap className="h-5 w-5 text-[#ff9800]" weight="fill" />
                  </div>
                  <div>
                     <h3 className="font-semibold text-sm">Boostez vos révisions</h3>

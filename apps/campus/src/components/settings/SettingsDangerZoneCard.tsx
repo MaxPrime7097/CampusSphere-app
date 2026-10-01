@@ -1,4 +1,4 @@
-import { TriangleAlert, LogOut, UserX, Loader2 } from "lucide-react";
+import { Warning as TriangleAlert, SignOut as LogOut, UserMinus as UserX, Spinner as Loader2 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 
 interface SettingsDangerZoneCardProps {

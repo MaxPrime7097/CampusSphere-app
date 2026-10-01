@@ -1,7 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PublicMenu } from './PublicMenu';
-import { ThemeToggle } from './ThemeToggle';
 
 export function Header(): JSX.Element {
   const navigate = useNavigate();
@@ -23,8 +22,6 @@ export function Header(): JSX.Element {
           <a href="/cs-inc/policies" className="text-muted-foreground hover:text-foreground transition-colors">Politiques</a>
           
           <div className="h-4 w-px bg-border/80" />
-          
-          <ThemeToggle />
 
           <a href="/login" className="text-primary hover:text-foreground transition-colors">Connexion</a>
           <button
@@ -35,9 +32,8 @@ export function Header(): JSX.Element {
           </button>
         </div>
 
-        {/* Mobile controls (Theme Switcher + Menu Hamburger) */}
+        {/* Mobile controls (Menu Hamburger) */}
         <div className="flex items-center gap-2 lg:hidden">
-          <ThemeToggle />
           <PublicMenu />
         </div>
       </div>

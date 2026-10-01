@@ -8,7 +8,7 @@
  *     the tokens are sent and the popup closes itself.
  */
 import { useState, useEffect } from "react";
-import { Loader2, Eye, EyeOff } from "lucide-react";
+import { Spinner as Loader2, Eye, EyeSlash as EyeOff } from "@phosphor-icons/react";
 import { supabaseSignIn, exchangeSupabaseToken } from "@/services/api";
 import { sendSsoTokens, isAllowedSpheraOrigin, SPHERA_ORIGINS } from "@cs/sso";
 

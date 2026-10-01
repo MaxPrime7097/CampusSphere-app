@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Globe, ChevronDown, Check } from 'lucide-react';
+import { Globe, CaretDown as ChevronDown, Check } from "@phosphor-icons/react";
 import { useLanguage } from '../hooks/useLanguage.ts';
 
 export interface LanguageSwitcherProps {

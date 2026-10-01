@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { BadgeCheck, Crown, MoreVertical } from "lucide-react";
+import { SealCheck as BadgeCheck, Crown, DotsThreeVertical as MoreVertical } from "@phosphor-icons/react";
 
 export interface SphereMemberItem {
   id: string;
@@ -56,7 +56,7 @@ export function SphereMembersTab({
               <p className="font-bold text-sm flex items-center gap-1">
                 {m.name}
                 {m.isVerified && (
-                  <BadgeCheck className="h-3.5 w-3.5 text-primary fill-primary/10" />
+                  <BadgeCheck className="h-3.5 w-3.5 text-primary" weight="fill" />
                 )}
                 {m.isCreator && <Crown className="h-3 w-3 text-yellow-500" />}
               </p>

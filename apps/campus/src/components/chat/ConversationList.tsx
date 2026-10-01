@@ -1,5 +1,5 @@
 import { Suspense, lazy } from "react";
-import { Search, Plus, Users, MessageSquare } from "lucide-react";
+import { MagnifyingGlass as Search, Plus, UsersThree as Users, ChatCircle as MessageSquare } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";

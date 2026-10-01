@@ -1,5 +1,5 @@
 import Sphere3D from "@/components/layout/Sphere3D";
-import { Users, BookOpen, MessageSquare, Zap } from "lucide-react";
+import { UsersThree as Users, BookOpen, ChatCircle as MessageSquare, Lightning as Zap } from "@phosphor-icons/react";
 
 export function AuthSidePanel() {
   return (

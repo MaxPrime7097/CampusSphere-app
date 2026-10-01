@@ -11,7 +11,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Heart, Send, Reply, MoreHorizontal, Smile, AtSign, Loader2, Zap, Pencil, Trash2, X } from "lucide-react";
+import { Heart, PaperPlaneTilt as Send, ArrowUUpLeft as Reply, DotsThree as MoreHorizontal, Smiley as Smile, At as AtSign, Spinner as Loader2, Lightning as Zap, Pencil, Trash as Trash2, X } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { Badge } from "@/components/ui/badge";

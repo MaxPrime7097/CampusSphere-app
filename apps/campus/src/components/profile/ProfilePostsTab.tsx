@@ -1,14 +1,16 @@
-import { FileText } from "lucide-react";
+import { FileText } from "@phosphor-icons/react";
 import { CreatePost } from "@/components/feed/CreatePost";
 import { PostCard } from "@/components/feed/PostCard";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PostSkeleton } from "@/components/ui/skeletons";
 
 interface ProfilePostsTabProps {
   isOwnProfile: boolean;
   posts: any[];
+  isLoading?: boolean;
 }
 
-export function ProfilePostsTab({ isOwnProfile, posts }: ProfilePostsTabProps) {
+export function ProfilePostsTab({ isOwnProfile, posts, isLoading }: ProfilePostsTabProps) {
   return (
     <section className="space-y-4 mt-6">
       {isOwnProfile && (
@@ -17,7 +19,12 @@ export function ProfilePostsTab({ isOwnProfile, posts }: ProfilePostsTabProps) {
         </div>
       )}
 
-      {posts.length === 0 ? (
+      {isLoading ? (
+        <div className="space-y-4">
+          <PostSkeleton />
+          <PostSkeleton />
+        </div>
+      ) : posts.length === 0 ? (
         <EmptyState
           icon={FileText}
           title="Aucun post"

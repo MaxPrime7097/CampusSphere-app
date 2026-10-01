@@ -1,19 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import {
-  Calendar,
-  Clock,
-  MapPin,
-  Globe,
-  Upload,
-  Users,
-  Check,
-  ArrowLeft,
-  X,
-  Ticket,
-  Loader2,
-} from "lucide-react";
+import { Calendar, Clock, MapPin, Globe, Upload, Users, Check, ArrowLeft, X, Ticket, Spinner as Loader2 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";

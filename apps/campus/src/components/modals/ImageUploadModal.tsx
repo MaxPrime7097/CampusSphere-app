@@ -3,7 +3,7 @@ import Cropper from 'react-easy-crop';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Upload, Camera, Trash2, Loader2, ArrowLeft } from 'lucide-react';
+import { Upload, Camera, Trash as Trash2, Spinner as Loader2, ArrowLeft } from "@phosphor-icons/react";
 import getCroppedImg from '@/lib/cropImage';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { compressImageFile } from '@/lib/imageCompression';

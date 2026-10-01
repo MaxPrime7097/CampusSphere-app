@@ -5,7 +5,7 @@ import {
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { ExternalLink } from "lucide-react";
+import { ArrowSquareOut as ExternalLink } from "@phosphor-icons/react";
 import { getNavigationSections, type NavigationUser, type NavigationItem } from "./navigationConfig";
 import { useUnreadCounts } from "@/hooks/useUnreadCounts";
 import { SpheraIcon } from "@/components/ui/sphera-icon";

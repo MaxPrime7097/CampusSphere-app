@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { moveTask } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, Zap, AlertTriangle, GripVertical, Plus, ChevronDown, ChevronRight, X } from "lucide-react";
+import { Calendar, Lightning as Zap, Warning as AlertTriangle, DotsSixVertical as GripVertical, Plus, CaretDown as ChevronDown, CaretRight as ChevronRight, X } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";

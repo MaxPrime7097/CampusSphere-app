@@ -1,5 +1,5 @@
 import React from "react";
-import { HelpCircle, AlignLeft, Sparkles, BrainCircuit, type LucideIcon } from "lucide-react";
+import { Question as HelpCircle, AlignLeft, Sparkle as Sparkles, Brain as BrainCircuit, type Icon as LucideIcon } from "@phosphor-icons/react";
 
 export interface ChatCommand {
   trigger: string;

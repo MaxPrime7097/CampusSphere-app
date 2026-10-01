@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Shield, Search, CheckCircle, XCircle, AlertCircle, Loader2, Users, FileText, Flag, Layers } from "lucide-react";
+import { Shield, MagnifyingGlass as Search, CheckCircle, XCircle, WarningCircle as AlertCircle, Spinner as Loader2, UsersThree as Users, FileText, Flag, Stack as Layers } from "@phosphor-icons/react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";

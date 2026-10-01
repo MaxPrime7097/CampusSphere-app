@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { useState, useEffect, useMemo } from "react";
 import { listPosts, listSpheres, listResources } from "@/services/api";
 import { Button } from "@/components/ui/button";
-import { HomeIcon, RefreshCw, Loader2 } from "lucide-react";
+import { House as HomeIcon, ArrowClockwise as RefreshCw, Spinner as Loader2 } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { mapPostToCard } from "@/lib/postCardMapper";
 import { PostSkeleton } from "@/components/ui/skeletons";

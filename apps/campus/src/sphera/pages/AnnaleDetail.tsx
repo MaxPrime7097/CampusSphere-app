@@ -2,7 +2,7 @@ import { parseSlugId, encodeHashId } from "@/lib/hashids";
 import React, { useEffect, useState, useLayoutEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { ArrowLeft, Share2, AlertCircle, Loader2, Check } from "lucide-react";
+import { ArrowLeft, ShareNetwork as Share2, WarningCircle as AlertCircle, Spinner as Loader2, Check } from "@phosphor-icons/react";
 import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";

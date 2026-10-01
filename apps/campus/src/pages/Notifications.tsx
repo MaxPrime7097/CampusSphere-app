@@ -5,17 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getUser, listNotifications, markNotificationRead, markAllNotificationsRead, deleteNotification as deleteNotificationApi } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  CheckCheck,
-  Bell,
-  X,
-  Users,
-  MessageSquare,
-  FileText,
-  Calendar,
-  Settings,
-  Loader2
-} from "lucide-react";
+import { Checks as CheckCheck, Bell, X, UsersThree as Users, ChatCircle as MessageSquare, FileText, Calendar, Gear as Settings, Spinner as Loader2 } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { CanonicalNotificationType } from "@/constants/notificationTypes";
 import { buildActionUrl, normalizeNotificationData, resolveConnectionProfileUrl, toCanonicalType } from "@/lib/notifications";

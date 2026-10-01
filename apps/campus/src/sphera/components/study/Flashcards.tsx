@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { RotateCcw, CheckCircle2, RefreshCcw } from "lucide-react";
+import { ArrowCounterClockwise as RotateCcw, CheckCircle as CheckCircle2, ArrowCounterClockwise as RefreshCcw } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
 interface Carte {

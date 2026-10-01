@@ -1,15 +1,5 @@
 import { useState } from "react";
-import {
-  Ticket,
-  Calendar,
-  Clock,
-  MapPin,
-  Globe,
-  ShieldCheck,
-  Download,
-  Copy,
-  Check,
-} from "lucide-react";
+import { Ticket, Calendar, Clock, MapPin, Globe, ShieldCheck, Download, Copy, Check, SealCheck as BadgeCheck } from "@phosphor-icons/react";
 import {
   Dialog,
   DialogContent,
@@ -123,7 +113,7 @@ export function EventTicketModal({
                     <span className="text-xs font-bold text-foreground">
                       {currentUser?.name || currentUser?.username || "Étudiant Campus"}
                     </span>
-                    <ShieldCheck className="h-3.5 w-3.5 text-amber-500 fill-amber-500/20" />
+                    <BadgeCheck className="h-3.5 w-3.5 text-primary" weight="fill" />
                   </div>
                   <p className="text-[11px] text-muted-foreground font-medium">
                     {facultyFormatted}
