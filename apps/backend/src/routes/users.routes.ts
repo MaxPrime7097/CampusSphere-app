@@ -462,9 +462,23 @@ async function updateProfile(req: Request, res: Response): Promise<void> {
   if (input.portfolio_links !== undefined) data.portfolioLinks = input.portfolio_links as Prisma.InputJsonValue;
 
   if (input.date_of_birth !== undefined) {
-    // Accept the several formats the client has historically sent; an unparseable
-    // value clears the field rather than rejecting the whole update.
-    data.dateOfBirth = parseDate(input.date_of_birth);
+    if (!input.date_of_birth?.trim()) {
+      throw badRequest("La date de naissance est obligatoire.", {
+        date_of_birth: ["La date de naissance est obligatoire."],
+      });
+    }
+    const parsed = parseDate(input.date_of_birth);
+    if (!parsed) {
+      throw badRequest("Format de date de naissance invalide.", {
+        date_of_birth: ["Format de date de naissance invalide."],
+      });
+    }
+    if (getAgeFromDate(parsed) < MINIMUM_AGE) {
+      throw badRequest(`Vous devez avoir au moins ${MINIMUM_AGE} ans.`, {
+        date_of_birth: [`Vous devez avoir au moins ${MINIMUM_AGE} ans.`],
+      });
+    }
+    data.dateOfBirth = parsed;
   }
 
   const user = await prisma.user.update({ where: { id: me.id }, data, select: userSelect });
@@ -473,6 +487,17 @@ async function updateProfile(req: Request, res: Response): Promise<void> {
 
 usersRouter.patch("/profile/", requireAuth, updateProfile);
 usersRouter.put("/profile/", requireAuth, updateProfile);
+
+const MINIMUM_AGE = 16;
+
+function getAgeFromDate(birthDate: Date, today = new Date()): number {
+  let age = today.getUTCFullYear() - birthDate.getUTCFullYear();
+  const hasHadBirthdayThisYear =
+    today.getUTCMonth() > birthDate.getUTCMonth() ||
+    (today.getUTCMonth() === birthDate.getUTCMonth() && today.getUTCDate() >= birthDate.getUTCDate());
+  if (!hasHadBirthdayThisYear) age -= 1;
+  return age;
+}
 
 function parseDate(value: string | null | undefined): Date | null {
   if (!value?.trim()) return null;
