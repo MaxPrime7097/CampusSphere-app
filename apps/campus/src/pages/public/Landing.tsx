@@ -337,6 +337,16 @@ export function Landing() {
                 <div className="flex items-start gap-3">
                   <p><strong>Feed personnalisé</strong> : <br />Ton fil d'actualité s'adapte à tes centres d'intérêt, tes sphères et les contenus avec lesquels tu interagis, fini le bruit, place au contenu qui compte vraiment</p>
                 </div>
+                <div className="pt-2">
+                  <Button
+                    variant="link"
+                    onClick={() => navigate('/cs-inc/impact-score')}
+                    className="p-0 h-auto text-primary font-semibold inline-flex items-center gap-1.5 hover:gap-2.5 transition-all text-base"
+                  >
+                    <span>Comprendre l'Impact Score en détail</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
 
