@@ -623,7 +623,7 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="p-0 border-border/40 gap-0 overflow-hidden flex flex-col sm:max-w-xl sm:h-[650px] sm:max-h-[82vh] sm:rounded-2xl bg-background">
+      <DialogContent className="p-0 border-border/40 gap-0 overflow-hidden flex flex-col max-sm:h-[90dvh] sm:max-w-xl sm:h-[650px] sm:max-h-[82vh] sm:rounded-2xl bg-background">
         {/* Modal Header */}
         <DialogHeader className="px-5 py-3.5 border-b border-border/40 shrink-0">
           <div className="flex items-center justify-between">

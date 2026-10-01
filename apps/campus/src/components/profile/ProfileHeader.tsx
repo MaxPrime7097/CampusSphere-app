@@ -163,10 +163,10 @@ export function ProfileHeader({
         </div>
 
         <div className="p-6 relative">
-          <div className="flex flex-col md:flex-row gap-6">
-            {/* Avatar superposé */}
-            <div className="flex flex-col items-start space-y-4">
-              <div className="relative -mt-20">
+          <div className="flex flex-col md:flex-row md:items-start gap-6">
+            {/* Top row on mobile (Avatar on left, actions on right) / Left column on PC (Avatar with actions below) */}
+            <div className="flex items-start justify-between md:flex-col md:items-start md:justify-start md:space-y-4 shrink-0">
+              <div className="relative -mt-20 shrink-0">
                 <Avatar className="h-32 w-32 ring-4 ring-background">
                   <AvatarImage src={user.avatar} />
                   <AvatarFallback className="bg-input text-muted-foreground font-bold text-2xl">
@@ -184,7 +184,8 @@ export function ProfileHeader({
                   </Button>
                 )}
               </div>
-              <div className="flex gap-2">
+
+              <div className="flex gap-2 pt-1 md:pt-0">
                 {!isOwnProfile && (
                   <div className="space-y-1">
                     <Button
@@ -259,7 +260,7 @@ export function ProfileHeader({
               </div>
             </div>
 
-            {/* Profile Info */}
+            {/* Profile Info: right column on PC, flows directly under avatar row on mobile */}
             <div className="flex-1 space-y-4">
               <div>
                 <div className="flex items-center gap-2">
@@ -275,107 +276,112 @@ export function ProfileHeader({
                 {user.bio || "Pas de bio pour l'instant"}
               </p>
 
-              {/* Impact Score et Mood */}
-              <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-4 p-2.5 sm:p-3 bg-muted/40 border border-border/40 rounded-xl">
-                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-muted rounded-lg flex items-center justify-center shrink-0">
-                    <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-foreground" />
+            {/* Impact Score et Mood (45% / 55%) */}
+            <div className="grid grid-cols-[9fr_11fr] gap-2 sm:gap-3 w-full p-2.5 sm:p-3 bg-muted/40 border border-border/40 rounded-xl">
+              {/* 45% Impact Score */}
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                  <Zap className="h-4 w-4 text-primary fill-primary" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1">
+                    <p className="text-xs sm:text-sm font-semibold truncate">Impact Score</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-4 w-4 sm:h-5 sm:w-5 p-0 rounded-full hover:bg-muted transition-colors shrink-0"
+                      onClick={() =>
+                        toast({
+                          title: "Score d'impact",
+                          description:
+                            "Le Score d'Impact mesure l'utilité et la pertinence de ce contenu pour la communauté CampusSphere. Il est calculé en fonction des interactions et des retours des étudiants.",
+                        })
+                      }
+                    >
+                      <Info className="h-3 w-3 text-muted-foreground" />
+                    </Button>
                   </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1">
-                      <p className="text-[11px] sm:text-sm font-semibold truncate">Impact Score</p>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-4 w-4 sm:h-5 sm:w-5 p-0 rounded-full hover:bg-muted transition-colors shrink-0"
-                        onClick={() =>
-                          toast({
-                            title: "Score d'impact",
-                            description:
-                              "Le Score d'Impact mesure l'utilité et la pertinence de ce contenu pour la communauté CampusSphere. Il est calculé en fonction des interactions et des retours des étudiants.",
-                          })
-                        }
-                      >
-                        <Info className="h-3 w-3 text-muted-foreground" />
-                      </Button>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <p
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <p
+                      className={cn(
+                        "text-sm sm:text-lg font-bold text-foreground truncate transition-all duration-300",
+                        animateScore && "animate-pop"
+                      )}
+                    >
+                      {user.impactScore ?? 0}
+                    </p>
+                    {user.impactScore !== null && (
+                      <div
                         className={cn(
-                          "text-sm sm:text-lg font-bold text-foreground truncate transition-all duration-300",
-                          animateScore && "animate-pop"
+                          "flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold text-white bg-gradient-to-r shadow-sm",
+                          getImpactLevelInfo(user.impactScore).currentLevel.color
                         )}
                       >
-                        {user.impactScore ?? 0}
-                      </p>
-                      {user.impactScore !== null && (
-                        <div
-                          className={cn(
-                            "flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold text-white bg-gradient-to-r shadow-sm",
-                            getImpactLevelInfo(user.impactScore).currentLevel.color
-                          )}
-                        >
-                          <span>{getImpactLevelInfo(user.impactScore).currentLevel.icon}</span>
-                        </div>
-                      )}
-                    </div>
+                        <span>{getImpactLevelInfo(user.impactScore).currentLevel.icon}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
+              </div>
 
-                <div className="h-8 w-px bg-border shrink-0" />
+              {/* 55% Mood du moment */}
+              <div
+                className={cn(
+                  "flex items-center gap-2 sm:gap-3 min-w-0 rounded-lg p-1 sm:p-1.5 transition-colors border-l border-border/50 pl-2 sm:pl-3",
+                  isOwnProfile ? "cursor-pointer hover:bg-muted/60" : ""
+                )}
+                onClick={() => isOwnProfile && onOpenMoodModal()}
+              >
+                <div className="w-8 h-8 sm:w-9 sm:h-9 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                  <Smile className="h-4 w-4 text-primary" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <p className="text-xs sm:text-sm font-semibold truncate">Mood du moment</p>
+                    {isOwnProfile && (
+                      <Settings className="h-3 w-3 text-muted-foreground shrink-0 hidden sm:block" />
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground break-words line-clamp-2 leading-snug" title={getMoodLabel(user.currentMood)}>
+                    {getMoodLabel(user.currentMood)}
+                  </p>
+                </div>
+              </div>
+            </div>
 
-                <div
-                  className="flex items-center gap-2 sm:gap-3 cursor-pointer hover:bg-muted/50 rounded-lg p-1 sm:p-2 -m-1 sm:-m-2 transition-colors min-w-0"
-                  onClick={() => isOwnProfile && onOpenMoodModal()}
+            {/* Stats */}
+            <div className="flex gap-6 text-sm">
+              <div>
+                <span className="font-semibold">{user.stats.posts}</span>
+                <span className="text-muted-foreground ml-1">Posts</span>
+              </div>
+              <div>
+                <span className="font-semibold">{user.stats.connections}</span>
+                <span className="text-muted-foreground ml-1">Connections</span>
+              </div>
+              <div>
+                <span className="font-semibold">{user.stats.contributions}</span>
+                <span className="text-muted-foreground ml-1">Contributions</span>
+              </div>
+            </div>
+
+            {/* Badges */}
+            <div className="flex flex-wrap gap-2">
+              {user.badges.map((badge: any) => (
+                <Badge
+                  key={badge.id || badge}
+                  className={`gap-1 ${badge.id === "admin" ? "bg-secondary text-secondary-foreground border border-border/60" : ""}`}
+                  variant={badge.id === "admin" ? "default" : "secondary"}
                 >
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-muted rounded-lg flex items-center justify-center shrink-0">
-                    <Smile className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-foreground" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[11px] sm:text-sm font-semibold">Mood du moment</p>
-                    <p className="text-xs sm:text-sm text-muted-foreground break-words line-clamp-3 overflow-hidden">
-                      {getMoodLabel(user.currentMood)}
-                    </p>
-                  </div>
-                  {isOwnProfile && (
-                    <Settings className="h-3 w-3 text-muted-foreground shrink-0 hidden sm:block ml-auto" />
-                  )}
-                </div>
-              </div>
-
-              {/* Stats */}
-              <div className="flex gap-6 text-sm">
-                <div>
-                  <span className="font-semibold">{user.stats.posts}</span>
-                  <span className="text-muted-foreground ml-1">Posts</span>
-                </div>
-                <div>
-                  <span className="font-semibold">{user.stats.connections}</span>
-                  <span className="text-muted-foreground ml-1">Connections</span>
-                </div>
-                <div>
-                  <span className="font-semibold">{user.stats.contributions}</span>
-                  <span className="text-muted-foreground ml-1">Contributions</span>
-                </div>
-              </div>
-
-              {/* Badges */}
-              <div className="flex flex-wrap gap-2">
-                {user.badges.map((badge: any) => (
-                  <Badge
-                    key={badge.id || badge}
-                    className={`gap-1 ${badge.id === "admin" ? "bg-secondary text-secondary-foreground border border-border/60" : ""}`}
-                    variant={badge.id === "admin" ? "default" : "secondary"}
-                  >
-                    {badge.id === "admin" && <Shield className="h-3 w-3" />}
-                    {badge.label || badge}
-                  </Badge>
-                ))}
-              </div>
+                  {badge.id === "admin" && <Shield className="h-3 w-3" />}
+                  {badge.label || badge}
+                </Badge>
+              ))}
             </div>
           </div>
         </div>
       </div>
-    </>
-  );
+    </div>
+  </>
+);
 }

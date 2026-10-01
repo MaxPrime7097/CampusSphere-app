@@ -63,7 +63,7 @@ export function EditAccountModal({ children, initialData, onSuccess, open: contr
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {children ? <DialogTrigger asChild>{children}</DialogTrigger> : null}
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserCheck className="h-5 w-5 text-primary" />
@@ -72,25 +72,23 @@ export function EditAccountModal({ children, initialData, onSuccess, open: contr
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="firstName">Prénom</Label>
-              <Input 
-                id="firstName"
-                value={firstName} 
-                onChange={(e) => setFirstName(e.target.value)} 
-                placeholder="Votre prénom"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="lastName">Nom</Label>
-              <Input 
-                id="lastName"
-                value={lastName} 
-                onChange={(e) => setLastName(e.target.value)} 
-                placeholder="Votre nom"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="firstName">Prénom</Label>
+            <Input 
+              id="firstName"
+              value={firstName} 
+              onChange={(e) => setFirstName(e.target.value)} 
+              placeholder="Votre prénom"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="lastName">Nom</Label>
+            <Input 
+              id="lastName"
+              value={lastName} 
+              onChange={(e) => setLastName(e.target.value)} 
+              placeholder="Votre nom"
+            />
           </div>
 
           <div className="space-y-2">

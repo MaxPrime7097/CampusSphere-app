@@ -485,8 +485,11 @@ export function SearchResults() {
 
           {/* ─── 2. FILTER PILLS & SORT BAR ─── */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
-            {/* Pill Tabs */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+            {/* Pill Tabs - Hidden scrollbar without navigation slider */}
+            <div
+              className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-hide no-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            >
               <button
                 type="button"
                 onClick={() => setActiveTab("all")}
@@ -877,7 +880,7 @@ export function SearchResults() {
 
                               <div className="flex items-center gap-3 pt-1 text-xs text-muted-foreground">
                                 <span className="inline-flex items-center gap-1 font-medium">
-                                  <Zap className="h-3.5 w-3.5 text-amber-500 fill-amber-500/20" />
+                                  <Zap className="h-3.5 w-3.5 text-primary fill-primary" />
                                   {post.impactScore}
                                 </span>
                                 {post.commentsCount != null && (
@@ -1140,7 +1143,7 @@ export function SearchResults() {
                               <Badge variant="secondary" className="text-[10px] px-2 py-0.5 font-medium">
                                 {getTypeLabel(res.type)}
                               </Badge>
-                              {res.category && (
+                              {res.category && !["general", "général", "autre", "other"].includes(getCategoryLabel(res.category).toLowerCase()) && (
                                 <Badge variant="outline" className="text-[10px] px-2 py-0.5 text-muted-foreground">
                                   {getCategoryLabel(res.category)}
                                 </Badge>
@@ -1210,7 +1213,7 @@ export function SearchResults() {
 
                         <div className="flex items-center gap-3 pt-1 text-xs text-muted-foreground">
                           <span className="inline-flex items-center gap-1 font-medium">
-                            <Zap className="h-3.5 w-3.5 text-amber-500 fill-amber-500/20" />
+                            <Zap className="h-3.5 w-3.5 text-primary fill-primary" />
                             {post.impactScore}
                           </span>
                           {post.commentsCount != null && (
@@ -1360,7 +1363,7 @@ export function SearchResults() {
                         <Badge variant="secondary" className="text-[10px] px-2 py-0.5 font-medium">
                           {getTypeLabel(res.type)}
                         </Badge>
-                        {res.category && (
+                        {res.category && !["general", "général", "autre", "other"].includes(getCategoryLabel(res.category).toLowerCase()) && (
                           <Badge variant="outline" className="text-[10px] px-2 py-0.5 text-muted-foreground">
                             {getCategoryLabel(res.category)}
                           </Badge>

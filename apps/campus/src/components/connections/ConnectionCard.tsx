@@ -40,8 +40,8 @@ export function ConnectionCard({
               <span>{truncate(formatSlugToLabel(connection.university), 20)}</span>
             )}
             {connection.university && <span>·</span>}
-            <span className="flex items-center gap-0.5">
-              <Zap className="h-3 w-3 text-muted-foreground" />
+            <span className="flex items-center gap-0.5 text-foreground/80 font-medium">
+              <Zap className="h-3 w-3 text-primary fill-primary" />
               {connection.impactScore ?? 0}
             </span>
             {connection.mutualFriends ? (

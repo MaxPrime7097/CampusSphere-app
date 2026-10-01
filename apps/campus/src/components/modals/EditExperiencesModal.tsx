@@ -89,15 +89,13 @@ export function EditExperiencesModal({ children, initialExperiences, onSuccess, 
 
         <div className="space-y-4 py-4">
           <div className="space-y-3 p-4 rounded-xl bg-muted/20">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Poste *</Label>
-                <JobTitleCombobox value={title} onValueChange={setTitle} />
-              </div>
-              <div className="space-y-2">
-                <Label>Entreprise *</Label>
-                <CompanyCombobox value={company} onValueChange={setCompany} />
-              </div>
+            <div className="space-y-2">
+              <Label>Poste *</Label>
+              <JobTitleCombobox value={title} onValueChange={setTitle} />
+            </div>
+            <div className="space-y-2">
+              <Label>Entreprise *</Label>
+              <CompanyCombobox value={company} onValueChange={setCompany} />
             </div>
             <div className="space-y-2">
               <Label>Durée *</Label>

@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Search, Menu, X } from "lucide-react";
+import { Search, Menu, X, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MenuDropdown } from "./MenuDropdown";
-import { ProfileBubble } from "./ProfileBubble";
+import { useUnreadCounts } from "@/hooks/useUnreadCounts";
 import { SearchDropdown } from "./SearchDropdown";
 
 interface MobileTopBarProps {
@@ -18,6 +18,7 @@ export function MobileTopBar({ onMenuClick, user, isLoading }: MobileTopBarProps
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const location = useLocation();
+  const counts = useUnreadCounts();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchDropdownVisible, setIsSearchDropdownVisible] = useState(false);
@@ -99,7 +100,20 @@ export function MobileTopBar({ onMenuClick, user, isLoading }: MobileTopBarProps
               <Search className="h-5 w-5" />
             </Button>
             
-            <ProfileBubble user={user} isLoading={isLoading} />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/notifications")}
+              className="relative h-9 w-9 p-0 rounded-full hover:bg-muted text-foreground active:scale-95 transition-transform"
+              aria-label="Notifications"
+            >
+              <Bell className="h-5 w-5" />
+              {counts.notifications > 0 && (
+                <span className="absolute top-1 right-1 min-w-[16px] h-4 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1 ring-2 ring-background">
+                  {counts.notifications > 99 ? "99+" : counts.notifications}
+                </span>
+              )}
+            </Button>
             <Button
               variant="ghost"
               size="sm"

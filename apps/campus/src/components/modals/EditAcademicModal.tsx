@@ -77,7 +77,7 @@ export function EditAcademicModal({ children, initialData, onSuccess, open: cont
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {children ? <DialogTrigger asChild>{children}</DialogTrigger> : null}
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <GraduationCap className="h-5 w-5 text-primary" />
@@ -91,15 +91,14 @@ export function EditAcademicModal({ children, initialData, onSuccess, open: cont
             <UniversityCombobox value={university} onValueChange={setUniversity} />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Filière *</Label>
-              <FacultyCombobox value={faculty} onValueChange={setFaculty} />
-            </div>
-            <div className="space-y-2">
-              <Label>Niveau *</Label>
-              <StudyLevelCombobox value={studyYear} onValueChange={setStudyYear} />
-            </div>
+          <div className="space-y-2">
+            <Label>Filière *</Label>
+            <FacultyCombobox value={faculty} onValueChange={setFaculty} />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Niveau *</Label>
+            <StudyLevelCombobox value={studyYear} onValueChange={setStudyYear} />
           </div>
 
           <div className="space-y-2">

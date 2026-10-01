@@ -1,5 +1,5 @@
 import { UniversalShareModal } from "@/components/shared/UniversalShareModal";
-import { Suspense, lazy, useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState, useRef } from "react";
 import { Heart, MessageCircle, Share, Bookmark, MoreVertical, Zap, Copy, Flag, ExternalLink, Users, Plus, Minus, X, Pencil, Trash2, Loader2, FileText, Download, ChevronLeft, ChevronRight, Search, Facebook, Instagram, Twitter, Linkedin, Info, BadgeCheck } from "lucide-react";
 import { FaFacebook, FaTwitter, FaInstagram, FaWhatsapp, FaLinkedin } from 'react-icons/fa';
 
@@ -72,6 +72,27 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [isDeleted, setIsDeleted] = useState(false);
+  const [showRatingPicker, setShowRatingPicker] = useState(false);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isLongPressRef = useRef(false);
+  const pickerRef = useRef<HTMLDivElement | null>(null);
+
+  // Close rating picker on click outside
+  useEffect(() => {
+    if (!showRatingPicker) return;
+    const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setShowRatingPicker(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("touchstart", handleOutsideClick);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("touchstart", handleOutsideClick);
+    };
+  }, [showRatingPicker]);
 
   useEffect(() => {
     setIsLiked(Boolean(post.isLiked));
@@ -169,31 +190,91 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
 
   const handleImpactRate = async (value: number | null) => {
     requireAuth(async () => {
-      // Explication pédagogique lors du premier clic
+      // Explication pedagogique lors du premier clic
       const hasSeenExplanation = localStorage.getItem("impact_explanation_shown");
       if (!hasSeenExplanation) {
         toast({
-          title: "Qu'est-ce que l'Impact Score ? ⚡",
-          description: "C'est une mesure de l'utilité du post. Plus un post aide la communauté, plus son Impact Score grimpe. Vous pouvez voter pour augmenter (+) ou réduire (-) cette note.",
+          title: "Qu'est-ce que l'Impact Score ?",
+          description: "C'est une mesure de l'utilite du post. Plus un post aide la communaute, plus son Impact Score grimpe. Un appui long permet d'evaluer de 1 a 5.",
           duration: 6000,
         });
         localStorage.setItem("impact_explanation_shown", "true");
       }
 
+      // Optimistic update for instant feedback
+      const prevScore = impactScore;
+      const prevRating = userImpactRating;
+      const delta = (value ?? 0) - (prevRating ?? 0);
+      setImpactScore((prev) => Math.max(0, prev + delta));
+      setUserImpactRating(value);
+
       try {
         const response = await impactRatePost(post.id, value);
-        const nextImpactScore = Number(response?.data?.impactScore ?? impactScore);
-        const nextUserImpactRating = response?.data?.userImpactRating ?? null;
+        const nextImpactScore = Number(response?.data?.impactScore ?? (prevScore + delta));
+        const nextUserImpactRating = response?.data?.userImpactRating ?? value;
 
         setImpactScore(nextImpactScore);
         setUserImpactRating(nextUserImpactRating);
       } catch (error: any) {
+        // Rollback on error
+        setImpactScore(prevScore);
+        setUserImpactRating(prevRating);
         toast({
           title: "Erreur",
           description: error?.message || "Impossible de noter l'impact du post",
           variant: "destructive",
           duration: 2000,
         });
+      }
+    });
+  };
+
+  const handleTouchStartImpact = () => {
+    isLongPressRef.current = false;
+    longPressTimerRef.current = setTimeout(() => {
+      isLongPressRef.current = true;
+      requireAuth(() => setShowRatingPicker(true));
+    }, 380);
+  };
+
+  const handleTouchEndImpact = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const handleTouchMoveImpact = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const handleMouseEnterImpact = () => {
+    hoverTimerRef.current = setTimeout(() => {
+      setShowRatingPicker(true);
+    }, 450);
+  };
+
+  const handleMouseLeaveImpact = () => {
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
+  };
+
+  const handleSingleTapImpact = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isLongPressRef.current) {
+      isLongPressRef.current = false;
+      return;
+    }
+    requireAuth(() => {
+      if (userImpactRating !== null) {
+        handleImpactRate(null);
+      } else {
+        handleImpactRate(1);
       }
     });
   };
@@ -606,72 +687,112 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
               )}
             </div>
 
-            {/* Impact Score, Comment, Share (Subtle light-gray pill buttons) */}
-            <div className="flex items-center justify-between pt-2.5 mt-1 border-t border-border/30 px-3.5 sm:px-5 md:px-6">
-              {/* Left: Impact Score Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="gap-1.5 h-8 md:h-7.5 px-3 md:px-2.5 rounded-full bg-muted/40 hover:bg-muted/70 text-xs font-medium text-muted-foreground hover:text-foreground border border-border/20 transition-all active:scale-95"
+            {/* Impact Score, Comment, Share (3 equal-sized full-width pills with light gray background) */}
+            <div className="grid grid-cols-3 gap-2 pt-2 mt-1 border-t border-border/30 px-2 sm:px-4">
+              {/* Left: Impact Score with Option A (1-Tap quick vote + Long-press / Hover 1-5 picker) */}
+              <div
+                className="relative w-full"
+                onMouseEnter={handleMouseEnterImpact}
+                onMouseLeave={handleMouseLeaveImpact}
+              >
+                {/* Floating Reaction / Rating Bar (1 to 5) */}
+                {showRatingPicker && (
+                  <div
+                    ref={pickerRef}
+                    className="absolute bottom-full left-0 mb-2 z-30 flex items-center gap-1 p-1 bg-background/95 backdrop-blur-md border border-border/80 shadow-lg rounded-full animate-in fade-in-0 zoom-in-95 duration-150"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <Zap className={cn("h-3.5 w-3.5", userImpactRating ? "text-amber-500 fill-amber-500" : "")} />
-                    <span>{impactScore}</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-56 p-3">
-                  <div className="space-y-3">
-                    <div className="text-xs font-medium text-muted-foreground">
-                      Score d'impact — évaluez l'utilité de ce post
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      {[1, 2, 3, 4, 5].map((value) => (
-                        <Button
-                          key={value}
-                          variant={userImpactRating === value ? "default" : "outline"}
-                          size="sm"
-                          className="h-9 w-9 p-0"
-                          onClick={() => handleImpactRate(value)}
-                        >
-                          {value}
-                        </Button>
-                      ))}
-                    </div>
-                    {userImpactRating !== null && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-full text-xs text-muted-foreground"
-                        onClick={() => handleImpactRate(null)}
+                    {[1, 2, 3, 4, 5].map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowRatingPicker(false);
+                          handleImpactRate(value);
+                        }}
+                        className={cn(
+                          "h-7 w-7 rounded-full text-xs font-semibold flex items-center justify-center transition-all cursor-pointer",
+                          userImpactRating === value
+                            ? "bg-primary text-primary-foreground shadow-sm scale-110"
+                            : "hover:bg-primary/20 hover:text-primary text-foreground"
+                        )}
+                        title={`Noter ${value}/5`}
                       >
-                        Retirer mon vote
-                      </Button>
+                        {value}
+                      </button>
+                    ))}
+                    {userImpactRating !== null && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowRatingPicker(false);
+                          handleImpactRate(null);
+                        }}
+                        className="h-7 w-7 rounded-full text-xs flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+                        title="Retirer mon vote"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
                     )}
                   </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                )}
+
+                <Button
+                  variant="ghost"
+                  type="button"
+                  onTouchStart={handleTouchStartImpact}
+                  onTouchEnd={handleTouchEndImpact}
+                  onTouchMove={handleTouchMoveImpact}
+                  onMouseDown={() => {
+                    isLongPressRef.current = false;
+                    longPressTimerRef.current = setTimeout(() => {
+                      isLongPressRef.current = true;
+                      requireAuth(() => setShowRatingPicker(true));
+                    }, 380);
+                  }}
+                  onMouseUp={() => {
+                    if (longPressTimerRef.current) {
+                      clearTimeout(longPressTimerRef.current);
+                      longPressTimerRef.current = null;
+                    }
+                  }}
+                  onClick={handleSingleTapImpact}
+                  className={cn(
+                    "w-full h-9 sm:h-9.5 px-2 flex items-center justify-center gap-1.5 sm:gap-2 rounded-full text-xs sm:text-sm font-medium border transition-all active:scale-95 select-none",
+                    userImpactRating
+                      ? "bg-primary/15 border-primary/35 text-primary font-semibold hover:bg-primary/20"
+                      : "bg-muted/50 hover:bg-muted/80 text-muted-foreground hover:text-foreground border-border/30"
+                  )}
+                  title={userImpactRating ? `Impact attribue (${userImpactRating}/5) — Cliquer pour retirer` : "Cliquer pour +1 Impact ou maintenir pour evaluer de 1 a 5"}
+                >
+                  <Zap className={cn("h-5 w-5 shrink-0 transition-transform", userImpactRating ? "text-primary fill-primary" : "")} />
+                  <span>{impactScore}</span>
+                  <span className="hidden sm:inline">Impact</span>
+                </Button>
+              </div>
 
               {/* Middle: Comments */}
               <Button
                 variant="ghost"
-                size="sm"
-                className="gap-1.5 h-8 md:h-7.5 px-3 md:px-2.5 rounded-full bg-muted/40 hover:bg-muted/70 text-xs font-medium text-muted-foreground hover:text-foreground border border-border/20 transition-all active:scale-95"
+                className="w-full h-9 sm:h-9.5 px-2 flex items-center justify-center gap-1.5 sm:gap-2 rounded-full text-xs sm:text-sm font-medium bg-muted/50 hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border/30 transition-all active:scale-95"
                 onClick={() => requireAuth(() => setCommentsOpen(true))}
               >
-                <MessageCircle className="h-3.5 w-3.5" />
+                <MessageCircle className="h-5 w-5 shrink-0" />
                 <span>{post.comments}</span>
+                <span className="hidden sm:inline">{post.comments > 1 ? "Commentaires" : "Commentaire"}</span>
               </Button>
 
               {/* Right: Share */}
               <Button
                 variant="ghost"
-                size="sm"
-                className="gap-1.5 h-8 md:h-7.5 px-3 md:px-2.5 rounded-full bg-muted/40 hover:bg-muted/70 text-xs font-medium text-muted-foreground hover:text-foreground border border-border/20 transition-all active:scale-95"
+                className="w-full h-9 sm:h-9.5 px-2 flex items-center justify-center gap-1.5 sm:gap-2 rounded-full text-xs sm:text-sm font-medium bg-muted/50 hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border/30 transition-all active:scale-95"
                 onClick={handleShare}
                 title="Partager ce post"
               >
-                <Share className="h-3.5 w-3.5" />
+                <Share className="h-5 w-5 shrink-0" />
+                <span>Partager</span>
               </Button>
             </div>
           </div>

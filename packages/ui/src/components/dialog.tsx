@@ -36,13 +36,13 @@ const DialogContent = React.forwardRef<
       ref={ref}
       className={cn(
         "fixed z-50 grid w-full gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-        // Affichage Mobile : Tiroir du bas à ~75% de la hauteur dynamique de l'écran (dvh adapté au clavier)
-        "inset-x-0 bottom-0 max-h-[75dvh] overflow-y-auto rounded-t-2xl rounded-b-none border-t border-x-0 border-b-0 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))] pt-3 data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
+        // Affichage Mobile : Tiroir du bas à 90% de la hauteur dynamique de l'écran (dvh adapté au clavier)
+        "inset-x-0 bottom-0 max-h-[90dvh] overflow-y-auto rounded-t-2xl rounded-b-none border-t border-x-0 border-b-0 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))] pt-3 data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
         // Affichage Desktop : Modale centrée classique inchangée
         "sm:inset-x-auto sm:bottom-auto sm:left-[50%] sm:top-[50%] sm:max-h-[85vh] sm:max-w-lg sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg sm:border sm:p-6 sm:data-[state=closed]:slide-out-to-bottom-0 sm:data-[state=open]:slide-in-from-bottom-0 sm:data-[state=closed]:zoom-out-95 sm:data-[state=open]:zoom-in-95 sm:data-[state=closed]:slide-out-to-left-1/2 sm:data-[state=closed]:slide-out-to-top-[48%] sm:data-[state=open]:slide-in-from-left-1/2 sm:data-[state=open]:slide-in-from-top-[48%]",
         className,
         // Overrides stricts sur mobile pour garantir l'affichage tiroir dynamique avec poignée tactile universelle
-        "max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:top-auto max-sm:left-0 max-sm:right-0 max-sm:w-full max-sm:max-w-full max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-t-2xl max-sm:rounded-b-none max-sm:border-t max-sm:border-x-0 max-sm:border-b-0 max-sm:max-h-[75dvh] max-sm:overflow-y-auto max-sm:pb-[max(1.5rem,env(safe-area-inset-bottom,0px))] max-sm:pt-0",
+        "max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:top-auto max-sm:left-0 max-sm:right-0 max-sm:w-full max-sm:max-w-full max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-t-2xl max-sm:rounded-b-none max-sm:border-t max-sm:border-x-0 max-sm:border-b-0 max-sm:max-h-[90dvh] max-sm:overflow-y-auto max-sm:pb-[max(1.5rem,env(safe-area-inset-bottom,0px))] max-sm:pt-0",
       )}
       {...props}
     >

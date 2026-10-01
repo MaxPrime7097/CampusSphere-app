@@ -80,7 +80,7 @@ function SavedPostItem({ post, onUnsave, onClick }: SavedPostItemProps) {
 
           <div className="flex items-center gap-3 pt-1 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1 font-medium">
-              <Zap className="h-3.5 w-3.5 text-amber-500 fill-amber-500/20" />
+              <Zap className="h-3.5 w-3.5 text-primary fill-primary" />
               {post.impactScore}
             </span>
             <span className="inline-flex items-center gap-1 font-medium">
