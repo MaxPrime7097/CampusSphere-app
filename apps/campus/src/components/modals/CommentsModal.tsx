@@ -55,6 +55,7 @@ interface CommentsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   postId: string;
+  allowComments?: boolean;
 }
 
 function normalizeCommentAuthor(rawAuthor: any, fallbackName?: string) {
@@ -82,7 +83,7 @@ function normalizeCommentAuthor(rawAuthor: any, fallbackName?: string) {
   };
 }
 
-export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps) {
+export function CommentsModal({ open, onOpenChange, postId, allowComments = true }: CommentsModalProps) {
   const { t } = useTranslation();
   const { toast } = useToast();
   const [newComment, setNewComment] = useState("");
@@ -698,7 +699,12 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
           )}
 
           {/* Minimalist single-line rounded bar */}
-          <div className="flex items-center gap-2.5">
+          {!allowComments ? (
+            <div className="w-full p-3 text-center text-xs text-muted-foreground bg-muted/30 border border-border/40 rounded-xl">
+              Les commentaires sont désactivés pour cette publication.
+            </div>
+          ) : (
+            <div className="flex items-center gap-2.5">
             <Avatar className="h-8 w-8 shrink-0">
               <AvatarImage src={currentUser?.avatar || "/placeholder-avatar.jpg"} />
               <AvatarFallback className="text-xs bg-muted font-semibold">
@@ -777,6 +783,7 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
               </button>
             </div>
           </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

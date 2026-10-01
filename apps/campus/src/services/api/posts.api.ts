@@ -71,6 +71,7 @@ export async function updatePost(
     content: string;
     visibility: string;
     tags: string[];
+    allow_comments: boolean;
   }>,
   token?: string
 ) {
