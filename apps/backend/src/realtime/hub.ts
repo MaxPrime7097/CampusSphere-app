@@ -31,7 +31,11 @@ export type ConversationEvent =
   | "message_created"
   | "message_updated"
   | "message_deleted"
-  | "conversation_read";
+  | "conversation_read"
+  | "message_reaction_updated"
+  | "conversation_updated"
+  | "user_typing"
+  | "user_presence";
 
 /** Opaque room key. Build with conversationChannel() / userChannel(). */
 export type ChannelKey = string & { readonly __brand: "ChannelKey" };

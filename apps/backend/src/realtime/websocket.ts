@@ -23,7 +23,8 @@ import type { Duplex } from "node:stream";
 import { WebSocketServer, type WebSocket } from "ws";
 import { bearerToken, verifyToken } from "../lib/jwt.js";
 import { prisma } from "../lib/prisma.js";
-import { conversationChannel, subscribe, userChannel, type ChannelKey } from "./hub.js";
+import { conversationChannel, publish, subscribe, userChannel, type ChannelKey } from "./hub.js";
+import { recordConnect, recordDisconnect, isUserOnline, getOnlineUserIds } from "./presence.js";
 import { quizLiveWss, handleQuizLiveUpgrade } from "./quizLiveSocket.js";
 
 const CHAT_PATH_RE = /^\/ws\/(?:chat|conversations)\/(\d+)\/?$/;
@@ -40,6 +41,8 @@ interface LiveSocket extends WebSocket {
 interface Authorised {
   channel: ChannelKey;
   userId: number;
+  username: string;
+  conversationId?: number;
   /** Sent as the handshake frame so a client can confirm what it is attached to. */
   hello: Record<string, unknown>;
 }
@@ -63,11 +66,19 @@ async function authorise(request: IncomingMessage): Promise<Authorised | null> {
     return null;
   }
 
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { isActive: true } });
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, username: true, isActive: true },
+  });
   if (!user?.isActive) return null;
 
   if (isNotifications) {
-    return { channel: userChannel(userId), userId, hello: { user_id: userId } };
+    return {
+      channel: userChannel(userId),
+      userId,
+      username: user.username,
+      hello: { user_id: userId },
+    };
   }
 
   const conversationId = Number(chatMatch![1]);
@@ -80,6 +91,8 @@ async function authorise(request: IncomingMessage): Promise<Authorised | null> {
   return {
     channel: conversationChannel(conversationId),
     userId,
+    username: user.username,
+    conversationId,
     hello: { conversation_id: conversationId },
   };
 }
@@ -125,14 +138,80 @@ export function attachWebSockets(server: Server): void {
       ws.isAlive = true;
     });
 
-    // The protocol is server -> client only; message sending goes through the HTTP
-    // API so it runs the same validation, permissions and notification logic.
-    // Inbound frames are ignored rather than parsed.
-    ws.on("message", () => undefined);
+    // Track user socket presence
+    recordConnect(auth.userId, ws);
 
-    ws.on("close", unsubscribe);
-    ws.on("error", () => {
+    // If connected to a conversation, notify room of presence and send initial presence state
+    if (auth.conversationId) {
+      publish(auth.conversationId, "user_presence", {
+        conversation_id: auth.conversationId,
+        user_id: auth.userId,
+        username: auth.username,
+        is_online: true,
+      });
+
+      // Send initial presence state to this newly connected client
+      void (async () => {
+        try {
+          const members = await prisma.conversationMember.findMany({
+            where: { conversationId: auth.conversationId },
+            select: { userId: true },
+          });
+          const onlineIds = await getOnlineUserIds(members.map((m) => m.userId));
+          if (ws.readyState === 1) {
+            ws.send(
+              JSON.stringify({
+                type: "presence_state",
+                event_type: "presence_state",
+                payload: {
+                  conversation_id: auth.conversationId,
+                  online_user_ids: onlineIds,
+                },
+              }),
+            );
+          }
+        } catch (err) {
+          console.error("[ws] failed to send initial presence_state", err);
+        }
+      })();
+    }
+
+    // Bi-directional frames: typing indicators
+    ws.on("message", (raw) => {
+      try {
+        const data = JSON.parse(raw.toString()) as { type?: string; is_typing?: boolean };
+        if (data.type === "typing" && auth.conversationId) {
+          publish(auth.conversationId, "user_typing", {
+            conversation_id: auth.conversationId,
+            user_id: auth.userId,
+            username: auth.username,
+            is_typing: Boolean(data.is_typing),
+          });
+        }
+      } catch {
+        // Ignore malformed frames
+      }
+    });
+
+    const cleanup = () => {
       unsubscribe();
+      recordDisconnect(auth.userId, ws);
+      if (auth.conversationId) {
+        void (async () => {
+          const stillOnline = await isUserOnline(auth.userId);
+          publish(auth.conversationId!, "user_presence", {
+            conversation_id: auth.conversationId,
+            user_id: auth.userId,
+            username: auth.username,
+            is_online: stillOnline,
+          });
+        })();
+      }
+    };
+
+    ws.on("close", cleanup);
+    ws.on("error", () => {
+      cleanup();
       ws.terminate();
     });
 
