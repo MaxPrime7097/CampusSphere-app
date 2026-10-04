@@ -127,6 +127,10 @@ export function AppLayout({ children }: AppLayoutProps) {
           });
           // Refresh global counts
           refreshCounts();
+
+          if (data.type === "MESSAGE" || data.notification_type === "MESSAGE" || data.conversation_id) {
+            window.dispatchEvent(new CustomEvent("campus:message_received", { detail: data }));
+          }
         } catch (e) {
           console.error("Notification WS Error:", e);
         }

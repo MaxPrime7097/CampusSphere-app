@@ -74,7 +74,7 @@ const AdminVerificationPage = lazy(() => import("./admin/pages/AdminVerification
 const AdminContactMessagesPage = lazy(() => import("./admin/pages/AdminContactMessagesPage").then(m => ({ default: m.AdminContactMessagesPage })));
 const AdminSpheraPage = lazy(() => import("./admin/pages/AdminSpheraPage").then(m => ({ default: m.AdminSpheraPage })));
 
-const PageLoader = () => (
+const InitialAppLoader = () => (
   <div className="min-h-screen w-full flex items-center justify-center bg-background">
     <div className="flex flex-col items-center gap-4">
       <div className="relative">
@@ -88,13 +88,32 @@ const PageLoader = () => (
   </div>
 );
 
+const RouteTransitionLoader = () => (
+  <div className="relative min-h-[50vh] w-full flex flex-col items-center justify-center">
+    <div className="fixed top-0 left-0 right-0 h-1 bg-primary/20 z-[9999] overflow-hidden">
+      <div className="h-full bg-primary campus-gradient animate-pulse w-full rounded-full" />
+    </div>
+    <div className="flex flex-col items-center gap-3 py-16">
+      <div className="relative">
+        <img src="/CS.svg" alt="Loading..." className="h-10 w-10 animate-pulse" />
+        <div className="absolute inset-0 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
+      </div>
+      <p className="text-xs font-medium text-muted-foreground animate-pulse">
+        Chargement...
+      </p>
+    </div>
+  </div>
+);
+
+const PageLoader = InitialAppLoader;
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000,
+      staleTime: 60 * 1000,
       gcTime: 30 * 60 * 1000,
       refetchOnWindowFocus: false,
-      refetchOnMount: false,
+      refetchOnMount: true,
       retry: 1,
     },
   },
@@ -104,7 +123,7 @@ const Protected = ({ children, requireCompleteProfile = true }: { children: Reac
   const { user, isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return <PageLoader />;
+    return <InitialAppLoader />;
   }
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
@@ -117,7 +136,7 @@ const Protected = ({ children, requireCompleteProfile = true }: { children: Reac
 
 const HomeOrLanding = () => {
   const { isAuthenticated, isLoading } = useAuth();
-  if (isLoading) return <PageLoader />;
+  if (isLoading) return <InitialAppLoader />;
   return isAuthenticated ? (
     <Protected>
       <AppLayout>
@@ -156,7 +175,7 @@ const App = (): React.ReactElement => (
         <Sonner />
         <BrowserRouter>
           <ScrollToTop />
-          <Suspense fallback={<PageLoader />}>
+          <Suspense fallback={<RouteTransitionLoader />}>
             <Routes>
               {/* Auth routes */}
             <Route path="/login" element={<Login />} />

@@ -14,6 +14,7 @@ interface CreateTaskModalProps {
   onTaskCreated?: (taskData: any) => void;
   sphereMembers?: Array<{ id: string; userId?: string; name: string; username: string; avatar?: string }>;
   sphereId: string | number;
+  initialStatus?: "todo" | "in_progress" | "review" | "done";
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
@@ -24,7 +25,15 @@ const PRIORITIES = [
   { value: "high",   label: "Haute",   color: "bg-red-500" },
 ];
 
-export function CreateTaskModal({ children, onTaskCreated, sphereMembers = [], sphereId, open: controlledOpen, onOpenChange: setControlledOpen }: CreateTaskModalProps) {
+export function CreateTaskModal({
+  children,
+  onTaskCreated,
+  sphereMembers = [],
+  sphereId,
+  initialStatus = "todo",
+  open: controlledOpen,
+  onOpenChange: setControlledOpen,
+}: CreateTaskModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [title, setTitle] = useState("");
@@ -63,10 +72,8 @@ export function CreateTaskModal({ children, onTaskCreated, sphereMembers = [], s
       toast({ variant: "destructive", title: "Titre trop court", description: "Le titre doit contenir au moins 3 caractères." });
       return;
     }
-    if (!assignedTo) {
-      toast({ variant: "destructive", title: "Assignation requise", description: "Veuillez assigner la tâche à un membre." });
-      return;
-    }
+    const assignedNum = assignedTo && assignedTo !== "unassigned" ? Number(assignedTo) : undefined;
+    const validAssignedTo = Number.isInteger(assignedNum) && assignedNum! > 0 ? assignedNum : undefined;
 
     setIsSubmitting(true);
     try {
@@ -76,7 +83,8 @@ export function CreateTaskModal({ children, onTaskCreated, sphereMembers = [], s
         due_date: dueDate || undefined,
         priority,
         sphere_id: Number(sphereId),
-        assigned_to: assignedTo,
+        assigned_to: validAssignedTo,
+        kanban_status: initialStatus,
         impact_points: priority === "high" ? 20 : priority === "medium" ? 15 : 10,
       } as any);
 
@@ -140,15 +148,14 @@ export function CreateTaskModal({ children, onTaskCreated, sphereMembers = [], s
           </div>
 
           <div>
-            <Label>Assigner à *</Label>
+            <Label>Assigner à <span className="text-muted-foreground text-xs">(optionnel)</span></Label>
             <Select value={assignedTo} onValueChange={setAssignedTo}>
               <SelectTrigger className="mt-1">
-                <SelectValue placeholder="Sélectionner un membre" />
+                <SelectValue placeholder="Non assigné" />
               </SelectTrigger>
               <SelectContent>
-                {sphereMembers.length === 0 ? (
-                  <div className="px-3 py-2 text-sm text-muted-foreground">Aucun membre disponible</div>
-                ) : sphereMembers.map((m) => (
+                <SelectItem value="unassigned">Non assigné</SelectItem>
+                {sphereMembers.map((m) => (
                   <SelectItem key={m.id} value={m.userId || m.id}>
                     {m.name} {m.username ? `(@${m.username})` : ""}
                   </SelectItem>
@@ -157,18 +164,33 @@ export function CreateTaskModal({ children, onTaskCreated, sphereMembers = [], s
             </Select>
           </div>
 
+          {isSubmitting && (
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-medium text-foreground flex items-center gap-1.5">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                  Création de la tâche en cours...
+                </span>
+                <span className="text-muted-foreground">Enregistrement...</span>
+              </div>
+              <div className="h-1.5 w-full bg-muted overflow-hidden rounded-full">
+                <div className="h-full bg-primary rounded-full animate-pulse w-4/5 transition-all duration-500" />
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-2 pt-2">
             <Button variant="outline" className="flex-1" onClick={() => setOpen(false)} disabled={isSubmitting}>
               Annuler
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={!title.trim() || !assignedTo || isSubmitting}
+              disabled={!title.trim() || isSubmitting}
               className="flex-1 bg-secondary text-secondary-foreground hover:bg-muted border border-border/60"
             >
               {isSubmitting
                 ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Création...</>
-                : <><CheckCircle className="h-4 w-4 mr-2" />Créer</>}
+                : <><CheckCircle className="h-4 w-4 mr-2" />Créer la tâche</>}
             </Button>
           </div>
         </div>

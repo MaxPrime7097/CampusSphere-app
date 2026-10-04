@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { getUser, listNotifications, markNotificationRead, markAllNotificationsRead, deleteNotification as deleteNotificationApi } from "@/services/api";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import { CanonicalNotificationType } from "@/constants/notificationTypes";
 import { buildActionUrl, normalizeNotificationData, resolveConnectionProfileUrl, toCanonicalType } from "@/lib/notifications";
 import { NotificationSkeleton } from "@/components/ui/skeletons";
-
 
 type NotificationListItem = {
   id: string;
@@ -42,9 +41,51 @@ const CLICKABLE_NOTIFICATION_TYPES = new Set<CanonicalNotificationType>([
   "message",
 ]);
 
+function mapNotificationsList(data: any): NotificationListItem[] {
+  const safeNotifications = Array.isArray(data) ? data : [];
+  return safeNotifications.map((n: any) => {
+    const senderName =
+      n.sender?.name ||
+      n.data?.sender_name ||
+      n.data?.user_full_name ||
+      n.data?.user_name ||
+      n.data?.inviter_name ||
+      n.data?.assigner_name ||
+      n.data?.requester_name ||
+      n.data?.author_name ||
+      n.data?.sender_username ||
+      n.data?.requester_username ||
+      null;
+    const senderAvatar = n.sender?.avatar || n.data?.sender_avatar || n.data?.author_avatar || null;
+
+    const notificationType = toCanonicalType(n.notification_type || n.type);
+    const normalizedData = normalizeNotificationData(n);
+    const actionUrl = buildActionUrl(notificationType, normalizedData);
+
+    return {
+      id: String(n.id),
+      type: notificationType,
+      title: n.title || 'Notification',
+      message: n.message || n.content || '',
+      read: n.is_read || n.read || false,
+      createdAt: n.created_at || n.createdAt || new Date().toISOString(),
+      sender: {
+        name: senderName,
+        avatar: senderAvatar,
+        id: normalizedData.senderId,
+      },
+      profileUsername: normalizedData.profileUsername,
+      actionUrl,
+    };
+  });
+}
+
 export function Notifications() {
-  const [notifications, setNotifications] = useState<NotificationListItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const [notifications, setNotifications] = useState<NotificationListItem[]>(() => {
+    const cached = queryClient.getQueryData<any>(["notifications"]);
+    return cached ? mapNotificationsList(cached) : [];
+  });
   const [statusText, setStatusText] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -55,68 +96,22 @@ export function Notifications() {
     staleTime: 30 * 1000,
     gcTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    refetchOnMount: true,
   });
+
+  const loading = notificationsQuery.isLoading && notifications.length === 0 && !notificationsQuery.data;
 
   useEffect(() => {
     if (notificationsQuery.data) {
-      const safeNotifications = Array.isArray(notificationsQuery.data) ? notificationsQuery.data : [];
-      const mapped = safeNotifications.map((n: any) => {
-        const senderName =
-          n.sender?.name ||
-          n.data?.sender_name ||
-          n.data?.user_full_name ||
-          n.data?.user_name ||
-          n.data?.inviter_name ||
-          n.data?.assigner_name ||
-          n.data?.requester_name ||
-          n.data?.author_name ||
-          n.data?.sender_username ||
-          n.data?.requester_username ||
-          null;
-        const senderAvatar = n.sender?.avatar || n.data?.sender_avatar || n.data?.author_avatar || null;
-
-        const notificationType = toCanonicalType(n.notification_type || n.type);
-        const normalizedData = normalizeNotificationData(n);
-        const actionUrl = buildActionUrl(notificationType, normalizedData);
-
-        if (!actionUrl && CLICKABLE_NOTIFICATION_TYPES.has(notificationType)) {
-          console.debug("[Notifications] Missing actionUrl for clickable notification", {
-            notificationId: n.id,
-            notificationType,
-            normalizedData,
-          });
-        }
-
-        return {
-          id: String(n.id),
-          type: notificationType,
-          title: n.title || 'Notification',
-          message: n.message || n.content || '',
-          read: n.is_read || n.read || false,
-          createdAt: n.created_at || n.createdAt || new Date().toISOString(),
-          sender: {
-            name: senderName,
-            avatar: senderAvatar,
-            id: normalizedData.senderId,
-          },
-          profileUsername: normalizedData.profileUsername,
-          actionUrl,
-        };
-      });
-      setNotifications(mapped);
-      setLoading(false);
-    } else if (notificationsQuery.isLoading) {
-      setLoading(true);
+      setNotifications(mapNotificationsList(notificationsQuery.data));
     } else if (notificationsQuery.error) {
       toast({
         title: "Erreur",
         description: (notificationsQuery.error as any)?.message || "Impossible de charger les notifications",
         variant: "destructive",
       });
-      setLoading(false);
     }
-  }, [notificationsQuery.data, notificationsQuery.isLoading, notificationsQuery.error, toast]);
+  }, [notificationsQuery.data, notificationsQuery.error, toast]);
 
   const getNotificationIcon = (type: CanonicalNotificationType) => {
     switch (type) {

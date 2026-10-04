@@ -260,3 +260,10 @@ export async function deleteSphereFile(
     token: token || getAccessToken(),
   });
 }
+
+export async function getSphereConversation(sphereId: number | string, token?: string) {
+  const response = await apiFetch<any>(`api/spheres/${sphereId}/conversation/`, {
+    token: token || getAccessToken(),
+  });
+  return unwrapItem<any>(response);
+}

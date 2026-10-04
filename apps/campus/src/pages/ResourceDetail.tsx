@@ -1,7 +1,7 @@
 import { parseSlugId, encodeHashId } from "@/lib/hashids";
 import { getResourceUrl } from "@/lib/utils";
 import { useState, useEffect, useLayoutEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Helmet } from "react-helmet-async";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -36,12 +36,57 @@ import {
   ResourceAuthModal,
 } from "@/components/resources";
 
+function mapResourceDetail(data: any) {
+  if (!data) return null;
+  const author = (data as any).author_info ?? data.author ?? null;
+  const uploaderContributions =
+    author?.stats?.contributions ?? author?.contributions_count ?? author?.contributionsCount ?? 1;
+
+  return {
+    id: String(data.id),
+    title: data.title || "",
+    description: data.description || "",
+    subject: normalizeSubject(data.subject),
+    category: normalizeCategory(data.category),
+    type: normalizeResourceType(data.type),
+    format: (data.fileUrl || data.file)?.toString().split(".").pop() || "",
+    size: String(data.fileSize || data.file_size || data.size || "0"),
+    level: normalizeAudience(data.level || data.audience || data.courseLevel),
+    pages: Number(data.pages || data.page_count || 0),
+    uploader: {
+      name: author?.name || (data as any).author_name || "Utilisateur",
+      username: author?.username || (data as any).author_username || "",
+      avatar: author?.avatar || "/placeholder-avatar.jpg",
+      verified: author?.isVerified || (author as any)?.is_verified || false,
+      level: author?.level || "",
+      contributions: Math.max(1, Number(uploaderContributions) || 1),
+    },
+    uploadDate: data.createdAt || data.created_at || data.uploaded_at || null,
+    stats: {
+      downloads: data.downloadCount || data.download_count || data.stats?.downloads || 0,
+      saves: data.saves || data.stats?.saves || data.saves_count || 0,
+      views: data.viewCount || data.view_count || data.stats?.views || 0,
+    },
+    isSaved: data.isSaved ?? data.is_saved ?? false,
+    canEdit: data.canEdit ?? data.can_edit ?? false,
+    canDelete: data.canDelete ?? data.can_delete ?? false,
+    fileUrl: data.fileUrl || data.file_url || data.file || "",
+    fileName: data.fileName || data.file_name || "",
+    mimeType:
+      data.mimeType || data.mime_type || data.contentType || data.content_type || "",
+    impactScore: data.impactScore || data.impact_score || 0,
+    tags: data.tags || [],
+    relatedCourse: normalizeSubject(data.subject),
+  };
+}
+
 export function ResourceDetail() {
   const { id: rawParam } = useParams();
   const realId = parseSlugId(rawParam) ?? rawParam;
   const id = realId ? String(realId) : undefined;
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Pre-emptive immediate address bar rewrite if rawParam is pure numeric
   useLayoutEffect(() => {
@@ -83,41 +128,21 @@ export function ResourceDetail() {
       (localStorage.getItem("access") || localStorage.getItem("access_token"))
   );
 
-  const [resource, setResource] = useState<{
-    id: string;
-    title: string;
-    description: string;
-    subject: string;
-    category: string;
-    type: string | null;
-    format: string;
-    size: string;
-    level: string;
-    pages: number;
-    uploader: {
-      name: string;
-      username?: string;
-      avatar: string;
-      verified: boolean;
-      level: string;
-      contributions: number;
-    };
-    uploadDate: string | null;
-    stats: {
-      downloads: number;
-      saves: number;
-      views: number;
-    };
-    impactScore: number;
-    tags: string[];
-    relatedCourse: string;
-    isSaved: boolean;
-    canEdit?: boolean;
-    canDelete?: boolean;
-    fileUrl?: string;
-    fileName?: string;
-    mimeType?: string;
-  } | null>(null);
+  const [resource, setResource] = useState<any | null>(() => {
+    if (!id) return null;
+    const direct = queryClient.getQueryData<any>(["resource", id]);
+    if (direct) return mapResourceDetail(direct);
+    const cachedResources = queryClient.getQueryData<any[]>(["resources"]);
+    const found = (cachedResources || []).find(
+      (r: any) => String(r.id) === String(id) || r.slug === id || r.hash_id === id
+    );
+    if (found) return mapResourceDetail(found);
+    const savedResources = queryClient.getQueryData<any[]>(["saved-resources"]);
+    const saved = (savedResources || []).find(
+      (r: any) => String(r.id) === String(id) || r.slug === id || r.hash_id === id
+    );
+    return saved ? mapResourceDetail(saved) : null;
+  });
 
   const fileSource = resource?.fileUrl || resource?.fileName || "";
   const inferredExtension = (fileSource.split(".").pop() || resource?.format || "").toLowerCase();
@@ -136,6 +161,22 @@ export function ResourceDetail() {
     gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
+    placeholderData: () => {
+      if (!id) return undefined;
+      const direct = queryClient.getQueryData<any>(["resource", id]);
+      if (direct) return direct;
+      const cachedResources = queryClient.getQueryData<any[]>(["resources"]);
+      const found = (cachedResources || []).find(
+        (r: any) => String(r.id) === String(id) || r.slug === id || r.hash_id === id
+      );
+      if (found) return found;
+      const savedResources = queryClient.getQueryData<any[]>(["saved-resources"]);
+      return (
+        (savedResources || []).find(
+          (r: any) => String(r.id) === String(id) || r.slug === id || r.hash_id === id
+        ) ?? undefined
+      );
+    },
   });
 
   useEffect(() => {
@@ -287,7 +328,7 @@ export function ResourceDetail() {
           link.remove();
           window.URL.revokeObjectURL(objectUrl);
 
-          setResource((prev) =>
+          setResource((prev: any) =>
             prev
               ? {
                   ...prev,
@@ -325,7 +366,7 @@ export function ResourceDetail() {
         const response = await saveResource(id);
         const saved = response?.data?.saved ?? !isSaved;
         setIsSaved(saved);
-        setResource((prev) =>
+        setResource((prev: any) =>
           prev
             ? {
                 ...prev,
@@ -452,7 +493,7 @@ export function ResourceDetail() {
         title,
         description: draftDescription.trim(),
       });
-      setResource((prev) =>
+      setResource((prev: any) =>
         prev
           ? {
               ...prev,

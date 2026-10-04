@@ -9,11 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Gear as Settings, FloppyDisk as Save, Spinner as Loader2, Sphere, Shield, Trash as Trash2, Clock as Clock3 } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { deleteSphere, extendSphereDuration, updateSphere } from "@/services/api";
+import { normalizeSphereType } from "@/config/sphereFeatures";
 import { cn } from "@/lib/utils";
 
 interface SphereSettings {
   name: string;
   description: string;
+  sphereType: string;
   requireApproval: boolean;
   objective?: string;
   targetAudience?: string;
@@ -61,6 +63,7 @@ export function SphereSettingsModal({
   const [settings, setSettings] = useState<SphereSettings>({
     name: "",
     description: "",
+    sphereType: "communaute",
     requireApproval: false,
     duration: "Permanent",
     autoDeleteOnExpiry: false,
@@ -75,15 +78,23 @@ export function SphereSettingsModal({
 
   useEffect(() => {
     if (sphereData) {
+      const data = sphereData as any;
+      const rawType =
+        data.sphere_type ||
+        data.sphereType ||
+        data.type ||
+        data.category ||
+        "communaute";
       setSettings({
-        name: sphereData.name || "",
-        description: sphereData.description || "",
-        requireApproval: sphereData.requireApproval || false,
-        duration: sphereData.duration || "Permanent",
-        autoDeleteOnExpiry: sphereData.autoDeleteOnExpiry ?? false,
-        objective: sphereData.objective || "",
-        targetAudience: sphereData.targetAudience || "Tous les étudiants",
-        collaborationTypes: sphereData.collaborationTypes || []
+        name: data.name || "",
+        description: data.description || "",
+        sphereType: normalizeSphereType(rawType),
+        requireApproval: Boolean(data.require_approval ?? data.requireApproval ?? false),
+        duration: data.duration || "Permanent",
+        autoDeleteOnExpiry: Boolean(data.auto_delete_on_expiry ?? data.autoDeleteOnExpiry ?? false),
+        objective: data.objective || "",
+        targetAudience: data.target_audience ?? data.targetAudience ?? "Tous les étudiants",
+        collaborationTypes: data.collaboration_types ?? data.collaborationTypes ?? []
       });
     }
   }, [sphereData]);
@@ -155,7 +166,7 @@ export function SphereSettingsModal({
       const payload = {
         name: settings.name.trim(),
         description: settings.description,
-        sphere_type: sphereData.type,
+        sphere_type: settings.sphereType,
         require_approval: settings.requireApproval,
         objective: settings.objective,
         target_audience: settings.targetAudience,
@@ -257,7 +268,7 @@ export function SphereSettingsModal({
     }
   };
 
-  const showAdvancedOptions = sphereData?.type !== 'cours' && sphereData?.type !== 'communaute';
+  const showAdvancedOptions = normalizeSphereType(settings.sphereType) === "projet";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -288,6 +299,26 @@ export function SphereSettingsModal({
                   placeholder="Nom de votre sphère"
                   maxLength={50}
                 />
+            </div>
+
+            <div>
+              <Label htmlFor="sphereType">Type de sphère</Label>
+              <Select
+                value={settings.sphereType}
+                onValueChange={(val) => updateSetting("sphereType", val)}
+              >
+                <SelectTrigger id="sphereType" className="mt-1">
+                  <SelectValue placeholder="Choisir un type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cours">🎓 Cours & TD (Supports, Annonces, Révision IA)</SelectItem>
+                  <SelectItem value="projet">🚀 Projet & Équipe (Kanban, Tâches, Copilote IA)</SelectItem>
+                  <SelectItem value="communaute">👥 Communauté (Promo, Club, Actualités)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Définit les onglets actifs et les fonctionnalités (Kanban, Annonces, Révision Sphera).
+              </p>
             </div>
 
             <div>
@@ -414,10 +445,15 @@ export function SphereSettingsModal({
                 </div>
               )}
 
-              <div className="text-sm text-muted-foreground mt-2">
-                Statut: {sphereData?.expiresAt ? (new Date(sphereData.expiresAt) < new Date() ? "Expirée" : "Active") : "Sans expiration"}
-                {sphereData?.expiresAt ? ` - Expire le ${new Date(sphereData.expiresAt).toLocaleString()}` : ""}
-              </div>
+              {(() => {
+                const expiresAtValue = (sphereData as any)?.expires_at || sphereData?.expiresAt;
+                return (
+                  <div className="text-sm text-muted-foreground mt-2">
+                    Statut: {expiresAtValue ? (new Date(expiresAtValue) < new Date() ? "Expirée" : "Active") : "Sans expiration"}
+                    {expiresAtValue ? ` - Expire le ${new Date(expiresAtValue).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}` : ""}
+                  </div>
+                );
+              })()}
 
               {settings.duration !== "Permanent" && (
                 <Button
