@@ -23,11 +23,12 @@ import type { Duplex } from "node:stream";
 import { WebSocketServer, type WebSocket } from "ws";
 import { bearerToken, verifyToken } from "../lib/jwt.js";
 import { prisma } from "../lib/prisma.js";
+import { parseSlugId, encodeHashId } from "../lib/hashids.js";
 import { conversationChannel, publish, subscribe, userChannel, type ChannelKey } from "./hub.js";
 import { recordConnect, recordDisconnect, isUserOnline, getOnlineUserIds } from "./presence.js";
 import { quizLiveWss, handleQuizLiveUpgrade } from "./quizLiveSocket.js";
 
-const CHAT_PATH_RE = /^\/ws\/(?:chat|conversations)\/(\d+)\/?$/;
+const CHAT_PATH_RE = /^\/ws\/(?:chat|conversations)\/([A-Za-z0-9_-]+)\/?$/;
 const NOTIFICATIONS_PATH_RE = /^\/ws\/notifications\/?$/;
 const QUIZ_LIVE_PATH_RE = /^\/ws\/quiz-live\/([A-Za-z0-9]+)\/?$/;
 
@@ -81,7 +82,10 @@ async function authorise(request: IncomingMessage): Promise<Authorised | null> {
     };
   }
 
-  const conversationId = Number(chatMatch![1]);
+  const rawConvId = chatMatch![1];
+  const conversationId = parseSlugId(rawConvId);
+  if (!conversationId) return null;
+
   const membership = await prisma.conversationMember.findUnique({
     where: { conversationId_userId: { conversationId, userId } },
     select: { userId: true },
@@ -93,7 +97,7 @@ async function authorise(request: IncomingMessage): Promise<Authorised | null> {
     userId,
     username: user.username,
     conversationId,
-    hello: { conversation_id: conversationId },
+    hello: { conversation_id: conversationId, conversation_hash_id: encodeHashId(conversationId) },
   };
 }
 
