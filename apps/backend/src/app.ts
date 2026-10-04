@@ -22,6 +22,7 @@ export function createApp(): Express {
   // rate-limiting keyed on IP see the proxy rather than the client.
   app.set("trust proxy", 1);
   app.disable("x-powered-by");
+  app.set("etag", "weak");
 
   app.use(
     cors({
@@ -31,7 +32,7 @@ export function createApp(): Express {
         callback(null, env.corsAllowedOrigins.includes(origin));
       },
       credentials: true,
-      exposedHeaders: ["Content-Disposition"],
+      exposedHeaders: ["Content-Disposition", "ETag"],
     }),
   );
 
