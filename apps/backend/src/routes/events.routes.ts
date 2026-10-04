@@ -26,8 +26,10 @@ import { ok, created, list, noContent } from "../lib/envelope.js";
 import { badRequest, forbidden, notFound } from "../lib/errors.js";
 import { currentUser, requireAuth } from "../middleware/auth.js";
 import { notifySphereMembersNewEvent } from "../services/eventNotifications.js";
+import { httpCache, autoInvalidate } from "../lib/cache.js";
 
 export const eventsRouter: Router = Router();
+eventsRouter.use(autoInvalidate("events"));
 
 // ── Zod Schemas ─────────────────────────────────────────────────────────────
 
@@ -123,7 +125,7 @@ function idParam(req: Request, name = "id"): number {
  * GET /api/events/mine
  * List events organized or registered by current authenticated user.
  */
-eventsRouter.get("/mine", requireAuth, async (req, res) => {
+eventsRouter.get("/mine", requireAuth, httpCache({ namespace: "events", ttlSeconds: 60 }), async (req, res) => {
   const user = req.user!;
   try {
     const [createdEvents, attendances] = await Promise.all([
@@ -179,7 +181,7 @@ eventsRouter.get("/mine", requireAuth, async (req, res) => {
  * GET /api/events
  * List all events with optional filters (category, sphereId, upcoming, search, timeframe).
  */
-eventsRouter.get("/", async (req, res) => {
+eventsRouter.get("/", httpCache({ namespace: "events", ttlSeconds: 60 }), async (req, res) => {
   const user = currentUser(req);
   const { category, upcoming, sphereId, sphere_id, search, timeframe } = req.query;
 
@@ -291,7 +293,7 @@ eventsRouter.get("/", async (req, res) => {
  * GET /api/events/:id
  * Retrieve details of a single event.
  */
-eventsRouter.get("/:id", async (req, res) => {
+eventsRouter.get("/:id", httpCache({ namespace: "events", ttlSeconds: 60 }), async (req, res) => {
   const rawId = String(req.params.id ?? "").trim();
   const parsed = parseSlugId(rawId);
   const numId = parsed ?? NaN;

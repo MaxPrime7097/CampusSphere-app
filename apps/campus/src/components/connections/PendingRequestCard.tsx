@@ -1,4 +1,4 @@
-import { Check, X } from "lucide-react";
+import { Check, X } from "@phosphor-icons/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import type { ConnectionUser } from "./types";

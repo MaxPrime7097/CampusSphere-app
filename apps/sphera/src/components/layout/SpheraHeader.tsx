@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { LanguageSwitcher } from '@cs/i18n'
 import { useTranslation } from 'react-i18next'
 import { useSpheraAuth } from '../../contexts/SpheraAuthContext'
-import { LogOut, Menu, X, Zap, ArrowRight } from 'lucide-react'
+import { SignOut as LogOut, List as Menu, X, Lightning as Zap, ArrowRight } from "@phosphor-icons/react";
 import { QuotaIndicator } from '../app/QuotaIndicator'
 
 export function SpheraHeader() {

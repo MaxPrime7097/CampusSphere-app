@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { WifiOff, RefreshCw } from "lucide-react";
+import { WifiSlash as WifiOff, ArrowClockwise as RefreshCw } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 
 export function OfflineBanner() {

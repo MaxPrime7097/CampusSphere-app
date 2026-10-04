@@ -1,11 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { updateUserProfile, uploadAvatar, uploadCoverPhoto } from "@/services/api";
-import { 
-  MapPin, Camera, Calendar, Link, User, BookOpen, 
-  Briefcase, GraduationCap, Loader2, Check, Upload, 
-  X, Zap, Smile, Shield, Plus, Languages, ArrowLeft 
-} from "lucide-react";
+import { MapPin, Camera, Calendar, Link, User, BookOpen, Briefcase, GraduationCap, Spinner as Loader2, Check, Upload, X, Lightning as Zap, Smiley as Smile, Shield, Plus, Translate as Languages, ArrowLeft } from "@phosphor-icons/react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

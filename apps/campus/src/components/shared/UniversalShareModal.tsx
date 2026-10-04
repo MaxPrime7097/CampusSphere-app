@@ -8,13 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Copy,
-  Check,
-  Share2,
-  Mail,
-  Smartphone,
-} from "lucide-react";
+import { Copy, Check, ShareNetwork as Share2, Envelope as Mail, DeviceMobile as Smartphone } from "@phosphor-icons/react";
 
 export type ShareItemType = "post" | "event" | "resource" | "sphere";
 

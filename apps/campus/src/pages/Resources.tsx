@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { normalizeResourceType } from "@/constants/resourceTypes";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { LayoutGrid, List } from "lucide-react";
+import { GridFour as LayoutGrid, List } from "@phosphor-icons/react";
 import { cn, getResourceUrl } from "@/lib/utils";
 import { parseSlugId, encodeHashId } from "@/lib/hashids";
 import type { Resource, ResourceFolder, ResourceCardData } from "@/types";

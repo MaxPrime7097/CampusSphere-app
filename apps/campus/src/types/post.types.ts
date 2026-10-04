@@ -80,5 +80,6 @@ export interface PostCardData {
   isSaved?: boolean;
   canEdit?: boolean;
   canDelete?: boolean;
+  allowComments?: boolean;
   files?: PostFile[];
 }

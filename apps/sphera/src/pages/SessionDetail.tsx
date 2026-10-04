@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { getSession, getAnnale, askQuestion, deleteSession, deleteAnnale, shareSession, shareAnnale, updateSessionText, addToolToSession, createFromSelection, API_BASE, type ToolType } from '../services/spheraApi'
 import { normalizeAiResponse } from '../utils/normalizeAiResponse'
-import { FileText, ArrowLeft, Maximize2, Minimize2, Send, Square, MessageSquare, Bot, User, BrainCircuit, Columns, Share2, Trash2, Check, AtSign, Plus, Loader2, AlertCircle, Sparkles, GitFork, AudioLines } from 'lucide-react'
+import { FileText, ArrowLeft, ArrowsOut as Maximize2, ArrowsIn as Minimize2, PaperPlaneTilt as Send, Square, ChatCircle as MessageSquare, Robot as Bot, User, Brain as BrainCircuit, Columns, ShareNetwork as Share2, Trash as Trash2, Check, At as AtSign, Plus, Spinner as Loader2, WarningCircle as AlertCircle, Sparkle as Sparkles, GitFork, Waveform as AudioLines } from "@phosphor-icons/react";
 import { FicheView, QuizView, FlashcardsView, AnnaleView, MindmapView, AudioSummaryView } from '../components/app/ResultViews'
 import { ShareModal } from '../components/app/ShareModal'
 import { DeleteConfirmModal } from '../components/app/DeleteConfirmModal'

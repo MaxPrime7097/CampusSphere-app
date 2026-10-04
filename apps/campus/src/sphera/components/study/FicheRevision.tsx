@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { CheckCircle2, BookOpen, Key, Calculator, Lightbulb, Download, Loader2 } from "lucide-react";
+import { CheckCircle as CheckCircle2, BookOpen, Key, Calculator, Lightbulb, Download, Spinner as Loader2 } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { useDownloadPDF } from "../../hooks/useDownloadPDF";
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Globe, Search, Loader2, RefreshCw, ExternalLink, Users, Calendar, Eye, Sparkles } from "lucide-react";
+import { Sphere, MagnifyingGlass as Search, Spinner as Loader2, ArrowClockwise as RefreshCw, ArrowSquareOut as ExternalLink, UsersThree as Users, Calendar, Eye, Sparkle as Sparkles } from "@phosphor-icons/react";
 import { Link } from "react-router-dom";
 import { getSphereUrl } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,7 +47,7 @@ export function AdminSpheresPage() {
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <CardTitle className="text-base font-bold flex items-center gap-2 font-automata">
-                <Globe className="h-4 w-4 text-purple-500" />
+                <Sphere className="h-4 w-4 text-purple-500" />
                 Gestion des Sphères Communautaires
               </CardTitle>
               <CardDescription className="text-xs">
@@ -95,7 +95,7 @@ export function AdminSpheresPage() {
             </div>
           ) : spheres.length === 0 ? (
             <div className="py-16 text-center border border-dashed rounded-2xl">
-              <Globe className="h-10 w-10 text-muted-foreground/40 mx-auto mb-2" />
+              <Sphere className="h-10 w-10 text-muted-foreground/40 mx-auto mb-2" />
               <p className="text-sm font-bold text-foreground font-automata">Aucune sphère trouvée</p>
               <p className="text-xs text-muted-foreground mt-1">Ajustez vos termes de recherche</p>
             </div>
@@ -109,7 +109,7 @@ export function AdminSpheresPage() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="p-2 rounded-xl bg-purple-500/10 text-purple-500">
-                        <Globe className="h-4 w-4" />
+                        <Sphere className="h-4 w-4" />
                       </div>
                       <Badge variant="outline" className="text-[10px]">
                         ID #{s.id}

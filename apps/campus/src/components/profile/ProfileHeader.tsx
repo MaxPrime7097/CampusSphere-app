@@ -1,21 +1,10 @@
 import { Suspense, lazy, useState } from "react";
-import {
-  Camera,
-  Check,
-  Unlink,
-  Link as LinkIcon,
-  Loader2,
-  Shield,
-  Info,
-  Pencil,
-  BadgeCheck,
-  Zap,
-  Smile,
-  Settings,
-} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Camera, Check, LinkBreak as Unlink, Link as LinkIcon, Spinner as Loader2, Shield, Info, Pencil, SealCheck as BadgeCheck, Lightning as Zap, Smiley as Smile, Gear as Settings, ArrowRight } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -87,6 +76,7 @@ export function ProfileHeader({
   onOpenMoodModal,
   onRefreshUser,
 }: ProfileHeaderProps) {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
   const [isEditAccountOpen, setIsEditAccountOpen] = useState(false);
@@ -266,7 +256,7 @@ export function ProfileHeader({
                 <div className="flex items-center gap-2">
                   <h1 className="text-2xl font-bold">{user.name}</h1>
                   {user.isVerified && (
-                    <BadgeCheck className="h-5 w-5 text-amber-500 fill-amber-500/20" />
+                    <BadgeCheck className="h-5 w-5 text-primary" weight="fill" />
                   )}
                 </div>
                 <p className="text-muted-foreground">@{user.username}</p>
@@ -281,25 +271,48 @@ export function ProfileHeader({
               {/* 45% Impact Score */}
               <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                 <div className="w-8 h-8 sm:w-9 sm:h-9 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
-                  <Zap className="h-4 w-4 text-primary fill-primary" />
+                  <Zap className="h-4 w-4 text-primary" weight="fill" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1">
                     <p className="text-xs sm:text-sm font-semibold truncate">Impact Score</p>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-4 w-4 sm:h-5 sm:w-5 p-0 rounded-full hover:bg-muted transition-colors shrink-0"
-                      onClick={() =>
-                        toast({
-                          title: "Score d'impact",
-                          description:
-                            "Le Score d'Impact mesure l'utilité et la pertinence de ce contenu pour la communauté CampusSphere. Il est calculé en fonction des interactions et des retours des étudiants.",
-                        })
-                      }
-                    >
-                      <Info className="h-3 w-3 text-muted-foreground" />
-                    </Button>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-4 w-4 sm:h-5 sm:w-5 p-0 rounded-full hover:bg-muted transition-colors shrink-0"
+                          aria-label="Informations sur l'Impact Score"
+                        >
+                          <Info className="h-3 w-3 text-muted-foreground" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-72 sm:w-80 p-4 space-y-3 z-50 text-left" align="start">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                            <Zap className="h-4 w-4 text-primary" weight="fill" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-sm leading-none">Impact Score</h4>
+                            <span className="text-[11px] text-muted-foreground">Système d'entraide</span>
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          Le Score d'Impact mesure la valeur et l'utilité des partages (ressources, réponses, entraide) apportés à la communauté CampusSphere.
+                        </p>
+                        <div className="pt-2 flex items-center justify-between border-t border-border/40">
+                          <Button
+                            variant="link"
+                            size="sm"
+                            onClick={() => navigate("/cs-inc/impact-score")}
+                            className="p-0 h-auto text-primary font-semibold text-xs inline-flex items-center gap-1 hover:gap-1.5 transition-all"
+                          >
+                            <span>En savoir plus</span>
+                            <ArrowRight className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <div className="flex items-center gap-1.5 sm:gap-2">
                     <p

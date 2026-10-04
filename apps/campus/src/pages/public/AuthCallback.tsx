@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { exchangeSupabaseToken } from "@/services/api";
-import { Loader2 } from "lucide-react";
+import { Spinner as Loader2 } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 

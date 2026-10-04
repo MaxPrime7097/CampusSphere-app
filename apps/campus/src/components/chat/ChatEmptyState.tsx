@@ -1,4 +1,4 @@
-import { MessageSquare, Plus } from "lucide-react";
+import { ChatCircle as MessageSquare, Plus } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 
 interface ChatEmptyStateProps {

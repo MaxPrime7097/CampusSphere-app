@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, FileText, X, Loader2 } from "lucide-react";
+import { Upload, FileText, X, Spinner as Loader2 } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { uploadSphereFile } from "@/services/api";
 

@@ -25,8 +25,10 @@ import { adjustPostImpact, applyImpactDelta, applyImpactEvent } from "../service
 import { createNotification } from "../services/notifications.js";
 import { resolveMentionedUsers } from "../lib/mentions.js";
 import { postsVisibleTo } from "../lib/visibility.js";
+import { httpCache, autoInvalidate } from "../lib/cache.js";
 
 export const postsRouter: Router = Router();
+postsRouter.use(autoInvalidate("posts"));
 
 // No router-level requireAuth: the feed and post detail are readable anonymously
 // (API_CONTRACT §3.4 marks them "—/U"), matching Django's IsAuthenticatedOrReadOnly.
@@ -114,7 +116,7 @@ const createSchema = z.object({
   allow_comments: z.boolean().default(true),
 });
 
-postsRouter.get("/", async (req, res) => {
+postsRouter.get("/", httpCache({ namespace: "posts", ttlSeconds: 60 }), async (req, res) => {
   // Anonymous is allowed here and sees public posts only.
   const viewerId = req.user?.id ?? null;
   const { page, pageSize, skip } = paginationParams(req.query as Record<string, unknown>);
@@ -207,7 +209,7 @@ postsRouter.post("/", requireAuth, async (req, res) => {
 
 // ── Filtered listings (before /:id/) ────────────────────────────────────────
 
-postsRouter.get("/saved/", requireAuth, async (req, res) => {
+postsRouter.get("/saved/", requireAuth, httpCache({ namespace: "posts", ttlSeconds: 60 }), async (req, res) => {
   const me = currentUser(req);
   const { page, pageSize, skip } = paginationParams(req.query as Record<string, unknown>);
 
@@ -408,7 +410,7 @@ postsRouter.post("/comments/:commentId/like/", requireAuth, async (req, res) => 
 
 const updateSchema = createSchema.partial().omit({ sphere: true });
 
-postsRouter.get("/:id/", async (req, res) => {
+postsRouter.get("/:id/", httpCache({ namespace: "posts", ttlSeconds: 60 }), async (req, res) => {
   const viewerId = req.user?.id ?? null;
   const post = await loadVisiblePost(postIdOf(req), viewerId);
   const d = viewerId !== null ? await decorate([post], viewerId) : null;

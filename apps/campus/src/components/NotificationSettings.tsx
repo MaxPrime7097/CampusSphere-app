@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Settings, Loader2 } from "lucide-react";
+import { Gear as Settings, Spinner as Loader2 } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { getNotificationSettings, updateNotificationSettings } from "@/services/api";
 

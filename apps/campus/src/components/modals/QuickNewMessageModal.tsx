@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Search, MessageSquare, ArrowRight } from "lucide-react";
+import { Spinner as Loader2, MagnifyingGlass as Search, ChatCircle as MessageSquare, ArrowRight } from "@phosphor-icons/react";
 import { searchUsers, createPrivateConversation } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";

@@ -1,18 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import {
-  FileText,
-  Search,
-  Trash2,
-  Loader2,
-  RefreshCw,
-  ExternalLink,
-  BookOpen,
-  Eye,
-  Calendar,
-  User,
-  FileCode,
-  Tag,
-} from "lucide-react";
+import { FileText, MagnifyingGlass as Search, Trash as Trash2, Spinner as Loader2, ArrowClockwise as RefreshCw, ArrowSquareOut as ExternalLink, BookOpen, Eye, Calendar, User, FileCode, Tag } from "@phosphor-icons/react";
 import { Link } from "react-router-dom";
 import { getResourceUrl } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

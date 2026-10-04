@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { FileText, BrainCircuit, List, CheckCircle2, HelpCircle, CircleSmall, Lightbulb, ChevronDown, ChevronRight, Timer, Trophy, XCircle, RotateCcw, RefreshCcw, Code2, Calculator, AlignLeft, Target, BookOpen, BookMarked, Award, Layers, Zap, GitFork, AudioLines, Play, Pause, Volume2, Download, LocateFixed, Sparkles, Maximize2, Minimize2, Network, Eye, Check, Copy, Search, ChevronsUpDown, Filter, X, ChevronUp } from 'lucide-react'
+import { FileText, Brain as BrainCircuit, List, CheckCircle as CheckCircle2, Question as HelpCircle, Dot as CircleSmall, Lightbulb, CaretDown as ChevronDown, CaretRight as ChevronRight, Timer, Trophy, XCircle, ArrowCounterClockwise as RotateCcw, ArrowCounterClockwise as RefreshCcw, Code as Code2, Calculator, AlignLeft, Target, BookOpen, BookmarkSimple as BookMarked, Medal as Award, Stack as Layers, Lightning as Zap, GitFork, Waveform as AudioLines, Play, Pause, SpeakerHigh as Volume2, Download, Crosshair as LocateFixed, Sparkle as Sparkles, ArrowsOut as Maximize2, ArrowsIn as Minimize2, Network, Eye, Check, Copy, MagnifyingGlass as Search, CaretUpDown as ChevronsUpDown, Funnel as Filter, X, CaretUp as ChevronUp } from "@phosphor-icons/react";
 import ReactFlow, { Background, Controls, type Node, type Edge, type ReactFlowInstance } from 'reactflow'
 import 'reactflow/dist/style.css'
 import DownloadPDFButton from '../shared/DownloadPDFButton'

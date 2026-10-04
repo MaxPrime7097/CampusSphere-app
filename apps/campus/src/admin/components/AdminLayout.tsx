@@ -1,15 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  Home,
-  Shield,
-  Menu,
-  ArrowUpRight,
-  UserCheck,
-  Bell,
-  Sparkles,
-  ChevronRight,
-  X,
-} from "lucide-react";
+import { House as Home, Shield, List as Menu, ArrowUpRight, UserCheck, Bell, Sparkle as Sparkles, CaretRight as ChevronRight, X } from "@phosphor-icons/react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { ADMIN_NAVIGATION } from "./adminNavigation";
 import { Badge } from "@/components/ui/badge";

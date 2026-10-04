@@ -23,11 +23,11 @@ export const MOOD_VALUE_TO_LABEL = MOOD_OPTIONS.reduce<Record<string, string>>((
 }, {});
 
 export const IMPACT_LEVELS = [
-  { min: 0, label: "Nouveau venu", color: "from-gray-400 to-gray-500", icon: "🌱" },
-  { min: 50, label: "Contributeur", color: "from-blue-400 to-blue-600", icon: "⭐" },
-  { min: 200, label: "Pilier du Campus", color: "from-orange-400 to-orange-600", icon: "🏆" },
-  { min: 500, label: "Légende du Campus", color: "from-purple-500 to-indigo-600", icon: "👑" },
-  { min: 1000, label: "Maître Campus", color: "from-yellow-400 to-red-600", icon: "🔥" },
+  { min: 0, label: "Nouveau venu", color: "from-slate-400 to-slate-600", icon: "🌱" },
+  { min: 50, label: "Contributeur", color: "from-blue-500 to-indigo-600", icon: "⭐" },
+  { min: 200, label: "Pilier du Campus", color: "from-neutral-700 to-stone-900", icon: "🔥" },
+  { min: 500, label: "Maître du Campus", color: "from-indigo-600 to-violet-800", icon: "🏆" },
+  { min: 1000, label: "Légende du Campus", color: "from-purple-900 via-rose-900 to-slate-900", icon: "👑" },
 ];
 
 export function getImpactLevelInfo(score: number) {

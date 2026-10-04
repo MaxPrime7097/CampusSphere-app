@@ -4,24 +4,7 @@ import { Helmet } from 'react-helmet-async'
 import { useTranslation } from 'react-i18next'
 import { SpheraHeader } from '../components/layout/SpheraHeader'
 import { SpheraFooter } from '../components/layout/SpheraFooter'
-import { 
-  Zap, 
-  Trophy, 
-  Clock, 
-  Sparkles, 
-  Play, 
-  LogIn, 
-  ArrowRight, 
-  FileUp, 
-  Settings2, 
-  FileCode, 
-  GraduationCap, 
-  Gamepad2, 
-  Volume2, 
-  Smartphone,
-  Flame,
-  CheckCircle2
-} from 'lucide-react'
+import { Lightning as Zap, Trophy, Clock, Sparkle as Sparkles, Play, SignIn as LogIn, ArrowRight, FileArrowUp as FileUp, GearSix as Settings2, FileCode, GraduationCap, GameController as Gamepad2, SpeakerHigh as Volume2, DeviceMobile as Smartphone, Flame, CheckCircle as CheckCircle2 } from "@phosphor-icons/react";
 
 export default function SpheraLiveShowcase() {
   const { t } = useTranslation('showcase')

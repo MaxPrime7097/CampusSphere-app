@@ -16,7 +16,7 @@ import {
   listFolders,
   type ResourceFolder,
 } from "@/services/api";
-import { ChevronLeft, Loader2 } from "lucide-react";
+import { CaretLeft as ChevronLeft, Spinner as Loader2 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {

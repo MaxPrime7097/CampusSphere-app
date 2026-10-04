@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { CheckCircle2, XCircle, Timer, RotateCcw } from 'lucide-react'
+import { CheckCircle as CheckCircle2, XCircle, Timer, ArrowCounterClockwise as RotateCcw } from "@phosphor-icons/react";
 
 interface QuizResultProps {
   data: any;

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Accordion from '@radix-ui/react-accordion';
-import { ChevronDown } from 'lucide-react';
+import { CaretDown as ChevronDown } from "@phosphor-icons/react";
 
 export function FAQ() {
   const { t } = useTranslation('landing');

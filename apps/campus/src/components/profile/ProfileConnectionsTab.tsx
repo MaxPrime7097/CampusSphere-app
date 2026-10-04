@@ -1,4 +1,4 @@
-import { Users } from "lucide-react";
+import { Users } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty-state";

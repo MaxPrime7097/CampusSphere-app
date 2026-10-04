@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Sun, Moon } from "lucide-react";
+import { Sun, Moon } from "@phosphor-icons/react";
 
 export function ThemeToggle({ className = "" }: { className?: string }): JSX.Element {
   const [isDark, setIsDark] = useState<boolean>(() => {

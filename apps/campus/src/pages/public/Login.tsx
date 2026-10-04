@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Helmet } from "react-helmet-async";
-import { Eye, EyeOff, Mail, Lock, Loader2, AlertCircle } from "lucide-react";
+import { Eye, EyeSlash as EyeOff, Envelope as Mail, Lock, Spinner as Loader2, WarningCircle as AlertCircle } from "@phosphor-icons/react";
 import { FaGoogle, FaFacebook } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import { Button } from "@/components/ui/button";

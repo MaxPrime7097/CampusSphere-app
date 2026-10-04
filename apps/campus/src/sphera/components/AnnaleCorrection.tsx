@@ -1,9 +1,5 @@
 import React, { useState } from "react";
-import {
-  ChevronDown, ChevronUp, BookOpen, Lightbulb, Target,
-  BookMarked, Zap, Award, Code2, Calculator, AlignLeft,
-  CheckCircle2, SquareStack, Download, Loader2,
-} from "lucide-react";
+import { CaretDown as ChevronDown, CaretUp as ChevronUp, BookOpen, Lightbulb, Target, BookmarkSimple as BookMarked, Lightning as Zap, Medal as Award, Code as Code2, Calculator, AlignLeft, CheckCircle as CheckCircle2, Stack as SquareStack, Download, Spinner as Loader2 } from "@phosphor-icons/react";
 import { useDownloadPDF } from "../hooks/useDownloadPDF";
 import type {
   AnnaleSession, AnnaleCorrection, AnnaleQuestion, AnnaleSection,

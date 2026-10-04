@@ -4,7 +4,7 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
 import { ResourceCard } from "@/components/resources/ResourceCard";
 import { Button } from "@/components/ui/button";
-import { Bookmark, BookOpen, MessageCircle, Zap, BadgeCheck } from "lucide-react";
+import { BookmarkSimple, BookOpen, ChatTeardrop, Lightning as Zap, SealCheck as BadgeCheck } from "@phosphor-icons/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -61,7 +61,7 @@ function SavedPostItem({ post, onUnsave, onClick }: SavedPostItemProps) {
               {post.author.name}
             </span>
             {post.author.isVerified && (
-              <BadgeCheck className="h-3.5 w-3.5 text-amber-500 fill-amber-500/20 shrink-0" />
+              <BadgeCheck className="h-3.5 w-3.5 text-primary shrink-0" weight="fill" />
             )}
             <span className="text-xs text-muted-foreground/50">·</span>
             <span className="text-xs text-muted-foreground shrink-0">
@@ -80,11 +80,11 @@ function SavedPostItem({ post, onUnsave, onClick }: SavedPostItemProps) {
 
           <div className="flex items-center gap-3 pt-1 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1 font-medium">
-              <Zap className="h-3.5 w-3.5 text-primary fill-primary" />
+              <Zap className="h-3.5 w-3.5 text-primary" weight="fill" />
               {post.impactScore}
             </span>
             <span className="inline-flex items-center gap-1 font-medium">
-              <MessageCircle className="h-3.5 w-3.5" />
+              <ChatTeardrop className="h-3.5 w-3.5" />
               {post.comments}
             </span>
           </div>
@@ -109,7 +109,7 @@ function SavedPostItem({ post, onUnsave, onClick }: SavedPostItemProps) {
           onClick={onUnsave}
           title="Retirer des enregistrements"
         >
-          <Bookmark className="h-4 w-4 fill-primary text-primary" />
+          <BookmarkSimple className="h-4 w-4 text-primary" weight="fill" />
         </Button>
       </div>
     </div>
@@ -288,7 +288,7 @@ export function SavedItems() {
               </div>
             ) : savedResources.length === 0 ? (
               <EmptyState
-                icon={Bookmark}
+                icon={BookmarkSimple}
                 title="Aucune ressource enregistrée"
                 description="Les ressources que vous sauvegardez apparaîtront ici."
                 actionLabel="Parcourir les ressources"

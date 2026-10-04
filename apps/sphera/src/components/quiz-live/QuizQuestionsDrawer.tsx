@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Edit3, Eye, Check, Plus, Trash2, Clock, Award, Save, Loader2, AlertCircle, Sliders } from 'lucide-react';
+import { X, PencilSimple as Edit3, Eye, Check, Plus, Trash as Trash2, Clock, Medal as Award, FloppyDisk as Save, Spinner as Loader2, WarningCircle as AlertCircle, Sliders } from "@phosphor-icons/react";
 import { updateQuizQuestions } from '../../services/spheraApi';
 
 export interface QuestionItem {

@@ -1,7 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { FileText, BrainCircuit, Zap, ArrowRight, FilePenLine, SquareStack } from 'lucide-react'
+import { FileText, Brain as BrainCircuit, Lightning as Zap, ArrowRight, NotePencil as FilePenLine, Stack as SquareStack } from "@phosphor-icons/react";
 
 export function Features() {
   const { t } = useTranslation('landing')

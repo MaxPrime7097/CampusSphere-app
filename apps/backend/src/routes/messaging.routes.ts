@@ -21,7 +21,7 @@ import {
   serializeMessage,
   type SerializableMessage,
 } from "../serializers/conversation.js";
-import { userSelect } from "../serializers/user.js";
+import { serializeUser, userSelect } from "../serializers/user.js";
 import { ok, created, list, paginate, paginationParams } from "../lib/envelope.js";
 import { badRequest, conflict, forbidden, notFound } from "../lib/errors.js";
 import { currentUser, requireAuth } from "../middleware/auth.js";
@@ -29,9 +29,31 @@ import { createNotification } from "../services/notifications.js";
 import { storage } from "../services/storage.js";
 import { singleUpload } from "../middleware/upload.js";
 import { publish } from "../realtime/hub.js";
+import { getOnlineUserIds } from "../realtime/presence.js";
+import { httpCache, autoInvalidate } from "../lib/cache.js";
 
 export const messagingRouter: Router = Router();
 messagingRouter.use(requireAuth);
+messagingRouter.use(autoInvalidate("conversations"));
+
+async function createSystemMessage(conversationId: number, content: string, senderId?: number) {
+  try {
+    const sysMsg = await prisma.message.create({
+      data: {
+        conversationId,
+        authorId: senderId ?? 1,
+        type: "SYSTEM",
+        status: "SENT",
+        content,
+      },
+      include: messageInclude,
+    });
+    const payload = serializeMessage(sysMsg, { viewerId: null, isReadByViewer: true });
+    publish(conversationId, "message_created", { message: payload });
+  } catch (err) {
+    console.error("[messaging] failed to create system message:", err);
+  }
+}
 
 function conversationIdOf(req: Request): number {
   const id = Number(req.params.id);
@@ -114,13 +136,18 @@ async function listConversations(req: Request, res: Response) {
   list(res, await serializeMany(conversations, me.id), paginate(total, page, pageSize));
 }
 
-messagingRouter.get("/user/", listConversations);
+messagingRouter.get("/user/", httpCache({ namespace: "conversations", ttlSeconds: 30 }), listConversations);
 
-const createSchema = z.object({
-  type: z.enum(["private", "group"]).default("private"),
-  name: z.string().max(100).optional(),
-  participant_ids: z.array(z.number().int().positive()).min(1),
-});
+const createSchema = z
+  .object({
+    type: z.enum(["private", "group"]).default("private"),
+    name: z.string().max(100).optional(),
+    participant_ids: z.array(z.number().int().positive()).default([]),
+  })
+  .refine(
+    (val) => val.type === "group" || val.participant_ids.length === 1,
+    { message: "Private conversations must have exactly one recipient.", path: ["participant_ids"] },
+  );
 
 /** Shared by POST /, /private/create/ and /group/create/. */
 async function createConversation(req: Request, res: Response, forcedType?: "private" | "group") {
@@ -135,27 +162,31 @@ async function createConversation(req: Request, res: Response, forcedType?: "pri
   };
   const input = createSchema.parse(normalised);
 
-  if (input.participant_ids.includes(me.id)) {
-    throw badRequest("Do not include yourself in participant_ids.", { participant_ids: ["Remove your own id."] });
-  }
-  if (input.type === "private" && input.participant_ids.length !== 1) {
-    throw badRequest("Private conversations must have exactly two participants.");
-  }
+  // Deduplicate and filter out self
+  const uniqueParticipantIds = Array.from(
+    new Set(input.participant_ids.filter((id) => id !== me.id))
+  );
 
-  const found = await prisma.user.findMany({
-    where: { id: { in: input.participant_ids }, isActive: true },
-    select: { id: true },
-  });
-  if (found.length !== input.participant_ids.length) throw badRequest("One or more participants do not exist.");
+  const found =
+    uniqueParticipantIds.length > 0
+      ? await prisma.user.findMany({
+          where: { id: { in: uniqueParticipantIds }, isActive: true },
+          select: { id: true },
+        })
+      : [];
 
   if (input.type === "private") {
+    if (found.length !== uniqueParticipantIds.length) {
+      throw badRequest("One or more participants do not exist.");
+    }
+
     // Reuse rather than duplicate: the client treats an existing thread as success.
     const existing = await prisma.conversation.findFirst({
       where: {
         type: "PRIVATE",
         AND: [
           { participants: { some: { userId: me.id } } },
-          { participants: { some: { userId: input.participant_ids[0] } } },
+          { participants: { some: { userId: uniqueParticipantIds[0] } } },
         ],
       },
       include: conversationInclude,
@@ -175,13 +206,16 @@ async function createConversation(req: Request, res: Response, forcedType?: "pri
     }
   }
 
+  // For group conversations: use all active found participants without failing if one account is deactivated
+  const validParticipantIds = input.type === "group" ? found.map((u) => u.id) : uniqueParticipantIds;
+
   const conversation = await prisma.conversation.create({
     data: {
       type: input.type === "group" ? "GROUP" : "PRIVATE",
       name: input.name ?? "",
       createdById: input.type === "group" ? me.id : null,
       participants: {
-        create: [{ userId: me.id }, ...input.participant_ids.map((userId) => ({ userId }))],
+        create: [{ userId: me.id }, ...validParticipantIds.map((userId) => ({ userId }))],
       },
     },
     include: conversationInclude,
@@ -190,14 +224,14 @@ async function createConversation(req: Request, res: Response, forcedType?: "pri
   created(res, serializeConversation(conversation, { viewerId: me.id, unreadCount: 0, lastMessage: null }));
 }
 
-messagingRouter.get("/", listConversations);
+messagingRouter.get("/", httpCache({ namespace: "conversations", ttlSeconds: 30 }), listConversations);
 messagingRouter.post("/", (req, res) => createConversation(req, res));
 messagingRouter.post("/private/create/", (req, res) => createConversation(req, res, "private"));
 messagingRouter.post("/group/create/", (req, res) => createConversation(req, res, "group"));
 
 // ── Detail ──────────────────────────────────────────────────────────────────
 
-messagingRouter.get("/:id/", async (req, res) => {
+messagingRouter.get("/:id/", httpCache({ namespace: "conversations", ttlSeconds: 30 }), async (req, res) => {
   const { conversation, me } = await loadConversation(req);
   ok(
     res,
@@ -208,6 +242,17 @@ messagingRouter.get("/:id/", async (req, res) => {
     }),
   );
 });
+
+messagingRouter.get("/:id/presence/", async (req, res) => {
+  const { conversation } = await loadConversation(req);
+  const memberIds = conversation.participants.map((p) => p.userId);
+  const onlineUserIds = await getOnlineUserIds(memberIds);
+  ok(res, {
+    conversation_id: conversation.id,
+    online_user_ids: onlineUserIds,
+  });
+});
+
 
 messagingRouter.patch("/:id/", async (req, res) => {
   const { conversation, me } = await loadConversation(req);
@@ -220,7 +265,13 @@ messagingRouter.patch("/:id/", async (req, res) => {
     include: conversationInclude,
   });
 
-  ok(res, serializeConversation(updated, { viewerId: me.id, unreadCount: await unreadCountFor(updated.id, me.id) }));
+  const payload = serializeConversation(updated, { viewerId: me.id, unreadCount: await unreadCountFor(updated.id, me.id) });
+  publish(conversation.id, "conversation_updated", { conversation: payload });
+
+  const senderName = me.username;
+  void createSystemMessage(conversation.id, `${senderName} a renommé le groupe en "${name}"`, me.id);
+
+  ok(res, payload);
 });
 
 messagingRouter.delete("/:id/", async (req, res) => {
@@ -235,31 +286,65 @@ messagingRouter.delete("/:id/", async (req, res) => {
 
 // ── Messages ────────────────────────────────────────────────────────────────
 
-messagingRouter.get("/:id/messages/", async (req, res) => {
+messagingRouter.get("/:id/messages/", httpCache({ namespace: "conversations", ttlSeconds: 30 }), async (req, res) => {
   const { conversation, me } = await loadConversation(req);
-  const { page, pageSize, skip } = paginationParams(req.query as Record<string, unknown>);
+  const pageSize = Math.min(100, Math.max(1, Number(req.query.page_size) || 30));
+  const before = req.query.before ? Number(req.query.before) : undefined;
+  const after = req.query.after ? Number(req.query.after) : undefined;
+  const page = req.query.page ? Math.max(1, Number(req.query.page)) : 1;
 
-  const [total, messages, receipt] = await Promise.all([
+  let where: Prisma.MessageWhereInput = { conversationId: conversation.id };
+
+  if (before && Number.isInteger(before)) {
+    where = { conversationId: conversation.id, id: { lt: before } };
+  } else if (after && Number.isInteger(after)) {
+    where = { conversationId: conversation.id, id: { gt: after } };
+  }
+
+  const [total, receipt] = await Promise.all([
     prisma.message.count({ where: { conversationId: conversation.id } }),
-    prisma.message.findMany({
-      where: { conversationId: conversation.id },
-      include: messageInclude,
-      skip,
-      take: pageSize,
-      orderBy: { createdAt: "asc" },
-    }),
     prisma.conversationReadReceipt.findUnique({
       where: { conversationId_userId: { conversationId: conversation.id, userId: me.id } },
       select: { lastReadAt: true },
     }),
   ]);
 
+  const isAscending = Boolean(after);
+  const skip = before || after ? 0 : (page - 1) * pageSize;
+
+  const rawMessages = await prisma.message.findMany({
+    where,
+    include: messageInclude,
+    skip,
+    take: pageSize,
+    orderBy: isAscending ? [{ createdAt: "asc" }, { id: "asc" }] : [{ createdAt: "desc" }, { id: "desc" }],
+  });
+
+  const messages = isAscending ? rawMessages : [...rawMessages].reverse();
+
   // Fetching the thread marks it read, matching the Django behaviour the unread
   // badge depends on.
+  const now = new Date();
   await prisma.conversationReadReceipt.upsert({
     where: { conversationId_userId: { conversationId: conversation.id, userId: me.id } },
-    create: { conversationId: conversation.id, userId: me.id, lastReadAt: new Date() },
-    update: { lastReadAt: new Date() },
+    create: { conversationId: conversation.id, userId: me.id, lastReadAt: now },
+    update: { lastReadAt: now },
+  });
+
+  await prisma.message.updateMany({
+    where: {
+      conversationId: conversation.id,
+      authorId: { not: me.id },
+      createdAt: { lte: now },
+      status: { not: "READ" },
+    },
+    data: { status: "READ" },
+  });
+
+  publish(conversation.id, "conversation_read", {
+    conversation_id: String(conversation.id),
+    reader_id: String(me.id),
+    timestamp: now.toISOString(),
   });
 
   const readBefore = receipt?.lastReadAt ?? null;
@@ -275,12 +360,75 @@ messagingRouter.get("/:id/messages/", async (req, res) => {
   );
 });
 
-messagingRouter.post("/:id/messages/", async (req, res) => {
+messagingRouter.post("/:id/messages/", singleUpload("file", "other"), async (req, res) => {
   const { conversation, me } = await loadConversation(req);
-  const { content } = z.object({ content: z.string().min(1) }).parse(req.body ?? {});
+  const body = req.body ?? {};
+
+  let content = typeof body.content === "string" ? body.content.trim() : "";
+  const replyToId = body.reply_to_id ? Number(body.reply_to_id) : undefined;
+  const duration = body.duration ? Number(body.duration) : undefined;
+
+  let mediaUrl: string | null = null;
+  let mediaType: string | null = null;
+  let fileName: string | null = null;
+  let fileSize: number | null = null;
+  let type: "TEXT" | "IMAGE" | "AUDIO" | "FILE" | "SYSTEM" = "TEXT";
+
+  if (req.file) {
+    const stored = await storage.put({
+      buffer: req.file.buffer,
+      originalName: req.file.originalname,
+      contentType: req.file.mimetype,
+      prefix: "conversations/media",
+    });
+    mediaUrl = stored.url;
+    mediaType = req.file.mimetype;
+    fileName = req.file.originalname;
+    fileSize = req.file.size;
+
+    if (req.file.mimetype.startsWith("image/")) {
+      type = "IMAGE";
+    } else if (req.file.mimetype.startsWith("audio/")) {
+      type = "AUDIO";
+    } else {
+      type = "FILE";
+    }
+  } else if (body.media_url) {
+    mediaUrl = String(body.media_url);
+    mediaType = body.media_type ? String(body.media_type) : null;
+    fileName = body.file_name ? String(body.file_name) : null;
+    fileSize = body.file_size ? Number(body.file_size) : null;
+    if (body.type && ["IMAGE", "AUDIO", "FILE"].includes(String(body.type).toUpperCase())) {
+      type = String(body.type).toUpperCase() as typeof type;
+    }
+  }
+
+  if (!content && !mediaUrl) {
+    throw badRequest("Message content or media is required.");
+  }
+
+  if (replyToId) {
+    const parent = await prisma.message.findFirst({
+      where: { id: replyToId, conversationId: conversation.id },
+      select: { id: true },
+    });
+    if (!parent) throw badRequest("Parent message not found in this conversation.");
+  }
 
   const message = await prisma.message.create({
-    data: { conversationId: conversation.id, authorId: me.id, content },
+    data: {
+      conversationId: conversation.id,
+      authorId: me.id,
+      content,
+      type,
+      status: "SENT",
+      mediaUrl,
+      mediaType,
+      fileName,
+      fileSize,
+      duration: duration && Number.isFinite(duration) ? duration : null,
+      replyToId: replyToId || null,
+    },
     include: messageInclude,
   });
 
@@ -345,12 +493,24 @@ messagingRouter.patch("/:id/messages/:messageId/", async (req, res) => {
     where: { id: messageId, conversationId: conversation.id },
   });
   if (!message) throw notFound("Message not found.");
-  if (!canModerateMessage(message, conversation, me)) throw forbidden("You cannot modify this message.");
+  if (message.authorId !== me.id) throw forbidden("Vous ne pouvez modifier que vos propres messages.");
+  if (message.isDeleted) throw badRequest("Ce message a été supprimé.");
+
+  // Strict 15-minute window enforcement
+  const elapsedMs = Date.now() - message.createdAt.getTime();
+  if (elapsedMs > 15 * 60 * 1000) {
+    throw badRequest("Le délai de 15 minutes pour modifier ce message est expiré.");
+  }
+
+  // Audio notes cannot be edited
+  if (message.type === "AUDIO" || message.mediaType === "audio") {
+    throw badRequest("Les messages vocaux ne peuvent pas être modifiés.");
+  }
 
   const { content } = z.object({ content: z.string().min(1) }).parse(req.body ?? {});
   const updated = await prisma.message.update({
     where: { id: message.id },
-    data: { content },
+    data: { content, updatedAt: new Date() },
     include: messageInclude,
   });
 
@@ -370,31 +530,155 @@ messagingRouter.delete("/:id/messages/:messageId/", async (req, res) => {
   if (!message) throw notFound("Message not found.");
   if (!canModerateMessage(message, conversation, me)) throw forbidden("You cannot delete this message.");
 
-  await prisma.message.delete({ where: { id: message.id } });
+  // Soft delete message to preserve conversation thread integrity
+  const updated = await prisma.message.update({
+    where: { id: message.id },
+    data: {
+      isDeleted: true,
+      deletedAt: new Date(),
+      content: "Ce message a été supprimé",
+      mediaUrl: null,
+      mediaType: null,
+      fileName: null,
+      fileSize: null,
+      duration: null,
+    },
+    include: messageInclude,
+  });
+
+  await prisma.messageReaction.deleteMany({ where: { messageId: message.id } });
   await prisma.conversation.update({ where: { id: conversation.id }, data: { updatedAt: new Date() } });
 
+  const payload = serializeMessage(updated, { viewerId: me.id });
   publish(conversation.id, "message_deleted", {
     message_id: String(message.id),
     conversation_id: String(conversation.id),
+    message: payload,
   });
-  ok(res, null, "Message deleted.");
+  ok(res, payload, "Message deleted.");
+});
+
+// ── Reactions ───────────────────────────────────────────────────────────────
+
+messagingRouter.post("/:id/messages/:messageId/reactions/", async (req, res) => {
+  const { conversation, me } = await loadConversation(req);
+  const messageId = Number(req.params.messageId);
+  if (!Number.isInteger(messageId) || messageId <= 0) throw notFound("Message not found.");
+
+  const message = await prisma.message.findFirst({
+    where: { id: messageId, conversationId: conversation.id },
+  });
+  if (!message) throw notFound("Message not found.");
+
+  const { emoji } = z.object({ emoji: z.string().min(1).max(10) }).parse(req.body ?? {});
+
+  const existing = await prisma.messageReaction.findUnique({
+    where: { messageId_userId: { messageId, userId: me.id } },
+  });
+
+  if (existing) {
+    if (existing.emoji === emoji) {
+      await prisma.messageReaction.delete({ where: { id: existing.id } });
+    } else {
+      await prisma.messageReaction.update({ where: { id: existing.id }, data: { emoji } });
+    }
+  } else {
+    await prisma.messageReaction.create({
+      data: { messageId, userId: me.id, emoji },
+    });
+  }
+
+  const updatedReactions = await prisma.messageReaction.findMany({
+    where: { messageId },
+    include: { user: { select: userSelect } },
+  });
+
+  const reactionsSummary: Record<string, string[]> = {};
+  for (const r of updatedReactions) {
+    if (!reactionsSummary[r.emoji]) reactionsSummary[r.emoji] = [];
+    reactionsSummary[r.emoji].push(String(r.userId));
+  }
+
+  const payload = {
+    message_id: String(messageId),
+    conversation_id: String(conversation.id),
+    reactions: updatedReactions.map((r) => ({
+      id: r.id,
+      emoji: r.emoji,
+      user_id: r.userId,
+      user: serializeUser(r.user, { viewerId: me.id }),
+      created_at: r.createdAt.toISOString(),
+    })),
+    reactions_summary: reactionsSummary,
+  };
+
+  publish(conversation.id, "message_reaction_updated", payload);
+  ok(res, payload);
+});
+
+messagingRouter.delete("/:id/messages/:messageId/reactions/", async (req, res) => {
+  const { conversation, me } = await loadConversation(req);
+  const messageId = Number(req.params.messageId);
+  if (!Number.isInteger(messageId) || messageId <= 0) throw notFound("Message not found.");
+
+  await prisma.messageReaction.deleteMany({
+    where: { messageId, userId: me.id },
+  });
+
+  const updatedReactions = await prisma.messageReaction.findMany({
+    where: { messageId },
+    include: { user: { select: userSelect } },
+  });
+
+  const reactionsSummary: Record<string, string[]> = {};
+  for (const r of updatedReactions) {
+    if (!reactionsSummary[r.emoji]) reactionsSummary[r.emoji] = [];
+    reactionsSummary[r.emoji].push(String(r.userId));
+  }
+
+  const payload = {
+    message_id: String(messageId),
+    conversation_id: String(conversation.id),
+    reactions: updatedReactions.map((r) => ({
+      id: r.id,
+      emoji: r.emoji,
+      user_id: r.userId,
+      user: serializeUser(r.user, { viewerId: me.id }),
+      created_at: r.createdAt.toISOString(),
+    })),
+    reactions_summary: reactionsSummary,
+  };
+
+  publish(conversation.id, "message_reaction_updated", payload);
+  ok(res, payload);
 });
 
 // ── Read state ──────────────────────────────────────────────────────────────
 
 messagingRouter.post("/:id/read/", async (req, res) => {
   const { conversation, me } = await loadConversation(req);
+  const now = new Date();
 
   await prisma.conversationReadReceipt.upsert({
     where: { conversationId_userId: { conversationId: conversation.id, userId: me.id } },
-    create: { conversationId: conversation.id, userId: me.id, lastReadAt: new Date() },
-    update: { lastReadAt: new Date() },
+    create: { conversationId: conversation.id, userId: me.id, lastReadAt: now },
+    update: { lastReadAt: now },
+  });
+
+  await prisma.message.updateMany({
+    where: {
+      conversationId: conversation.id,
+      authorId: { not: me.id },
+      createdAt: { lte: now },
+      status: { not: "READ" },
+    },
+    data: { status: "READ" },
   });
 
   publish(conversation.id, "conversation_read", {
     conversation_id: String(conversation.id),
     reader_id: String(me.id),
-    timestamp: new Date().toISOString(),
+    timestamp: now.toISOString(),
   });
   ok(res, null, "Conversation marked as read");
 });
@@ -419,7 +703,6 @@ messagingRouter.get("/:id/participants/", async (req, res) => {
     orderBy: { joinedAt: "asc" },
   });
 
-  const { serializeUser } = await import("../serializers/user.js");
   list(res, members.map((m) => serializeUser(m.user, { viewerId: me.id })));
 });
 
@@ -438,7 +721,12 @@ messagingRouter.post("/:id/participants/add/", async (req, res) => {
   });
   if (existing) throw conflict("User is already a participant.");
 
-  await prisma.conversationMember.create({ data: { conversationId: conversation.id, userId } });
+  await prisma.conversationMember.create({ data: { conversationId: conversation.id, userId, role: "MEMBER" } });
+
+  const senderName = me.username;
+  const addedName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.username;
+  void createSystemMessage(conversation.id, `${senderName} a ajouté ${addedName} au groupe`, me.id);
+
   ok(res, null, `${user.firstName} ${user.lastName}`.trim() + " added to conversation");
 });
 
@@ -455,9 +743,16 @@ messagingRouter.delete("/:id/participants/:userId/remove/", async (req, res) => 
   });
   if (!membership) throw badRequest("User is not a participant.");
 
+  const targetUser = await prisma.user.findUnique({ where: { id: userId }, select: { firstName: true, lastName: true, username: true } });
+
   await prisma.conversationMember.delete({
     where: { conversationId_userId: { conversationId: conversation.id, userId } },
   });
+
+  const senderName = me.username;
+  const removedName = targetUser ? `${targetUser.firstName || ""} ${targetUser.lastName || ""}`.trim() || targetUser.username : "Un membre";
+  void createSystemMessage(conversation.id, `${senderName} a retiré ${removedName} du groupe`, me.id);
+
   ok(res, null, "Participant removed from conversation");
 });
 
@@ -471,6 +766,10 @@ messagingRouter.post("/:id/leave/", async (req, res) => {
       await prisma.conversation.update({
         where: { id: conversation.id },
         data: { createdById: replacement.userId },
+      });
+      await prisma.conversationMember.update({
+        where: { conversationId_userId: { conversationId: conversation.id, userId: replacement.userId } },
+        data: { role: "OWNER" },
       });
     }
   }
@@ -488,6 +787,9 @@ messagingRouter.post("/:id/leave/", async (req, res) => {
     return;
   }
 
+  const senderName = me.username;
+  void createSystemMessage(conversation.id, `${senderName} a quitté le groupe`, me.id);
+
   ok(res, null, "You left the conversation");
 });
 
@@ -496,11 +798,19 @@ messagingRouter.post("/:id/leave/", async (req, res) => {
 messagingRouter.post("/:id/avatar/", singleUpload("avatar", "conversationAvatar"), async (req, res) => {
   const { conversation, me } = await loadConversation(req);
   if (conversation.type !== "GROUP") throw badRequest("Only group conversations have an avatar.");
-  if (conversation.createdById !== me.id) throw forbidden("Only the group creator can change the avatar.");
 
   // The client sends `remove=true` as a form field rather than issuing a DELETE.
   if (String((req.body as Record<string, unknown>)?.remove ?? "").toLowerCase() === "true") {
-    await prisma.conversation.update({ where: { id: conversation.id }, data: { avatarUrl: null } });
+    const updated = await prisma.conversation.update({
+      where: { id: conversation.id },
+      data: { avatarUrl: null },
+      include: conversationInclude,
+    });
+    const senderName = me.username;
+    void createSystemMessage(conversation.id, `${senderName} a supprimé la photo du groupe`, me.id);
+    publish(conversation.id, "conversation_updated", {
+      conversation: serializeConversation(updated, { viewerId: me.id }),
+    });
     ok(res, { avatar_url: null });
     return;
   }
@@ -515,6 +825,18 @@ messagingRouter.post("/:id/avatar/", singleUpload("avatar", "conversationAvatar"
     prefix: "conversations/avatars",
   });
 
-  await prisma.conversation.update({ where: { id: conversation.id }, data: { avatarUrl: stored.url } });
+  const updated = await prisma.conversation.update({
+    where: { id: conversation.id },
+    data: { avatarUrl: stored.url },
+    include: conversationInclude,
+  });
+
+  const senderName = me.username;
+  void createSystemMessage(conversation.id, `${senderName} a mis à jour la photo du groupe`, me.id);
+  publish(conversation.id, "conversation_updated", {
+    conversation: serializeConversation(updated, { viewerId: me.id }),
+  });
+
   ok(res, { avatar_url: stored.url });
 });
+

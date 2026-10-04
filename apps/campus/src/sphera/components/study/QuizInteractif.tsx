@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, XCircle, RotateCcw, Trophy, ChevronRight, Timer } from "lucide-react";
+import { CheckCircle as CheckCircle2, XCircle, ArrowCounterClockwise as RotateCcw, Trophy, CaretRight as ChevronRight, Timer } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
 interface Question {

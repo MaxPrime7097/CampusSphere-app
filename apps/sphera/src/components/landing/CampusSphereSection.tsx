@@ -1,6 +1,6 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowRight, GraduationCap } from 'lucide-react'
+import { ArrowRight, GraduationCap } from "@phosphor-icons/react";
 
 export function CampusSphereSection() {
   const { t } = useTranslation('landing')

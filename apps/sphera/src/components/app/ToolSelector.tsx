@@ -1,6 +1,6 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import { FileText, SquareStack, BrainCircuit, CheckCircle2, Layers, GitFork, AudioLines, MessageSquare } from 'lucide-react'
+import { FileText, Stack as SquareStack, Brain as BrainCircuit, CheckCircle as CheckCircle2, Stack as Layers, GitFork, Waveform as AudioLines, ChatCircle as MessageSquare } from "@phosphor-icons/react";
 import type { ToolType } from '../../services/spheraApi'
 export type { ToolType }
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { FileText, BrainCircuit, SquareStack, Calendar, ArrowRight, LayoutDashboard, FilePenLine, Loader2, Share2, Trash2, GitFork, AudioLines } from 'lucide-react'
+import { FileText, Brain as BrainCircuit, Stack as SquareStack, Calendar, ArrowRight, SquaresFour as LayoutDashboard, NotePencil as FilePenLine, Spinner as Loader2, ShareNetwork as Share2, Trash as Trash2, GitFork, Waveform as AudioLines } from "@phosphor-icons/react";
 import { useSpheraAuth } from '../contexts/SpheraAuthContext'
 import { getSessions, getAnnales, deleteSession, deleteAnnale, shareSession, shareAnnale } from '../services/spheraApi'
 import { UploadZone } from '../components/app/UploadZone'

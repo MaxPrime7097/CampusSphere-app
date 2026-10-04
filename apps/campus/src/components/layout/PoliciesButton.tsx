@@ -1,7 +1,7 @@
 import React from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from "@/components/ui/button";
-import {ChevronDown } from "lucide-react"
+import { CaretDown as ChevronDown } from "@phosphor-icons/react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 

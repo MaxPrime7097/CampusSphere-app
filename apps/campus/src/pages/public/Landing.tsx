@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
-import { ArrowRight, Users, Calendar, BookOpen, Shield, Star, UserPlus, LogIn, Sparkles, Zap, Heart, FolderOpen, MessageSquare, Dot, Circle, FileDown, Bot, FilePenLine, FileText } from "lucide-react";
+import { ArrowRight, UsersThree as Users, Calendar, BookOpen, Shield, Star, UserPlus, SignIn as LogIn, Sparkle as Sparkles, Lightning as Zap, Heart, FolderOpen, ChatCircle as MessageSquare, Dot, Circle, FileArrowDown as FileDown, Robot as Bot, NotePencil as FilePenLine, FileText } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -332,10 +332,20 @@ export function Landing() {
               </div>
               <div className="space-y-4 font-nunito text-lg">
                 <div className="flex items-start gap-3">
-                  <p><strong>Le concept : “Impact Score”</strong> : Un système de notation unique! Chaque post a un bouton <Zap className="inline-block w-4 h-4 text-primary fill-primary" />, que les utilisateurs peuvent évaluer.  Ce score mesure la valeur perçue d’une publication : “À quel point ce post m’a été utile, m’a inspiré, m’a aidé, ou m’a marqué ?”. Plus un post a d'impact, plus il remonte dans le feed</p>
+                  <p><strong>Le concept : “Impact Score”</strong> : Un système de notation unique! Chaque post a un bouton <Zap className="inline-block w-4 h-4 text-primary" weight="fill" />, que les utilisateurs peuvent évaluer.  Ce score mesure la valeur perçue d’une publication : “À quel point ce post m’a été utile, m’a inspiré, m’a aidé, ou m’a marqué ?”. Plus un post a d'impact, plus il remonte dans le feed</p>
                 </div>
                 <div className="flex items-start gap-3">
                   <p><strong>Feed personnalisé</strong> : <br />Ton fil d'actualité s'adapte à tes centres d'intérêt, tes sphères et les contenus avec lesquels tu interagis, fini le bruit, place au contenu qui compte vraiment</p>
+                </div>
+                <div className="pt-2">
+                  <Button
+                    variant="link"
+                    onClick={() => navigate('/cs-inc/impact-score')}
+                    className="p-0 h-auto text-primary font-semibold inline-flex items-center gap-1.5 hover:gap-2.5 transition-all text-base"
+                  >
+                    <span>Comprendre l'Impact Score en détail</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             </div>

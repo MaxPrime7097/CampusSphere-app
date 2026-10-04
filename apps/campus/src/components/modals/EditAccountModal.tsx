@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { UserCheck, Loader2, Check, FileText } from "lucide-react";
+import { UserCheck, Spinner as Loader2, Check, FileText } from "@phosphor-icons/react";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { updateUserProfile } from "@/services/api";

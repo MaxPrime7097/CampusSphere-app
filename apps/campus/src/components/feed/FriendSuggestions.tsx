@@ -1,6 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Link, RefreshCw, Check } from "lucide-react";
+import { Link, ArrowClockwise as RefreshCw, Check } from "@phosphor-icons/react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -37,8 +37,8 @@ export function FriendSuggestions() {
       if (!currentUser?.id) return [];
       try {
         const [allUsers, userConnections] = await Promise.all([
-          searchUsers("").catch(() => []),
-          getUserConnections(currentUser.id).catch(() => []),
+          searchUsers("").catch((): any[] => []),
+          getUserConnections(currentUser.id).catch((): any[] => []),
         ]);
         const connectionIds = new Set(
           (userConnections || []).map((c: any) =>

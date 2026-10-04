@@ -1,4 +1,4 @@
-import { Link, Zap } from "lucide-react";
+import { Link, Lightning as Zap } from "@phosphor-icons/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { formatSlugToLabel, truncate } from "@/lib/utils";
@@ -41,7 +41,7 @@ export function SuggestionCard({
             )}
             {suggestion.university && <span>·</span>}
             <span className="flex items-center gap-0.5 text-foreground/80 font-medium">
-              <Zap className="h-3 w-3 text-primary fill-primary" />
+              <Zap className="h-3 w-3 text-primary" weight="fill" />
               {suggestion.impactScore ?? 0}
             </span>
           </div>

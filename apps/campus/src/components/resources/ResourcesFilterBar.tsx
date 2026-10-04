@@ -1,16 +1,4 @@
-import {
-  Search,
-  X,
-  Filter,
-  Layers,
-  BookOpen,
-  FileText,
-  FileSpreadsheet,
-  GraduationCap,
-  Archive,
-  FolderGit2,
-  Presentation,
-} from "lucide-react";
+import { MagnifyingGlass as Search, X, Funnel as Filter, Stack as Layers, BookOpen, FileText, FileCsv as FileSpreadsheet, GraduationCap, Archive, FolderSimple as FolderGit2, Presentation } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {

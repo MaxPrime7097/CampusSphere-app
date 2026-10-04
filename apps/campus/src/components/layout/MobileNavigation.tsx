@@ -73,11 +73,12 @@ export function MobileNavigation({ user: externalUser }: { user?: NavigationUser
 
                     <div className="relative flex flex-col items-center justify-center">
                       <item.icon
+                        weight={isActive ? "fill" : "regular"}
                         className={cn(
                           "transition-all duration-200",
                           isActive
-                            ? "h-6 w-6 stroke-[2.25] text-primary scale-105"
-                            : "h-6 w-6 stroke-[1.75]"
+                            ? "h-6 w-6 text-primary scale-105"
+                            : "h-6 w-6 text-muted-foreground/60"
                         )}
                       />
 
@@ -114,8 +115,9 @@ export function MobileNavigation({ user: externalUser }: { user?: NavigationUser
               onClick={() => setIsCreateHubModalOpen(true)}
             >
               <centerItem.icon
+                weight="bold"
                 className={cn(
-                  "h-6 w-6 stroke-[2.5] transition-transform duration-300",
+                  "h-6 w-6 transition-transform duration-300",
                   isCreateHubModalOpen ? "rotate-45" : ""
                 )}
               />
@@ -155,11 +157,12 @@ export function MobileNavigation({ user: externalUser }: { user?: NavigationUser
 
                     <div className="relative flex flex-col items-center justify-center">
                       <item.icon
+                        weight={isActive ? "fill" : "regular"}
                         className={cn(
                           "transition-all duration-200",
                           isActive
-                            ? "h-6 w-6 stroke-[2.25] text-primary scale-105"
-                            : "h-6 w-6 stroke-[1.75]"
+                            ? "h-6 w-6 text-primary scale-105"
+                            : "h-6 w-6 text-muted-foreground/60"
                         )}
                       />
 

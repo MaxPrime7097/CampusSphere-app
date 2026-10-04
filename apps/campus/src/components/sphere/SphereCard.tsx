@@ -3,19 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Users,
-  Lock,
-  Check,
-  Clock,
-  BookOpen,
-  FolderGit2,
-  Sparkles,
-  GraduationCap,
-  Layers,
-  ArrowRight,
-  ShieldCheck,
-} from "lucide-react";
+import { UsersThree as Users, Lock, Check, Clock, BookOpen, FolderSimple as FolderGit2, Sparkle as Sparkles, GraduationCap, Stack as Layers, ArrowRight, ShieldCheck } from "@phosphor-icons/react";
 import { cn, getSphereUrl } from "@/lib/utils";
 import type { Sphere } from "@/types";
 

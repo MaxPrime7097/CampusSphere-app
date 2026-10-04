@@ -11,7 +11,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Heart, Send, Reply, MoreHorizontal, Smile, AtSign, Loader2, Zap, Pencil, Trash2, X } from "lucide-react";
+import { Heart, PaperPlaneTilt as Send, ArrowUUpLeft as Reply, DotsThree as MoreHorizontal, Smiley as Smile, At as AtSign, Spinner as Loader2, Lightning as Zap, Pencil, Trash as Trash2, X } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
@@ -55,6 +55,7 @@ interface CommentsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   postId: string;
+  allowComments?: boolean;
 }
 
 function normalizeCommentAuthor(rawAuthor: any, fallbackName?: string) {
@@ -82,7 +83,7 @@ function normalizeCommentAuthor(rawAuthor: any, fallbackName?: string) {
   };
 }
 
-export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps) {
+export function CommentsModal({ open, onOpenChange, postId, allowComments = true }: CommentsModalProps) {
   const { t } = useTranslation();
   const { toast } = useToast();
   const [newComment, setNewComment] = useState("");
@@ -698,7 +699,12 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
           )}
 
           {/* Minimalist single-line rounded bar */}
-          <div className="flex items-center gap-2.5">
+          {!allowComments ? (
+            <div className="w-full p-3 text-center text-xs text-muted-foreground bg-muted/30 border border-border/40 rounded-xl">
+              Les commentaires sont désactivés pour cette publication.
+            </div>
+          ) : (
+            <div className="flex items-center gap-2.5">
             <Avatar className="h-8 w-8 shrink-0">
               <AvatarImage src={currentUser?.avatar || "/placeholder-avatar.jpg"} />
               <AvatarFallback className="text-xs bg-muted font-semibold">
@@ -777,6 +783,7 @@ export function CommentsModal({ open, onOpenChange, postId }: CommentsModalProps
               </button>
             </div>
           </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

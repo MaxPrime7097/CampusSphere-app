@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { globalSearch } from "@/services/api";
 import { getEvents } from "@/services/eventService";
-import { Loader2, BadgeCheck, FileText, BookOpen, FileCode, Zap } from "lucide-react";
+import { Spinner as Loader2, SealCheck as BadgeCheck, FileText, BookOpen, FileCode, Lightning as Zap } from "@phosphor-icons/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn, getPostUrl, getEventUrl, getResourceUrl, getSphereUrl } from "@/lib/utils";
@@ -169,7 +169,7 @@ export function SearchDropdown({ query, isVisible, onClose }: SearchDropdownProp
                             {user.name || [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username}
                           </span>
                           {(user.is_verified || user.isVerified) && (
-                            <BadgeCheck className="h-3.5 w-3.5 text-amber-500 fill-amber-500/20 shrink-0" />
+                            <BadgeCheck className="h-3.5 w-3.5 text-primary shrink-0" weight="fill" />
                           )}
                         </div>
                         <p className="text-[11px] text-muted-foreground truncate">@{user.username}</p>
@@ -201,7 +201,7 @@ export function SearchDropdown({ query, isVisible, onClose }: SearchDropdownProp
                         <span className="truncate">Par {post.author_info?.name || post.author_info?.username || "Auteur"}</span>
                         <span>·</span>
                         <span className="inline-flex items-center gap-0.5 text-foreground/80 font-medium">
-                          <Zap className="h-3 w-3 text-primary fill-primary" />
+                          <Zap className="h-3 w-3 text-primary" weight="fill" />
                           {post.impact_score || 0}
                         </span>
                       </div>

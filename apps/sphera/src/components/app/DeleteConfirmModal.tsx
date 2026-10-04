@@ -1,6 +1,6 @@
 import React from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { X, Trash2, AlertTriangle } from 'lucide-react';
+import { X, Trash as Trash2, Warning as AlertTriangle } from "@phosphor-icons/react";
 import { useTranslation } from 'react-i18next';
 
 export function DeleteConfirmModal({

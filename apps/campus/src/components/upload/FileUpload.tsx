@@ -2,18 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Upload, 
-  File, 
-  Image, 
-  Video, 
-  Music, 
-  Archive, 
-  FileText, 
-  X, 
-  Check,
-  AlertCircle
-} from "lucide-react";
+import { Upload, File, Image, Video, MusicNote as Music, Archive, FileText, X, Check, WarningCircle as AlertCircle } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { compressImageFiles } from "@/lib/imageCompression";
 

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
-import { Users, Heart, Zap, BookOpen, MessageCircle, Award, Globe, Star, Sparkles, Target, Eye, Users2, Trophy, ChevronDown, Bug, Linkedin, Github, Mail, ArrowRight, GraduationCap } from "lucide-react";
+import { UsersThree as Users, Heart, Lightning as Zap, BookOpen, ChatCircleDots as MessageCircle, Medal as Award, Globe, Star, Sparkle as Sparkles, Target, Eye, Users as Users2, Trophy, CaretDown as ChevronDown, BugBeetle as Bug, LinkedinLogo as Linkedin, GithubLogo as Github, Envelope as Mail, ArrowRight, GraduationCap } from "@phosphor-icons/react";
 
 export function About(): JSX.Element {
   const navigate = useNavigate();

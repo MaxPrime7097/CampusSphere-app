@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Camera, Upload, Shield, Check, Loader2, AlertCircle, Info } from "lucide-react";
+import { Camera, Upload, Shield, Check, Spinner as Loader2, WarningCircle as AlertCircle, Info } from "@phosphor-icons/react";
 import { verifyStudentStatus } from "@/services/api";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";

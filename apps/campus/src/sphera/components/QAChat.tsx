@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import { Send, MessageCircleQuestion, AlertCircle, Loader2 } from "lucide-react";
+import { PaperPlaneTilt as Send, Question as MessageCircleQuestion, WarningCircle as AlertCircle, Spinner as Loader2 } from "@phosphor-icons/react";
 import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { useQAChat } from "../hooks/useQAChat";
 import { CommandMenu, CHAT_COMMANDS, type ChatCommand } from "./CommandMenu";

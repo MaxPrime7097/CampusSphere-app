@@ -1,21 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import {
-  Plus,
-  LogOut,
-  FileText,
-  ExternalLink,
-  Zap,
-  FilePenLine,
-  ChevronLeft,
-  ChevronRight,
-  Search,
-  X,
-  Menu,
-  Sliders,
-  HelpCircle,
-  MoreVertical,
-} from 'lucide-react'
+import { Plus, SignOut as LogOut, FileText, ArrowSquareOut as ExternalLink, Lightning as Zap, NotePencil as FilePenLine, CaretLeft as ChevronLeft, CaretRight as ChevronRight, MagnifyingGlass as Search, X, List as Menu, Sliders, Question as HelpCircle, DotsThreeVertical as MoreVertical } from "@phosphor-icons/react";
 import { useTranslation } from 'react-i18next'
 import { useSpheraAuth } from '../../contexts/SpheraAuthContext'
 import { getMyQuizSessions, getSessions, getAnnales } from '../../services/spheraApi'

@@ -1,5 +1,5 @@
 import { Suspense, lazy } from "react";
-import { Folder, FolderOpen, Plus } from "lucide-react";
+import { Folder, FolderOpen, Plus } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { FolderCard } from "@/components/resources/FolderCard";
 import { ResourceCard } from "@/components/resources/ResourceCard";

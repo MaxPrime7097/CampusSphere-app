@@ -10,13 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { 
-  User, 
-  Settings, 
-  LogOut,
-  ChevronDown,
-  BadgeCheck
-} from "lucide-react";
+import { User, Gear as Settings, SignOut as LogOut, CaretDown as ChevronDown, SealCheck as BadgeCheck } from "@phosphor-icons/react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface ProfileBubbleProps {
@@ -76,7 +70,7 @@ export function ProfileBubble({ user: externalUser, isLoading: externalLoading }
           <div className="flex flex-col space-y-1">
             <div className="flex items-center gap-1.5">
               <p className="text-sm font-medium leading-none">{user.name}</p>
-              {user.isVerified && <BadgeCheck className="h-3.5 w-3.5 text-primary fill-primary/10" />}
+              {user.isVerified && <BadgeCheck className="h-3.5 w-3.5 text-primary" weight="fill" />}
             </div>
             <p className="text-xs leading-none text-muted-foreground">
               @{user.username}

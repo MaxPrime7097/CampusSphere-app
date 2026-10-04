@@ -1,23 +1,5 @@
-import type { LucideIcon } from "lucide-react";
-import {
-  Scale,
-  Bookmark,
-  FolderOpen,
-  Home,
-  Info,
-  LifeBuoy,
-  MessageSquare,
-  ScrollText,
-  Settings,
-  Shield,
-  User,
-  Globe,
-  Bell,
-  Plus,
-  Link,
-  Calendar,
-  Search,
-} from "lucide-react";
+import type { Icon as LucideIcon } from "@phosphor-icons/react";
+import { Scales as Scale, BookmarkSimple, FolderOpen, House as Home, Info, Lifebuoy as LifeBuoy, ChatCircle as MessageSquare, Scroll as ScrollText, Gear as Settings, Shield, User, Sphere, Bell, Plus, Link, Calendar, MagnifyingGlass as Search, Lightning as Zap } from "@phosphor-icons/react";
 import { SpheraIcon } from "@/components/ui/sphera-icon";
 
 export interface NavigationUser {
@@ -75,7 +57,7 @@ export function getNavigationSections(user?: NavigationUser | null): NavigationS
   navigationItems.push({ title: "Événements", url: "/events", icon: Calendar });
   
   if (isAuthenticated) {
-    navigationItems.push({ title: "Sphères", url: "/spheres", icon: Globe });
+    navigationItems.push({ title: "Sphères", url: "/spheres", icon: Sphere });
   }
 
   const quickActions: NavigationItem[] = [];
@@ -83,7 +65,7 @@ export function getNavigationSections(user?: NavigationUser | null): NavigationS
     quickActions.push(
       { title: "Connexions", url:"/connections", icon: Link },
       { title: "Messages", url: "/messages", icon: MessageSquare },
-      { title: "Enregistrements", url: "/saved", icon: Bookmark },
+      { title: "Enregistrements", url: "/saved", icon: BookmarkSimple },
       { title: "Paramètres", url: "/settings", icon: Settings }
     );
   }
@@ -91,6 +73,7 @@ export function getNavigationSections(user?: NavigationUser | null): NavigationS
   const utilities: NavigationItem[] = [
     { title: "Ouvrir Sphera", url: "/sphera/sso", icon: SpheraIcon, external: true },
     ...adminEntry,
+    { title: "Impact Score", url: "/cs-inc/impact-score", icon: Zap, external: true },
     { title: "À propos", url: "/cs-inc/about", icon: Info, external: true },
     { title: "Politiques", url: "/cs-inc/policies", icon: Scale, external: true },
     { title: "Aide", url: "/cs-inc/contact", icon: LifeBuoy, external: true },
@@ -101,7 +84,7 @@ export function getNavigationSections(user?: NavigationUser | null): NavigationS
     { title: "Ressources", url: "/resources", icon: FolderOpen },
     { title: "Publier", url: newPost, icon: Plus },
     { title: "Événements", url: "/events", icon: Calendar },
-    { title: "Sphères", url: "/spheres", icon: Globe },
+    { title: "Sphères", url: "/spheres", icon: Sphere },
   ];
 
   return {

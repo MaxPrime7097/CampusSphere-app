@@ -19,7 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
-import { ArrowLeft, AlertCircle, Shield } from "lucide-react";
+import { ArrowLeft, WarningCircle as AlertCircle, Shield } from "@phosphor-icons/react";
 import { getSphereFeatures } from "@/config/sphereFeatures";
 import { useToast } from "@/hooks/use-toast";
 import { openVerificationModal } from "@/lib/events";

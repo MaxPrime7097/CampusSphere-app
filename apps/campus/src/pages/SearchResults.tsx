@@ -18,16 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Search,
-  Users,
-  Loader2,
-  BadgeCheck,
-  X,
-  Calendar,
-  MessageCircle,
-  Zap,
-} from "lucide-react";
+import { MagnifyingGlass as Search, UsersThree as Users, Spinner as Loader2, SealCheck as BadgeCheck, X, Calendar, ChatTeardrop, Lightning as Zap } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { cn, formatSlugToLabel, getPostUrl, getEventUrl, getResourceUrl, getSphereUrl } from "@/lib/utils";
 import { formatRelativeTime } from "@/lib/date";
@@ -856,7 +847,7 @@ export function SearchResults() {
                                   {post.authorName}
                                 </span>
                                 {post.isVerified && (
-                                  <BadgeCheck className="h-3.5 w-3.5 text-amber-500 fill-amber-500/20 shrink-0" />
+                                  <BadgeCheck className="h-3.5 w-3.5 text-primary shrink-0" weight="fill" />
                                 )}
                                 <span className="text-xs text-muted-foreground/50">·</span>
                                 <span className="text-xs text-muted-foreground shrink-0">
@@ -880,12 +871,12 @@ export function SearchResults() {
 
                               <div className="flex items-center gap-3 pt-1 text-xs text-muted-foreground">
                                 <span className="inline-flex items-center gap-1 font-medium">
-                                  <Zap className="h-3.5 w-3.5 text-primary fill-primary" />
+                                  <Zap className="h-3.5 w-3.5 text-primary" weight="fill" />
                                   {post.impactScore}
                                 </span>
                                 {post.commentsCount != null && (
                                   <span className="inline-flex items-center gap-1 font-medium">
-                                    <MessageCircle className="h-3.5 w-3.5" />
+                                    <ChatTeardrop className="h-3.5 w-3.5" />
                                     {post.commentsCount}
                                   </span>
                                 )}
@@ -1022,7 +1013,7 @@ export function SearchResults() {
                                   {user.name}
                                 </span>
                                 {user.isVerified && (
-                                  <BadgeCheck className="h-4 w-4 text-amber-500 fill-amber-500/20 shrink-0" />
+                                  <BadgeCheck className="h-4 w-4 text-primary shrink-0" weight="fill" />
                                 )}
                               </div>
                               <p className="text-xs text-muted-foreground truncate mt-0.5">
@@ -1189,7 +1180,7 @@ export function SearchResults() {
                             {post.authorName}
                           </span>
                           {post.isVerified && (
-                            <BadgeCheck className="h-3.5 w-3.5 text-amber-500 fill-amber-500/20 shrink-0" />
+                            <BadgeCheck className="h-3.5 w-3.5 text-primary shrink-0" weight="fill" />
                           )}
                           <span className="text-xs text-muted-foreground/50">·</span>
                           <span className="text-xs text-muted-foreground shrink-0">
@@ -1213,12 +1204,12 @@ export function SearchResults() {
 
                         <div className="flex items-center gap-3 pt-1 text-xs text-muted-foreground">
                           <span className="inline-flex items-center gap-1 font-medium">
-                            <Zap className="h-3.5 w-3.5 text-primary fill-primary" />
+                            <Zap className="h-3.5 w-3.5 text-primary" weight="fill" />
                             {post.impactScore}
                           </span>
                           {post.commentsCount != null && (
                             <span className="inline-flex items-center gap-1 font-medium">
-                              <MessageCircle className="h-3.5 w-3.5" />
+                              <ChatTeardrop className="h-3.5 w-3.5" />
                               {post.commentsCount}
                             </span>
                           )}
@@ -1321,7 +1312,7 @@ export function SearchResults() {
                             {user.name}
                           </span>
                           {user.isVerified && (
-                            <BadgeCheck className="h-4 w-4 text-amber-500 fill-amber-500/20 shrink-0" />
+                            <BadgeCheck className="h-4 w-4 text-primary shrink-0" weight="fill" />
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground truncate mt-0.5">

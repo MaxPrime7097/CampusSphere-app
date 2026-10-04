@@ -1,22 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, NavLink } from "react-router-dom";
-import {
-  Moon,
-  Sun,
-  LogOut,
-  ChevronRight,
-  ExternalLink,
-  BadgeCheck,
-  Calendar,
-  Link as LinkIcon,
-  MessageSquare,
-  Bookmark,
-  Settings,
-  Shield,
-  Info,
-  Scale,
-  LifeBuoy,
-} from "lucide-react";
+import { Moon, Sun, SignOut as LogOut, CaretRight as ChevronRight, ArrowSquareOut as ExternalLink, SealCheck as BadgeCheck, Link as LinkIcon, ChatCircle as MessageSquare, BookmarkSimple, Gear as Settings, Shield, Info, Scales as Scale, Lifebuoy as LifeBuoy } from "@phosphor-icons/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -79,7 +63,7 @@ export function MobileMenu() {
                     {user.name || user.username}
                   </span>
                   {user.isVerified && (
-                    <BadgeCheck className="h-4 w-4 text-primary fill-primary/20 shrink-0" />
+                    <BadgeCheck className="h-4 w-4 text-primary shrink-0" weight="fill" />
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground truncate">
@@ -148,12 +132,10 @@ export function MobileMenu() {
           href="/sphera/sso"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-between p-3 rounded-2xl border border-border/50 bg-card hover:border-primary/40 hover:bg-muted/30 transition-all group shadow-none cursor-pointer"
+          className="flex items-center justify-between p-3.5 rounded-2xl border border-border/50 bg-card hover:border-primary/40 hover:bg-muted/30 transition-all group shadow-none cursor-pointer"
         >
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="h-10 w-10 rounded-xl bg-primary/15 border border-primary/25 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <SpheraIcon size="md" variant="primary" />
-            </div>
+          <div className="flex items-center gap-3.5 min-w-0">
+            <SpheraIcon size="xl" variant="primary" className="w-9 h-9 shrink-0 group-hover:scale-105 transition-transform" />
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
@@ -175,92 +157,74 @@ export function MobileMenu() {
         </a>
 
         {/* Section: Fonctionnalités clés (Non présentes dans la barre inférieure) */}
-        <div className="space-y-1">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80 px-2">
-            Espaces & Outils
-          </span>
-          <div className="rounded-2xl border border-border/40 bg-card overflow-hidden divide-y divide-border/30">
-            {/* Événements (Non présent dans la barre mobile) */}
-            <NavLink
-              to="/events"
-              className={({ isActive }) =>
-                `flex items-center justify-between px-3.5 py-3 text-xs font-medium transition-colors hover:bg-muted/40 ${
-                  isActive ? "bg-accent text-primary font-semibold" : "text-foreground"
-                }`
-              }
-            >
-              <div className="flex items-center gap-3">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span>Événements campus</span>
-              </div>
-              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40" />
-            </NavLink>
+        {isAuthenticated && (
+          <div className="space-y-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80 px-2">
+              Espaces & Outils
+            </span>
+            <div className="rounded-2xl border border-border/40 bg-card overflow-hidden divide-y divide-border/30">
+              <NavLink
+                to="/connections"
+                className={({ isActive }) =>
+                  `flex items-center justify-between px-3.5 py-3 text-xs font-medium transition-colors hover:bg-muted/40 ${
+                    isActive ? "bg-accent text-primary font-semibold" : "text-foreground"
+                  }`
+                }
+              >
+                <div className="flex items-center gap-3">
+                  <LinkIcon className="h-4 w-4 text-muted-foreground" />
+                  <span>Connexions</span>
+                </div>
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40" />
+              </NavLink>
 
-            {isAuthenticated && (
-              <>
-                <NavLink
-                  to="/connections"
-                  className={({ isActive }) =>
-                    `flex items-center justify-between px-3.5 py-3 text-xs font-medium transition-colors hover:bg-muted/40 ${
-                      isActive ? "bg-accent text-primary font-semibold" : "text-foreground"
-                    }`
-                  }
-                >
-                  <div className="flex items-center gap-3">
-                    <LinkIcon className="h-4 w-4 text-muted-foreground" />
-                    <span>Connexions</span>
-                  </div>
-                  <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40" />
-                </NavLink>
+              <NavLink
+                to="/messages"
+                className={({ isActive }) =>
+                  `flex items-center justify-between px-3.5 py-3 text-xs font-medium transition-colors hover:bg-muted/40 ${
+                    isActive ? "bg-accent text-primary font-semibold" : "text-foreground"
+                  }`
+                }
+              >
+                <div className="flex items-center gap-3">
+                  <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                  <span>Messages</span>
+                </div>
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40" />
+              </NavLink>
 
-                <NavLink
-                  to="/messages"
-                  className={({ isActive }) =>
-                    `flex items-center justify-between px-3.5 py-3 text-xs font-medium transition-colors hover:bg-muted/40 ${
-                      isActive ? "bg-accent text-primary font-semibold" : "text-foreground"
-                    }`
-                  }
-                >
-                  <div className="flex items-center gap-3">
-                    <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                    <span>Messages</span>
-                  </div>
-                  <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40" />
-                </NavLink>
+              <NavLink
+                to="/saved"
+                className={({ isActive }) =>
+                  `flex items-center justify-between px-3.5 py-3 text-xs font-medium transition-colors hover:bg-muted/40 ${
+                    isActive ? "bg-accent text-primary font-semibold" : "text-foreground"
+                  }`
+                }
+              >
+                <div className="flex items-center gap-3">
+                  <BookmarkSimple className="h-4 w-4 text-muted-foreground" />
+                  <span>Enregistrements</span>
+                </div>
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40" />
+              </NavLink>
 
-                <NavLink
-                  to="/saved"
-                  className={({ isActive }) =>
-                    `flex items-center justify-between px-3.5 py-3 text-xs font-medium transition-colors hover:bg-muted/40 ${
-                      isActive ? "bg-accent text-primary font-semibold" : "text-foreground"
-                    }`
-                  }
-                >
-                  <div className="flex items-center gap-3">
-                    <Bookmark className="h-4 w-4 text-muted-foreground" />
-                    <span>Enregistrements</span>
-                  </div>
-                  <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40" />
-                </NavLink>
-
-                <NavLink
-                  to="/settings"
-                  className={({ isActive }) =>
-                    `flex items-center justify-between px-3.5 py-3 text-xs font-medium transition-colors hover:bg-muted/40 ${
-                      isActive ? "bg-accent text-primary font-semibold" : "text-foreground"
-                    }`
-                  }
-                >
-                  <div className="flex items-center gap-3">
-                    <Settings className="h-4 w-4 text-muted-foreground" />
-                    <span>Paramètres</span>
-                  </div>
-                  <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40" />
-                </NavLink>
-              </>
-            )}
+              <NavLink
+                to="/settings"
+                className={({ isActive }) =>
+                  `flex items-center justify-between px-3.5 py-3 text-xs font-medium transition-colors hover:bg-muted/40 ${
+                    isActive ? "bg-accent text-primary font-semibold" : "text-foreground"
+                  }`
+                }
+              >
+                <div className="flex items-center gap-3">
+                  <Settings className="h-4 w-4 text-muted-foreground" />
+                  <span>Paramètres</span>
+                </div>
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40" />
+              </NavLink>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Section: Informations & Aide */}
         <div className="space-y-1">

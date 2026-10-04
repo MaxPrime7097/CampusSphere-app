@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { CaretLeft as ChevronLeft, CaretRight as ChevronRight } from "@phosphor-icons/react";
 import { cn } from '@/lib/utils';
 
 export function NetflixCarousel({ children, className }: { children: React.ReactNode, className?: string }) {

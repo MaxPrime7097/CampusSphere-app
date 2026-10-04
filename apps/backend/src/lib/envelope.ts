@@ -22,16 +22,11 @@ export interface Pagination {
   has_previous: boolean;
 }
 
-function timestamp(): string {
-  return new Date().toISOString();
-}
-
 function send<T>(res: Response, status: number, data: T, message?: string): Response {
   return res.status(status).json({
     success: true,
     data,
     ...(message ? { message } : {}),
-    timestamp: timestamp(),
   });
 }
 
@@ -50,7 +45,6 @@ export function list<T>(res: Response, data: T[], pagination?: Pagination): Resp
     success: true,
     data,
     ...(pagination ? { pagination } : {}),
-    timestamp: timestamp(),
   });
 }
 

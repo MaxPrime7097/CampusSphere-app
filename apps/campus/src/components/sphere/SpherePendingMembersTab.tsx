@@ -1,4 +1,4 @@
-import { Users, UserCheck, UserX } from "lucide-react";
+import { UsersThree as Users, UserCheck, UserMinus as UserX } from "@phosphor-icons/react";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

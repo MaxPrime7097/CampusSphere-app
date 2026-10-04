@@ -151,6 +151,27 @@ enum ConversationType {
   GROUP
 }
 
+enum MessageType {
+  TEXT
+  IMAGE
+  AUDIO
+  FILE
+  SYSTEM
+}
+
+enum MessageStatus {
+  SENDING
+  SENT
+  DELIVERED
+  READ
+}
+
+enum ConversationMemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
 /// Canonical set of 15. Reconciles three divergent lists — see API_CONTRACT §2.
 /// Django emitted `message_received` (declared nowhere) where both enums said
 /// `message`, and `verification_status` was emitted but never declared.
@@ -294,6 +315,7 @@ model User {
   conversationsOwned  Conversation[]            @relation("ConversationCreator")
   messages            Message[]
   messageReads        MessageRead[]
+  messageReactions    MessageReaction[]
   readReceipts        ConversationReadReceipt[]
   notifications       Notification[]
   notificationSetting NotificationSettings?
@@ -792,9 +814,10 @@ model Conversation {
 /// Explicit join table rather than an implicit M2M, so membership can be queried
 /// and indexed directly.
 model ConversationMember {
-  conversationId Int      @map("conversation_id")
-  userId         Int      @map("user_id")
-  joinedAt       DateTime @default(now()) @map("joined_at")
+  conversationId Int                    @map("conversation_id")
+  userId         Int                    @map("user_id")
+  role           ConversationMemberRole @default(MEMBER)
+  joinedAt       DateTime               @default(now()) @map("joined_at")
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -805,19 +828,55 @@ model ConversationMember {
 }
 
 model Message {
-  id             Int      @id @default(autoincrement())
+  id             Int           @id @default(autoincrement())
+  type           MessageType   @default(TEXT)
+  status         MessageStatus @default(SENT)
   content        String
-  conversationId Int      @map("conversation_id")
-  authorId       Int      @map("author_id")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  conversationId Int           @map("conversation_id")
+  authorId       Int           @map("author_id")
 
-  conversation Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  author       User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  readBy       MessageRead[]
+  // Media attachments
+  mediaUrl       String?       @map("media_url")
+  mediaType      String?       @map("media_type")
+  fileName       String?       @map("file_name")
+  fileSize       Int?          @map("file_size")
+  duration       Float?        @map("duration")
+
+  // Replies / Quotes
+  replyToId      Int?          @map("reply_to_id")
+  replyTo        Message?      @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies        Message[]     @relation("MessageReplies")
+
+  // Soft delete
+  isDeleted      Boolean       @default(false) @map("is_deleted")
+  deletedAt      DateTime?     @map("deleted_at")
+
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  conversation   Conversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  author         User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  readBy         MessageRead[]
+  reactions      MessageReaction[]
 
   @@index([conversationId, createdAt])
+  @@index([replyToId])
   @@map("messages")
+}
+
+model MessageReaction {
+  id        Int      @id @default(autoincrement())
+  messageId Int      @map("message_id")
+  userId    Int      @map("user_id")
+  emoji     String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([messageId])
+  @@map("message_reactions")
 }
 
 model MessageRead {
@@ -1107,7 +1166,7 @@ model GenerationUsage {
   id            Int      @id @default(autoincrement())
   userId        Int      @map("user_id")
   weekStartDate DateTime @map("week_start_date") @db.Date
-  count         Int      @default(0)
+  count         Int    @default(0)
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 

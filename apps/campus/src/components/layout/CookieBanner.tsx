@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Cookie, X } from "lucide-react";
+import { Cookie, X } from "@phosphor-icons/react";
 import { useNavigate } from "react-router-dom";
 
 const COOKIE_KEY = "campussphere_cookie_consent";

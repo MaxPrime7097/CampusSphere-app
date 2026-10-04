@@ -1,19 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import {
-  ShieldAlert,
-  Search,
-  CheckCircle2,
-  Loader2,
-  RefreshCw,
-  FileText,
-  MessageSquare,
-  AlertTriangle,
-  Eye,
-  Trash2,
-  User,
-  Calendar,
-  ExternalLink,
-} from "lucide-react";
+import { ShieldWarning as ShieldAlert, MagnifyingGlass as Search, CheckCircle as CheckCircle2, Spinner as Loader2, ArrowClockwise as RefreshCw, FileText, ChatCircle as MessageSquare, Warning as AlertTriangle, Eye, Trash as Trash2, User, Calendar, ArrowSquareOut as ExternalLink } from "@phosphor-icons/react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";

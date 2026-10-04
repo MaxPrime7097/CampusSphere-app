@@ -1,4 +1,4 @@
-import { Lock, Loader2 } from "lucide-react";
+import { Lock, Spinner as Loader2 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ZoomIn, ZoomOut, RotateCcw, RotateCw, ExternalLink, ImageIcon } from 'lucide-react';
+import { MagnifyingGlassPlus as ZoomIn, MagnifyingGlassMinus as ZoomOut, ArrowCounterClockwise as RotateCcw, ArrowClockwise as RotateCw, ArrowSquareOut as ExternalLink, ImageIcon } from "@phosphor-icons/react";
 import { useTranslation } from 'react-i18next';
 
 interface DocumentImageViewerProps {

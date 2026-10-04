@@ -1,5 +1,5 @@
 import React from 'react'
-import { FileText, BrainCircuit, SquareStack, HelpCircle, AlignLeft, Sparkles, type LucideIcon } from 'lucide-react'
+import { FileText, Brain as BrainCircuit, Stack as SquareStack, Question as HelpCircle, AlignLeft, Sparkle as Sparkles, type Icon as LucideIcon } from "@phosphor-icons/react";
 import { useTranslation } from 'react-i18next'
 
 export interface Command {

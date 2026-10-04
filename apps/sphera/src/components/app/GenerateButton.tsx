@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { Sparkles, Loader2 } from 'lucide-react'
+import { Sparkle as Sparkles, Spinner as Loader2 } from "@phosphor-icons/react";
 import { useTranslation } from 'react-i18next'
 
 interface GenerateButtonProps {
