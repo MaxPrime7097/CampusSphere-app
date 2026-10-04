@@ -22,7 +22,7 @@ import { PDFParse } from "pdf-parse";
 
 const run = promisify(execFile);
 
-export const MAX_CHARS = 40_000;
+export const MAX_CHARS = 500_000;
 
 /** Below this many characters of embedded text, a PDF is treated as a scan. */
 const OCR_THRESHOLD = 150;

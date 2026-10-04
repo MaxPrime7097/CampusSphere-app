@@ -1,6 +1,6 @@
 import { Suspense, lazy, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Camera, Check, LinkBreak as Unlink, Link as LinkIcon, Spinner as Loader2, Shield, Info, Pencil, SealCheck as BadgeCheck, Lightning as Zap, Smiley as Smile, Gear as Settings, ArrowRight } from "@phosphor-icons/react";
+import { Camera, Check, LinkBreak as Unlink, Link as LinkIcon, Spinner as Loader2, Shield, Info, PencilSimple, SealCheck as BadgeCheck, Lightning as Zap, Smiley as Smile, Gear as Settings, ArrowRight } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -227,7 +227,7 @@ export function ProfileHeader({
                       size="sm"
                       onClick={() => setIsEditAccountOpen(true)}
                     >
-                      <Pencil className="h-4 w-4 mr-2" />
+                      <PencilSimple className="h-4 w-4 mr-2" />
                       <span className="inline">Modifier</span>
                     </Button>
                     {isEditAccountOpen && (

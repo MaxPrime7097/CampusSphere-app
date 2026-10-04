@@ -24,15 +24,18 @@ export function appendSlash(req: Request, res: Response, next: NextFunction): vo
 }
 
 /**
- * Cache-Control: no-store for the realtime surfaces named in CACHE_POLICY.md —
- * messaging, notifications, unread counts and every mutating action.
+ * Cache-Control policy:
+ * - `no-store` for all mutating actions (POST, PUT, PATCH, DELETE).
+ * - `no-cache` for GET/HEAD requests so browsers and clients cache the response and revalidate
+ *   conditionally with `If-None-Match: <etag>` for 304 Not Modified responses.
  */
 export function noStore(req: Request, res: Response, next: NextFunction): void {
-  const realtime = /^\/api\/(conversations|notifications)\b/.test(req.path);
   const mutating = req.method !== "GET" && req.method !== "HEAD";
 
-  if (realtime || mutating) {
+  if (mutating) {
     res.setHeader("Cache-Control", "no-store");
+  } else {
+    res.setHeader("Cache-Control", "no-cache");
   }
   next();
 }

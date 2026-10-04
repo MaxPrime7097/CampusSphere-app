@@ -17,7 +17,7 @@ campussphere-monorepo/
 ├── apps/
 │   ├── campus/              # @cs/campus (Vite + React 18) — Port 5173
 │   │                        # Réseau social académique, sphères, documents & génération 1-clic.
-│   ├── sphera/              # @cs/sphera (Vite + React 18) — Port 5174 / 4173
+│   ├── sphera/              # @cs/sphera (Vite + React 18) — Port 5174
 │   │                        # Application d'étude interactive dédiée (mindmaps, audio, live quiz).
 │   └── backend/             # @cs/backend (Node 22 / Express 5 + Prisma 5) — Port 3000
 │                            # API REST unique, WebSockets natifs, Redis multi-instances.
@@ -103,7 +103,7 @@ pnpm dev              # Lance apps/campus, apps/sphera et apps/backend
 
 # Développement ciblé
 pnpm dev:campus       # CampusSphere seul -> http://localhost:5173
-pnpm dev:sphera       # Sphera seul       -> http://localhost:5174 ou 4173
+pnpm dev:sphera       # Sphera seul       -> http://localhost:5174 
 pnpm dev:backend      # Backend Express   -> http://localhost:3000
 
 # Vérifications qualité (Turborepo)

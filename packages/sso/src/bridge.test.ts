@@ -17,7 +17,7 @@ describe("@cs/sso security & bridge", () => {
 
     it("should allow local development ports", () => {
       expect(isAllowedSpheraOrigin("http://localhost:5174")).toBe(true);
-      expect(isAllowedSpheraOrigin("http://localhost:4173")).toBe(true);
+      expect(isAllowedSpheraOrigin("http://localhost:5174")).toBe(true);
     });
 
     it("should reject malicious or unapproved domains", () => {

@@ -16,15 +16,18 @@ import { prisma } from "../lib/prisma.js";
 import { computeExpiry, getSphereFeatures } from "../lib/sphereConfig.js";
 import { resolveSphereId } from "../lib/sphereLookup.js";
 import { serializeSphere, serializeSphereMember, sphereInclude } from "../serializers/sphere.js";
+import { conversationInclude, serializeConversation } from "../serializers/conversation.js";
 import { userSelect } from "../serializers/user.js";
 import { ok, created, list, paginate, paginationParams } from "../lib/envelope.js";
 import { badRequest, conflict, forbidden, notFound } from "../lib/errors.js";
 import { currentUser, requireAuth } from "../middleware/auth.js";
 import { singleUpload } from "../middleware/upload.js";
 import { keyFromUrl, storage } from "../services/storage.js";
+import { httpCache, autoInvalidate } from "../lib/cache.js";
 
 export const spheresRouter: Router = Router();
 spheresRouter.use(requireAuth);
+spheresRouter.use(autoInvalidate("spheres"));
 
 const CATEGORIES = ["academic", "professional", "social", "sports", "arts", "technology", "other"] as const;
 const TYPES = ["cours", "projet", "club", "revision", "communaute"] as const;
@@ -80,7 +83,7 @@ const createSchema = z.object({
   collaboration_types: z.array(z.string()).default([]),
 });
 
-spheresRouter.get("/", async (req, res) => {
+spheresRouter.get("/", httpCache({ namespace: "spheres", ttlSeconds: 60 }), async (req, res) => {
   const me = currentUser(req);
   const { page, pageSize, skip } = paginationParams(req.query as Record<string, unknown>);
   const search = String(req.query.search ?? "").trim();
@@ -155,7 +158,7 @@ spheresRouter.post("/", async (req, res) => {
 
 // ── Convenience listings (before /:id/ so they are not shadowed) ─────────────
 
-spheresRouter.get("/user/spheres/", async (req, res) => {
+spheresRouter.get("/user/spheres/", httpCache({ namespace: "spheres", ttlSeconds: 60 }), async (req, res) => {
   const me = currentUser(req);
   const memberships = await prisma.sphereMember.findMany({
     where: { userId: me.id, status: "ACTIVE", sphere: notExpired },
@@ -193,7 +196,7 @@ async function loadVisibleSphere(req: Request) {
   return { sphere, membership, me };
 }
 
-spheresRouter.get("/:id/", async (req, res) => {
+spheresRouter.get("/:id/", httpCache({ namespace: "spheres", ttlSeconds: 60 }), async (req, res) => {
   const { sphere, membership, me } = await loadVisibleSphere(req);
   ok(res, serializeSphere(sphere, { viewerId: me.id, membership, taskCounts: await taskCountsFor(sphere.id) }));
 });
@@ -327,7 +330,7 @@ spheresRouter.post("/:id/extend-duration/", async (req, res) => {
 
 // ── Members ─────────────────────────────────────────────────────────────────
 
-spheresRouter.get("/:id/members/", async (req, res) => {
+spheresRouter.get("/:id/members/", httpCache({ namespace: "spheres", ttlSeconds: 60 }), async (req, res) => {
   const { sphere, membership, me } = await loadVisibleSphere(req);
   if (membership?.status !== "ACTIVE" && sphere.createdById !== me.id) {
     throw forbidden("You must be a member of this sphere.");
@@ -442,7 +445,7 @@ spheresRouter.delete("/:id/members/:memberId/", async (req, res) => {
 
 // ── Overview ────────────────────────────────────────────────────────────────
 
-spheresRouter.get("/:id/overview/", async (req, res) => {
+spheresRouter.get("/:id/overview/", httpCache({ namespace: "spheres", ttlSeconds: 60 }), async (req, res) => {
   const { sphere, membership, me } = await loadVisibleSphere(req);
   if (membership?.status !== "ACTIVE") throw forbidden("You must be a member of this sphere.");
 
@@ -591,7 +594,7 @@ spheresRouter.post("/:id/files/", singleUpload("file", "sphereFile"), async (req
   });
 });
 
-spheresRouter.get("/:id/files/", async (req, res) => {
+spheresRouter.get("/:id/files/", httpCache({ namespace: "spheres", ttlSeconds: 60 }), async (req, res) => {
   const { sphere, membership } = await loadVisibleSphere(req);
   if (membership?.status !== "ACTIVE") throw forbidden("You must be a member of this sphere.");
 
@@ -635,4 +638,81 @@ spheresRouter.delete("/:id/files/:fileId/", async (req, res) => {
 
   await prisma.sphereFile.delete({ where: { id: file.id } });
   ok(res, null, "File deleted.");
+});
+
+spheresRouter.get("/:id/conversation/", async (req, res) => {
+  const { sphere, membership, me } = await loadVisibleSphere(req);
+  if (membership?.status !== "ACTIVE" && sphere.createdById !== me.id) {
+    throw forbidden("You must be an active member of this sphere to access its chat.");
+  }
+
+  const tag = `[sphere-${sphere.id}]`;
+  let conv = await prisma.conversation.findFirst({
+    where: {
+      type: "GROUP",
+      OR: [
+        { name: { contains: tag } },
+        { name: { contains: `sphere-${sphere.id}` } },
+      ],
+    },
+    include: conversationInclude,
+  });
+
+  if (!conv) {
+    const activeMembers = await prisma.sphereMember.findMany({
+      where: { sphereId: sphere.id, status: "ACTIVE" },
+      select: { userId: true },
+    });
+    const participantIds = Array.from(new Set([me.id, sphere.createdById, ...activeMembers.map((m) => m.userId)]));
+
+    conv = await prisma.conversation.create({
+      data: {
+        type: "GROUP",
+        name: `${sphere.name} ${tag}`,
+        avatarUrl: sphere.bannerImage || null,
+        createdById: sphere.createdById || me.id,
+        participants: {
+          create: participantIds.map((userId) => ({ userId })),
+        },
+      },
+      include: conversationInclude,
+    });
+  } else {
+    // Ensure all active sphere members and current user are in conversation participants
+    const activeMembers = await prisma.sphereMember.findMany({
+      where: { sphereId: sphere.id, status: "ACTIVE" },
+      select: { userId: true },
+    });
+    const existingMemberUserIds = new Set(conv.participants.map((p) => p.userId));
+    const toAdd = activeMembers.filter((m) => !existingMemberUserIds.has(m.userId)).map((m) => m.userId);
+    if (!existingMemberUserIds.has(me.id)) {
+      toAdd.push(me.id);
+    }
+    const uniqueToAdd = Array.from(new Set(toAdd));
+
+    if (uniqueToAdd.length > 0 && conv) {
+      const activeConvId = conv.id;
+      await prisma.conversationMember.createMany({
+        data: uniqueToAdd.map((userId) => ({
+          conversationId: activeConvId,
+          userId,
+        })),
+        skipDuplicates: true,
+      });
+
+      conv =
+        (await prisma.conversation.findUnique({
+          where: { id: activeConvId },
+          include: conversationInclude,
+        })) ?? conv;
+    }
+  }
+
+  ok(
+    res,
+    serializeConversation(conv, {
+      viewerId: me.id,
+      unreadCount: 0,
+    }),
+  );
 });

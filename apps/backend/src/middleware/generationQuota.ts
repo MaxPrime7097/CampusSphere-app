@@ -3,7 +3,7 @@ import { prisma } from "../lib/prisma.js";
 import { getWeekStartDate } from "../lib/weekHelper.js";
 import { currentUser } from "./auth.js";
 
-export const WEEKLY_LIMIT = 5;
+export const WEEKLY_LIMIT = 10;
 
 /**
  * Middleware enforcing the weekly generation limit (5 generations per week per student).

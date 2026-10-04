@@ -44,6 +44,7 @@ import {
   isToolType,
   MIN_SOURCE_CHARS,
   VALID_TOOL_TYPES,
+  type AnnaleMode,
   type ToolType,
 } from "../services/ai/index.js";
 import {
@@ -56,8 +57,10 @@ import {
   type SerializableAnnaleSession,
   type SerializableStudySession,
 } from "../serializers/sphera.js";
+import { httpCache, autoInvalidate } from "../lib/cache.js";
 
 export const spheraRouter: Router = Router();
+spheraRouter.use(autoInvalidate("sphera"));
 
 // ── Shared helpers ──────────────────────────────────────────────────────────
 
@@ -1006,7 +1009,7 @@ spheraRouter.post("/generate/audio", checkGenerationQuota, singleUpload("file", 
 
 // ── Study sessions ──────────────────────────────────────────────────────────
 
-spheraRouter.get("/sessions/", async (req, res) => {
+spheraRouter.get("/sessions/", httpCache({ namespace: "sphera", ttlSeconds: 60 }), async (req, res) => {
   const me = currentUser(req);
   const where: Prisma.StudySessionWhereInput = { ownerId: me.id };
 
@@ -1022,7 +1025,7 @@ spheraRouter.get("/sessions/", async (req, res) => {
   list(res, sessions.map((s) => serializeStudySessionListItem(s as SerializableStudySession)));
 });
 
-spheraRouter.get("/sessions/:id/", async (req, res) => {
+spheraRouter.get("/sessions/:id/", httpCache({ namespace: "sphera", ttlSeconds: 60 }), async (req, res) => {
   const me = currentUser(req);
   try {
     ok(res, serializeStudySession(await readableStudySession(idParam(req), me.id)));
@@ -1158,6 +1161,330 @@ spheraRouter.post("/sessions/:id/create-from-selection/", async (req, res) => {
   });
 });
 
+// ── Sphera Artefacts & Multi-threads Q&A ─────────────────────────────────────
+
+const createArtefactSchema = z.object({
+  type: z.enum(["quiz", "flashcards", "mindmap", "audio", "note", "annale_rapide", "annale_complete"]),
+  title: z.string().trim().optional(),
+  subtitle: z.string().trim().optional(),
+  target_chapter: z.string().trim().optional(),
+  selection_text: z.string().trim().optional(),
+  content: z.any().optional(),
+});
+
+/**
+ * GET /sessions/<id>/artefacts/
+ * Lists all artefacts created for a study session.
+ */
+spheraRouter.get("/sessions/:id/artefacts/", async (req, res) => {
+  const me = currentUser(req);
+  const session = await ownStudySession(idParam(req), me.id);
+
+  const artefacts = await prisma.artefact.findMany({
+    where: { sessionId: session.id, ownerId: me.id },
+    orderBy: { createdAt: "desc" },
+  });
+
+  list(res, artefacts);
+});
+
+/**
+ * POST /sessions/<id>/artefacts/
+ * Generates an artefact (quiz, flashcards, mindmap, audio, annale_rapide, annale_complete) or saves a manual note.
+ * Deducts 1.0 gen for full document, 0.5 for chapter/selection, 0 for notes.
+ */
+spheraRouter.post("/sessions/:id/artefacts/", async (req, res) => {
+  const me = currentUser(req);
+  const session = await ownStudySession(idParam(req), me.id);
+  const input = createArtefactSchema.parse(req.body ?? {});
+
+  const isNote = input.type === "note";
+  const isAnnale = input.type === "annale_rapide" || input.type === "annale_complete";
+  const isFractional = Boolean(input.target_chapter || input.selection_text);
+  const cost = isNote ? 0 : isFractional ? 0.5 : 1.0;
+
+  if (cost > 0) {
+    const weekStart = getWeekStartDate();
+    const usage = await prisma.generationUsage.findUnique({
+      where: { userId_weekStartDate: { userId: me.id, weekStartDate: weekStart } },
+    });
+    const currentCount = usage?.count ?? 0;
+    if (currentCount + cost > WEEKLY_LIMIT) {
+      const nextMonday = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+      res.status(429).json({
+        success: false,
+        error: "weekly_limit_reached",
+        message: `Tu as utilisé ton quota Sphera (${currentCount}/${WEEKLY_LIMIT} gén.). Renouvellement lundi !`,
+        resetsOn: nextMonday.toISOString(),
+      });
+      return;
+    }
+  }
+
+  let finalContent: unknown;
+  if (isNote) {
+    finalContent = input.content ?? { text: "" };
+  } else if (isAnnale) {
+    const annaleMode: AnnaleMode = input.type === "annale_rapide" ? "rapide" : "complete";
+    const textToUse = session.extractedText;
+    if (!textToUse || textToUse.length < MIN_SOURCE_CHARS) {
+      throw badRequest("Contenu insuffisant pour générer ce corrigé d'annale.");
+    }
+    const generated = await generateAnnale(textToUse, annaleMode, null, me.id);
+    finalContent = { ...(generated as Record<string, unknown>), mode: annaleMode };
+  } else {
+    const textToUse = input.selection_text || input.target_chapter || session.extractedText;
+    if (!textToUse || textToUse.length < MIN_SOURCE_CHARS) {
+      throw badRequest("Contenu insuffisant pour générer cet artefact.");
+    }
+    finalContent = await processToolContent(textToUse, input.type as ToolType, me.id);
+  }
+
+  const existingCount = await prisma.artefact.count({
+    where: { sessionId: session.id, type: input.type },
+  });
+
+  const defaultTitles: Record<string, string> = {
+    quiz: input.target_chapter ? `Quiz - ${input.target_chapter}` : `Quiz #${existingCount + 1}`,
+    flashcards: input.target_chapter ? `Flashcards - ${input.target_chapter}` : `Flashcards #${existingCount + 1}`,
+    mindmap: "Carte mentale",
+    audio: "Podcast Deep Dive",
+    note: "Note personnelle",
+    annale_rapide: "Correction Rapide",
+    annale_complete: "Correction Complète",
+  };
+
+  const defaultSubtitles: Record<string, string> = {
+    quiz: input.target_chapter ? `Chapitre ciblé` : `20 questions • Tout le cours`,
+    flashcards: input.target_chapter ? `Chapitre ciblé` : `20 cartes • Tout le cours`,
+    mindmap: `Vue synthétique`,
+    audio: `Audio didactique`,
+    note: `Rédigé manuellement`,
+    annale_rapide: `Points clés & barème indicatif`,
+    annale_complete: `Résolution détaillée pas à pas`,
+  };
+
+  const artefact = await prisma.artefact.create({
+    data: {
+      sessionId: session.id,
+      ownerId: me.id,
+      type: input.type,
+      title: input.title || defaultTitles[input.type] || "Artefact",
+      subtitle: input.subtitle || defaultSubtitles[input.type] || null,
+      content: finalContent as Prisma.InputJsonValue,
+      targetChapter: input.target_chapter || null,
+      fromSelection: Boolean(input.selection_text),
+      selectionText: input.selection_text || null,
+    },
+  });
+
+  if (cost > 0) {
+    await incrementGenerationQuota(me.id, cost);
+  }
+
+  ok(res, artefact);
+});
+
+/**
+ * PATCH /artefacts/<id>/
+ * Updates an artefact's title, subtitle, or note content.
+ */
+spheraRouter.patch("/artefacts/:id/", async (req, res) => {
+  const me = currentUser(req);
+  const artefact = await prisma.artefact.findFirst({
+    where: { id: idParam(req), ownerId: me.id },
+  });
+  if (!artefact) throw notFound("Artefact introuvable.");
+
+  const { title, subtitle, content } = z.object({
+    title: z.string().trim().optional(),
+    subtitle: z.string().trim().optional(),
+    content: z.any().optional(),
+  }).parse(req.body ?? {});
+
+  const updated = await prisma.artefact.update({
+    where: { id: artefact.id },
+    data: {
+      ...(title !== undefined ? { title } : {}),
+      ...(subtitle !== undefined ? { subtitle } : {}),
+      ...(content !== undefined ? { content: content as Prisma.InputJsonValue } : {}),
+    },
+  });
+
+  ok(res, updated);
+});
+
+/**
+ * DELETE /artefacts/<id>/
+ * Deletes an artefact.
+ */
+spheraRouter.delete("/artefacts/:id/", async (req, res) => {
+  const me = currentUser(req);
+  const artefact = await prisma.artefact.findFirst({
+    where: { id: idParam(req), ownerId: me.id },
+  });
+  if (!artefact) throw notFound("Artefact introuvable.");
+
+  await prisma.artefact.delete({ where: { id: artefact.id } });
+  ok(res, null, "Artefact supprimé.");
+});
+
+/**
+ * POST /sessions/<id>/fiche/regenerate/
+ * Regenerates the single unique course fiche. Costs 0.5 generation.
+ */
+spheraRouter.post("/sessions/:id/fiche/regenerate/", async (req, res) => {
+  const me = currentUser(req);
+  const session = await ownStudySession(idParam(req), me.id);
+
+  if (!session.extractedText || session.extractedText.length < MIN_SOURCE_CHARS) {
+    throw badRequest("Texte insuffisant pour régénérer la fiche.");
+  }
+
+  const cost = 0.5;
+  const weekStart = getWeekStartDate();
+  const usage = await prisma.generationUsage.findUnique({
+    where: { userId_weekStartDate: { userId: me.id, weekStartDate: weekStart } },
+  });
+  const currentCount = usage?.count ?? 0;
+  if (currentCount + cost > WEEKLY_LIMIT) {
+    const nextMonday = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+    res.status(429).json({
+      success: false,
+      error: "weekly_limit_reached",
+      message: `Quota Sphera atteint (${currentCount}/${WEEKLY_LIMIT}). Renouvellement lundi !`,
+      resetsOn: nextMonday.toISOString(),
+    });
+    return;
+  }
+
+  const newFiche = await processToolContent(session.extractedText, "fiche", me.id);
+
+  const updated = await prisma.studySession.update({
+    where: { id: session.id },
+    data: {
+      ficheContent: newFiche as Prisma.InputJsonValue,
+      content: {
+        ...((session.content ?? {}) as Record<string, unknown>),
+        fiche: newFiche,
+      } as Prisma.InputJsonObject,
+    },
+    include: studySessionInclude,
+  });
+
+  await incrementGenerationQuota(me.id, cost);
+
+  ok(res, {
+    fiche: newFiche,
+    session: serializeStudySession(updated as SerializableStudySession),
+  });
+});
+
+/**
+ * GET /sessions/<id>/threads/
+ * Lists all chat threads and their messages for a session.
+ */
+spheraRouter.get("/sessions/:id/threads/", async (req, res) => {
+  const me = currentUser(req);
+  const session = await ownStudySession(idParam(req), me.id);
+
+  const threads = await prisma.chatThread.findMany({
+    where: { sessionId: session.id, ownerId: me.id },
+    include: {
+      messages: { orderBy: { createdAt: "asc" } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  list(res, threads);
+});
+
+/**
+ * POST /sessions/<id>/threads/
+ * Creates a new chat thread for this session.
+ */
+spheraRouter.post("/sessions/:id/threads/", async (req, res) => {
+  const me = currentUser(req);
+  const session = await ownStudySession(idParam(req), me.id);
+  const { title } = z.object({ title: z.string().trim().optional() }).parse(req.body ?? {});
+
+  const thread = await prisma.chatThread.create({
+    data: {
+      sessionId: session.id,
+      ownerId: me.id,
+      title: title || "Nouvelle discussion",
+    },
+    include: {
+      messages: true,
+    },
+  });
+
+  created(res, thread);
+});
+
+/**
+ * POST /threads/<threadId>/messages/
+ * Sends a message in a chat thread. 100% FREE (0 quota consumed).
+ */
+spheraRouter.post("/threads/:threadId/messages/", async (req, res) => {
+  const me = currentUser(req);
+  const threadId = idParam(req, "threadId");
+  const thread = await prisma.chatThread.findFirst({
+    where: { id: threadId, ownerId: me.id },
+    include: { session: true, messages: { orderBy: { createdAt: "asc" } } },
+  });
+  if (!thread) throw notFound("Fil de discussion introuvable.");
+
+  const { question } = z.object({ question: z.string().trim().min(1) }).parse(req.body ?? {});
+
+  const previousThreadHistory: QaEntry[] = [];
+  const existingMsgs = thread.messages || [];
+  for (let i = 0; i < existingMsgs.length; i++) {
+    const m = existingMsgs[i];
+    if (m.role === "user") {
+      const next = existingMsgs[i + 1];
+      previousThreadHistory.push({
+        question: m.content,
+        answer: next && next.role === "assistant" ? next.content : "",
+        created_at: m.createdAt.toISOString(),
+      });
+      if (next && next.role === "assistant") i++;
+    }
+  }
+
+  const answer = await generateQaAnswer(
+    thread.session.extractedText,
+    question,
+    me.id,
+    previousThreadHistory,
+  );
+
+  await prisma.chatMessage.create({
+    data: { threadId: thread.id, role: "user", content: question },
+  });
+  const assistantMsg = await prisma.chatMessage.create({
+    data: { threadId: thread.id, role: "assistant", content: answer },
+  });
+
+  ok(res, assistantMsg);
+});
+
+/**
+ * DELETE /threads/<threadId>/
+ * Deletes a chat thread and all its messages.
+ */
+spheraRouter.delete("/threads/:threadId/", async (req, res) => {
+  const me = currentUser(req);
+  const threadId = idParam(req, "threadId");
+  const thread = await prisma.chatThread.findFirst({
+    where: { id: threadId, ownerId: me.id },
+  });
+  if (!thread) throw notFound("Fil de discussion introuvable.");
+
+  await prisma.chatThread.delete({ where: { id: thread.id } });
+  ok(res, null, "Fil de discussion supprimé.");
+});
+
 /**
  * GET /sessions/<id>/suggestions/ — generated once, then served from the row.
  *
@@ -1197,7 +1524,16 @@ interface QaEntry {
 }
 
 function appendQa(history: unknown, entry: QaEntry): QaEntry[] {
-  return [...(Array.isArray(history) ? (history as QaEntry[]) : []), entry];
+  let list: QaEntry[] = [];
+  if (Array.isArray(history)) {
+    list = history as QaEntry[];
+  } else if (typeof history === "string") {
+    try {
+      const parsed = JSON.parse(history);
+      if (Array.isArray(parsed)) list = parsed;
+    } catch {}
+  }
+  return [...list, entry];
 }
 
 spheraRouter.post("/sessions/:id/ask/", async (req, res) => {
@@ -1211,9 +1547,15 @@ spheraRouter.post("/sessions/:id/ask/", async (req, res) => {
     );
   }
 
+  const rawHistory: QaEntry[] = Array.isArray(session.qaHistory)
+    ? (session.qaHistory as unknown as QaEntry[])
+    : typeof session.qaHistory === "string"
+      ? (() => { try { const p = JSON.parse(session.qaHistory as string); return Array.isArray(p) ? (p as unknown as QaEntry[]) : []; } catch { return []; } })()
+      : [];
+
   const entry: QaEntry = {
     question,
-    answer: await generateQaAnswer(session.extractedText, question, me.id),
+    answer: await generateQaAnswer(session.extractedText, question, me.id, rawHistory),
     created_at: new Date().toISOString(),
   };
 
@@ -1281,7 +1623,7 @@ spheraRouter.delete("/sessions/:id/share/", async (req, res) => {
 
 // ── Annales ─────────────────────────────────────────────────────────────────
 
-spheraRouter.get("/annales/", async (req, res) => {
+spheraRouter.get("/annales/", httpCache({ namespace: "sphera", ttlSeconds: 60 }), async (req, res) => {
   const me = currentUser(req);
   const sessions = await prisma.annaleSession.findMany({
     where: { ownerId: me.id },
@@ -1291,7 +1633,7 @@ spheraRouter.get("/annales/", async (req, res) => {
   list(res, sessions.map((s) => serializeAnnaleSessionListItem(s as SerializableAnnaleSession)));
 });
 
-spheraRouter.get("/annales/:id/", async (req, res) => {
+spheraRouter.get("/annales/:id/", httpCache({ namespace: "sphera", ttlSeconds: 60 }), async (req, res) => {
   const me = currentUser(req);
   try {
     ok(res, serializeAnnaleSession(await readableAnnaleSession(idParam(req), me.id)));
@@ -1321,9 +1663,15 @@ spheraRouter.post("/annales/:id/ask/", async (req, res) => {
     throw badRequest("Le texte de ce document n'est pas disponible pour le Q&A.");
   }
 
+  const rawHistory: QaEntry[] = Array.isArray(session.qaHistory)
+    ? (session.qaHistory as unknown as QaEntry[])
+    : typeof session.qaHistory === "string"
+      ? (() => { try { const p = JSON.parse(session.qaHistory as string); return Array.isArray(p) ? (p as unknown as QaEntry[]) : []; } catch { return []; } })()
+      : [];
+
   const entry: QaEntry = {
     question,
-    answer: await generateQaAnswer(session.extractedText, question, me.id),
+    answer: await generateQaAnswer(session.extractedText, question, me.id, rawHistory),
     created_at: new Date().toISOString(),
   };
 

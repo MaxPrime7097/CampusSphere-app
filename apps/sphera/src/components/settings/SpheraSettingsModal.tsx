@@ -647,13 +647,13 @@ export const SpheraSettingsModal: React.FC<SpheraSettingsModalProps> = ({
                     <div className="p-5 rounded-xl border border-sphera-border bg-sphera-surface-2 space-y-4">
                       <div>
                         <div className="flex items-center justify-between">
-                          <h4 className="text-sm font-medium text-white">Nombre de Flashcards (Cartes mémoires)</h4>
+                          <h4 className="text-sm font-medium text-white">Nombre de Flashcards</h4>
                           <span className="text-xs font-semibold text-sphera-green">
                             {prefs?.flashcard_count ? `${prefs.flashcard_count} cartes` : 'Auto (recommandé)'}
                           </span>
                         </div>
                         <p className="text-xs text-sphera-text-muted mt-0.5">
-                          Nombre de cartes mémoires recto/verso créées par paquet de révision
+                          Nombre de flashcards recto/verso créées par paquet de révision
                         </p>
                       </div>
 
@@ -707,7 +707,7 @@ export const SpheraSettingsModal: React.FC<SpheraSettingsModalProps> = ({
                       <div className="flex items-center justify-between">
                         <h4 className="text-sm font-semibold text-white">Consommation hebdomadaire</h4>
                         <span className="text-sm font-bold text-sphera-green">
-                          {quota?.used ?? 0} / {quota?.limit ?? 5} générations
+                          {Number(quota?.used ?? 0).toFixed((quota?.used ?? 0) % 1 === 0 ? 0 : 1)} / {quota?.limit ?? 10} générations
                         </span>
                       </div>
 
@@ -716,14 +716,14 @@ export const SpheraSettingsModal: React.FC<SpheraSettingsModalProps> = ({
                         <div
                           className="h-full bg-sphera-green rounded-full transition-all duration-500"
                           style={{
-                            width: `${Math.min(100, (((quota?.used ?? 0) / (quota?.limit ?? 5)) * 100))}%`,
+                            width: `${Math.min(100, (((quota?.used ?? 0) / (quota?.limit ?? 10)) * 100))}%`,
                           }}
                         />
                       </div>
 
                       <div className="flex items-center justify-between text-xs text-sphera-text-muted pt-1">
                         <span>
-                          {Math.max(0, (quota?.limit ?? 5) - (quota?.used ?? 0))} génération(s) restante(s)
+                          {Math.max(0, (quota?.limit ?? 10) - (quota?.used ?? 0)).toFixed((((quota?.limit ?? 10) - (quota?.used ?? 0)) % 1 === 0) ? 0 : 1)} génération(s) restante(s)
                         </span>
                         <span>
                           {quota?.resetsOn
@@ -742,18 +742,18 @@ export const SpheraSettingsModal: React.FC<SpheraSettingsModalProps> = ({
                       <h4 className="text-xs font-semibold text-white uppercase tracking-wider">
                         Règles de décompte du quota
                       </h4>
-                      <ul className="text-xs text-sphera-text-muted space-y-2">
+                      <ul className="text-xs text-sphera-text-muted space-y-2.5">
                         <li className="flex items-start gap-2">
                           <span className="text-sphera-green font-bold">•</span>
-                          <span><strong>1 unité :</strong> Création d'une session complète à partir d'un cours (génération simultanée de la fiche, du quiz, des flashcards et de la carte mentale).</span>
+                          <span><strong>1 unité :</strong> Création d'une session complète sur l'ensemble d'un cours (fiche, quiz, flashcards, podcast deep dive).</span>
                         </li>
                         <li className="flex items-start gap-2">
-                          <span className="text-sphera-green font-bold">•</span>
-                          <span><strong>0,5 unité :</strong> Réponses approfondies du Chat Q&A ou génération ciblée d'items depuis une sélection de texte surlignée.</span>
+                          <span className="text-cyan-400 font-bold">•</span>
+                          <span><strong>0,5 unité :</strong> Génération ciblée par chapitre (Quiz ou Flashcards par bloc), régénération de fiche ou outil sur texte sélectionné.</span>
                         </li>
                         <li className="flex items-start gap-2">
-                          <span className="text-sphera-green font-bold">•</span>
-                          <span><strong>Gratuit :</strong> Consultation de vos cours, révision des flashcards, entraînements illimités sur les quiz générés et parties Sphera Live.</span>
+                          <span className="text-emerald-400 font-bold">•</span>
+                          <span><strong>100% Gratuit (0 quota) :</strong> Assistant Chat Q&A en direct, création de notes personnelles, consultation des fiches et entraînements quiz.</span>
                         </li>
                       </ul>
                     </div>

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Download, Eye, BookmarkSimple, Lightning as Zap, SealCheck as BadgeCheck, Pencil, FolderSimplePlus as FolderInput, Trash as Trash2, ShareNetwork as Share2, Flag, Spinner as Loader2, X } from "@phosphor-icons/react";
+import { Download, Eye, BookmarkSimple, Lightning as Zap, SealCheck as BadgeCheck, PencilSimple, FolderSimplePlus as FolderInput, Trash as Trash2, ShareNetwork as Share2, Flag, Spinner as Loader2, X } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -443,7 +443,7 @@ export function ResourceHeader({
                 className="gap-2"
                 aria-label="Modifier la ressource"
               >
-                <Pencil className="h-4 w-4" />
+                <PencilSimple className="h-4 w-4" />
                 <span className="hidden md:inline">Modifier</span>
               </Button>
             )}

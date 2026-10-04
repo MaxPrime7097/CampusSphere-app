@@ -151,6 +151,27 @@ enum ConversationType {
   GROUP
 }
 
+enum MessageType {
+  TEXT
+  IMAGE
+  AUDIO
+  FILE
+  SYSTEM
+}
+
+enum MessageStatus {
+  SENDING
+  SENT
+  DELIVERED
+  READ
+}
+
+enum ConversationMemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
 /// Canonical set of 15. Reconciles three divergent lists — see API_CONTRACT §2.
 /// Django emitted `message_received` (declared nowhere) where both enums said
 /// `message`, and `verification_status` was emitted but never declared.
@@ -294,11 +315,14 @@ model User {
   conversationsOwned  Conversation[]            @relation("ConversationCreator")
   messages            Message[]
   messageReads        MessageRead[]
+  messageReactions    MessageReaction[]
   readReceipts        ConversationReadReceipt[]
   notifications       Notification[]
   notificationSetting NotificationSettings?
   studySessions       StudySession[]
   annaleSessions      AnnaleSession[]
+  artefacts           Artefact[]
+  chatThreads         ChatThread[]
   eventsOrganized     Event[]                   @relation("EventsOrganized")
   eventAttendances    EventAttendee[]           @relation("UserEventAttendances")
   eventCheckins       EventAttendee[]           @relation("EventCheckins")
@@ -792,9 +816,10 @@ model Conversation {
 /// Explicit join table rather than an implicit M2M, so membership can be queried
 /// and indexed directly.
 model ConversationMember {
-  conversationId Int      @map("conversation_id")
-  userId         Int      @map("user_id")
-  joinedAt       DateTime @default(now()) @map("joined_at")
+  conversationId Int                    @map("conversation_id")
+  userId         Int                    @map("user_id")
+  role           ConversationMemberRole @default(MEMBER)
+  joinedAt       DateTime               @default(now()) @map("joined_at")
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -805,19 +830,55 @@ model ConversationMember {
 }
 
 model Message {
-  id             Int      @id @default(autoincrement())
+  id             Int           @id @default(autoincrement())
+  type           MessageType   @default(TEXT)
+  status         MessageStatus @default(SENT)
   content        String
-  conversationId Int      @map("conversation_id")
-  authorId       Int      @map("author_id")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  conversationId Int           @map("conversation_id")
+  authorId       Int           @map("author_id")
 
-  conversation Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  author       User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  readBy       MessageRead[]
+  // Media attachments
+  mediaUrl       String?       @map("media_url")
+  mediaType      String?       @map("media_type")
+  fileName       String?       @map("file_name")
+  fileSize       Int?          @map("file_size")
+  duration       Float?        @map("duration")
+
+  // Replies / Quotes
+  replyToId      Int?          @map("reply_to_id")
+  replyTo        Message?      @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies        Message[]     @relation("MessageReplies")
+
+  // Soft delete
+  isDeleted      Boolean       @default(false) @map("is_deleted")
+  deletedAt      DateTime?     @map("deleted_at")
+
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  conversation   Conversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  author         User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  readBy         MessageRead[]
+  reactions      MessageReaction[]
 
   @@index([conversationId, createdAt])
+  @@index([replyToId])
   @@map("messages")
+}
+
+model MessageReaction {
+  id        Int      @id @default(autoincrement())
+  messageId Int      @map("message_id")
+  userId    Int      @map("user_id")
+  emoji     String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([messageId])
+  @@map("message_reactions")
 }
 
 model MessageRead {
@@ -917,6 +978,8 @@ model StudySession {
 
   /// Source text for Q&A and for add-tool regeneration. Never serialised.
   extractedText String @default("") @map("extracted_text")
+  pageCount     Int    @default(1) @map("page_count")
+  ficheContent  Json?  @map("fiche_content")
   qaHistory     Json   @default("[]") @map("qa_history")
   suggestions   Json   @default("[]")
 
@@ -926,14 +989,73 @@ model StudySession {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  owner        User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  resource     Resource?   @relation(fields: [resourceId], references: [id], onDelete: SetNull)
-  sphereFile   SphereFile? @relation(fields: [sphereFileId], references: [id], onDelete: SetNull)
-  sharedSphere Sphere?     @relation(fields: [sharedSphereId], references: [id], onDelete: SetNull)
+  owner        User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  resource     Resource?    @relation(fields: [resourceId], references: [id], onDelete: SetNull)
+  sphereFile   SphereFile?  @relation(fields: [sphereFileId], references: [id], onDelete: SetNull)
+  sharedSphere Sphere?      @relation(fields: [sharedSphereId], references: [id], onDelete: SetNull)
+  artefacts    Artefact[]
+  chatThreads  ChatThread[]
 
   @@index([ownerId, createdAt])
   @@index([sharedSphereId, isShared])
   @@map("study_sessions")
+}
+
+model Artefact {
+  id             Int          @id @default(autoincrement())
+  sessionId      Int          @map("session_id")
+  ownerId        Int          @map("owner_id")
+
+  // Type d'artefact : 'quiz', 'flashcards', 'mindmap', 'audio', 'note'
+  type           String       @map("type")
+  title          String       @default("")
+  subtitle       String?
+  content        Json         @default("{}")
+
+  targetChapter  String?      @map("target_chapter")
+  fromSelection  Boolean      @default(false) @map("from_selection")
+  selectionText  String?      @map("selection_text") @db.Text
+
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  session        StudySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  owner          User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+  @@index([ownerId, createdAt])
+  @@map("artefacts")
+}
+
+model ChatThread {
+  id             Int           @id @default(autoincrement())
+  sessionId      Int           @map("session_id")
+  ownerId        Int           @map("owner_id")
+  title          String        @default("Discussion générale")
+  messages       ChatMessage[]
+
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  session        StudySession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  owner          User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([ownerId])
+  @@map("sphera_chat_threads")
+}
+
+model ChatMessage {
+  id        Int        @id @default(autoincrement())
+  threadId  Int        @map("thread_id")
+  role      String     // 'user' | 'assistant'
+  content   String     @db.Text
+  createdAt DateTime   @default(now()) @map("created_at")
+
+  thread    ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId, createdAt])
+  @@map("sphera_chat_messages")
 }
 
 model AnnaleSession {
@@ -1107,7 +1229,7 @@ model GenerationUsage {
   id            Int      @id @default(autoincrement())
   userId        Int      @map("user_id")
   weekStartDate DateTime @map("week_start_date") @db.Date
-  count         Int      @default(0)
+  count         Float    @default(0)
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 

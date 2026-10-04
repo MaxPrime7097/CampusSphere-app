@@ -1,21 +1,25 @@
 import React from 'react'
-import { FileText, Brain as BrainCircuit, Stack as SquareStack, Question as HelpCircle, AlignLeft, Sparkle as Sparkles, type Icon as LucideIcon } from "@phosphor-icons/react";
+import { FileText, Question, Cards, Sparkle as Sparkles, AlignLeft, Lightbulb, type Icon as LucideIcon } from "@phosphor-icons/react";
 import { useTranslation } from 'react-i18next'
 
 export interface Command {
   trigger: string
+  aliases?: string[]
   label: string
   icon: LucideIcon
   description: string
   category: 'tool' | 'action'
   toolType?: 'fiche' | 'quiz' | 'flashcards'
   template?: string
+  templateEn?: string
   prefix?: string
+  prefixEn?: string
 }
 
 export const COMMANDS: Command[] = [
   {
     trigger: '@fiche',
+    aliases: ['@notes', '@sheet'],
     label: 'Fiche de révision',
     icon: FileText,
     description: 'Afficher ou générer ta fiche de révision',
@@ -24,46 +28,57 @@ export const COMMANDS: Command[] = [
   },
   {
     trigger: '@quiz',
+    aliases: ['@qcm'],
     label: 'Quiz interactif',
-    icon: BrainCircuit,
+    icon: Question,
     description: 'Afficher ou lancer ton quiz',
     category: 'tool',
     toolType: 'quiz',
   },
   {
     trigger: '@flashcards',
+    aliases: ['@cards', '@cartes'],
     label: 'Flashcards',
-    icon: SquareStack,
+    icon: Cards,
     description: 'Afficher ou réviser tes flashcards',
     category: 'tool',
     toolType: 'flashcards',
   },
   {
     trigger: '@expliquer',
+    aliases: ['@explain'],
     label: 'Expliquer une notion',
-    icon: HelpCircle,
+    icon: Sparkles,
     description: 'Explication pédagogique et détaillée pas à pas',
     category: 'action',
     template: '@expliquer ',
+    templateEn: '@explain ',
     prefix: 'Explique-moi de façon très claire, structurée et pédagogique : ',
+    prefixEn: 'Explain in a clear, structured, and pedagogical way: ',
   },
   {
     trigger: '@résumer',
+    aliases: ['@summarize', '@resume', '@summary', '@synthese'],
     label: 'Résumer un point',
     icon: AlignLeft,
     description: 'Synthèse concise et percutante',
     category: 'action',
     template: '@résumer ',
+    templateEn: '@summarize ',
     prefix: 'Fais-moi un résumé concis et percutant de : ',
+    prefixEn: 'Summarize concisely and clearly: ',
   },
   {
     trigger: '@exemple',
+    aliases: ['@example'],
     label: 'Exemple concret',
-    icon: Sparkles,
+    icon: Lightbulb,
     description: 'Cas pratique ou mise en situation d\'examen',
     category: 'action',
     template: '@exemple ',
+    templateEn: '@example ',
     prefix: 'Donne-moi un exemple concret et parlant pour illustrer : ',
+    prefixEn: 'Provide a concrete and illustrative example of: ',
   },
 ]
 
@@ -71,28 +86,60 @@ interface CommandMenuProps {
   isVisible: boolean
   filter: string
   activeIndex: number
+  isEnglish?: boolean
   onSelect: (command: Command) => void
   onClose: () => void
 }
 
-export function CommandMenu({ isVisible, filter, activeIndex, onSelect, onClose }: CommandMenuProps) {
+export function CommandMenu({ isVisible, filter, activeIndex, isEnglish = false, onSelect, onClose }: CommandMenuProps) {
   const { t } = useTranslation('study')
   if (!isVisible) return null
 
   const getTranslatedCommand = (cmd: Command): Command => {
     switch (cmd.trigger) {
       case '@fiche':
-        return { ...cmd, label: t('modals.commandMenu.ficheLabel'), description: t('modals.commandMenu.ficheDesc') }
+        return {
+          ...cmd,
+          label: isEnglish ? 'Study Summary' : t('modals.commandMenu.ficheLabel'),
+          description: isEnglish ? 'View or generate study summary sheet' : t('modals.commandMenu.ficheDesc'),
+          trigger: isEnglish ? '@summary' : cmd.trigger,
+        }
       case '@quiz':
-        return { ...cmd, label: t('modals.commandMenu.quizLabel'), description: t('modals.commandMenu.quizDesc') }
+        return {
+          ...cmd,
+          label: isEnglish ? 'Interactive Quiz' : t('modals.commandMenu.quizLabel'),
+          description: isEnglish ? 'Take or generate interactive quiz' : t('modals.commandMenu.quizDesc'),
+        }
       case '@flashcards':
-        return { ...cmd, label: t('modals.commandMenu.flashcardsLabel'), description: t('modals.commandMenu.flashcardsDesc') }
+        return {
+          ...cmd,
+          label: isEnglish ? 'Flashcards' : t('modals.commandMenu.flashcardsLabel'),
+          description: isEnglish ? 'Review or generate flashcards' : t('modals.commandMenu.flashcardsDesc'),
+        }
       case '@expliquer':
-        return { ...cmd, label: t('modals.commandMenu.explainLabel'), description: t('modals.commandMenu.explainDesc') }
+        return {
+          ...cmd,
+          label: isEnglish ? 'Explain a concept' : t('modals.commandMenu.explainLabel'),
+          description: isEnglish ? 'Step-by-step clear pedagogical explanation' : t('modals.commandMenu.explainDesc'),
+          trigger: isEnglish ? '@explain' : cmd.trigger,
+          template: isEnglish ? cmd.templateEn : cmd.template,
+        }
       case '@résumer':
-        return { ...cmd, label: t('modals.commandMenu.resumeLabel'), description: t('modals.commandMenu.resumeDesc') }
+        return {
+          ...cmd,
+          label: isEnglish ? 'Summarize a topic' : t('modals.commandMenu.resumeLabel'),
+          description: isEnglish ? 'Concise and impactful synthesis' : t('modals.commandMenu.resumeDesc'),
+          trigger: isEnglish ? '@summarize' : cmd.trigger,
+          template: isEnglish ? cmd.templateEn : cmd.template,
+        }
       case '@exemple':
-        return { ...cmd, label: t('modals.commandMenu.exampleLabel'), description: t('modals.commandMenu.exampleDesc') }
+        return {
+          ...cmd,
+          label: isEnglish ? 'Concrete Example' : t('modals.commandMenu.exampleLabel'),
+          description: isEnglish ? 'Practical real-world case or exam scenario' : t('modals.commandMenu.exampleDesc'),
+          trigger: isEnglish ? '@example' : cmd.trigger,
+          template: isEnglish ? cmd.templateEn : cmd.template,
+        }
       default:
         return cmd
     }
@@ -102,6 +149,7 @@ export function CommandMenu({ isVisible, filter, activeIndex, onSelect, onClose 
   const search = filter.toLowerCase().trim()
   const filtered = translatedCommands.filter(cmd =>
     cmd.trigger.toLowerCase().includes(search) ||
+    (cmd.aliases && cmd.aliases.some(a => a.toLowerCase().includes(search))) ||
     cmd.label.toLowerCase().includes(search) ||
     cmd.description.toLowerCase().includes(search)
   )
@@ -135,9 +183,15 @@ export function CommandMenu({ isVisible, filter, activeIndex, onSelect, onClose 
               <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
                 isActive 
                   ? 'bg-sphera-green/20 text-sphera-green' 
-                  : cmd.category === 'tool'
-                    ? 'bg-blue-500/10 text-blue-400'
-                    : 'bg-sphera-surface text-sphera-text-muted'
+                  : cmd.toolType === 'fiche'
+                    ? 'bg-cyan-500/10 text-cyan-400'
+                    : cmd.toolType === 'quiz'
+                      ? 'bg-rose-500/10 text-rose-400'
+                      : cmd.toolType === 'flashcards'
+                        ? 'bg-orange-500/10 text-orange-400'
+                        : cmd.trigger.startsWith('@exem')
+                          ? 'bg-amber-500/10 text-amber-400'
+                          : 'bg-sphera-surface text-sphera-text-muted'
               }`}>
                 <Icon className="w-4 h-4" />
               </div>

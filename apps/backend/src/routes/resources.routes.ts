@@ -21,8 +21,10 @@ import { applyImpactEvent } from "../services/impact.js";
 import { keyFromUrl, storage } from "../services/storage.js";
 import { parseJsonField, singleUpload } from "../middleware/upload.js";
 import { friendIds, resourcesVisibleTo } from "../lib/visibility.js";
+import { httpCache, autoInvalidate } from "../lib/cache.js";
 
 export const resourcesRouter: Router = Router();
+resourcesRouter.use(autoInvalidate("resources"));
 
 // No router-level requireAuth. API_CONTRACT §3.5 marks the list "—/U" and detail,
 // download and preview "visibility" — all readable anonymously, where anonymous
@@ -97,7 +99,7 @@ const folderCreateSchema = z.object({
   visibility: z.enum(VISIBILITIES).default("public"),
 });
 
-resourcesRouter.get("/folders/", requireAuth, async (req, res) => {
+resourcesRouter.get("/folders/", requireAuth, httpCache({ namespace: "resources", ttlSeconds: 60 }), async (req, res) => {
   const me = currentUser(req);
   const folders = await prisma.resourceFolder.findMany({
     where: { ownerId: me.id },
@@ -266,7 +268,7 @@ resourcesRouter.get("/folders/:folderId/download/", requireAuth, async (req, res
 
 // ── Filtered listings ───────────────────────────────────────────────────────
 
-resourcesRouter.get("/saved/", requireAuth, async (req, res) => {
+resourcesRouter.get("/saved/", requireAuth, httpCache({ namespace: "resources", ttlSeconds: 60 }), async (req, res) => {
   const me = currentUser(req);
   const { page, pageSize, skip } = paginationParams(req.query as Record<string, unknown>);
 
@@ -347,7 +349,7 @@ resourcesRouter.get("/sphere/:sphereId/", requireAuth, async (req, res) => {
 
 // ── List / create ───────────────────────────────────────────────────────────
 
-resourcesRouter.get("/", async (req, res) => {
+resourcesRouter.get("/", httpCache({ namespace: "resources", ttlSeconds: 60 }), async (req, res) => {
   const viewerId = req.user?.id ?? null;
   const { page, pageSize, skip } = paginationParams(req.query as Record<string, unknown>);
   const search = String(req.query.search ?? "").trim();
@@ -433,7 +435,7 @@ resourcesRouter.post("/", requireAuth, singleUpload("file", "resource"), async (
 
 // ── Detail ──────────────────────────────────────────────────────────────────
 
-resourcesRouter.get("/:id/", async (req, res) => {
+resourcesRouter.get("/:id/", httpCache({ namespace: "resources", ttlSeconds: 60 }), async (req, res) => {
   const viewerId = req.user?.id ?? null;
   const resource = await loadVisibleResource(req, viewerId);
 

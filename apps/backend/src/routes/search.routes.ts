@@ -263,7 +263,6 @@ searchRouter.get("/search/", requireAuth, async (req, res) => {
     data: results,
     errors,
     query: q,
-    timestamp: new Date().toISOString(),
   });
 });
 
@@ -279,7 +278,7 @@ searchRouter.get("/search/suggestions/", requireAuth, async (req, res) => {
   const limit = parseLimit(req.query.limit, 5);
 
   if (q.length < 2) {
-    res.status(200).json({ success: true, data: [], timestamp: new Date().toISOString() });
+    res.status(200).json({ success: true, data: [] });
     return;
   }
 
@@ -336,7 +335,6 @@ searchRouter.get("/search/suggestions/", requireAuth, async (req, res) => {
     data: suggestions,
     errors,
     query: q,
-    timestamp: new Date().toISOString(),
   });
 });
 

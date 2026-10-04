@@ -2,9 +2,11 @@ import { parseSlugId, encodeHashId } from "../lib/hashids";
 import React, { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { getSession, getAnnale, askQuestion, deleteSession, deleteAnnale, shareSession, shareAnnale, updateSessionText, addToolToSession, createFromSelection, API_BASE, type ToolType } from '../services/spheraApi'
+import { getSession, getAnnale, askQuestion, deleteSession, deleteAnnale, shareSession, shareAnnale, updateSessionText, addToolToSession, createFromSelection, createArtefact, updateArtefact, deleteArtefact, regenerateFiche, getChatThreads, createChatThread, sendThreadMessage, deleteChatThread, type ArtefactItem, type ChatThreadItem, API_BASE, type ToolType } from '../services/spheraApi'
+import { StudyWorkspacePanel } from '../components/app/StudyWorkspacePanel'
+import { QuotaIndicator } from '../components/app/QuotaIndicator'
 import { normalizeAiResponse } from '../utils/normalizeAiResponse'
-import { FileText, ArrowLeft, ArrowsOut as Maximize2, ArrowsIn as Minimize2, PaperPlaneTilt as Send, Square, ChatCircle as MessageSquare, Robot as Bot, User, Brain as BrainCircuit, Columns, ShareNetwork as Share2, Trash as Trash2, Check, At as AtSign, Plus, Spinner as Loader2, WarningCircle as AlertCircle, Sparkle as Sparkles, GitFork, Waveform as AudioLines } from "@phosphor-icons/react";
+import { FileText, ArrowLeft, ArrowsOut as Maximize2, ArrowsIn as Minimize2, PaperPlaneTilt as Send, Square, ChatCircle as MessageSquare, Robot as Bot, User, Columns, ShareNetwork as Share2, Trash as Trash2, Check, At as AtSign, Plus, Spinner as Loader2, WarningCircle as AlertCircle, Sparkle as Sparkles, GitFork, BookOpen } from "@phosphor-icons/react";
 import { FicheView, QuizView, FlashcardsView, AnnaleView, MindmapView, AudioSummaryView } from '../components/app/ResultViews'
 import { ShareModal } from '../components/app/ShareModal'
 import { DeleteConfirmModal } from '../components/app/DeleteConfirmModal'
@@ -14,6 +16,9 @@ import { CommandMenu, COMMANDS, type Command } from '../components/app/CommandMe
 import { QuestionSuggestions } from '../components/app/QuestionSuggestions'
 import { AiMessageItem } from '../components/app/AiMessageItem'
 import { TextSelectionToolbar, type SelectionActionType } from '../components/app/TextSelectionToolbar'
+import { isTextEnglish } from '../utils/detectLanguage'
+import { getCached, setCached, getOngoingGenerations, addOngoingGeneration, removeOngoingGeneration } from '../utils/sessionCache'
+import { useSessionDetailQuery, invalidateSessionDetail, updateSessionDetailCache } from '../hooks/useSpheraQueries'
 
 export default function SessionDetail({ type = 'session' }: { type?: 'session' | 'annale' }) {
   const { t } = useTranslation('study')
@@ -21,8 +26,10 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
   const parsedId = parseSlugId(rawId);
   const id = parsedId ? String(parsedId) : rawId;
   const navigate = useNavigate()
-  const [session, setSession] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+
+  const { data: sessionData, isLoading: queryLoading } = useSessionDetailQuery(id, type)
+  const [session, setSession] = useState<any>(() => sessionData || (id ? getCached(`session_detail_${id}`) : null))
+  const loading = queryLoading && !session
 
   // Pré-remplacement immédiat de l'URL si elle contient un ID numérique brut (ex: /sessions/123)
   // pour éviter tout flash d'ID numérique dans la barre d'adresse avant le chargement des données
@@ -41,15 +48,37 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
   const [activeTab, setActiveTab] = useState<string>('')
 
   const [isGeneratingTool, setIsGeneratingTool] = useState(false)
+  const [generatingToolType, setGeneratingToolType] = useState<string | null>(null)
   const [toolError, setToolError] = useState<string | null>(null)
 
   // Workspace State
   const [isPdfExpanded, setIsPdfExpanded] = useState(true)
-  const [docViewMode, setDocViewMode] = useState<'doc' | 'text'>('doc')
+  const [docViewMode, setDocViewMode] = useState<'doc' | 'text'>(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      return 'text'
+    }
+    return 'doc'
+  })
   const [mobileActiveView, setMobileActiveView] = useState<'doc' | 'workspace'>('workspace')
   const [chatMessage, setChatMessage] = useState('')
-  const [chatHistory, setChatHistory] = useState<any[]>([])
+  const [chatHistory, setChatHistory] = useState<any[]>(() => {
+    const s = sessionData || (id ? getCached(`session_detail_${id}`) : null)
+    return Array.isArray(s?.qa_history) ? s.qa_history : []
+  })
   const [isChatting, setIsChatting] = useState(false)
+
+  // Artefacts & Threads
+  const [artefacts, setArtefacts] = useState<ArtefactItem[]>(() => {
+    const s = sessionData || (id ? getCached(`session_detail_${id}`) : null)
+    return Array.isArray(s?.artefacts) ? s.artefacts : []
+  })
+  const [threads, setThreads] = useState<ChatThreadItem[]>(() => {
+    const s = sessionData || (id ? getCached(`session_detail_${id}`) : null)
+    return Array.isArray(s?.chat_threads) ? s.chat_threads : []
+  })
+  const [activeThreadId, setActiveThreadId] = useState<number | null>(null)
+  const [isRegeneratingFiche, setIsRegeneratingFiche] = useState(false)
+  const [isGeneratingArtefact, setIsGeneratingArtefact] = useState(false)
 
   // Command Menu State
   const [showCommandMenu, setShowCommandMenu] = useState(false)
@@ -71,6 +100,16 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [selectionToolbar, setSelectionToolbar] = useState<{ coords: { x: number; y: number }; text: string } | null>(null)
   const [actionFeedback, setActionFeedback] = useState<{ message: string; type: 'loading' | 'success' | 'error' } | null>(null)
+  const [generatingChapterArtefact, setGeneratingChapterArtefact] = useState<{ type: 'quiz' | 'flashcards'; chapter: string } | null>(null)
+
+  const showFeedback = (message: string, type: 'loading' | 'success' | 'error', duration = 3500) => {
+    setActionFeedback({ message, type })
+    if (type !== 'loading') {
+      setTimeout(() => {
+        setActionFeedback((prev) => (prev?.message === message ? null : prev))
+      }, duration)
+    }
+  }
 
   const handleWorkspaceSelection = () => {
     setTimeout(() => {
@@ -104,94 +143,340 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
   const handleAddTool = async (tool: ToolType) => {
     if (!session?.id) return
     setIsGeneratingTool(true)
+    setGeneratingToolType(tool)
     setToolError(null)
+    addOngoingGeneration(session.id, tool)
     try {
       const res = await addToolToSession(session.id, tool)
       const payload = res.data
       setSession(payload)
+      setCached(`session_detail_${session.id}`, payload)
+      invalidateSessionDetail(session.id, type)
       setActiveTab(tool)
+      removeOngoingGeneration(session.id, tool)
+      showFeedback(`✨ Outil généré avec succès !`, 'success')
     } catch (e: any) {
+      removeOngoingGeneration(session.id, tool)
       setToolError(e.message || t('sessionDetail.generateToolError', { tool: TOOL_LABELS[tool] || tool }))
     } finally {
       setIsGeneratingTool(false)
+      setGeneratingToolType(null)
     }
+  }
+
+  // Artefact & Thread handlers for StudyWorkspacePanel
+  const handleDeleteArtefact = async (artId: number) => {
+    const backup = artefacts
+    setArtefacts(prev => prev.filter(a => a.id !== artId))
+    showFeedback('Outil supprimé avec succès.', 'success')
+    try {
+      await deleteArtefact(artId)
+    } catch (e: any) {
+      setArtefacts(backup)
+      showFeedback(e?.message || "Erreur lors de la suppression de l'outil.", 'error')
+    }
+  }
+
+  const handleRenameArtefact = async (artId: number, newTitle: string) => {
+    const backup = artefacts
+    setArtefacts(prev => prev.map(a => a.id === artId ? { ...a, title: newTitle } : a))
+    showFeedback('Outil renommé avec succès.', 'success')
+    try {
+      await updateArtefact(artId, { title: newTitle })
+    } catch (e: any) {
+      setArtefacts(backup)
+      showFeedback(e?.message || 'Erreur lors du renommage.', 'error')
+    }
+  }
+
+  const handleNewNote = async () => {
+    if (!id) return
+    try {
+      const res = await createArtefact(id, {
+        type: 'note',
+        title: `Note #${artefacts.filter(a => a.type === 'note').length + 1}`,
+        subtitle: 'Note personnelle',
+        content: { text: '' },
+      })
+      setArtefacts(prev => [res.data, ...prev])
+      showFeedback('Nouvelle note créée.', 'success')
+      return res.data
+    } catch (e: any) {
+      showFeedback(e?.message || 'Erreur lors de la création de la note.', 'error')
+    }
+  }
+
+  const handleSaveNote = async (artId: number, text: string) => {
+    try {
+      await updateArtefact(artId, { content: { text } })
+      setArtefacts(prev => prev.map(a => a.id === artId ? { ...a, content: { text } } : a))
+      showFeedback('Note enregistrée.', 'success')
+    } catch (e: any) {
+      showFeedback(e?.message || "Erreur lors de l'enregistrement de la note.", 'error')
+    }
+  }
+
+  const handleGenerateChapterQuiz = async (chapterTitle: string, chapterSummary: string) => {
+    if (!id) return
+    setIsGeneratingArtefact(true)
+    setGeneratingChapterArtefact({ type: 'quiz', chapter: chapterTitle })
+    showFeedback(`Création du quiz pour "${chapterTitle}" en cours (0.5 gén)...`, 'loading')
+    try {
+      const res = await createArtefact(id, {
+        type: 'quiz',
+        title: `Quiz - ${chapterTitle}`,
+        subtitle: `Quiz ciblé • ${chapterTitle}`,
+        target_chapter: chapterTitle,
+        selection_text: chapterSummary,
+      })
+      setArtefacts(prev => [res.data, ...prev])
+      showFeedback(`Le quiz pour "${chapterTitle}" est disponible dans Mes outils !`, 'success', 4000)
+    } catch (e: any) {
+      showFeedback(e?.message || 'Erreur lors de la génération du quiz par chapitre.', 'error')
+    } finally {
+      setIsGeneratingArtefact(false)
+      setGeneratingChapterArtefact(null)
+    }
+  }
+
+  const handleGenerateChapterFlashcards = async (chapterTitle: string, chapterSummary: string) => {
+    if (!id) return
+    setIsGeneratingArtefact(true)
+    setGeneratingChapterArtefact({ type: 'flashcards', chapter: chapterTitle })
+    showFeedback(`Création des flashcards pour "${chapterTitle}" en cours (0.5 gén)...`, 'loading')
+    try {
+      const res = await createArtefact(id, {
+        type: 'flashcards',
+        title: `Flashcards - ${chapterTitle}`,
+        subtitle: `Flashcards • ${chapterTitle}`,
+        target_chapter: chapterTitle,
+        selection_text: chapterSummary,
+      })
+      setArtefacts(prev => [res.data, ...prev])
+      showFeedback(`Les flashcards pour "${chapterTitle}" sont disponibles dans Mes outils !`, 'success', 4000)
+    } catch (e: any) {
+      showFeedback(e?.message || 'Erreur lors de la génération des flashcards par chapitre.', 'error')
+    } finally {
+      setIsGeneratingArtefact(false)
+      setGeneratingChapterArtefact(null)
+    }
+  }
+
+  const handleRegenerateFiche = async () => {
+    if (!id) return
+    setIsRegeneratingFiche(true)
+    showFeedback('Régénération de la fiche en cours (0.5 gén)...', 'loading')
+    try {
+      const res = await regenerateFiche(id)
+      if (res.data?.fiche) {
+        setSession((prev: any) => ({ ...prev, content: { ...prev.content, fiche: res.data.fiche } }))
+        showFeedback('Fiche de révision régénérée avec succès !', 'success')
+      }
+    } catch (e: any) {
+      showFeedback(e?.message || 'Erreur lors de la régénération de la fiche.', 'error')
+    } finally {
+      setIsRegeneratingFiche(false)
+    }
+  }
+
+  const handleCreateThread = async (title: string) => {
+    if (!id) return
+    try {
+      const res = await createChatThread(id, title)
+      setThreads(prev => [...prev, res.data])
+      setActiveThreadId(res.data.id)
+      showFeedback('Nouveau fil de discussion créé.', 'success')
+    } catch (e: any) {
+      showFeedback(e?.message || 'Erreur lors de la création du fil.', 'error')
+    }
+  }
+
+  const handleSelectThread = (threadId: number) => setActiveThreadId(threadId)
+
+  const handleDeleteThread = async (threadId: number) => {
+    try {
+      await deleteChatThread(threadId)
+      setThreads(prev => prev.filter(t => t.id !== threadId))
+      if (activeThreadId === threadId) {
+        const remaining = threads.filter(t => t.id !== threadId)
+        setActiveThreadId(remaining.length ? remaining[0].id : null)
+      }
+      showFeedback('Fil de discussion supprimé.', 'success')
+    } catch (e: any) {
+      showFeedback(e?.message || 'Erreur lors de la suppression du fil.', 'error')
+    }
+  }
+
+  const handleSendChatMessage = (msg: string) => {
+    handleSendChat(msg)
   }
 
   const handleDelete = async () => {
     try {
-      if (type === 'annale') await deleteAnnale(id as string);
-      else await deleteSession(id as string);
-      navigate('/dashboard');
-    } catch (e) {
-      alert(t('sessionDetail.deleteError'));
+      if (type === 'annale') await deleteAnnale(id as string)
+      else await deleteSession(id as string)
+      navigate('/dashboard')
+    } catch (e: any) {
+      showFeedback(e?.message || t('sessionDetail.deleteError'), 'error')
     }
   }
 
   const handleOpenShare = async () => {
     try {
       if (!session.is_shared) {
-        const shareFn = type === 'annale' ? shareAnnale : shareSession;
-        await shareFn(id as string);
-        setSession({ ...session, is_shared: true });
+        const shareFn = type === 'annale' ? shareAnnale : shareSession
+        await shareFn(id as string)
+        setSession({ ...session, is_shared: true })
       }
-      setIsShareModalOpen(true);
-    } catch (e) {
-      alert(t('sessionDetail.shareError'));
+      setIsShareModalOpen(true)
+    } catch (e: any) {
+      showFeedback(e?.message || t('sessionDetail.shareError'), 'error')
     }
   }
 
+  // Synchronisation des données reçues via TanStack Query (initial, rafraîchissement ou polling d'arrière-plan)
   useEffect(() => {
-    if (!id) return
-    const fetchFn = type === 'annale' ? getAnnale : getSession;
-    fetchFn(id)
-      .then(r => {
-        const payload = r?.data ?? r;
-        setSession(payload);
-        const hash = encodeHashId(payload.id);
-        const titleText = payload.title || payload.name || payload.resource_title || payload.source_filename || type;
-        const slug = titleText
-          .toLowerCase()
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-+|-+$/g, "")
-          .slice(0, 50);
+    if (!sessionData) return
 
-        if (hash && typeof window !== "undefined" && window.history.replaceState) {
-          const canonicalUrl = `/${type === "annale" ? "annales" : "sessions"}/${slug ? `${slug}-${hash}` : hash}`;
-          if (window.location.pathname !== canonicalUrl) {
-            window.history.replaceState(null, "", canonicalUrl);
+    setSession(sessionData)
+    const payload = sessionData
+    const hash = encodeHashId(payload.id)
+    const titleText = payload.title || payload.name || payload.resource_title || payload.source_filename || type
+    const slug = titleText
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 50)
+
+    if (hash && typeof window !== "undefined" && window.history.replaceState) {
+      const canonicalUrl = `/${type === "annale" ? "annales" : "sessions"}/${slug ? `${slug}-${hash}` : hash}`
+      if (window.location.pathname !== canonicalUrl) {
+        window.history.replaceState(null, "", canonicalUrl)
+      }
+    }
+
+    const isAnnaleSession = type === 'annale' || payload.mode !== undefined || payload.sections !== undefined
+    const types = payload.tool_types || (isAnnaleSession ? ['annale'] : ['fiche'])
+    if (types.length && !activeTab) setActiveTab(types[0])
+    else if (!activeTab) setActiveTab(isAnnaleSession ? 'annale' : 'fiche')
+
+    if (payload.qa_history) {
+      setChatHistory(prev => {
+        if (prev.length === 0) return payload.qa_history
+        if (payload.qa_history.length >= prev.length) return payload.qa_history
+        return prev
+      })
+    }
+    if (payload.artefacts) {
+      setArtefacts(prev => {
+        if (prev.length === 0) return payload.artefacts
+        if (payload.artefacts.length >= prev.length) return payload.artefacts
+        return prev
+      })
+    }
+    if (payload.chat_threads) {
+      setThreads(prev => {
+        if (prev.length === 0) {
+          if (payload.chat_threads.length > 0 && activeThreadId === null) {
+            setActiveThreadId(payload.chat_threads[0].id)
+          }
+          return payload.chat_threads
+        }
+        if (payload.chat_threads.length >= prev.length) return payload.chat_threads
+        return prev
+      })
+    }
+
+    // Détection automatique de la fin d'une génération en arrière-plan
+    if (id) {
+      const ongoing = getOngoingGenerations(id)
+      if (ongoing.length > 0) {
+        const currentContent = payload.content || {}
+        const finished = ongoing.filter(t => currentContent[t] !== undefined)
+        if (finished.length > 0) {
+          finished.forEach(t => removeOngoingGeneration(id, t))
+          showFeedback(`✨ Outil généré avec succès !`, 'success', 5000)
+          const remaining = getOngoingGenerations(id)
+          if (remaining.length === 0) {
+            setIsGeneratingTool(false)
+            setGeneratingToolType(null)
+          } else {
+            setGeneratingToolType(remaining[0])
           }
         }
-        const isAnnaleSession = type === 'annale' || payload.mode !== undefined || payload.sections !== undefined;
-        const types = payload.tool_types || (isAnnaleSession ? ['annale'] : ['fiche']);
-        if (types.length) setActiveTab(types[0]);
-        else setActiveTab(isAnnaleSession ? 'annale' : 'fiche');
-        if (payload.qa_history) setChatHistory(payload.qa_history);
-      })
-      .catch(async () => {
-        try {
-          const fallbackFn = type === 'annale' ? getSession : getAnnale;
-          const r = await fallbackFn(id);
-          const payload = r?.data ?? r;
-          setSession(payload);
-          const isAnnaleSession = type === 'annale' || payload.mode !== undefined || payload.sections !== undefined;
-          const types = payload.tool_types || (isAnnaleSession ? ['annale'] : ['fiche']);
-          if (types.length) setActiveTab(types[0]);
-          else setActiveTab(isAnnaleSession ? 'annale' : 'fiche');
-          if (payload.qa_history) setChatHistory(payload.qa_history);
-        } catch {
-          navigate('/dashboard');
-        }
-      })
-      .finally(() => setLoading(false));
-  }, [id, type, navigate]);
+      }
+    }
+  }, [sessionData, id, type, activeTab, chatHistory.length, artefacts.length, threads.length, activeThreadId])
 
-  if (loading) return (
-    <div className="p-8 max-w-4xl mx-auto flex flex-col gap-4">
-      <div className="h-24 bg-sphera-surface rounded-xl animate-pulse" />
-      <div className="h-40 bg-sphera-surface rounded-xl animate-pulse" />
-      <div className="h-40 bg-sphera-surface rounded-xl animate-pulse" />
+  // Détection initiale des générations en cours au montage
+  useEffect(() => {
+    if (!id) return
+    const ongoing = getOngoingGenerations(id)
+    if (ongoing.length > 0) {
+      setIsGeneratingTool(true)
+      setGeneratingToolType(ongoing[0])
+    }
+  }, [id])
+
+  if (loading && !session) return (
+    <div className="flex h-full overflow-hidden flex-col md:flex-row bg-sphera-bg">
+      {/* Left Column Skeleton: Document Preview */}
+      <div className="hidden md:flex md:w-1/2 border-r border-sphera-border flex-col bg-sphera-surface-2 animate-pulse">
+        <div className="h-14 border-b border-sphera-border flex items-center justify-between px-4 bg-sphera-bg">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-sphera-surface" />
+            <div className="h-4 bg-sphera-surface rounded w-48" />
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-16 h-7 rounded-lg bg-sphera-surface" />
+            <div className="w-8 h-7 rounded-lg bg-sphera-surface" />
+          </div>
+        </div>
+        <div className="flex-1 p-6 flex flex-col items-center justify-start space-y-4 overflow-hidden">
+          <div className="w-full max-w-lg h-[600px] rounded-xl bg-sphera-surface/50 border border-sphera-border/50 p-8 space-y-4">
+            <div className="h-6 bg-sphera-surface rounded w-3/4 mb-6" />
+            <div className="space-y-2.5">
+              <div className="h-3.5 bg-sphera-surface/80 rounded w-full" />
+              <div className="h-3.5 bg-sphera-surface/80 rounded w-11/12" />
+              <div className="h-3.5 bg-sphera-surface/80 rounded w-4/5" />
+            </div>
+            <div className="h-32 bg-sphera-surface/40 rounded-lg w-full my-6" />
+            <div className="space-y-2.5">
+              <div className="h-3.5 bg-sphera-surface/80 rounded w-full" />
+              <div className="h-3.5 bg-sphera-surface/80 rounded w-5/6" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Column Skeleton: Study Workspace */}
+      <div className="flex flex-1 flex-col h-full bg-sphera-bg animate-pulse">
+        <div className="h-14 border-b border-sphera-border flex items-center justify-between px-4 bg-sphera-surface-2/80">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-sphera-surface" />
+            <div className="w-7 h-7 rounded-lg bg-sphera-surface" />
+          </div>
+          <div className="w-7 h-7 rounded-lg bg-sphera-surface" />
+        </div>
+        <div className="flex-1 p-6 space-y-6 max-w-xl mx-auto w-full">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="h-16 rounded-xl bg-sphera-surface-2 border border-sphera-border/60" />
+            ))}
+          </div>
+          <div className="space-y-3 pt-2">
+            <div className="h-4 bg-sphera-surface-2 rounded w-28 mb-3" />
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-12 rounded-xl bg-sphera-surface-2/70 border border-sphera-border/40" />
+            ))}
+          </div>
+        </div>
+        <div className="p-4 border-t border-sphera-border bg-sphera-surface-2 shrink-0">
+          <div className="h-11 rounded-full bg-sphera-surface border border-sphera-border/60 max-w-xl mx-auto" />
+        </div>
+      </div>
     </div>
   )
 
@@ -252,12 +537,14 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
       return
     }
 
-    if (cmd.template) {
+    const isDocEn = isTextEnglish(session?.extracted_text || '')
+    const templateToUse = isDocEn ? (cmd.templateEn || cmd.template) : cmd.template
+    if (templateToUse) {
       setChatMessage(prev => {
         if (prev.match(/@([a-zA-Z0-9_-]*)$/)) {
-          return prev.replace(/@([a-zA-Z0-9_-]*)$/, cmd.template || '')
+          return prev.replace(/@([a-zA-Z0-9_-]*)$/, templateToUse || '')
         }
-        return prev ? `${prev} ${cmd.template}` : (cmd.template || '')
+        return prev ? `${prev} ${templateToUse}` : (templateToUse || '')
       })
       setTimeout(() => chatInputRef.current?.focus(), 50)
     }
@@ -270,6 +557,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
         if (!search) return true
         return (
           c.trigger.toLowerCase().includes(search) ||
+          (c.aliases && c.aliases.some(a => a.toLowerCase().includes(search))) ||
           c.label.toLowerCase().includes(search) ||
           c.description.toLowerCase().includes(search)
         )
@@ -355,10 +643,25 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
       setChatHistory(prev => {
         const newHist = [...prev];
         if (newHist[index] && newHist[index].answer === '...') {
-          newHist[index].answer = normalized;
+          newHist[index] = { question: newQuestion, answer: normalized, created_at: new Date().toISOString() };
         }
         return newHist;
       });
+
+      if (id) {
+        const editedEntry = { question: newQuestion, answer: normalized, created_at: new Date().toISOString() };
+        updateSessionDetailCache(id, type, (old: any) => {
+          const prevQa = Array.isArray(old?.qa_history) ? [...old.qa_history] : [];
+          if (prevQa[index]) prevQa[index] = editedEntry;
+          return { ...old, qa_history: prevQa };
+        });
+        setSession((prev: any) => {
+          if (!prev) return prev;
+          const prevQa = Array.isArray(prev?.qa_history) ? [...prev.qa_history] : [];
+          if (prevQa[index]) prevQa[index] = editedEntry;
+          return { ...prev, qa_history: prevQa };
+        });
+      }
     } catch (e: any) {
       if (e?.name === 'AbortError' || controller.signal.aborted) {
         return;
@@ -407,10 +710,25 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
       setChatHistory(prev => {
         const newHist = [...prev];
         if (newHist[index] && newHist[index].answer === '...') {
-          newHist[index].answer = normalized;
+          newHist[index] = { ...newHist[index], answer: normalized };
         }
         return newHist;
       });
+
+      if (id) {
+        const regeneratedEntry = { ...item, answer: normalized };
+        updateSessionDetailCache(id, type, (old: any) => {
+          const prevQa = Array.isArray(old?.qa_history) ? [...old.qa_history] : [];
+          if (prevQa[index]) prevQa[index] = regeneratedEntry;
+          return { ...old, qa_history: prevQa };
+        });
+        setSession((prev: any) => {
+          if (!prev) return prev;
+          const prevQa = Array.isArray(prev?.qa_history) ? [...prev.qa_history] : [];
+          if (prevQa[index]) prevQa[index] = regeneratedEntry;
+          return { ...prev, qa_history: prevQa };
+        });
+      }
     } catch (e: any) {
       if (e?.name === 'AbortError' || controller.signal.aborted) {
         return;
@@ -430,14 +748,17 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
     }
   };
 
-  const handleSendChat = async () => {
-    const raw = chatMessage.trim();
+  const handleSendChat = async (customMessage?: string) => {
+    const raw = (customMessage !== undefined ? customMessage : chatMessage).trim();
     if (!raw || !id) return;
 
     // Bare tool command -> switch tab
     const lower = raw.toLowerCase();
-    if (lower === '@fiche' || lower === '@quiz' || lower === '@flashcards' || lower === '@mindmap' || lower === '@audio') {
-      const tool = lower.replace('@', '');
+    if (['@fiche', '@quiz', '@flashcards', '@mindmap', '@audio', '@summary', '@notes', '@qcm', '@cards'].includes(lower)) {
+      let tool = lower.replace('@', '');
+      if (tool === 'notes' || tool === 'summary') tool = 'fiche';
+      if (tool === 'qcm') tool = 'quiz';
+      if (tool === 'cards') tool = 'flashcards';
       const availableTools = (session?.tool_types as string[]) || (session?.content ? Object.keys(session.content) : []);
       if (availableTools.includes(tool)) {
         setActiveTab(tool);
@@ -453,14 +774,20 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
     if (match) {
       const cmdTrigger = `@${match[1].toLowerCase()}`;
       const rest = match[2].trim();
-      const foundCmd = COMMANDS.find(c => c.trigger.toLowerCase() === cmdTrigger);
-      if (foundCmd && foundCmd.prefix) {
-        queryForAi = foundCmd.prefix + (rest || t('sessionDetail.promptDefaultEssential'));
-        displayQuestion = rest || foundCmd.label;
+      const foundCmd = COMMANDS.find(c =>
+        c.trigger.toLowerCase() === cmdTrigger ||
+        (c.aliases && c.aliases.some(a => a.toLowerCase() === cmdTrigger))
+      );
+      const isDocEn = isTextEnglish(session?.extracted_text || raw);
+      if (foundCmd && (foundCmd.prefix || foundCmd.prefixEn)) {
+        const prefix = isDocEn ? (foundCmd.prefixEn || foundCmd.prefix) : (foundCmd.prefix || foundCmd.prefixEn);
+        const defaultTopic = isDocEn ? 'the key concepts.' : t('sessionDetail.promptDefaultEssential');
+        queryForAi = prefix + (rest || defaultTopic);
+        displayQuestion = rest || (isDocEn ? (foundCmd.trigger === '@expliquer' ? 'Explain concept' : foundCmd.trigger === '@résumer' ? 'Summarize topic' : 'Concrete example') : foundCmd.label);
       } else if (foundCmd && foundCmd.toolType) {
         queryForAi = rest 
-          ? t('sessionDetail.promptRelatedToCourse', { text: rest }) 
-          : t('sessionDetail.promptSummarizePoints');
+          ? (isDocEn ? `Regarding the course, explain the essential elements of "${rest}".` : t('sessionDetail.promptRelatedToCourse', { text: rest })) 
+          : (isDocEn ? 'Summarize the essential points of the course.' : t('sessionDetail.promptSummarizePoints'));
       } else {
         queryForAi = rest || raw;
       }
@@ -478,13 +805,32 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
     try {
       const res = await askQuestion(id, queryForAi, type, controller.signal);
       const normalized = normalizeAiResponse(res?.data?.answer);
+      const newEntry = {
+        question: displayQuestion,
+        answer: normalized,
+        created_at: res?.data?.created_at || new Date().toISOString(),
+      };
       setChatHistory(prev => {
         const newHist = [...prev];
         if (newHist.length > 0 && newHist[newHist.length - 1].answer === '...') {
-          newHist[newHist.length - 1].answer = normalized;
+          newHist[newHist.length - 1] = newEntry;
+        } else {
+          newHist.push(newEntry);
         }
         return newHist;
       });
+
+      if (id) {
+        updateSessionDetailCache(id, type, (old: any) => {
+          const prevQa = Array.isArray(old?.qa_history) ? old.qa_history : [];
+          return { ...old, qa_history: [...prevQa, newEntry] };
+        });
+        setSession((prev: any) => {
+          if (!prev) return prev;
+          const prevQa = Array.isArray(prev?.qa_history) ? prev.qa_history : [];
+          return { ...prev, qa_history: [...prevQa, newEntry] };
+        });
+      }
     } catch (e: any) {
       if (e?.name === 'AbortError' || controller.signal.aborted) {
         return;
@@ -537,24 +883,27 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
       }
     }
 
+    const isDocEn = isTextEnglish(session?.extracted_text || selectedText)
+    const targetLng = isDocEn ? 'en' : 'fr'
+
     let prompt = ''
     let display = ''
 
     if (action === 'expliquer') {
-      display = t('sessionDetail.explainAction', { text: selectedText })
-      prompt = t('sessionDetail.explainPrompt', { text: selectedText })
+      display = t('sessionDetail.explainAction', { lng: targetLng, text: selectedText })
+      prompt = t('sessionDetail.explainPrompt', { lng: targetLng, text: selectedText })
     } else if (action === 'resumer') {
-      display = t('sessionDetail.summarizeAction', { text: selectedText })
-      prompt = t('sessionDetail.summarizePrompt', { text: selectedText })
+      display = t('sessionDetail.summarizeAction', { lng: targetLng, text: selectedText })
+      prompt = t('sessionDetail.summarizePrompt', { lng: targetLng, text: selectedText })
     } else if (action === 'exemple') {
-      display = t('sessionDetail.exampleAction', { text: selectedText })
-      prompt = t('sessionDetail.examplePrompt', { text: selectedText })
+      display = t('sessionDetail.exampleAction', { lng: targetLng, text: selectedText })
+      prompt = t('sessionDetail.examplePrompt', { lng: targetLng, text: selectedText })
     } else if (action === 'quiz') {
-      display = t('sessionDetail.quizAction', { text: selectedText })
-      prompt = t('sessionDetail.quizPrompt', { text: selectedText })
+      display = t('sessionDetail.quizAction', { lng: targetLng, text: selectedText })
+      prompt = t('sessionDetail.quizPrompt', { lng: targetLng, text: selectedText })
     } else if (action === 'flashcards') {
-      display = t('sessionDetail.flashcardAction', { text: selectedText })
-      prompt = t('sessionDetail.flashcardPrompt', { text: selectedText })
+      display = t('sessionDetail.flashcardAction', { lng: targetLng, text: selectedText })
+      prompt = t('sessionDetail.flashcardPrompt', { lng: targetLng, text: selectedText })
     }
 
     setMobileActiveView('workspace')
@@ -569,13 +918,32 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
     try {
       const res = await askQuestion(id!, prompt, type, controller.signal)
       const normalized = normalizeAiResponse(res?.data?.answer)
+      const newEntry = {
+        question: display,
+        answer: normalized,
+        created_at: res?.data?.created_at || new Date().toISOString(),
+      };
       setChatHistory(prev => {
-        const newHist = [...prev]
+        const newHist = [...prev];
         if (newHist.length > 0 && newHist[newHist.length - 1].answer === '...') {
-          newHist[newHist.length - 1].answer = normalized
+          newHist[newHist.length - 1] = newEntry;
+        } else {
+          newHist.push(newEntry);
         }
-        return newHist
-      })
+        return newHist;
+      });
+
+      if (id) {
+        updateSessionDetailCache(id, type, (old: any) => {
+          const prevQa = Array.isArray(old?.qa_history) ? old.qa_history : [];
+          return { ...old, qa_history: [...prevQa, newEntry] };
+        });
+        setSession((prev: any) => {
+          if (!prev) return prev;
+          const prevQa = Array.isArray(prev?.qa_history) ? prev.qa_history : [];
+          return { ...prev, qa_history: [...prevQa, newEntry] };
+        });
+      }
     } catch (e: any) {
       if (e?.name === 'AbortError' || controller.signal.aborted) {
         return
@@ -605,7 +973,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
   const isImage = Boolean(/\.(png|jpe?g|webp|gif|bmp|svg)$/i.test(fileUrl || '') || /\.(png|jpe?g|webp|gif|bmp|svg)$/i.test(filename));
 
   return (
-    <div className="flex h-full overflow-hidden flex-col md:flex-row bg-sphera-bg">
+    <div className="flex flex-1 h-full min-h-0 overflow-hidden flex-col md:flex-row bg-sphera-bg">
       {/* Mobile Top Bar with Segmented View Switcher */}
       <div className="md:hidden flex items-center justify-between px-3 py-2 bg-sphera-surface-2 border-b border-sphera-border shrink-0 z-30">
         <button
@@ -643,12 +1011,12 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
       </div>
 
       {/* Left Column: Source Document */}
-      <div className={`${mobileActiveView === 'doc' ? 'flex flex-1 w-full' : 'hidden'} ${isPdfExpanded ? 'md:flex md:w-1/2' : 'md:hidden'} border-r border-sphera-border flex-col bg-sphera-surface-2 overflow-hidden transition-all duration-300`}>
+      <div className={`${mobileActiveView === 'doc' ? 'flex flex-1 w-full min-h-0' : 'hidden'} ${isPdfExpanded ? 'md:flex md:w-1/2' : 'md:hidden'} border-r border-sphera-border flex-col bg-sphera-surface-2 overflow-hidden transition-all duration-300`}>
         <div className="h-14 border-b border-sphera-border flex items-center justify-between px-4 bg-sphera-bg">
           <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => navigate('/dashboard')}
-              className="p-1.5 text-sphera-text-muted hover:bg-sphera-surface hover:text-white rounded-md transition-colors shrink-0"
+              className="hidden md:inline-flex p-1.5 text-sphera-text-muted hover:bg-sphera-surface hover:text-white rounded-md transition-colors shrink-0"
               title={t('sessionDetail.backToDashboard')}
             >
               <ArrowLeft className="w-5 h-5" />
@@ -730,206 +1098,61 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
         </div>
       </div>
 
-      {/* Right Column: Generated Tools & Workspace */}
-      <div className={`${mobileActiveView === 'workspace' ? 'flex flex-1 w-full' : 'hidden'} ${isPdfExpanded ? 'md:flex md:w-1/2' : 'md:flex md:w-full'} flex-col h-full bg-sphera-bg relative shadow-[-10px_0_30px_rgba(0,0,0,0.5)] transition-all duration-300`}>
-
-        {/* Workspace Toolbar */}
-        <div className="h-14 border-b border-sphera-border flex items-center justify-between px-4 bg-sphera-surface-2/80 backdrop-blur-md sticky top-0 z-20">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setIsPdfExpanded(!isPdfExpanded)}
-              className="p-1.5 rounded-md text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors"
-              title={isPdfExpanded ? t('sessionDetail.fullscreen') : t('sessionDetail.showPreview')}
-            >
-              {isPdfExpanded ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
-            </button>
-            {!isPdfExpanded && (
-              <span className="text-sm font-semibold text-white truncate max-w-[200px] border-l border-sphera-border pl-3">
-                {session.resource_title || session.source_filename}
-              </span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="flex gap-1 bg-sphera-bg p-1 rounded-md overflow-x-auto">
-              {tabList.map(tKey => {
-                const isGenerated = isToolGenerated(tKey);
-                return (
-                  <button
-                    key={tKey}
-                    onClick={() => setActiveTab(tKey)}
-                    className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors flex items-center gap-1.5 whitespace-nowrap ${
-                      activeTab === tKey
-                        ? 'bg-sphera-surface text-white shadow-sm'
-                        : isGenerated
-                          ? 'text-sphera-text-muted hover:text-white'
-                          : 'text-sphera-text-muted/50 hover:text-sphera-text-muted/90'
-                    }`}
-                  >
-                    {TOOL_LABELS[tKey] || (tKey.charAt(0).toUpperCase() + tKey.slice(1))}
-                    {!isGenerated && !isAnnale && (
-                      <span className="text-[9px] bg-sphera-surface-2 px-1.5 rounded-full border border-sphera-border text-sphera-text-muted">+</span>
-                    )}
-                  </button>
-                )
-              })}
-              <button
-                onClick={() => setActiveTab('chat')}
-                className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors flex items-center gap-1.5 ${activeTab === 'chat' ? 'bg-sphera-surface text-white' : 'text-sphera-text-muted hover:text-white'
-                  }`}
-              >
-                <MessageSquare className="w-3.5 h-3.5" /> Q&A
-              </button>
-            </div>
-            
-            <div className="flex items-center gap-2 border-l border-sphera-border pl-4">
-              <button
-                onClick={handleOpenShare}
-                className={`p-1.5 rounded transition-colors text-sphera-text-muted hover:text-white hover:bg-sphera-surface`}
-                title={t('sessionDetail.sharePublicLink')}
-              >
-                <Share2 className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setIsDeleteModalOpen(true)}
-                className="p-1.5 rounded text-red-500/60 hover:text-red-500 hover:bg-red-500/10 transition-colors"
-                title={t('sessionDetail.deleteSession')}
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Generated Content Area */}
-        <div 
-          className="flex-1 overflow-y-auto min-h-0 relative select-text"
-          onMouseUp={handleWorkspaceSelection}
-          onTouchEnd={handleWorkspaceSelection}
-        >
-          <div className="p-4 sm:p-6 md:p-8 max-w-3xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500 pb-6">
-            {activeTab !== 'chat' && !isToolGenerated(activeTab) ? (
-              <div className="p-8 text-center bg-sphera-surface-2 rounded-2xl border border-sphera-border">
-                <p className="text-sphera-text-muted mb-4">{t('sessionDetail.toolNotGenerated')}</p>
-                <button
-                  onClick={() => handleAddTool(activeTab as ToolType)}
-                  disabled={isGeneratingTool}
-                  className="sphera-primary-btn py-2 px-4 text-xs inline-flex items-center gap-2"
-                >
-                  {isGeneratingTool ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                  <span>{t('sessionDetail.generateTool', { tool: TOOL_LABELS[activeTab] || activeTab })}</span>
-                </button>
-                {toolError && <p className="text-red-400 text-sm mt-4 bg-red-500/10 p-3 rounded-lg border border-red-500/20">{toolError}</p>}
-              </div>
-            ) : (
-              <>
-                {activeTab === 'fiche' && <FicheView content={content.fiche} />}
-                {activeTab === 'quiz' && <QuizView content={content.quiz} />}
-                {activeTab === 'flashcards' && <FlashcardsView content={content.flashcards} />}
-                {activeTab === 'mindmap' && <MindmapView content={content.mindmap || content} />}
-                {activeTab === 'audio' && <AudioSummaryView content={content.audio || content} />}
-                {activeTab === 'annale' && <AnnaleView annale={session} />}
-              </>
-            )}
-            {activeTab === 'chat' && (
-              <div className="flex flex-col gap-2 pb-6">
-                {chatHistory.length === 0 ? (
-                  <div className="text-center p-12 bg-sphera-surface-2 rounded-2xl border border-sphera-border">
-                    <MessageSquare className="w-10 h-10 text-sphera-text-muted mx-auto mb-4 opacity-50" />
-                    <p className="text-white font-medium mb-1">{t('sessionDetail.askQuestionsTitle')}</p>
-                    <p className="text-sm text-sphera-text-muted">{t('sessionDetail.askQuestionsSubtitle')}</p>
-                  </div>
-                ) : (
-                  chatHistory.map((msg, i) => (
-                    <AiMessageItem
-                      key={i}
-                      index={i}
-                      question={msg.question}
-                      answer={msg.answer}
-                      onEdit={handleEditMessage}
-                      onRegenerate={handleRegenerateResponse}
-                      disabled={isChatting}
-                    />
-                  ))
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Q&A Chat Input (Pinned at Bottom) */}
-        <div className="shrink-0 w-full bg-sphera-surface-2/95 border-t border-sphera-border px-3 py-2 sm:px-4 sm:py-3 z-30 backdrop-blur-md">
-          {activeTab === 'chat' && (
-            <div className="max-w-3xl mx-auto mb-2">
-              <QuestionSuggestions
-                sessionId={id}
-                askedQuestions={chatHistory.map(m => m.question)}
-                onSelect={(q) => {
-                  setChatMessage(q)
-                  chatInputRef.current?.focus()
-                }}
-              />
-            </div>
-          )}
-
-          <div className="max-w-3xl mx-auto relative">
-            <CommandMenu
-              isVisible={showCommandMenu}
-              filter={commandFilter}
-              activeIndex={commandActiveIdx}
-              onSelect={handleCommandSelect}
-              onClose={() => setShowCommandMenu(false)}
-            />
-            <div className="flex items-center gap-2 bg-sphera-surface border border-sphera-border rounded-full p-1.5 pl-3 sm:pl-4 shadow-[0_0_20px_rgba(0,0,0,0.3)] focus-within:border-sphera-green/50 transition-colors">
-              <button
-                type="button"
-                onClick={handleToggleCommandMenu}
-                title={t('sessionDetail.commandsTooltip')}
-                aria-label={t('sessionDetail.commandsAria')}
-                className={`p-1.5 rounded-full transition-colors shrink-0 ${
-                  showCommandMenu 
-                    ? 'bg-sphera-green text-black' 
-                    : 'text-sphera-text-muted hover:text-sphera-green hover:bg-sphera-surface-2'
-                }`}
-              >
-                <AtSign className="w-4 h-4" />
-              </button>
-              <input
-                ref={chatInputRef}
-                type="text"
-                placeholder={t('sessionDetail.chatPlaceholder')}
-                value={chatMessage}
-                onChange={e => handleChatInputChange(e.target.value)}
-                onKeyDown={handleChatKeyDown}
-                className="flex-1 bg-transparent border-none text-sm text-white placeholder-sphera-text-muted outline-none focus:ring-0"
-              />
-              {isChatting ? (
-                <button
-                  type="button"
-                  onClick={handleStopChat}
-                  title={t('sessionDetail.stopResponse')}
-                  aria-label={t('sessionDetail.stopResponse')}
-                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-red-500/90 hover:bg-red-500 text-white flex items-center justify-center transition-all flex-shrink-0 shadow-[0_0_15px_rgba(239,68,68,0.4)] animate-in fade-in"
-                >
-                  <Square className="w-3.5 h-3.5 fill-current" />
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleSendChat}
-                  disabled={!chatMessage.trim() || !id}
-                  title={t('sessionDetail.sendMessage')}
-                  aria-label={t('sessionDetail.sendMessage')}
-                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-sphera-green text-black flex items-center justify-center hover:bg-green-400 disabled:opacity-50 disabled:hover:bg-sphera-green transition-colors flex-shrink-0 shadow-[0_0_15px_rgba(34,197,94,0.3)]"
-                >
-                  <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-0.5" />
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
+      {/* Right Column: Study Workspace */}
+      <div className={`${mobileActiveView === 'workspace' ? 'flex flex-1 w-full min-h-0' : 'hidden'} ${isPdfExpanded ? 'md:flex md:w-1/2' : 'md:flex md:w-full'} flex-col bg-sphera-bg relative shadow-[-10px_0_30px_rgba(0,0,0,0.5)] transition-all duration-300`}>
+        <StudyWorkspacePanel
+          sessionId={id}
+          documentTitle={session.resource_title || session.source_filename || 'Espace d\'étude'}
+          sessionContent={content}
+          artefacts={artefacts}
+          threads={threads}
+          activeThreadId={activeThreadId}
+          onSelectThread={handleSelectThread}
+          onCreateThread={handleCreateThread}
+          onDeleteThread={handleDeleteThread}
+          chatHistory={chatHistory}
+          isChatting={isChatting}
+          onSendMessage={handleSendChatMessage}
+          onStopChat={handleStopChat}
+          onEditMessage={handleEditMessage}
+          onRegenerateResponse={handleRegenerateResponse}
+          isGeneratingTool={isGeneratingTool}
+          generatingToolType={generatingToolType}
+          onGenerateTool={handleAddTool}
+          onDeleteArtefact={handleDeleteArtefact}
+          onRenameArtefact={handleRenameArtefact}
+          onNewNote={handleNewNote}
+          onSaveNote={handleSaveNote}
+          onGenerateChapterQuiz={handleGenerateChapterQuiz}
+          onGenerateChapterFlashcards={handleGenerateChapterFlashcards}
+          onRegenerateFiche={handleRegenerateFiche}
+          isRegeneratingFiche={isRegeneratingFiche}
+          isGeneratingArtefact={isGeneratingArtefact}
+          generatingChapterArtefact={generatingChapterArtefact}
+          isPdfExpanded={isPdfExpanded}
+          onTogglePdfExpanded={() => setIsPdfExpanded(!isPdfExpanded)}
+          rawAnnale={isAnnale ? session : undefined}
+          onOpenShare={handleOpenShare}
+          onOpenDelete={() => setIsDeleteModalOpen(true)}
+          onArtefactCreated={(newArt) => setArtefacts(prev => [newArt, ...prev])}
+          onCreateNoteWithContent={async (title, text) => {
+            if (!id) return
+            try {
+              const res = await createArtefact(id, {
+                type: 'note',
+                title,
+                subtitle: 'Créée depuis le Q&A',
+                content: { text },
+              })
+              setArtefacts(prev => [res.data, ...prev])
+              showFeedback('Note enregistrée !', 'success')
+            } catch (err: any) {
+              showFeedback(err?.message || "Erreur lors de l'enregistrement de la note", 'error')
+            }
+          }}
+          extractedText={session.extracted_text}
+        />
       </div>
-      
       {selectionToolbar && (
         <TextSelectionToolbar
           coords={selectionToolbar.coords}

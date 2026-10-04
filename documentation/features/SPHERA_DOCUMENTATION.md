@@ -54,7 +54,7 @@ sequenceDiagram
    const getSpheraStandaloneUrl = () => {
      const envUrl = (import.meta.env.VITE_SPHERA_STANDALONE_URL as string)?.trim();
      const isLocal = ["localhost", "127.0.0.1"].some((host) => window.location.hostname.includes(host));
-     const baseUrl = envUrl || (isLocal ? "http://localhost:4173" : "https://sphera.campussphere.app");
+     const baseUrl = envUrl || (isLocal ? "http://localhost:5174" : "https://sphera.campussphere.app");
      
      const accessToken = localStorage.getItem("access") || localStorage.getItem("access_token");
      const refreshToken = localStorage.getItem("refresh");
@@ -142,7 +142,7 @@ https://campussphere.app, https://www.campussphere.app, https://sphera.campussph
 Laisser `CORS_ALLOWED_ORIGINS` **non renseignée** pour en bénéficier — vérifié contre un serveur
 en marche.
 
-⚠️ **En local, `http://localhost:4173` n'y figure pas.** C'est le port de `vite preview` utilisé
+⚠️ **En local, `http://localhost:5174` n'y figure pas.** C'est le port de `vite preview` utilisé
 par l'app Sphera standalone (voir `VITE_SPHERA_STANDALONE_URL`), et ses requêtes seront donc
 bloquées par le navigateur tant que l'origine n'est pas ajoutée.
 
@@ -150,7 +150,7 @@ La variable d'environnement **remplace entièrement** les défauts, elle ne s'y 
 faut donc lister *toutes* les origines voulues, pas seulement celle qui manque.
 
 ```env
-CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:8080,http://localhost:4173,https://campussphere.app,https://www.campussphere.app,https://sphera.campussphere.app
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:8080,http://localhost:5174,https://campussphere.app,https://www.campussphere.app,https://sphera.campussphere.app
 ```
 
 ### Étape 2 : Compilation & Build
