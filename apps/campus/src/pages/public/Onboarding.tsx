@@ -1,6 +1,6 @@
-import { Suspense, lazy, useState, useRef, useEffect } from "react";
+import { Suspense, lazy, useState, useRef } from "react";
 import { Helmet } from "react-helmet-async";
-import { CaretRight as ChevronRight, Check, Spinner as Loader2, Plus, X, Camera, Info, ArrowSquareOut as ExternalLink, Sparkle as Sparkles, Briefcase, Heart, Lightning as Zap } from "@phosphor-icons/react";
+import { CaretRight as ChevronRight, Check, Spinner as Loader2, Plus, X, Camera, Info, ArrowSquareOut as ExternalLink, Briefcase, Heart, Lightning as Zap } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input, REGISTRATION_MAX_LENGTHS } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +24,7 @@ import { FacultyCombobox } from "@/components/forms/FacultyCombobox";
 import { StudyLevelCombobox } from "@/components/forms/StudyLevelCombobox";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
 import { useAuth } from "@/contexts/AuthContext";
+import { WELCOME_FLAG_KEY } from "@/components/onboarding/WelcomeTeamModal";
 
 const AddEducationModal = lazy(() =>
   import("@/components/modals/AddEducationModal").then((module) => ({
@@ -36,179 +37,44 @@ const AddExperienceModal = lazy(() =>
   }))
 );
 
-type Step = 0 | 1 | 2 | 3;
+type Step = 1 | 2;
 
-interface NarrativeWord {
-  text: string;
-  highlight?: boolean;
-}
+const MINIMUM_AGE = 16;
+const AGE_POLICY_URL = "/cs-inc/policies/terms#age-restriction";
 
-interface NarrativeParagraph {
-  isTitle?: boolean;
-  isFinal?: boolean;
-  words: NarrativeWord[];
-}
+const parseISODate = (value: string) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null;
+  return date;
+};
 
-const NARRATIVE_DATA: NarrativeParagraph[] = [
-  {
-    isTitle: true,
-    words: [
-      { text: "Imagine" },
-      { text: "un" },
-      { text: "espace..." },
-    ],
-  },
-  {
-    words: [
-      { text: "..." },
-      { text: "où" },
-      { text: "toute", highlight: true },
-      { text: "la", highlight: true },
-      { text: "vie", highlight: true },
-      { text: "de", highlight: true },
-      { text: "ton", highlight: true },
-      { text: "campus", highlight: true },
-      { text: "tient" },
-      { text: "enfin" },
-      { text: "dans" },
-      { text: "ta" },
-      { text: "poche." },
-    ],
-  },
-  {
-    words: [
-      { text: "..." },
-      { text: "où" },
-      { text: "tes" },
-      { text: "exposés" },
-      { text: "et" },
-      { text: "projets" },
-      { text: "avancent" },
-      { text: "sans" },
-      { text: "stress" },
-      { text: "grâce" },
-      { text: "à" },
-      { text: "des" },
-      { text: "Sphères", highlight: true },
-      { text: "collaboratives", highlight: true },
-      { text: "avec" },
-      { text: "Kanban," },
-      { text: "chat" },
-      { text: "d'équipe" },
-      { text: "et" },
-      { text: "fichiers" },
-      { text: "partagés." },
-    ],
-  },
-  {
-    words: [
-      { text: "..." },
-      { text: "où" },
-      { text: "tu" },
-      { text: "as" },
-      { text: "accès" },
-      { text: "en" },
-      { text: "un" },
-      { text: "instant" },
-      { text: "aux" },
-      { text: "fiches,", highlight: true },
-      { text: "cours", highlight: true },
-      { text: "et", highlight: true },
-      { text: "annales", highlight: true },
-      { text: "déposés" },
-      { text: "par" },
-      { text: "ceux" },
-      { text: "qui" },
-      { text: "ont" },
-      { text: "déjà" },
-      { text: "validé" },
-      { text: "ta" },
-      { text: "filière." },
-    ],
-  },
-  {
-    words: [
-      { text: "..." },
-      { text: "où" },
-      { text: "Sphera,", highlight: true },
-      { text: "ton" },
-      { text: "assistante" },
-      { text: "IA," },
-      { text: "t'épaule" },
-      { text: "pour" },
-      { text: "comprendre" },
-      { text: "n'importe" },
-      { text: "quelle" },
-      { text: "notion" },
-      { text: "et" },
-      { text: "transforme" },
-      { text: "tes" },
-      { text: "cours" },
-      { text: "en" },
-      { text: "quiz" },
-      { text: "et" },
-      { text: "fiches" },
-      { text: "interactifs." },
-    ],
-  },
-  {
-    words: [
-      { text: "..." },
-      { text: "où" },
-      { text: "ton" },
-      { text: "fil" },
-      { text: "d'actu" },
-      { text: "est" },
-      { text: "guidé" },
-      { text: "par" },
-      { text: "l'Impact", highlight: true },
-      { text: "Score", highlight: true },
-      { text: "⚡,", highlight: true },
-      { text: "pour" },
-      { text: "ne" },
-      { text: "faire" },
-      { text: "remonter" },
-      { text: "que" },
-      { text: "ce" },
-      { text: "qui" },
-      { text: "t'aide" },
-      { text: "et" },
-      { text: "t'inspire" },
-      { text: "vraiment." },
-    ],
-  },
-  {
-    words: [
-      { text: "..." },
-      { text: "où" },
-      { text: "tu" },
-      { text: "ne" },
-      { text: "rates" },
-      { text: "plus" },
-      { text: "aucun" },
-      { text: "événement;", highlight: true },
-      { text: "hackathon," },
-      { text: "atelier" },
-      { text: "ou" },
-      { text: "soirée" },
-      { text: "de" },
-      { text: "ton" },
-      { text: "université." },
-    ],
-  },
-  {
-    isFinal: true,
-    words: [
-      { text: "Cet" },
-      { text: "espace" },
-      { text: "existe." },
-      { text: "Bienvenue" },
-      { text: "sur" },
-      { text: "CampusSphere.", highlight: true },
-      { text: "🚀" },
-    ],
-  },
-];
+const getAgeFromDate = (birthDate: Date, today: Date) => {
+  let age = today.getUTCFullYear() - birthDate.getUTCFullYear();
+  const m = today.getUTCMonth() - birthDate.getUTCMonth();
+  if (m < 0 || (m === 0 && today.getUTCDate() < birthDate.getUTCDate())) age--;
+  return age;
+};
+
+const getBirthDateMax = () => {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear() - MINIMUM_AGE, now.getUTCMonth(), now.getUTCDate()))
+    .toISOString()
+    .split("T")[0];
+};
+
+/** Retourne un message d'erreur, ou null si la date est valide et l'âge >= MINIMUM_AGE. */
+const validateDateOfBirth = (value: string): string | null => {
+  if (!value) return "Date de naissance requise";
+  const birthDate = parseISODate(value);
+  if (!birthDate) return "Date de naissance invalide";
+  const now = new Date();
+  const todayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  if (birthDate > todayUtc) return "La date de naissance ne peut pas être dans le futur";
+  if (getAgeFromDate(birthDate, todayUtc) < MINIMUM_AGE) return `Vous devez avoir au moins ${MINIMUM_AGE} ans`;
+  return null;
+};
 
 const COMMON_SKILLS = [
   "JavaScript", "Python", "React", "Node.js", "TypeScript",
@@ -228,160 +94,15 @@ const COMMON_INTERESTS = [
   "Musique", "Cinéma", "Jeux Vidéo", "Bénévolat", "Mode", "Cuisine",
 ];
 
-function TypewriterNarration({ onComplete }: { onComplete: () => void }) {
-  const flattenedWords = useRef(
-    NARRATIVE_DATA.flatMap((p, pIdx) =>
-      p.words.map((w) => ({
-        pIdx,
-        text: w.text,
-        highlight: !!w.highlight,
-        isTitle: !!p.isTitle,
-        isFinal: !!p.isFinal,
-      }))
-    )
-  ).current;
-
-  const [visibleCount, setVisibleCount] = useState(0);
-  const isFinished = visibleCount >= flattenedWords.length;
-
-  useEffect(() => {
-    if (visibleCount >= flattenedWords.length) return;
-
-    const currentWord = flattenedWords[visibleCount]?.text || "";
-    let delay = 75; // cadence naturelle de base
-    if (currentWord.endsWith("...") || currentWord.endsWith(".")) {
-      delay = 240; // respiration humaine en fin de phrase
-    } else if (currentWord.endsWith(",") || currentWord.endsWith(":")) {
-      delay = 140; // légère pause sur ponctuation
-    }
-
-    const timer = setTimeout(() => {
-      setVisibleCount((prev) => prev + 1);
-    }, delay);
-
-    return () => clearTimeout(timer);
-  }, [visibleCount, flattenedWords]);
-
-  const getWordsForParagraph = (pIdx: number) => {
-    const pWords = flattenedWords.filter((w) => w.pIdx === pIdx);
-    const pStartIndex = flattenedWords.findIndex((w) => w.pIdx === pIdx);
-    const visibleInThisP = Math.max(0, Math.min(pWords.length, visibleCount - pStartIndex));
-    return pWords.slice(0, visibleInThisP);
-  };
-
-  return (
-    <div className="w-full max-w-2xl py-2 sm:py-6">
-      <div className="flex items-center justify-between pb-4 mb-6 border-b border-border/40">
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
-          Spoiler alert 👀
-        </span>
-        {!isFinished && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setVisibleCount(flattenedWords.length)}
-            className="text-xs text-muted-foreground hover:text-foreground h-7 px-2 font-normal"
-          >
-            Afficher tout
-          </Button>
-        )}
-      </div>
-
-      <div
-        className="space-y-4 min-h-[320px] text-left leading-relaxed cursor-pointer"
-        onClick={() => {
-          if (!isFinished) setVisibleCount(flattenedWords.length);
-        }}
-        title={!isFinished ? "Cliquez pour afficher tout le texte" : undefined}
-      >
-        {NARRATIVE_DATA.map((p, pIdx) => {
-          const wordsToShow = getWordsForParagraph(pIdx);
-          if (wordsToShow.length === 0) return null;
-
-          if (p.isTitle) {
-            return (
-              <h2 key={pIdx} className="text-2xl sm:text-3xl font-bold font-raleway text-foreground animate-in fade-in duration-300">
-                {wordsToShow.map((w, wIdx) => (
-                  <span key={wIdx} className="mr-1.5 inline-block">
-                    {w.text}
-                  </span>
-                ))}
-              </h2>
-            );
-          }
-
-          if (p.isFinal) {
-            return (
-              <div key={pIdx} className="pt-4 border-t border-border/40 animate-in fade-in duration-300">
-                <p className="text-lg sm:text-xl font-bold text-foreground font-poppins">
-                  {wordsToShow.map((w, wIdx) => (
-                    <span
-                      key={wIdx}
-                      className={cn(
-                        "mr-1.5 inline-block",
-                        w.highlight && "text-primary"
-                      )}
-                    >
-                      {w.text}
-                    </span>
-                  ))}
-                </p>
-              </div>
-            );
-          }
-
-          return (
-            <p key={pIdx} className="text-base sm:text-lg text-muted-foreground font-nunito animate-in fade-in duration-200">
-              {wordsToShow.map((w, wIdx) => (
-                <span
-                  key={wIdx}
-                  className={cn(
-                    "mr-1.5 inline-block transition-colors duration-200",
-                    w.highlight ? "text-primary font-semibold" : "text-foreground/80"
-                  )}
-                >
-                  {w.text}
-                </span>
-              ))}
-              {visibleCount < flattenedWords.length && pIdx === flattenedWords[visibleCount]?.pIdx && (
-                <span className="inline-block w-1.5 h-4 bg-primary animate-pulse align-middle" />
-              )}
-            </p>
-          );
-        })}
-      </div>
-
-      <div className="mt-8 pt-6 border-t border-border/40 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <span className="text-xs text-muted-foreground font-normal">
-          1 minute pour personnaliser ton espace
-        </span>
-        <Button
-          onClick={onComplete}
-          className="campus-gradient text-white hover:opacity-90 w-full sm:w-auto px-6 py-5 text-base shadow-sm transition-transform hover:scale-[1.01]"
-        >
-          {isFinished ? "Configurer mon profil étudiant" : "Passer & Configurer"}
-          <ChevronRight className="ml-2 h-5 w-5" />
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-const TEAM_MEMBERS = [
-  { name: "Max", avatar: "/Team/Nlend.jpg" },
-  { name: "Boris", avatar: "/Team/Boris.jpg" },
-  { name: "Nathan", avatar: "/Team/Nathan.jpg" },
-  { name: "Tommi", avatar: "/Team/Tommi.jpg" },
-  { name: "Gwenaëlle", avatar: "/Team/Gwen.png" },
-];
-
 export function Onboarding() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { refreshUser } = useAuth();
-  const [step, setStep] = useState<Step>(0);
+  const { refreshUser, user } = useAuth();
+  const [step, setStep] = useState<Step>(1);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // La date de naissance n'est demandée que si elle n'est pas déjà connue (ex: inscription Google)
+  const [needsDateOfBirth] = useState(() => !user?.dateOfBirth);
 
   const [isAddEducationOpen, setIsAddEducationOpen] = useState(false);
   const [isAddExperienceOpen, setIsAddExperienceOpen] = useState(false);
@@ -391,6 +112,7 @@ export function Onboarding() {
   const [cardPreview, setCardPreview] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
+    dateOfBirth: "",
     university: "iuc",
     faculty: "",
     studyYear: "",
@@ -444,7 +166,18 @@ export function Onboarding() {
   const handleFinalSubmit = async () => {
     if (isLoading) return;
 
+    if (needsDateOfBirth) {
+      const dobError = validateDateOfBirth(formData.dateOfBirth);
+      if (dobError) {
+        setErrors({ dateOfBirth: dobError });
+        setStep(1);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+    }
+
     const payload = {
+      ...(needsDateOfBirth ? { date_of_birth: formData.dateOfBirth } : {}),
       university: formData.university,
       faculty: formData.faculty,
       study_year: formData.studyYear,
@@ -480,7 +213,9 @@ export function Onboarding() {
       }
 
       await refreshUser();
-      setStep(3);
+      // Déclenche la pop-up de bienvenue de l'équipe une fois dans l'application
+      localStorage.setItem(WELCOME_FLAG_KEY, "1");
+      navigate("/", { replace: true });
     } catch (err: any) {
       toast({ title: "Erreur", description: err?.message, variant: "destructive" });
     } finally {
@@ -488,20 +223,7 @@ export function Onboarding() {
     }
   };
 
-  const getProgress = () => {
-    switch (step) {
-      case 0:
-        return 20;
-      case 1:
-        return 50;
-      case 2:
-        return 80;
-      case 3:
-        return 100;
-      default:
-        return 20;
-    }
-  };
+  const getProgress = () => (step === 1 ? 50 : 100);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5 flex flex-col items-center justify-center p-4 sm:p-8">
@@ -510,52 +232,69 @@ export function Onboarding() {
       </Helmet>
 
       <div className="w-full max-w-2xl">
-        {/* Entête épurée pour les étapes 1 et 2 */}
-        {step !== 0 && step !== 3 && (
-          <div className="text-center mb-8">
-            <span className="text-2xl font-bold font-automata text-primary">CampusSphere</span>
-            <h1 className="text-xl font-semibold mt-4">
-              {step === 1 ? "Où étudiez-vous ?" : "Votre profil étudiant"}
-            </h1>
-            <p className="text-muted-foreground mt-2 text-sm">
-              {step === 1
-                ? "Renseignez votre établissement pour être directement connecté à la communauté de votre campus."
-                : "Personnalisez vos centres d'intérêt pour découvrir des étudiants qui partagent les mêmes cours ou passions que vous."}
-            </p>
-          </div>
-        )}
+        {/* Entête épurée */}
+        <div className="text-center mb-8">
+          <span className="text-2xl font-bold font-automata text-primary">CampusSphere</span>
+          <h1 className="text-xl font-semibold mt-4">
+            {step === 1 ? "Où étudiez-vous ?" : "Votre profil étudiant"}
+          </h1>
+          <p className="text-muted-foreground mt-2 text-sm">
+            {step === 1
+              ? "Renseignez votre établissement pour être directement connecté à la communauté de votre campus."
+              : "Personnalisez vos centres d'intérêt pour découvrir des étudiants qui partagent les mêmes cours ou passions que vous."}
+          </p>
+        </div>
 
         {/* Barre de progression épurée */}
-        {step !== 3 && (
-          <div className="mb-8">
-            <div className="flex justify-between items-center text-xs text-muted-foreground mb-2 font-normal">
-              <span>
-                {step === 0 && "Étape 0/2 • Découverte"}
-                {step === 1 && "Étape 1/2 • Établissement"}
-                {step === 2 && "Étape 2/2 • Profil & Intérêts"}
-              </span>
-              <span>{getProgress()}%</span>
-            </div>
-            <Progress value={getProgress()} className="h-1.5" />
+        <div className="mb-8">
+          <div className="flex justify-between items-center text-xs text-muted-foreground mb-2 font-normal">
+            <span>
+              {step === 1 && "Étape 1/2 • Établissement"}
+              {step === 2 && "Étape 2/2 • Profil & Intérêts"}
+            </span>
+            <span>{getProgress()}%</span>
           </div>
-        )}
+          <Progress value={getProgress()} className="h-1.5" />
+        </div>
 
         <div className="space-y-6">
-          {/* ── ÉTAPE 0 : Narration progressive (sans boîte saturée) ── */}
-          {step === 0 && (
-            <div className="animate-in fade-in duration-500 flex justify-center">
-              <TypewriterNarration
-                onComplete={() => {
-                  setStep(1);
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
-              />
-            </div>
-          )}
-
           {/* ── ÉTAPE 1 : Infos académiques (design fluide sans carte lourde) ── */}
           {step === 1 && (
             <div className="space-y-5 animate-in fade-in duration-500 py-2">
+              {user?.firstName && (
+                <div className="flex items-start gap-2 p-3 bg-primary/5 text-foreground/80 rounded-lg text-xs">
+                  <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-primary" />
+                  <span>
+                    Bienvenue <strong>{user.firstName}</strong> ! Tu pourras modifier ton nom, ton prénom et ta photo à tout moment depuis ton profil.
+                  </span>
+                </div>
+              )}
+
+              {needsDateOfBirth && (
+                <div>
+                  <Label>Date de naissance *</Label>
+                  <Input
+                    type="date"
+                    max={getBirthDateMax()}
+                    value={formData.dateOfBirth}
+                    onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
+                    className={cn("mt-2", errors.dateOfBirth && "border-destructive")}
+                  />
+                  {errors.dateOfBirth && <p className="text-xs text-red-500 mt-1">{errors.dateOfBirth}</p>}
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    Pourquoi cette information ?{" "}
+                    <a
+                      href={AGE_POLICY_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      CampusSphere est réservé aux personnes de {MINIMUM_AGE} ans et plus — en savoir plus
+                    </a>
+                  </p>
+                </div>
+              )}
+
               <div>
                 <Label>Université / Institut *</Label>
                 <UniversityCombobox
@@ -656,22 +395,21 @@ export function Onboarding() {
                 />
               </div>
 
-              <div className="flex justify-between items-center pt-6 border-t border-border/40">
-                <Button
-                  variant="ghost"
-                  onClick={() => setStep(0)}
-                  className="text-muted-foreground hover:text-foreground font-normal"
-                >
-                  Intro
-                </Button>
+              <div className="flex justify-end items-center pt-6 border-t border-border/40">
                 <Button
                   onClick={() => {
                     const v = step1Schema.safeParse(formData);
+                    const fe: Record<string, string> = {};
                     if (!v.success) {
-                      const fe: Record<string, string> = {};
                       v.error.errors.forEach((e) => {
                         if (e.path[0]) fe[e.path[0] as string] = e.message;
                       });
+                    }
+                    if (needsDateOfBirth) {
+                      const dobError = validateDateOfBirth(formData.dateOfBirth);
+                      if (dobError) fe.dateOfBirth = dobError;
+                    }
+                    if (Object.keys(fe).length > 0) {
                       setErrors(fe);
                       return;
                     }
@@ -1150,84 +888,6 @@ export function Onboarding() {
                     Terminer mon profil
                   </Button>
                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* ── ÉTAPE 3 : Le Mot de l'équipe CampusSphere (design 100% épuré sans carte) ── */}
-          {step === 3 && (
-            <div className="w-full max-w-xl mx-auto py-4 text-center animate-in fade-in duration-400">
-              <div className="flex items-center justify-center gap-3 mb-3">
-                <img src="/CS.svg" alt="CampusSphere Logo" className="w-9 h-9 sm:w-10 sm:h-10 object-contain" />
-                <span className="text-2xl sm:text-3xl font-bold font-automata campus-gradient bg-clip-text text-transparent">
-                  CampusSphere
-                </span>
-              </div>
-
-              <h2 className="text-xl sm:text-2xl font-bold font-raleway text-foreground mb-6">
-                Bienvenue dans l'aventure ! 🎉
-              </h2>
-
-              <div className="text-left text-sm sm:text-base leading-relaxed text-muted-foreground font-nunito space-y-4">
-                <p className="font-semibold text-foreground">Salut !</p>
-                <p>
-                  Toute l'équipe de <strong className="text-foreground font-semibold">CampusSphere</strong> est ultra fière de t'accueillir sur la plateforme.
-                </p>
-
-                <p>
-                  On a créé cet espace autour d'une promesse simple : <strong className="text-foreground font-semibold">Connect. Share. Grow.</strong>
-                </p>
-
-                <div className="space-y-2.5 pl-3 border-l-2 border-primary/40 my-3 text-xs sm:text-sm">
-                  <p>
-                    <strong className="text-foreground font-medium">Connect :</strong> Échange avec les étudiants de ton campus, rejoins tes premières Sphères et ne sois plus jamais coupé de ce qui s'y passe.
-                  </p>
-                  <p>
-                    <strong className="text-foreground font-medium">Share :</strong> Trouve et partage fiches, cours et annales d'examens en un clic pour faire avancer toute la communauté.
-                  </p>
-                  <p>
-                    <strong className="text-foreground font-medium">Grow :</strong> Valide tes matières, avance sur tes projets à plusieurs et booste tes révisions au quotidien avec Sphera.
-                  </p>
-                </div>
-
-                <p>
-                  Rejoins tes premières Sphères, explore les ressources partagées, teste Sphera pour tes révisions et fais comme chez toi !
-                </p>
-
-                <div className="pt-6 border-t border-border/40 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="flex -space-x-3 overflow-hidden p-0.5">
-                    {TEAM_MEMBERS.map((m, i) => (
-                      <img
-                        key={i}
-                        src={m.avatar}
-                        alt={m.name}
-                        title={m.name}
-                        className="inline-block h-10 w-10 sm:h-11 sm:w-11 rounded-full ring-2 ring-background object-cover shadow-sm transition-transform hover:scale-110 hover:z-10"
-                      />
-                    ))}
-                  </div>
-
-                  <span className="font-semibold text-foreground text-sm sm:text-base font-poppins">
-                    — L'équipe CampusSphere 🧡
-                  </span>
-                </div>
-              </div>
-
-              <div className="mt-8">
-                <Button
-                  onClick={() => {
-                    toast({
-                      title: "Ton espace est prêt ! 🎉",
-                      description: "Bienvenue sur CampusSphere ! Connect. Share. Grow. 🚀",
-                      duration: 4000,
-                    });
-                    navigate("/");
-                  }}
-                  size="lg"
-                  className="campus-gradient text-white hover:opacity-90 w-full py-6 text-base rounded-xl shadow-md transition-transform hover:scale-[1.01]"
-                >
-                  Entrer dans mon espace 🚀
-                </Button>
               </div>
             </div>
           )}
