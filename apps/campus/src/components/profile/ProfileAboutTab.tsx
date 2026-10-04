@@ -1,5 +1,5 @@
 import { Suspense, lazy, useState } from "react";
-import { Pencil, ArrowSquareOut as ExternalLink } from "@phosphor-icons/react";
+import { PencilSimple, ArrowSquareOut as ExternalLink } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
@@ -105,7 +105,7 @@ export function ProfileAboutTab({
                   onClick={() => setIsEditAcademicOpen(true)}
                   title="Modifier les informations académiques"
                 >
-                  <Pencil className="h-3.5 w-3.5" />
+                  <PencilSimple className="h-3.5 w-3.5" />
                 </Button>
                 {isEditAcademicOpen && (
                   <Suspense fallback={<ModalLoadingFallback />}>
@@ -169,7 +169,7 @@ export function ProfileAboutTab({
                   onClick={() => setIsEditPersonalOpen(true)}
                   title="Modifier les informations personnelles"
                 >
-                  <Pencil className="h-3.5 w-3.5" />
+                  <PencilSimple className="h-3.5 w-3.5" />
                 </Button>
                 {isEditPersonalOpen && (
                   <Suspense fallback={<ModalLoadingFallback />}>
@@ -239,7 +239,7 @@ export function ProfileAboutTab({
                   onClick={() => setIsEditEducationOpen(true)}
                   title="Modifier les formations"
                 >
-                  <Pencil className="h-3.5 w-3.5" />
+                  <PencilSimple className="h-3.5 w-3.5" />
                 </Button>
                 {isEditEducationOpen && (
                   <Suspense fallback={<ModalLoadingFallback />}>
@@ -295,7 +295,7 @@ export function ProfileAboutTab({
                   onClick={() => setIsEditExperiencesOpen(true)}
                   title="Modifier les expériences"
                 >
-                  <Pencil className="h-3.5 w-3.5" />
+                  <PencilSimple className="h-3.5 w-3.5" />
                 </Button>
                 {isEditExperiencesOpen && (
                   <Suspense fallback={<ModalLoadingFallback />}>
@@ -349,7 +349,7 @@ export function ProfileAboutTab({
                   onClick={() => setIsEditSkillsOpen(true)}
                   title="Modifier les compétences"
                 >
-                  <Pencil className="h-3.5 w-3.5" />
+                  <PencilSimple className="h-3.5 w-3.5" />
                 </Button>
                 {isEditSkillsOpen && (
                   <Suspense fallback={<ModalLoadingFallback />}>
@@ -394,7 +394,7 @@ export function ProfileAboutTab({
                   onClick={() => setIsEditInterestsOpen(true)}
                   title="Modifier les centres d'intérêt"
                 >
-                  <Pencil className="h-3.5 w-3.5" />
+                  <PencilSimple className="h-3.5 w-3.5" />
                 </Button>
                 {isEditInterestsOpen && (
                   <Suspense fallback={<ModalLoadingFallback />}>
@@ -439,7 +439,7 @@ export function ProfileAboutTab({
                   onClick={() => setIsEditPortfolioOpen(true)}
                   title="Modifier le portfolio"
                 >
-                  <Pencil className="h-3.5 w-3.5" />
+                  <PencilSimple className="h-3.5 w-3.5" />
                 </Button>
                 {isEditPortfolioOpen && (
                   <Suspense fallback={<ModalLoadingFallback />}>

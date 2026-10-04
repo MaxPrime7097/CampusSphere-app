@@ -1,6 +1,6 @@
 import { UniversalShareModal } from "@/components/shared/UniversalShareModal";
 import { Suspense, lazy, useEffect, useState, useRef } from "react";
-import { Heart, ChatTeardrop, Share, BookmarkSimple, UsersThree as Users, DotsThreeVertical as MoreVertical, Lightning as Zap, Copy, Flag, ArrowSquareOut as ExternalLink, Plus, Minus, X, Pencil, Trash as Trash2, Spinner as Loader2, FileText, Download, CaretLeft as ChevronLeft, CaretRight as ChevronRight, MagnifyingGlass as Search, FacebookLogo as Facebook, InstagramLogo as Instagram, TwitterLogo as Twitter, LinkedinLogo as Linkedin, Info, SealCheck as BadgeCheck } from "@phosphor-icons/react";
+import { Heart, ChatTeardrop, Share, BookmarkSimple, UsersThree as Users, DotsThreeVertical as MoreVertical, Lightning as Zap, Copy, Flag, ArrowSquareOut as ExternalLink, Plus, Minus, X, PencilSimple, Trash as Trash2, Spinner as Loader2, FileText, Download, CaretLeft as ChevronLeft, CaretRight as ChevronRight, MagnifyingGlass as Search, FacebookLogo as Facebook, InstagramLogo as Instagram, TwitterLogo as Twitter, LinkedinLogo as Linkedin, Info, SealCheck as BadgeCheck } from "@phosphor-icons/react";
 import { FaFacebook, FaTwitter, FaInstagram, FaWhatsapp, FaLinkedin } from 'react-icons/fa';
 
 import { Button } from "@/components/ui/button";
@@ -585,7 +585,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                 </DropdownMenuItem>
                 {post.canEdit && (
                   <DropdownMenuItem onClick={handleOpenEdit}>
-                    <Pencil className="h-4 w-4 mr-2" />
+                    <PencilSimple className="h-4 w-4 mr-2" />
                     Modifier
                   </DropdownMenuItem>
                 )}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Copy, Check, ThumbsUp, ThumbsDown, Pencil, ArrowCounterClockwise as RotateCcw, NotePencil } from "@phosphor-icons/react";
+import { Copy, Check, ThumbsUp, ThumbsDown, PencilSimple, ArrowCounterClockwise as RotateCcw, NotePencil } from "@phosphor-icons/react";
 import { useTranslation } from 'react-i18next'
 import { MarkdownRenderer } from './MarkdownRenderer'
 
@@ -100,7 +100,7 @@ export function AiMessageItem({ question, answer, index, onEdit, onRegenerate, o
                 aria-label={t('aiMessage.editTooltip')}
                 className="opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity p-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2 shrink-0"
               >
-                <Pencil className="w-3.5 h-3.5" />
+                <PencilSimple className="w-3.5 h-3.5" />
               </button>
             )}
             <div className="px-4 py-2.5 rounded-2xl rounded-tr-xs bg-sphera-surface-2 border border-sphera-border/70 text-white text-sm leading-relaxed shadow-sm">

@@ -8,7 +8,7 @@ import {
   DropdownMenuPortal,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Smiley as Smile, DotsThreeVertical as MoreVertical, Pencil, Trash, Checks as CheckCheck } from "@phosphor-icons/react";
+import { Smiley as Smile, DotsThreeVertical as MoreVertical, PencilSimple, Trash, Checks as CheckCheck } from "@phosphor-icons/react";
 import { formatRelativeTime } from "@/lib/date";
 import type { Message } from "@/types";
 
@@ -196,7 +196,7 @@ export function ChatMessageItem({
                     >
                       {canEdit && (
                         <DropdownMenuItem onClick={() => onStartEdit(message)} className="gap-2">
-                          <Pencil className="h-3.5 w-3.5" /> Modifier
+                          <PencilSimple className="h-3.5 w-3.5" /> Modifier
                         </DropdownMenuItem>
                       )}
                       {canDelete && (

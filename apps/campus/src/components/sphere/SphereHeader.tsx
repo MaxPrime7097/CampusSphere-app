@@ -171,7 +171,7 @@ export function SphereHeader({
                   if (iconName === "Target") return <Target className="h-3.5 w-3.5" />;
                   if (iconName === "Globe") return <Sphere className="h-3.5 w-3.5" />;
                   if (iconName === "Trophy") return <Trophy className="h-3.5 w-3.5" />;
-                  if (iconName === "Pencil") return <FileText className="h-3.5 w-3.5" />;
+                  if (iconName === "PencilSimple") return <FileText className="h-3.5 w-3.5" />;
                   return null;
                 })()}
                 {SPHERE_TYPE_LABELS[sphere.sphere_type as SphereType] ?? sphere.sphere_type}
