@@ -37,12 +37,11 @@ import { useNavigate } from "react-router-dom";
 type ToolType = "fiche" | "quiz" | "flashcards" | "mindmap" | "audio";
 type Step = "choose" | "loading" | "result" | "error";
 
-// [BE-MIGRATION FE-02] Needs a `sphereFileId?: string | number | null` prop forwarded to
-// generateStudyTools, so sphere files stop being sent as resource ids. — documentation/FRONTEND_CHANGES.md
 interface StudyToolsModalProps {
   isOpen: boolean;
   onClose: () => void;
   resourceId?: string | number | null;
+  sphereFileId?: string | number | null;
   resourceTitle?: string;
   uploadFile?: File | null;
   onSuccess?: (data: any) => void;
@@ -95,6 +94,7 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
   isOpen,
   onClose,
   resourceId,
+  sphereFileId,
   resourceTitle,
   uploadFile,
   onSuccess,
@@ -129,6 +129,8 @@ export const StudyToolsModal: React.FC<StudyToolsModalProps> = ({
       let res;
       if (uploadFile) {
         res = await generateFromUpload(uploadFile, selectedTypes);
+      } else if (sphereFileId) {
+        res = await generateStudyTools({ sphere_file_id: sphereFileId, tool_types: selectedTypes });
       } else if (resourceId) {
         res = await generateStudyTools(resourceId, selectedTypes);
       } else {

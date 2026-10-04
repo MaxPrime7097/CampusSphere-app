@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Folder, FolderOpen, Download, Spinner as Loader2, DotsThreeVertical as MoreVertical, Pencil, Trash as Trash2 } from "@phosphor-icons/react";
+import { Folder, FolderOpen, Download, Spinner as Loader2, DotsThreeVertical as MoreVertical, PencilSimple, Trash as Trash2 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -90,7 +90,7 @@ export function FolderCard({
                   }}
                   className="text-xs"
                 >
-                  <Pencil className="h-3.5 w-3.5 mr-2" /> Renommer
+                  <PencilSimple className="h-3.5 w-3.5 mr-2" /> Renommer
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-xs text-destructive font-medium"

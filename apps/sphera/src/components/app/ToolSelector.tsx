@@ -1,6 +1,6 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import { FileText, Stack as SquareStack, Brain as BrainCircuit, CheckCircle as CheckCircle2, Stack as Layers, GitFork, Waveform as AudioLines, ChatCircle as MessageSquare } from "@phosphor-icons/react";
+import { FileText, Cards, Question, CheckCircle as CheckCircle2, GitFork, Waveform, ChatCircle as MessageSquare } from "@phosphor-icons/react";
 import type { ToolType } from '../../services/spheraApi'
 export type { ToolType }
 
@@ -18,21 +18,21 @@ export function ToolSelector({ selectedTools, onToolSelect }: ToolSelectorProps)
       title: t('tools.fiche.title'),
       desc: t('tools.fiche.desc'),
       icon: <FileText className="w-5 h-5" />,
-      colorClass: "text-blue-400"
+      colorClass: "text-cyan-400"
     },
     {
       id: 'quiz',
       title: t('tools.quiz.title'),
       desc: t('tools.quiz.desc'),
-      icon: <BrainCircuit className="w-5 h-5" />,
-      colorClass: "text-purple-400"
+      icon: <Question className="w-5 h-5" />,
+      colorClass: "text-rose-400"
     },
     {
       id: 'flashcards' as ToolType,
       title: t('tools.flashcards.title'),
       desc: t('tools.flashcards.desc'),
-      icon: <SquareStack className="w-5 h-5" />,
-      colorClass: "text-green-400"
+      icon: <Cards className="w-5 h-5" />,
+      colorClass: "text-orange-400"
     },
     {
       id: 'mindmap' as ToolType,
@@ -45,8 +45,8 @@ export function ToolSelector({ selectedTools, onToolSelect }: ToolSelectorProps)
       id: 'audio' as ToolType,
       title: t('tools.audio.title'),
       desc: t('tools.audio.desc'),
-      icon: <AudioLines className="w-5 h-5" />,
-      colorClass: "text-teal-400"
+      icon: <Waveform className="w-5 h-5" />,
+      colorClass: "text-purple-400"
     }
   ]
 

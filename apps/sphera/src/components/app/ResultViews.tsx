@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { FileText, Brain as BrainCircuit, List, CheckCircle as CheckCircle2, Question as HelpCircle, Dot as CircleSmall, Lightbulb, CaretDown as ChevronDown, CaretRight as ChevronRight, Timer, Trophy, XCircle, ArrowCounterClockwise as RotateCcw, ArrowCounterClockwise as RefreshCcw, Code as Code2, Calculator, AlignLeft, Target, BookOpen, BookmarkSimple as BookMarked, Medal as Award, Stack as Layers, Lightning as Zap, GitFork, Waveform as AudioLines, Play, Pause, SpeakerHigh as Volume2, Download, Crosshair as LocateFixed, Sparkle as Sparkles, ArrowsOut as Maximize2, ArrowsIn as Minimize2, Network, Eye, Check, Copy, MagnifyingGlass as Search, CaretUpDown as ChevronsUpDown, Funnel as Filter, X, CaretUp as ChevronUp } from "@phosphor-icons/react";
-import ReactFlow, { Background, Controls, type Node, type Edge, type ReactFlowInstance } from 'reactflow'
+import { FileText, Brain as BrainCircuit, List, CheckCircle as CheckCircle2, Question as HelpCircle, Dot as CircleSmall, Lightbulb, CaretDown as ChevronDown, CaretRight as ChevronRight, Timer, Trophy, XCircle, ArrowCounterClockwise as RotateCcw, ArrowClockwise as RotateCw, ArrowCounterClockwise as RefreshCcw, Code as Code2, Calculator, AlignLeft, Target, BookOpen, BookmarkSimple as BookMarked, Medal as Award, Stack as Layers, Lightning as Zap, GitFork, Waveform as AudioLines, Play, Pause, SpeakerHigh as Volume2, SpeakerSimpleHigh, SpeakerSimpleSlash, Download, Crosshair as LocateFixed, Sparkle as Sparkles, ArrowsOut as Maximize2, ArrowsIn as Minimize2, Eye, Check, Copy, MagnifyingGlass as Search, CaretUpDown as ChevronsUpDown, Funnel as Filter, X, CaretUp as ChevronUp, Scales, ChatCircle } from "@phosphor-icons/react";
+import ReactFlow, { Background, Controls, Position, type Node, type Edge, type ReactFlowInstance } from 'reactflow'
 import 'reactflow/dist/style.css'
 import DownloadPDFButton from '../shared/DownloadPDFButton'
 import { useDownloadPDF } from '../../hooks/useDownloadPDF'
+import { usePodcastPlayer, podcastStore, getPodcastVoiceData } from '../../utils/podcastPlayerStore'
 
 const formatText = (text: any) => {
   if (!text || typeof text !== 'string') return text;
@@ -193,11 +194,47 @@ export function FicheView({ content, sourceName }: { content: any; sourceName?: 
 
 const TIMER_SECONDS = 30
 
-export function QuizView({ content }: { content: any }) {
+export function QuizView({
+  content,
+  sessionId,
+  artefactId,
+  onAskQuestion,
+  onPause,
+}: {
+  content: any
+  sessionId?: string | number
+  artefactId?: string | number
+  onAskQuestion?: (prompt: string) => void
+  onPause?: () => void
+}) {
   const { t } = useTranslation('study')
   const qData = content?.quiz || content || {}
   const questions = Array.isArray(qData.questions) ? qData.questions : []
-  
+
+  const storageKey = useMemo(
+    () => `sphera_quiz_prog_${sessionId || 'local'}_${artefactId || 'main'}`,
+    [sessionId, artefactId]
+  )
+
+  const [savedProgress, setSavedProgress] = useState<{
+    currentIndex: number
+    score: number
+    answers: Array<{ selected: string | null; correct: boolean }>
+  } | null>(() => {
+    try {
+      const raw = localStorage.getItem(`sphera_quiz_prog_${sessionId || 'local'}_${artefactId || 'main'}`)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (typeof parsed.currentIndex === 'number' && parsed.currentIndex > 0 && Array.isArray(parsed.answers)) {
+          return parsed
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return null
+  })
+
   const [currentIndex, setCurrentIndex] = useState(0)
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
   const [score, setScore] = useState(0)
@@ -207,10 +244,72 @@ export function QuizView({ content }: { content: any }) {
   const [answers, setAnswers] = useState<Array<{ selected: string | null; correct: boolean }>>([])
   const [showExplanation, setShowExplanation] = useState(false)
 
+  // Save progress automatically
+  useEffect(() => {
+    if (currentIndex > 0 && !finished && answers.length > 0) {
+      try {
+        localStorage.setItem(
+          storageKey,
+          JSON.stringify({
+            currentIndex,
+            score,
+            answers,
+            timestamp: Date.now(),
+          })
+        )
+      } catch {}
+    }
+  }, [currentIndex, score, answers, finished, storageKey])
+
+  // Clear saved progress on finish
+  useEffect(() => {
+    if (finished) {
+      try {
+        localStorage.removeItem(storageKey)
+      } catch {}
+    }
+  }, [finished, storageKey])
+
   if (!questions.length) return <p className="text-sphera-text-muted">{t('resultViews.emptyQuiz')}</p>
 
   const total = questions.length
   const currentQuestion = questions[currentIndex]
+
+  const handleResumeSaved = () => {
+    if (!savedProgress) return
+    setCurrentIndex(savedProgress.currentIndex)
+    setScore(savedProgress.score)
+    setAnswers(savedProgress.answers)
+    setSelectedOption(null)
+    setShowExplanation(false)
+    setTimeLeft(TIMER_SECONDS)
+    setTimerActive(true)
+    setSavedProgress(null)
+  }
+
+  const handleDismissSaved = () => {
+    try {
+      localStorage.removeItem(storageKey)
+    } catch {}
+    setSavedProgress(null)
+  }
+
+  const handlePause = () => {
+    try {
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify({
+          currentIndex,
+          score,
+          answers,
+          timestamp: Date.now(),
+        })
+      )
+    } catch {}
+    if (onPause) {
+      onPause()
+    }
+  }
 
   const handleTimeout = useCallback(() => {
     if (selectedOption !== null) return;
@@ -253,6 +352,10 @@ export function QuizView({ content }: { content: any }) {
   }
 
   const handleRestart = () => {
+    try {
+      localStorage.removeItem(storageKey);
+    } catch {}
+    setSavedProgress(null);
     setCurrentIndex(0);
     setSelectedOption(null);
     setScore(0);
@@ -275,7 +378,7 @@ export function QuizView({ content }: { content: any }) {
     else if (pct >= 60) { message = t('resultViews.quizMessageGood'); }
 
     return (
-      <div className="space-y-6 max-w-2xl mx-auto pb-8">
+      <div className="space-y-6 max-w-2xl mx-auto pb-8 animate-in fade-in">
         <div className="text-center p-8 bg-sphera-surface-2 rounded-2xl border border-sphera-border">
           <div className="w-16 h-16 rounded-2xl bg-sphera-green/15 text-sphera-green flex items-center justify-center mx-auto mb-4 border border-sphera-green/30">
             <Trophy className="w-8 h-8" />
@@ -293,8 +396,8 @@ export function QuizView({ content }: { content: any }) {
         <div className="space-y-3">
           <h3 className="font-semibold text-white mb-4">{t('resultViews.recapTitle')}</h3>
           {answers.map((ans, i) => (
-            <div key={i} className={`flex flex-col sm:flex-row gap-3 rounded-xl p-4 border text-sm ${ans.correct ? "border-sphera-green/30 bg-sphera-green/5" : "border-red-500/30 bg-red-500/5"}`}>
-              <div className="flex items-center gap-3 w-full">
+            <div key={i} className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl p-4 border text-sm ${ans.correct ? "border-sphera-green/30 bg-sphera-green/5" : "border-red-500/30 bg-red-500/5"}`}>
+              <div className="flex items-center gap-3 min-w-0 flex-1">
                 {ans.correct ? <CheckCircle2 className="h-5 w-5 text-sphera-green flex-shrink-0" /> : <XCircle className="h-5 w-5 text-red-500 flex-shrink-0" />}
                 <div className="flex-1 text-white leading-relaxed">
                   <span className="font-bold mr-2">Q{i + 1}.</span> {formatText(questions[i]?.question)}
@@ -305,6 +408,25 @@ export function QuizView({ content }: { content: any }) {
                   </span>
                 )}
               </div>
+              {onAskQuestion && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const qObj = questions[i]
+                    const qText = qObj?.question || ''
+                    const rightAns = `${qObj?.bonne_reponse} - ${qObj?.options?.find((o: string) => o.startsWith(qObj?.bonne_reponse)) || ''}`
+                    const myAns = ans.selected || 'Non répondue'
+                    const expl = qObj?.explication || ''
+                    const prompt = `Concernant la question ${i + 1} du quiz :\n"${qText}"\n\nJ'ai répondu : "${myAns}" (Bonne réponse : "${rightAns}")\nExplication : "${expl}"\n\nPeux-tu m'expliquer ce concept plus en détail avec des exemples simples ?`
+                    onAskQuestion(prompt)
+                  }}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-xs text-sphera-text-muted hover:text-sphera-green transition-colors shrink-0 self-end sm:self-center"
+                  title="Poser une question à Sphera sur cette question"
+                >
+                  <ChatCircle className="w-3.5 h-3.5 text-sphera-green" />
+                  <span>Demander à Sphera</span>
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -320,14 +442,60 @@ export function QuizView({ content }: { content: any }) {
 
   return (
     <div className="space-y-5 max-w-2xl mx-auto pb-8">
+      {/* Saved Progress Banner */}
+      {savedProgress && (
+        <div className="p-4 rounded-xl border border-sphera-green/40 bg-sphera-green/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-sphera-green/20 text-sphera-green flex items-center justify-center shrink-0">
+              <RotateCcw className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-white">Progression précédente détectée</p>
+              <p className="text-[11px] text-sphera-text-muted">
+                Question {savedProgress.currentIndex + 1} sur {total} • Score : {savedProgress.score} pt{savedProgress.score > 1 ? 's' : ''}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleDismissSaved}
+              className="px-3 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-xs text-sphera-text-muted hover:text-white transition-colors"
+            >
+              Recommencer
+            </button>
+            <button
+              type="button"
+              onClick={handleResumeSaved}
+              className="px-3 py-1.5 rounded-lg bg-sphera-green text-black font-semibold text-xs hover:bg-green-400 transition-colors shadow-xs"
+            >
+              Reprendre
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between text-sm">
         <span className="text-sphera-text-muted font-medium">
           Question <span className="text-white font-bold">{currentIndex + 1}</span> / {total}
         </span>
-        <div className="bg-sphera-surface px-3 py-1.5 rounded-full border border-sphera-border flex items-center gap-2">
-          <Trophy className="h-3.5 w-3.5 text-yellow-500" />
-          <span className="text-white font-semibold">{t('resultViews.points', { count: score })}</span>
+        <div className="flex items-center gap-2">
+          {currentIndex > 0 && onPause && (
+            <button
+              type="button"
+              onClick={handlePause}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-[11px] text-sphera-text-muted hover:text-white transition-colors"
+              title="Sauvegarder et continuer plus tard"
+            >
+              <Pause className="w-3.5 h-3.5" />
+              <span>Continuer plus tard</span>
+            </button>
+          )}
+          <div className="bg-sphera-surface px-3 py-1.5 rounded-full border border-sphera-border flex items-center gap-2">
+            <Trophy className="h-3.5 w-3.5 text-yellow-500" />
+            <span className="text-white font-semibold">{t('resultViews.points', { count: score })}</span>
+          </div>
         </div>
       </div>
 
@@ -418,6 +586,26 @@ export function QuizView({ content }: { content: any }) {
             )}
           </p>
           <div className="opacity-90">{formatText(currentQuestion.explication)}</div>
+
+          {onAskQuestion && (
+            <div className="pt-3 mt-3 border-t border-sphera-border/40 flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  const qText = currentQuestion.question || ''
+                  const myAns = selectedOption ? `${selectedOption} - ${currentQuestion.options?.find((o: string) => o.startsWith(selectedOption)) || ''}` : 'Aucune'
+                  const rightAns = `${currentQuestion.bonne_reponse} - ${currentQuestion.options?.find((o: string) => o.startsWith(currentQuestion.bonne_reponse)) || ''}`
+                  const expl = currentQuestion.explication || ''
+                  const prompt = `Concernant la question du quiz :\n"${qText}"\n\nMa réponse était : "${myAns}"\nLa bonne réponse est : "${rightAns}"\nExplication : "${expl}"\n\nPeux-tu m'expliquer en détail pourquoi c'est cette réponse et me donner un moyen mnémotechnique ou un exemple pour bien comprendre ?`
+                  onAskQuestion(prompt)
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-xs font-medium text-white hover:text-sphera-green transition-all shadow-xs"
+              >
+                <ChatCircle weight="duotone" className="w-4 h-4 text-sphera-green" />
+                <span>Demander à Sphera</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -434,11 +622,45 @@ export function QuizView({ content }: { content: any }) {
   )
 }
 
-export function FlashcardsView({ content }: { content: any }) {
+export function FlashcardsView({
+  content,
+  sessionId,
+  artefactId,
+  onAskQuestion,
+  onPause,
+}: {
+  content: any
+  sessionId?: string | number
+  artefactId?: string | number
+  onAskQuestion?: (prompt: string) => void
+  onPause?: () => void
+}) {
   const { t } = useTranslation('study')
   const fData = content?.flashcards || content || {}
   const cartes = Array.isArray(fData.cartes) ? fData.cartes : []
   const total = cartes.length
+
+  const storageKey = useMemo(
+    () => `sphera_fc_prog_${sessionId || 'local'}_${artefactId || 'main'}`,
+    [sessionId, artefactId]
+  )
+
+  const [savedProgress, setSavedProgress] = useState<{
+    currentIndex: number
+    known: number[]
+    review: number[]
+  } | null>(() => {
+    try {
+      const raw = localStorage.getItem(`sphera_fc_prog_${sessionId || 'local'}_${artefactId || 'main'}`)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (typeof parsed.currentIndex === 'number' && parsed.currentIndex > 0 && Array.isArray(parsed.known)) {
+          return parsed
+        }
+      }
+    } catch {}
+    return null
+  })
 
   const [currentIndex, setCurrentIndex] = useState(0)
   const [flipped, setFlipped] = useState(false)
@@ -446,9 +668,68 @@ export function FlashcardsView({ content }: { content: any }) {
   const [review, setReview] = useState<Set<number>>(new Set())
   const [finished, setFinished] = useState(false)
 
+  // Save progress automatically
+  useEffect(() => {
+    if (currentIndex > 0 && !finished && (known.size > 0 || review.size > 0)) {
+      try {
+        localStorage.setItem(
+          storageKey,
+          JSON.stringify({
+            currentIndex,
+            known: Array.from(known),
+            review: Array.from(review),
+            timestamp: Date.now(),
+          })
+        )
+      } catch {}
+    }
+  }, [currentIndex, known, review, finished, storageKey])
+
+  // Clear when finished
+  useEffect(() => {
+    if (finished) {
+      try {
+        localStorage.removeItem(storageKey)
+      } catch {}
+    }
+  }, [finished, storageKey])
+
   if (!total) return <p className="text-sphera-text-muted">{t('resultViews.emptyFlashcards')}</p>
 
   const currentCard = cartes[currentIndex]
+
+  const handleResumeSaved = () => {
+    if (!savedProgress) return
+    setCurrentIndex(savedProgress.currentIndex)
+    setKnown(new Set(savedProgress.known))
+    setReview(new Set(savedProgress.review))
+    setFlipped(false)
+    setSavedProgress(null)
+  }
+
+  const handleDismissSaved = () => {
+    try {
+      localStorage.removeItem(storageKey)
+    } catch {}
+    setSavedProgress(null)
+  }
+
+  const handlePause = () => {
+    try {
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify({
+          currentIndex,
+          known: Array.from(known),
+          review: Array.from(review),
+          timestamp: Date.now(),
+        })
+      )
+    } catch {}
+    if (onPause) {
+      onPause()
+    }
+  }
 
   const handleKnew = () => {
     setKnown(prev => new Set(prev).add(currentIndex));
@@ -470,6 +751,10 @@ export function FlashcardsView({ content }: { content: any }) {
   }
 
   const handleRestart = () => {
+    try {
+      localStorage.removeItem(storageKey);
+    } catch {}
+    setSavedProgress(null);
     setCurrentIndex(0);
     setFlipped(false);
     setKnown(new Set());
@@ -478,6 +763,10 @@ export function FlashcardsView({ content }: { content: any }) {
   }
 
   const handleRestartReview = () => {
+    try {
+      localStorage.removeItem(storageKey);
+    } catch {}
+    setSavedProgress(null);
     setCurrentIndex(0);
     setFlipped(false);
     setKnown(new Set());
@@ -491,7 +780,7 @@ export function FlashcardsView({ content }: { content: any }) {
     const reviewCards = cartes.filter((_, i) => !known.has(i));
 
     return (
-      <div className="space-y-6 max-w-2xl mx-auto pb-8">
+      <div className="space-y-6 max-w-2xl mx-auto pb-8 animate-in fade-in">
         <div className="text-center p-8 bg-sphera-surface-2 rounded-2xl border border-sphera-border">
           <div className="w-16 h-16 rounded-2xl bg-sphera-green/15 text-sphera-green flex items-center justify-center mx-auto mb-4 border border-sphera-green/30">
             {knownCount === total ? <Trophy className="w-8 h-8" /> : <BookOpen className="w-8 h-8" />}
@@ -513,9 +802,25 @@ export function FlashcardsView({ content }: { content: any }) {
               <RefreshCcw className="h-5 w-5 text-yellow-500" /> {t('resultViews.flashcardsToReview')}
             </h3>
             {reviewCards.map((card: any, i: number) => (
-              <div key={i} className="border border-red-500/30 bg-red-500/5 rounded-xl p-4">
-                <p className="text-sm font-semibold text-red-400 mb-2">{formatText(card.recto)}</p>
-                <div className="text-sm text-sphera-text-muted leading-relaxed">{formatText(card.verso)}</div>
+              <div key={i} className="border border-red-500/30 bg-red-500/5 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-red-400 mb-1">{formatText(card.recto)}</p>
+                  <div className="text-sm text-sphera-text-muted leading-relaxed">{formatText(card.verso)}</div>
+                </div>
+                {onAskQuestion && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const prompt = `Concernant la carte de révision :\n- Notion / Recto : "${card.recto}"\n- Définition / Verso : "${card.verso}"\n\nPeux-tu m'expliquer ce point en détail et m'aider à le retenir ?`
+                      onAskQuestion(prompt)
+                    }}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-xs text-sphera-text-muted hover:text-sphera-green transition-colors shrink-0 self-end sm:self-center"
+                    title="Demander de l'aide à Sphera sur cette carte"
+                  >
+                    <ChatCircle className="w-3.5 h-3.5 text-sphera-green" />
+                    <span>Demander à Sphera</span>
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -537,12 +842,56 @@ export function FlashcardsView({ content }: { content: any }) {
 
   return (
     <div className="max-w-2xl mx-auto pb-12 space-y-5">
-      {/* Progression */}
+      {/* Saved Progress Banner */}
+      {savedProgress && (
+        <div className="p-4 rounded-xl border border-sphera-green/40 bg-sphera-green/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-sphera-green/20 text-sphera-green flex items-center justify-center shrink-0">
+              <RotateCcw className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-white">Session de révision détectée</p>
+              <p className="text-[11px] text-sphera-text-muted">
+                Carte {savedProgress.currentIndex + 1} sur {total} • {savedProgress.known.length} maîtrisée(s)
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleDismissSaved}
+              className="px-3 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-xs text-sphera-text-muted hover:text-white transition-colors"
+            >
+              Recommencer
+            </button>
+            <button
+              type="button"
+              onClick={handleResumeSaved}
+              className="px-3 py-1.5 rounded-lg bg-sphera-green text-black font-semibold text-xs hover:bg-green-400 transition-colors shadow-xs"
+            >
+              Reprendre
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Progression & Header */}
       <div className="flex items-center justify-between text-sm">
         <span className="text-sphera-text-muted font-medium">
           Carte <span className="text-white font-bold">{currentIndex + 1}</span> / {total}
         </span>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          {currentIndex > 0 && onPause && (
+            <button
+              type="button"
+              onClick={handlePause}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-[11px] text-sphera-text-muted hover:text-white transition-colors"
+              title="Sauvegarder et continuer plus tard"
+            >
+              <Pause className="w-3.5 h-3.5" />
+              <span>Continuer plus tard</span>
+            </button>
+          )}
           {known.size > 0 && (
             <span className="bg-sphera-green/10 text-sphera-green border border-sphera-green/20 px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1">
               <CheckCircle2 className="h-3.5 w-3.5" /> {t('resultViews.knownBadge', { count: known.size })}
@@ -600,8 +949,26 @@ export function FlashcardsView({ content }: { content: any }) {
         </div>
       </div>
 
+      {/* Ask Sphera button when flipped */}
+      {flipped && onAskQuestion && (
+        <div className="flex justify-center animate-in fade-in duration-200">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              const prompt = `Concernant la flashcard de révision :\n- Recto (Concept / Question) : "${currentCard.recto}"\n- Verso (Réponse / Définition) : "${currentCard.verso}"\n\nPeux-tu approfondir ce concept avec des explications claires et des exemples concrets d'application ?`
+              onAskQuestion(prompt)
+            }}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-xs font-medium text-white hover:text-sphera-green transition-all shadow-xs"
+          >
+            <ChatCircle weight="duotone" className="w-4 h-4 text-sphera-green" />
+            <span>Demander des explications à Sphera</span>
+          </button>
+        </div>
+      )}
+
       {/* Actions */}
-      <div className="pt-4 h-16">
+      <div className="pt-2 h-16">
         {flipped ? (
           <div className="flex gap-3 animate-in fade-in zoom-in duration-300">
             <button
@@ -921,16 +1288,135 @@ function AdaptiveAnswer({ question }: { question: any }) {
   );
 }
 
+function AskSpheraButton({
+  questionNum,
+  enonce,
+  onAskQuestion,
+}: {
+  questionNum: number | string;
+  enonce: string;
+  onAskQuestion?: (prompt: string) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as any)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [isOpen]);
+
+  if (!onAskQuestion) return null;
+
+  const enonceShort = enonce ? (enonce.length > 80 ? enonce.slice(0, 80) + '...' : enonce) : '';
+
+  return (
+    <div className="relative inline-block" ref={containerRef}>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen((v) => !v);
+        }}
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-sphera-surface hover:bg-sphera-surface-2 border border-sphera-border text-sphera-green hover:border-sphera-green/50 transition-all cursor-pointer shadow-xs active:scale-95"
+        title="Poser une question ciblée à Sphera sur cette correction"
+      >
+        <Sparkles weight="fill" className="w-3.5 h-3.5 text-sphera-green" />
+        <span>Demander à Sphera</span>
+        <ChevronDown className={`w-3 h-3 text-sphera-text-muted transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="absolute right-0 bottom-full mb-2 w-72 sm:w-80 p-2 rounded-xl border border-sphera-border bg-sphera-surface-2/95 backdrop-blur-md shadow-2xl z-50 text-xs animate-in fade-in zoom-in-95 duration-150 space-y-1 origin-bottom-right"
+        >
+          <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-sphera-text-muted">
+            Actions rapides Q{questionNum}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setIsOpen(false);
+              onAskQuestion(`Peux-tu m'expliquer pas à pas la correction de la question Q${questionNum} : "${enonceShort}" ? Je n'ai pas bien compris le raisonnement.`);
+            }}
+            className="flex items-start gap-2.5 w-full p-2 rounded-lg text-left hover:bg-sphera-surface transition-colors group cursor-pointer"
+          >
+            <ChatCircle weight="duotone" className="w-4 h-4 text-sphera-green shrink-0 mt-0.5" />
+            <div className="min-w-0">
+              <p className="text-white font-medium group-hover:text-sphera-green transition-colors">Expliquer cette question</p>
+              <p className="text-[11px] text-sphera-text-muted truncate">Détailler le raisonnement et les formules</p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setIsOpen(false);
+              onAskQuestion(`Donne-moi un exercice d'entraînement similaire à la question Q${questionNum} ("${enonceShort}") avec son énoncé complet et sa correction détaillée.`);
+            }}
+            className="flex items-start gap-2.5 w-full p-2 rounded-lg text-left hover:bg-sphera-surface transition-colors group cursor-pointer"
+          >
+            <Target weight="duotone" className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+            <div className="min-w-0">
+              <p className="text-white font-medium group-hover:text-cyan-400 transition-colors">Exercice similaire</p>
+              <p className="text-[11px] text-sphera-text-muted truncate">S'entraîner sur la même notion avec corrigé</p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setIsOpen(false);
+              onAskQuestion(`Pour la question Q${questionNum}, je voudrais tester une autre méthode de résolution. Peux-tu analyser si d'autres démarches sont acceptées au barème ?`);
+            }}
+            className="flex items-start gap-2.5 w-full p-2 rounded-lg text-left hover:bg-sphera-surface transition-colors group cursor-pointer"
+          >
+            <Scales weight="duotone" className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
+            <div className="min-w-0">
+              <p className="text-white font-medium group-hover:text-purple-400 transition-colors">Tester une autre méthode</p>
+              <p className="text-[11px] text-sphera-text-muted truncate">Vérifier la validité et le barème indicatif</p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setIsOpen(false);
+              onAskQuestion(`Quels sont les pièges classiques et astuces de rédaction pour la question Q${questionNum} ? Comment s'assurer d'obtenir le maximum de points ?`);
+            }}
+            className="flex items-start gap-2.5 w-full p-2 rounded-lg text-left hover:bg-sphera-surface transition-colors group cursor-pointer"
+          >
+            <Zap weight="duotone" className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <div className="min-w-0">
+              <p className="text-white font-medium group-hover:text-amber-400 transition-colors">Astuces & pièges d'examen</p>
+              <p className="text-[11px] text-sphera-text-muted truncate">Ce que les examinateurs sanctionnent</p>
+            </div>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function QuestionCard({
   question,
   mode,
   isOpen,
   onToggle,
+  onAskQuestion,
 }: {
   question: any;
   mode?: 'complete' | 'rapide';
   isOpen?: boolean;
   onToggle?: () => void;
+  onAskQuestion?: (prompt: string) => void;
 }) {
   const [localOpen, setLocalOpen] = useState(false);
   const open = isOpen !== undefined ? isOpen : localOpen;
@@ -967,17 +1453,23 @@ function QuestionCard({
               {formatText(repDirecte)}
             </div>
 
-            {(question.explication || question.source_cours || question.a_retenir) && (
-              <div>
+            <div className="flex items-center justify-between pt-1 gap-2 flex-wrap">
+              {(question.explication || question.source_cours || question.a_retenir) ? (
                 <button
                   type="button"
                   onClick={() => setLocalOpen(v => !v)}
-                  className="text-xs text-[#ff9800] hover:text-[#ff9800]/80 font-medium inline-flex items-center gap-1 transition-colors"
+                  className="text-xs text-[#ff9800] hover:text-[#ff9800]/80 font-medium inline-flex items-center gap-1 transition-colors cursor-pointer"
                 >
                   {localOpen ? 'Masquer les détails' : 'Afficher l\'explication et les détails'}
                   <ChevronDown className={`w-3 h-3 transition-transform ${localOpen ? 'rotate-180' : ''}`} />
                 </button>
-                {localOpen && <AdaptiveAnswer question={question} />}
+              ) : <div />}
+              <AskSpheraButton questionNum={num} enonce={enonce} onAskQuestion={onAskQuestion} />
+            </div>
+
+            {localOpen && (
+              <div className="pt-2 animate-in fade-in">
+                <AdaptiveAnswer question={question} />
               </div>
             )}
           </div>
@@ -1015,20 +1507,37 @@ function QuestionCard({
       {open && (
         <div className="px-5 pb-5 pt-1 space-y-3 animate-in fade-in slide-in-from-top-1 border-t border-sphera-border/40">
           <AdaptiveAnswer question={question} />
+          <div className="flex items-center justify-between pt-3 border-t border-sphera-border/30">
+            <span className="text-[11px] text-sphera-text-muted">Besoin d'aide ou d'approfondir cette question ?</span>
+            <AskSpheraButton questionNum={num} enonce={enonce} onAskQuestion={onAskQuestion} />
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-export function AnnaleView({ annale, sourceName }: { annale: any; sourceName?: string }) {
+export function AnnaleView({
+  annale,
+  sourceName,
+  onAskQuestion,
+}: {
+  annale: any;
+  sourceName?: string;
+  onAskQuestion?: (prompt: string) => void;
+}) {
   const { t } = useTranslation('study')
   const rawAnnale = annale || {};
   let content = rawAnnale.content !== undefined ? rawAnnale.content : rawAnnale;
   if (typeof content === 'string') {
     try { content = JSON.parse(content); } catch {}
   }
-  const mode = rawAnnale.mode || content?.mode || 'complete';
+  const mode: 'rapide' | 'complete' =
+    rawAnnale?.type === 'annale_rapide'
+      ? 'rapide'
+      : rawAnnale?.type === 'annale_complete'
+      ? 'complete'
+      : (content?.mode === 'rapide' || rawAnnale?.mode === 'rapide' ? 'rapide' : 'complete');
   const isRawArray = Array.isArray(content);
   const rawSections: any[] = !isRawArray && (Array.isArray(content?.sections) ? content.sections : (Array.isArray(content?.parties) ? content.parties : []));
   const hasSections = Array.isArray(rawSections) && rawSections.length > 0;
@@ -1249,6 +1758,7 @@ export function AnnaleView({ annale, sourceName }: { annale: any; sourceName?: s
                       mode={mode}
                       isOpen={expandedMap[q._key] ?? areAllExpanded}
                       onToggle={() => toggleQuestion(q._key)}
+                      onAskQuestion={onAskQuestion}
                     />
                   ))}
                 </div>
@@ -1268,6 +1778,7 @@ export function AnnaleView({ annale, sourceName }: { annale: any; sourceName?: s
               mode={mode}
               isOpen={expandedMap[q._key] ?? areAllExpanded}
               onToggle={() => toggleQuestion(q._key)}
+              onAskQuestion={onAskQuestion}
             />
           ))}
         </div>
@@ -1399,110 +1910,143 @@ export function MindmapView({ content }: { content: any }) {
     }
   };
 
-  // Build the radial node-link structure for ReactFlow
+  // Build the Horizontal Tree (Left-to-Right) structure for ReactFlow
   const { nodes, edges } = useMemo<FlowData>(() => {
     const nodesList: Node[] = [];
     const edgesList: Edge[] = [];
 
-    const centerX = 650;
-    const centerY = 450;
+    const branchCount = branches.length;
+    if (branchCount === 0) {
+      nodesList.push({
+        id: 'central',
+        sourcePosition: Position.Right,
+        targetPosition: Position.Left,
+        data: {
+          label: (
+            <div className="p-3 text-center select-none font-bold text-sm text-white">
+              {centralNode}
+            </div>
+          ),
+        },
+        position: { x: 50, y: 150 },
+        style: {
+          background: 'rgba(24, 27, 36, 0.96)',
+          border: '1px solid rgba(255, 255, 255, 0.12)',
+          borderRadius: '12px',
+          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
+          color: '#fff',
+          minWidth: 180,
+          maxWidth: 240,
+        },
+      });
+      return { nodes: nodesList, edges: edgesList };
+    }
 
-    // Central core node
+    const SUB_ITEM_HEIGHT = 56;
+    const BRANCH_GAP = 20;
+
+    const branchHeights = branches.map((b, i) => {
+      const isCollapsed = Boolean(collapsedBranches[i]);
+      const subCount = Array.isArray(b.sous_branches) ? b.sous_branches.length : 0;
+      if (isCollapsed || subCount === 0) return 56;
+      return Math.max(56, subCount * SUB_ITEM_HEIGHT);
+    });
+
+    const totalTreeHeight = branchHeights.reduce((acc, h) => acc + h + BRANCH_GAP, 0) - BRANCH_GAP;
+    const startY = 40;
+    const centralY = startY + totalTreeHeight / 2 - 30;
+
+    // Central core node on the left
     nodesList.push({
       id: 'central',
+      sourcePosition: Position.Right,
+      targetPosition: Position.Left,
       data: {
         label: (
-          <div className="flex flex-col items-center justify-center p-3.5 text-center select-none cursor-pointer">
-            <span className="font-extrabold text-sm sm:text-base text-white leading-snug">
+          <div className="flex flex-col items-start p-3 select-none cursor-pointer">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 mb-0.5">
+              Sujet central
+            </span>
+            <span className="font-bold text-sm text-white leading-snug">
               {centralNode}
             </span>
-            <span className="text-[10px] text-emerald-400/60 mt-1 font-mono">
-              {t('resultViews.themesCount', { count: branches.length })}
+            <span className="text-[10px] text-sphera-text-muted mt-1 font-mono">
+              {branches.length} branches principales
             </span>
           </div>
         ),
       },
-      position: { x: centerX, y: centerY },
+      position: { x: 40, y: Math.max(40, centralY) },
       style: {
-        background: 'rgba(15, 23, 42, 0.95)',
-        border: '2.5px solid #10B981',
-        borderRadius: '18px',
-        boxShadow: '0 0 35px rgba(16, 185, 129, 0.35), inset 0 0 15px rgba(16, 185, 129, 0.15)',
+        background: 'rgba(22, 25, 34, 0.98)',
+        border: '1px solid rgba(16, 185, 129, 0.35)',
+        borderRadius: '12px',
+        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)',
         color: '#fff',
         minWidth: 190,
-        maxWidth: 270,
+        maxWidth: 250,
         cursor: 'pointer',
         zIndex: 10,
       },
     });
 
-    const branchCount = branches.length;
-    if (branchCount === 0) return { nodes: nodesList, edges: edgesList };
-
-    // Radial layout around center
-    const radius = Math.max(300, 240 + branchCount * 12);
-    const angleStep = (2 * Math.PI) / branchCount;
+    // Level 1 branches and Level 2 sub-branches horizontally to the right
+    let currentY = startY;
 
     branches.forEach((b: any, i: number) => {
-      const angle = i * angleStep - Math.PI / 2;
-      const bx = centerX + radius * Math.cos(angle);
-      const by = centerY + radius * Math.sin(angle);
       const branchId = `branch-${i}`;
       const color = getBranchColor(b.couleur, i);
-
       const subBranches: any[] = Array.isArray(b.sous_branches) ? b.sous_branches : [];
       const subCount = subBranches.length;
       const isCollapsed = Boolean(collapsedBranches[i]);
+      const currentBranchHeight = branchHeights[i];
+
+      const branchY = currentY + currentBranchHeight / 2 - 25;
 
       nodesList.push({
         id: branchId,
+        sourcePosition: Position.Right,
+        targetPosition: Position.Left,
         data: {
           label: (
-            <div className="flex flex-col gap-1.5 p-2.5 text-left select-none cursor-pointer">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span
-                    className="w-2.5 h-2.5 rounded-full shrink-0"
-                    style={{ backgroundColor: color.hex, boxShadow: `0 0 8px ${color.hex}` }}
-                  />
-                  <span className="font-bold text-xs sm:text-sm text-white leading-tight truncate">
-                    {b.label}
-                  </span>
-                </div>
-                {subCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleBranch(i);
-                    }}
-                    className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full font-bold transition-all border flex items-center gap-1 ${
-                      isCollapsed
-                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30 shadow-sm'
-                        : 'bg-white/10 text-white/70 border-white/20 hover:bg-white/20'
-                    }`}
-                    title={isCollapsed ? "Déplier les sous-concepts" : "Replier les sous-concepts"}
-                  >
-                    <span>{isCollapsed ? `+ ${subCount}` : `- ${subCount}`}</span>
-                  </button>
-                )}
+            <div className="flex items-center justify-between gap-3 p-2.5 text-left select-none cursor-pointer">
+              <div className="flex items-center gap-2 min-w-0">
+                <span
+                  className="w-2.5 h-2.5 rounded-full shrink-0"
+                  style={{ backgroundColor: color.hex }}
+                />
+                <span className="font-semibold text-xs sm:text-sm text-white leading-tight truncate">
+                  {b.label}
+                </span>
               </div>
               {subCount > 0 && (
-                <div className="flex items-center justify-between text-[10px] text-white/45 pl-4 font-mono">
-                  <span>{isCollapsed ? "Cliquer pour déplier" : `${subCount} sous-concepts`}</span>
-                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleBranch(i);
+                  }}
+                  className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full font-bold transition-all border flex items-center gap-0.5 ${
+                    isCollapsed
+                      ? 'bg-sphera-surface-2 text-sphera-text-muted border-sphera-border hover:text-white'
+                      : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                  }`}
+                  title={isCollapsed ? "Déplier les sous-branches" : "Replier les sous-branches"}
+                >
+                  <span>{isCollapsed ? `+ ${subCount}` : `- ${subCount}`}</span>
+                </button>
               )}
             </div>
           ),
         },
-        position: { x: bx, y: by },
+        position: { x: 380, y: branchY },
         style: {
-          background: isCollapsed ? 'rgba(15, 23, 42, 0.98)' : 'rgba(15, 23, 42, 0.92)',
-          border: `2px solid ${color.hex}`,
-          borderRadius: '14px',
-          boxShadow: isCollapsed ? `0 0 25px ${color.glow}` : `0 0 16px ${color.glow}`,
+          background: 'rgba(24, 27, 37, 0.96)',
+          border: `1px solid ${isCollapsed ? 'rgba(255, 255, 255, 0.1)' : `${color.hex}55`}`,
+          borderRadius: '10px',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.25)',
           color: '#fff',
-          minWidth: 170,
+          minWidth: 180,
           maxWidth: 250,
           cursor: 'pointer',
           zIndex: 5,
@@ -1513,40 +2057,38 @@ export function MindmapView({ content }: { content: any }) {
         id: `e-central-${branchId}`,
         source: 'central',
         target: branchId,
-        type: 'default',
-        animated: true,
-        style: { stroke: color.hex, strokeWidth: 2.5 },
+        type: 'smoothstep',
+        style: { stroke: `${color.hex}88`, strokeWidth: 1.5 },
       });
 
-      // Sub-branches radiating outward (only if not collapsed!)
+      // Sub-branches placed horizontally to the right of branch
       if (!isCollapsed && subCount > 0) {
-        const subRadius = radius + 175;
-        const spreadStep = 0.32;
-
         subBranches.forEach((sb: any, j: number) => {
           const subId = `${branchId}-sub-${j}`;
           const subLabel = typeof sb === 'string' ? sb : (sb.label || sb.nom || sb.texte || JSON.stringify(sb));
-          const subAngle = angle + (j - (subCount - 1) / 2) * spreadStep;
-          const sx = centerX + subRadius * Math.cos(subAngle);
-          const sy = centerY + subRadius * Math.sin(subAngle);
+          const subY = currentY + j * SUB_ITEM_HEIGHT + 2;
 
           nodesList.push({
             id: subId,
+            sourcePosition: Position.Right,
+            targetPosition: Position.Left,
             data: {
               label: (
-                <div className="p-1 text-xs text-white/90 leading-snug select-none">
-                  {subLabel}
+                <div className="flex items-start gap-1.5 p-2 text-xs text-white/90 leading-snug select-none">
+                  <span className="text-sphera-text-muted text-[10px] mt-0.5">•</span>
+                  <span>{subLabel}</span>
                 </div>
               ),
             },
-            position: { x: sx, y: sy },
+            position: { x: 700, y: subY },
             style: {
-              background: 'rgba(30, 41, 59, 0.88)',
-              border: `1.5px solid ${color.hex}99`,
-              borderRadius: '10px',
-              boxShadow: '0 2px 10px rgba(0, 0, 0, 0.5)',
+              background: 'rgba(18, 20, 28, 0.94)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '8px',
+              boxShadow: '0 2px 6px rgba(0, 0, 0, 0.2)',
               color: '#e2e8f0',
-              maxWidth: 190,
+              minWidth: 170,
+              maxWidth: 230,
               fontSize: '11px',
               zIndex: 2,
             },
@@ -1556,11 +2098,13 @@ export function MindmapView({ content }: { content: any }) {
             id: `e-${branchId}-${subId}`,
             source: branchId,
             target: subId,
-            type: 'default',
-            style: { stroke: `${color.hex}88`, strokeWidth: 1.5 },
+            type: 'smoothstep',
+            style: { stroke: `${color.hex}55`, strokeWidth: 1.2 },
           });
         });
       }
+
+      currentY += currentBranchHeight + BRANCH_GAP;
     });
 
     return { nodes: nodesList, edges: edgesList };
@@ -1591,96 +2135,92 @@ export function MindmapView({ content }: { content: any }) {
 
   return (
     <div className={`flex flex-col gap-6 ${isFullscreen ? 'fixed inset-0 z-50 bg-[#070b14] p-4 sm:p-6 overflow-hidden' : ''}`}>
-      {/* Mindmap Toolbar */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-sphera-bg border border-sphera-border shadow-md">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <Network className="w-5 h-5 text-emerald-400" />
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">Carte Mentale Interactive</span>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-sphera-surface border border-sphera-border text-sphera-text-muted">
-                {branches.length} branches · {totalSubBranches} sous-points
-              </span>
-            </div>
-            {mapData?.titre && (
-              <h2 className="text-lg sm:text-xl font-bold text-white mt-1">
-                {mapData.titre}
-              </h2>
-            )}
+      {/* Mindmap Sleek Header & Structured Toolbar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-sphera-border/60">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 mb-0.5">
+            <GitFork className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">Carte Mentale</span>
+          </div>
+          {mapData?.titre && (
+            <h2 className="text-base sm:text-lg font-semibold text-white truncate">
+              {mapData.titre}
+            </h2>
+          )}
+        </div>
+
+        {/* Cohesive, structured button toolbar */}
+        <div className="flex items-center gap-2 flex-wrap shrink-0">
+          {/* 1. Mode Switcher (Canvas / Arbre) */}
+          <div className="inline-flex p-0.5 rounded-xl bg-sphera-surface-2 border border-sphera-border shadow-xs">
+            <button
+              type="button"
+              onClick={() => setViewMode('canvas')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-all ${
+                viewMode === 'canvas'
+                  ? 'bg-sphera-surface text-emerald-300 shadow-sm border border-emerald-500/20'
+                  : 'text-sphera-text-muted hover:text-white'
+              }`}
+            >
+              <GitFork className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Canvas</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('tree')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-all ${
+                viewMode === 'tree'
+                  ? 'bg-sphera-surface text-emerald-300 shadow-sm border border-emerald-500/20'
+                  : 'text-sphera-text-muted hover:text-white'
+              }`}
+            >
+              <List className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Arbre</span>
+            </button>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* View switcher */}
-            <div className="flex items-center rounded-lg bg-sphera-surface p-1 border border-sphera-border">
-              <button
-                type="button"
-                onClick={() => setViewMode('canvas')}
-                className={`px-3 py-1 text-xs font-semibold rounded-md flex items-center gap-1.5 transition-colors ${
-                  viewMode === 'canvas'
-                    ? 'bg-emerald-500 text-black shadow'
-                    : 'text-sphera-text-muted hover:text-white'
-                }`}
-              >
-                <Network className="w-3.5 h-3.5" />
-                <span>{t('resultViews.canvasMode')}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode('tree')}
-                className={`px-3 py-1 text-xs font-semibold rounded-md flex items-center gap-1.5 transition-colors ${
-                  viewMode === 'tree'
-                    ? 'bg-emerald-500 text-black shadow'
-                    : 'text-sphera-text-muted hover:text-white'
-                }`}
-              >
-                <List className="w-3.5 h-3.5" />
-                <span>{t('resultViews.treeMode')}</span>
-              </button>
-            </div>
-
-            {/* Fold / Unfold buttons */}
+          {/* 2. Hierarchy Action Pills: Déplier / Replier */}
+          <div className="inline-flex p-0.5 rounded-xl bg-sphera-surface-2 border border-sphera-border shadow-xs">
             <button
               type="button"
               onClick={expandAll}
-              className="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-sphera-surface text-sphera-text-muted hover:text-white border border-sphera-border transition-colors"
-              title={t('resultViews.expandAll')}
+              className="px-2.5 py-1.5 text-xs font-medium rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors"
+              title="Déplier toutes les branches"
             >
-              {t('resultViews.expandAll')}
+              Déplier tout
             </button>
+            <div className="w-px h-3.5 bg-sphera-border/60 self-center mx-0.5" />
             <button
               type="button"
               onClick={collapseAll}
-              className="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-sphera-surface text-sphera-text-muted hover:text-white border border-sphera-border transition-colors"
-              title={t('resultViews.collapseAll')}
+              className="px-2.5 py-1.5 text-xs font-medium rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors"
+              title="Replier toutes les branches"
             >
-              {t('resultViews.collapseAll')}
+              Replier tout
             </button>
-
-            {viewMode === 'canvas' && (
-              <>
-                <div className="h-4 w-px bg-sphera-border mx-0.5" />
-                <button
-                  type="button"
-                  onClick={handleRecenter}
-                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-sphera-surface text-emerald-400 hover:bg-emerald-500/10 border border-emerald-500/30 transition-colors inline-flex items-center gap-1.5"
-                  title={t('resultViews.recenter')}
-                >
-                  <LocateFixed className="w-3.5 h-3.5" />
-                  <span>{t('resultViews.recenter')}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setIsFullscreen(prev => !prev)}
-                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-sphera-surface text-sphera-text-muted hover:text-white border border-sphera-border transition-colors inline-flex items-center gap-1.5"
-                  title={isFullscreen ? "Quitter plein écran" : "Plein écran"}
-                >
-                  {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-                  <span>{isFullscreen ? 'Réduire' : 'Plein écran'}</span>
-                </button>
-              </>
-            )}
           </div>
+
+          {/* 3. Canvas utilities (Recenter & Fullscreen) */}
+          {viewMode === 'canvas' && (
+            <div className="inline-flex p-0.5 rounded-xl bg-sphera-surface-2 border border-sphera-border shadow-xs">
+              <button
+                type="button"
+                onClick={handleRecenter}
+                className="p-1.5 rounded-lg text-sphera-text-muted hover:text-emerald-400 hover:bg-sphera-surface transition-colors"
+                title="Recentrer la carte mentale"
+              >
+                <LocateFixed className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsFullscreen((prev) => !prev)}
+                className="p-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors"
+                title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
+              >
+                {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1723,9 +2263,10 @@ export function MindmapView({ content }: { content: any }) {
         </div>
       ) : (
         /* Hierarchical Outline / Tree View */
-        <div className="space-y-4">
-          <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-500/10 via-sphera-surface-2 to-teal-500/10 border border-emerald-500/30 text-center">
-            <h3 className="text-lg md:text-xl font-extrabold text-white mt-0.5 tracking-tight">
+        <div className="space-y-3">
+          <div className="p-4 rounded-2xl bg-sphera-surface-2 border border-sphera-border text-center">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 mb-0.5 block">Sujet central</span>
+            <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">
               {centralNode}
             </h3>
           </div>
@@ -1738,30 +2279,21 @@ export function MindmapView({ content }: { content: any }) {
             return (
               <div
                 key={i}
-                className="rounded-2xl border transition-all duration-200 overflow-hidden"
-                style={{ borderColor: `${color.hex}55`, backgroundColor: color.bg }}
+                className="rounded-2xl border border-sphera-border bg-sphera-surface-2/60 transition-all duration-200 overflow-hidden hover:border-sphera-border/90"
               >
                 <button
                   type="button"
                   onClick={() => toggleBranch(i)}
-                  className="w-full p-4 sm:p-5 flex items-center justify-between text-left hover:bg-white/[0.03] transition-colors"
+                  className="w-full p-4 sm:p-4.5 flex items-center justify-between text-left hover:bg-white/[0.02] transition-colors"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex items-center gap-2.5 min-w-0">
                     <span
-                      className="w-3 h-3 rounded-full shrink-0"
-                      style={{ backgroundColor: color.hex, boxShadow: `0 0 8px ${color.hex}` }}
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{ backgroundColor: color.hex }}
                     />
-                    <span className="font-bold text-white text-base sm:text-lg truncate">
+                    <span className="font-semibold text-white text-sm sm:text-base truncate">
                       {b.label}
                     </span>
-                    {b.couleur && (
-                      <span
-                        className="text-[10px] px-2 py-0.5 rounded-full border uppercase tracking-wider font-semibold"
-                        style={{ color: color.text, borderColor: `${color.hex}66`, backgroundColor: `${color.hex}22` }}
-                      >
-                        {b.couleur}
-                      </span>
-                    )}
                   </div>
                   <div className="flex items-center gap-3 shrink-0 ml-2">
                     <span className="text-xs text-sphera-text-muted">
@@ -1838,12 +2370,72 @@ function normalizeSpeaker(rawSpeaker: unknown, index: number = 0): 'A' | 'B' {
   return index % 2 === 0 ? 'A' : 'B';
 }
 
-export function AudioSummaryView({ content }: { content: any }) {
-  const { t } = useTranslation('study')
+function LiveVoiceVisualizer({ isPlaying }: { isPlaying: boolean }) {
+  const [frequencies, setFrequencies] = useState<number[]>(() =>
+    new Array(24).fill(6)
+  );
+  const animFrameRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!isPlaying) {
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      setFrequencies(new Array(24).fill(6));
+      return;
+    }
+
+    const update = () => {
+      const data = getPodcastVoiceData(24);
+      setFrequencies(data);
+      animFrameRef.current = requestAnimationFrame(update);
+    };
+
+    animFrameRef.current = requestAnimationFrame(update);
+    return () => {
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    };
+  }, [isPlaying]);
+
+  return (
+    <div className="flex items-center justify-center gap-1 sm:gap-1.5 h-14 py-2 px-4 rounded-xl bg-sphera-surface/50 border border-sphera-border/60 overflow-hidden">
+      {frequencies.map((val, i) => (
+        <div
+          key={i}
+          className={`w-1 sm:w-1.5 rounded-full transition-all duration-75 ${
+            isPlaying && val > 8
+              ? 'bg-gradient-to-t from-purple-600 via-purple-500 to-purple-300 shadow-[0_0_8px_rgba(168,85,247,0.35)]'
+              : 'bg-sphera-text-muted/20'
+          }`}
+          style={{
+            height: `${Math.max(8, val)}%`,
+            minHeight: '4px',
+            maxHeight: '100%',
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+export function AudioSummaryView({
+  content,
+  sessionId,
+}: {
+  content: any;
+  sessionId?: string | number;
+}) {
+  const { t } = useTranslation('study');
   const audioData = content?.audio || content || {};
   const dialogue: Array<{ speaker: string; text: string }> = Array.isArray(audioData?.dialogue) ? audioData.dialogue : [];
   const audioUrl: string | undefined = audioData?.audioUrl;
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const podcast = usePodcastPlayer();
+  const currentTitle = audioData?.titre || "Podcast de révision";
+
+  const isCurrentAudio = podcast.isActive && (podcast.audioUrl === audioUrl || podcast.title === currentTitle);
+  const isPlaying = isCurrentAudio && podcast.isPlaying;
+  const currentTime = isCurrentAudio ? podcast.currentTime : 0;
+  const duration = isCurrentAudio ? podcast.duration : (audioUrl ? 0 : dialogue.length);
+  const playbackSpeed = isCurrentAudio ? podcast.playbackSpeed : 1;
 
   const normalizedDialogue = useMemo(() => {
     const raw = dialogue.map((turn, idx) => ({
@@ -1861,27 +2453,11 @@ export function AudioSummaryView({ content }: { content: any }) {
     return raw;
   }, [dialogue]);
 
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [isSpeakingWebSpeech, setIsSpeakingWebSpeech] = useState(false);
-
-  useEffect(() => {
-    return () => {
-      if (typeof window !== 'undefined' && window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-      }
-    };
-  }, []);
-
   const toggleAudioPlay = () => {
-    if (!audioRef.current) return;
-    if (isPlaying) {
-      audioRef.current.pause();
-      setIsPlaying(false);
+    if (isCurrentAudio) {
+      podcastStore.togglePlay();
     } else {
-      audioRef.current.play().then(() => setIsPlaying(true)).catch(console.error);
+      podcastStore.loadAndPlay(currentTitle, audioUrl, normalizedDialogue, audioData?.lang, sessionId);
     }
   };
 
@@ -1889,18 +2465,19 @@ export function AudioSummaryView({ content }: { content: any }) {
     const speeds = [1, 1.25, 1.5, 2];
     const nextIdx = (speeds.indexOf(playbackSpeed) + 1) % speeds.length;
     const nextSpeed = speeds[nextIdx];
-    setPlaybackSpeed(nextSpeed);
-    if (audioRef.current) {
-      audioRef.current.playbackRate = nextSpeed;
-    }
+    podcastStore.setSpeed(nextSpeed);
   };
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const time = Number(e.target.value);
-    setCurrentTime(time);
-    if (audioRef.current) {
-      audioRef.current.currentTime = time;
+    podcastStore.seek(time);
+  };
+
+  const handleJumpToTurn = (index: number) => {
+    if (!isCurrentAudio) {
+      podcastStore.loadAndPlay(currentTitle, audioUrl, normalizedDialogue, audioData?.lang, sessionId);
     }
+    podcastStore.seekToTurn(index);
   };
 
   const formatTime = (secs: number) => {
@@ -1910,156 +2487,168 @@ export function AudioSummaryView({ content }: { content: any }) {
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
-  const toggleWebSpeech = () => {
-    if (typeof window === 'undefined' || !window.speechSynthesis) return;
-    if (isSpeakingWebSpeech) {
-      window.speechSynthesis.cancel();
-      setIsSpeakingWebSpeech(false);
-      return;
-    }
-
-    const langCode = audioData?.lang?.toLowerCase().startsWith('en') ? 'en-US' : 'fr-FR';
-
-    window.speechSynthesis.cancel();
-
-    let currentTurnIndex = 0;
-
-    const speakNextTurn = () => {
-      if (!window.speechSynthesis) return;
-      if (currentTurnIndex >= normalizedDialogue.length) {
-        setIsSpeakingWebSpeech(false);
-        return;
-      }
-
-      const turn = normalizedDialogue[currentTurnIndex];
-      const isSpeakerA = turn.speaker === 'A';
-      const cleaned = cleanSpokenText(turn.text);
-
-      const utterance = new SpeechSynthesisUtterance(cleaned);
-      utterance.lang = langCode;
-      utterance.rate = playbackSpeed;
-      utterance.pitch = isSpeakerA ? 1.0 : 1.15;
-
-      utterance.onend = () => {
-        currentTurnIndex++;
-        speakNextTurn();
-      };
-      utterance.onerror = () => {
-        setIsSpeakingWebSpeech(false);
-      };
-
-      window.speechSynthesis.speak(utterance);
-    };
-
-    setIsSpeakingWebSpeech(true);
-    speakNextTurn();
-  };
-
   return (
     <div className="flex flex-col gap-6">
-      {/* Audio Player Card */}
-      <div className="p-6 rounded-2xl bg-sphera-surface-2 border border-sphera-border relative overflow-hidden shadow-xl">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <AudioLines className="w-5 h-5 text-teal-400" />
-            <span className="text-xs font-bold uppercase tracking-wider text-teal-400">{t('resultViews.podcastTitle')}</span>
+      {/* Sleek Podcast Header */}
+      <div className="flex items-center justify-between gap-3 pb-3 border-b border-sphera-border/60">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 mb-0.5">
+            <AudioLines className="w-4 h-4 text-purple-400 shrink-0" />
+            <span className="text-xs font-bold uppercase tracking-wider text-purple-400">
+              {t('resultViews.podcastTitle')}
+            </span>
           </div>
-          {audioUrl && (
-            <a
-              href={audioUrl}
-              download="podcast-revision.mp3"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors"
-              title={t('resultViews.downloadMp3')}
-            >
-              <Download className="w-4 h-4" />
-            </a>
+          {audioData?.titre && (
+            <h2 className="text-base sm:text-lg font-semibold text-white truncate">
+              {audioData.titre}
+            </h2>
           )}
         </div>
 
-        {audioData?.titre && (
-          <h2 className="text-xl font-bold text-white mb-4">{audioData.titre}</h2>
+        {audioUrl && (
+          <a
+            href={audioUrl}
+            download="podcast-revision.mp3"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sphera-surface-2 border border-sphera-border text-xs font-medium text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors shrink-0"
+            title={t('resultViews.downloadMp3')}
+          >
+            <Download className="w-3.5 h-3.5 text-purple-400" />
+            <span>MP3</span>
+          </a>
         )}
+      </div>
 
-        {/* Audio Element or Web Speech Fallback */}
-        {audioUrl ? (
-          <div className="space-y-3 bg-sphera-bg p-4 rounded-xl border border-sphera-border">
-            <audio
-              ref={audioRef}
-              src={audioUrl}
-              onTimeUpdate={() => audioRef.current && setCurrentTime(audioRef.current.currentTime)}
-              onLoadedMetadata={() => audioRef.current && setDuration(audioRef.current.duration)}
-              onEnded={() => setIsPlaying(false)}
+      {/* Modern Studio Audio Player Card */}
+      <div className="p-5 sm:p-6 rounded-2xl bg-sphera-surface-2 border border-sphera-border relative overflow-hidden shadow-sm space-y-5">
+        {/* Dynamic Voice Visualizer connected to voice harmonics & word boundaries */}
+        <LiveVoiceVisualizer isPlaying={isPlaying} />
+
+        {/* Audio Scrubber & Progress */}
+        <div className="space-y-1.5">
+          {audioUrl ? (
+            <input
+              type="range"
+              min={0}
+              max={duration || 100}
+              value={currentTime}
+              onChange={handleSeek}
+              className="w-full accent-purple-400 cursor-pointer h-1.5 bg-sphera-surface rounded-lg appearance-none"
             />
-
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={toggleAudioPlay}
-                className="w-10 h-10 rounded-full bg-sphera-green text-black flex items-center justify-center font-bold shadow-lg hover:brightness-110 transition-all shrink-0"
-              >
-                {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
-              </button>
-
-              <div className="flex-1">
-                <input
-                  type="range"
-                  min={0}
-                  max={duration || 100}
-                  value={currentTime}
-                  onChange={handleSeek}
-                  className="w-full accent-sphera-green cursor-pointer h-1.5 bg-sphera-surface rounded-lg"
-                />
-                <div className="flex justify-between text-[11px] text-sphera-text-muted font-mono mt-1">
-                  <span>{formatTime(currentTime)}</span>
-                  <span>{formatTime(duration)}</span>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleSpeedChange}
-                className="px-2 py-1 rounded bg-sphera-surface border border-sphera-border text-xs font-mono text-sphera-text-muted hover:text-white transition-colors"
-              >
-                {playbackSpeed}x
-              </button>
+          ) : (
+            <div className="h-1.5 w-full bg-sphera-surface rounded-full overflow-hidden">
+              <div
+                className="h-full bg-purple-500 transition-all duration-300"
+                style={{
+                  width: `${
+                    dialogue.length > 0
+                      ? Math.min(100, ((currentTime + 1) / dialogue.length) * 100)
+                      : 0
+                  }%`,
+                }}
+              />
             </div>
+          )}
+          <div className="flex justify-between text-[11px] font-mono text-sphera-text-muted">
+            <span>
+              {audioUrl
+                ? formatTime(currentTime)
+                : (dialogue.length > 0
+                    ? `Réplique ${Math.min(currentTime + 1, dialogue.length)}`
+                    : '0:00')}
+            </span>
+            <span>
+              {audioUrl ? formatTime(duration) : `${dialogue.length} répliques`}
+            </span>
           </div>
-        ) : (
-          <div className="flex items-center justify-between p-4 rounded-xl bg-sphera-bg border border-sphera-border">
-            <div className="flex items-center gap-3">
-              <Volume2 className="w-5 h-5 text-teal-400" />
-              <div>
-                <p className="text-sm font-semibold text-white">{t('resultViews.webSpeechTitle')}</p>
-                <p className="text-xs text-sphera-text-muted">{t('resultViews.webSpeechSub')}</p>
-              </div>
-            </div>
+        </div>
+
+        {/* Audio Controls (Left Mute, Center Play/Pause & Skip, Right Speed) */}
+        <div className="flex items-center justify-between pt-1">
+          {/* Left: Sound Mute / Unmute Button */}
+          <div className="flex items-center">
             <button
               type="button"
-              onClick={toggleWebSpeech}
-              className="sphera-primary-btn py-2 px-4 text-xs inline-flex items-center gap-2"
+              onClick={() => podcastStore.toggleMute()}
+              className={`p-2.5 rounded-xl border transition-colors cursor-pointer ${
+                podcast.isMuted
+                  ? 'bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20'
+                  : 'bg-sphera-surface border-sphera-border text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2'
+              }`}
+              title={podcast.isMuted ? 'Activer le son' : 'Couper le son'}
             >
-              {isSpeakingWebSpeech ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-              <span>{isSpeakingWebSpeech ? t('resultViews.stopPlayback') : t('resultViews.startVoice')}</span>
+              {podcast.isMuted ? <SpeakerSimpleSlash className="w-4 h-4" /> : <SpeakerSimpleHigh className="w-4 h-4" />}
             </button>
           </div>
-        )}
+
+          {/* Center: Transport Controls (Reculer 15s, Play/Pause, Avancer 15s) */}
+          <div className="flex items-center gap-2.5 sm:gap-3.5">
+            <button
+              type="button"
+              onClick={() => podcastStore.skip(-15)}
+              className="p-2.5 rounded-xl text-sphera-text-muted hover:text-white hover:bg-sphera-surface border border-sphera-border/60 transition-colors cursor-pointer"
+              title="Reculer de 15s"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+
+            <button
+              type="button"
+              onClick={toggleAudioPlay}
+              className="w-12 h-12 rounded-full bg-purple-500 hover:bg-purple-400 text-white flex items-center justify-center font-bold shadow-lg shadow-purple-500/25 active:scale-95 transition-all shrink-0 cursor-pointer"
+              title={isPlaying ? 'Pause' : 'Lecture'}
+            >
+              {isPlaying ? (
+                <Pause className="w-5 h-5 fill-current" />
+              ) : (
+                <Play className="w-5 h-5 ml-0.5 fill-current" />
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => podcastStore.skip(15)}
+              className="p-2.5 rounded-xl text-sphera-text-muted hover:text-white hover:bg-sphera-surface border border-sphera-border/60 transition-colors cursor-pointer"
+              title="Avancer de 15s"
+            >
+              <RotateCw className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Right: Playback Speed Button */}
+          <div className="flex items-center">
+            <button
+              type="button"
+              onClick={handleSpeedChange}
+              className="px-3 py-1.5 rounded-xl bg-sphera-surface border border-sphera-border text-xs font-mono font-medium text-sphera-text-muted hover:text-white hover:border-purple-500/30 transition-colors shrink-0 cursor-pointer"
+              title="Vitesse de lecture"
+            >
+              {playbackSpeed}x
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Dialogue Script */}
       <div className="space-y-4">
         <div className="flex items-center justify-between px-1">
-          <h3 className="font-bold text-white text-base">{t('resultViews.scriptTitle', { count: dialogue.length })}</h3>
+          <h3 className="font-bold text-white text-base">
+            {t('resultViews.scriptTitle', { count: dialogue.length })}
+          </h3>
           <span className="text-xs text-sphera-text-muted">
-            {t('resultViews.discussionTime', { minutes: Math.max(1, Math.round(dialogue.length * 0.4)) })}
+            {t('resultViews.discussionTime', {
+              minutes: Math.max(1, Math.round(dialogue.length * 0.4)),
+            })}
           </span>
         </div>
 
         {normalizedDialogue.length === 0 ? (
           <div className="p-8 text-center bg-sphera-surface-2 rounded-2xl border border-sphera-border opacity-60">
             <AudioLines className="w-12 h-12 text-sphera-text-muted mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-white mb-1">{t('resultViews.noAudioDialogue')}</h3>
+            <h3 className="text-lg font-medium text-white mb-1">
+              {t('resultViews.noAudioDialogue')}
+            </h3>
             <p className="text-sm text-sphera-text-muted max-w-md mx-auto">
               {t('resultViews.noAudioDialogueDesc')}
             </p>
@@ -2067,19 +2656,28 @@ export function AudioSummaryView({ content }: { content: any }) {
         ) : (
           normalizedDialogue.map((turn, idx) => {
             const isSpeakerA = turn.speaker === 'A';
+            const isCurrentTurn = isCurrentAudio && (
+              audioUrl
+                ? (duration > 0 ? Math.min(normalizedDialogue.length - 1, Math.floor((currentTime / duration) * normalizedDialogue.length)) === idx : idx === 0)
+                : currentTime === idx
+            );
             return (
               <div
                 key={idx}
-                className={`flex gap-3 sm:gap-4 p-4 rounded-2xl border transition-all ${
-                  isSpeakerA
-                    ? 'bg-sphera-surface border-sphera-green/30'
-                    : 'bg-sphera-surface-2 border-purple-500/30 ml-4 sm:ml-8'
+                onClick={() => handleJumpToTurn(idx)}
+                className={`flex gap-3 sm:gap-4 p-4 rounded-2xl border transition-all cursor-pointer ${
+                  isCurrentTurn && isPlaying
+                    ? 'bg-purple-500/10 border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.15)] ring-1 ring-purple-500/30'
+                    : isSpeakerA
+                      ? 'bg-sphera-surface/80 border-sphera-border hover:border-purple-500/30'
+                      : 'bg-sphera-surface-2/80 border-sphera-border hover:border-purple-500/30 ml-3 sm:ml-6'
                 }`}
+                title="Cliquer pour écouter à partir de cette réplique"
               >
                 <div
                   className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
                     isSpeakerA
-                      ? 'bg-sphera-green/20 text-sphera-green border border-sphera-green/40'
+                      ? 'bg-purple-500/50 text-purple-400 border border-purple-500/40'
                       : 'bg-purple-500/20 text-purple-400 border border-purple-500/40'
                   }`}
                 >
@@ -2090,7 +2688,9 @@ export function AudioSummaryView({ content }: { content: any }) {
                     <span className="text-xs font-bold text-white">
                       {isSpeakerA ? t('resultViews.speakerA') : t('resultViews.speakerB')}
                     </span>
-                    <span className="text-[10px] text-sphera-text-muted font-mono">#{idx + 1}</span>
+                    <span className="text-[10px] text-sphera-text-muted font-mono">
+                      #{idx + 1}
+                    </span>
                   </div>
                   <div className="text-sm text-white/90 leading-relaxed">
                     {formatText(cleanSpokenText(turn.text))}

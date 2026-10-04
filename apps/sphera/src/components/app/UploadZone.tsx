@@ -67,14 +67,14 @@ export function UploadZone({ onFileSelect, selectedFile }: UploadZoneProps) {
               e.stopPropagation()
               onFileSelect(null)
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-sphera-surface-2 text-white hover:bg-sphera-border transition-colors text-sm font-medium"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-sphera-surface text-white hover:bg-sphera-border transition-colors text-sm font-medium"
           >
             <X className="w-4 h-4" /> {t('upload.changeFile')}
           </button>
         </div>
       ) : (
         <div className="flex flex-col items-center transition-transform group-hover:scale-105 duration-300">
-          <div className="w-16 h-16 rounded-full bg-sphera-surface-2 border border-sphera-border flex items-center justify-center mb-4 text-sphera-green group-hover:bg-sphera-green/10 group-hover:border-sphera-green/30 transition-colors">
+          <div className="w-16 h-16 rounded-full bg-sphera-surface border border-sphera-border flex items-center justify-center mb-4 text-sphera-green group-hover:bg-sphera-green/10 group-hover:border-sphera-green/30 transition-colors">
             <UploadCloud className="w-8 h-8" />
           </div>
           <h3 className="text-white font-medium text-lg mb-2">{t('upload.dropzoneTitle')}</h3>

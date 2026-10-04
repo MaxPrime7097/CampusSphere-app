@@ -18,8 +18,8 @@ export const SPHERA_ORIGINS: readonly string[] = [
   "https://sphera.campussphere.app",
   "http://localhost:5174",
   "http://127.0.0.1:5174",
-  "http://localhost:4173",
-  "http://127.0.0.1:4173",
+  "http://localhost:5174",
+  "http://127.0.0.1:5174",
 ] as const;
 
 export function isAllowedSpheraOrigin(origin: string): boolean {

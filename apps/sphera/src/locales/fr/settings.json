@@ -18,7 +18,7 @@
     },
     "tools": {
       "title": "Paramètres par Outil (Quiz & Flashcards)",
-      "desc": "Définissez le volume par défaut de questions et cartes mémoires générées pour chaque cours"
+      "desc": "Définissez le volume par défaut de questions et flashcards générées pour chaque cours"
     },
     "quota": {
       "title": "Usage & Quota Hebdomadaire",
@@ -70,7 +70,7 @@
     "tools": {
       "fiche": "Fiches de cours",
       "quiz": "Quiz interactifs",
-      "flashcards": "Cartes mémoires",
+      "flashcards": "Flashcards",
       "mindmap": "Cartes mentales",
       "audio": "Résumés audio"
     },

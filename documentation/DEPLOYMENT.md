@@ -154,7 +154,7 @@ https://campussphere.app, https://www.campussphere.app, https://sphera.campussph
 Laisser `CORS_ALLOWED_ORIGINS` **non renseignée** pour en bénéficier. La variable **remplace**
 ces défauts au lieu de s'y ajouter : si elle est posée, elle doit lister *toutes* les origines,
 sinon le navigateur bloquera les requêtes venant de celles qui manquent. À noter que
-`http://localhost:4173` — port de `vite preview` pour Sphera standalone — n'est pas dans les
+`http://localhost:5174` — port de `vite preview` pour Sphera standalone — n'est pas dans les
 défauts.
 
 ---

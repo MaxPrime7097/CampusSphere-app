@@ -78,9 +78,16 @@ export default function Register() {
       const user = await getCurrentUser()
       setUser(user)
       navigate("/dashboard")
-    } catch {
+    } catch (err: any) {
       clearTokens()
-      setError(t('register.ssoError'))
+      const msg = err?.message || ''
+      if (msg.includes('blocked') || msg.includes('popup')) {
+        setError("La fenêtre d'inscription CampusSphere a été bloquée par votre navigateur. Veuillez autoriser les fenêtres pop-up pour continuer.")
+      } else if (msg.includes('cancelled') || msg.includes('closed')) {
+        setError("L'inscription via CampusSphere a été annulée.")
+      } else {
+        setError(msg || t('register.ssoError'))
+      }
       setSsoLoading(false)
     }
   }

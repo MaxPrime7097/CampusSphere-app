@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { useNavigate } from 'react-router-dom'
-import { MagnifyingGlass as Search, X, FileText, Brain as BrainCircuit, NotePencil as FilePenLine, Lightning as Zap, Calendar, ArrowRight, Stack as SquareStack } from "@phosphor-icons/react";
+import { MagnifyingGlass as Search, X, FileText, Brain as BrainCircuit, NotePencilSimple as FilePenLine, Lightning as Zap, Calendar, ArrowRight, Stack as SquareStack } from "@phosphor-icons/react";
 import { useTranslation } from 'react-i18next'
 
 interface SearchModalProps {
