@@ -72,16 +72,8 @@ export function Resources() {
 
   // Action states
   const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
-  const [savedResources, setSavedResources] = useState<Set<string>>(() => {
-    const cached = queryClient.getQueryData<any[]>(["saved-resources"]);
-    const raw = Array.isArray(cached) ? cached : (cached as any)?.data || [];
-    return new Set(raw.map((r: any) => String(r.id)));
-  });
-  const [resources, setResources] = useState<ResourceCardData[]>(() => {
-    const cached = queryClient.getQueryData<any[]>(["resources"]);
-    const raw = Array.isArray(cached) ? cached : (cached as any)?.data || [];
-    return raw.map(mapResourceCard);
-  });
+  const [savedResources, setSavedResources] = useState<Set<string>>(new Set());
+  const [resources, setResources] = useState<ResourceCardData[]>([]);
 
   // Fetch Resources
   const resourcesQuery = useQuery({
@@ -269,8 +261,11 @@ export function Resources() {
       const matchesType =
         selectedType === "all" ||
         r.type === selectedType ||
-        (selectedType === "notes" && (r.type === "notes" || r.type === "resumes")) ||
-        (selectedType === "annales" && (r.type === "annales" || r.type === "exam_papers"));
+        (selectedType === "course_notes" && (r.type === "course_notes" || r.type === "notes" || r.type === "resumes")) ||
+        (selectedType === "exams" && (r.type === "exams" || r.type === "annales" || r.type === "exam_papers")) ||
+        (selectedType === "td_tp" && (r.type === "td_tp" || r.type === "exercises")) ||
+        (selectedType === "project" && (r.type === "project" || r.type === "projects")) ||
+        (selectedType === "book" && (r.type === "book" || r.type === "books"));
 
       const ext = r.fileUrl?.split(".").pop()?.toLowerCase() || "";
       const matchesFormat =
