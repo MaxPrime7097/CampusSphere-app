@@ -11,12 +11,14 @@ import { parseJsonWithFallback, UnparseableModelOutputError } from "./json.js";
 import { annalePrompt, qaPrompt, suggestionsPrompt, toolPrompt, quizFromSelectionPrompt, flashcardFromSelectionPrompt, type AnnaleMode, type ToolType } from "./prompts.js";
 import { AllProvidersFailedError, callWithFallback, TOKENS_ANNALE, TOKENS_DEFAULT, TOKENS_FLASHCARDS, TOKENS_QUIZ } from "./providers.js";
 import { buildContextPrefix, buildStyleInstructions, getUserAcademicContext, getUserPreferences } from "./userContext.js";
+import { extractRelevantPassages, type QaEntry } from "./rag.js";
+export { type QaEntry } from "./rag.js";
 
 /** Below this, a document has no usable content — usually a failed scan. */
 export const MIN_SOURCE_CHARS = 50;
 
 /** Above this, we reject to prevent budget explosion and context window overflow. */
-export const MAX_SOURCE_CHARS = 40_000;
+export const MAX_SOURCE_CHARS = 500_000;
 
 export const VALID_TOOL_TYPES: readonly ToolType[] = ["fiche", "quiz", "flashcards", "mindmap", "audio"];
 
@@ -149,15 +151,21 @@ export async function generateTool(
   }
 }
 
-/** Answer a question grounded only in the supplied source text. Returns prose. */
+/** Answer a question grounded in the course text, with adaptive RAG and conversational memory. */
 export async function generateQaAnswer(
   sourceText: string,
   question: string,
   userId?: number,
+  history?: QaEntry[],
 ): Promise<string> {
   assertUsableSource(sourceText, "Le texte du cours");
   const prefix = await resolveContextPrefix(userId);
-  const prompt = prefix + qaPrompt(sourceText, question);
+
+  // 1. Adaptive RAG for large documents (> 25k chars)
+  const { text: processedText, isFiltered } = extractRelevantPassages(sourceText, question, history);
+
+  // 2. Build prompt with conversational memory (sliding window)
+  const prompt = prefix + qaPrompt(processedText, question, history, isFiltered);
   try {
     return (
       await callWithFallback(prompt, TOKENS_DEFAULT, { toolType: "qa", userId })
@@ -179,7 +187,8 @@ export async function generateAnnale(
   const prompt = prefix + annalePrompt(annaleText, mode, coursText);
   try {
     const raw = await callWithFallback(prompt, TOKENS_ANNALE, { toolType: "annale", userId });
-    return validateAnnaleOutput(parseJsonWithFallback(raw));
+    const validated = validateAnnaleOutput(parseJsonWithFallback(raw));
+    return { ...validated, mode };
   } catch (error) {
     throw asApiError(error);
   }

@@ -32,6 +32,13 @@ export const studySessionInclude = {
   resource: { select: { id: true, title: true, fileUrl: true } },
   sphereFile: { select: { id: true, title: true, fileUrl: true } },
   sharedSphere: { select: { id: true, name: true } },
+  artefacts: { orderBy: { createdAt: "desc" as const } },
+  chatThreads: {
+    include: {
+      messages: { orderBy: { createdAt: "asc" as const } },
+    },
+    orderBy: { createdAt: "desc" as const },
+  },
 };
 
 export const annaleSessionInclude = {
@@ -80,6 +87,10 @@ export function serializeStudySession(session: SerializableStudySession): Record
     source_filename: session.sourceFilename,
     tool_types: lowerTools(session),
     content: session.content ?? {},
+    fiche_content: (session as any).ficheContent ?? null,
+    page_count: (session as any).pageCount ?? 1,
+    artefacts: (session as any).artefacts ?? [],
+    chat_threads: (session as any).chatThreads ?? [],
     qa_history: session.qaHistory ?? [],
     has_qa: Boolean(session.extractedText),
     extracted_text: session.extractedText ?? "",
