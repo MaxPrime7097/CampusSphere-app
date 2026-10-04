@@ -23,8 +23,10 @@ export function applyTheme(theme: SpheraTheme): void {
 
   if (theme === 'clair') {
     document.documentElement.setAttribute('data-theme', 'clair')
+    document.documentElement.classList.remove('dark')
   } else {
     document.documentElement.removeAttribute('data-theme')
+    document.documentElement.classList.add('dark')
   }
 }
 

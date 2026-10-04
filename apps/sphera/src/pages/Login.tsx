@@ -59,9 +59,16 @@ export default function Login() {
       const user = await getCurrentUser()
       setUser(user)
       navigate("/dashboard")
-    } catch {
+    } catch (err: any) {
       clearTokens()
-      setError(t('login.ssoError'))
+      const msg = err?.message || ''
+      if (msg.includes('blocked') || msg.includes('popup')) {
+        setError("La fenêtre de connexion CampusSphere a été bloquée par votre navigateur. Veuillez autoriser les fenêtres pop-up pour ce site.")
+      } else if (msg.includes('cancelled') || msg.includes('closed')) {
+        setError("La tentative de connexion CampusSphere a été interrompue.")
+      } else {
+        setError(msg || t('login.ssoError'))
+      }
       setSsoLoading(false)
     }
   }
