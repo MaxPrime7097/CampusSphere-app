@@ -57,12 +57,13 @@ export async function invalidateCache(namespace: string): Promise<void> {
 /**
  * Middleware that automatically invalidates the given namespace(s) on successful mutating requests (POST, PUT, PATCH, DELETE).
  */
-export function autoInvalidate(...namespaces: string[]) {
+export function autoInvalidate(...namespaces: (string | string[])[]) {
+  const flattened = namespaces.flat();
   return (req: Request, res: Response, next: NextFunction): void => {
     if (req.method !== "GET" && req.method !== "HEAD") {
       res.on("finish", () => {
         if (res.statusCode >= 200 && res.statusCode < 300) {
-          for (const ns of namespaces) {
+          for (const ns of flattened) {
             void invalidateCache(ns);
           }
         }
