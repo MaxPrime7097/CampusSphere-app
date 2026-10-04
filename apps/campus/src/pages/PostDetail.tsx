@@ -1,5 +1,5 @@
 import { useState, useEffect, useLayoutEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Helmet } from "react-helmet-async";
 import { useParams, useNavigate } from "react-router-dom";
 import { getPost } from "@/services/api";
@@ -17,6 +17,7 @@ export function PostDetail() {
   const realId = parseSlugId(rawParam) ?? rawParam;
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Pre-emptive immediate address bar rewrite if rawParam is pure numeric
   useLayoutEffect(() => {
@@ -32,8 +33,22 @@ export function PostDetail() {
     }
   }, [rawParam]);
 
-  const [post, setPost] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [post, setPost] = useState<any>(() => {
+    if (!realId) return null;
+    const direct = queryClient.getQueryData<any>(["post", realId]);
+    if (direct) return mapPostToCard(direct);
+    const homePosts = queryClient.getQueryData<any[]>(["home", "posts"]);
+    const foundHome = (homePosts || []).find(
+      (p: any) => String(p.id) === String(realId) || p.slug === realId || p.hash_id === realId
+    );
+    if (foundHome) return mapPostToCard(foundHome);
+    const savedPosts = queryClient.getQueryData<any[]>(["saved-posts"]);
+    const foundSaved = (savedPosts || []).find(
+      (p: any) => String(p.id) === String(realId) || p.slug === realId || p.hash_id === realId
+    );
+    if (foundSaved) return mapPostToCard(foundSaved);
+    return null;
+  });
 
   const postQuery = useQuery({
     queryKey: ["post", realId],
@@ -43,13 +58,27 @@ export function PostDetail() {
     gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
+    placeholderData: () => {
+      if (!realId) return undefined;
+      const direct = queryClient.getQueryData<any>(["post", realId]);
+      if (direct) return direct;
+      const homePosts = queryClient.getQueryData<any[]>(["home", "posts"]);
+      const foundHome = (homePosts || []).find(
+        (p: any) => String(p.id) === String(realId) || p.slug === realId || p.hash_id === realId
+      );
+      if (foundHome) return foundHome;
+      const savedPosts = queryClient.getQueryData<any[]>(["saved-posts"]);
+      return (
+        (savedPosts || []).find(
+          (p: any) => String(p.id) === String(realId) || p.slug === realId || p.hash_id === realId
+        ) ?? undefined
+      );
+    },
   });
 
+  const loading = postQuery.isLoading && !post && !postQuery.data;
+
   useEffect(() => {
-    if (postQuery.isLoading) {
-      if (!post) setLoading(true);
-      return;
-    }
     if (postQuery.data) {
       const mapped = mapPostToCard(postQuery.data);
       setPost(mapped);
@@ -68,8 +97,7 @@ export function PostDetail() {
         variant: "destructive",
       });
     }
-    setLoading(false);
-  }, [postQuery.data, postQuery.isLoading, postQuery.error, toast]);
+  }, [postQuery.data, postQuery.error, toast]);
 
   const handleBack = () => {
     if (window.history.length > 2) {

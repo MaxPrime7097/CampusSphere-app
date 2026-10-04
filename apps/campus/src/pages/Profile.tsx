@@ -1,5 +1,5 @@
 import { Suspense, lazy, useState, useEffect, useMemo, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import {
   getUserByUsername,
@@ -203,13 +203,48 @@ export function Profile() {
 
   const [animateScore, setAnimateScore] = useState(false);
   const prevScoreRef = useRef<number | null>(null);
+  const queryClient = useQueryClient();
 
-  const [targetUser, setTargetUser] = useState<any>(null);
-  const [userPosts, setUserPosts] = useState<any[]>([]);
-  const [userConnections, setUserConnections] = useState<any[]>([]);
-  const [userResources, setUserResources] = useState<any[]>([]);
-  const [resourcesAvailable, setResourcesAvailable] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [targetUser, setTargetUser] = useState<any>(() => {
+    if (!username || (currentUser && username === currentUser.username)) {
+      return currentUser ?? null;
+    }
+    const cached = queryClient.getQueryData<any>(["profile-user", username]);
+    return cached ?? null;
+  });
+  const [userPosts, setUserPosts] = useState<any[]>(() => {
+    const ownerId = targetUser?.id || currentUser?.id;
+    if (!ownerId) return [];
+    const cached = queryClient.getQueryData<any[]>(["profile-posts", ownerId]);
+    return Array.isArray(cached) ? cached : [];
+  });
+  const [userConnections, setUserConnections] = useState<any[]>(() => {
+    const ownerId = targetUser?.id || currentUser?.id;
+    if (!ownerId) return [];
+    const cached = queryClient.getQueryData<any[]>(["profile-connections", ownerId]);
+    if (!Array.isArray(cached)) return [];
+    return cached
+      .map((conn: any) => getConnectionCounterpart(conn, String(ownerId)))
+      .filter(Boolean);
+  });
+  const [userResources, setUserResources] = useState<any[]>(() => {
+    const ownerId = targetUser?.id || currentUser?.id;
+    if (!ownerId) return [];
+    const cached = queryClient.getQueryData<any[]>(["profile-resources", ownerId]);
+    return Array.isArray(cached) ? cached : [];
+  });
+  const [resourcesAvailable, setResourcesAvailable] = useState(() => {
+    const ownerId = targetUser?.id || currentUser?.id;
+    if (!ownerId) return false;
+    const cached = queryClient.getQueryData<any[]>(["profile-resources", ownerId]);
+    return Array.isArray(cached) && cached.length > 0;
+  });
+  const [loading, setLoading] = useState(() => {
+    if (!username) return false;
+    if (currentUser && username === currentUser.username) return false;
+    const cached = queryClient.getQueryData<any>(["profile-user", username]);
+    return !cached;
+  });
   const [profileLoadError, setProfileLoadError] = useState(false);
   const [profileUnavailableDueToOnboarding, setProfileUnavailableDueToOnboarding] = useState(false);
 
@@ -230,6 +265,11 @@ export function Profile() {
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     retry: false,
+    placeholderData: () => {
+      if (!username) return undefined;
+      if (currentUser && username === currentUser.username) return currentUser;
+      return queryClient.getQueryData<any>(["profile-user", username]);
+    },
   });
 
   useEffect(() => {

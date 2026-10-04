@@ -99,7 +99,7 @@ export function AppSidebar({ user: externalUser }: { user?: NavigationUser }) {
   };
 
   return (
-    <Sidebar className={isCollapsed ? "w-20" : "w-60"} collapsible="icon">
+    <Sidebar collapsible="icon">
       <SidebarContent className="pt-[60px]">
         {navigationItems.length > 0 && (
           <SidebarGroup>
