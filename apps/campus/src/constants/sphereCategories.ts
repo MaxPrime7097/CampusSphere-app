@@ -1,22 +1,15 @@
 export const SPHERE_CATEGORY_OPTIONS = [
-  { value: "all", label: "Toutes" },
-  { value: "academic", label: "Académique" },
-  { value: "professional", label: "Professionnel" },
-  { value: "social", label: "Social" },
-  { value: "sports", label: "Sports" },
-  { value: "arts", label: "Arts" },
-  { value: "technology", label: "Technologie" },
-  { value: "other", label: "Autre" },
+  { value: "all", label: "Toutes les catégories" },
+  { value: "cours", label: "Cours" },
+  { value: "projet", label: "Projet" },
+  { value: "communaute", label: "Communauté" },
 ] as const;
 
 export const SPHERE_TYPE_OPTIONS = [
-  { value: "all", label: "Tous types" },
-  { value: "study", label: "Étude" },
-  { value: "project", label: "Projet" },
-  { value: "club", label: "Club" },
-  { value: "event", label: "Événement" },
-  { value: "networking", label: "Réseautage" },
-  { value: "other", label: "Autre" },
+  { value: "all", label: "Tous les types" },
+  { value: "cours", label: "Cours" },
+  { value: "projet", label: "Projet" },
+  { value: "communaute", label: "Communauté" },
 ] as const;
 
 export const SPHERE_AUDIENCE_OPTIONS = [
@@ -33,9 +26,25 @@ export const SPHERE_AUDIENCE_OPTIONS = [
   { value: "Autre", label: "Autre" },
 ] as const;
 
-export const SPHERE_CATEGORY_LABEL_MAP: Record<string, string> = Object.fromEntries(
-  SPHERE_CATEGORY_OPTIONS.map((category) => [category.value, category.label])
-);
+export const SPHERE_CATEGORY_LABEL_MAP: Record<string, string> = {
+  all: "Toutes",
+  cours: "Cours",
+  projet: "Projet",
+  communaute: "Communauté",
+  course: "Cours",
+  project: "Projet",
+  community: "Communauté",
+  academic: "Cours",
+  revision: "Cours",
+  study: "Cours",
+  professional: "Projet",
+  social: "Communauté",
+  sports: "Communauté",
+  arts: "Communauté",
+  technology: "Communauté",
+  club: "Communauté",
+  other: "Communauté",
+};
 
 export function getSphereCategoryLabel(category: string | undefined | null): string {
   if (!category) return "";

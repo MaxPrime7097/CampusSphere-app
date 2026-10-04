@@ -1,12 +1,8 @@
 // Configuration des features disponibles par type de sphère
 // Miroir de spheres/sphere_config.py côté backend
 
-export type SphereType =
-  | 'cours'
-  | 'projet'
-  | 'club'
-  | 'revision'
-  | 'communaute'
+export type CanonicalSphereType = 'cours' | 'projet' | 'communaute'
+export type SphereType = CanonicalSphereType | 'club' | 'revision'
 
 export interface SphereFeatures {
   has_resources:     boolean
@@ -34,14 +30,25 @@ export const SPHERE_FEATURES: Record<SphereType, SphereFeatures> = {
     has_resources:     true,
     has_announcements: false,
     has_chat:          true,
-    has_sphera:        false,
+    has_sphera:        true,
     has_kanban:        true,
     has_tasks:         true,
     has_events:        false,
     has_feed:          false,
   },
+  communaute: {
+    has_resources:     true,
+    has_announcements: true,
+    has_chat:          true,
+    has_sphera:        false,
+    has_kanban:        false,
+    has_tasks:         false,
+    has_events:        true,
+    has_feed:          false,
+  },
+  // Rétrocompatibilité données historiques :
   club: {
-    has_resources:     false,
+    has_resources:     true,
     has_announcements: true,
     has_chat:          true,
     has_sphera:        false,
@@ -52,7 +59,7 @@ export const SPHERE_FEATURES: Record<SphereType, SphereFeatures> = {
   },
   revision: {
     has_resources:     true,
-    has_announcements: false,
+    has_announcements: true,
     has_chat:          true,
     has_sphera:        true,
     has_kanban:        false,
@@ -60,46 +67,47 @@ export const SPHERE_FEATURES: Record<SphereType, SphereFeatures> = {
     has_events:        false,
     has_feed:          false,
   },
-  communaute: {
-    has_resources:     true,
-    has_announcements: false,
-    has_chat:          true,
-    has_sphera:        false,
-    has_kanban:        false,
-    has_tasks:         false,
-    has_events:        false,
-    has_feed:          true,
-  },
 }
 
-export const getSphereFeatures = (type?: SphereType | string | null): SphereFeatures =>
-  SPHERE_FEATURES[(type as SphereType) ?? 'communaute'] ?? SPHERE_FEATURES['communaute']
+export function normalizeSphereType(rawType?: string | null): CanonicalSphereType {
+  if (!rawType) return 'communaute';
+  const t = String(rawType).trim().toLowerCase();
+  if (['cours', 'course', 'revision', 'study', 'academic'].includes(t)) return 'cours';
+  if (['projet', 'project', 'professional'].includes(t)) return 'projet';
+  if (['communaute', 'club', 'community', 'social', 'sports', 'arts', 'technology', 'other'].includes(t)) return 'communaute';
+  return 'communaute';
+}
+
+export const getSphereFeatures = (type?: SphereType | string | null): SphereFeatures => {
+  const canonical = normalizeSphereType(type);
+  return SPHERE_FEATURES[canonical] ?? SPHERE_FEATURES['communaute'];
+};
 
 /** Libellés affichés dans le badge de type */
 export const SPHERE_TYPE_LABELS: Record<SphereType, string> = {
   cours:      'Cours',
   projet:     'Projet',
-  club:       'Club',
-  revision:   'Révision',
   communaute: 'Communauté',
+  club:       'Communauté',
+  revision:   'Cours',
 }
 
 /** Icônes associées au type pour les badges */
 export const SPHERE_TYPE_ICONS: Record<SphereType, any> = {
   cours:      'BookOpen',
   projet:     'Target',
-  club:       'Trophy',
-  revision:   'Pencil',
-  communaute: 'Globe',
+  communaute: 'UsersFour',
+  club:       'UsersFour',
+  revision:   'BookOpen',
 }
 
 /** Couleurs Tailwind pour le badge de type */
 export const SPHERE_TYPE_COLORS: Record<SphereType, string> = {
   cours:      'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30',
   projet:     'bg-violet-500/15 text-violet-600 dark:text-violet-400 border-violet-500/30',
-  club:       'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30',
-  revision:   'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
   communaute: 'bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30',
+  club:       'bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30',
+  revision:   'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30',
 }
 
 /** Options affichées dans CreateSphereModal (V1 — 3 types) */
@@ -121,8 +129,8 @@ export const SPHERE_TYPE_OPTIONS_V1 = [
   {
     value: 'communaute' as SphereType,
     label: 'Communauté',
-    description: 'Espace ouvert pour une filière ou un intérêt commun',
-    iconName: 'globe',
+    description: 'Espace ouvert pour une filière, association ou promotion',
+    iconName: 'users-four',
     gradient: 'from-sky-500 to-cyan-500',
   },
 ]
