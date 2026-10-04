@@ -274,7 +274,7 @@ usersRouter.post("/auth/password-reset/", registrationRateLimit, passwordReset);
 usersRouter.get("/auth/me/", async (req, res) => {
   // Dual-mode by contract: anonymous callers get authenticated:false, not a 401.
   if (!req.user) {
-    res.status(200).json({ success: true, authenticated: false, data: null, timestamp: new Date().toISOString() });
+    res.status(200).json({ success: true, authenticated: false, data: null });
     return;
   }
 
@@ -285,7 +285,6 @@ usersRouter.get("/auth/me/", async (req, res) => {
     success: true,
     authenticated: true,
     data: serializeUser(user, { viewerId: user.id, counts: await loadUserCounts(user.id) }),
-    timestamp: new Date().toISOString(),
   });
 });
 
