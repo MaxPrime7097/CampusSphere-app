@@ -49,4 +49,14 @@ describe("8-character Hashids Engine (Backend)", () => {
     const resolved = await resolveSphereId(slug);
     expect(resolved).toBe(id);
   });
+
+  it("handles conversation hashids and slugs seamlessly", () => {
+    const convId = 42;
+    const hash = encodeHashId(convId);
+    expect(hash).toHaveLength(8);
+    expect(parseSlugId(hash)).toBe(convId);
+    expect(parseSlugId(`conversation-${hash}`)).toBe(convId);
+    expect(parseSlugId(convId)).toBe(convId);
+    expect(parseSlugId(String(convId))).toBe(convId);
+  });
 });

@@ -14,6 +14,7 @@ import { Router, type Request, type Response } from "express";
 import { z } from "zod";
 import { NotificationType, Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
+import { parseSlugId, encodeHashId } from "../lib/hashids.js";
 import {
   conversationInclude,
   messageInclude,
@@ -56,8 +57,14 @@ async function createSystemMessage(conversationId: number, content: string, send
 }
 
 function conversationIdOf(req: Request): number {
-  const id = Number(req.params.id);
-  if (!Number.isInteger(id) || id <= 0) throw notFound("Conversation not found.");
+  const id = parseSlugId(req.params.id);
+  if (!id || !Number.isInteger(id) || id <= 0) throw notFound("Conversation not found.");
+  return id;
+}
+
+function messageIdOf(param: unknown): number {
+  const id = parseSlugId(param);
+  if (!id || !Number.isInteger(id) || id <= 0) throw notFound("Message not found.");
   return id;
 }
 
@@ -249,6 +256,7 @@ messagingRouter.get("/:id/presence/", async (req, res) => {
   const onlineUserIds = await getOnlineUserIds(memberIds);
   ok(res, {
     conversation_id: conversation.id,
+    conversation_hash_id: encodeHashId(conversation.id),
     online_user_ids: onlineUserIds,
   });
 });
@@ -343,6 +351,7 @@ messagingRouter.get("/:id/messages/", httpCache({ namespace: "conversations", tt
 
   publish(conversation.id, "conversation_read", {
     conversation_id: String(conversation.id),
+    conversation_hash_id: encodeHashId(conversation.id),
     reader_id: String(me.id),
     timestamp: now.toISOString(),
   });
@@ -463,6 +472,7 @@ messagingRouter.post("/:id/messages/", singleUpload("file", "other"), async (req
         },
         data: {
           conversation_id: String(conversation.id),
+          conversation_hash_id: encodeHashId(conversation.id) ?? String(conversation.id),
           message_id: String(message.id),
           conversation_type: conversation.type.toLowerCase(),
         },
@@ -486,8 +496,7 @@ function canModerateMessage(
 
 messagingRouter.patch("/:id/messages/:messageId/", async (req, res) => {
   const { conversation, me } = await loadConversation(req);
-  const messageId = Number(req.params.messageId);
-  if (!Number.isInteger(messageId) || messageId <= 0) throw notFound("Message not found.");
+  const messageId = messageIdOf(req.params.messageId);
 
   const message = await prisma.message.findFirst({
     where: { id: messageId, conversationId: conversation.id },
@@ -521,8 +530,7 @@ messagingRouter.patch("/:id/messages/:messageId/", async (req, res) => {
 
 messagingRouter.delete("/:id/messages/:messageId/", async (req, res) => {
   const { conversation, me } = await loadConversation(req);
-  const messageId = Number(req.params.messageId);
-  if (!Number.isInteger(messageId) || messageId <= 0) throw notFound("Message not found.");
+  const messageId = messageIdOf(req.params.messageId);
 
   const message = await prisma.message.findFirst({
     where: { id: messageId, conversationId: conversation.id },
@@ -553,6 +561,7 @@ messagingRouter.delete("/:id/messages/:messageId/", async (req, res) => {
   publish(conversation.id, "message_deleted", {
     message_id: String(message.id),
     conversation_id: String(conversation.id),
+    conversation_hash_id: encodeHashId(conversation.id),
     message: payload,
   });
   ok(res, payload, "Message deleted.");
@@ -562,8 +571,7 @@ messagingRouter.delete("/:id/messages/:messageId/", async (req, res) => {
 
 messagingRouter.post("/:id/messages/:messageId/reactions/", async (req, res) => {
   const { conversation, me } = await loadConversation(req);
-  const messageId = Number(req.params.messageId);
-  if (!Number.isInteger(messageId) || messageId <= 0) throw notFound("Message not found.");
+  const messageId = messageIdOf(req.params.messageId);
 
   const message = await prisma.message.findFirst({
     where: { id: messageId, conversationId: conversation.id },
@@ -602,6 +610,7 @@ messagingRouter.post("/:id/messages/:messageId/reactions/", async (req, res) => 
   const payload = {
     message_id: String(messageId),
     conversation_id: String(conversation.id),
+    conversation_hash_id: encodeHashId(conversation.id),
     reactions: updatedReactions.map((r) => ({
       id: r.id,
       emoji: r.emoji,
@@ -618,8 +627,7 @@ messagingRouter.post("/:id/messages/:messageId/reactions/", async (req, res) => 
 
 messagingRouter.delete("/:id/messages/:messageId/reactions/", async (req, res) => {
   const { conversation, me } = await loadConversation(req);
-  const messageId = Number(req.params.messageId);
-  if (!Number.isInteger(messageId) || messageId <= 0) throw notFound("Message not found.");
+  const messageId = messageIdOf(req.params.messageId);
 
   await prisma.messageReaction.deleteMany({
     where: { messageId, userId: me.id },
@@ -639,6 +647,7 @@ messagingRouter.delete("/:id/messages/:messageId/reactions/", async (req, res) =
   const payload = {
     message_id: String(messageId),
     conversation_id: String(conversation.id),
+    conversation_hash_id: encodeHashId(conversation.id),
     reactions: updatedReactions.map((r) => ({
       id: r.id,
       emoji: r.emoji,
@@ -677,6 +686,7 @@ messagingRouter.post("/:id/read/", async (req, res) => {
 
   publish(conversation.id, "conversation_read", {
     conversation_id: String(conversation.id),
+    conversation_hash_id: encodeHashId(conversation.id),
     reader_id: String(me.id),
     timestamp: now.toISOString(),
   });

@@ -4,6 +4,7 @@
 
 import type { Conversation, ConversationMember, Message, MessageReaction, Prisma } from "@prisma/client";
 import { serializeUser, userSelect, type SerializableUser } from "./user.js";
+import { encodeHashId } from "../lib/hashids.js";
 
 export const messageInclude = {
   author: { select: userSelect },
@@ -53,12 +54,14 @@ export function serializeMessage(
 
   return {
     id: message.id,
+    hash_id: encodeHashId(message.id),
     type: (message.type || "TEXT").toLowerCase(),
     status: (message.status || "SENT").toLowerCase(),
     content: isDeleted ? "Ce message a été supprimé" : message.content,
     author: message.authorId,
     author_info: serializeUser(message.author, { viewerId: ctx.viewerId }),
     conversation: message.conversationId,
+    conversation_hash_id: encodeHashId(message.conversationId),
     media_url: isDeleted ? null : message.mediaUrl,
     media_type: isDeleted ? null : message.mediaType,
     file_name: isDeleted ? null : message.fileName,
@@ -68,6 +71,7 @@ export function serializeMessage(
     reply_to: message.replyTo
       ? {
           id: message.replyTo.id,
+          hash_id: encodeHashId(message.replyTo.id),
           content: message.replyTo.isDeleted ? "Ce message a été supprimé" : message.replyTo.content,
           type: (message.replyTo.type || "TEXT").toLowerCase(),
           author: message.replyTo.authorId,
@@ -106,8 +110,11 @@ export function serializeConversation(
   conversation: SerializableConversation,
   ctx: ConversationViewerContext,
 ): Record<string, unknown> {
+  const hashId = encodeHashId(conversation.id);
   return {
     id: conversation.id,
+    hash_id: hashId,
+    hashId,
     type: conversation.type.toLowerCase(),
     name: conversation.name,
     avatar: conversation.avatarUrl,
