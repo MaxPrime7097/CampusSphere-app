@@ -25,13 +25,18 @@ const CreateSphereModal = lazy(() =>
   }))
 );
 
+export function normalizeSphereType(type?: string | null): "cours" | "projet" | "communaute" {
+  const t = (type || "").toLowerCase().trim();
+  if (t === "cours" || t === "revision" || t === "study" || t === "academic") return "cours";
+  if (t === "projet" || t === "project") return "projet";
+  return "communaute";
+}
+
 export const SPHERE_TYPE_CHIPS = [
   { value: "all", label: "Toutes les sphères", icon: SphereIcon },
   { value: "cours", label: "Cours & TD", icon: BookOpen },
   { value: "projet", label: "Projets & Groupes", icon: FolderGit2 },
   { value: "communaute", label: "Communautés", icon: Users },
-  { value: "club", label: "Clubs & Assos", icon: Sparkles },
-  { value: "revision", label: "Révisions & Examens", icon: GraduationCap },
 ] as const;
 
 export function Spheres() {
@@ -131,12 +136,8 @@ export function Spheres() {
       sphere.description?.toLowerCase().includes(query) ||
       sphere.objective?.toLowerCase().includes(query);
 
-    const sphereType = (sphere.sphere_type || sphere.sphereType || "").toLowerCase();
-    const matchesType =
-      filterType === "all" ||
-      sphereType === filterType ||
-      (filterType === "cours" && (sphereType === "cours" || sphereType === "revision")) ||
-      (filterType === "revision" && (sphereType === "revision" || sphereType === "cours"));
+    const sphereType = normalizeSphereType(sphere.sphere_type || sphere.sphereType);
+    const matchesType = filterType === "all" || sphereType === filterType;
 
     const matchesAudience =
       filterAudience === "all" ||
@@ -665,17 +666,14 @@ export function Spheres() {
               );
             })()}
 
-            {/* Rows 3+: Par Type de Sphère */}
+            {/* Rows 3+: Par Type de Sphère (3 catégories canoniques) */}
             {[
               { value: "cours", label: "Cours, TD & Académique" },
               { value: "projet", label: "Projets & Groupes de Travail" },
               { value: "communaute", label: "Communautés & Échanges" },
-              { value: "club", label: "Clubs & Associations" },
-              { value: "revision", label: "Groupes de Révision & Annales" },
             ].map((typeObj) => {
               const catSpheres = allSpheres.filter((s) => {
-                const sType = (s.sphere_type || s.sphereType || "").toLowerCase();
-                return sType === typeObj.value;
+                return normalizeSphereType(s.sphere_type || s.sphereType) === typeObj.value;
               });
               if (catSpheres.length === 0 && !isSpheresLoading) return null;
               return (

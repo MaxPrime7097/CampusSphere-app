@@ -85,6 +85,21 @@ export function SphereHeader({
   const [isManageMembersOpen, setIsManageMembersOpen] = useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
 
+  const requiresApproval = Boolean(
+    sphere?.require_approval ??
+    sphere?.requireApproval ??
+    sphere?.requires_approval ??
+    sphere?.requiresApproval ??
+    sphere?.is_private ??
+    sphere?.isPrivate ??
+    sphereFallback?.require_approval ??
+    sphereFallback?.requireApproval ??
+    sphereFallback?.is_private ??
+    sphereFallback?.isPrivate ??
+    false
+  );
+  const showPendingMenuItem = canModerateMembers && (requiresApproval || pendingMembersCount > 0);
+
   return (
     <div className="overflow-hidden md:rounded-xl border-y md:border bg-card shadow-sm">
       {/* Banner */}
@@ -171,7 +186,7 @@ export function SphereHeader({
                   if (iconName === "Target") return <Target className="h-3.5 w-3.5" />;
                   if (iconName === "Globe") return <Sphere className="h-3.5 w-3.5" />;
                   if (iconName === "Trophy") return <Trophy className="h-3.5 w-3.5" />;
-                  if (iconName === "Pencil") return <FileText className="h-3.5 w-3.5" />;
+                  if (iconName === "PencilSimple") return <FileText className="h-3.5 w-3.5" />;
                   return null;
                 })()}
                 {SPHERE_TYPE_LABELS[sphere.sphere_type as SphereType] ?? sphere.sphere_type}
@@ -317,7 +332,7 @@ export function SphereHeader({
                 <DropdownMenuItem onClick={() => onSelectTab("members")}>
                   <Users className="h-4 w-4 mr-2" /> Membres ({membersCount})
                 </DropdownMenuItem>
-                {canModerateMembers && (
+                {showPendingMenuItem && (
                   <DropdownMenuItem onClick={() => onSelectTab("pending")}>
                     <UserCheck className="h-4 w-4 mr-2" /> Demandes ({pendingMembersCount})
                   </DropdownMenuItem>

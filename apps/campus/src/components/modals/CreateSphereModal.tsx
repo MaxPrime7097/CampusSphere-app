@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Spinner as Loader2, Check, ArrowLeft, ArrowRight, BookOpen, Target, Globe, CaretDown as ChevronDown, CaretUp as ChevronUp, SlidersHorizontal } from "@phosphor-icons/react";
+import { Spinner as Loader2, Check, ArrowLeft, ArrowRight, BookOpen, Target, Globe, UsersFour, CaretDown as ChevronDown, CaretUp as ChevronUp, SlidersHorizontal } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { createSphere } from "@/services/api";
@@ -192,7 +192,6 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
               <DialogTitle className="text-base sm:text-lg">
                 {step === 0 ? "Quel type de sphère ?" : selectedOption ? selectedOption.label : "Créer une sphère"}
               </DialogTitle>
-              <p className="text-xs text-muted-foreground mt-0.5">Étape {step + 1} / 2</p>
             </div>
           </div>
           {/* Progress bar */}
@@ -239,7 +238,7 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
                     )}>
                       {option.iconName === 'book-open' && <BookOpen className="h-5 w-5" />}
                       {option.iconName === 'target' && <Target className="h-5 w-5" />}
-                      {option.iconName === 'globe' && <Globe className="h-5 w-5" />}
+                      {(option.iconName === 'users-four' || option.iconName === 'globe') && <UsersFour className="h-5 w-5" />}
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold text-sm text-foreground">{option.label}</p>

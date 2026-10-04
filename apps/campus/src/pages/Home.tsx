@@ -3,6 +3,7 @@ import { PostCard } from "@/components/feed/PostCard";
 import { FriendSuggestions } from "@/components/feed/FriendSuggestions";
 import { ResourceFeedCard } from "@/components/feed/ResourceFeedCard";
 import { FeedSidebar } from "@/components/layout/FeedSidebar";
+import { WelcomeTeamModal } from "@/components/onboarding/WelcomeTeamModal";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useMemo } from "react";
@@ -134,6 +135,7 @@ export function Home() {
 
   return (
     <div className="min-h-screen bg-background">
+      <WelcomeTeamModal />
       <div className={isMobile ? "w-full pt-3.5 pb-8" : "container max-w-7xl mx-auto"}>
         <div className={isMobile ? "w-full" : "grid grid-cols-1 lg:grid-cols-12 gap-6 px-4"}>
           {/* Main Feed */}

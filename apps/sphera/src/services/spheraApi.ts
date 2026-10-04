@@ -61,11 +61,94 @@ async function performRefreshRaw(refresh: string): Promise<string | null> {
 // ─── Core fetch ─────────────────────────────────────────────────
 function translateSpheraApiError(errJson: any, status: number): string {
   if (!errJson && status === 429) {
-    return "Limite de requêtes atteinte. Vous avez effectué trop d'actions en peu de temps ou atteint votre quota. Veuillez patienter un instant.";
+    return "Limite de requêtes atteinte. Vous avez effectué trop d'actions en peu de temps ou atteint votre quota de 10 générations hebdomadaires. Veuillez patienter un instant.";
   }
-  const raw = errJson?.message || errJson?.error || errJson?.detail || "";
+
+  const FIELD_NAMES: Record<string, string> = {
+    email: "Adresse email",
+    password: "Mot de passe",
+    confirm_password: "Confirmation du mot de passe",
+    username: "Nom d'utilisateur",
+    first_name: "Prénom",
+    last_name: "Nom",
+    file: "Document",
+    roomCode: "Code du salon",
+    title: "Titre",
+  }
+
+  // 1. Extraire les erreurs de champs (Zod/backend field_errors ou DRF errors)
+  const fieldIssues: string[] = []
+  const fieldSources = [errJson?.field_errors, errJson?.errors].filter(Boolean)
+
+  for (const src of fieldSources) {
+    if (typeof src === 'object' && !Array.isArray(src)) {
+      for (const [field, msgs] of Object.entries(src)) {
+        const fieldLabel = FIELD_NAMES[field] || field
+        const msgList = Array.isArray(msgs) ? msgs : [msgs]
+        const cleanMsgs = msgList
+          .map((m: any) => {
+            const str = typeof m === 'string' ? m : m?.message || m?.msg || JSON.stringify(m)
+            // Traduction des messages Zod courants
+            if (str.includes('Invalid email')) return 'Format d\'adresse email invalide'
+            if (str.includes('at least 8 character')) return 'Doit contenir au moins 8 caractères'
+            if (str.includes('Required')) return 'Champ obligatoire'
+            return str
+          })
+          .join(', ')
+
+        if (field === 'non_field_errors' || field === '_all_') {
+          fieldIssues.push(cleanMsgs)
+        } else {
+          fieldIssues.push(`${fieldLabel} : ${cleanMsgs}`)
+        }
+      }
+    } else if (Array.isArray(src)) {
+      src.forEach((item: any) => {
+        fieldIssues.push(typeof item === 'string' ? item : item?.message || item?.msg || JSON.stringify(item))
+      })
+    }
+  }
+
+  let raw = errJson?.message || errJson?.error || errJson?.detail || ""
+  if (fieldIssues.length > 0) {
+    return fieldIssues.join(' • ')
+  }
+
   const lower = String(raw).toLowerCase();
 
+  // 2. Erreurs d'authentification et comptes
+  if (
+    lower.includes("invalid credentials") ||
+    lower.includes("invalid_credentials") ||
+    lower.includes("mot de passe incorrect") ||
+    lower.includes("incorrect password")
+  ) {
+    return "Adresse email ou mot de passe incorrect. Veuillez vérifier vos identifiants de connexion.";
+  }
+
+  if (lower.includes("account is disabled") || lower.includes("account_disabled")) {
+    return "Votre compte étudiant est temporairement désactivé. Veuillez contacter le support de CampusSphere.";
+  }
+
+  if (lower.includes("account no longer exists") || lower.includes("user not found")) {
+    return "Aucun compte étudiant n'est associé à cette adresse email. Veuillez vérifier l'adresse ou vous inscrire.";
+  }
+
+  if (lower.includes("already exists") || lower.includes("unique constraint") || lower.includes("conflict")) {
+    if (lower.includes("email")) {
+      return "Cette adresse email est déjà associée à un compte CampusSphere existant. Connectez-vous avec vos identifiants habituels.";
+    }
+    if (lower.includes("username")) {
+      return "Ce nom d'utilisateur est déjà pris par un autre étudiant. Veuillez en choisir un autre.";
+    }
+    return "Un compte ou un enregistrement avec ces informations existe déjà.";
+  }
+
+  if (lower.includes("passwords do not match") || lower.includes("passwords_dont_match")) {
+    return "Les deux mots de passe saisis ne correspondent pas. Veuillez vérifier votre saisie.";
+  }
+
+  // 3. Quota et Rate limiting
   if (
     status === 429 ||
     lower === "rate_limit" ||
@@ -74,46 +157,59 @@ function translateSpheraApiError(errJson: any, status: number): string {
     lower.includes("throttled")
   ) {
     if (lower.includes("weekly_limit_reached") || lower.includes("tu as utilisé tes")) {
-      return "Limite hebdomadaire atteinte : vous avez utilisé vos 5 générations Sphera gratuites pour cette semaine (quota renouvelé lundi prochain).";
+      return "Quota hebdomadaire atteint : vous avez utilisé vos 10 générations gratuites de la semaine. Votre solde se renouvelle automatiquement chaque lundi matin.";
     }
     if (lower.includes("insufficient_quota") || lower.includes("quota insuffisant")) {
-      return "Quota insuffisant : le nombre d'outils sélectionnés dépasse vos générations restantes pour cette semaine.";
+      return "Générations insuffisantes : l'outil demandé dépasse votre solde disponible pour cette semaine.";
     }
     const match = String(raw).match(/available in (\d+)\s*seconds/i);
     if (match?.[1]) {
-      return `Trop de requêtes envoyées. Veuillez patienter environ ${match[1]} seconde(s) avant de réessayer.`;
+      return `Trop d'actions envoyées rapidement. Veuillez patienter environ ${match[1]} seconde(s) avant de continuer.`;
     }
-    return "Trop de requêtes envoyées en peu de temps ou quota hebdomadaire atteint. Veuillez patienter avant de réessayer.";
+    return "Trop de requêtes envoyées en peu de temps ou quota hebdomadaire atteint. Veuillez patienter un instant avant de réessayer.";
   }
 
   if (lower.includes("weekly_limit_reached")) {
-    return "Limite hebdomadaire atteinte : vous avez utilisé vos 5 générations Sphera gratuites pour cette semaine.";
+    return "Limite hebdomadaire atteinte : vous avez utilisé vos 10 générations Sphera gratuites pour cette semaine (solde renouvelé chaque lundi).";
   }
   if (lower.includes("insufficient_quota")) {
-    return "Quota insuffisant : le nombre d'outils sélectionnés dépasse vos générations restantes pour cette semaine.";
+    return "Quota insuffisant : cette action nécessite plus de générations que votre solde restant.";
   }
-  if (status === 413 || lower.includes("too large")) {
-    return "Le fichier sélectionné est trop volumineux (20 Mo maximum).";
+
+  // 4. Fichiers et Uploads
+  if (status === 413 || lower.includes("too large") || lower.includes("file_too_large")) {
+    return "Le document sélectionné est trop volumineux. La taille maximale autorisée est de 20 Mo.";
   }
-  if (status === 415 || lower.includes("unsupported")) {
-    return "Format de document non supporté. Formats acceptés : PDF, DOCX et TXT.";
+  if (status === 415 || lower.includes("unsupported") || lower.includes("invalid file type")) {
+    return "Format de document non supporté. Sphera accepte les fichiers PDF, Word (.docx) et texte brut (.txt).";
   }
-  if (status === 503 || lower.includes("ai_providers_failed") || lower.includes("allprovidersfailed")) {
-    return "Le service d'intelligence artificielle Sphera est temporairement saturé ou indisponible. Veuillez réessayer dans quelques instants.";
+
+  // 5. Providers IA
+  if (status === 503 || lower.includes("ai_providers_failed") || lower.includes("allprovidersfailed") || lower.includes("all ai providers failed")) {
+    return "Les serveurs d'intelligence artificielle pédagogique sont temporairement surchargés. Veuillez relancer la génération dans quelques instants.";
   }
+
+  // 6. Statuts HTTP génériques
   if (status === 401) {
-    return "Identifiants incorrects ou session expirée. Veuillez vous reconnecter.";
+    return "Votre session a expiré ou vos identifiants sont invalides. Veuillez vous reconnecter.";
   }
   if (status === 403) {
-    return "Vous n'avez pas l'autorisation d'effectuer cette action.";
+    if (lower.includes("account_required")) {
+      return "Cette action nécessite un compte étudiant. Connectez-vous ou créez un compte gratuit pour continuer.";
+    }
+    return raw || "Accès restreint : vous n'avez pas les autorisations nécessaires pour effectuer cette action.";
   }
   if (status === 404) {
-    return "L'élément demandé est introuvable.";
+    return raw || "Le document, la session d'étude ou la ressource demandée est introuvable ou a été supprimée.";
+  }
+  if (status === 400) {
+    return raw || "La requête envoyée est incomplète ou invalide. Veuillez vérifier les informations saisies.";
   }
   if (status >= 500) {
-    return "Une erreur serveur temporaire est survenue. Veuillez réessayer dans un instant.";
+    return "Une erreur technique interne est survenue sur les serveurs de Sphera. Nos équipes ont été alertées, veuillez réessayer dans un instant.";
   }
-  return raw || `Erreur ${status}`;
+
+  return raw || `Erreur de communication (Code HTTP ${status})`;
 }
 
 async function apiFetch<T>(
@@ -125,20 +221,28 @@ async function apiFetch<T>(
   const token = getToken()
 
   if (requireAuth && !token) {
-    throw new Error('AUTH_REQUIRED')
+    throw new Error('Connexion requise pour effectuer cette opération.')
   }
 
   const headers: Record<string, string> = {}
   if (token) headers['Authorization'] = `Bearer ${token}`
   if (!(body instanceof FormData)) headers['Content-Type'] = 'application/json'
 
-  const res = await fetch(url, {
-    method,
-    headers,
-    body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
-    credentials: 'include',
-    signal,
-  })
+  let res: Response
+  try {
+    res = await fetch(url, {
+      method,
+      headers,
+      body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
+      credentials: 'include',
+      signal,
+    })
+  } catch (netErr: any) {
+    if (netErr?.name === 'AbortError' || signal?.aborted) {
+      throw netErr
+    }
+    throw new Error("Impossible de contacter les serveurs Sphera. Vérifiez votre connexion Internet ou réessayez dans un instant.")
+  }
 
   if (!res.ok) {
     // Si expiration du token (401) et que nous n'avons pas déjà réessayé, tente de rafraîchir
@@ -382,6 +486,105 @@ export async function askQuestion(id: number | string, question: string, type: '
     endpoint,
     { method: 'POST', body: { question }, requireAuth: true, signal }
   )
+}
+
+// ─── Sphera Artefacts & Multi-threads Q&A ────────────────────────
+
+export interface ArtefactItem {
+  id: number;
+  sessionId: number;
+  ownerId: number;
+  type: 'quiz' | 'flashcards' | 'mindmap' | 'audio' | 'note' | 'annale_rapide' | 'annale_complete';
+  title: string;
+  subtitle?: string | null;
+  content: any;
+  targetChapter?: string | null;
+  fromSelection: boolean;
+  selectionText?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ChatThreadItem {
+  id: number;
+  sessionId: number;
+  ownerId: number;
+  title: string;
+  messages: { id: number; role: 'user' | 'assistant'; content: string; createdAt: string }[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getArtefacts(sessionId: number | string) {
+  return apiFetch<{ success: boolean; data: ArtefactItem[] }>(`api/sphera/sessions/${sessionId}/artefacts/`, { requireAuth: true });
+}
+
+export async function createArtefact(
+  sessionId: number | string,
+  params: {
+    type: 'quiz' | 'flashcards' | 'mindmap' | 'audio' | 'note' | 'annale_rapide' | 'annale_complete';
+    title?: string;
+    subtitle?: string;
+    target_chapter?: string;
+    selection_text?: string;
+    content?: any;
+  }
+) {
+  const res = await apiFetch<{ success: boolean; data: ArtefactItem }>(`api/sphera/sessions/${sessionId}/artefacts/`, {
+    method: 'POST',
+    body: params,
+    requireAuth: true,
+  });
+  notifyQuotaUpdated();
+  return res;
+}
+
+export async function updateArtefact(
+  artefactId: number | string,
+  params: { title?: string; subtitle?: string; content?: any }
+) {
+  return apiFetch<{ success: boolean; data: ArtefactItem }>(`api/sphera/artefacts/${artefactId}/`, {
+    method: 'PATCH',
+    body: params,
+    requireAuth: true,
+  });
+}
+
+export async function deleteArtefact(artefactId: number | string) {
+  return apiFetch(`api/sphera/artefacts/${artefactId}/`, { method: 'DELETE', requireAuth: true });
+}
+
+export async function regenerateFiche(sessionId: number | string) {
+  const res = await apiFetch<{ success: boolean; data: { fiche: any; session: any } }>(`api/sphera/sessions/${sessionId}/fiche/regenerate/`, {
+    method: 'POST',
+    requireAuth: true,
+  });
+  notifyQuotaUpdated();
+  return res;
+}
+
+export async function getChatThreads(sessionId: number | string) {
+  return apiFetch<{ success: boolean; data: ChatThreadItem[] }>(`api/sphera/sessions/${sessionId}/threads/`, { requireAuth: true });
+}
+
+export async function createChatThread(sessionId: number | string, title?: string) {
+  return apiFetch<{ success: boolean; data: ChatThreadItem }>(`api/sphera/sessions/${sessionId}/threads/`, {
+    method: 'POST',
+    body: { title },
+    requireAuth: true,
+  });
+}
+
+export async function sendThreadMessage(threadId: number | string, question: string) {
+  return apiFetch<{ success: boolean; data: { id: number; role: 'assistant'; content: string; createdAt: string } }>(`api/sphera/threads/${threadId}/messages/`, {
+    method: 'POST',
+    body: { question },
+    requireAuth: true,
+  });
+}
+
+export async function deleteChatThread(threadId: number | string) {
+  return apiFetch(`api/sphera/threads/${threadId}/`, { method: 'DELETE', requireAuth: true });
 }
 
 // ─── Annales (auth requis) ───────────────────────────────────────

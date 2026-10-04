@@ -6,7 +6,21 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Gear as Settings, FloppyDisk as Save, Spinner as Loader2, Sphere, Shield, Trash as Trash2, Clock as Clock3 } from "@phosphor-icons/react";
+import {
+  Gear as Settings,
+  FloppyDisk as Save,
+  Spinner as Loader2,
+  Sphere,
+  Shield,
+  Trash as Trash2,
+  Clock as Clock3,
+  BookOpen,
+  Target,
+  UsersThree as Users,
+  Sparkle as Sparkles,
+  Kanban,
+  CheckCircle,
+} from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { deleteSphere, extendSphereDuration, updateSphere } from "@/services/api";
 import { cn } from "@/lib/utils";
@@ -29,14 +43,22 @@ interface SphereSettingsModalProps {
     name: string;
     description: string;
     type?: string;
+    sphere_type?: string;
+    sphereType?: string;
     isPrivate?: boolean;
-    requireApproval: boolean;
+    is_private?: boolean;
+    requireApproval?: boolean;
+    require_approval?: boolean;
     objective?: string;
     targetAudience?: string;
+    target_audience?: string;
     duration?: string;
     expiresAt?: string | null;
+    expires_at?: string | null;
     autoDeleteOnExpiry?: boolean;
+    auto_delete_on_expiry?: boolean;
     collaborationTypes?: string[];
+    collaboration_types?: string[];
   };
   onSettingsUpdated?: (updatedSettings: SphereSettings) => void;
   onSphereDeleted?: (sphereId: string) => void;
@@ -73,17 +95,37 @@ export function SphereSettingsModal({
   const open = controlledOpen !== undefined ? controlledOpen : isOpen;
   const setOpen = setControlledOpen ?? setIsOpen;
 
+  const rawType = (
+    sphereData?.sphere_type ||
+    sphereData?.sphereType ||
+    sphereData?.type ||
+    "communaute"
+  ).toLowerCase();
+
+  const sphereType: "cours" | "projet" | "communaute" =
+    rawType === "cours" || rawType === "revision" || rawType === "study" || rawType === "academic"
+      ? "cours"
+      : rawType === "projet" || rawType === "project"
+      ? "projet"
+      : "communaute";
+
   useEffect(() => {
     if (sphereData) {
       setSettings({
         name: sphereData.name || "",
         description: sphereData.description || "",
-        requireApproval: sphereData.requireApproval || false,
+        requireApproval: Boolean(
+          sphereData.requireApproval ?? sphereData.require_approval ?? false
+        ),
         duration: sphereData.duration || "Permanent",
-        autoDeleteOnExpiry: sphereData.autoDeleteOnExpiry ?? false,
+        autoDeleteOnExpiry: Boolean(
+          sphereData.autoDeleteOnExpiry ?? sphereData.auto_delete_on_expiry ?? false
+        ),
         objective: sphereData.objective || "",
-        targetAudience: sphereData.targetAudience || "Tous les étudiants",
-        collaborationTypes: sphereData.collaborationTypes || []
+        targetAudience:
+          sphereData.targetAudience || sphereData.target_audience || "Tous les étudiants",
+        collaborationTypes:
+          sphereData.collaborationTypes || sphereData.collaboration_types || [],
       });
     }
   }, [sphereData]);
@@ -96,28 +138,67 @@ export function SphereSettingsModal({
     "Flexible"
   ];
 
-  const targetAudienceOptions = [
-    "Tous les étudiants",
-    "Étudiants en informatique",
-    "Étudiants en business",
-    "Étudiants en sciences",
-    "Étudiants en arts",
-    "Étudiants en médecine",
-    "Étudiants en ingénierie",
-    "Étudiants en droit",
-    "Étudiants en économie",
-    "Autre",
-  ];
+  const targetAudienceOptions =
+    sphereType === "cours"
+      ? [
+          "Tous les étudiants",
+          "Licence 1 (L1)",
+          "Licence 2 (L2)",
+          "Licence 3 (L3)",
+          "Master 1 (M1)",
+          "Master 2 (M2)",
+          "Classes Préparatoires / Ingénieur",
+          "BTS / DUT",
+          "Autre",
+        ]
+      : sphereType === "projet"
+      ? [
+          "Toute l'équipe du projet",
+          "Étudiants en informatique",
+          "Étudiants en business & gestion",
+          "Étudiants en design & arts",
+          "Étudiants en ingénierie",
+          "Pluridisciplinaire",
+          "Autre",
+        ]
+      : [
+          "Tous les étudiants",
+          "Étudiants en informatique",
+          "Étudiants en business",
+          "Étudiants en sciences",
+          "Étudiants en arts",
+          "Étudiants en médecine",
+          "Étudiants en ingénierie",
+          "Étudiants en droit",
+          "Étudiants en économie",
+          "Vie de campus & BDE",
+          "Autre",
+        ];
 
-  const collaborationTypesList = [
-    "Partage de ressources",
-    "Collaboration sur projets",
-    "Discussion et échanges",
-    "Mentorat",
-    "Études de groupe",
-    "Événements",
-    "Recherche collaborative",
-  ];
+  const collaborationTypesList =
+    sphereType === "cours"
+      ? [
+          "Partage de ressources",
+          "Révisions de groupe",
+          "Annales corrigées",
+          "Questions & Entraide",
+          "Fiches de synthèse",
+        ]
+      : sphereType === "projet"
+      ? [
+          "Collaboration sur projets",
+          "Tableau Kanban",
+          "Partage de fichiers & livrables",
+          "Suivi des tâches",
+          "Recherche collaborative",
+        ]
+      : [
+          "Discussion et échanges",
+          "Événements du campus",
+          "Mentorat & Entraide",
+          "Partage de bons plans",
+          "Réseautage étudiant",
+        ];
 
   const updateSetting = (key: keyof SphereSettings, value: any) => {
     setSettings(prev => ({
@@ -155,7 +236,7 @@ export function SphereSettingsModal({
       const payload = {
         name: settings.name.trim(),
         description: settings.description,
-        sphere_type: sphereData.type,
+        sphere_type: sphereType,
         require_approval: settings.requireApproval,
         objective: settings.objective,
         target_audience: settings.targetAudience,
@@ -176,7 +257,7 @@ export function SphereSettingsModal({
 
       toast({
         title: "Paramètres sauvegardés !",
-        description: "Les paramètres de la sphère ont été mis à jour",
+        description: "Les paramètres de la sphère ont été mis à jour avec succès",
         duration: 3000,
       });
 
@@ -215,37 +296,23 @@ export function SphereSettingsModal({
   };
 
   const handleDeleteSphere = async () => {
-    if (!sphereData?.id) {
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Identifiant de sphère manquant",
-      });
-      return;
-    }
+    if (!sphereData?.id) return;
 
     setIsDeleting(true);
-
     try {
-      const response = await deleteSphere(sphereData.id);
-      const isSuccess = response?.success ?? true;
-      if (!isSuccess) {
-        throw new Error(response?.message || "Échec de la suppression de la sphère");
-      }
-
-      if (onSphereDeleted) {
-        onSphereDeleted(sphereData.id);
-      }
-
+      await deleteSphere(sphereData.id);
+      
       toast({
         title: "Sphère supprimée",
         description: "La sphère a été supprimée avec succès",
-        duration: 3000,
       });
 
       setOpen(false);
       setShowDeleteConfirm(false);
 
+      if (onSphereDeleted) {
+        onSphereDeleted(sphereData.id);
+      }
     } catch (error) {
       toast({
         variant: "destructive",
@@ -257,7 +324,7 @@ export function SphereSettingsModal({
     }
   };
 
-  const showAdvancedOptions = sphereData?.type !== 'cours' && sphereData?.type !== 'communaute';
+  const expiresDate = sphereData?.expiresAt || sphereData?.expires_at;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -272,85 +339,162 @@ export function SphereSettingsModal({
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Badge & Type Info Header */}
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/40 border border-border/40">
+            {sphereType === "cours" && (
+              <>
+                <div className="h-10 w-10 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                  <BookOpen className="h-5 w-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground">Sphère de Cours</h4>
+                  <p className="text-xs text-muted-foreground">Espace pédagogique dédié aux cours, TDs, annales & révisions</p>
+                </div>
+              </>
+            )}
+            {sphereType === "projet" && (
+              <>
+                <div className="h-10 w-10 rounded-xl bg-violet-500/15 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0">
+                  <Target className="h-5 w-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground">Sphère de Projet</h4>
+                  <p className="text-xs text-muted-foreground">Gestion d'équipe, tableau Kanban, tâches et livrables</p>
+                </div>
+              </>
+            )}
+            {sphereType === "communaute" && (
+              <>
+                <div className="h-10 w-10 rounded-xl bg-sky-500/15 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
+                  <Users className="h-5 w-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground">Communauté Étudiante</h4>
+                  <p className="text-xs text-muted-foreground">Échanges libres, flux d'actualités et vie étudiante</p>
+                </div>
+              </>
+            )}
+          </div>
+
           {/* Informations générales */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Sphere className="h-4 w-4" />
+            <h3 className="text-sm font-semibold tracking-wide text-foreground flex items-center gap-2">
+              <Sphere className="h-4 w-4 text-primary" />
               Informations générales
             </h3>
             
             <div>
-                <Label htmlFor="name">Nom de la sphère *</Label>
-                <Input
-                  id="name"
-                  value={settings.name}
-                  onChange={(e) => updateSetting("name", e.target.value)}
-                  placeholder="Nom de votre sphère"
-                  maxLength={50}
-                />
+              <Label htmlFor="name" className="text-xs">Nom de la sphère *</Label>
+              <Input
+                id="name"
+                value={settings.name}
+                onChange={(e) => updateSetting("name", e.target.value)}
+                placeholder="Nom de votre sphère"
+                maxLength={50}
+                className="mt-1"
+              />
             </div>
 
             <div>
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description" className="text-xs">Description</Label>
               <Textarea
                 id="description"
                 value={settings.description}
                 onChange={(e) => updateSetting("description", e.target.value)}
-                placeholder="Description de la sphère"
+                placeholder="Description concise de la sphère"
                 rows={3}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="objective">Objectif</Label>
-              <Textarea
-                id="objective"
-                value={settings.objective}
-                onChange={(e) => updateSetting("objective", e.target.value)}
-                placeholder="Objectif de la sphère (optionnel)"
-                rows={2}
+                className="mt-1"
               />
             </div>
           </div>
 
-          {/* Confidentialité et accès */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              Confidentialité et accès
-            </h3>
-            
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="requireApproval">Approbation requise</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Les demandes d'adhésion doivent être approuvées
-                  </p>
-                </div>
-                <Switch
-                  id="requireApproval"
-                  checked={settings.requireApproval}
-                  onCheckedChange={(value) => updateSetting("requireApproval", value)}
+          {/* Section Spécifique au Type */}
+          {sphereType === "cours" && (
+            <div className="space-y-4 pt-2 border-t border-border/40">
+              <h3 className="text-sm font-semibold tracking-wide text-foreground flex items-center gap-2">
+                <BookOpen className="h-4 w-4 text-blue-500" />
+                Configuration du cours & pédagogie
+              </h3>
+
+              <div>
+                <Label htmlFor="courseObjective" className="text-xs">Objectifs pédagogiques & Syllabus</Label>
+                <Textarea
+                  id="courseObjective"
+                  value={settings.objective}
+                  onChange={(e) => updateSetting("objective", e.target.value)}
+                  placeholder="Ex : Notions clés du semestre, programme des examens, chapitres abordés..."
+                  rows={2}
+                  className="mt-1"
                 />
               </div>
-            </div>
-          </div>
 
-          {/* Options Avancées (Public cible, Durée, Collaboration) */}
-          {showAdvancedOptions && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <Clock3 className="h-4 w-4" />
-                Options avancées
+              <div>
+                <Label htmlFor="targetAudience" className="text-xs">Niveau d'études & Promotion ciblée</Label>
+                <Select value={settings.targetAudience} onValueChange={(value) => updateSetting("targetAudience", value)}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Sélectionnez le niveau" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {targetAudienceOptions.map((audience) => (
+                      <SelectItem key={audience} value={audience}>{audience}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label className="text-xs">Modalités de révision & entraide</Label>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {collaborationTypesList.map((type) => {
+                    const isSelected = (settings.collaborationTypes || []).includes(type);
+                    return (
+                      <Button
+                        key={type}
+                        type="button"
+                        variant={isSelected ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => toggleCollaborationType(type)}
+                        className={cn(
+                          "text-xs h-7 py-0 px-2.5 rounded-lg",
+                          isSelected
+                            ? "bg-blue-600 text-white hover:bg-blue-700"
+                            : "text-muted-foreground"
+                        )}
+                      >
+                        {type}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {sphereType === "projet" && (
+            <div className="space-y-4 pt-2 border-t border-border/40">
+              <h3 className="text-sm font-semibold tracking-wide text-foreground flex items-center gap-2">
+                <Target className="h-4 w-4 text-violet-500" />
+                Configuration du projet & Kanban
               </h3>
+
+              <div>
+                <Label htmlFor="projectObjective" className="text-xs">Objectif & Livrable principal du projet</Label>
+                <Textarea
+                  id="projectObjective"
+                  value={settings.objective}
+                  onChange={(e) => updateSetting("objective", e.target.value)}
+                  placeholder="Ex : Développer un MVP, soumettre le rapport de projet, préparer la soutenance..."
+                  rows={2}
+                  className="mt-1"
+                />
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="targetAudience">Public cible</Label>
+                  <Label htmlFor="targetAudience" className="text-xs">Profils & Équipe recherchée</Label>
                   <Select value={settings.targetAudience} onValueChange={(value) => updateSetting("targetAudience", value)}>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Tous les étudiants" />
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Profils ciblés" />
                     </SelectTrigger>
                     <SelectContent>
                       {targetAudienceOptions.map((audience) => (
@@ -361,9 +505,9 @@ export function SphereSettingsModal({
                 </div>
 
                 <div>
-                  <Label htmlFor="duration">Durée</Label>
+                  <Label htmlFor="duration" className="text-xs">Durée estimée du projet</Label>
                   <Select value={settings.duration} onValueChange={(value) => updateSetting("duration", value)}>
-                    <SelectTrigger className="mt-2">
+                    <SelectTrigger className="mt-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -376,35 +520,12 @@ export function SphereSettingsModal({
                   </Select>
                 </div>
               </div>
-              
-              <div>
-                <Label>Collaboration</Label>
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {collaborationTypesList.map((type) => (
-                    <Button
-                      key={type}
-                      type="button"
-                      variant={(settings.collaborationTypes || []).includes(type) ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => toggleCollaborationType(type)}
-                      className={cn(
-                        "text-[10px] h-7 py-0 px-2",
-                        (settings.collaborationTypes || []).includes(type)
-                          ? "bg-secondary text-secondary-foreground hover:bg-muted border border-border/60 border-none"
-                          : "text-muted-foreground"
-                      )}
-                    >
-                      {type}
-                    </Button>
-                  ))}
-                </div>
-              </div>
 
               {settings.duration !== "Permanent" && (
-                <div className="flex items-center justify-between rounded-md border p-3 mt-4">
+                <div className="flex items-center justify-between rounded-xl border p-3 bg-muted/20">
                   <div>
-                    <Label htmlFor="autoDeleteOnExpiry">Suppression auto à expiration</Label>
-                    <p className="text-xs text-muted-foreground">Supprime la sphère expirée automatiquement</p>
+                    <Label htmlFor="autoDeleteOnExpiry" className="text-xs font-medium">Suppression automatique à expiration</Label>
+                    <p className="text-[11px] text-muted-foreground">Archiver la sphère et ses données lorsque l'échéance est atteinte</p>
                   </div>
                   <Switch
                     id="autoDeleteOnExpiry"
@@ -414,50 +535,181 @@ export function SphereSettingsModal({
                 </div>
               )}
 
-              <div className="text-sm text-muted-foreground mt-2">
-                Statut: {sphereData?.expiresAt ? (new Date(sphereData.expiresAt) < new Date() ? "Expirée" : "Active") : "Sans expiration"}
-                {sphereData?.expiresAt ? ` - Expire le ${new Date(sphereData.expiresAt).toLocaleString()}` : ""}
-              </div>
-
-              {settings.duration !== "Permanent" && (
-                <Button
-                  variant="secondary"
-                  onClick={handleExtendDuration}
-                  disabled={isExtending || isSaving || isDeleting}
-                  className="mt-2"
-                >
-                  {isExtending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Clock3 className="h-4 w-4 mr-2" />}
-                  Prolonger la durée
-                </Button>
+              {expiresDate && (
+                <div className="text-xs text-muted-foreground flex items-center justify-between p-2.5 rounded-lg bg-muted/40">
+                  <span>
+                    Statut : {new Date(expiresDate) < new Date() ? "Expiré" : "En cours"} (Expire le {new Date(expiresDate).toLocaleDateString()})
+                  </span>
+                  {settings.duration !== "Permanent" && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleExtendDuration}
+                      disabled={isExtending || isSaving || isDeleting}
+                      className="h-7 text-xs gap-1"
+                    >
+                      {isExtending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Clock3 className="h-3 w-3" />}
+                      Prolonger
+                    </Button>
+                  )}
+                </div>
               )}
+
+              <div>
+                <Label className="text-xs">Outils & Modalités du projet</Label>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {collaborationTypesList.map((type) => {
+                    const isSelected = (settings.collaborationTypes || []).includes(type);
+                    return (
+                      <Button
+                        key={type}
+                        type="button"
+                        variant={isSelected ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => toggleCollaborationType(type)}
+                        className={cn(
+                          "text-xs h-7 py-0 px-2.5 rounded-lg",
+                          isSelected
+                            ? "bg-violet-600 text-white hover:bg-violet-700"
+                            : "text-muted-foreground"
+                        )}
+                      >
+                        {type}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           )}
 
+          {sphereType === "communaute" && (
+            <div className="space-y-4 pt-2 border-t border-border/40">
+              <h3 className="text-sm font-semibold tracking-wide text-foreground flex items-center gap-2">
+                <Users className="h-4 w-4 text-sky-500" />
+                Configuration de la communauté
+              </h3>
+
+              <div>
+                <Label htmlFor="communityCharter" className="text-xs">Charte & Consignes de bienveillance</Label>
+                <Textarea
+                  id="communityCharter"
+                  value={settings.objective}
+                  onChange={(e) => updateSetting("objective", e.target.value)}
+                  placeholder="Ex : Espace d'entraide et de partage respectueux, ouvert à toutes les promos..."
+                  rows={2}
+                  className="mt-1"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="targetAudience" className="text-xs">Public ciblé</Label>
+                  <Select value={settings.targetAudience} onValueChange={(value) => updateSetting("targetAudience", value)}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Public visé" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {targetAudienceOptions.map((audience) => (
+                        <SelectItem key={audience} value={audience}>{audience}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="duration" className="text-xs">Durée de la communauté</Label>
+                  <Select value={settings.duration} onValueChange={(value) => updateSetting("duration", value)}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {durationOptions.map((duration) => (
+                        <SelectItem key={duration} value={duration}>
+                          {duration}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-xs">Activités communautaires</Label>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {collaborationTypesList.map((type) => {
+                    const isSelected = (settings.collaborationTypes || []).includes(type);
+                    return (
+                      <Button
+                        key={type}
+                        type="button"
+                        variant={isSelected ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => toggleCollaborationType(type)}
+                        className={cn(
+                          "text-xs h-7 py-0 px-2.5 rounded-lg",
+                          isSelected
+                            ? "bg-sky-600 text-white hover:bg-sky-700"
+                            : "text-muted-foreground"
+                        )}
+                      >
+                        {type}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Confidentialité et accès */}
+          <div className="space-y-4 pt-2 border-t border-border/40">
+            <h3 className="text-sm font-semibold tracking-wide text-foreground flex items-center gap-2">
+              <Shield className="h-4 w-4 text-emerald-500" />
+              Confidentialité & Accès
+            </h3>
+            
+            <div className="flex items-center justify-between p-3 rounded-xl border border-border/40 bg-card">
+              <div>
+                <Label htmlFor="requireApproval" className="text-xs font-medium">Approbation des adhésions requise</Label>
+                <p className="text-[11px] text-muted-foreground">
+                  Les nouveaux membres doivent être validés par un modérateur ou créateur avant d'accéder à la sphère
+                </p>
+              </div>
+              <Switch
+                id="requireApproval"
+                checked={settings.requireApproval}
+                onCheckedChange={(value) => updateSetting("requireApproval", value)}
+              />
+            </div>
+          </div>
+
           {/* Zone de danger */}
-          <div className="space-y-4 pt-4 border-t">
+          <div className="space-y-4 pt-4 border-t border-destructive/20">
             {!showDeleteConfirm ? (
               <Button
                 variant="destructive"
                 onClick={() => setShowDeleteConfirm(true)}
-                className="w-full"
+                className="w-full text-xs font-semibold"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Supprimer la sphère
               </Button>
             ) : (
-              <div className="space-y-3 p-4 border border-destructive/20 rounded-lg bg-destructive/5">
-                <p className="text-sm text-destructive font-medium">
+              <div className="space-y-3 p-4 border border-destructive/30 rounded-xl bg-destructive/5">
+                <p className="text-sm text-destructive font-semibold">
                   Êtes-vous sûr de vouloir supprimer cette sphère ?
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Cette action est irréversible. Tous les posts, ressources et tâches seront supprimés.
+                  Cette action est irréversible. Tous les messages, fichiers et tâches associés seront définitivement supprimés.
                 </p>
-                <div className="flex gap-2">
+                <div className="flex gap-2 justify-end pt-1">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setShowDeleteConfirm(false)}
                     disabled={isDeleting}
+                    className="text-xs"
                   >
                     Annuler
                   </Button>
@@ -466,15 +718,16 @@ export function SphereSettingsModal({
                     size="sm"
                     onClick={handleDeleteSphere}
                     disabled={isDeleting}
+                    className="text-xs font-semibold"
                   >
                     {isDeleting ? (
                       <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
                         Suppression...
                       </>
                     ) : (
                       <>
-                        <Trash2 className="h-4 w-4 mr-2" />
+                        <Trash2 className="h-3.5 w-3.5 mr-1.5" />
                         Confirmer la suppression
                       </>
                     )}
@@ -485,10 +738,10 @@ export function SphereSettingsModal({
           </div>
 
           {/* Boutons d'action */}
-          <div className="flex gap-2 pt-4">
+          <div className="flex gap-2 pt-2 border-t border-border/40">
             <Button
               variant="outline"
-              className="flex-1"
+              className="flex-1 text-xs"
               onClick={() => setOpen(false)}
               disabled={isSaving || isDeleting}
             >
@@ -497,17 +750,17 @@ export function SphereSettingsModal({
             <Button
               onClick={handleSave}
               disabled={!settings.name.trim() || isSaving || isDeleting}
-              className="flex-1 bg-secondary text-secondary-foreground hover:bg-muted border border-border/60"
+              className="flex-1 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90"
             >
               {isSaving ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
                   Sauvegarde...
                 </>
               ) : (
                 <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Sauvegarder
+                  <Save className="h-3.5 w-3.5 mr-1.5" />
+                  Enregistrer les modifications
                 </>
               )}
             </Button>
@@ -517,5 +770,3 @@ export function SphereSettingsModal({
     </Dialog>
   );
 }
-
-

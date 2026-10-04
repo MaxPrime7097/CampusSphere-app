@@ -47,7 +47,7 @@ pnpm dev
 
 # Ou lancer une application spécifique :
 pnpm dev:campus    # CampusSphere -> http://localhost:5173
-pnpm dev:sphera    # Sphera App   -> http://localhost:5174 ou 4173
+pnpm dev:sphera    # Sphera App   -> http://localhost:5174
 pnpm dev:backend   # API Backend  -> http://localhost:3000
 ```
 

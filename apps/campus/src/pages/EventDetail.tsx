@@ -92,6 +92,19 @@ export function EventDetail() {
     gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
+    placeholderData: () => {
+      if (!id) return undefined;
+      const eventsQueries = queryClient.getQueriesData<any[]>({ queryKey: ["events"] });
+      for (const [, eventsList] of eventsQueries) {
+        if (Array.isArray(eventsList)) {
+          const match = eventsList.find(
+            (e: any) => String(e.id) === String(id) || e.slug === id || e.hash_id === id
+          );
+          if (match) return match;
+        }
+      }
+      return undefined;
+    },
   });
 
   // Fetch Attendees

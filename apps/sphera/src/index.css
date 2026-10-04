@@ -101,7 +101,8 @@
     color: #17301F;
   }
 
-  [data-theme="clair"] .text-white {
+  [data-theme="clair"] .text-white,
+  [data-theme="clair"] [class*="text-white/"] {
     color: #17301F;
   }
 

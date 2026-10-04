@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getSphereOverview } from "@/services/api";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -22,18 +22,22 @@ const PRI_LABEL: Record<string, string> = { high: "Haute", medium: "Moyenne", lo
 const KAN: Record<string, string> = { todo: "À faire", in_progress: "En cours", review: "Révision", done: "Terminé" };
 
 export function SphereOverview({ sphereId, sphereType, objective, onTabChange }: Props) {
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const load = async () => {
-    setLoading(true); setError(null);
-    try { setData(await getSphereOverview(sphereId)); }
-    catch (e: any) { setError(e?.message || "Erreur de chargement."); }
-    finally { setLoading(false); }
-  };
+  const overviewQuery = useQuery({
+    queryKey: ["sphere-overview", sphereId],
+    queryFn: () => getSphereOverview(sphereId),
+    enabled: Boolean(sphereId),
+    staleTime: 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+    placeholderData: (prev) => prev ?? queryClient.getQueryData(["sphere-overview", sphereId]),
+  });
 
-  useEffect(() => { void load(); }, [sphereId]);
+  const data = overviewQuery.data ?? queryClient.getQueryData(["sphere-overview", sphereId]);
+  const loading = overviewQuery.isLoading && !data;
+  const error = overviewQuery.error ? ((overviewQuery.error as any)?.message || "Erreur de chargement.") : null;
 
   const fmt = (d?: string | null) =>
     d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }) : null;
@@ -44,10 +48,10 @@ export function SphereOverview({ sphereId, sphereType, objective, onTabChange }:
     </div>
   );
 
-  if (error) return (
+  if (error && !data) return (
     <div className="flex flex-col items-center justify-center py-16 gap-3">
       <p className="text-sm text-destructive">{error}</p>
-      <Button variant="outline" size="sm" onClick={load} className="gap-2">
+      <Button variant="outline" size="sm" onClick={() => void overviewQuery.refetch()} className="gap-2">
         <RefreshCw className="h-4 w-4" /> Réessayer
       </Button>
     </div>

@@ -11,12 +11,9 @@ export const SPHERE_CATEGORY_OPTIONS = [
 
 export const SPHERE_TYPE_OPTIONS = [
   { value: "all", label: "Tous types" },
-  { value: "study", label: "Étude" },
-  { value: "project", label: "Projet" },
-  { value: "club", label: "Club" },
-  { value: "event", label: "Événement" },
-  { value: "networking", label: "Réseautage" },
-  { value: "other", label: "Autre" },
+  { value: "cours", label: "Cours" },
+  { value: "projet", label: "Projet" },
+  { value: "communaute", label: "Communauté" },
 ] as const;
 
 export const SPHERE_AUDIENCE_OPTIONS = [

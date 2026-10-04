@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { FileText, BookOpen, Spinner as Loader2 } from "@phosphor-icons/react";
 import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { Button } from "@/components/ui/button";
@@ -20,9 +21,7 @@ interface SphereFile {
 }
 
 export function SphereSpheraTab({ sphereId }: SphereSpheraTabProps) {
-  const [files, setFiles] = useState<SphereFile[]>([]);
-  const [sharedSessions, setSharedSessions] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [studyModal, setStudyModal] = useState<{
     open: boolean;
@@ -30,26 +29,47 @@ export function SphereSpheraTab({ sphereId }: SphereSpheraTabProps) {
     resourceTitle?: string;
   }>({ open: false });
 
-  useEffect(() => {
-    setLoading(true);
-    // [BE-MIGRATION FE-04] Promise.all makes one failing call blank the whole tab; the sessions
-    // call currently always 500s, so files never render. Use allSettled. — documentation/FRONTEND_CHANGES.md
-    Promise.all([
-      getSphereFiles(sphereId),
-      getSphereStudySessions(sphereId)
-    ])
-      .then(([filesData, sessionsData]) => {
-        setFiles(Array.isArray(filesData) ? filesData : []);
-        setSharedSessions(sessionsData?.success ? sessionsData.data : []);
-      })
-      .catch(() => {
-        setFiles([]);
-        setSharedSessions([]);
-      })
-      .finally(() => setLoading(false));
-  }, [sphereId]);
+  // Use the shared sphere-files cache key (populated by SphereDetail)
+  const filesQuery = useQuery({
+    queryKey: ["sphere-files", sphereId],
+    queryFn: () => getSphereFiles(sphereId),
+    enabled: Boolean(sphereId),
+    staleTime: 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+    placeholderData: (prev) => prev ?? queryClient.getQueryData(["sphere-files", sphereId]),
+  });
 
-  if (loading) {
+  const sessionsQuery = useQuery({
+    queryKey: ["sphere-study-sessions", sphereId],
+    queryFn: async () => {
+      try {
+        const res = await getSphereStudySessions(sphereId);
+        return res?.success && Array.isArray(res.data) ? res.data : [];
+      } catch {
+        return [];
+      }
+    },
+    enabled: Boolean(sphereId),
+    staleTime: 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+    placeholderData: (prev) => prev ?? queryClient.getQueryData(["sphere-study-sessions", sphereId]),
+  });
+
+  const cachedFiles = queryClient.getQueryData<any[]>(["sphere-files", sphereId]);
+  const rawFiles = filesQuery.data ?? cachedFiles ?? [];
+  const files: SphereFile[] = Array.isArray(rawFiles) ? rawFiles : [];
+
+  const cachedSessions = queryClient.getQueryData<any[]>(["sphere-study-sessions", sphereId]);
+  const sharedSessions: any[] = sessionsQuery.data ?? cachedSessions ?? [];
+
+  const isLoading =
+    (filesQuery.isLoading || sessionsQuery.isLoading) && files.length === 0 && sharedSessions.length === 0;
+
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />

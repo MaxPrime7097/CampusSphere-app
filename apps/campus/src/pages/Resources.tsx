@@ -261,8 +261,11 @@ export function Resources() {
       const matchesType =
         selectedType === "all" ||
         r.type === selectedType ||
-        (selectedType === "notes" && (r.type === "notes" || r.type === "resumes")) ||
-        (selectedType === "annales" && (r.type === "annales" || r.type === "exam_papers"));
+        (selectedType === "course_notes" && (r.type === "course_notes" || r.type === "notes" || r.type === "resumes")) ||
+        (selectedType === "exams" && (r.type === "exams" || r.type === "annales" || r.type === "exam_papers")) ||
+        (selectedType === "td_tp" && (r.type === "td_tp" || r.type === "exercises")) ||
+        (selectedType === "project" && (r.type === "project" || r.type === "projects")) ||
+        (selectedType === "book" && (r.type === "book" || r.type === "books"));
 
       const ext = r.fileUrl?.split(".").pop()?.toLowerCase() || "";
       const matchesFormat =

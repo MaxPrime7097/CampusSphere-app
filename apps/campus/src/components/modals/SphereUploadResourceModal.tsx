@@ -101,6 +101,24 @@ export function SphereUploadResourceModal({ sphereId, children, onUploaded, open
             />
           </div>
 
+          {uploading && (
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-medium text-foreground flex items-center gap-1.5">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                  Téléversement en cours...
+                </span>
+                <span className="text-muted-foreground">Indexation...</span>
+              </div>
+              <div className="h-1.5 w-full bg-muted overflow-hidden rounded-full">
+                <div className="h-full bg-primary rounded-full animate-pulse w-4/5 transition-all duration-500" />
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Envoi de &quot;{file?.name}&quot; vers la bibliothèque de la sphère.
+              </p>
+            </div>
+          )}
+
           <div className="flex gap-2">
             <Button variant="outline" className="flex-1" onClick={() => setOpen(false)} disabled={uploading}>Annuler</Button>
             <Button
@@ -108,7 +126,7 @@ export function SphereUploadResourceModal({ sphereId, children, onUploaded, open
               onClick={handleSubmit}
               disabled={!file || !title.trim() || uploading}
             >
-              {uploading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Upload...</> : "Partager"}
+              {uploading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Envoi en cours...</> : "Partager"}
             </Button>
           </div>
         </div>

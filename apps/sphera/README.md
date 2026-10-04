@@ -95,7 +95,7 @@ npm install
 # Démarrer le serveur Vite
 npm run dev
 ```
-L'application démarre par défaut sur `http://localhost:5173` ou `http://localhost:4173`.
+L'application démarre par défaut sur `http://localhost:5173`.
 
 ---
 

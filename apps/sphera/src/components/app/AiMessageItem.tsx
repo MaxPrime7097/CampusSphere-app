@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Copy, Check, ThumbsUp, ThumbsDown, Pencil, ArrowCounterClockwise as RotateCcw } from "@phosphor-icons/react";
+import { Copy, Check, ThumbsUp, ThumbsDown, PencilSimple, ArrowCounterClockwise as RotateCcw, NotePencil } from "@phosphor-icons/react";
 import { useTranslation } from 'react-i18next'
 import { MarkdownRenderer } from './MarkdownRenderer'
 
@@ -9,12 +9,14 @@ interface AiMessageItemProps {
   index?: number
   onEdit?: (index: number, newQuestion: string) => void
   onRegenerate?: (index: number) => void
+  onCreateNote?: (question: string, answer: string) => void
   disabled?: boolean
 }
 
-export function AiMessageItem({ question, answer, index, onEdit, onRegenerate, disabled }: AiMessageItemProps) {
+export function AiMessageItem({ question, answer, index, onEdit, onRegenerate, onCreateNote, disabled }: AiMessageItemProps) {
   const { t } = useTranslation('study')
   const [copied, setCopied] = useState(false)
+  const [noteSaved, setNoteSaved] = useState(false)
   const [feedback, setFeedback] = useState<'up' | 'down' | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [editText, setEditText] = useState(question)
@@ -98,7 +100,7 @@ export function AiMessageItem({ question, answer, index, onEdit, onRegenerate, d
                 aria-label={t('aiMessage.editTooltip')}
                 className="opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity p-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2 shrink-0"
               >
-                <Pencil className="w-3.5 h-3.5" />
+                <PencilSimple className="w-3.5 h-3.5" />
               </button>
             )}
             <div className="px-4 py-2.5 rounded-2xl rounded-tr-xs bg-sphera-surface-2 border border-sphera-border/70 text-white text-sm leading-relaxed shadow-sm">
@@ -171,6 +173,35 @@ export function AiMessageItem({ question, answer, index, onEdit, onRegenerate, d
               >
                 <ThumbsDown className="w-3.5 h-3.5" />
               </button>
+
+              {onCreateNote && !isLoading && (
+                <>
+                  <span className="text-sphera-border px-1">•</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onCreateNote(question, answer)
+                      setNoteSaved(true)
+                      setTimeout(() => setNoteSaved(false), 2200)
+                    }}
+                    title="Enregistrer cette réponse dans mes notes"
+                    aria-label="En créer une note"
+                    className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs text-sphera-text-muted hover:text-amber-300 hover:bg-amber-400/10 transition-colors active:scale-95 cursor-pointer"
+                  >
+                    {noteSaved ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-amber-400" />
+                        <span className="text-amber-400 text-[11px] font-medium">Note enregistrée !</span>
+                      </>
+                    ) : (
+                      <>
+                        <NotePencil className="w-3.5 h-3.5 text-amber-400/80" />
+                        <span className="text-[11px] text-zinc-300 hover:text-white">En créer une note</span>
+                      </>
+                    )}
+                  </button>
+                </>
+              )}
 
               {onRegenerate && index !== undefined && !disabled && (
                 <>

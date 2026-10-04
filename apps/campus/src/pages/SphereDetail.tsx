@@ -1,7 +1,7 @@
 import { parseSlugId, encodeHashId } from "@/lib/hashids";
 import { getSphereUrl } from "@/lib/utils";
 import { Suspense, lazy, useState, useEffect, useMemo, useLayoutEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   getSphere,
@@ -52,6 +52,7 @@ export function SphereDetail() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
+  const queryClient = useQueryClient();
 
   // Pre-emptive immediate address bar rewrite if rawParam is pure numeric
   useLayoutEffect(() => {
@@ -67,7 +68,22 @@ export function SphereDetail() {
     }
   }, [rawParam]);
 
-  const [sphere, setSphere] = useState<any | null>(null);
+  const [sphere, setSphere] = useState<any | null>(() => {
+    if (!id) return null;
+    const direct = queryClient.getQueryData<any>(["sphere", id]);
+    if (direct) return direct;
+    const allSpheres = queryClient.getQueryData<any[]>(["spheres"]);
+    const found = (allSpheres || []).find(
+      (s: any) => String(s.id) === String(id) || s.slug === id || s.hash_id === id
+    );
+    if (found) return found;
+    const userSpheres = queryClient.getQueryData<any[]>(["user-spheres"]);
+    return (
+      (userSpheres || []).find(
+        (s: any) => String(s.id) === String(id) || s.slug === id || s.hash_id === id
+      ) ?? null
+    );
+  });
 
   // Full canonical sync once sphere data is loaded
   useEffect(() => {
@@ -77,11 +93,51 @@ export function SphereDetail() {
       window.history.replaceState(null, "", canonicalUrl);
     }
   }, [sphere]);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [members, setMembers] = useState<any[]>([]);
-  const [pendingMembers, setPendingMembers] = useState<any[]>([]);
-  const [tasks, setTasks] = useState<any[]>([]);
-  const [resources, setResources] = useState<any[]>([]);
+  const mapMember = (m: any, creatorId?: string | number) => ({
+    id: String(m.id),
+    userId: String(m.user_info?.id ?? m.user ?? ""),
+    user_info: m.user_info,
+    role: normalizeRole(m.role || m.role_display || "member"),
+    status: m.status || "active",
+    name:
+      m.user_info?.name ||
+      `${m.user_info?.first_name || ""} ${m.user_info?.last_name || ""}`.trim() ||
+      "Unknown",
+    username: m.user_info?.username || "unknown",
+    avatar: m.user_info?.avatar || "/placeholder-avatar.jpg",
+    isVerified: Boolean(m.user_info?.is_verified ?? m.user_info?.isVerified),
+    isCreator: creatorId ? String(creatorId) === String(m.user_info?.id ?? m.user ?? "") : false,
+  });
+
+  const [currentUserId, setCurrentUserId] = useState<string | null>(() =>
+    currentUser?.id ? String(currentUser.id) : null
+  );
+
+  const [members, setMembers] = useState<any[]>(() => {
+    if (!id) return [];
+    const cached = queryClient.getQueryData<any>(["sphere-members", id]);
+    const raw = Array.isArray(cached) ? cached : cached?.data || cached?.results || [];
+    return raw.map((m: any) => mapMember(m, sphere?.created_by_info?.id ?? sphere?.created_by)).filter((m: any) => m.status === "active");
+  });
+
+  const [pendingMembers, setPendingMembers] = useState<any[]>(() => {
+    if (!id) return [];
+    const cached = queryClient.getQueryData<any>(["sphere-members", id]);
+    const raw = Array.isArray(cached) ? cached : cached?.data || cached?.results || [];
+    return raw.map((m: any) => mapMember(m, sphere?.created_by_info?.id ?? sphere?.created_by)).filter((m: any) => m.status === "pending");
+  });
+
+  const [tasks, setTasks] = useState<any[]>(() => {
+    if (!id) return [];
+    const cached = queryClient.getQueryData<any[]>(["sphere-tasks", id]);
+    return Array.isArray(cached) ? cached.map(mapTask) : [];
+  });
+
+  const [resources, setResources] = useState<any[]>(() => {
+    if (!id) return [];
+    const cached = queryClient.getQueryData<any[]>(["sphere-files", id]);
+    return Array.isArray(cached) ? cached : [];
+  });
 
   const [isMember, setIsMember] = useState(false);
   const [isPendingRequest, setIsPendingRequest] = useState(false);
@@ -163,45 +219,65 @@ export function SphereDetail() {
     queryKey: ["sphere", id],
     queryFn: () => getSphere(String(id)),
     enabled: Boolean(id),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60 * 1000,
     gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    refetchOnMount: true,
+    placeholderData: (prev) => {
+      if (prev) return prev;
+      if (!id) return undefined;
+      const direct = queryClient.getQueryData<any>(["sphere", id]);
+      if (direct) return direct;
+      const allSpheres = queryClient.getQueryData<any[]>(["spheres"]);
+      const found = (allSpheres || []).find(
+        (s: any) => String(s.id) === String(id) || s.slug === id || s.hash_id === id
+      );
+      if (found) return found;
+      const userSpheres = queryClient.getQueryData<any[]>(["user-spheres"]);
+      return (
+        (userSpheres || []).find(
+          (s: any) => String(s.id) === String(id) || s.slug === id || s.hash_id === id
+        ) ?? undefined
+      );
+    },
   });
 
   const membersQuery = useQuery({
     queryKey: ["sphere-members", id],
     queryFn: () => listSphereMembers(String(id)),
     enabled: Boolean(id),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60 * 1000,
     gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    refetchOnMount: true,
+    placeholderData: (prev) => prev ?? queryClient.getQueryData(["sphere-members", id]),
   });
 
   const tasksQuery = useQuery({
     queryKey: ["sphere-tasks", id],
     queryFn: () => listSphereTasks(String(id)),
     enabled: Boolean(id),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60 * 1000,
     gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    refetchOnMount: true,
     retry: false,
+    placeholderData: (prev) => prev ?? queryClient.getQueryData(["sphere-tasks", id]),
   });
 
   const filesQuery = useQuery({
     queryKey: ["sphere-files", id],
     queryFn: () => getSphereFiles(String(id)),
     enabled: Boolean(id),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60 * 1000,
     gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    refetchOnMount: true,
+    placeholderData: (prev) => prev ?? queryClient.getQueryData(["sphere-files", id]),
   });
 
   const isInitialLoading =
-    (sphereQuery.isLoading || membersQuery.isLoading) && !sphereQuery.data && !sphere;
+    sphereQuery.isLoading && !sphereQuery.data && !sphere;
 
   const loadSphereData = async () => {
     await Promise.all([
@@ -213,21 +289,18 @@ export function SphereDetail() {
   };
 
   useEffect(() => {
-    if (!id) return;
-
-    if (sphereQuery.error) {
-      setLoadError((sphereQuery.error as any)?.message || "Erreur de chargement");
-      return;
+    if (sphereQuery.data) {
+      setSphere(sphereQuery.data);
     }
+  }, [sphereQuery.data]);
 
-    setLoadError(null);
-
-    const sphereData = sphereQuery.data;
-    const rawMembersData = membersQuery.data;
-    if (!sphereData) return;
-
+  useEffect(() => {
     setCurrentUserId(currentUser?.id ? String(currentUser.id) : null);
-    setSphere(sphereData);
+  }, [currentUser?.id]);
+
+  useEffect(() => {
+    const rawMembersData = membersQuery.data ?? queryClient.getQueryData(["sphere-members", id]);
+    if (!rawMembersData) return;
 
     const membersData: any[] = Array.isArray(rawMembersData)
       ? rawMembersData
@@ -237,28 +310,15 @@ export function SphereDetail() {
       ? (rawMembersData as any).results
       : [];
 
-    const mappedMembers = (membersData || []).map((m: any) => ({
-      id: String(m.id),
-      userId: String(m.user_info?.id ?? m.user ?? ""),
-      user_info: m.user_info,
-      role: normalizeRole(m.role || m.role_display || "member"),
-      status: m.status || "active",
-      name:
-        m.user_info?.name ||
-        `${m.user_info?.first_name || ""} ${m.user_info?.last_name || ""}`.trim() ||
-        "Unknown",
-      username: m.user_info?.username || "unknown",
-      avatar: m.user_info?.avatar || "/placeholder-avatar.jpg",
-      isVerified: Boolean(m.user_info?.is_verified ?? m.user_info?.isVerified),
-      isCreator: String(sphereData?.created_by_info?.id) === String(m.user_info?.id ?? m.user ?? ""),
-    }));
+    const creatorId = sphere?.created_by_info?.id ?? sphere?.created_by ?? sphere?.createdByInfo?.id;
+    const mappedMembers = membersData.map((m: any) => mapMember(m, creatorId));
 
     setMembers(mappedMembers.filter((m: any) => m.status === "active"));
     setPendingMembers(mappedMembers.filter((m: any) => m.status === "pending"));
 
-    const isMemberFromServer = sphereData?.is_member ?? sphereData?.isMember ?? false;
+    const isMemberFromServer = sphere?.is_member ?? sphere?.isMember ?? false;
     const membershipStatusFromServer =
-      sphereData?.membership_status ?? sphereData?.membershipStatus ?? null;
+      sphere?.membership_status ?? sphere?.membershipStatus ?? null;
     const currentUserMember = mappedMembers.find(
       (m: any) => m.userId && m.userId !== "" && String(m.userId) === String(currentUser?.id)
     );
@@ -271,7 +331,9 @@ export function SphereDetail() {
 
     setIsMember(resolvedIsMember);
     setIsPendingRequest(!resolvedIsMember && resolvedIsPending);
+  }, [membersQuery.data, sphere, currentUser?.id, id]);
 
+  useEffect(() => {
     if (tasksQuery.data) {
       setTasks((tasksQuery.data || []).map(mapTask));
       setTaskState("ready");
@@ -282,26 +344,23 @@ export function SphereDetail() {
       setTasks([]);
       setTaskState(errStatus === 403 ? "forbidden" : "server_error");
     }
+  }, [tasksQuery.data, tasksQuery.error]);
 
+  useEffect(() => {
     if (filesQuery.data) {
       setResources(filesQuery.data);
     } else if (filesQuery.error) {
       setResources([]);
     }
-  }, [
-    id,
-    currentUser?.id,
-    sphereQuery.data,
-    sphereQuery.isLoading,
-    sphereQuery.error,
-    membersQuery.data,
-    membersQuery.isLoading,
-    membersQuery.error,
-    tasksQuery.data,
-    tasksQuery.error,
-    filesQuery.data,
-    filesQuery.error,
-  ]);
+  }, [filesQuery.data, filesQuery.error]);
+
+  useEffect(() => {
+    if (sphereQuery.error && !sphere) {
+      setLoadError((sphereQuery.error as any)?.message || "Erreur de chargement");
+    } else {
+      setLoadError(null);
+    }
+  }, [sphereQuery.error, sphere]);
 
   const sphereFallback = useMemo(
     () =>
@@ -339,6 +398,18 @@ export function SphereDetail() {
   }, [currentUserId, members, sphere]);
 
   const canModerateMembers = resolvedUserRole === "admin" || resolvedUserRole === "moderator";
+
+  const requiresApproval = Boolean(
+    sphere?.require_approval ??
+    sphere?.requireApproval ??
+    sphere?.requires_approval ??
+    sphere?.requiresApproval ??
+    sphere?.is_private ??
+    sphere?.isPrivate ??
+    false
+  );
+
+  const showPendingTab = canModerateMembers && (requiresApproval || pendingMembers.length > 0);
 
   const sphereCreatorId = useMemo(() => {
     const candidates = [
@@ -643,7 +714,7 @@ export function SphereDetail() {
                   <SharedTabsTrigger value="members" className="hidden md:flex">
                     Membres
                   </SharedTabsTrigger>
-                  {canModerateMembers && (
+                  {showPendingTab && (
                     <SharedTabsTrigger value="pending" className="hidden md:flex">
                       Demandes ({pendingMembers.length})
                     </SharedTabsTrigger>
@@ -652,7 +723,7 @@ export function SphereDetail() {
               </div>
 
               <div className="px-4 md:px-0">
-                <TabsContent value="overview" className="mt-4">
+                <TabsContent value="overview" forceMount className="mt-4 data-[state=inactive]:hidden">
                   <SphereOverview
                     sphereId={String(id)}
                     sphereType={sphere?.sphere_type}
@@ -661,7 +732,7 @@ export function SphereDetail() {
                   />
                 </TabsContent>
 
-                <TabsContent value="chat" className="mt-4">
+                <TabsContent value="chat" forceMount className="mt-4 data-[state=inactive]:hidden">
                   <MiniChat
                     sphereId={String(id)}
                     sphereName={sphereFallback.name}
@@ -670,7 +741,7 @@ export function SphereDetail() {
                   />
                 </TabsContent>
 
-                <TabsContent value="tasks" className="mt-4">
+                <TabsContent value="tasks" forceMount className="mt-4 data-[state=inactive]:hidden">
                   <SphereTasksTab
                     sphereId={String(id)}
                     hasKanban={sphereFeatures.has_kanban}
@@ -685,7 +756,7 @@ export function SphereDetail() {
                   />
                 </TabsContent>
 
-                <TabsContent value="files" className="mt-4">
+                <TabsContent value="files" forceMount className="mt-4 data-[state=inactive]:hidden">
                   <SphereFilesTab
                     sphereId={String(id)}
                     resources={resources}
@@ -698,7 +769,7 @@ export function SphereDetail() {
                   />
                 </TabsContent>
 
-                <TabsContent value="members" className="mt-4">
+                <TabsContent value="members" forceMount className="mt-4 data-[state=inactive]:hidden">
                   <SphereMembersTab
                     members={members}
                     canModerateMembers={canModerateMembers}
@@ -708,23 +779,25 @@ export function SphereDetail() {
                   />
                 </TabsContent>
 
-                <TabsContent value="pending" className="mt-4">
-                  <SpherePendingMembersTab
-                    pendingMembers={pendingMembers}
-                    processingMemberIds={processingMemberIds}
-                    onApprove={handleApproveRequest}
-                    onReject={handleRejectRequest}
-                  />
-                </TabsContent>
+                {showPendingTab && (
+                  <TabsContent value="pending" forceMount className="mt-4 data-[state=inactive]:hidden">
+                    <SpherePendingMembersTab
+                      pendingMembers={pendingMembers}
+                      processingMemberIds={processingMemberIds}
+                      onApprove={handleApproveRequest}
+                      onReject={handleRejectRequest}
+                    />
+                  </TabsContent>
+                )}
 
                 {sphereFeatures.has_sphera && (
-                  <TabsContent value="sphera" className="mt-4">
+                  <TabsContent value="sphera" forceMount className="mt-4 data-[state=inactive]:hidden">
                     <SphereSpheraTab sphereId={String(id)} />
                   </TabsContent>
                 )}
 
                 {sphereFeatures.has_announcements && (
-                  <TabsContent value="annonces" className="mt-4">
+                  <TabsContent value="annonces" forceMount className="mt-4 data-[state=inactive]:hidden">
                     <AnnouncementsTab
                       sphereId={String(id)}
                       canModerate={canModerateMembers}

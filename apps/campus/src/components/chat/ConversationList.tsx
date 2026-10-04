@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { formatRelativeTime } from "@/lib/date";
+import { parseSlugId } from "@/lib/hashids";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
 import type { Conversation } from "@/types";
 
@@ -126,14 +127,21 @@ export function ConversationList({
             </div>
           </div>
         ) : (
-          filteredConversations.map((conversation) => (
-            <div
-              key={conversation.id}
-              className={`p-3 md:p-4 border-b cursor-pointer transition-colors hover:bg-accent/50 ${
-                selectedConversationId === conversation.id ? "bg-accent" : ""
-              }`}
-              onClick={() => onSelectConversation(conversation.id)}
-            >
+          filteredConversations.map((conversation) => {
+            const isSelected =
+              selectedConversationId === conversation.id ||
+              (conversation.hash_id && selectedConversationId === conversation.hash_id) ||
+              (parseSlugId(selectedConversationId) !== null &&
+                parseSlugId(selectedConversationId) ===
+                  (conversation.numericId ?? parseSlugId(conversation.id)));
+            return (
+              <div
+                key={conversation.id}
+                className={`p-3 md:p-4 border-b cursor-pointer transition-colors hover:bg-accent/50 ${
+                  isSelected ? "bg-accent" : ""
+                }`}
+                onClick={() => onSelectConversation(conversation.hash_id || conversation.id)}
+              >
               <div className="flex items-center gap-2 md:gap-3">
                 <div className="relative flex-shrink-0">
                   <Avatar className="h-9 w-9 md:h-12 md:w-12">
@@ -186,8 +194,8 @@ export function ConversationList({
                 </div>
               </div>
             </div>
-          ))
-        )}
+          );
+        }))}
       </div>
     </div>
   );

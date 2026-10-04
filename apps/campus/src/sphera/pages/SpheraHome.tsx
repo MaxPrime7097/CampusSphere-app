@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
-import { BookOpen, Brain as BrainCircuit, Stack as SquareStack, Upload, Spinner as Loader2, FileText, Plus, Scroll } from "@phosphor-icons/react";
+import { BookOpen, Brain as BrainCircuit, Upload, Spinner as Loader2, FileText, Plus, Scroll, Exam, Stack as SquareStack } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { StudySessionCard } from "@/sphera/components/study/StudySessionCard";
 import { StudyToolsModal } from "@/sphera/components/study/StudyToolsModal";
@@ -43,52 +44,69 @@ const getSpheraStandaloneUrl = () => {
 export const SpheraHome: React.FC = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [sessions, setSessions] = useState<StudySessionListItem[]>([]);
-  const [loadingSessions, setLoadingSessions] = useState(true);
   const [filter, setFilter] = useState<ToolFilter>("all");
   const [selectedUploadFile, setSelectedUploadFile] = useState<File | null>(null);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
-
-  const [annales, setAnnales] = useState<AnnaleSessionListItem[]>([]);
-  const [loadingAnnales, setLoadingAnnales] = useState(true);
   const [annaleModalOpen, setAnnaleModalOpen] = useState(false);
 
-  useEffect(() => {
-    loadSessions();
-    loadAnnales();
-  }, []);
-
-  const loadSessions = async () => {
-    setLoadingSessions(true);
-    try {
+  // TanStack Query SWR for study sessions
+  const sessionsQuery = useQuery({
+    queryKey: ["sphera", "sessions"],
+    queryFn: async () => {
       const res = await getStudySessions();
-      setSessions(res?.data || []);
-    } catch {
-      toast({ title: "Impossible de charger les sessions", variant: "destructive" });
-    } finally {
-      setLoadingSessions(false);
-    }
-  };
+      return (res?.data || []) as StudySessionListItem[];
+    },
+    staleTime: 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    placeholderData: (prev) => prev,
+    refetchOnMount: true,
+  });
 
-  const loadAnnales = async () => {
-    setLoadingAnnales(true);
-    try {
+  // TanStack Query SWR for annale sessions
+  const annalesQuery = useQuery({
+    queryKey: ["sphera", "annales"],
+    queryFn: async () => {
       const res = await getAnnaleSessions();
-      setAnnales(res?.data || []);
-    } catch {
-      // Silencieux
-    } finally {
-      setLoadingAnnales(false);
-    }
-  };
+      return (res?.data || []) as AnnaleSessionListItem[];
+    },
+    staleTime: 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    placeholderData: (prev) => prev,
+    refetchOnMount: true,
+  });
+
+  const [sessions, setSessions] = useState<StudySessionListItem[]>(() => {
+    const cached = queryClient.getQueryData<StudySessionListItem[]>(["sphera", "sessions"]);
+    return Array.isArray(cached) ? cached : [];
+  });
+
+  const [annales, setAnnales] = useState<AnnaleSessionListItem[]>(() => {
+    const cached = queryClient.getQueryData<AnnaleSessionListItem[]>(["sphera", "annales"]);
+    return Array.isArray(cached) ? cached : [];
+  });
+
+  useEffect(() => {
+    if (sessionsQuery.data) setSessions(sessionsQuery.data);
+  }, [sessionsQuery.data]);
+
+  useEffect(() => {
+    if (annalesQuery.data) setAnnales(annalesQuery.data);
+  }, [annalesQuery.data]);
+
+  const loadingSessions = sessionsQuery.isLoading && sessions.length === 0;
+  const loadingAnnales = annalesQuery.isLoading && annales.length === 0;
 
   const handleDeleteSession = async (sessionId: number) => {
     try {
       await deleteStudySession(sessionId);
       setSessions((prev) => prev.filter((s) => s.id !== sessionId));
-      toast({ title: "Session supprimee" });
+      queryClient.setQueryData<StudySessionListItem[]>(["sphera", "sessions"], (old) =>
+        (old || []).filter((s) => s.id !== sessionId)
+      );
+      toast({ title: "Session supprimée" });
     } catch {
       toast({ title: "Erreur lors de la suppression", variant: "destructive" });
     }
@@ -98,7 +116,10 @@ export const SpheraHome: React.FC = () => {
     try {
       await deleteAnnaleSession(id);
       setAnnales((prev) => prev.filter((a) => a.id !== id));
-      toast({ title: "Annale supprimee" });
+      queryClient.setQueryData<AnnaleSessionListItem[]>(["sphera", "annales"], (old) =>
+        (old || []).filter((a) => a.id !== id)
+      );
+      toast({ title: "Annale supprimée" });
     } catch {
       toast({ title: "Erreur lors de la suppression", variant: "destructive" });
     }
@@ -212,11 +233,11 @@ export const SpheraHome: React.FC = () => {
               ) : filteredSessions.length === 0 ? (
                 <div className="flex flex-col items-center py-16 gap-4 text-center">
                   <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center">
-                    <SpheraIcon size="xl" className="opacity-40" />
+                    <BookOpen className="h-6 w-6 text-muted-foreground" />
                   </div>
                   <div>
                     <p className="font-semibold text-foreground">
-                      Aucune session{filter !== "all" ? " de ce type" : ""}
+                      Aucune révision {filter !== "all" ? " de ce type" : ""}
                     </p>
                     <p className="text-sm text-muted-foreground mt-1 max-w-xs">
                       Cliquez sur "Reviser avec l'IA" sur une ressource, ou uploadez un document.
@@ -251,7 +272,7 @@ export const SpheraHome: React.FC = () => {
               ) : annales.length === 0 ? (
                 <div className="flex flex-col items-center py-16 gap-4 text-center px-4">
                   <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center">
-                    <FileText className="h-6 w-6 text-muted-foreground" />
+                    <Exam className="h-6 w-6 text-muted-foreground" />
                   </div>
                   <div>
                     <p className="font-semibold text-foreground">Aucune annale corrigée</p>
@@ -289,13 +310,13 @@ export const SpheraHome: React.FC = () => {
           uploadFile={selectedUploadFile}
           onSuccess={async () => {
             toast({ title: "Session generee avec succes !" });
-            await loadSessions();
+            await sessionsQuery.refetch();
           }}
         />
       )}
       <AnnaleUploadModal
         open={annaleModalOpen}
-        onClose={() => { setAnnaleModalOpen(false); loadAnnales(); }}
+        onClose={() => { setAnnaleModalOpen(false); void annalesQuery.refetch(); }}
       />
     </>
   );

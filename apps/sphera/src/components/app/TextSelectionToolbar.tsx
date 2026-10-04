@@ -1,5 +1,5 @@
 import React from 'react'
-import { Sparkle as Sparkles, FileText, Lightbulb, Brain as BrainCircuit, Stack as SquareStack } from "@phosphor-icons/react";
+import { Sparkle as Sparkles, FileText, Lightbulb, Question, Cards } from "@phosphor-icons/react";
 import { useTranslation } from 'react-i18next'
 
 export type SelectionActionType = 'expliquer' | 'resumer' | 'exemple' | 'quiz' | 'flashcards'
@@ -30,7 +30,7 @@ export function TextSelectionToolbar({ coords, selectedText, onAction, onClose }
       id: 'resumer',
       label: t('modals.textSelection.summarize'),
       icon: <FileText className="w-3.5 h-3.5" />,
-      color: 'hover:text-blue-400 hover:bg-blue-400/10',
+      color: 'hover:text-cyan-400 hover:bg-cyan-400/10',
     },
     {
       id: 'exemple',
@@ -41,14 +41,14 @@ export function TextSelectionToolbar({ coords, selectedText, onAction, onClose }
     {
       id: 'quiz',
       label: t('modals.textSelection.quiz'),
-      icon: <BrainCircuit className="w-3.5 h-3.5" />,
-      color: 'hover:text-purple-400 hover:bg-purple-400/10',
+      icon: <Question className="w-3.5 h-3.5" />,
+      color: 'hover:text-rose-400 hover:bg-rose-400/10',
     },
     {
       id: 'flashcards',
       label: t('modals.textSelection.flashcard'),
-      icon: <SquareStack className="w-3.5 h-3.5" />,
-      color: 'hover:text-emerald-400 hover:bg-emerald-400/10',
+      icon: <Cards className="w-3.5 h-3.5" />,
+      color: 'hover:text-orange-400 hover:bg-orange-400/10',
     },
   ]
 

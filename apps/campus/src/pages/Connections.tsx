@@ -7,6 +7,7 @@ import {
   disconnectFromUser,
   getMutualConnectionCounts,
   acceptConnection,
+  createPrivateConversation,
 } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -295,6 +296,21 @@ export function Connections() {
     }
   };
 
+  const handleNavigateMessage = async (userId: string) => {
+    try {
+      const res = await createPrivateConversation(userId);
+      const conv = res?.data || res;
+      const convId = conv?.hash_id || (conv?.id ? String(conv.id) : null);
+      if (convId) {
+        navigate(`/messages/${convId}`);
+        return;
+      }
+    } catch {
+      // fallback
+    }
+    navigate("/messages");
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container max-w-7xl mx-auto py-6 md:py-8 px-4 sm:px-6 space-y-6 animate-in fade-in duration-300">
@@ -317,7 +333,7 @@ export function Connections() {
             connections={filteredConnections}
             suggestions={filteredSuggestions}
             onNavigateProfile={(username) => navigate("/profile/" + username)}
-            onNavigateMessage={(id) => navigate("/messages/" + id)}
+            onNavigateMessage={handleNavigateMessage}
             onConnect={handleConnectSuggestion}
             onResetFilters={() => {
               setSearchQuery("");
@@ -332,7 +348,7 @@ export function Connections() {
             connections={filteredConnections}
             suggestions={filteredSuggestions}
             onNavigateProfile={(username) => navigate("/profile/" + username)}
-            onNavigateMessage={(id) => navigate("/messages/" + id)}
+            onNavigateMessage={handleNavigateMessage}
             onAcceptRequest={handleAcceptRequest}
             onRejectRequest={handleRejectRequest}
             onConnectSuggestion={handleConnectSuggestion}
@@ -345,7 +361,7 @@ export function Connections() {
             suggestions={filteredSuggestions}
             onViewAll={setViewAllSection}
             onNavigateProfile={(username) => navigate("/profile/" + username)}
-            onNavigateMessage={(id) => navigate("/messages/" + id)}
+            onNavigateMessage={handleNavigateMessage}
             onAcceptRequest={handleAcceptRequest}
             onRejectRequest={handleRejectRequest}
             onConnectSuggestion={handleConnectSuggestion}

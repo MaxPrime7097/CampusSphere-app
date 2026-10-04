@@ -13,6 +13,7 @@ import { playSound, preloadSounds, toggleMute, getMuteState } from '../utils/aud
 import { SpeakerHigh as Volume2, SpeakerSimpleX as VolumeX, Lightning as Zap, Eye, ArrowLeft, Square } from "@phosphor-icons/react";
 import { getQuizSessionByCode, getQuizSessionHostDetails, resetQuizSession } from '../services/spheraApi';
 import { QuizQuestionsDrawer } from '../components/quiz-live/QuizQuestionsDrawer';
+import { ConfirmationModal } from '../components/app/ConfirmationModal';
 
 export default function QuizLiveHost() {
   const { t } = useTranslation('live');
@@ -31,6 +32,7 @@ export default function QuizLiveHost() {
   const codeParam = searchParams.get('code');
   const [isFetchingSession, setIsFetchingSession] = useState(!!codeParam);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isStopConfirmOpen, setIsStopConfirmOpen] = useState(false);
 
   useEffect(() => {
     const code = searchParams.get('code');
@@ -72,8 +74,7 @@ export default function QuizLiveHost() {
               });
             }
           } catch (e2) {
-            console.error(e2);
-            alert(t('host.errorLoadSession'));
+            console.error("Impossible de charger la session:", e2);
             navigate('/live');
           }
         } finally {
@@ -124,10 +125,12 @@ export default function QuizLiveHost() {
   };
 
   const handleStopQuiz = () => {
-    if (window.confirm(t('host.stopQuizConfirm'))) {
-      setCountdown(null);
-      stopQuiz();
-    }
+    setIsStopConfirmOpen(true);
+  };
+
+  const handleConfirmStopQuiz = () => {
+    setCountdown(null);
+    stopQuiz();
   };
 
   useEffect(() => {
@@ -442,6 +445,18 @@ export default function QuizLiveHost() {
               title: updatedTitle || prev?.title,
             }));
           }}
+        />
+        
+        {/* Custom Confirmation Modal for Stopping the Live Quiz */}
+        <ConfirmationModal
+          isOpen={isStopConfirmOpen}
+          onClose={() => setIsStopConfirmOpen(false)}
+          onConfirm={handleConfirmStopQuiz}
+          title={t('host.stopQuizTitle', 'Arrêter la Session Live')}
+          description={t('host.stopQuizConfirm', 'Voulez-vous vraiment stopper définitivement ce quiz pour tous les participants connectés ?')}
+          confirmLabel={t('host.stopQuizButton', 'Stopper le Quiz')}
+          cancelLabel={t('common.cancel', 'Continuer')}
+          variant="danger"
         />
 
       </main>

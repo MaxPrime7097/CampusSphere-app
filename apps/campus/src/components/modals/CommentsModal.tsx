@@ -11,7 +11,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Heart, PaperPlaneTilt as Send, ArrowUUpLeft as Reply, DotsThree as MoreHorizontal, Smiley as Smile, At as AtSign, Spinner as Loader2, Lightning as Zap, Pencil, Trash as Trash2, X } from "@phosphor-icons/react";
+import { Heart, PaperPlaneTilt as Send, ArrowUUpLeft as Reply, DotsThree as MoreHorizontal, Smiley as Smile, At as AtSign, Spinner as Loader2, Lightning as Zap, PencilSimple, Trash as Trash2, X } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
@@ -558,7 +558,7 @@ export function CommentsModal({ open, onOpenChange, postId, allowComments = true
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-36">
                     <DropdownMenuItem onClick={() => openEditComment(comment)}>
-                      <Pencil className="h-3.5 w-3.5 mr-2" />
+                      <PencilSimple className="h-3.5 w-3.5 mr-2" />
                       Modifier
                     </DropdownMenuItem>
                     <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setCommentToDelete(comment)}>

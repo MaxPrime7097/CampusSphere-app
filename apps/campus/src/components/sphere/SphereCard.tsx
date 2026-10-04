@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { UsersThree as Users, Lock, Check, Clock, BookOpen, FolderSimple as FolderGit2, Sparkle as Sparkles, GraduationCap, Stack as Layers, ArrowRight, ShieldCheck } from "@phosphor-icons/react";
+import { UsersThree as Users, Lock, Check, Clock, BookOpen, FolderSimple as FolderGit2, Sparkle as Sparkles, GraduationCap, Stack as Layers, ArrowRight, ShieldCheck, UsersFour, Target } from "@phosphor-icons/react";
 import { cn, getSphereUrl } from "@/lib/utils";
+import { normalizeSphereType } from "@/config/sphereFeatures";
 import type { Sphere } from "@/types";
 
 interface SphereCardProps {
@@ -21,34 +22,24 @@ const SPHERE_TYPE_META: Record<
   { label: string; gradient: string; icon: React.ComponentType<{ className?: string }> }
 > = {
   cours: {
-    label: "Cours & TD",
+    label: "Cours",
     gradient: "from-blue-600 to-indigo-700",
     icon: BookOpen,
   },
   projet: {
     label: "Projet",
-    gradient: "from-pink-600 to-rose-700",
-    icon: FolderGit2,
+    gradient: "from-violet-600 to-purple-700",
+    icon: Target,
   },
   communaute: {
     label: "Communauté",
-    gradient: "from-emerald-600 to-teal-700",
-    icon: Users,
-  },
-  club: {
-    label: "Club & Asso",
-    gradient: "from-indigo-600 to-purple-700",
-    icon: Sparkles,
-  },
-  revision: {
-    label: "Révisions & Examens",
-    gradient: "from-purple-600 to-violet-800",
-    icon: GraduationCap,
+    gradient: "from-sky-600 to-teal-700",
+    icon: UsersFour,
   },
   default: {
-    label: "Sphère",
-    gradient: "from-slate-700 to-zinc-900",
-    icon: Layers,
+    label: "Communauté",
+    gradient: "from-sky-600 to-teal-700",
+    icon: UsersFour,
   },
 };
 
@@ -64,8 +55,10 @@ export const SphereCard = React.memo(
     const navigate = useNavigate();
 
     const bannerImage = sphere.banner_url || sphere.bannerUrl || sphere.cover_image || sphere.coverImage;
-    const rawType = (sphere.sphere_type || sphere.sphereType || "communaute").toLowerCase();
-    const meta = SPHERE_TYPE_META[rawType] || SPHERE_TYPE_META.default;
+    const canonicalType = normalizeSphereType(
+      sphere.sphere_type || sphere.sphereType || (sphere as any).category || "communaute"
+    );
+    const meta = SPHERE_TYPE_META[canonicalType] || SPHERE_TYPE_META.default;
     const IconComponent = meta.icon;
 
     const memberCount = Number(sphere.member_count ?? sphere.memberCount ?? 1);

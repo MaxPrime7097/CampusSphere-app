@@ -147,7 +147,7 @@ export function MiniChat({ sphereId, sphereName, isExpanded, onToggleExpanded, c
           return;
         }
 
-        const convId = String(existing.id);
+        const convId = String(existing.hash_id || existing.id);
         setConversationId(convId);
         await fetchMessages(convId, myId);
         if (!mounted) return;
@@ -195,8 +195,8 @@ export function MiniChat({ sphereId, sphereName, isExpanded, onToggleExpanded, c
         const convName = `${sphereName} (sphere-${sphereId})`;
         const created = await createGroupConversation(convName, memberIds);
         const groupData = created?.data ?? created;
-        if (groupData?.id) {
-          currentConvId = String(groupData.id);
+        if (groupData?.id || groupData?.hash_id) {
+          currentConvId = String(groupData.hash_id || groupData.id);
           setConversationId(currentConvId);
           connectWS(currentConvId, currentUser?.id ? String(currentUser.id) : undefined);
         } else {

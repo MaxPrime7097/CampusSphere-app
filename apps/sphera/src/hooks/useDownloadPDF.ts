@@ -17,8 +17,7 @@ export const useDownloadPDF = () => {
       const html = generateFicheHtml({ fiche: content, sourceName })
       await printHtmlDocument(html, docTitle)
     } catch (e) {
-      console.error('[PDF]', e)
-      alert("Erreur lors de la préparation de l'export PDF.")
+      console.error("[PDF] Erreur lors de la préparation de l'export PDF:", e)
     } finally {
       setIsDownloading(false)
     }
@@ -36,8 +35,7 @@ export const useDownloadPDF = () => {
       const html = generateAnnaleHtml({ annale, sourceName })
       await printHtmlDocument(html, docTitle)
     } catch (e) {
-      console.error('[PDF]', e)
-      alert("Erreur lors de la préparation de l'export PDF.")
+      console.error("[PDF] Erreur lors de la préparation de l'export PDF:", e)
     } finally {
       setIsDownloading(false)
     }

@@ -1,6 +1,18 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileText, Download, BookmarkSimple, FileCode, Archive, Spinner as Loader2, BookOpen, GraduationCap, Sparkle as Sparkles, Eye, Lightning as Zap } from "@phosphor-icons/react";
+import {
+  Download,
+  BookmarkSimple,
+  Spinner as Loader2,
+  BookOpen,
+  GraduationCap,
+  FolderSimple as FolderGit2,
+  BookBookmark,
+  Notepad,
+  Question as QuestionMark,
+  Eye,
+  Lightning as Zap,
+} from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SpheraIcon } from "@/components/ui/sphera-icon";
@@ -19,43 +31,33 @@ interface ResourceTileProps {
 }
 
 const TYPE_CONFIG: Record<string, { label: string; gradient: string; iconColor: string }> = {
-  notes: {
-    label: "Notes",
+  course_notes: {
+    label: "Note de cours",
     gradient: "from-blue-500/10 via-blue-500/5 to-muted/40",
     iconColor: "text-blue-500",
   },
-  resumes: {
-    label: "Résumé",
-    gradient: "from-sky-500/10 via-sky-500/5 to-muted/40",
-    iconColor: "text-sky-500",
+  td_tp: {
+    label: "TD / TP",
+    gradient: "from-orange-500/10 via-orange-500/5 to-muted/40",
+    iconColor: "text-orange-500",
   },
-  exercises: {
-    label: "Exercices",
-    gradient: "from-red-500/10 via-red-500/5 to-muted/40",
-    iconColor: "text-red-500",
-  },
-  exam_papers: {
-    label: "Épreuve",
+  exams: {
+    label: "Annale",
     gradient: "from-emerald-500/10 via-emerald-500/5 to-muted/40",
     iconColor: "text-emerald-500",
   },
-  annales: {
-    label: "Annale",
-    gradient: "from-purple-500/10 via-purple-500/5 to-muted/40",
-    iconColor: "text-purple-500",
-  },
-  projects: {
+  project: {
     label: "Projet",
-    gradient: "from-pink-500/10 via-pink-500/5 to-muted/40",
-    iconColor: "text-pink-500",
+    gradient: "from-violet-500/10 via-violet-500/5 to-muted/40",
+    iconColor: "text-violet-500",
   },
-  presentations: {
-    label: "Slides",
-    gradient: "from-indigo-500/10 via-indigo-500/5 to-muted/40",
-    iconColor: "text-indigo-500",
+  book: {
+    label: "Livre",
+    gradient: "from-amber-500/10 via-amber-500/5 to-muted/40",
+    iconColor: "text-amber-500",
   },
   other: {
-    label: "Document",
+    label: "Autre",
     gradient: "from-muted/40 via-muted/20 to-muted/40",
     iconColor: "text-muted-foreground",
   },
@@ -63,27 +65,23 @@ const TYPE_CONFIG: Record<string, { label: string; gradient: string; iconColor: 
 
 function getTypeConfig(type?: string) {
   if (!type) return TYPE_CONFIG.other;
-  const key = type.toLowerCase();
-  return TYPE_CONFIG[key] || TYPE_CONFIG.other;
+  return TYPE_CONFIG[type.toLowerCase()] || TYPE_CONFIG.other;
 }
 
 function getFileIcon(type?: string, className = "h-8 w-8") {
-  const key = (type || "").toLowerCase();
-  switch (key) {
-    case "notes":
+  switch ((type || "").toLowerCase()) {
+    case "course_notes":
       return <BookOpen className={className} />;
-    case "resumes":
-      return <FileText className={className} />;
-    case "exercises":
-      return <FileCode className={className} />;
-    case "exam_papers":
+    case "td_tp":
+      return <Notepad className={className} />;
+    case "exams":
       return <GraduationCap className={className} />;
-    case "annales":
-      return <Sparkles className={className} />;
-    case "projects":
-      return <Archive className={className} />;
+    case "project":
+      return <FolderGit2 className={className} />;
+    case "book":
+      return <BookBookmark className={className} />;
     default:
-      return <FileText className={className} />;
+      return <QuestionMark className={className} />;
   }
 }
 

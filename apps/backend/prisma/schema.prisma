@@ -321,6 +321,8 @@ model User {
   notificationSetting NotificationSettings?
   studySessions       StudySession[]
   annaleSessions      AnnaleSession[]
+  artefacts           Artefact[]
+  chatThreads         ChatThread[]
   eventsOrganized     Event[]                   @relation("EventsOrganized")
   eventAttendances    EventAttendee[]           @relation("UserEventAttendances")
   eventCheckins       EventAttendee[]           @relation("EventCheckins")
@@ -976,6 +978,8 @@ model StudySession {
 
   /// Source text for Q&A and for add-tool regeneration. Never serialised.
   extractedText String @default("") @map("extracted_text")
+  pageCount     Int    @default(1) @map("page_count")
+  ficheContent  Json?  @map("fiche_content")
   qaHistory     Json   @default("[]") @map("qa_history")
   suggestions   Json   @default("[]")
 
@@ -985,14 +989,73 @@ model StudySession {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  owner        User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  resource     Resource?   @relation(fields: [resourceId], references: [id], onDelete: SetNull)
-  sphereFile   SphereFile? @relation(fields: [sphereFileId], references: [id], onDelete: SetNull)
-  sharedSphere Sphere?     @relation(fields: [sharedSphereId], references: [id], onDelete: SetNull)
+  owner        User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  resource     Resource?    @relation(fields: [resourceId], references: [id], onDelete: SetNull)
+  sphereFile   SphereFile?  @relation(fields: [sphereFileId], references: [id], onDelete: SetNull)
+  sharedSphere Sphere?      @relation(fields: [sharedSphereId], references: [id], onDelete: SetNull)
+  artefacts    Artefact[]
+  chatThreads  ChatThread[]
 
   @@index([ownerId, createdAt])
   @@index([sharedSphereId, isShared])
   @@map("study_sessions")
+}
+
+model Artefact {
+  id             Int          @id @default(autoincrement())
+  sessionId      Int          @map("session_id")
+  ownerId        Int          @map("owner_id")
+
+  // Type d'artefact : 'quiz', 'flashcards', 'mindmap', 'audio', 'note'
+  type           String       @map("type")
+  title          String       @default("")
+  subtitle       String?
+  content        Json         @default("{}")
+
+  targetChapter  String?      @map("target_chapter")
+  fromSelection  Boolean      @default(false) @map("from_selection")
+  selectionText  String?      @map("selection_text") @db.Text
+
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  session        StudySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  owner          User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+  @@index([ownerId, createdAt])
+  @@map("artefacts")
+}
+
+model ChatThread {
+  id             Int           @id @default(autoincrement())
+  sessionId      Int           @map("session_id")
+  ownerId        Int           @map("owner_id")
+  title          String        @default("Discussion générale")
+  messages       ChatMessage[]
+
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  session        StudySession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  owner          User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([ownerId])
+  @@map("sphera_chat_threads")
+}
+
+model ChatMessage {
+  id        Int        @id @default(autoincrement())
+  threadId  Int        @map("thread_id")
+  role      String     // 'user' | 'assistant'
+  content   String     @db.Text
+  createdAt DateTime   @default(now()) @map("created_at")
+
+  thread    ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId, createdAt])
+  @@map("sphera_chat_messages")
 }
 
 model AnnaleSession {
@@ -1166,7 +1229,7 @@ model GenerationUsage {
   id            Int      @id @default(autoincrement())
   userId        Int      @map("user_id")
   weekStartDate DateTime @map("week_start_date") @db.Date
-  count         Int    @default(0)
+  count         Float    @default(0)
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 

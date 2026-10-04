@@ -17,18 +17,26 @@ import type {
 // ===========================================================================
 
 export async function generateStudyTools(
-  resourceIdOrParams: string | number | { resource_id: string | number; tool_types: ToolType[] },
+  resourceIdOrParams: string | number | { resource_id?: string | number; sphere_file_id?: string | number; tool_types: ToolType[] },
   maybeToolTypes?: ToolType[]
 ): Promise<ApiResponse<StudySession>> {
-  const resourceId = typeof resourceIdOrParams === "object" ? resourceIdOrParams.resource_id : resourceIdOrParams;
-  const toolTypes = typeof resourceIdOrParams === "object" ? resourceIdOrParams.tool_types : (maybeToolTypes || []);
+  const isObj = typeof resourceIdOrParams === "object";
+  const resourceId = isObj ? resourceIdOrParams.resource_id : resourceIdOrParams;
+  const sphereFileId = isObj ? resourceIdOrParams.sphere_file_id : undefined;
+  const toolTypes = isObj ? resourceIdOrParams.tool_types : (maybeToolTypes || []);
+
+  const body: Record<string, any> = {
+    tool_types: JSON.stringify(toolTypes),
+  };
+  if (sphereFileId !== undefined) {
+    body.sphere_file_id = sphereFileId;
+  } else if (resourceId !== undefined) {
+    body.resource_id = resourceId;
+  }
 
   return apiFetch<ApiResponse<StudySession>>("api/sphera/generate/from-resource/", {
     method: "POST",
-    body: {
-      resource_id: resourceId,
-      tool_types: JSON.stringify(toolTypes),
-    } as any,
+    body: body as any,
   });
 }
 

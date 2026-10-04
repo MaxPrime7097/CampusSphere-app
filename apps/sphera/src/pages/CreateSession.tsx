@@ -1,20 +1,67 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { FileText, ArrowLeft, ArrowsOut as Maximize2, ArrowsIn as Minimize2, PaperPlaneTilt as Send, Square, ChatCircle as MessageSquare, Robot as Bot, User, At as AtSign, Sparkle as Sparkles, BookOpen, Lightning as Zap, Spinner as Loader2, Plus, WarningCircle as AlertCircle, Check } from "@phosphor-icons/react";
+import {
+  FileText,
+  Cards,
+  Exam,
+  Note,
+  Waveform,
+  GitFork,
+  ArrowLeft,
+  ArrowsOut as Maximize2,
+  ArrowsIn as Minimize2,
+  PaperPlaneTilt as Send,
+  Square,
+  ChatCircle as MessageSquare,
+  Robot as Bot,
+  User,
+  At as AtSign,
+  Sparkle as Sparkles,
+  BookOpen,
+  Lightning as Zap,
+  Spinner as Loader2,
+  Plus,
+  WarningCircle as AlertCircle,
+  Check,
+  Trash as Trash2,
+  Stack as Layers,
+} from "@phosphor-icons/react";
 import { ToolSelector, type ToolType } from '../components/app/ToolSelector'
 import { GenerateButton } from '../components/app/GenerateButton'
 import { pendingUploadFile } from '../store/fileStore'
 import { FicheView, QuizView, FlashcardsView, AnnaleView, MindmapView, AudioSummaryView } from '../components/app/ResultViews'
-import { generateFromUpload, generateAnnale, askQuestion, addToolToSession, createFromSelection } from '../services/spheraApi'
+import { ChapterFicheView } from '../components/app/ChapterFicheView'
+import { ArtefactList } from '../components/app/ArtefactList'
+import { ChatThreadBar } from '../components/app/ChatThreadBar'
+import { StudyWorkspacePanel } from '../components/app/StudyWorkspacePanel'
+import {
+  generateFromUpload,
+  generateAnnale,
+  askQuestion,
+  addToolToSession,
+  createFromSelection,
+  createArtefact,
+  updateArtefact,
+  deleteArtefact,
+  regenerateFiche,
+  createChatThread,
+  sendThreadMessage,
+  deleteChatThread,
+  type ArtefactItem,
+  type ChatThreadItem,
+} from '../services/spheraApi'
 import { QuestionSuggestions } from '../components/app/QuestionSuggestions'
 import { normalizeAiResponse } from '../utils/normalizeAiResponse'
 import { CommandMenu, COMMANDS, type Command } from '../components/app/CommandMenu'
+import { isTextEnglish } from '../utils/detectLanguage'
 import { QuotaIndicator } from '../components/app/QuotaIndicator'
 import { CourseTextReader } from '../components/app/CourseTextReader'
 import { DocumentImageViewer } from '../components/app/DocumentImageViewer'
 import { AiMessageItem } from '../components/app/AiMessageItem'
 import { TextSelectionToolbar, type SelectionActionType } from '../components/app/TextSelectionToolbar'
 import { useTranslation } from 'react-i18next'
+import { setCached } from '../utils/sessionCache'
+import { updateSessionDetailCache } from '../hooks/useSpheraQueries'
 
 export default function CreateSession() {
   const { t } = useTranslation('study')
@@ -26,17 +73,30 @@ export default function CreateSession() {
   const [selectedTools, setSelectedTools] = useState<ToolType[]>(['fiche'])
   const [annaleMode, setAnnaleMode] = useState<'complete' | 'rapide'>('complete')
   const [generating, setGenerating] = useState(false)
+  const [creationStep, setCreationStep] = useState<number>(1)
   const [error, setError] = useState<string | null>(null)
   const [fileUrl, setFileUrl] = useState<string | null>(null)
   const [textSource, setTextSource] = useState<string | null>(null)
   
   // Workspace State
   const [generatedContent, setGeneratedContent] = useState<any>(null)
+  const [rawAnnaleData, setRawAnnaleData] = useState<any>(null)
   const [isPdfExpanded, setIsPdfExpanded] = useState(true)
   const [docViewMode, setDocViewMode] = useState<'doc' | 'text'>('doc')
   const [activeTab, setActiveTab] = useState<string>('fiche')
   const [isGeneratingTool, setIsGeneratingTool] = useState(false)
+  const [generatingToolType, setGeneratingToolType] = useState<string | null>(null)
   const [toolError, setToolError] = useState<string | null>(null)
+
+  // Artefacts & Multi-threads state
+  const [artefacts, setArtefacts] = useState<ArtefactItem[]>([])
+  const [activeArtefact, setActiveArtefact] = useState<ArtefactItem | null>(null)
+  const [threads, setThreads] = useState<ChatThreadItem[]>([])
+  const [activeThreadId, setActiveThreadId] = useState<number | null>(null)
+  const [isRegeneratingFiche, setIsRegeneratingFiche] = useState(false)
+  const [isGeneratingArtefact, setIsGeneratingArtefact] = useState(false)
+  const [generatingChapterArtefact, setGeneratingChapterArtefact] = useState<{ type: 'quiz' | 'flashcards'; chapter: string } | null>(null)
+  const [noteContentText, setNoteContentText] = useState('')
   
   // Chat State
   const [sessionId, setSessionId] = useState<string | null>(null)
@@ -48,6 +108,242 @@ export default function CreateSession() {
   const [showCommandMenu, setShowCommandMenu] = useState(false)
   const [commandFilter, setCommandFilter] = useState('')
   const [commandActiveIdx, setCommandActiveIdx] = useState(0)
+
+  // Floating feedback notification
+  const [actionFeedback, setActionFeedback] = useState<{ message: string; type: 'loading' | 'success' | 'error' } | null>(null)
+  const showFeedback = (message: string, type: 'loading' | 'success' | 'error', duration = 3500) => {
+    setActionFeedback({ message, type })
+    if (type !== 'loading') {
+      setTimeout(() => {
+        setActionFeedback((prev) => (prev?.message === message ? null : prev))
+      }, duration)
+    }
+  }
+
+  const handleGenerateChapterQuiz = async (chapterTitle: string, chapterSummary: string) => {
+    if (!sessionId) return
+    setIsGeneratingArtefact(true)
+    setGeneratingChapterArtefact({ type: 'quiz', chapter: chapterTitle })
+    showFeedback(`Création du quiz pour "${chapterTitle}" en cours (0.5 gén)...`, 'loading')
+    try {
+      const res = await createArtefact(sessionId, {
+        type: 'quiz',
+        title: `Quiz - ${chapterTitle}`,
+        subtitle: `Quiz ciblé • ${chapterTitle}`,
+        target_chapter: chapterTitle,
+        selection_text: chapterSummary,
+      })
+      const newArt = res.data
+      setArtefacts(prev => [newArt, ...prev])
+      setActiveArtefact(newArt)
+      setActiveTab('artefacts')
+      showFeedback(`Le quiz pour "${chapterTitle}" est prêt !`, 'success')
+    } catch (err: any) {
+      showFeedback(err.message || 'Erreur lors de la génération du quiz par chapitre.', 'error')
+    } finally {
+      setIsGeneratingArtefact(false)
+      setGeneratingChapterArtefact(null)
+    }
+  }
+
+  const handleGenerateChapterFlashcards = async (chapterTitle: string, chapterSummary: string) => {
+    if (!sessionId) return
+    setIsGeneratingArtefact(true)
+    setGeneratingChapterArtefact({ type: 'flashcards', chapter: chapterTitle })
+    showFeedback(`Création des flashcards pour "${chapterTitle}" en cours (0.5 gén)...`, 'loading')
+    try {
+      const res = await createArtefact(sessionId, {
+        type: 'flashcards',
+        title: `Flashcards - ${chapterTitle}`,
+        subtitle: `Flashcards • ${chapterTitle}`,
+        target_chapter: chapterTitle,
+        selection_text: chapterSummary,
+      })
+      const newArt = res.data
+      setArtefacts(prev => [newArt, ...prev])
+      setActiveArtefact(newArt)
+      setActiveTab('artefacts')
+      showFeedback(`Les flashcards pour "${chapterTitle}" sont prêtes !`, 'success')
+    } catch (err: any) {
+      showFeedback(err.message || 'Erreur lors de la génération des flashcards par chapitre.', 'error')
+    } finally {
+      setIsGeneratingArtefact(false)
+      setGeneratingChapterArtefact(null)
+    }
+  }
+
+  const handleRegenerateFiche = async () => {
+    if (!sessionId) return
+    setIsRegeneratingFiche(true)
+    showFeedback('Régénération de la fiche en cours...', 'loading')
+    try {
+      const res = await regenerateFiche(sessionId)
+      if (res.data?.fiche) {
+        setGeneratedContent((prev: any) => ({
+          ...prev,
+          fiche: res.data.fiche,
+        }))
+        showFeedback('Fiche régénérée avec succès !', 'success')
+      }
+    } catch (err: any) {
+      showFeedback(err.message || 'Erreur lors de la régénération de la fiche.', 'error')
+    } finally {
+      setIsRegeneratingFiche(false)
+    }
+  }
+
+  const handleSelectArtefact = (art: ArtefactItem) => {
+    setActiveArtefact(art)
+    if (art.type === 'note') {
+      setNoteContentText(art.content?.text || '')
+    }
+  }
+
+  const handleDeleteArtefact = async (artId: number) => {
+    const backup = artefacts
+    setArtefacts(prev => prev.filter(a => a.id !== artId))
+    if (activeArtefact?.id === artId) {
+      setActiveArtefact(null)
+    }
+    showFeedback('Outil supprimé.', 'success')
+    try {
+      await deleteArtefact(artId)
+    } catch (err: any) {
+      setArtefacts(backup)
+      showFeedback(err.message || "Erreur lors de la suppression de l'artefact.", 'error')
+    }
+  }
+
+  const handleRenameArtefact = async (artId: number, newTitle: string) => {
+    const backup = artefacts
+    setArtefacts(prev => prev.map(a => a.id === artId ? { ...a, title: newTitle } : a))
+    if (activeArtefact?.id === artId) {
+      setActiveArtefact(prev => prev ? { ...prev, title: newTitle } : null)
+    }
+    showFeedback('Outil renommé.', 'success')
+    try {
+      await updateArtefact(artId, { title: newTitle })
+    } catch (err: any) {
+      setArtefacts(backup)
+      showFeedback(err.message || 'Erreur lors du renommage.', 'error')
+    }
+  }
+
+  const handleNewNote = async () => {
+    if (!sessionId) return
+    try {
+      const noteCount = artefacts.filter(a => a.type === 'note').length + 1
+      const res = await createArtefact(sessionId, {
+        type: 'note',
+        title: `Note #${noteCount}`,
+        subtitle: 'Note personnelle',
+        content: { text: '' },
+      })
+      const newArt = res.data
+      setArtefacts(prev => [newArt, ...prev])
+      setActiveArtefact(newArt)
+      setNoteContentText('')
+      setActiveTab('artefacts')
+      showFeedback('Nouvelle note créée.', 'success')
+      return newArt
+    } catch (err: any) {
+      showFeedback(err.message || 'Erreur lors de la création de la note.', 'error')
+    }
+  }
+
+  const handleSaveNote = async (artId: number, text: string) => {
+    try {
+      await updateArtefact(artId, { content: { text } })
+      setArtefacts(prev => prev.map(a => a.id === artId ? { ...a, content: { text } } : a))
+      if (activeArtefact?.id === artId) {
+        setActiveArtefact(prev => prev ? { ...prev, content: { text } } : null)
+      }
+      showFeedback('Note enregistrée.', 'success')
+    } catch (err: any) {
+      showFeedback(err.message || "Erreur lors de l'enregistrement de la note.", 'error')
+    }
+  }
+
+  const handleCreateThread = async (title: string) => {
+    if (!sessionId) return
+    try {
+      const res = await createChatThread(sessionId, title)
+      const newThread = res.data
+      setThreads(prev => [...prev, newThread])
+      setActiveThreadId(newThread.id)
+      setActiveTab('chat')
+      showFeedback('Fil de discussion créé.', 'success')
+    } catch (err: any) {
+      showFeedback(err.message || 'Erreur lors de la création du fil de discussion.', 'error')
+    }
+  }
+
+  const handleSelectThread = (threadId: number) => {
+    setActiveThreadId(threadId)
+  }
+
+  const handleSendThreadMessage = async (threadId: number, questionText: string) => {
+    setIsChatting(true)
+    setActiveTab('chat')
+    try {
+      setThreads(prev => prev.map(t => {
+        if (t.id === threadId) {
+          return {
+            ...t,
+            messages: [
+              ...(t.messages || []),
+              { id: Date.now(), role: 'user' as const, content: questionText, createdAt: new Date().toISOString() },
+              { id: Date.now() + 1, role: 'assistant' as const, content: '...', createdAt: new Date().toISOString() }
+            ]
+          }
+        }
+        return t
+      }))
+
+      const res = await sendThreadMessage(threadId, questionText)
+      const assistantMsg = res.data
+
+      setThreads(prev => prev.map(t => {
+        if (t.id === threadId) {
+          const msgs = (t.messages || []).map(m => m.content === '...' ? {
+            id: assistantMsg.id,
+            role: 'assistant' as const,
+            content: assistantMsg.content,
+            createdAt: assistantMsg.createdAt,
+          } : m)
+          return { ...t, messages: msgs }
+        }
+        return t
+      }))
+    } catch (err: any) {
+      setThreads(prev => prev.map(t => {
+        if (t.id === threadId) {
+          const msgs = (t.messages || []).map(m => m.content === '...' ? {
+            ...m,
+            content: "Erreur lors de l'envoi du message."
+          } : m)
+          return { ...t, messages: msgs }
+        }
+        return t
+      }))
+    } finally {
+      setIsChatting(false)
+    }
+  }
+
+  const handleDeleteThread = async (threadId: number) => {
+    try {
+      await deleteChatThread(threadId)
+      setThreads(prev => prev.filter(t => t.id !== threadId))
+      if (activeThreadId === threadId) {
+        const remaining = threads.filter(t => t.id !== threadId)
+        setActiveThreadId(remaining.length ? remaining[0].id : null)
+      }
+      showFeedback('Fil supprimé.', 'success')
+    } catch (err: any) {
+      showFeedback(err.message || 'Erreur lors de la suppression du fil.', 'error')
+    }
+  }
   const [mobileActiveView, setMobileActiveView] = useState<'doc' | 'workspace'>('workspace')
   const chatInputRef = useRef<HTMLInputElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -61,7 +357,6 @@ export default function CreateSession() {
   }, [])
 
   const [selectionToolbar, setSelectionToolbar] = useState<{ coords: { x: number; y: number }; text: string } | null>(null)
-  const [actionFeedback, setActionFeedback] = useState<{ message: string; type: 'loading' | 'success' | 'error' } | null>(null)
 
   const handleWorkspaceSelection = () => {
     setTimeout(() => {
@@ -125,9 +420,12 @@ export default function CreateSession() {
 
   const handleStartDirectQa = async () => {
     setGenerating(true)
+    setCreationStep(1)
     setError(null)
+    const stepTimer = setTimeout(() => setCreationStep(2), 1500)
     try {
       const result = await generateFromUpload({ file, tool_types: [] })
+      clearTimeout(stepTimer)
       const payload = result?.data ?? result
       setGeneratedContent(payload.content || {})
       if (payload.extracted_text) {
@@ -137,7 +435,43 @@ export default function CreateSession() {
       if (payload.qa_history) setChatHistory(payload.qa_history)
       setActiveTab('chat')
     } catch (e: any) {
+      clearTimeout(stepTimer)
       setError(e.message || "Erreur lors de l'initialisation de la session Q&A.")
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  const handleStartAnnale = async () => {
+    if (!file) return
+    setGenerationMode('annale')
+    setGenerating(true)
+    setCreationStep(1)
+    setError(null)
+    const stepTimer = setTimeout(() => setCreationStep(2), 1500)
+    try {
+      // Fast initialization: extract text and create session instantly (1-2s)
+      const result = await generateFromUpload({ file, tool_types: [] })
+      clearTimeout(stepTimer)
+      const payload = result?.data ?? result
+      if (payload.id) {
+        setSessionId(payload.id)
+      }
+      if (payload.extracted_text) {
+        setTextSource(payload.extracted_text)
+      }
+      if (payload.qa_history) setChatHistory(payload.qa_history)
+      if (payload.artefacts) setArtefacts(payload.artefacts)
+      if (payload.chat_threads && payload.chat_threads.length > 0) {
+        setThreads(payload.chat_threads)
+        setActiveThreadId(payload.chat_threads[0].id)
+      }
+      setGeneratedContent({ isAnnaleWorkspace: true, extracted_text: payload.extracted_text, id: payload.id })
+      setRawAnnaleData({ isAnnaleWorkspace: true, extracted_text: payload.extracted_text, id: payload.id })
+      setActiveTab('chat')
+    } catch (e: any) {
+      clearTimeout(stepTimer)
+      setError(e.message || "Erreur lors de la préparation de l'espace annale.")
     } finally {
       setGenerating(false)
     }
@@ -164,6 +498,13 @@ export default function CreateSession() {
       }
       if (payload.id) setSessionId(payload.id);
       if (payload.qa_history) setChatHistory(payload.qa_history);
+      if (payload.artefacts) setArtefacts(payload.artefacts);
+      if (payload.chat_threads) {
+        setThreads(payload.chat_threads);
+        if (payload.chat_threads.length > 0) {
+          setActiveThreadId(payload.chat_threads[0].id);
+        }
+      }
       
       // Set active tab based on what was generated
       const generatedTypes = payload.tool_types || (generationMode === 'study' ? selectedTools : ['annale']);
@@ -398,18 +739,23 @@ export default function CreateSession() {
     if (match) {
       const cmdTrigger = `@${match[1].toLowerCase()}`;
       const rest = match[2].trim();
-      const foundCmd = COMMANDS.find(c => c.trigger.toLowerCase() === cmdTrigger);
+      const foundCmd = COMMANDS.find(c =>
+        c.trigger.toLowerCase() === cmdTrigger ||
+        (c.aliases && c.aliases.some(a => a.toLowerCase() === cmdTrigger))
+      );
 
-      if (foundCmd && foundCmd.category === 'action' && foundCmd.prefix) {
+      const isDocEn = isTextEnglish(raw);
+      if (foundCmd && foundCmd.category === 'action' && (foundCmd.prefix || foundCmd.prefixEn)) {
         displayQuestion = raw;
+        const prefix = isDocEn ? (foundCmd.prefixEn || foundCmd.prefix) : (foundCmd.prefix || foundCmd.prefixEn);
         queryForAi = rest 
-          ? `${foundCmd.prefix}${rest}` 
-          : `Explique-moi les concepts essentiels du cours de manière pédagogique.`;
+          ? `${prefix}${rest}` 
+          : (isDocEn ? 'Explain the essential concepts of the course clearly.' : `Explique-moi les concepts essentiels du cours de manière pédagogique.`);
       } else if (foundCmd && foundCmd.category === 'tool') {
         displayQuestion = raw;
         queryForAi = rest 
-          ? `En lien avec le cours, donne-moi les éléments nécessaires sur "${rest}".` 
-          : `Résume les points essentiels du cours.`;
+          ? (isDocEn ? `Regarding the course, explain the essential elements of "${rest}".` : `En lien avec le cours, donne-moi les éléments nécessaires sur "${rest}".`)
+          : (isDocEn ? 'Summarize the essential points of the course.' : `Résume les points essentiels du cours.`);
       } else {
         queryForAi = rest || raw;
       }
@@ -611,6 +957,7 @@ export default function CreateSession() {
   const handleAddTool = async (tool: ToolType) => {
     if (!sessionId) return;
     setIsGeneratingTool(true);
+    setGeneratingToolType(tool);
     setToolError(null);
     try {
       const res = await addToolToSession(sessionId, tool);
@@ -621,9 +968,68 @@ export default function CreateSession() {
         setSelectedTools(prev => [...prev, tool]);
       }
     } catch (e: any) {
-      setToolError(e.message || `Erreur lors de la génération de ${tool}.`);
+      const errMsg = e.message || `Erreur lors de la génération de ${tool}.`;
+      setToolError(errMsg);
+      showFeedback(errMsg, 'error');
     } finally {
       setIsGeneratingTool(false);
+      setGeneratingToolType(null);
+    }
+  }
+
+  const handleSendDirectQuestion = async (query: string) => {
+    if (!sessionId || !query.trim() || isChatting) return
+    setIsChatting(true)
+    setChatHistory(prev => [...prev, { question: query, answer: '...' }])
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+
+    try {
+      const res = await askQuestion(sessionId, query, generationMode === 'annale' ? 'annale' : 'session', controller.signal)
+      const normalized = normalizeAiResponse(res?.data?.answer)
+      const newEntry = {
+        question: query,
+        answer: normalized,
+        created_at: res?.data?.created_at || new Date().toISOString(),
+      }
+      setChatHistory(prev => {
+        const newHist = [...prev]
+        if (newHist.length > 0 && newHist[newHist.length - 1].answer === '...') {
+          newHist[newHist.length - 1] = newEntry
+        } else {
+          newHist.push(newEntry)
+        }
+        return newHist
+      })
+      if (sessionId) {
+        updateSessionDetailCache(sessionId, generationMode === 'annale' ? 'annale' : 'session', (old: any) => {
+          const prevQa = Array.isArray(old?.qa_history) ? old.qa_history : [];
+          return { ...old, qa_history: [...prevQa, newEntry] };
+        });
+      }
+    } catch (e: any) {
+      if (e?.name === 'AbortError' || controller.signal.aborted) return
+      setChatHistory(prev => {
+        const newHist = [...prev]
+        if (newHist.length > 0 && newHist[newHist.length - 1].answer === '...') {
+          newHist[newHist.length - 1].answer = "Erreur de connexion avec l'assistant."
+        }
+        return newHist
+      })
+    } finally {
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null
+        setIsChatting(false)
+      }
+    }
+  }
+
+  const handleSendChatMessage = (msg: string) => {
+    if (activeThreadId) {
+      handleSendThreadMessage(activeThreadId, msg)
+    } else {
+      setChatMessage(msg)
+      handleSendDirectQuestion(msg)
     }
   }
 
@@ -718,7 +1124,7 @@ export default function CreateSession() {
     }
   }
 
-  const STUDY_TABS: ToolType[] = ['fiche', 'quiz', 'flashcards', 'mindmap', 'audio']
+  const STUDY_TABS: ToolType[] = ['fiche', 'quiz', 'flashcards', 'mindmap', 'audio', 'artefacts' as ToolType]
   const TOOL_LABELS: Record<string, string> = {
     fiche: t('tools.fiche.title'),
     quiz: t('tools.quiz.title'),
@@ -726,9 +1132,12 @@ export default function CreateSession() {
     mindmap: t('tools.mindmap.title'),
     audio: t('tools.audio.title'),
     annale: t('tools.annale.title'),
+    artefacts: `Mes ensembles (${artefacts.length})`,
   }
 
   const isToolGenerated = (tKey: string) => {
+    if (tKey === 'artefacts') return true
+    if (tKey === 'fiche') return Boolean(generatedContent && generatedContent.fiche)
     if (tKey === 'annale') {
       return Boolean(generatedContent && (generatedContent.sections || generatedContent.corrections || Object.keys(generatedContent).length > 0))
     }
@@ -775,7 +1184,7 @@ export default function CreateSession() {
       </div>
       
       {/* Left Column: PDF Preview */}
-      <div className={`${mobileActiveView === 'doc' ? 'flex flex-1 w-full' : 'hidden'} ${isPdfExpanded ? 'md:flex md:w-1/2' : 'md:hidden'} border-r border-sphera-border flex-col bg-sphera-surface-2 overflow-hidden transition-all duration-300`}>
+      <div className={`${mobileActiveView === 'doc' ? 'flex flex-1 w-full min-h-0' : 'hidden'} ${isPdfExpanded ? 'md:flex md:w-1/2' : 'md:hidden'} border-r border-sphera-border flex-col bg-sphera-surface-2 overflow-hidden transition-all duration-300`}>
         <div className="h-14 border-b border-sphera-border flex items-center justify-between px-4 bg-sphera-bg">
           <div className="flex items-center gap-3 min-w-0">
             <button 
@@ -850,347 +1259,150 @@ export default function CreateSession() {
       </div>
 
       {/* Right Column: Configuration & Results Workspace */}
-      <div className={`${mobileActiveView === 'workspace' ? 'flex flex-1 w-full' : 'hidden'} ${isPdfExpanded ? 'md:flex md:w-1/2' : 'md:flex md:w-full'} flex-col h-full bg-sphera-bg relative shadow-[-10px_0_30px_rgba(0,0,0,0.5)] transition-all duration-300`}>
-        
-        {/* Workspace Toolbar */}
-        <div className="h-14 border-b border-sphera-border flex items-center justify-between px-4 bg-sphera-surface-2/80 backdrop-blur-md sticky top-0 z-20">
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={() => setIsPdfExpanded(!isPdfExpanded)}
-              className="p-1.5 rounded-md text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors"
-              title={isPdfExpanded ? t('createSession.fullscreen') : t('createSession.showPreview')}
-            >
-              {isPdfExpanded ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
-            </button>
-            {!isPdfExpanded && (
-              <span className="text-sm font-semibold text-white truncate max-w-[200px] border-l border-sphera-border pl-3">
-                {file.name}
-              </span>
-            )}
-          </div>
+      <div className={`${mobileActiveView === 'workspace' ? 'flex flex-1 w-full min-h-0' : 'hidden'} ${isPdfExpanded ? 'md:flex md:w-1/2' : 'md:flex md:w-full'} flex-col bg-sphera-bg relative shadow-[-10px_0_30px_rgba(0,0,0,0.5)] transition-all duration-300`}>
 
-          {generatedContent && (
-            <div className="flex gap-1 bg-sphera-bg p-1 rounded-md overflow-x-auto">
-              {(generationMode === 'study' ? STUDY_TABS : ['annale']).map(t => {
-                const isGenerated = isToolGenerated(t);
-                return (
-                  <button 
-                    key={t}
-                    onClick={() => setActiveTab(t)}
-                    className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors flex items-center gap-1.5 whitespace-nowrap ${
-                      activeTab === t 
-                        ? 'bg-sphera-surface text-white shadow-sm' 
-                        : isGenerated 
-                          ? 'text-sphera-text-muted hover:text-white' 
-                          : 'text-sphera-text-muted/50 hover:text-sphera-text-muted/90'
-                    }`}
-                  >
-                    {TOOL_LABELS[t] || (t.charAt(0).toUpperCase() + t.slice(1))}
-                    {!isGenerated && generationMode === 'study' && (
-                      <span className="text-[9px] bg-sphera-surface-2 px-1.5 rounded-full border border-sphera-border text-sphera-text-muted">+</span>
-                    )}
-                  </button>
-                )
-              })}
-              {sessionId && (
-                <button 
-                  onClick={() => setActiveTab('chat')}
-                  className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors flex items-center gap-1.5 ${
-                    activeTab === 'chat' ? 'bg-sphera-surface text-white' : 'text-sphera-text-muted hover:text-white'
-                  }`}
-                >
-                  <MessageSquare className="w-3.5 h-3.5" /> Q&A
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Scrollable Content Area */}
-        <div 
-          className="flex-1 overflow-y-auto min-h-0 relative select-text"
-          onMouseUp={handleWorkspaceSelection}
-          onTouchEnd={handleWorkspaceSelection}
-        >
-          {!generatedContent ? (
-            /* Settings View */
-            <div className="p-6 sm:p-8 max-w-xl mx-auto w-full pb-8">
-              <h2 className="font-display text-2xl font-bold text-white mb-6">{t('createSession.title')}</h2>
-              
-              {error && <div className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">{error}</div>}
-
-              {/* Mode Toggle */}
-              <div className="flex bg-sphera-surface p-1 rounded-xl w-full mb-8">
+        {!generatedContent ? (
+          /* ── PRE-GENERATION: 2 big cards + loading state ── */
+          <div className="flex flex-col h-full">
+            {/* Mini toolbar */}
+            <div className="h-14 border-b border-sphera-border flex items-center justify-between px-4 bg-sphera-surface-2/80 backdrop-blur-md shrink-0">
+              <div className="flex items-center gap-3">
                 <button
-                  onClick={() => setGenerationMode('study')}
-                  className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all ${
-                    generationMode === 'study'
-                      ? 'bg-sphera-surface-2 text-white shadow-sm border border-sphera-border'
-                      : 'text-sphera-text-muted hover:text-white border border-transparent'
-                  }`}
+                  onClick={() => setIsPdfExpanded(!isPdfExpanded)}
+                  className="p-1.5 rounded-md text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors"
+                  title={isPdfExpanded ? t('createSession.fullscreen') : t('createSession.showPreview')}
                 >
-                  {t('createSession.studyMode')}
+                  {isPdfExpanded ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
                 </button>
-                <button
-                  onClick={() => setGenerationMode('annale')}
-                  className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all ${
-                    generationMode === 'annale'
-                      ? 'bg-sphera-surface-2 text-white shadow-sm border border-sphera-border'
-                      : 'text-sphera-text-muted hover:text-white border border-transparent'
-                  }`}
-                >
-                  {t('createSession.annaleMode')}
-                </button>
+                {!isPdfExpanded && (
+                  <span className="text-sm font-semibold text-white truncate max-w-[200px] border-l border-sphera-border pl-3">
+                    {file.name}
+                  </span>
+                )}
               </div>
-
-              {generationMode === 'study' ? (
-                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <ToolSelector 
-                    selectedTools={selectedTools}
-                    onToolSelect={setSelectedTools}
-                  />
-                </div>
-              ) : (
-                <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <label className="text-sm font-medium text-sphera-text-muted">{t('createSession.annaleTypeLabel')}</label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <button
-                      onClick={() => setAnnaleMode('complete')}
-                      className={`p-4 rounded-xl border text-left flex flex-col justify-between transition-all ${
-                        annaleMode === 'complete'
-                          ? 'bg-sphera-surface-2 border-sphera-green text-white shadow-sm'
-                          : 'bg-sphera-surface border-sphera-border text-sphera-text-muted hover:border-sphera-text-muted'
-                      }`}
-                    >
-                      <div>
-                        <div className="font-semibold text-white mb-1">{t('createSession.annaleComplete')}</div>
-                        <div className="text-xs text-sphera-text-muted">{t('createSession.annaleCompleteDesc')}</div>
-                      </div>
-                      <div className="mt-4 flex items-center gap-1.5 text-xs text-sphera-green">
-                        <BookOpen className="w-4 h-4" /> {t('createSession.annaleCompleteBadge')}
-                      </div>
-                    </button>
-                    <button
-                      onClick={() => setAnnaleMode('rapide')}
-                      className={`p-4 rounded-xl border text-left flex flex-col justify-between transition-all ${
-                        annaleMode === 'rapide'
-                          ? 'bg-sphera-surface-2 border-sphera-green text-white shadow-sm'
-                          : 'bg-sphera-surface border-sphera-border text-sphera-text-muted hover:border-sphera-text-muted'
-                      }`}
-                    >
-                      <div>
-                        <div className="font-semibold text-white mb-1">{t('createSession.annaleRapide')}</div>
-                        <div className="text-xs text-sphera-text-muted">{t('createSession.annaleRapideDesc')}</div>
-                      </div>
-                      <div className="mt-4 flex items-center gap-1.5 text-xs text-[#ff9800]">
-                        <Zap className="w-4 h-4" /> {t('createSession.annaleRapideBadge')}
-                      </div>
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {generationMode === 'study' && selectedTools.length === 0 ? (
-                <button
-                  onClick={handleStartDirectQa}
-                  disabled={generating}
-                  className="sphera-primary-btn w-full mt-8 py-3.5 text-sm font-bold flex items-center justify-center gap-2 shadow-lg"
-                >
-                  {generating ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>{t('createSession.initializing')}</span>
-                    </>
-                  ) : (
-                    <>
-                      <MessageSquare className="w-5 h-5" />
-                      <span>{t('createSession.directQaBtn')}</span>
-                    </>
-                  )}
-                </button>
-              ) : (
-                <>
-                  <button
-                    onClick={handleGenerate}
-                    disabled={generating}
-                    className="sphera-primary-btn w-full mt-8 py-3.5 text-sm font-bold flex items-center justify-center gap-2 shadow-lg"
-                  >
-                    {generating ? (
-                      <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        <span>{t('createSession.generating')}</span>
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-5 h-5" />
-                        <span>
-                          {generationMode === 'study'
-                            ? t('createSession.generateCount', { count: selectedTools.length })
-                            : t('createSession.launchCorrection')}
-                        </span>
-                      </>
-                    )}
-                  </button>
-
-                  {generationMode === 'study' && (
-                    <button
-                      type="button"
-                      onClick={handleStartDirectQa}
-                      disabled={generating}
-                      className="w-full mt-3 py-2.5 px-4 text-xs font-semibold text-sphera-text-muted hover:text-white hover:bg-sphera-surface rounded-xl border border-sphera-border/60 hover:border-sphera-border transition-all flex items-center justify-center gap-2"
-                    >
-                      <MessageSquare className="w-3.5 h-3.5 text-sphera-green" />
-                      <span>{t('createSession.directQaNotice')}</span>
-                    </button>
-                  )}
-                </>
-              )}
+              <QuotaIndicator />
             </div>
-          ) : (
-            /* Results View */
-            <div className="p-4 sm:p-6 md:p-8 max-w-3xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500 pb-6">
-              {activeTab !== 'chat' && (
-                <div className="flex items-center justify-between mb-6 pb-4 border-b border-sphera-border">
+
+            {/* Cards */}
+            <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-10 overflow-y-auto">
+              {generating ? (
+                <div className="flex flex-col items-center gap-4 text-center animate-in fade-in max-w-sm">
+                  <div className="w-16 h-16 rounded-2xl bg-sphera-surface-2 border border-sphera-border flex items-center justify-center shadow-lg relative">
+                    <Loader2 className="w-8 h-8 text-sphera-green animate-spin" />
+                  </div>
                   <div>
-                    <h2 className="text-lg font-bold text-white capitalize">{activeTab}</h2>
-                    <p className="text-xs text-sphera-text-muted">{t('createSession.generatedFrom', { file: file.name })}</p>
+                    <p className="text-white font-semibold text-base mb-1">
+                      {generationMode === 'annale' ? "Préparation de l'espace d'annale…" : "Préparation de l'espace d'étude…"}
+                    </p>
+                    <p className="text-xs text-sphera-text-muted">
+                      {creationStep === 1
+                        ? "Étape 1/2 : Extraction et analyse du document…"
+                        : "Étape 2/2 : Initialisation de l'espace d'étude…"}
+                    </p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => navigate('/dashboard')}
-                      className="px-3 py-1.5 rounded-lg bg-sphera-surface hover:bg-sphera-surface-2 border border-sphera-border text-xs font-semibold text-white transition-colors"
-                    >
-                      {t('createSession.seeInDashboard')}
-                    </button>
+                  {/* Step indicators */}
+                  <div className="flex items-center gap-2 mt-1 w-48">
+                    <div className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${creationStep >= 1 ? 'bg-sphera-green' : 'bg-sphera-surface-2'}`} />
+                    <div className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${creationStep >= 2 ? 'bg-sphera-green' : 'bg-sphera-surface-2'}`} />
                   </div>
-                </div>
-              )}
-
-              {/* Tool specific renders */}
-              {activeTab !== 'chat' && !isToolGenerated(activeTab) ? (
-                <div className="p-8 text-center bg-sphera-surface-2 rounded-2xl border border-sphera-border">
-                  <p className="text-sphera-text-muted mb-4">{t('createSession.toolNotGenerated')}</p>
-                  <button
-                    onClick={() => handleAddTool(activeTab as ToolType)}
-                    disabled={isGeneratingTool}
-                    className="sphera-primary-btn py-2 px-4 text-xs inline-flex items-center gap-2"
-                  >
-                    {isGeneratingTool ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                    <span>{t('createSession.generateTool', { tool: TOOL_LABELS[activeTab] || activeTab })}</span>
-                  </button>
-                  {toolError && <p className="text-red-400 text-sm mt-4 bg-red-500/10 p-3 rounded-lg border border-red-500/20">{toolError}</p>}
                 </div>
               ) : (
                 <>
-                  {activeTab === 'fiche' && <FicheView content={generatedContent.fiche} />}
-                  {activeTab === 'quiz' && <QuizView content={generatedContent.quiz} />}
-                  {activeTab === 'flashcards' && <FlashcardsView content={generatedContent.flashcards} />}
-                  {activeTab === 'mindmap' && <MindmapView content={generatedContent.mindmap || generatedContent} />}
-                  {activeTab === 'audio' && <AudioSummaryView content={generatedContent.audio || generatedContent} />}
-                  {activeTab === 'annale' && <AnnaleView annale={{ content: generatedContent, mode: annaleMode }} />}
+                  <div className="mb-8 text-center">
+                    <h2 className="font-display text-2xl font-bold text-white mb-2">{t('createSession.title')}</h2>
+                    <p className="text-sm text-sphera-text-muted">Choisissez comment exploiter ce document</p>
+                  </div>
+
+                  {error && <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-sm text-red-400 w-full max-w-md">{error}</div>}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg">
+                    {/* Card 1: Réviser un cours */}
+                    <button
+                      onClick={() => {
+                        setGenerationMode('study')
+                        setSelectedTools([])
+                        handleStartDirectQa()
+                      }}
+                      disabled={generating}
+                      className="group flex flex-col items-center justify-center p-6 rounded-2xl border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 hover:border-sphera-border/80 transition-all duration-200 text-center cursor-pointer shadow-sm"
+                    >
+                      <div className="w-11 h-11 rounded-xl bg-sphera-surface-2 border border-sphera-border flex items-center justify-center mb-3 group-hover:border-sphera-green/40 transition-colors">
+                        <BookOpen weight="duotone" className="w-5 h-5 text-sphera-green" />
+                      </div>
+                      <h3 className="text-sm font-semibold text-white mb-1">Réviser un cours</h3>
+                      <p className="text-xs text-sphera-text-muted">Fiches, quiz, flashcards…</p>
+                    </button>
+
+                    {/* Card 2: Corriger une annale */}
+                    <button
+                      onClick={handleStartAnnale}
+                      disabled={generating}
+                      className="group flex flex-col items-center justify-center p-6 rounded-2xl border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 hover:border-sphera-border/80 transition-all duration-200 text-center cursor-pointer shadow-sm"
+                    >
+                      <div className="w-11 h-11 rounded-xl bg-sphera-surface-2 border border-sphera-border flex items-center justify-center mb-3 group-hover:border-orange-500/40 transition-colors">
+                        <Exam weight="duotone" className="w-5 h-5 text-orange-400" />
+                      </div>
+                      <h3 className="text-sm font-semibold text-white mb-1">Corriger une annale</h3>
+                      <p className="text-xs text-sphera-text-muted">Corrigé détaillé pas à pas</p>
+                    </button>
+                  </div>
                 </>
-              )}
-              {activeTab === 'chat' && (
-                <div className="flex flex-col gap-2 pb-6">
-                  {chatHistory.length === 0 ? (
-                    <div className="text-center p-12 bg-sphera-surface-2 rounded-2xl border border-sphera-border">
-                      <MessageSquare className="w-10 h-10 text-sphera-text-muted mx-auto mb-4 opacity-50" />
-                      <p className="text-white font-medium mb-1">{t('createSession.qaEmptyTitle')}</p>
-                      <p className="text-sm text-sphera-text-muted">{t('createSession.qaEmptyDesc')}</p>
-                    </div>
-                  ) : (
-                    chatHistory.map((msg, i) => (
-                      <AiMessageItem
-                        key={i}
-                        index={i}
-                        question={msg.question}
-                        answer={msg.answer}
-                        onEdit={handleEditMessage}
-                        onRegenerate={handleRegenerateResponse}
-                        disabled={isChatting}
-                      />
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Q&A Chat Input (Pinned Bottom Bar) */}
-        <div className="shrink-0 w-full bg-sphera-surface-2/95 border-t border-sphera-border px-3 py-2 sm:px-4 sm:py-3 z-30 backdrop-blur-md">
-          {/* Suggestions de questions */}
-          {sessionId && activeTab === 'chat' && (
-            <div className="max-w-3xl mx-auto mb-2">
-              <QuestionSuggestions
-                sessionId={sessionId}
-                askedQuestions={chatHistory.map(m => m.question)}
-                onSelect={(q) => {
-                  setChatMessage(q)
-                  chatInputRef.current?.focus()
-                }}
-              />
-            </div>
-          )}
-
-          {/* Chat input with @ command detection */}
-          <div className="max-w-3xl mx-auto relative">
-            <CommandMenu
-              isVisible={showCommandMenu}
-              filter={commandFilter}
-              activeIndex={commandActiveIdx}
-              onSelect={handleCommandSelect}
-              onClose={() => setShowCommandMenu(false)}
-            />
-            <div className="flex items-center gap-2 bg-sphera-surface border border-sphera-border rounded-full p-1.5 pl-3 sm:pl-4 shadow-[0_0_20px_rgba(0,0,0,0.3)] focus-within:border-sphera-green/50 transition-colors">
-              <button
-                type="button"
-                onClick={handleToggleCommandMenu}
-                title={t('createSession.commandsAt')}
-                aria-label={t('createSession.commandsAt')}
-                className={`p-1.5 rounded-full transition-colors shrink-0 ${
-                  showCommandMenu 
-                    ? 'bg-sphera-green text-black' 
-                    : 'text-sphera-text-muted hover:text-sphera-green hover:bg-sphera-surface-2'
-                }`}
-              >
-                <AtSign className="w-4 h-4" />
-              </button>
-              <input 
-                ref={chatInputRef}
-                type="text" 
-                placeholder={t('createSession.inputPlaceholder')}
-                value={chatMessage}
-                onChange={e => handleChatInputChange(e.target.value)}
-                onKeyDown={handleChatKeyDown}
-                disabled={isChatting || generating}
-                className="flex-1 bg-transparent border-none text-sm text-white placeholder-sphera-text-muted outline-none focus:ring-0"
-              />
-              {isChatting ? (
-                <button 
-                  type="button"
-                  onClick={handleStopChat}
-                  title={t('createSession.stopResponse')}
-                  aria-label={t('createSession.stopResponse')}
-                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-red-500/90 hover:bg-red-500 text-white flex items-center justify-center transition-all flex-shrink-0 shadow-[0_0_15px_rgba(239,68,68,0.4)] animate-in fade-in"
-                >
-                  <Square className="w-3.5 h-3.5 fill-current" />
-                </button>
-              ) : (
-                <button 
-                  type="button"
-                  onClick={handleSendChat}
-                  disabled={!chatMessage.trim() || generating}
-                  title={t('createSession.sendMessage')}
-                  aria-label={t('createSession.sendMessage')}
-                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-sphera-green text-black flex items-center justify-center hover:bg-green-400 disabled:opacity-50 disabled:hover:bg-sphera-green transition-colors flex-shrink-0 shadow-[0_0_15px_rgba(34,197,94,0.3)]"
-                >
-                  <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-0.5" />
-                </button>
               )}
             </div>
           </div>
-        </div>
+        ) : (
+          /* ── POST-GENERATION: StudyWorkspacePanel handles everything ── */
+          <StudyWorkspacePanel
+            sessionId={sessionId}
+            documentTitle={file.name.replace(/\.[^/.]+$/, '')}
+            sessionContent={generatedContent}
+            artefacts={artefacts}
+            threads={threads}
+            activeThreadId={activeThreadId}
+            onSelectThread={handleSelectThread}
+            onCreateThread={handleCreateThread}
+            onDeleteThread={handleDeleteThread}
+            chatHistory={chatHistory}
+            isChatting={isChatting}
+            onSendMessage={handleSendChatMessage}
+            onStopChat={handleStopChat}
+            onEditMessage={handleEditMessage}
+            onRegenerateResponse={handleRegenerateResponse}
+            isGeneratingTool={isGeneratingTool}
+            generatingToolType={generatingToolType}
+            onGenerateTool={handleAddTool}
+            onDeleteArtefact={handleDeleteArtefact}
+            onRenameArtefact={handleRenameArtefact}
+            onNewNote={handleNewNote}
+            onSaveNote={handleSaveNote}
+            onGenerateChapterQuiz={handleGenerateChapterQuiz}
+            onGenerateChapterFlashcards={handleGenerateChapterFlashcards}
+            onRegenerateFiche={handleRegenerateFiche}
+            isRegeneratingFiche={isRegeneratingFiche}
+            isGeneratingArtefact={isGeneratingArtefact}
+            generatingChapterArtefact={generatingChapterArtefact}
+            isPdfExpanded={isPdfExpanded}
+            onTogglePdfExpanded={() => setIsPdfExpanded(!isPdfExpanded)}
+            rawAnnale={generationMode === 'annale' ? (rawAnnaleData || generatedContent) : undefined}
+            onArtefactCreated={(newArt) => setArtefacts(prev => [newArt, ...prev])}
+            onCreateNoteWithContent={async (title, text) => {
+              if (!sessionId) return
+              try {
+                const res = await createArtefact(sessionId, {
+                  type: 'note',
+                  title,
+                  subtitle: 'Créée depuis le Q&A',
+                  content: { text },
+                })
+                setArtefacts(prev => [res.data, ...prev])
+                showFeedback('Note enregistrée !', 'success')
+              } catch (err: any) {
+                showFeedback(err?.message || "Erreur lors de l'enregistrement de la note", 'error')
+              }
+            }}
+            extractedText={generatedContent?.extracted_text || rawAnnaleData?.extracted_text || ''}
+          />
+        )}
       </div>
 
       {selectionToolbar && (
@@ -1213,3 +1425,4 @@ export default function CreateSession() {
     </div>
   )
 }
+

@@ -4,6 +4,7 @@ import {
   createPrivateConversation,
   deleteMessage,
   deleteConversation,
+  getConversation,
   getConversationMessages,
   getConversationParticipants,
   getUserConnections,
@@ -26,6 +27,7 @@ import { z } from "zod";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import type { Conversation, Message, ConversationParticipant } from "@/types";
+import { parseSlugId, encodeHashId } from "@/lib/hashids";
 import {
   ChatHeader,
   ChatMessageItem,
@@ -42,6 +44,16 @@ function unwrapApiData(payload: any) {
     return payload.data;
   }
   return payload;
+}
+
+function isMatchingConv(conv: Conversation | null | undefined, targetId: string | undefined): boolean {
+  if (!conv || !targetId) return false;
+  if (conv.id === targetId) return true;
+  if (conv.hash_id && conv.hash_id === targetId) return true;
+  const targetNum = typeof targetId === "number" ? targetId : parseSlugId(targetId);
+  const convNum = conv.numericId ?? (typeof conv.id === "number" ? conv.id : parseSlugId(conv.id));
+  if (targetNum !== null && convNum !== null && targetNum === convNum) return true;
+  return false;
 }
 
 function mapConversation(rawConv: any, currentUserId?: string): Conversation {
@@ -63,8 +75,13 @@ function mapConversation(rawConv: any, currentUserId?: string): Conversation {
     conv.lastMessageAt ||
     null;
 
+  const numericId = typeof conv.id === "number" ? conv.id : parseSlugId(conv.id);
+  const hashId = conv.hash_id || conv.hashId || (numericId ? encodeHashId(numericId) : null) || String(conv.id || "");
+
   return {
-    id: String(conv.id),
+    id: hashId,
+    hash_id: hashId,
+    numericId: numericId ?? undefined,
     type: conv.type || conv.conversation_type || "private",
     participants,
     lastMessage,
@@ -247,6 +264,23 @@ export function Messages() {
     refetchOnMount: false,
   });
 
+  const singleConversationQuery = useQuery({
+    queryKey: ["messages", "conversation-detail", conversationId || "none"],
+    queryFn: () => getConversation(String(conversationId || "")),
+    enabled: Boolean(conversationId) && !conversations.some((c) => isMatchingConv(c, conversationId)),
+    staleTime: 60 * 1000,
+  });
+
+  useEffect(() => {
+    if (singleConversationQuery.data) {
+      const mapped = mapConversation(singleConversationQuery.data, String(currentUser?.id || ""));
+      setConversations((prev) => {
+        if (prev.some((c) => isMatchingConv(c, mapped.id))) return prev;
+        return [mapped, ...prev];
+      });
+    }
+  }, [singleConversationQuery.data, currentUser?.id]);
+
   useEffect(() => {
     if (normalizedConnectionSearch.length < 2) {
       setGlobalUsers([]);
@@ -383,7 +417,7 @@ export function Messages() {
           );
           setConversations((prev) =>
             prev.map((conversation) =>
-              conversation.id === String(conversationId)
+              isMatchingConv(conversation, conversationId)
                 ? {
                     ...conversation,
                     lastMessage: next.content,
@@ -412,7 +446,7 @@ export function Messages() {
           if (readerId === String(currentUser?.id || "")) {
             setConversations((prev) =>
               prev.map((conversation) =>
-                conversation.id === String(conversationId)
+                isMatchingConv(conversation, conversationId)
                   ? { ...conversation, unread: 0 }
                   : conversation
               )
@@ -425,7 +459,7 @@ export function Messages() {
 
           setConversations((prev) =>
             prev.map((conv) => {
-              if (conv.id === String(conversationId)) {
+              if (isMatchingConv(conv, conversationId)) {
                 return { ...conv, isOnline: status === "online" };
               }
               return conv;
@@ -484,7 +518,7 @@ export function Messages() {
       );
       setConversations((prev) =>
         prev.map((conversation) =>
-          conversation.id === conversationId
+          isMatchingConv(conversation, conversationId)
             ? {
                 ...conversation,
                 lastMessage: newMsg.content,
@@ -510,7 +544,7 @@ export function Messages() {
     void markConversationRead(targetConversationId).catch((): void => {});
     setConversations((prev) =>
       prev.map((conversation) =>
-        conversation.id === targetConversationId ? { ...conversation, unread: 0 } : conversation
+        isMatchingConv(conversation, targetConversationId) ? { ...conversation, unread: 0 } : conversation
       )
     );
   };
@@ -583,7 +617,7 @@ export function Messages() {
 
       setConversations((prev) => [
         mappedConversation,
-        ...prev.filter((conversation) => conversation.id !== mappedConversation.id),
+        ...prev.filter((conversation) => !isMatchingConv(conversation, mappedConversation.id)),
       ]);
       setShowNewConversationModal(false);
       setConnectionSearch("");
@@ -607,7 +641,7 @@ export function Messages() {
           )
       );
       if (existingConversation) {
-        navigate(`/messages/${existingConversation.id}`);
+        navigate(`/messages/${existingConversation.hash_id || existingConversation.id}`);
         setShowNewConversationModal(false);
         setConnectionSearch("");
         toast({
@@ -628,7 +662,26 @@ export function Messages() {
     }
   };
 
-  const selectedConv = conversations.find((c) => c.id === conversationId);
+  const selectedConv =
+    conversations.find((c) => isMatchingConv(c, conversationId)) ||
+    conversations.find(
+      (c) =>
+        c.type === "private" &&
+        (c.participants || []).some((p: any) => String(p.id) === String(conversationId))
+    );
+
+  useEffect(() => {
+    if (
+      conversationId &&
+      selectedConv &&
+      selectedConv.hash_id &&
+      conversationId !== selectedConv.hash_id &&
+      (/^\d+$/.test(conversationId) || conversationId !== selectedConv.id)
+    ) {
+      navigate(`/messages/${selectedConv.hash_id}`, { replace: true });
+    }
+  }, [conversationId, selectedConv, navigate]);
+
   const selectedParticipants = selectedConv?.participants || [];
   const isGroupCreator =
     selectedConv?.type === "group" &&
@@ -660,7 +713,7 @@ export function Messages() {
       await renameConversation(conversationId, renameValue.trim());
       setConversations((prev) =>
         prev.map((conv) =>
-          conv.id === conversationId ? { ...conv, name: renameValue.trim() } : conv
+          isMatchingConv(conv, conversationId) ? { ...conv, name: renameValue.trim() } : conv
         )
       );
       setRenameDialogOpen(false);
@@ -686,7 +739,7 @@ export function Messages() {
       setParticipants(updatedParticipants);
       setConversations((prev) =>
         prev.map((conv) =>
-          conv.id === conversationId ? { ...conv, participants: updatedParticipants } : conv
+          isMatchingConv(conv, conversationId) ? { ...conv, participants: updatedParticipants } : conv
         )
       );
       toast({ title: "Membre ajouté", description: "Le membre a été ajouté à la conversation." });
@@ -712,7 +765,7 @@ export function Messages() {
       setParticipants(updatedParticipants);
       setConversations((prev) =>
         prev.map((conv) =>
-          conv.id === conversationId ? { ...conv, participants: updatedParticipants } : conv
+          isMatchingConv(conv, conversationId) ? { ...conv, participants: updatedParticipants } : conv
         )
       );
       toast({ title: "Membre retiré", description: `${displayName} a été retiré du groupe.` });
@@ -733,7 +786,7 @@ export function Messages() {
       await markConversationUnread(conversationId);
       setConversations((prev) =>
         prev.map((conv) =>
-          conv.id === conversationId ? { ...conv, unread: Math.max(1, conv.unread || 0) } : conv
+          isMatchingConv(conv, conversationId) ? { ...conv, unread: Math.max(1, conv.unread || 0) } : conv
         )
       );
       toast({ title: "Non lu", description: `« ${selectedConv.name} » est marquée comme non lue.` });
@@ -752,7 +805,7 @@ export function Messages() {
     setIsUpdatingConversation(true);
     try {
       await leaveConversation(conversationId);
-      setConversations((prev) => prev.filter((conv) => conv.id !== conversationId));
+      setConversations((prev) => prev.filter((conv) => !isMatchingConv(conv, conversationId)));
       navigate("/messages");
       toast({ title: "Conversation quittée", description: `Vous avez quitté « ${selectedConv.name} ».` });
     } catch (error: any) {
@@ -772,7 +825,7 @@ export function Messages() {
     setIsUpdatingConversation(true);
     try {
       await deleteConversation(conversationId);
-      setConversations((prev) => prev.filter((conv) => conv.id !== conversationId));
+      setConversations((prev) => prev.filter((conv) => !isMatchingConv(conv, conversationId)));
       navigate("/messages");
       toast({ title: "Conversation supprimée", description: `« ${selectedConv.name} » a été supprimée.` });
     } catch (error: any) {
@@ -791,7 +844,7 @@ export function Messages() {
     try {
       const res = await uploadConversationAvatar(conversationId, file);
       setConversations((prev) =>
-        prev.map((conv) => (conv.id === conversationId ? { ...conv, avatar: res.avatar_url } : conv))
+        prev.map((conv) => (isMatchingConv(conv, conversationId) ? { ...conv, avatar: res.avatar_url } : conv))
       );
       toast({ title: "Avatar mis à jour !" });
     } catch (err: any) {
@@ -804,7 +857,7 @@ export function Messages() {
     try {
       await removeConversationAvatar(conversationId);
       setConversations((prev) =>
-        prev.map((conv) => (conv.id === conversationId ? { ...conv, avatar: null } : conv))
+        prev.map((conv) => (isMatchingConv(conv, conversationId) ? { ...conv, avatar: null } : conv))
       );
       toast({ title: "Avatar supprimé" });
     } catch (err: any) {
@@ -855,7 +908,7 @@ export function Messages() {
             const newConversation = mapConversation(groupData, String(currentUser?.id || ""));
             setConversations((prev) => [
               newConversation,
-              ...prev.filter((item) => item.id !== newConversation.id),
+              ...prev.filter((item) => !isMatchingConv(item, newConversation.id)),
             ]);
             toast({
               title: "Conversation créée !",

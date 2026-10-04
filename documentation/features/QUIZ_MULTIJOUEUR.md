@@ -671,7 +671,7 @@ Zone principale :
   Zone upload document
 
 Onglets bas de page :
-  [Mes sessions] [Mes annales]
+  [Mes révisions] [Mes annales]
 ```
 
 ### Ou placer Sphera Live
@@ -685,7 +685,7 @@ Point d'entree accessible depuis n'importe quel ecran de Sphera.
 
 **Onglets** - ajouter un 3eme onglet a cote des 2 existants :
 ```
-[Mes sessions] [Mes annales] [zap Sphera Live]
+[Mes révisions] [Mes annales] [zap Sphera Live]
 ```
 Meme pattern de navigation que l'existant (sessions individuelles vs
 annales vs live) - coherent avec ce qui existe deja, pas un nouveau

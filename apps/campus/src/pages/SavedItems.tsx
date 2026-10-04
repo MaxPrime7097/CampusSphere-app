@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
 import { ResourceCard } from "@/components/resources/ResourceCard";
@@ -116,9 +116,57 @@ function SavedPostItem({ post, onUnsave, onClick }: SavedPostItemProps) {
   );
 }
 
+function mapSavedPosts(data: any): any[] {
+  return (data || []).map((post: any) => ({
+    id: String(post.id),
+    author: {
+      name: post.author?.name || "Utilisateur",
+      avatar: post.author?.avatar || "/placeholder-avatar.jpg",
+      username: post.author?.username || "user",
+    },
+    content: post.content || "",
+    createdAt: post.createdAt || post.created_at || null,
+    likes: Number(post.likesCount ?? post.likes_count ?? 0),
+    comments: Number(post.commentsCount ?? post.comments_count ?? 0),
+    category: post.category || "Général",
+    impactScore: Number(post.impactScore ?? post.impact_score ?? 0),
+    isLiked: Boolean(post.isLiked ?? post.is_liked),
+    isSaved: true,
+    files: post.files || [],
+    image: post.image || null,
+    canEdit: Boolean(post.canEdit ?? post.can_edit),
+    canDelete: Boolean(post.canDelete ?? post.can_delete),
+  }));
+}
+
+function mapSavedResources(data: any): any[] {
+  return (data || []).map((r: any) => ({
+    id: String(r.id),
+    title: r.title,
+    description: r.description || '',
+    subject: normalizeSubject(r.subject),
+    type: normalizeResourceType(r.type),
+    authorName: r.author?.name || r.author_info?.name || r.author_name || 'Unknown',
+    fileUrl: r.fileUrl || r.file_url || r.file || '',
+    fileSize: r.fileSize || r.file_size || '0 MB',
+    tags: r.tags || [],
+    impactScore: r.impactScore || r.impact_score || 0,
+    createdAt: r.createdAt || r.created_at || null,
+    viewCount: r.viewCount || r.view_count || 0,
+    downloadCount: r.downloadCount || r.download_count || 0,
+  }));
+}
+
 export function SavedItems() {
-  const [savedPosts, setSavedPosts] = useState<any[]>([]);
-  const [savedResources, setSavedResources] = useState<any[]>([]);
+  const queryClient = useQueryClient();
+  const [savedPosts, setSavedPosts] = useState<any[]>(() => {
+    const cached = queryClient.getQueryData<any[]>(["saved-posts"]);
+    return cached ? mapSavedPosts(cached) : [];
+  });
+  const [savedResources, setSavedResources] = useState<any[]>(() => {
+    const cached = queryClient.getQueryData<any[]>(["saved-resources"]);
+    return cached ? mapSavedResources(cached) : [];
+  });
   const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -150,48 +198,13 @@ export function SavedItems() {
 
   useEffect(() => {
     if (savedPostsQuery.data) {
-      const mappedPosts = (savedPostsQuery.data || []).map((post: any) => ({
-        id: String(post.id),
-        author: {
-          name: post.author?.name || "Utilisateur",
-          avatar: post.author?.avatar || "/placeholder-avatar.jpg",
-          username: post.author?.username || "user",
-        },
-        content: post.content || "",
-        createdAt: post.createdAt || post.created_at || null,
-        likes: Number(post.likesCount ?? post.likes_count ?? 0),
-        comments: Number(post.commentsCount ?? post.comments_count ?? 0),
-        category: post.category || "Général",
-        impactScore: Number(post.impactScore ?? post.impact_score ?? 0),
-        isLiked: Boolean(post.isLiked ?? post.is_liked),
-        isSaved: true,
-        files: post.files || [],
-        image: post.image || null,
-        canEdit: Boolean(post.canEdit ?? post.can_edit),
-        canDelete: Boolean(post.canDelete ?? post.can_delete),
-      }));
-      setSavedPosts(mappedPosts);
+      setSavedPosts(mapSavedPosts(savedPostsQuery.data));
     }
   }, [savedPostsQuery.data]);
 
   useEffect(() => {
     if (savedResourcesQuery.data) {
-      const mapped = (savedResourcesQuery.data || []).map((r: any) => ({
-        id: String(r.id),
-        title: r.title,
-        description: r.description || '',
-        subject: normalizeSubject(r.subject),
-        type: normalizeResourceType(r.type),
-        authorName: r.author?.name || r.author_info?.name || r.author_name || 'Unknown',
-        fileUrl: r.fileUrl || r.file_url || r.file || '',
-        fileSize: r.fileSize || r.file_size || '0 MB',
-        tags: r.tags || [],
-        impactScore: r.impactScore || r.impact_score || 0,
-        createdAt: r.createdAt || r.created_at || null,
-        viewCount: r.viewCount || r.view_count || 0,
-        downloadCount: r.downloadCount || r.download_count || 0,
-      }));
-      setSavedResources(mapped);
+      setSavedResources(mapSavedResources(savedResourcesQuery.data));
     }
   }, [savedResourcesQuery.data]);
 
@@ -213,6 +226,9 @@ export function SavedItems() {
     try {
       await saveResource(resourceId);
       setSavedResources((prev) => prev.filter((r) => r.id !== resourceId));
+      queryClient.setQueryData(["saved-resources"], (old: any) =>
+        Array.isArray(old) ? old.filter((r: any) => String(r.id) !== String(resourceId)) : []
+      );
       toast({ title: "Ressource retirée des sauvegardes", duration: 2000 });
     } catch (err: any) {
       toast({ title: "Erreur", description: err?.message, variant: "destructive" });
@@ -224,6 +240,9 @@ export function SavedItems() {
     try {
       await savePost(postId);
       setSavedPosts((prev) => prev.filter((p) => p.id !== postId));
+      queryClient.setQueryData(["saved-posts"], (old: any) =>
+        Array.isArray(old) ? old.filter((p: any) => String(p.id) !== String(postId)) : []
+      );
       toast({
         title: "Post retiré des sauvegardes",
         description: "Le post a été retiré de vos enregistrements",

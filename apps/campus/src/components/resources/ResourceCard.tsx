@@ -2,7 +2,18 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Download, BookmarkSimple, FileCode, Archive, Spinner as Loader2, BookOpen, GraduationCap, Sparkle as Sparkles } from "@phosphor-icons/react";
+import {
+  FileText,
+  Download,
+  BookmarkSimple,
+  Spinner as Loader2,
+  BookOpen,
+  GraduationCap,
+  FolderSimple as FolderGit2,
+  BookBookmark,
+  Notepad,
+  Question as QuestionMark,
+} from "@phosphor-icons/react";
 import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { formatFileSize, cn, getResourceUrl } from "@/lib/utils";
 import { StudyToolsModal } from "@/sphera/components/study/StudyToolsModal";
@@ -19,71 +30,57 @@ interface ResourceCardProps {
 }
 
 const TYPE_STYLES: Record<string, { icon: string; bg: string; label: string }> = {
-  notes: {
+  course_notes: {
     icon: "text-blue-500",
     bg: "bg-blue-500/10 border-blue-500/20",
-    label: "Notes",
+    label: "Note de cours",
   },
-  resumes: {
-    icon: "text-sky-500",
-    bg: "bg-sky-500/10 border-sky-500/20",
-    label: "Fiche & Résumé",
+  td_tp: {
+    icon: "text-orange-500",
+    bg: "bg-orange-500/10 border-orange-500/20",
+    label: "TD / TP",
   },
-  exercises: {
-    icon: "text-red-500",
-    bg: "bg-red-500/10 border-red-500/20",
-    label: "Exercices",
-  },
-  exam_papers: {
+  exams: {
     icon: "text-emerald-500",
     bg: "bg-emerald-500/10 border-emerald-500/20",
-    label: "Anciennes Épreuves",
-  },
-  annales: {
-    icon: "text-purple-500",
-    bg: "bg-purple-500/10 border-purple-500/20",
     label: "Annale",
   },
-  projects: {
-    icon: "text-pink-500",
-    bg: "bg-pink-500/10 border-pink-500/20",
+  project: {
+    icon: "text-violet-500",
+    bg: "bg-violet-500/10 border-violet-500/20",
     label: "Projet",
   },
-  presentations: {
-    icon: "text-indigo-500",
-    bg: "bg-indigo-500/10 border-indigo-500/20",
-    label: "Slides",
+  book: {
+    icon: "text-amber-500",
+    bg: "bg-amber-500/10 border-amber-500/20",
+    label: "Livre",
   },
   other: {
     icon: "text-muted-foreground",
     bg: "bg-muted/30 border-border/40",
-    label: "Document",
+    label: "Autre",
   },
 };
 
 function getTypeStyle(type?: string) {
   if (!type) return TYPE_STYLES.other;
-  const key = type.toLowerCase();
-  return TYPE_STYLES[key] || TYPE_STYLES.other;
+  return TYPE_STYLES[type.toLowerCase()] || TYPE_STYLES.other;
 }
 
 function getFileIcon(type?: string, className = "h-3.5 w-3.5") {
-  const key = (type || "").toLowerCase();
-  switch (key) {
-    case "notes":
+  switch ((type || "").toLowerCase()) {
+    case "course_notes":
       return <BookOpen className={className} />;
-    case "resumes":
-      return <FileText className={className} />;
-    case "exercises":
-      return <FileCode className={className} />;
-    case "exam_papers":
+    case "td_tp":
+      return <Notepad className={className} />;
+    case "exams":
       return <GraduationCap className={className} />;
-    case "annales":
-      return <Sparkles className={className} />;
-    case "projects":
-      return <Archive className={className} />;
+    case "project":
+      return <FolderGit2 className={className} />;
+    case "book":
+      return <BookBookmark className={className} />;
     default:
-      return <FileText className={className} />;
+      return <QuestionMark className={className} />;
   }
 }
 
