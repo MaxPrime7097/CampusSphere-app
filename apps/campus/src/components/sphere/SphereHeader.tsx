@@ -1,5 +1,5 @@
 import { Suspense, lazy, useState } from "react";
-import { UsersThree as Users, FileText, Gear as Settings, DotsThreeVertical as MoreVertical, Spinner as Loader2, UserPlus, UserCheck, Camera, ShareNetwork as Share2, Target, Sphere, Trophy, BookOpen, UsersFour } from "@phosphor-icons/react";
+import { UsersThree as Users, FileText, Gear as Settings, DotsThreeVertical as MoreVertical, Spinner as Loader2, UserPlus, UserCheck, Camera, ShareNetwork as Share2, Target, Sphere, Trophy, BookOpen } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -14,7 +14,6 @@ import {
   SPHERE_TYPE_LABELS,
   SPHERE_TYPE_COLORS,
   SPHERE_TYPE_ICONS,
-  normalizeSphereType,
   type SphereType,
 } from "@/config/sphereFeatures";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
@@ -22,6 +21,11 @@ import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
 const SphereSettingsModal = lazy(() =>
   import("@/components/modals/SphereSettingsModal").then((module) => ({
     default: module.SphereSettingsModal,
+  }))
+);
+const ManageMembersModal = lazy(() =>
+  import("@/components/modals/ManageMembersModal").then((module) => ({
+    default: module.ManageMembersModal,
   }))
 );
 const AddMemberModal = lazy(() =>
@@ -45,7 +49,6 @@ interface SphereHeaderProps {
   canModerateMembers: boolean;
   membersCount: number;
   pendingMembersCount: number;
-  activeTab?: string;
   onOpenBannerModal: () => void;
   onJoinSphere: () => void;
   onCancelRequest: () => void;
@@ -70,7 +73,6 @@ export function SphereHeader({
   canModerateMembers,
   membersCount,
   pendingMembersCount,
-  activeTab,
   onOpenBannerModal,
   onJoinSphere,
   onCancelRequest,
@@ -80,7 +82,23 @@ export function SphereHeader({
   onSphereDeleted,
 }: SphereHeaderProps) {
   const [isSphereSettingsOpen, setIsSphereSettingsOpen] = useState(false);
+  const [isManageMembersOpen, setIsManageMembersOpen] = useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+
+  const requiresApproval = Boolean(
+    sphere?.require_approval ??
+    sphere?.requireApproval ??
+    sphere?.requires_approval ??
+    sphere?.requiresApproval ??
+    sphere?.is_private ??
+    sphere?.isPrivate ??
+    sphereFallback?.require_approval ??
+    sphereFallback?.requireApproval ??
+    sphereFallback?.is_private ??
+    sphereFallback?.isPrivate ??
+    false
+  );
+  const showPendingMenuItem = canModerateMembers && (requiresApproval || pendingMembersCount > 0);
 
   return (
     <div className="overflow-hidden md:rounded-xl border-y md:border bg-card shadow-sm">
@@ -138,15 +156,9 @@ export function SphereHeader({
           </p>
 
           <div className="flex flex-wrap gap-3 text-sm font-medium">
-            <button
-              type="button"
-              onClick={() => onSelectTab("members")}
-              className="flex items-center gap-1.5 hover:text-primary transition-colors cursor-pointer group"
-              title="Afficher la liste des membres"
-            >
-              <Users className="h-4 w-4 text-primary group-hover:scale-110 transition-transform" />
-              <span>{sphereMemberCount} membres</span>
-            </button>
+            <span className="flex items-center gap-1.5">
+              <Users className="h-4 w-4 text-primary" /> {sphereMemberCount} membres
+            </span>
             <span className="flex items-center gap-1.5">
               <FileText className="h-4 w-4 text-primary" /> {filesCount} fichiers
             </span>
@@ -161,34 +173,25 @@ export function SphereHeader({
         {/* Actions */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-2">
           <div className="flex flex-wrap items-center gap-2">
-            {(() => {
-              const rawType =
-                sphere?.sphere_type ??
-                sphere?.sphereType ??
-                sphere?.type ??
-                sphereFallback?.sphere_type ??
-                sphereFallback?.sphereType ??
-                sphereFallback?.type ??
-                sphere?.category;
-              if (!rawType) return null;
-              const canonicalType = normalizeSphereType(rawType);
-              const iconName = SPHERE_TYPE_ICONS[canonicalType];
-              return (
-                <span
-                  className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${
-                    SPHERE_TYPE_COLORS[canonicalType] ??
-                    "bg-muted text-muted-foreground border-border"
-                  }`}
-                >
-                  {iconName === "BookOpen" && <BookOpen className="h-3.5 w-3.5" />}
-                  {iconName === "Target" && <Target className="h-3.5 w-3.5" />}
-                  {iconName === "UsersFour" && <UsersFour className="h-3.5 w-3.5" />}
-                  {iconName === "Trophy" && <Trophy className="h-3.5 w-3.5" />}
-                  {iconName === "Pencil" && <FileText className="h-3.5 w-3.5" />}
-                  {SPHERE_TYPE_LABELS[canonicalType] ?? canonicalType}
-                </span>
-              );
-            })()}
+            {sphere?.sphere_type && (
+              <span
+                className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full border ${
+                  SPHERE_TYPE_COLORS[sphere.sphere_type as SphereType] ??
+                  "bg-muted text-muted-foreground border-border"
+                }`}
+              >
+                {(() => {
+                  const iconName = SPHERE_TYPE_ICONS[sphere.sphere_type as SphereType];
+                  if (iconName === "BookOpen") return <BookOpen className="h-3.5 w-3.5" />;
+                  if (iconName === "Target") return <Target className="h-3.5 w-3.5" />;
+                  if (iconName === "Globe") return <Sphere className="h-3.5 w-3.5" />;
+                  if (iconName === "Trophy") return <Trophy className="h-3.5 w-3.5" />;
+                  if (iconName === "PencilSimple") return <FileText className="h-3.5 w-3.5" />;
+                  return null;
+                })()}
+                {SPHERE_TYPE_LABELS[sphere.sphere_type as SphereType] ?? sphere.sphere_type}
+              </span>
+            )}
             <Badge
               variant={isMember ? "default" : isPendingRequest ? "secondary" : "outline"}
               className="w-fit"
@@ -225,16 +228,29 @@ export function SphereHeader({
                   </>
                 )}
 
-                <Button
-                  variant={activeTab === "members" ? "default" : "outline"}
-                  size="sm"
-                  className="hidden md:inline-flex gap-2"
-                  onClick={() => onSelectTab("members")}
-                >
-                  <Users className="h-4 w-4" />{" "}
-                  <span>Membres</span>
-                  <span className="text-xs opacity-75">({membersCount})</span>
-                </Button>
+                {canModerateMembers && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => setIsManageMembersOpen(true)}
+                    >
+                      <Users className="h-4 w-4" />{" "}
+                      <span className="hidden sm:inline">Équipe</span>
+                    </Button>
+                    {isManageMembersOpen && (
+                      <Suspense fallback={<ModalLoadingFallback />}>
+                        <ManageMembersModal
+                          open={isManageMembersOpen}
+                          onOpenChange={setIsManageMembersOpen}
+                          sphereId={sphereFallback.id}
+                          sphereName={sphereFallback.name}
+                        />
+                      </Suspense>
+                    )}
+                  </>
+                )}
 
                 {canModerateMembers && (
                   <>
@@ -316,7 +332,7 @@ export function SphereHeader({
                 <DropdownMenuItem onClick={() => onSelectTab("members")}>
                   <Users className="h-4 w-4 mr-2" /> Membres ({membersCount})
                 </DropdownMenuItem>
-                {canModerateMembers && (
+                {showPendingMenuItem && (
                   <DropdownMenuItem onClick={() => onSelectTab("pending")}>
                     <UserCheck className="h-4 w-4 mr-2" /> Demandes ({pendingMembersCount})
                   </DropdownMenuItem>
