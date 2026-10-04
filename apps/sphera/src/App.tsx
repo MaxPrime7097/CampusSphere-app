@@ -67,10 +67,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
           <img
             src="/sphera-logo-dark.png"
             alt="Sphera"
-            className="w-24 h-auto animate-[spin_3s_linear_infinite] relative z-10"
+            className="w-20 h-auto animate-[spin_3s_linear_infinite] relative z-10"
           />
         </div>
-        <p className="text-sphera-text-muted text-sm font-medium tracking-wide animate-pulse uppercase">
+        <p className="text-sphera-text-muted text-sm font-medium tracking-wide animate-pulse">
           Initialisation...
         </p>
       </div>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { FileText, Brain as BrainCircuit, Stack as SquareStack, Calendar, ArrowRight, SquaresFour as LayoutDashboard, NotePencil as FilePenLine, Spinner as Loader2, ShareNetwork as Share2, Trash as Trash2, GitFork, Waveform as AudioLines } from "@phosphor-icons/react";
+import { FileText, Calendar, ArrowRight, NotePencil as FilePenLine, ShareNetwork as Share2, Trash as Trash2, BookOpen, Exam } from "@phosphor-icons/react";
 import { useSpheraAuth } from '../contexts/SpheraAuthContext'
 import { getSessions, getAnnales, deleteSession, deleteAnnale, shareSession, shareAnnale } from '../services/spheraApi'
 import { UploadZone } from '../components/app/UploadZone'
@@ -10,6 +10,7 @@ import { QuotaIndicator } from '../components/app/QuotaIndicator'
 import { PasteTextModal } from '../components/app/PasteTextModal'
 import { DeleteConfirmModal } from '../components/app/DeleteConfirmModal'
 import { ShareModal } from '../components/app/ShareModal'
+import { useSessionsQuery, useAnnalesQuery, invalidateSpheraSessions } from '../hooks/useSpheraQueries'
 
 // Force Vite HMR reload
 export default function Dashboard() {
@@ -25,34 +26,22 @@ export default function Dashboard() {
   const [itemToDelete, setItemToDelete] = useState<{ id: string | number; type: 'session' | 'annale'; title: string } | null>(null)
   const [shareModalData, setShareModalData] = useState<{ url: string; title: string } | null>(null)
 
-  // Sessions State
-  const [sessions, setSessions] = useState<any[]>([])
-  const [annales, setAnnales] = useState<any[]>([])
-  const [loadingSessions, setLoadingSessions] = useState(true)
-
-  React.useEffect(() => {
-    Promise.all([
-      getSessions().then(res => { const d = (res as any)?.data; setSessions(Array.isArray(d) ? d : []) }).catch(err => console.error("Erreur chargement sessions:", err)),
-      getAnnales().then(res => { const d = (res as any)?.data; setAnnales(Array.isArray(d) ? d : []) }).catch(err => console.error("Erreur chargement annales:", err))
-    ]).finally(() => setLoadingSessions(false))
-  }, [])
-
   // Tabs State
   const [activeTab, setActiveTab] = useState<'sessions' | 'annales' | 'live'>('sessions')
 
-  const getIcon = (type: string) => {
-    switch(type) {
-      case 'fiche': return <FileText className="w-5 h-5 text-blue-400" />
-      case 'quiz': return <BrainCircuit className="w-5 h-5 text-purple-400" />
-      case 'flashcards': return <SquareStack className="w-5 h-5 text-sphera-green" />
-      case 'annale': return <FilePenLine className="w-5 h-5 text-orange-400" />
-      case 'mindmap': return <GitFork className="w-5 h-5 text-emerald-400" />
-      case 'audio': return <AudioLines className="w-5 h-5 text-teal-400" />
-      default: return <FileText className="w-5 h-5 text-sphera-text-muted" />
-    }
-  }
-
+  // TanStack Query Sessions & Annales
+  const { data: sessions = [], isLoading: isLoadingSessions } = useSessionsQuery()
+  const { data: annales = [], isLoading: isLoadingAnnales } = useAnnalesQuery()
+  const loadingSessions = activeTab === 'annales' ? isLoadingAnnales : isLoadingSessions
   const displayedItems = activeTab === 'annales' ? annales : sessions;
+  const showSkeleton = loadingSessions && displayedItems.length === 0;
+
+  const getItemIcon = (isAnnale: boolean) => {
+    if (isAnnale) {
+      return <Exam className="w-5 h-5 text-orange-400" />
+    }
+    return <BookOpen className="w-5 h-5 text-sphera-green" />
+  }
 
   const handleFileSelect = (f: File | null) => {
     if (!f) return
@@ -76,11 +65,11 @@ export default function Dashboard() {
     try {
       if (itemToDelete.type === 'annale') {
         await deleteAnnale(itemToDelete.id)
-        setAnnales(prev => prev.filter(a => a.id !== itemToDelete.id))
       } else {
         await deleteSession(itemToDelete.id)
-        setSessions(prev => prev.filter(s => s.id !== itemToDelete.id))
       }
+      invalidateSpheraSessions()
+      window.dispatchEvent(new CustomEvent('sphera:session-deleted', { detail: { id: itemToDelete.id } }))
     } catch (e) {
       console.error("Erreur lors de la suppression:", e)
     } finally {
@@ -118,7 +107,6 @@ export default function Dashboard() {
             {t('dashboard.welcome', { name: user?.first_name || user?.username || 'Spherian' })}
           </h1>
           <p className="text-sphera-text-muted">{t('dashboard.subtitle1')}</p>
-          <p className="text-sphera-text-muted">{t('dashboard.subtitle2')}</p>
           <div className="flex justify-center mt-4">
             <QuotaIndicator />
           </div>
@@ -139,6 +127,8 @@ export default function Dashboard() {
               <span className="bg-sphera-surface-2 px-3 text-xs text-sphera-text-muted uppercase tracking-wider font-semibold">
                 {t('dashboard.or')}
               </span>
+              <div className="border-t border-sphera-border w-full" />
+
             </div>
 
             {/* Paste Text Button */}
@@ -170,7 +160,7 @@ export default function Dashboard() {
                 : 'border-transparent text-sphera-text-muted hover:text-white'
             }`}
           >
-            <LayoutDashboard className="w-4 h-4" /> {t('dashboard.tabs.sessions')}
+            <BookOpen className="w-4 h-4" /> {t('dashboard.tabs.sessions')}
           </button>
           <button
             onClick={() => setActiveTab('annales')}
@@ -180,19 +170,39 @@ export default function Dashboard() {
                 : 'border-transparent text-sphera-text-muted hover:text-white'
             }`}
           >
-            <FilePenLine className="w-4 h-4" /> {t('dashboard.tabs.annales')}
+            <Exam className="w-4 h-4" /> {t('dashboard.tabs.annales')}
           </button>
         </div>
 
         {/* Grid content */}
         <>
-            {loadingSessions ? (
-              <div className="flex justify-center p-8 text-sphera-text-muted">
-                <Loader2 className="w-6 h-6 animate-spin" />
+            {showSkeleton ? (
+              <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-1 sm:gap-4">
+                {[1, 2, 3, 4, 5, 6].map(idx => (
+                  <div key={idx} className="sphera-card p-5 block rounded-none sm:rounded-2xl border-x-0 sm:border-x animate-pulse">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="w-10 h-10 rounded-lg bg-sphera-surface-2" />
+                      <div className="flex gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-sphera-surface-2" />
+                        <div className="w-7 h-7 rounded-lg bg-sphera-surface-2" />
+                      </div>
+                    </div>
+                    <div className="h-4 bg-sphera-surface-2 rounded w-3/4 mb-2" />
+                    <div className="h-3 bg-sphera-surface-2/60 rounded w-1/2 mb-4" />
+                    <div className="flex items-center justify-between pt-2 border-t border-sphera-border/40">
+                      <div className="h-3 bg-sphera-surface-2 rounded w-20" />
+                      <div className="h-4 bg-sphera-surface-2 rounded w-16" />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : displayedItems.length === 0 ? (
               <div className="text-center p-12 bg-sphera-surface-2 rounded-2xl border border-sphera-border mx-4 sm:mx-0">
-                <FileText className="w-12 h-12 text-sphera-text-muted mx-auto mb-4 opacity-50" />
+                {activeTab === 'annales' ? (
+                  <Exam className="w-12 h-12 text-orange-400/50 mx-auto mb-4" />
+                ) : (
+                  <BookOpen className="w-12 h-12 text-sphera-green/50 mx-auto mb-4" />
+                )}
                 <p className="text-white font-medium mb-1">
                   {t('dashboard.empty.title', { type: activeTab === 'annales' ? t('dashboard.annaleType') : t('dashboard.sessionType') })}
                 </p>
@@ -208,7 +218,7 @@ export default function Dashboard() {
                   >
                     <div className="flex items-center justify-between mb-4">
                       <div className="w-10 h-10 rounded-lg bg-sphera-bg border border-sphera-border flex items-center justify-center">
-                        {getIcon(item.tool_types?.[0] || (activeTab === 'annales' ? 'annale' : 'fiche'))}
+                        {getItemIcon(activeTab === 'annales')}
                       </div>
                       <div className="flex items-center gap-1">
                         <button
