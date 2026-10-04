@@ -80,35 +80,28 @@ function TaskCard({ task, col, draggingId, loading, onDragStart, onDragEnd, onMo
       )}
     >
       <div className="flex items-start justify-between gap-1.5 mb-1.5">
-        <div className="flex items-start gap-1.5 min-w-0">
+        <div className="flex items-start gap-1.5 min-w-0 flex-1">
           {!isMobile && <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 mt-0.5 flex-shrink-0 group-hover:text-muted-foreground/60" />}
-          <p className={cn("text-sm font-medium leading-snug flex-1", col.id === "done" && "line-through text-muted-foreground")}>
+          <p className={cn("text-sm font-medium leading-snug flex-1 break-words", col.id === "done" && "line-through text-muted-foreground")}>
             {task.title}
           </p>
         </div>
-        
-        {/* Boutons de déplacement mobile */}
-        {isMobile && onMove && (
-          <div className="flex gap-1 flex-shrink-0">
-            {prevCol && (
-              <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => onMove(task.id, prevCol)}>
-                <ChevronRight className="h-3.5 w-3.5 rotate-180" />
-              </Button>
-            )}
-            {nextCol && (
-              <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => onMove(task.id, nextCol)}>
-                <ChevronRight className="h-3.5 w-3.5" />
-              </Button>
-            )}
-          </div>
-        )}
-        
+
         {onDelete && (
           <Button 
             variant="ghost" 
             size="icon" 
-            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
-            onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
+            title="Supprimer la tâche"
+            className={cn(
+              "h-6 w-6 p-0 text-muted-foreground hover:text-destructive flex-shrink-0",
+              !isMobile ? "opacity-0 group-hover:opacity-100 transition-opacity" : "opacity-40 hover:opacity-100"
+            )}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (window.confirm("Supprimer cette tâche ?")) {
+                onDelete(task.id);
+              }
+            }}
           >
             <X className="h-3.5 w-3.5" />
           </Button>
@@ -149,6 +142,47 @@ function TaskCard({ task, col, draggingId, loading, onDragStart, onDragEnd, onMo
           )}
         </div>
       </div>
+
+      {/* Barre de déplacement mobile ergonomique */}
+      {isMobile && onMove && (
+        <div className="mt-2 pt-2 border-t border-border/40 flex items-center justify-between gap-1.5 text-[11px]">
+          {prevCol ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground gap-1 bg-background/50"
+              onClick={(e) => {
+                e.stopPropagation();
+                onMove(task.id, prevCol);
+              }}
+            >
+              <ChevronRight className="h-3 w-3 rotate-180" />
+              <span>{COLS.find((c) => c.id === prevCol)?.label}</span>
+            </Button>
+          ) : (
+            <div />
+          )}
+
+          {nextCol ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground gap-1 bg-background/50 font-medium"
+              onClick={(e) => {
+                e.stopPropagation();
+                onMove(task.id, nextCol);
+              }}
+            >
+              <span>{COLS.find((c) => c.id === nextCol)?.label}</span>
+              <ChevronRight className="h-3 w-3" />
+            </Button>
+          ) : col.id === "done" ? (
+            <span className="text-[10px] text-green-600 dark:text-green-400 font-medium flex items-center gap-0.5 ml-auto">
+              ✓ Terminée
+            </span>
+          ) : null}
+        </div>
+      )}
     </div>
   );
 }

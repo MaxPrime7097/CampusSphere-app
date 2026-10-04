@@ -284,30 +284,51 @@ export function normalizeSphere(sphere: any): Sphere | null {
   if (!sphere) return null;
 
   const createdByInfo = normalizeUser(sphere.created_by_info ?? sphere.createdByInfo ?? sphere.creator_info);
+  const sphereType = String(sphere.sphere_type ?? sphere.sphereType ?? sphere.type ?? "communaute").toLowerCase();
+  const bannerUrl = sphere.banner_image_url ?? sphere.banner_image ?? sphere.banner_url ?? sphere.bannerUrl ?? sphere.banner ?? null;
+  const requireApproval = Boolean(sphere.require_approval ?? sphere.requireApproval ?? false);
+  const targetAudience = sphere.target_audience ?? sphere.targetAudience ?? "";
+  const expiresAt = sphere.expires_at ?? sphere.expiresAt ?? null;
+  const autoDeleteOnExpiry = Boolean(sphere.auto_delete_on_expiry ?? sphere.autoDeleteOnExpiry ?? false);
+  const collaborationTypes = toArray(sphere.collaboration_types ?? sphere.collaborationTypes);
 
   return {
     ...sphere,
     name: sphere.name ?? "",
     description: sphere.description ?? "",
     category: sphere.category ?? "",
-    type: sphere.type ?? "",
+    type: sphereType,
+    sphere_type: sphereType,
+    sphereType,
     color: sphere.color ?? "",
     icon: sphere.icon ?? "",
+    banner: bannerUrl,
+    banner_image_url: bannerUrl,
     objective: sphere.objective ?? "",
-    targetAudience: sphere.target_audience ?? sphere.targetAudience ?? "",
+    targetAudience,
+    target_audience: targetAudience,
     duration: sphere.duration ?? "",
-    expiresAt: sphere.expires_at ?? sphere.expiresAt ?? null,
-    autoDeleteOnExpiry: sphere.auto_delete_on_expiry ?? sphere.autoDeleteOnExpiry ?? false,
-    collaborationTypes: toArray(sphere.collaboration_types ?? sphere.collaborationTypes),
-    isPrivate: sphere.is_private ?? sphere.isPrivate ?? false,
-    requireApproval: sphere.require_approval ?? sphere.requireApproval ?? false,
+    expiresAt,
+    expires_at: expiresAt,
+    autoDeleteOnExpiry,
+    auto_delete_on_expiry: autoDeleteOnExpiry,
+    collaborationTypes,
+    collaboration_types: collaborationTypes,
+    isPrivate: Boolean(sphere.is_private ?? sphere.isPrivate ?? false),
+    is_private: Boolean(sphere.is_private ?? sphere.isPrivate ?? false),
+    requireApproval,
+    require_approval: requireApproval,
     memberCount: toNumber(sphere.member_count ?? sphere.memberCount, 0),
+    member_count: toNumber(sphere.member_count ?? sphere.memberCount, 0),
     progression: toNumber(sphere.progression ?? sphere.progressionPercentage, 0),
     createdBy: sphere.created_by ?? sphere.createdBy ?? createdByInfo?.id ?? null,
     createdByInfo,
-    isMember: sphere.is_member ?? sphere.isMember ?? false,
+    isMember: Boolean(sphere.is_member ?? sphere.isMember ?? false),
+    is_member: Boolean(sphere.is_member ?? sphere.isMember ?? false),
     membershipStatus: sphere.membership_status ?? sphere.membershipStatus ?? null,
+    membership_status: sphere.membership_status ?? sphere.membershipStatus ?? null,
     userRole: sphere.user_role ?? sphere.userRole ?? null,
+    user_role: sphere.user_role ?? sphere.userRole ?? null,
     createdAt: sphere.created_at ?? sphere.createdAt ?? null,
     updatedAt: sphere.updated_at ?? sphere.updatedAt ?? null,
   };

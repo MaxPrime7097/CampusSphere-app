@@ -72,8 +72,16 @@ export function Resources() {
 
   // Action states
   const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
-  const [savedResources, setSavedResources] = useState<Set<string>>(new Set());
-  const [resources, setResources] = useState<ResourceCardData[]>([]);
+  const [savedResources, setSavedResources] = useState<Set<string>>(() => {
+    const cached = queryClient.getQueryData<any[]>(["saved-resources"]);
+    const raw = Array.isArray(cached) ? cached : (cached as any)?.data || [];
+    return new Set(raw.map((r: any) => String(r.id)));
+  });
+  const [resources, setResources] = useState<ResourceCardData[]>(() => {
+    const cached = queryClient.getQueryData<any[]>(["resources"]);
+    const raw = Array.isArray(cached) ? cached : (cached as any)?.data || [];
+    return raw.map(mapResourceCard);
+  });
 
   // Fetch Resources
   const resourcesQuery = useQuery({

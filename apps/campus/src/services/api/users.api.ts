@@ -13,7 +13,7 @@ import {
 // ============================================================================
 
 export async function getCurrentUser(token?: string) {
-  const response = await apiFetch<{ success: boolean; authenticated?: boolean; data: any; timestamp: string }>(
+  const response = await apiFetch<{ success: boolean; authenticated?: boolean; data: any; timestamp?: string }>(
     "api/users/auth/me/",
     { token: token || getAccessToken() }
   );

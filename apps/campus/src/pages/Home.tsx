@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { mapPostToCard } from "@/lib/postCardMapper";
 import { PostSkeleton } from "@/components/ui/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { PostCardData, Sphere } from "@/types";
 import type { Resource } from "@/types";
 
@@ -25,6 +25,7 @@ type FeedItem = FeedPost | FeedResource;
 export function Home() {
   const isMobile = useIsMobile();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
 
@@ -41,25 +42,28 @@ export function Home() {
         .slice(0, 3),
   });
 
-  const [posts, setPosts] = useState<PostCardData[]>([]);
+  const [posts, setPosts] = useState<PostCardData[]>(() => {
+    const cached = queryClient.getQueryData<any[]>(["home", "posts"]);
+    return Array.isArray(cached) ? cached.map(mapPostToCard) : [];
+  });
 
   const postsQuery = useQuery({
     queryKey: ["home", "posts"],
     queryFn: () => listPosts(),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60 * 1000,
     gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    refetchOnMount: true,
     select: (data) => (data || []).map(mapPostToCard),
   });
 
   const resourcesQuery = useQuery({
     queryKey: ["home", "recent-resources"],
     queryFn: () => listResources({ limit: 10 }),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 2 * 60 * 1000,
     gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    refetchOnMount: true,
   });
 
   useEffect(() => {
@@ -129,6 +133,10 @@ export function Home() {
 
   const handlePostCreated = (createdPost: unknown) => {
     const mappedPost = mapPostToCard(createdPost as Record<string, unknown>);
+    queryClient.setQueryData(["home", "posts"], (old: any) => [
+      createdPost,
+      ...(Array.isArray(old) ? old.filter((p: any) => String(p.id) !== String((createdPost as any)?.id)) : []),
+    ]);
     setPosts((prev) => [mappedPost, ...prev.filter((post) => post.id !== mappedPost.id)]);
   };
 

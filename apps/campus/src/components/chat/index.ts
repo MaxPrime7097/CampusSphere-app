@@ -6,4 +6,6 @@ export { ConversationList } from "./ConversationList";
 export { NewConversationDialog } from "./NewConversationDialog";
 export { ConversationParticipantsDialog } from "./ConversationParticipantsDialog";
 export { RenameGroupDialog } from "./RenameGroupDialog";
+export { ChatDetailsSidebar } from "./ChatDetailsSidebar";
+export { MediaLightbox } from "./MediaLightbox";
 export { MiniChat } from "./MiniChat";
