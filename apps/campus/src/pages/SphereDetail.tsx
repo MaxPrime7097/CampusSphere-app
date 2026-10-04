@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
 import { ArrowLeft, WarningCircle as AlertCircle, Shield } from "@phosphor-icons/react";
-import { getSphereFeatures } from "@/config/sphereFeatures";
+import { getSphereFeatures, normalizeSphereType } from "@/config/sphereFeatures";
 import { useToast } from "@/hooks/use-toast";
 import { openVerificationModal } from "@/lib/events";
 import { useAuth } from "@/contexts/AuthContext";
@@ -93,51 +93,13 @@ export function SphereDetail() {
       window.history.replaceState(null, "", canonicalUrl);
     }
   }, [sphere]);
-  const mapMember = (m: any, creatorId?: string | number) => ({
-    id: String(m.id),
-    userId: String(m.user_info?.id ?? m.user ?? ""),
-    user_info: m.user_info,
-    role: normalizeRole(m.role || m.role_display || "member"),
-    status: m.status || "active",
-    name:
-      m.user_info?.name ||
-      `${m.user_info?.first_name || ""} ${m.user_info?.last_name || ""}`.trim() ||
-      "Unknown",
-    username: m.user_info?.username || "unknown",
-    avatar: m.user_info?.avatar || "/placeholder-avatar.jpg",
-    isVerified: Boolean(m.user_info?.is_verified ?? m.user_info?.isVerified),
-    isCreator: creatorId ? String(creatorId) === String(m.user_info?.id ?? m.user ?? "") : false,
-  });
-
   const [currentUserId, setCurrentUserId] = useState<string | null>(() =>
     currentUser?.id ? String(currentUser.id) : null
   );
-
-  const [members, setMembers] = useState<any[]>(() => {
-    if (!id) return [];
-    const cached = queryClient.getQueryData<any>(["sphere-members", id]);
-    const raw = Array.isArray(cached) ? cached : cached?.data || cached?.results || [];
-    return raw.map((m: any) => mapMember(m, sphere?.created_by_info?.id ?? sphere?.created_by)).filter((m: any) => m.status === "active");
-  });
-
-  const [pendingMembers, setPendingMembers] = useState<any[]>(() => {
-    if (!id) return [];
-    const cached = queryClient.getQueryData<any>(["sphere-members", id]);
-    const raw = Array.isArray(cached) ? cached : cached?.data || cached?.results || [];
-    return raw.map((m: any) => mapMember(m, sphere?.created_by_info?.id ?? sphere?.created_by)).filter((m: any) => m.status === "pending");
-  });
-
-  const [tasks, setTasks] = useState<any[]>(() => {
-    if (!id) return [];
-    const cached = queryClient.getQueryData<any[]>(["sphere-tasks", id]);
-    return Array.isArray(cached) ? cached.map(mapTask) : [];
-  });
-
-  const [resources, setResources] = useState<any[]>(() => {
-    if (!id) return [];
-    const cached = queryClient.getQueryData<any[]>(["sphere-files", id]);
-    return Array.isArray(cached) ? cached : [];
-  });
+  const [members, setMembers] = useState<any[]>([]);
+  const [pendingMembers, setPendingMembers] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [resources, setResources] = useState<any[]>([]);
 
   const [isMember, setIsMember] = useState(false);
   const [isPendingRequest, setIsPendingRequest] = useState(false);
@@ -192,6 +154,7 @@ export function SphereDetail() {
     const role = String(roleValue).trim().toLowerCase();
     if (["admin", "administrateur"].includes(role)) return "admin";
     if (["moderator", "modérateur", "moderateur"].includes(role)) return "moderator";
+    if (["teacher", "enseignant", "professeur", "prof"].includes(role)) return "teacher";
     return "member";
   };
 
@@ -223,8 +186,7 @@ export function SphereDetail() {
     gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: true,
-    placeholderData: (prev) => {
-      if (prev) return prev;
+    placeholderData: () => {
       if (!id) return undefined;
       const direct = queryClient.getQueryData<any>(["sphere", id]);
       if (direct) return direct;
@@ -250,7 +212,6 @@ export function SphereDetail() {
     gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: true,
-    placeholderData: (prev) => prev ?? queryClient.getQueryData(["sphere-members", id]),
   });
 
   const tasksQuery = useQuery({
@@ -262,7 +223,6 @@ export function SphereDetail() {
     refetchOnWindowFocus: false,
     refetchOnMount: true,
     retry: false,
-    placeholderData: (prev) => prev ?? queryClient.getQueryData(["sphere-tasks", id]),
   });
 
   const filesQuery = useQuery({
@@ -273,7 +233,6 @@ export function SphereDetail() {
     gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: true,
-    placeholderData: (prev) => prev ?? queryClient.getQueryData(["sphere-files", id]),
   });
 
   const isInitialLoading =
@@ -289,18 +248,21 @@ export function SphereDetail() {
   };
 
   useEffect(() => {
-    if (sphereQuery.data) {
-      setSphere(sphereQuery.data);
+    if (!id) return;
+
+    if (sphereQuery.error) {
+      setLoadError((sphereQuery.error as any)?.message || "Erreur de chargement");
+      return;
     }
-  }, [sphereQuery.data]);
 
-  useEffect(() => {
+    setLoadError(null);
+
+    const sphereData = sphereQuery.data;
+    const rawMembersData = membersQuery.data;
+    if (!sphereData) return;
+
     setCurrentUserId(currentUser?.id ? String(currentUser.id) : null);
-  }, [currentUser?.id]);
-
-  useEffect(() => {
-    const rawMembersData = membersQuery.data ?? queryClient.getQueryData(["sphere-members", id]);
-    if (!rawMembersData) return;
+    setSphere(sphereData);
 
     const membersData: any[] = Array.isArray(rawMembersData)
       ? rawMembersData
@@ -310,15 +272,28 @@ export function SphereDetail() {
       ? (rawMembersData as any).results
       : [];
 
-    const creatorId = sphere?.created_by_info?.id ?? sphere?.created_by ?? sphere?.createdByInfo?.id;
-    const mappedMembers = membersData.map((m: any) => mapMember(m, creatorId));
+    const mappedMembers = (membersData || []).map((m: any) => ({
+      id: String(m.id),
+      userId: String(m.user_info?.id ?? m.user ?? ""),
+      user_info: m.user_info,
+      role: normalizeRole(m.role || m.role_display || "member"),
+      status: m.status || "active",
+      name:
+        m.user_info?.name ||
+        `${m.user_info?.first_name || ""} ${m.user_info?.last_name || ""}`.trim() ||
+        "Unknown",
+      username: m.user_info?.username || "unknown",
+      avatar: m.user_info?.avatar || "/placeholder-avatar.jpg",
+      isVerified: Boolean(m.user_info?.is_verified ?? m.user_info?.isVerified),
+      isCreator: String(sphereData?.created_by_info?.id) === String(m.user_info?.id ?? m.user ?? ""),
+    }));
 
     setMembers(mappedMembers.filter((m: any) => m.status === "active"));
     setPendingMembers(mappedMembers.filter((m: any) => m.status === "pending"));
 
-    const isMemberFromServer = sphere?.is_member ?? sphere?.isMember ?? false;
+    const isMemberFromServer = sphereData?.is_member ?? sphereData?.isMember ?? false;
     const membershipStatusFromServer =
-      sphere?.membership_status ?? sphere?.membershipStatus ?? null;
+      sphereData?.membership_status ?? sphereData?.membershipStatus ?? null;
     const currentUserMember = mappedMembers.find(
       (m: any) => m.userId && m.userId !== "" && String(m.userId) === String(currentUser?.id)
     );
@@ -331,9 +306,7 @@ export function SphereDetail() {
 
     setIsMember(resolvedIsMember);
     setIsPendingRequest(!resolvedIsMember && resolvedIsPending);
-  }, [membersQuery.data, sphere, currentUser?.id, id]);
 
-  useEffect(() => {
     if (tasksQuery.data) {
       setTasks((tasksQuery.data || []).map(mapTask));
       setTaskState("ready");
@@ -344,23 +317,26 @@ export function SphereDetail() {
       setTasks([]);
       setTaskState(errStatus === 403 ? "forbidden" : "server_error");
     }
-  }, [tasksQuery.data, tasksQuery.error]);
 
-  useEffect(() => {
     if (filesQuery.data) {
       setResources(filesQuery.data);
     } else if (filesQuery.error) {
       setResources([]);
     }
-  }, [filesQuery.data, filesQuery.error]);
-
-  useEffect(() => {
-    if (sphereQuery.error && !sphere) {
-      setLoadError((sphereQuery.error as any)?.message || "Erreur de chargement");
-    } else {
-      setLoadError(null);
-    }
-  }, [sphereQuery.error, sphere]);
+  }, [
+    id,
+    currentUser?.id,
+    sphereQuery.data,
+    sphereQuery.isLoading,
+    sphereQuery.error,
+    membersQuery.data,
+    membersQuery.isLoading,
+    membersQuery.error,
+    tasksQuery.data,
+    tasksQuery.error,
+    filesQuery.data,
+    filesQuery.error,
+  ]);
 
   const sphereFallback = useMemo(
     () =>
@@ -378,17 +354,32 @@ export function SphereDetail() {
     [sphere, id]
   );
 
-  const sphereFeatures = useMemo(
-    () => getSphereFeatures(sphere?.sphere_type),
-    [sphere?.sphere_type]
+  const canonicalSphereType = useMemo(
+    () =>
+      normalizeSphereType(
+        sphere?.sphere_type ??
+        sphere?.sphereType ??
+        sphere?.type ??
+        sphereFallback?.sphere_type ??
+        sphereFallback?.sphereType ??
+        sphereFallback?.type ??
+        sphere?.category
+      ),
+    [
+      sphere?.sphere_type,
+      sphere?.sphereType,
+      sphere?.type,
+      sphereFallback?.sphere_type,
+      sphereFallback?.sphereType,
+      sphereFallback?.type,
+      sphere?.category,
+    ]
   );
 
-  const sphereMemberCount = Math.max(sphere?.memberCount ?? 0, members.length);
-  const membershipStateLabel = useMemo(() => {
-    if (isMember) return "Membre";
-    if (isPendingRequest) return "Demande en attente";
-    return "Non membre";
-  }, [isMember, isPendingRequest]);
+  const sphereFeatures = useMemo(
+    () => getSphereFeatures(canonicalSphereType),
+    [canonicalSphereType]
+  );
 
   const resolvedUserRole = useMemo(() => {
     if (!currentUserId) return "member";
@@ -399,17 +390,61 @@ export function SphereDetail() {
 
   const canModerateMembers = resolvedUserRole === "admin" || resolvedUserRole === "moderator";
 
-  const requiresApproval = Boolean(
-    sphere?.require_approval ??
-    sphere?.requireApproval ??
-    sphere?.requires_approval ??
-    sphere?.requiresApproval ??
-    sphere?.is_private ??
-    sphere?.isPrivate ??
-    false
-  );
+  // Tabs ordered strictly according to SPHERE_POLICY.md for each canonical type
+  // Note: Membres is accessed via the dedicated Header button visible to all members
+  const availableTabs = useMemo(() => {
+    if (canonicalSphereType === "cours") {
+      return [
+        { id: "overview", label: "Vue d'ensemble" },
+        { id: "annonces", label: "Annonces" },
+        { id: "files", label: `Fichiers (${resources.length})` },
+        { id: "chat", label: "Discussion" },
+        { id: "sphera", label: "Sphera" },
+        ...(canModerateMembers ? [{ id: "pending", label: `Demandes (${pendingMembers.length})` }] : []),
+      ];
+    }
+    if (canonicalSphereType === "projet") {
+      return [
+        { id: "overview", label: "Vue d'ensemble" },
+        { id: "tasks", label: `Tâches (${tasks.length})` },
+        { id: "files", label: `Fichiers (${resources.length})` },
+        { id: "chat", label: "Discussion" },
+        { id: "sphera", label: "Sphera" },
+        ...(canModerateMembers ? [{ id: "pending", label: `Demandes (${pendingMembers.length})` }] : []),
+      ];
+    }
+    // communaute
+    return [
+      { id: "overview", label: "Vue d'ensemble" },
+      { id: "annonces", label: "Annonces" },
+      { id: "files", label: `Fichiers (${resources.length})` },
+      { id: "chat", label: "Discussion" },
+      ...(canModerateMembers ? [{ id: "pending", label: `Demandes (${pendingMembers.length})` }] : []),
+    ];
+  }, [
+    canonicalSphereType,
+    resources.length,
+    tasks.length,
+    pendingMembers.length,
+    canModerateMembers,
+  ]);
 
-  const showPendingTab = canModerateMembers && (requiresApproval || pendingMembers.length > 0);
+  useEffect(() => {
+    const isValidTab =
+      availableTabs.some((t) => t.id === activeTab) ||
+      activeTab === "members" ||
+      (canModerateMembers && activeTab === "pending");
+    if (!isValidTab) {
+      setActiveTab("overview");
+    }
+  }, [availableTabs, activeTab, canModerateMembers]);
+
+  const sphereMemberCount = Math.max(sphere?.memberCount ?? 0, members.length);
+  const membershipStateLabel = useMemo(() => {
+    if (isMember) return "Membre";
+    if (isPendingRequest) return "Demande en attente";
+    return "Non membre";
+  }, [isMember, isPendingRequest]);
 
   const sphereCreatorId = useMemo(() => {
     const candidates = [
@@ -682,6 +717,7 @@ export function SphereDetail() {
             canModerateMembers={canModerateMembers}
             membersCount={members.length}
             pendingMembersCount={pendingMembers.length}
+            activeTab={activeTab}
             onOpenBannerModal={() => setShowBannerModal(true)}
             onJoinSphere={handleJoinSphere}
             onCancelRequest={handleCancelRequest}
@@ -695,30 +731,11 @@ export function SphereDetail() {
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <div className="px-4 md:px-0">
                 <SharedTabsList>
-                  <SharedTabsTrigger value="overview">Vue d'ensemble</SharedTabsTrigger>
-                  <SharedTabsTrigger value="chat">Discussion</SharedTabsTrigger>
-                  {sphereFeatures.has_kanban && (
-                    <SharedTabsTrigger value="tasks">
-                      Tâches ({tasks.length})
+                  {availableTabs.map((tab) => (
+                    <SharedTabsTrigger key={tab.id} value={tab.id}>
+                      {tab.label}
                     </SharedTabsTrigger>
-                  )}
-                  <SharedTabsTrigger value="files">
-                    Fichiers ({resources.length})
-                  </SharedTabsTrigger>
-                  {sphereFeatures.has_sphera && (
-                    <SharedTabsTrigger value="sphera">Sphera</SharedTabsTrigger>
-                  )}
-                  {sphereFeatures.has_announcements && (
-                    <SharedTabsTrigger value="annonces">Annonces</SharedTabsTrigger>
-                  )}
-                  <SharedTabsTrigger value="members" className="hidden md:flex">
-                    Membres
-                  </SharedTabsTrigger>
-                  {showPendingTab && (
-                    <SharedTabsTrigger value="pending" className="hidden md:flex">
-                      Demandes ({pendingMembers.length})
-                    </SharedTabsTrigger>
-                  )}
+                  ))}
                 </SharedTabsList>
               </div>
 
@@ -726,8 +743,10 @@ export function SphereDetail() {
                 <TabsContent value="overview" forceMount className="mt-4 data-[state=inactive]:hidden">
                   <SphereOverview
                     sphereId={String(id)}
-                    sphereType={sphere?.sphere_type}
+                    sphereType={canonicalSphereType}
                     objective={sphere?.objective || sphereFallback.objective}
+                    targetAudience={sphere?.target_audience || sphere?.targetAudience}
+                    duration={sphere?.duration}
                     onTabChange={setActiveTab}
                   />
                 </TabsContent>
@@ -736,40 +755,56 @@ export function SphereDetail() {
                   <MiniChat
                     sphereId={String(id)}
                     sphereName={sphereFallback.name}
+                    sphereMembers={members}
                     isExpanded={isChatExpanded}
                     onToggleExpanded={() => setIsChatExpanded(!isChatExpanded)}
                   />
                 </TabsContent>
 
-                <TabsContent value="tasks" forceMount className="mt-4 data-[state=inactive]:hidden">
-                  <SphereTasksTab
-                    sphereId={String(id)}
-                    hasKanban={sphereFeatures.has_kanban}
-                    taskState={taskState}
-                    tasks={tasks}
-                    onTasksChange={setTasks}
-                    onDeleteTask={handleTaskDelete}
-                    canModerate={canModerateMembers}
-                    isVerifiedUser={Boolean(currentUser?.isVerified)}
-                    members={members}
-                    onTaskCreated={loadSphereData}
-                  />
-                </TabsContent>
+                {sphereFeatures.has_kanban && (
+                  <TabsContent value="tasks" forceMount className="mt-4 data-[state=inactive]:hidden">
+                    <SphereTasksTab
+                      sphereId={String(id)}
+                      hasKanban={sphereFeatures.has_kanban}
+                      taskState={taskState}
+                      tasks={tasks}
+                      onTasksChange={setTasks}
+                      onDeleteTask={handleTaskDelete}
+                      canModerate={canModerateMembers}
+                      isVerifiedUser={Boolean(currentUser?.isVerified)}
+                      members={members}
+                      onTaskCreated={loadSphereData}
+                    />
+                  </TabsContent>
+                )}
 
                 <TabsContent value="files" forceMount className="mt-4 data-[state=inactive]:hidden">
                   <SphereFilesTab
                     sphereId={String(id)}
                     resources={resources}
+                    isLoading={filesQuery.isLoading}
                     canModerateMembers={canModerateMembers}
                     currentUserId={currentUserId}
                     onDeleteFile={handleDeleteFile}
-                    onFileUploaded={() =>
-                      getSphereFiles(String(id)).then(setResources).catch((): void => {})
-                    }
+                    onFileUploaded={async () => {
+                      const updated: any[] = await getSphereFiles(String(id)).catch((): any[] => []);
+                      setResources(updated);
+                      void filesQuery.refetch();
+                    }}
                   />
                 </TabsContent>
 
                 <TabsContent value="members" forceMount className="mt-4 data-[state=inactive]:hidden">
+                  <div className="mb-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setActiveTab("overview")}
+                      className="gap-1.5 text-xs text-muted-foreground hover:text-foreground -ml-2"
+                    >
+                      <ArrowLeft className="h-3.5 w-3.5" /> Retour à la vue d'ensemble
+                    </Button>
+                  </div>
                   <SphereMembersTab
                     members={members}
                     canModerateMembers={canModerateMembers}
@@ -779,7 +814,7 @@ export function SphereDetail() {
                   />
                 </TabsContent>
 
-                {showPendingTab && (
+                {canModerateMembers && (
                   <TabsContent value="pending" forceMount className="mt-4 data-[state=inactive]:hidden">
                     <SpherePendingMembersTab
                       pendingMembers={pendingMembers}
@@ -792,7 +827,11 @@ export function SphereDetail() {
 
                 {sphereFeatures.has_sphera && (
                   <TabsContent value="sphera" forceMount className="mt-4 data-[state=inactive]:hidden">
-                    <SphereSpheraTab sphereId={String(id)} />
+                    <SphereSpheraTab
+                      sphereId={String(id)}
+                      sphereType={canonicalSphereType}
+                      onTabChange={setActiveTab}
+                    />
                   </TabsContent>
                 )}
 

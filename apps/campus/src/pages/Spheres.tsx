@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sphere as SphereIcon, MagnifyingGlass as Search, UsersThree as Users, TrendUp as TrendingUp, Clock, Spinner as Loader2, Check, ArrowClockwise as RefreshCw, Plus, X, Funnel as Filter, BookOpen, FolderSimple as FolderGit2, Sparkle as Sparkles, GraduationCap, ShieldCheck, GridFour as LayoutGrid, List } from "@phosphor-icons/react";
+import { Sphere as SphereIcon, MagnifyingGlass as Search, UsersThree as Users, TrendUp as TrendingUp, Clock, Spinner as Loader2, Check, ArrowClockwise as RefreshCw, Plus, X, Funnel as Filter, BookOpen, FolderSimple as FolderGit2, Sparkle as Sparkles, GraduationCap, ShieldCheck, GridFour as LayoutGrid, List, UsersFour, Target } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { openVerificationModal } from "@/lib/events";
 import { SphereCard } from "@/components/sphere/SphereCard";
@@ -15,8 +15,9 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { SphereSkeleton } from "@/components/ui/skeletons";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
+import { normalizeSphereType } from "@/config/sphereFeatures";
 import type { Sphere } from "@/types";
 
 const CreateSphereModal = lazy(() =>
@@ -25,18 +26,11 @@ const CreateSphereModal = lazy(() =>
   }))
 );
 
-export function normalizeSphereType(type?: string | null): "cours" | "projet" | "communaute" {
-  const t = (type || "").toLowerCase().trim();
-  if (t === "cours" || t === "revision" || t === "study" || t === "academic") return "cours";
-  if (t === "projet" || t === "project") return "projet";
-  return "communaute";
-}
-
 export const SPHERE_TYPE_CHIPS = [
   { value: "all", label: "Toutes les sphères", icon: SphereIcon },
-  { value: "cours", label: "Cours & TD", icon: BookOpen },
-  { value: "projet", label: "Projets & Groupes", icon: FolderGit2 },
-  { value: "communaute", label: "Communautés", icon: Users },
+  { value: "cours", label: "Cours", icon: BookOpen },
+  { value: "projet", label: "Projet", icon: Target },
+  { value: "communaute", label: "Communauté", icon: UsersFour },
 ] as const;
 
 export function Spheres() {
@@ -44,6 +38,7 @@ export function Spheres() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { user: currentUser, isLoading: isAuthLoading } = useAuth();
+  const queryClient = useQueryClient();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
@@ -52,12 +47,21 @@ export function Spheres() {
   const [isCreateSphereOpen, setIsCreateSphereOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  const [userJoinedSpheres, setUserJoinedSpheres] = useState<string[]>([]);
+  const [allSpheres, setAllSpheres] = useState<Sphere[]>(() => {
+    const cached = queryClient.getQueryData<Sphere[]>(["spheres"]);
+    return Array.isArray(cached) ? cached : [];
+  });
+  const [userSpheres, setUserSpheres] = useState<Sphere[]>(() => {
+    const cached = queryClient.getQueryData<Sphere[]>(["user-spheres"]);
+    return Array.isArray(cached) ? cached : [];
+  });
+  const [userJoinedSpheres, setUserJoinedSpheres] = useState<string[]>(() => {
+    const cached = queryClient.getQueryData<Sphere[]>(["user-spheres"]);
+    return Array.isArray(cached) ? cached.map((s: any) => String(s.id)) : [];
+  });
   const [pendingJoinRequests, setPendingJoinRequests] = useState<string[]>([]);
-  const [userSpheres, setUserSpheres] = useState<Sphere[]>([]);
   const [userSpheresLoadError, setUserSpheresLoadError] = useState<string | null>(null);
-  const [allSpheres, setAllSpheres] = useState<Sphere[]>([]);
-  const [loadingSpheres, setLoadingSpheres] = useState<boolean>(true);
+  const [loadingSpheres, setLoadingSpheres] = useState<boolean>(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isJoining, setIsJoining] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -65,20 +69,20 @@ export function Spheres() {
   const spheresQuery = useQuery({
     queryKey: ["spheres"],
     queryFn: () => listSpheres(),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60 * 1000,
     gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    refetchOnMount: true,
   });
 
   const userSpheresQuery = useQuery({
     queryKey: ["user-spheres"],
     queryFn: () => getUserSpheres(),
     enabled: Boolean(currentUser?.id),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60 * 1000,
     gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    refetchOnMount: true,
   });
 
   const debugApiError = (endpoint: string, error: unknown) => {
@@ -114,7 +118,8 @@ export function Spheres() {
     isAuthLoading ||
     ((userSpheresQuery.isLoading || spheresQuery.isLoading) &&
       allSpheres.length === 0 &&
-      !spheresQuery.data);
+      !spheresQuery.data &&
+      !userSpheresQuery.data);
 
   const refreshMembershipState = async () => {
     const [spheresRes, mySpheresRes] = await Promise.all([
@@ -136,8 +141,10 @@ export function Spheres() {
       sphere.description?.toLowerCase().includes(query) ||
       sphere.objective?.toLowerCase().includes(query);
 
-    const sphereType = normalizeSphereType(sphere.sphere_type || sphere.sphereType);
-    const matchesType = filterType === "all" || sphereType === filterType;
+    const canonicalType = normalizeSphereType(
+      sphere.sphere_type || sphere.sphereType || (sphere as any).category
+    );
+    const matchesType = filterType === "all" || canonicalType === filterType;
 
     const matchesAudience =
       filterAudience === "all" ||
@@ -236,6 +243,14 @@ export function Spheres() {
 
   const handleSphereCreated = (sphere: any) => {
     if (!sphere) return;
+    queryClient.setQueryData(["spheres"], (old: any) => [
+      sphere,
+      ...(Array.isArray(old) ? old.filter((item: any) => String(item.id) !== String(sphere.id)) : []),
+    ]);
+    queryClient.setQueryData(["user-spheres"], (old: any) => [
+      sphere,
+      ...(Array.isArray(old) ? old.filter((item: any) => String(item.id) !== String(sphere.id)) : []),
+    ]);
     setAllSpheres((prev) => [
       sphere,
       ...prev.filter((item) => String(item.id) !== String(sphere.id)),
@@ -442,6 +457,7 @@ export function Spheres() {
                       : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent"
                   )}
                 >
+                  <chip.icon className="h-3.5 w-3.5" />
                   <span>{chip.label}</span>
                 </button>
               );
@@ -666,14 +682,17 @@ export function Spheres() {
               );
             })()}
 
-            {/* Rows 3+: Par Type de Sphère (3 catégories canoniques) */}
+            {/* Rows 3+: Par Type de Sphère */}
             {[
               { value: "cours", label: "Cours, TD & Académique" },
               { value: "projet", label: "Projets & Groupes de Travail" },
               { value: "communaute", label: "Communautés & Échanges" },
+              { value: "club", label: "Clubs & Associations" },
+              { value: "revision", label: "Groupes de Révision & Annales" },
             ].map((typeObj) => {
               const catSpheres = allSpheres.filter((s) => {
-                return normalizeSphereType(s.sphere_type || s.sphereType) === typeObj.value;
+                const sType = (s.sphere_type || s.sphereType || "").toLowerCase();
+                return sType === typeObj.value;
               });
               if (catSpheres.length === 0 && !isSpheresLoading) return null;
               return (
