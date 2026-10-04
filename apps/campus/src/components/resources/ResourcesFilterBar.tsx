@@ -1,4 +1,15 @@
-import { MagnifyingGlass as Search, X, Funnel as Filter, Stack as Layers, BookOpen, FileText, FileCsv as FileSpreadsheet, GraduationCap, Archive, FolderSimple as FolderGit2, Presentation } from "@phosphor-icons/react";
+import {
+  MagnifyingGlass as Search,
+  X,
+  Funnel as Filter,
+  Stack as Layers,
+  BookOpen,
+  GraduationCap,
+  FolderSimple as FolderGit2,
+  BookBookmark,
+  Notepad,
+  Question as QuestionMark,
+} from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -11,14 +22,13 @@ import {
 import { cn } from "@/lib/utils";
 
 export const RESOURCE_CHIPS = [
-  { value: "all", label: "Toutes les ressources", icon: Layers },
-  { value: "notes", label: "Notes de cours", icon: BookOpen },
-  { value: "resumes", label: "Résumés & Fiches", icon: FileText },
-  { value: "exercises", label: "Exercices & TD", icon: FileSpreadsheet },
-  { value: "exam_papers", label: "Épreuves d'examen", icon: GraduationCap },
-  { value: "annales", label: "Annales corrigées", icon: Archive },
-  { value: "projects", label: "Projets & Rapports", icon: FolderGit2 },
-  { value: "presentations", label: "Présentations / Slides", icon: Presentation },
+  { value: "all",          label: "Toutes",       icon: Layers },
+  { value: "course_notes", label: "Note de cours", icon: BookOpen },
+  { value: "td_tp",        label: "TD / TP",       icon: Notepad },
+  { value: "exams",        label: "Annales",        icon: GraduationCap },
+  { value: "project",      label: "Projet",         icon: FolderGit2 },
+  { value: "book",         label: "Livre",          icon: BookBookmark },
+  { value: "other",        label: "Autre",          icon: QuestionMark },
 ] as const;
 
 export const FILE_FORMATS = [

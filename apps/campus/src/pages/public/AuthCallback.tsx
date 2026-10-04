@@ -82,14 +82,14 @@ export function AuthCallback() {
           debugRoutingDecision({
             source: "is_new_user",
             isNewUser: true,
-            destination: "/complete-profile",
+            destination: "/onboarding",
           });
         } else if (typeof needsProfileCompletion === "boolean") {
           shouldCompleteProfile = needsProfileCompletion;
           debugRoutingDecision({
             source: "needs_profile_completion",
             needsProfileCompletion,
-            destination: shouldCompleteProfile ? "/complete-profile" : "/",
+            destination: shouldCompleteProfile ? "/onboarding" : "/",
           });
         } else {
           // Fallback: check profile data manually
@@ -98,13 +98,13 @@ export function AuthCallback() {
             source: "fallback_profile_check",
             profile_completion_required: shouldCompleteProfile,
             profile_data: user,
-            destination: shouldCompleteProfile ? "/complete-profile" : "/",
+            destination: shouldCompleteProfile ? "/onboarding" : "/",
           });
         }
 
         if (shouldCompleteProfile) {
-          console.info("[AuthCallback] Redirecting to profile completion");
-          navigate("/complete-profile", { replace: true });
+          console.info("[AuthCallback] Redirecting to onboarding");
+          navigate("/onboarding", { replace: true });
         } else {
           console.info("[AuthCallback] Login successful, redirecting to home");
           toast({ title: "Connexion réussie !", duration: 2000 });
