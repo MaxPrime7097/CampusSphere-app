@@ -102,6 +102,7 @@ export function ChatMessageInput({
   replyingTo,
   onCancelReply,
 }: ChatMessageInputProps) {
+  const { toast } = useToast();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -233,8 +234,16 @@ export function ChatMessageInput({
       recordTimerRef.current = window.setInterval(() => {
         setRecordSeconds((prev) => prev + 1);
       }, 1000);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Unable to access microphone:", err);
+      toast({
+        title: "Microphone inaccessible",
+        description:
+          err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError"
+            ? "L'accès au micro a été refusé. Veuillez vérifier les autorisations de votre navigateur ou de votre système."
+            : "Impossible d'accéder au microphone sur cet appareil.",
+        variant: "destructive",
+      });
     }
   };
 

@@ -44,7 +44,7 @@ import {
   ArrowBendUpLeft,
   DotsThreeVertical as MoreVertical,
   Copy,
-  Pencil,
+  PencilSimple,
   Prohibit,
   DownloadSimple,
   Sparkle,
@@ -123,9 +123,7 @@ function mapRawMessage(msg: any, currentUserId: string): Message {
     senderId,
     content: msg.content || "",
     timestamp: msg.created_at || msg.createdAt || null,
-    isEdited: Boolean(
-      msg.is_edited || (msg.updated_at && msg.created_at && msg.updated_at !== msg.created_at)
-    ),
+    isEdited: Boolean(msg.is_edited),
     isCurrentUser: senderId === String(currentUserId || ""),
     avatar: author.avatar || "/placeholder-avatar.jpg",
     canEdit: msg.can_edit ?? (senderId === String(currentUserId || "") && finalType === "text"),
@@ -1527,7 +1525,7 @@ export function MiniChat({
                               onClick={() => handleStartEdit(msg)}
                               className="gap-2 cursor-pointer text-xs"
                             >
-                              <Pencil className="h-3.5 w-3.5" />
+                              <PencilSimple className="h-3.5 w-3.5" />
                               <span>Modifier (15 min)</span>
                             </DropdownMenuItem>
                           )}

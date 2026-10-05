@@ -11,7 +11,7 @@ export function SpheraFooter() {
         
         <div className="flex flex-col items-center md:items-start gap-1">
           <Link to="/" className="flex items-center gap-2">
-            <img src="/sphera-logo-dark.png" alt="Sphera logo" className="h-6 w-auto" />
+            <img src="/sphera_logo.svg" alt="Sphera logo" className="h-6 w-auto" />
             <span className="font-display font-bold text-lg text-white">Sphera</span>
           </Link>
           <p className="text-sm text-sphera-text-muted mt-2">{t('footer.slogan')}</p>
