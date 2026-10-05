@@ -519,7 +519,7 @@ messagingRouter.patch("/:id/messages/:messageId/", async (req, res) => {
   const { content } = z.object({ content: z.string().min(1) }).parse(req.body ?? {});
   const updated = await prisma.message.update({
     where: { id: message.id },
-    data: { content, updatedAt: new Date() },
+    data: { content, isEdited: true, updatedAt: new Date() },
     include: messageInclude,
   });
 

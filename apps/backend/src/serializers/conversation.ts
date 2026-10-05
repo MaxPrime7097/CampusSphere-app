@@ -95,6 +95,7 @@ export function serializeMessage(
     // per-viewer answer is `is_read_by_user`.
     is_read: ctx.isReadByViewer ?? false,
     is_read_by_user: ctx.isReadByViewer ?? false,
+    is_edited: message.isEdited ?? false,
     created_at: message.createdAt.toISOString(),
     updated_at: message.updatedAt.toISOString(),
   };
