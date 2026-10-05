@@ -384,20 +384,29 @@ messagingRouter.post("/:id/messages/", singleUpload("file", "other"), async (req
   let type: "TEXT" | "IMAGE" | "AUDIO" | "FILE" | "SYSTEM" = "TEXT";
 
   if (req.file) {
+    let contentType = req.file.mimetype;
+    if (/\.(webm|oga|ogg)$/i.test(req.file.originalname) && (!contentType || contentType === "application/octet-stream")) {
+      contentType = "audio/webm";
+    } else if (/\.(m4a|mp4|aac)$/i.test(req.file.originalname) && (!contentType || contentType === "application/octet-stream")) {
+      contentType = "audio/mp4";
+    } else if (/\.(mp3)$/i.test(req.file.originalname) && (!contentType || contentType === "application/octet-stream")) {
+      contentType = "audio/mpeg";
+    }
+
     const stored = await storage.put({
       buffer: req.file.buffer,
       originalName: req.file.originalname,
-      contentType: req.file.mimetype,
+      contentType,
       prefix: "conversations/media",
     });
     mediaUrl = stored.url;
-    mediaType = req.file.mimetype;
+    mediaType = contentType;
     fileName = req.file.originalname;
     fileSize = req.file.size;
 
-    if (req.file.mimetype.startsWith("image/")) {
+    if (contentType.startsWith("image/") || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(req.file.originalname)) {
       type = "IMAGE";
-    } else if (req.file.mimetype.startsWith("audio/")) {
+    } else if (contentType.startsWith("audio/") || /\.(webm|ogg|oga|mp3|wav|m4a|aac)$/i.test(req.file.originalname)) {
       type = "AUDIO";
     } else {
       type = "FILE";
