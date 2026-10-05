@@ -24,6 +24,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import type { Message } from "@/types";
+import { useToast } from "@/hooks/use-toast";
 
 interface ChatMessageInputProps {
   value: string;
