@@ -113,6 +113,9 @@ export function CachedImage({
   );
 }
 
+// In-memory set of downloaded voice notes so they stay downloaded across renders
+const downloadedAudioSet = new Set<string>();
+
 /**
  * Modern Soundwave Voice Note Player (WhatsApp & Telegram style)
  * Includes speed toggle (1x / 1.5x / 2x) and WhatsApp-style local media caching
@@ -134,7 +137,11 @@ export function SoundwavePlayer({
   const [isPlaying, setIsPlaying] = useState(false);
   const [isBuffering, setIsBuffering] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [isDownloaded, setIsDownloaded] = useState<boolean>(true);
+  const [isDownloaded, setIsDownloaded] = useState<boolean>(() => {
+    if (isCurrentUser) return true;
+    if (src.startsWith("blob:") || src.startsWith("data:")) return true;
+    return downloadedAudioSet.has(src);
+  });
   const [currentTime, setCurrentTime] = useState(0);
   const [playbackRate, setPlaybackRate] = useState<number>(1);
   const [mediaSrc, setMediaSrc] = useState<string>(src);
@@ -147,6 +154,8 @@ export function SoundwavePlayer({
     void isMediaCached(src).then((cached) => {
       if (!isMounted) return;
       if (cached) {
+        setIsDownloaded(true);
+        downloadedAudioSet.add(src);
         void getCachedMediaUrl(src, false).then((url) => {
           if (isMounted) setMediaSrc(url);
         });
@@ -157,10 +166,64 @@ export function SoundwavePlayer({
     };
   }, [src]);
 
+  const handleDownload = async (e: React.MouseEvent): Promise<void> => {
+    e.stopPropagation();
+    if (isDownloading) return;
+    setIsDownloading(true);
+
+    try {
+      // Pre-buffer natively via HTML5 Audio element without CORS fetch friction
+      await new Promise<void>((resolve) => {
+        const audio = new Audio();
+        audio.preload = "auto";
+        audio.src = src;
+
+        const onReady = () => {
+          cleanup();
+          resolve();
+        };
+
+        const cleanup = () => {
+          audio.removeEventListener("canplaythrough", onReady);
+          audio.removeEventListener("loadeddata", onReady);
+          audio.removeEventListener("error", onReady);
+        };
+
+        audio.addEventListener("canplaythrough", onReady, { once: true });
+        audio.addEventListener("loadeddata", onReady, { once: true });
+        audio.addEventListener("error", onReady, { once: true });
+
+        // Snappy WhatsApp loading duration (max 450ms)
+        setTimeout(onReady, 450);
+      });
+
+      downloadedAudioSet.add(src);
+      setIsDownloaded(true);
+
+      // Auto-start playback smoothly right after download like WhatsApp
+      setTimeout(() => {
+        if (audioRef.current) {
+          audioRef.current
+            .play()
+            .then(() => setIsPlaying(true))
+            .catch(() => {});
+        }
+      }, 50);
+    } catch {
+      setIsDownloaded(true);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   const totalDuration = duration && duration > 0 ? duration : 5;
 
   const togglePlay = (e: React.MouseEvent): void => {
     e.stopPropagation();
+    if (!isDownloaded) {
+      void handleDownload(e);
+      return;
+    }
     if (!audioRef.current) return;
     if (isPlaying) {
       audioRef.current.pause();
@@ -320,6 +383,8 @@ export function SoundwavePlayer({
                     ? isPassed
                       ? "bg-white"
                       : "bg-white/35"
+                    : !isDownloaded
+                    ? "bg-muted-foreground/25"
                     : isPassed
                     ? "bg-foreground"
                     : "bg-muted-foreground/35"
