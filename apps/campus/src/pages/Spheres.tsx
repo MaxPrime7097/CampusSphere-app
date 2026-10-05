@@ -27,10 +27,10 @@ const CreateSphereModal = lazy(() =>
 );
 
 export const SPHERE_TYPE_CHIPS = [
-  { value: "all", label: "Toutes les sphères", icon: SphereIcon },
-  { value: "cours", label: "Cours", icon: BookOpen },
-  { value: "projet", label: "Projet", icon: Target },
-  { value: "communaute", label: "Communauté", icon: UsersFour },
+  { value: "all", label: "Toutes les sphères" },
+  { value: "cours", label: "Cours" },
+  { value: "projet", label: "Projet" },
+  { value: "communaute", label: "Communauté" },
 ] as const;
 
 export function Spheres() {
@@ -451,13 +451,12 @@ export function Spheres() {
                   type="button"
                   onClick={() => setFilterType(chip.value)}
                   className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer",
+                    "flex items-center px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer",
                     isSelected
                       ? "bg-primary/15 text-primary border border-primary/30 shadow-xs font-semibold"
                       : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent"
                   )}
                 >
-                  <chip.icon className="h-3.5 w-3.5" />
                   <span>{chip.label}</span>
                 </button>
               );

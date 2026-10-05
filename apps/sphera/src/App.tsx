@@ -65,7 +65,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen flex flex-col items-center justify-center gap-6">
         <div className="flex items-center justify-center relative overflow-hidden">
           <img
-            src="/sphera-logo-dark.png"
+            src="/sphera_logo.svg"
             alt="Sphera"
             className="w-20 h-auto animate-[spin_3s_linear_infinite] relative z-10"
           />

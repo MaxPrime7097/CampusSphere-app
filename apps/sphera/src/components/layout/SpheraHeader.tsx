@@ -35,7 +35,7 @@ export function SpheraHeader() {
 
       <div className="container mx-auto max-w-7xl px-4 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-3">
-          <img src="/sphera-logo-dark.png" alt="Sphera logo" className="h-8 md:h-10 w-auto" />
+          <img src="/sphera_logo.svg" alt="Sphera logo" className="h-8 md:h-10 w-auto" />
           <span className="font-display font-bold text-lg md:text-xl tracking-tight text-white">Sphera</span>
           <span className="text-[10px] font-bold text-sphera-green bg-sphera-green-glow px-2 py-0.5 rounded-full uppercase tracking-wider hidden sm:inline-block">
             {t('header.beta')}

@@ -10,7 +10,7 @@ import {
 import {
   Smiley as Smile,
   DotsThreeVertical as MoreVertical,
-  Pencil,
+  PencilSimple,
   Trash,
   Check,
   Checks,
@@ -1141,7 +1141,7 @@ export function ChatMessageItem({
                     </DropdownMenuItem>
                     {canEdit && (
                       <DropdownMenuItem onClick={() => onStartEdit(message)} className="gap-2 text-xs">
-                        <Pencil className="h-3.5 w-3.5" /> Modifier
+                        <PencilSimple className="h-3.5 w-3.5" /> Modifier
                       </DropdownMenuItem>
                     )}
                     {canDelete && (

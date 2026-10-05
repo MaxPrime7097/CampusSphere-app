@@ -10,7 +10,7 @@ import {
   Gear as Settings,
   FloppyDisk as Save,
   Spinner as Loader2,
-  Sphere,
+  SlidersHorizontal,
   Shield,
   Trash as Trash2,
   Clock as Clock3,
@@ -379,7 +379,7 @@ export function SphereSettingsModal({
           {/* Informations générales */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold tracking-wide text-foreground flex items-center gap-2">
-              <Sphere className="h-4 w-4 text-primary" />
+              <SlidersHorizontal className="h-4 w-4 text-primary" />
               Informations générales
             </h3>
             

@@ -164,10 +164,7 @@ function mapMessage(rawMsg: any, currentUserId?: string): Message {
     senderId,
     content: msg.content || "",
     timestamp: msg.created_at || msg.createdAt || null,
-    isEdited:
-      msg.is_edited ||
-      (msg.updated_at && msg.created_at && msg.updated_at !== msg.created_at) ||
-      false,
+    isEdited: Boolean(msg.is_edited),
     isCurrentUser: senderId === String(currentUserId || ""),
     avatar: author.avatar || "/placeholder-avatar.jpg",
     canEdit: msg.can_edit ?? senderId === String(currentUserId || ""),

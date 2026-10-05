@@ -37,7 +37,7 @@ export function SpheraAuthSidePanel() {
         {/* Center Glowing Orb */}
         <div className="w-36 h-36 rounded-full bg-gradient-to-tr from-sphera-green/30 via-emerald-500/20 to-transparent border border-sphera-green/40 backdrop-blur-md shadow-[0_0_60px_rgba(34,197,94,0.25)] flex items-center justify-center relative">
           <div className="w-20 h-20 rounded-full bg-sphera-bg/80 border border-sphera-green/50 flex items-center justify-center shadow-inner">
-            <img src="/sphera-logo-dark.png" alt={t('sidePanel.coreAlt')} className="w-12 h-12 object-contain drop-shadow-[0_0_15px_rgba(34,197,94,0.5)]" />
+            <img src="/sphera_logo.svg" alt={t('sidePanel.coreAlt')} className="w-12 h-12 object-contain drop-shadow-[0_0_15px_rgba(34,197,94,0.5)]" />
           </div>
         </div>
 
