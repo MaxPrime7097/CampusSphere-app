@@ -134,25 +134,19 @@ export function SoundwavePlayer({
   const [isPlaying, setIsPlaying] = useState(false);
   const [isBuffering, setIsBuffering] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [isDownloaded, setIsDownloaded] = useState<boolean>(() => {
-    if (isCurrentUser) return true;
-    if (src.startsWith("blob:") || src.startsWith("data:")) return true;
-    return false;
-  });
+  const [isDownloaded, setIsDownloaded] = useState<boolean>(true);
   const [currentTime, setCurrentTime] = useState(0);
   const [playbackRate, setPlaybackRate] = useState<number>(1);
   const [mediaSrc, setMediaSrc] = useState<string>(src);
 
   useEffect(() => {
     let isMounted = true;
-    if (isCurrentUser || src.startsWith("blob:") || src.startsWith("data:")) {
-      setIsDownloaded(true);
+    if (src.startsWith("blob:") || src.startsWith("data:")) {
       return;
     }
     void isMediaCached(src).then((cached) => {
       if (!isMounted) return;
       if (cached) {
-        setIsDownloaded(true);
         void getCachedMediaUrl(src, false).then((url) => {
           if (isMounted) setMediaSrc(url);
         });
@@ -161,31 +155,12 @@ export function SoundwavePlayer({
     return () => {
       isMounted = false;
     };
-  }, [src, isCurrentUser]);
-
-  const handleDownload = async (e: React.MouseEvent): Promise<void> => {
-    e.stopPropagation();
-    if (isDownloading) return;
-    setIsDownloading(true);
-    try {
-      const url = await downloadAndCacheMedia(src);
-      setMediaSrc(url);
-      setIsDownloaded(true);
-    } catch {
-      setIsDownloaded(true);
-    } finally {
-      setIsDownloading(false);
-    }
-  };
+  }, [src]);
 
   const totalDuration = duration && duration > 0 ? duration : 5;
 
   const togglePlay = (e: React.MouseEvent): void => {
     e.stopPropagation();
-    if (!isDownloaded) {
-      void handleDownload(e);
-      return;
-    }
     if (!audioRef.current) return;
     if (isPlaying) {
       audioRef.current.pause();
