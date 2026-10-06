@@ -15,7 +15,7 @@ export async function loadUserCounts(userId: number): Promise<UserCounts> {
       where: { status: "ACCEPTED", OR: [{ requesterId: userId }, { recipientId: userId }] },
     }),
     prisma.post.count({ where: { authorId: userId } }),
-    prisma.resource.count({ where: { authorId: userId } }),
+    prisma.resource.count({ where: { authorId: userId, audience: { not: "sphera_internal" } } }),
   ]);
 
   return { joinedSpheres, connections, contributions: posts + resources };

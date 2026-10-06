@@ -55,7 +55,18 @@ export async function postsVisibleTo(userId: number | null): Promise<Prisma.Post
  * A null viewer is anonymous and sees public resources only.
  */
 export async function resourcesVisibleTo(userId: number | null): Promise<Prisma.ResourceWhereInput> {
-  if (userId === null) return { visibility: "PUBLIC" };
+  const notSpheraInternal: Prisma.ResourceWhereInput = {
+    audience: { not: "sphera_internal" },
+  };
+
+  if (userId === null) {
+    return {
+      AND: [
+        notSpheraInternal,
+        { visibility: "PUBLIC" },
+      ],
+    };
+  }
 
   const [me, friends] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId }, select: { university: true } }),
@@ -63,11 +74,16 @@ export async function resourcesVisibleTo(userId: number | null): Promise<Prisma.
   ]);
 
   return {
-    OR: [
-      { visibility: "PUBLIC" },
-      { authorId: userId },
-      ...(me?.university ? [{ visibility: "UNIVERSITY" as const, author: { university: me.university } }] : []),
-      { visibility: "FRIENDS", authorId: { in: friends } },
+    AND: [
+      notSpheraInternal,
+      {
+        OR: [
+          { visibility: "PUBLIC" },
+          { authorId: userId },
+          ...(me?.university ? [{ visibility: "UNIVERSITY" as const, author: { university: me.university } }] : []),
+          { visibility: "FRIENDS", authorId: { in: friends } },
+        ],
+      },
     ],
   };
 }
