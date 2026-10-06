@@ -207,6 +207,20 @@ usersRouter.post("/auth/login/", loginIpRateLimit, loginAccountRateLimit, async 
     select: { ...userSelect, passwordHash: true, isActive: true },
   });
 
+  // Detect SSO-only accounts (created via Google/Supabase — passwordHash is null).
+  // We expose this *after* a timing-safe no-op so the timing stays consistent with
+  // a genuine wrong-password attempt, but we return a distinct error code so Sphera
+  // can display "Use the CampusSphere SSO button" instead of "Wrong password".
+  if (record && !record.passwordHash) {
+    await verifyPassword(input.password, await decoyHash()); // constant-time no-op
+    res.status(401).json({
+      success: false,
+      error: "sso_account",
+      message: "This account uses CampusSphere SSO. Please log in with the CampusSphere button.",
+    });
+    return;
+  }
+
   // Always perform a verification, against a decoy hash when the account is absent,
   // so response timing does not reveal whether an email is registered.
   const valid = await verifyPassword(input.password, record?.passwordHash ?? (await decoyHash()));
