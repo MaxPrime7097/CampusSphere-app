@@ -198,6 +198,33 @@ usersRouter.post("/auth/register/", registrationRateLimit, async (req, res) => {
 
 const loginSchema = z.object({ email: z.string().email(), password: z.string().min(1) });
 
+/**
+ * Verifies email + password against Supabase GoTrue REST API.
+ * Used when a user registered on CampusSphere with email and password,
+ * where passwords reside in Supabase Auth and PostgreSQL `users.passwordHash` is null.
+ */
+async function verifySupabasePassword(email: string, password: string): Promise<boolean> {
+  const url = env.supabase.url;
+  const key = env.supabase.serviceRoleKey;
+  if (!url || !key) return false;
+
+  try {
+    const res = await fetch(`${url.replace(/\/$/, "")}/auth/v1/token?grant_type=password`, {
+      method: "POST",
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, password }),
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn("[auth] Supabase password verification network error:", err);
+    return false;
+  }
+}
+
 usersRouter.post("/auth/login/", loginIpRateLimit, loginAccountRateLimit, async (req, res) => {
   const input = loginSchema.parse(req.body);
   const email = normaliseEmail(input.email);
@@ -207,24 +234,39 @@ usersRouter.post("/auth/login/", loginIpRateLimit, loginAccountRateLimit, async 
     select: { ...userSelect, passwordHash: true, isActive: true },
   });
 
-  // Detect SSO-only accounts (created via Google/Supabase — passwordHash is null).
-  // We expose this *after* a timing-safe no-op so the timing stays consistent with
-  // a genuine wrong-password attempt, but we return a distinct error code so Sphera
-  // can display "Use the CampusSphere SSO button" instead of "Wrong password".
-  if (record && !record.passwordHash) {
-    await verifyPassword(input.password, await decoyHash()); // constant-time no-op
-    res.status(401).json({
-      success: false,
-      error: "sso_account",
-      message: "This account uses CampusSphere SSO. Please log in with the CampusSphere button.",
-    });
-    return;
+  let valid = false;
+
+  if (record?.passwordHash) {
+    valid = await verifyPassword(input.password, record.passwordHash);
   }
 
-  // Always perform a verification, against a decoy hash when the account is absent,
-  // so response timing does not reveal whether an email is registered.
-  const valid = await verifyPassword(input.password, record?.passwordHash ?? (await decoyHash()));
-  if (!record || !valid) throw unauthenticated("Invalid credentials.");
+  // If local passwordHash is missing (user created on CampusSphere via Supabase)
+  // or local verification failed (e.g. password updated on Supabase),
+  // verify against Supabase Auth:
+  if (!valid && record && env.supabase.url) {
+    const supabaseOk = await verifySupabasePassword(email, input.password);
+    if (supabaseOk) {
+      valid = true;
+      // Sync the Argon2 hash locally so subsequent logins on Sphera are instant
+      try {
+        const newHash = await hashPassword(input.password);
+        await prisma.user.update({
+          where: { id: record.id },
+          data: { passwordHash: newHash },
+        });
+      } catch (err) {
+        console.warn("[auth] Failed to persist synced password hash:", err);
+      }
+    }
+  }
+
+  // If account is absent, run against decoy hash to prevent timing attacks:
+  if (!record) {
+    await verifyPassword(input.password, await decoyHash());
+    throw unauthenticated("Invalid credentials.");
+  }
+
+  if (!valid) throw unauthenticated("Invalid credentials.");
   if (!record.isActive) throw unauthenticated("This account is disabled.");
 
   // Forgive the per-account counter once the caller proves they own the account,
