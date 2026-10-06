@@ -37,6 +37,7 @@ function ScrollToTop() {
 
 function SSOCatcher() {
   const navigate = useNavigate();
+  const { setUser } = useSpheraAuth();
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const hash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : '';
@@ -50,10 +51,21 @@ function SSOCatcher() {
       if (window.history.replaceState) {
         window.history.replaceState({}, document.title, window.location.pathname);
       }
-      // Navigate to dashboard without full reload
-      navigate('/dashboard', { replace: true });
+      // Fetch user and update auth context BEFORE navigating so ProtectedRoute
+      // sees isAuthenticated=true immediately (fixes SSO-redirects-to-login bug).
+      import('./services/spheraApi').then(({ getCurrentUser }) => {
+        getCurrentUser()
+          .then((u) => {
+            if (u) setUser(u);
+          })
+          .catch(() => { /* token invalid — leave boot() to handle it */ })
+          .finally(() => {
+            navigate('/dashboard', { replace: true });
+          });
+      });
     }
-  }, [navigate]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   return null;
 }
 

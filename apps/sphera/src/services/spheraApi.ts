@@ -117,6 +117,12 @@ function translateSpheraApiError(errJson: any, status: number): string {
   const lower = String(raw).toLowerCase();
 
   // 2. Erreurs d'authentification et comptes
+
+  // SSO-only account: user registered via Google/Supabase, has no password
+  if (errJson?.error === "sso_account" || lower.includes("sso_account") || lower.includes("uses campussphere sso")) {
+    return "Ce compte a été créé via Google ou CampusSphere SSO. Utilise le bouton « Se connecter avec CampusSphere » ci-dessus — pas besoin de mot de passe !";
+  }
+
   if (
     lower.includes("invalid credentials") ||
     lower.includes("invalid_credentials") ||

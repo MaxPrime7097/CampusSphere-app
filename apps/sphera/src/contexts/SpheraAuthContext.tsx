@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react'
 import { getCurrentUser, clearTokens, getToken, setTokens } from '../services/spheraApi'
 import { attemptSilentSso } from '@cs/sso'
 
@@ -24,8 +24,16 @@ const SpheraAuthContext = createContext<SpheraAuthContextType | undefined>(undef
 
 // ─── Provider ───────────────────────────────────────────────────
 export const SpheraAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<SpheraUser | null>(null)
+  const [user, setUserState] = useState<SpheraUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  // Track whether a concurrent setUser() call (from SSOCatcher or Login) has
+  // already set the user so boot() doesn't overwrite with null on error.
+  const userSetExternallyRef = useRef(false)
+
+  const setUser = (u: SpheraUser | null) => {
+    userSetExternallyRef.current = true
+    setUserState(u)
+  }
 
   useEffect(() => {
     const boot = async () => {
@@ -45,14 +53,38 @@ export const SpheraAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         }
       }
 
+      // Bail out early if a concurrent login (SSOCatcher or Login page) already
+      // set the user while we were doing the async SSO probe above.
+      if (userSetExternallyRef.current) {
+        setIsLoading(false)
+        return
+      }
+
       // 3. If we have a token (either existing or from SSO), validate it
       if (token) {
         try {
           const u = await getCurrentUser()
-          setUser(u)
-        } catch {
-          clearTokens()
-          setUser(null)
+          // Check again: a concurrent login might have completed while we awaited.
+          if (!userSetExternallyRef.current) {
+            setUserState(u)
+          }
+        } catch (err: any) {
+          // Only clear tokens on genuine authentication errors (401 / 403).
+          // Network errors, timeouts, server 5xx, etc. must NOT log the user out —
+          // that is what causes the random ejections reported by users.
+          const isAuthError = err?.message &&
+            (err.message.includes("session") ||
+             err.message.includes("expiré") ||
+             err.message.includes("expired") ||
+             err.message.includes("invalid") ||
+             err.message.includes("invalide") ||
+             err.message.includes("reconnect"))
+          if (isAuthError) {
+            clearTokens()
+            if (!userSetExternallyRef.current) setUserState(null)
+          }
+          // If it's a network/server error, keep the user logged in — they'll
+          // get a proper 401 on their next request and the interceptor will retry.
         }
       }
 
@@ -64,7 +96,8 @@ export const SpheraAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const logout = () => {
     clearTokens()
-    setUser(null)
+    setUserState(null)
+    userSetExternallyRef.current = false
   }
 
   return (
