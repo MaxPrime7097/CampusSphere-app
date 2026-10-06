@@ -770,6 +770,7 @@ spheraRouter.post("/generate/from-upload/", singleUpload("file", "resource"), as
       fileType: file.mimetype || "application/octet-stream",
       type: "COURS",
       visibility: "FRIENDS",
+      audience: "sphera_internal",
     },
     select: { id: true },
   });
@@ -849,6 +850,7 @@ spheraRouter.post("/generate/annale/", checkGenerationQuota, singleUpload("file"
           fileType: file.mimetype || "application/octet-stream",
           type: "EXAM_PAPERS",
           visibility: "FRIENDS",
+          audience: "sphera_internal",
         },
         select: { id: true },
       });
@@ -943,6 +945,7 @@ async function handleSingleToolGeneration(
         fileType: file.mimetype || "application/octet-stream",
         type: "COURS",
         visibility: "FRIENDS",
+        audience: "sphera_internal",
       },
       select: { id: true },
     });
