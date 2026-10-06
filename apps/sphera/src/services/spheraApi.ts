@@ -50,11 +50,14 @@ async function performRefreshRaw(refresh: string): Promise<string | null> {
       body: JSON.stringify({ refresh }),
       credentials: "include",
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) return null;
+      return "TEMPORARY_ERROR";
+    }
     const json = await res.json().catch(() => null as any);
     return json?.access || json?.accessToken || json?.data?.access || null;
   } catch {
-    return null;
+    return "TEMPORARY_ERROR";
   }
 }
 
@@ -260,10 +263,13 @@ async function apiFetch<T>(
         }
         const newAccess = await refreshPromise.catch(() => null)
         refreshPromise = null
-        if (newAccess) {
+        if (newAccess && newAccess !== "TEMPORARY_ERROR") {
           setTokens(newAccess, refresh)
           // Re-tente la requête avec le nouveau token
           return apiFetch<T>(path, { ...options, _retry: true })
+        }
+        if (newAccess === "TEMPORARY_ERROR") {
+          throw new Error("Problème temporaire de connexion. Veuillez réessayer dans un instant.")
         }
       }
       clearTokens()

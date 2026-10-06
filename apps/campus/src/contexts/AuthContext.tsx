@@ -16,8 +16,28 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const [user, setUserState] = useState<UserProfile | null>(() => {
+    try {
+      const cached = localStorage.getItem("cs_user");
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
   const [isLoading, setIsLoading] = useState(true);
+
+  const setUser = (u: UserProfile | null) => {
+    setUserState(u);
+    try {
+      if (u) {
+        localStorage.setItem("cs_user", JSON.stringify(u));
+      } else {
+        localStorage.removeItem("cs_user");
+      }
+    } catch {
+      // ignore storage errors
+    }
+  };
 
   const refreshUser = async () => {
     let token = getAccessToken();
@@ -63,10 +83,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      setUser(userData);
-    } catch (error) {
-      console.error("Auth initialization error:", error);
+      if (userData) {
+        setUser(userData);
+      }
+    } catch (error: any) {
+      console.warn("Auth initialization error:", error);
       // Fallback to Supabase session before giving up
+      let recovered = false;
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.access_token) {
@@ -74,14 +97,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const newToken = exchangeRes?.data?.tokens?.accessToken;
           if (newToken) {
             const userData = await getCurrentUser(newToken);
-            setUser(userData);
-            return;
+            if (userData) {
+              setUser(userData);
+              recovered = true;
+            }
           }
         }
       } catch {
         // ignore
       }
-      setUser(null);
+
+      if (!recovered) {
+        // ONLY clear user if the backend explicitly returned a 401 or 403 authentication error!
+        // Transient network errors, server restarts, offline mode must NOT log the user out!
+        const status = Number(error?.status || error?.statusCode);
+        const isAuthError = status === 401 || status === 403;
+        if (isAuthError) {
+          setUser(null);
+          clearTokens();
+        }
+      }
     } finally {
       setIsLoading(false);
     }
@@ -102,10 +137,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.error("Auth state change error:", e);
           }
         }
-      } else if (event === "SIGNED_OUT") {
-        setUser(null);
-        clearTokens();
       }
+      // Note: do NOT clear tokens on Supabase "SIGNED_OUT" event!
+      // Supabase emits SIGNED_OUT when background timers or tab suspend causes its own
+      // 1-hour session to lapse, even though CampusSphere's backend JWT tokens (7-day / 90-day)
+      // are still completely valid. Only explicit user logout should destroy the session.
     });
 
     return () => {
