@@ -452,11 +452,17 @@ export async function performRefreshRaw(refresh: string): Promise<string | null>
       body: JSON.stringify({ refresh }),
       credentials: "include",
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        return null; // genuinely expired or revoked by server
+      }
+      return "TEMPORARY_ERROR";
+    }
     const json = await res.json().catch(() => null as any);
     return json?.access || json?.accessToken || json?.data?.access || null;
   } catch {
-    return null;
+    // Network offline, timeout, server restarting: keep tokens
+    return "TEMPORARY_ERROR";
   }
 }
 
@@ -510,16 +516,22 @@ export async function apiFetch<T>(
             if (!refreshPromise) {
               refreshPromise = performRefreshRaw(refresh);
             }
-            const newAccess = await refreshPromise.catch((): null => null);
+            const refreshRes = await refreshPromise.catch((): null => null);
             refreshPromise = null;
-            if (newAccess) {
-              setTokens(newAccess, refresh);
-              return apiFetch<T>(path, { ...options, token: newAccess, _retry: true });
+            if (refreshRes && refreshRes !== "TEMPORARY_ERROR") {
+              setTokens(refreshRes, refresh);
+              return apiFetch<T>(path, { ...options, token: refreshRes, _retry: true });
+            }
+            if (refreshRes === "TEMPORARY_ERROR") {
+              // Network issue or server hiccup: DO NOT wipe user session!
+              throw new ApiRequestError("Problème temporaire de connexion. Veuillez réessayer.", 401);
             }
           }
+          // Only clear tokens when the refresh token was definitively rejected (401/403)
           clearTokens();
         }
-      } catch {
+      } catch (innerErr) {
+        if (innerErr instanceof ApiRequestError) throw innerErr;
         // parsing json failed, fallback will be used
       }
     } else {
