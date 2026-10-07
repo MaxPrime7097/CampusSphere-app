@@ -33,13 +33,6 @@ resourcesRouter.use(autoInvalidate("resources"));
 const MAX_FOLDERS_PER_USER = 4;
 const MAX_RESOURCES_PER_FOLDER = 20;
 
-/** All accepted type strings — both legacy DB values and new frontend canonical keys. */
-const TYPES = [
-  // Legacy DB values (still returned by serializer)
-  "cours", "notes", "resumes", "exercises", "projects", "presentations", "exam_papers", "other",
-  // New frontend canonical keys
-  "course_notes", "td_tp", "exams", "project", "book",
-] as const;
 const VISIBILITIES = ["public", "university", "friends"] as const;
 
 /**
