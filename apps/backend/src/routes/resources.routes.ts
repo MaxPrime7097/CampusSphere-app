@@ -42,6 +42,37 @@ const TYPES = [
 ] as const;
 const VISIBILITIES = ["public", "university", "friends"] as const;
 
+/**
+ * Maps any accepted type string (legacy DB value or new frontend canonical key)
+ * to a valid Prisma ResourceType enum value.
+ *
+ * The frontend sends canonical keys like "course_notes", "td_tp", "exams", etc.
+ * Legacy DB values like "cours", "notes" are also accepted for backwards-compat.
+ * Anything unrecognised falls back to OTHER.
+ */
+function normaliseResourceType(raw: string | undefined): ResourceType {
+  const v = (raw ?? "other").toLowerCase().trim();
+  // New frontend canonical keys
+  if (v === "course_notes" || v === "notes" || v === "resumes" || v === "cours" || v === "resume" || v === "summary") return "NOTES";
+  if (v === "td_tp" || v === "exercises" || v === "exercices" || v === "td" || v === "tp") return "EXERCISES";
+  if (v === "exams" || v === "exam_papers" || v === "annales" || v === "annale" || v === "exam") return "EXAM_PAPERS";
+  if (v === "project" || v === "projects" || v === "presentations" || v === "slides" || v === "projet") return "PROJECTS";
+  if (v === "book" || v === "books" || v === "livre") return "RESUMES";
+  if (v === "other") return "OTHER";
+  // Legacy DB values that map 1-to-1
+  const legacyMap: Record<string, ResourceType> = {
+    cours:         "COURS",
+    notes:         "NOTES",
+    resumes:       "RESUMES",
+    exercises:     "EXERCISES",
+    projects:      "PROJECTS",
+    presentations: "PRESENTATIONS",
+    exam_papers:   "EXAM_PAPERS",
+    other:         "OTHER",
+  };
+  return legacyMap[v] ?? "OTHER";
+}
+
 /** Django accepted `private` as a synonym for `friends`; preserved on write. */
 function normaliseVisibility(value: string | undefined): ResourceVisibility {
   const v = (value ?? "public").toLowerCase();
@@ -392,7 +423,7 @@ resourcesRouter.post("/", requireAuth, singleUpload("file", "resource"), async (
   if (!title) throw badRequest("A title is required.", { title: ["This field is required."] });
 
   const rawType = (body.type ?? "other").toLowerCase();
-  const type = (TYPES.includes(rawType as (typeof TYPES)[number]) ? rawType : "other").toUpperCase() as ResourceType;
+  const type = normaliseResourceType(rawType);
 
   const folderId = body.folder_id ? Number(body.folder_id) : null;
   if (folderId) {
@@ -468,7 +499,7 @@ const updateSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   description: z.string().optional(),
   subject: z.string().max(100).optional(),
-  type: z.enum(TYPES).optional(),
+  type: z.string().optional(),
   visibility: z.enum([...VISIBILITIES, "private"]).optional(),
   audience: z.string().max(200).optional(),
   tags: z.array(z.string()).optional(),
@@ -499,7 +530,7 @@ async function updateResource(req: Request, res: import("express").Response) {
       ...(input.title !== undefined ? { title: input.title } : {}),
       ...(input.description !== undefined ? { description: input.description } : {}),
       ...(input.subject !== undefined ? { subject: input.subject } : {}),
-      ...(input.type !== undefined ? { type: input.type.toUpperCase() as ResourceType } : {}),
+      ...(input.type !== undefined ? { type: normaliseResourceType(input.type) } : {}),
       ...(input.visibility !== undefined ? { visibility: normaliseVisibility(input.visibility) } : {}),
       ...(input.audience !== undefined ? { audience: input.audience } : {}),
       ...(input.tags !== undefined ? { tags: input.tags } : {}),
