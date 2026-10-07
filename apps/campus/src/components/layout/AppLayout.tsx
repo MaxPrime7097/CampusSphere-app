@@ -108,9 +108,25 @@ export function AppLayout({ children }: AppLayoutProps) {
     
     let socket: WebSocket | null = null;
     let retryTimeout: number | null = null;
+    let retryCount = 0;
+    const MAX_RETRIES = 5;
 
     const connect = () => {
-      socket = new WebSocket(wsUrl);
+      if (retryCount >= MAX_RETRIES) {
+        // Stop infinite reconnection spam when WebSockets are disabled upstream (e.g. Cloudflare proxy).
+        // Background polling via useUnreadCounts continues to keep badge counts accurate.
+        return;
+      }
+
+      try {
+        socket = new WebSocket(wsUrl);
+      } catch {
+        return;
+      }
+
+      socket.onopen = () => {
+        retryCount = 0;
+      };
 
       socket.onmessage = (event) => {
         try {
@@ -136,8 +152,16 @@ export function AppLayout({ children }: AppLayoutProps) {
         }
       };
 
+      socket.onerror = () => {
+        // Handled via onclose
+      };
+
       socket.onclose = () => {
-        retryTimeout = window.setTimeout(connect, 5000);
+        retryCount++;
+        if (retryCount < MAX_RETRIES) {
+          const delay = Math.min(5000 * Math.pow(2, retryCount - 1), 60000);
+          retryTimeout = window.setTimeout(connect, delay);
+        }
       };
     };
 
