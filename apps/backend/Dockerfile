@@ -22,8 +22,10 @@ RUN corepack enable && \
 # ─────────────────────────────
 # Dependencies
 # ─────────────────────────────
-
 FROM base AS deps
+
+# Prisma + TypeScript + autres devDependencies nécessaires au build
+ENV NODE_ENV=development
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/backend/package.json apps/backend/package.json
@@ -36,7 +38,6 @@ RUN pnpm install \
 # ─────────────────────────────
 # Build
 # ─────────────────────────────
-
 FROM deps AS build
 
 COPY apps/backend apps/backend
@@ -50,8 +51,9 @@ RUN pnpm build
 # ─────────────────────────────
 # Production
 # ─────────────────────────────
-
 FROM base AS production
+
+ENV NODE_ENV=production
 
 WORKDIR /app
 
@@ -81,14 +83,14 @@ ENV PORT=3000
 
 EXPOSE 3000
 
-WORKDIR /app/apps/backend
-
 HEALTHCHECK \
     --interval=30s \
     --timeout=10s \
     --start-period=30s \
     --retries=3 \
     CMD curl -fsS "http://localhost:${PORT}/api/health/" || exit 1
+
+WORKDIR /app/apps/backend
 
 ENTRYPOINT ["./docker-entrypoint.sh"]
 
