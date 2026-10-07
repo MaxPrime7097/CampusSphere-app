@@ -1,0 +1,33 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+
+    container_name: campussphere-api
+
+    restart: unless-stopped
+
+    env_file:
+      - ./apps/backend/.env.production
+
+    expose:
+      - "3000"
+
+    mem_limit: 900m
+    mem_reservation: 500m
+
+    stop_grace_period: 15s
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-fsS",
+          "http://localhost:3000/api/health/"
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
