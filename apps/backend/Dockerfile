@@ -57,20 +57,29 @@ ENV NODE_ENV=production
 
 WORKDIR /app
 
+# Workspace manifests
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/backend/package.json apps/backend/package.json
+COPY apps/backend/prisma apps/backend/prisma
+
+# Install only runtime dependencies for backend
+RUN pnpm install \
+    --frozen-lockfile \
+    --prod \
+    --filter @cs/backend...
+
+WORKDIR /app/apps/backend
+
+# Generate Prisma client in the final image
+RUN pnpm prisma generate
+
+WORKDIR /app
+
 COPY --from=build /app/apps/backend/dist \
     ./apps/backend/dist
 
-COPY --from=build /app/apps/backend/package.json \
-    ./apps/backend/package.json
-
-COPY --from=build /app/apps/backend/prisma \
-    ./apps/backend/prisma
-
 COPY --from=build /app/apps/backend/docker-entrypoint.sh \
     ./apps/backend/docker-entrypoint.sh
-
-COPY --from=build /app/node_modules \
-    ./node_modules
 
 RUN chmod +x ./apps/backend/docker-entrypoint.sh
 
