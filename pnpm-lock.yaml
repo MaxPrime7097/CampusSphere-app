@@ -72,6 +72,9 @@ importers:
       pdf-parse:
         specifier: ^2.4.5
         version: 2.4.5
+      prisma:
+        specifier: ^5.22.0
+        version: 5.22.0
       ws:
         specifier: ^8.21.3
         version: 8.21.3
@@ -106,9 +109,6 @@ importers:
       '@types/ws':
         specifier: ^8.18.1
         version: 8.18.1
-      prisma:
-        specifier: ^5.22.0
-        version: 5.22.0
       tsx:
         specifier: ^4.19.2
         version: 4.23.15
