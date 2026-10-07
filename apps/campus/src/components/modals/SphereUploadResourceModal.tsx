@@ -26,8 +26,8 @@ export function SphereUploadResourceModal({ sphereId, children, onUploaded, open
   const setOpen = setControlledOpen ?? setInternalOpen;
 
   const handleFile = (f: File) => {
-    if (f.size > 50 * 1024 * 1024) {
-      toast({ title: "Fichier trop volumineux", description: "Max 50MB", variant: "destructive" });
+    if (f.size > 100 * 1024 * 1024) {
+      toast({ title: "Fichier trop volumineux", description: "Max 100 Mo", variant: "destructive" });
       return;
     }
     setFile(f);
@@ -83,7 +83,7 @@ export function SphereUploadResourceModal({ sphereId, children, onUploaded, open
               <>
                 <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                 <p className="text-sm text-muted-foreground">Cliquez ou glissez un fichier</p>
-                <p className="text-xs text-muted-foreground mt-1">PDF, DOC, PPT, ZIP, images — max 50MB</p>
+                <p className="text-xs text-muted-foreground mt-1">PDF, DOC, PPT, ZIP, images — max 100 Mo</p>
               </>
             )}
             <input ref={inputRef} type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />

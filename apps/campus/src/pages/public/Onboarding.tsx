@@ -20,8 +20,10 @@ import {
 } from "@/schemas/completeProfilePayload";
 import { cn } from "@/lib/utils";
 import { UniversityCombobox } from "@/components/forms/UniversityCombobox";
+import { DomainCombobox } from "@/components/forms/DomainCombobox";
 import { FacultyCombobox } from "@/components/forms/FacultyCombobox";
 import { StudyLevelCombobox } from "@/components/forms/StudyLevelCombobox";
+import { getDomainForFaculty } from "@/constants/academicData";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
 import { useAuth } from "@/contexts/AuthContext";
 import { WELCOME_FLAG_KEY } from "@/components/onboarding/WelcomeTeamModal";
@@ -128,6 +130,7 @@ export function Onboarding() {
     portfolioLinks: [] as Array<{ name: string; url: string }>,
   });
 
+  const [academicDomain, setAcademicDomain] = useState<string>("");
   const [newLanguageInput, setNewLanguageInput] = useState("");
   const [newSkillInput, setNewSkillInput] = useState("");
   const [newInterestInput, setNewInterestInput] = useState("");
@@ -305,10 +308,28 @@ export function Onboarding() {
                 {errors.university && <p className="text-xs text-red-500 mt-1">{errors.university}</p>}
               </div>
 
+              <div>
+                <Label>Domaine d'études</Label>
+                <DomainCombobox
+                  value={academicDomain}
+                  onValueChange={(dom) => {
+                    setAcademicDomain(dom);
+                    if (formData.faculty && getDomainForFaculty(formData.faculty) !== dom) {
+                      handleInputChange("faculty", "");
+                    }
+                  }}
+                  className="mt-2"
+                />
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label>Filière *</Label>
                   <FacultyCombobox
+                    domain={academicDomain}
+                    onDomainChange={(dom) => {
+                      if (dom && dom !== academicDomain) setAcademicDomain(dom);
+                    }}
                     value={formData.faculty}
                     onValueChange={(v) => handleInputChange("faculty", v)}
                     className="mt-2"

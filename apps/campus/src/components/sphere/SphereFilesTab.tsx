@@ -175,10 +175,10 @@ export function SphereFilesTab({
     let uploadedCount = 0;
     try {
       for (const file of filesArray) {
-        if (file.size > 50 * 1024 * 1024) {
+        if (file.size > 100 * 1024 * 1024) {
           toast({
             title: "Fichier trop volumineux",
-            description: `"${file.name}" dépasse la limite autorisée de 50 Mo.`,
+            description: `"${file.name}" dépasse la limite autorisée de 100 Mo.`,
             variant: "destructive",
           });
           continue;
@@ -324,7 +324,7 @@ export function SphereFilesTab({
               {isDraggingOver ? "Déposez vos fichiers pour les téléverser" : "Glissez-déposez des fichiers ici ou cliquez pour parcourir"}
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Formats acceptés : PDF, Word, Excel, PowerPoint, Images, Archives ZIP (max 50 Mo par fichier)
+              Formats acceptés : PDF, Word, Excel, PowerPoint, Images, Archives ZIP (max 100 Mo par fichier)
             </p>
           </div>
         </div>

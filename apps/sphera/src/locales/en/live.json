@@ -128,7 +128,7 @@
     },
     "generateDesc": "Sphera analyzes your document (PDF, Word, TXT, or course photo) and crafts a ready-to-play multiple-choice quiz.",
     "optionResource": "Option 1: CampusSphere document link or ID",
-    "optionResourcePlaceholder": "e.g.: 42 or https://campussphere.app/resources/42",
+    "optionResourcePlaceholder": "e.g.: document-a1z2e3r4 or https://campussphere.app/resources/document-a1z2e3r4",
     "or": "or",
     "optionUpload": "Option 2: Import a course file",
     "uploadDropzone": "Click to choose or drag and drop",

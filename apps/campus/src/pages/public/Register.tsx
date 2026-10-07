@@ -28,6 +28,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 type Step = 1 | "verify";
 const MINIMUM_AGE = 16;
+const AGE_POLICY_URL = "/cs-inc/policies/terms#age-restriction";
 const RESEND_COOLDOWN_SECONDS = 60;
 const SUBMIT_DEBOUNCE_MS = 1000;
 
@@ -440,6 +441,17 @@ export function Register() {
                   <Label>Date de naissance *</Label>
                   <Input type="date" max={getBirthDateMax()} value={formData.dateOfBirth} onChange={e => handleInputChange("dateOfBirth", e.target.value)} className={`w-full min-w-0 ${errors.dateOfBirth ? "border-destructive" : ""}`} />
                   {errors.dateOfBirth && <p className="text-xs text-destructive mt-1">{errors.dateOfBirth}</p>}
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    Pourquoi cette information ?{" "}
+                    <a
+                      href={AGE_POLICY_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      CampusSphere est réservé aux personnes de {MINIMUM_AGE} ans et plus — en savoir plus
+                    </a>
+                  </p>
                 </div>
                 <div className="min-w-0">
                   <Label>Téléphone</Label>

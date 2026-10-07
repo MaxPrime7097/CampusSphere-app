@@ -10,8 +10,10 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { UniversityCombobox } from "@/components/forms/UniversityCombobox";
+import { DomainCombobox } from "@/components/forms/DomainCombobox";
 import { FacultyCombobox } from "@/components/forms/FacultyCombobox";
 import { StudyLevelCombobox } from "@/components/forms/StudyLevelCombobox";
+import { getDomainForFaculty } from "@/constants/academicData";
 import { SkillsCombobox } from "@/components/forms/SkillsCombobox";
 import { InterestsCombobox } from "@/components/forms/InterestsCombobox";
 import { CityCombobox } from "@/components/forms/CityCombobox";
@@ -39,6 +41,7 @@ export function EditProfile() {
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [languages, setLanguages] = useState<string[]>([]);
   const [university, setUniversity] = useState("");
+  const [academicDomain, setAcademicDomain] = useState("");
   const [faculty, setFaculty] = useState("");
   const [studyYear, setStudyYear] = useState("");
   const [studentId, setStudentId] = useState("");
@@ -88,7 +91,9 @@ export function EditProfile() {
     setLanguages(langs);
 
     setUniversity(currentUser.university || "");
-    setFaculty(currentUser.faculty || "");
+    const initialFac = currentUser.faculty || "";
+    setFaculty(initialFac);
+    setAcademicDomain(getDomainForFaculty(initialFac) || "");
     setStudyYear(currentUser.studyYear || currentUser.study_year || "");
     setStudentId(currentUser.studentId || currentUser.student_id || "");
 
@@ -260,14 +265,33 @@ export function EditProfile() {
               <UniversityCombobox value={university} onValueChange={setUniversity} />
             </div>
             <div className="space-y-2">
+              <Label>Domaine d'études</Label>
+              <DomainCombobox
+                value={academicDomain}
+                onValueChange={(d) => {
+                  setAcademicDomain(d);
+                  if (faculty && getDomainForFaculty(faculty) !== d) {
+                    setFaculty("");
+                  }
+                }}
+              />
+            </div>
+            <div className="space-y-2">
               <Label>Filière</Label>
-              <FacultyCombobox value={faculty} onValueChange={setFaculty} />
+              <FacultyCombobox
+                domain={academicDomain}
+                onDomainChange={(d) => {
+                  if (d && d !== academicDomain) setAcademicDomain(d);
+                }}
+                value={faculty}
+                onValueChange={setFaculty}
+              />
             </div>
             <div className="space-y-2">
               <Label>Niveau d'étude</Label>
               <StudyLevelCombobox value={studyYear} onValueChange={setStudyYear} />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 md:col-span-2">
               <Label htmlFor="studentId">Matricule / ID</Label>
               <Input id="studentId" value={studentId} onChange={(e) => setStudentId(e.target.value)} />
             </div>

@@ -25,7 +25,7 @@ import { listFolders, createResource, type ResourceFolder } from "@/services/api
 import { compressImageFile } from "@/lib/imageCompression";
 import { cn } from "@/lib/utils";
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024;
+const MAX_FILE_SIZE = 100 * 1024 * 1024;
 const ACCEPTED_FILE_TYPES = [...ACCEPTED_RESOURCE_MIME_TYPES];
 
 const cleanFileNameToTitle = (filename: string): string => {
@@ -118,7 +118,7 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
       toast({ 
         variant: "destructive", 
         title: "Fichier trop volumineux", 
-        description: "La taille maximale est de 50MB" 
+        description: "La taille maximale est de 100 Mo" 
       });
       return;
     }
@@ -351,7 +351,7 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
                     />
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-2">
-                    Glissez-déposez un fichier ou parcourez (PDF, Docs, Images... max 50MB)
+                    Glissez-déposez un fichier ou parcourez (PDF, Docs, Images... max 100 Mo)
                   </p>
                 </div>
               )}
