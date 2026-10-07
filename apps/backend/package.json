@@ -44,6 +44,8 @@
     "@aws-sdk/client-s3": "^3.1105.0",
     "@node-rs/argon2": "^2.0.2",
     "@prisma/client": "^5.22.0",
+    "@smithy/core": "^3.35.0",
+    "@smithy/signature-v4": "^5.7.3",
     "adm-zip": "^0.6.0",
     "archiver": "^8.0.0",
     "cors": "^2.8.5",
@@ -55,8 +57,6 @@
     "multer": "^2.2.0",
     "nodemailer": "^9.0.5",
     "pdf-parse": "^2.4.5",
-    "@smithy/core": "^3.18.0",
-    "@smithy/signature-v4": "^5.2.5",
     "ws": "^8.21.3",
     "zod": "^3.25.76"
   }
