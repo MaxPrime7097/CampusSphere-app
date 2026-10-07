@@ -54,6 +54,21 @@ export function createApp(): Express {
   // DRF's AnonRateThrottle, so it has to know whether a token was presented.
   app.use("/api", anonymousRateLimit, apiRouter);
 
+  // WebSocket endpoints fallback: if a reverse proxy (like Cloudflare) or client
+  // forwards a WebSocket request as plain HTTP without upgrading, inform the client
+  // that a WebSocket handshake is required rather than a generic 404.
+  app.all(/^\/ws(?:\/.*)?$/, (_req, res) => {
+    res.status(426).set({
+      Upgrade: "WebSocket",
+      Connection: "Upgrade",
+    }).json({
+      success: false,
+      error: "Upgrade Required",
+      code: "upgrade_required",
+      detail: "This endpoint requires a WebSocket connection (wss://).",
+    });
+  });
+
   app.use(notFoundHandler);
   app.use(errorHandler);
 
