@@ -2,12 +2,24 @@ import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { globalSearch } from "@/services/api";
 import { getEvents } from "@/services/eventService";
-import { Spinner as Loader2, SealCheck as BadgeCheck, FileText, BookOpen, FileCode, Lightning as Zap } from "@phosphor-icons/react";
+import {
+  Spinner as Loader2,
+  SealCheck as BadgeCheck,
+  FileText,
+  BookOpen,
+  GraduationCap,
+  FolderSimple as FolderGit2,
+  BookBookmark,
+  Notepad,
+  Question as QuestionMark,
+  Lightning as Zap,
+} from "@phosphor-icons/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn, getPostUrl, getEventUrl, getResourceUrl, getSphereUrl } from "@/lib/utils";
 import { formatRelativeTime } from "@/lib/date";
 import { getSphereCategoryLabel } from "@/constants/sphereCategories";
+import { normalizeResourceType } from "@/constants/resourceTypes";
 import { useQuery } from "@tanstack/react-query";
 
 interface SearchDropdownProps {
@@ -17,30 +29,35 @@ interface SearchDropdownProps {
 }
 
 const RESOURCE_TYPE_STYLES: Record<string, { icon: string; bg: string }> = {
-  notes: { icon: "text-blue-500", bg: "bg-blue-500/10 border-blue-500/20" },
-  resumes: { icon: "text-sky-500", bg: "bg-sky-500/10 border-sky-500/20" },
-  exercises: { icon: "text-red-500", bg: "bg-red-500/10 border-red-500/20" },
-  exam_papers: { icon: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
-  annales: { icon: "text-purple-500", bg: "bg-purple-500/10 border-purple-500/20" },
-  projects: { icon: "text-pink-500", bg: "bg-pink-500/10 border-pink-500/20" },
-  presentations: { icon: "text-indigo-500", bg: "bg-indigo-500/10 border-indigo-500/20" },
-  other: { icon: "text-muted-foreground", bg: "bg-muted/30 border-border/40" },
+  course_notes: { icon: "text-blue-500", bg: "bg-blue-500/10 border-blue-500/20" },
+  td_tp:        { icon: "text-orange-500", bg: "bg-orange-500/10 border-orange-500/20" },
+  exams:        { icon: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
+  project:      { icon: "text-violet-500", bg: "bg-violet-500/10 border-violet-500/20" },
+  book:         { icon: "text-amber-500", bg: "bg-amber-500/10 border-amber-500/20" },
+  other:        { icon: "text-muted-foreground", bg: "bg-muted/30 border-border/40" },
 };
 
 function getResourceStyle(type?: string) {
   if (!type) return RESOURCE_TYPE_STYLES.other;
-  return RESOURCE_TYPE_STYLES[type.toLowerCase()] || RESOURCE_TYPE_STYLES.other;
+  const canonical = normalizeResourceType(type);
+  return RESOURCE_TYPE_STYLES[canonical] || RESOURCE_TYPE_STYLES.other;
 }
 
 function getResourceIcon(type?: string, className = "h-4 w-4") {
-  const key = (type || "").toLowerCase();
-  switch (key) {
-    case "notes":
+  const canonical = normalizeResourceType(type);
+  switch (canonical) {
+    case "course_notes":
       return <BookOpen className={className} />;
-    case "exercises":
-      return <FileCode className={className} />;
+    case "td_tp":
+      return <Notepad className={className} />;
+    case "exams":
+      return <GraduationCap className={className} />;
+    case "project":
+      return <FolderGit2 className={className} />;
+    case "book":
+      return <BookBookmark className={className} />;
     default:
-      return <FileText className={className} />;
+      return <QuestionMark className={className} />;
   }
 }
 
