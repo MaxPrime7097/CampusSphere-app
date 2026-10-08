@@ -268,6 +268,11 @@ export function normalizeUser(user: any): UserProfile | null {
     phoneNumber: user.phoneNumber ?? user.phone_number ?? "",
     dateOfBirth: user.dateOfBirth ?? user.date_of_birth ?? "",
     isVerified: Boolean(user.is_verified ?? user.isVerified ?? false),
+    is_profile_complete: Boolean(
+      user.is_profile_complete ??
+      user.isProfileComplete ??
+      (user.university?.trim() && user.faculty?.trim() && (user.studyYear?.trim() || user.study_year?.trim()))
+    ),
     stats: {
       posts: toNumber(user.posts_count ?? user.stats?.posts, 0),
       connections: toNumber(user.connections_count ?? user.stats?.connections, 0),

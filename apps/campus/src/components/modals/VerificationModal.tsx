@@ -73,6 +73,10 @@ export function VerificationModal({ children, onSuccess, open: controlledOpen, o
       setIsVerifiedImmediately(isVerified);
       setStep(3);
       
+      if (user?.id) {
+        localStorage.setItem(`cs_verification_submitted_${user.id}`, "true");
+      }
+
       if (isVerified) {
         toast({
           title: "Félicitations !",

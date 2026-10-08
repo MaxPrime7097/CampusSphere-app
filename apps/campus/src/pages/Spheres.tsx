@@ -17,6 +17,7 @@ import { SphereSkeleton } from "@/components/ui/skeletons";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
+import { getVerificationAccessStatus } from "@/utils/verification";
 import { normalizeSphereType } from "@/config/sphereFeatures";
 import type { Sphere } from "@/types";
 
@@ -38,6 +39,7 @@ export function Spheres() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { user: currentUser, isLoading: isAuthLoading } = useAuth();
+  const { canPerformAction } = getVerificationAccessStatus(currentUser);
   const queryClient = useQueryClient();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -180,14 +182,14 @@ export function Spheres() {
   const handleJoinSphere = async (sphereId: string, sphereName: string) => {
     if (!currentUser) return;
 
-    if (!currentUser.isVerified) {
+    if (!canPerformAction) {
       toast({
         title: "Compte non certifié",
-        description: "Vous devez être certifié pour rejoindre une sphère.",
+        description: "Votre période d'accès découverte de 24h a expiré. Certifiez votre statut d'étudiant pour rejoindre une sphère.",
         variant: "destructive",
         action: (
           <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>
-            Vérifier
+            Certifier
           </Button>
         ),
       });

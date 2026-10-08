@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Pen as PenLine, Upload, UsersThree as Users, Calendar, ChatCircle as MessageSquare, ArrowRight } from "@phosphor-icons/react";
 import { useAuth } from "@/contexts/AuthContext";
+import { getVerificationAccessStatus } from "@/utils/verification";
 import { useToast } from "@/hooks/use-toast";
 import { openVerificationModal } from "@/lib/events";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
@@ -54,7 +55,7 @@ export function CreateHubModal({
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const isVerified = (user as any)?.isVerified ?? false;
+  const { canPerformAction } = getVerificationAccessStatus(user);
 
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
   const setOpen = setControlledOpen ?? setInternalOpen;
@@ -66,10 +67,10 @@ export function CreateHubModal({
   }, [open]);
 
   const handleActionClick = (type: ActionType) => {
-    if (!isVerified) {
+    if (!canPerformAction) {
       toast({
         title: "Compte non certifié",
-        description: "Vous devez certifier votre compte pour effectuer cette action.",
+        description: "Votre période d'accès découverte de 24h a expiré. Certifiez votre compte pour continuer à effectuer cette action.",
         variant: "destructive",
         action: (
           <button

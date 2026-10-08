@@ -15,6 +15,7 @@ import { openVerificationModal } from "@/lib/events";
 import { Button } from "@/components/ui/button";
 import { normalizeResourceType } from "@/constants/resourceTypes";
 import { useAuth } from "@/contexts/AuthContext";
+import { getVerificationAccessStatus } from "@/utils/verification";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { GridFour as LayoutGrid, List } from "@phosphor-icons/react";
 import { cn, getResourceUrl } from "@/lib/utils";
@@ -52,6 +53,7 @@ export function Resources() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
+  const { canPerformAction } = getVerificationAccessStatus(currentUser);
   const queryClient = useQueryClient();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -158,14 +160,14 @@ export function Resources() {
 
   const handleDownload = async (e: React.MouseEvent, resourceId: string) => {
     e.stopPropagation();
-    if (!currentUser?.isVerified) {
+    if (!canPerformAction) {
       toast({
         title: "Compte non certifié",
-        description: "Certifiez votre compte pour télécharger des ressources.",
+        description: "Votre période d'accès découverte de 24h a expiré. Certifiez votre compte pour continuer à télécharger des ressources.",
         variant: "destructive",
         action: (
           <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>
-            Vérifier
+            Certifier
           </Button>
         ),
       });
@@ -398,10 +400,10 @@ export function Resources() {
                 onOpenFolder={handleOpenFolder}
                 onCloseFolder={() => setSelectedFolder(null)}
                 onDownloadZip={async (f) => {
-                  if (!currentUser?.isVerified) {
+                  if (!canPerformAction) {
                     toast({
                       title: "Compte non certifié",
-                      description: "Certifiez votre compte pour télécharger des dossiers ZIP.",
+                      description: "Votre période d'accès découverte de 24h a expiré. Certifiez votre compte pour télécharger des dossiers ZIP.",
                       variant: "destructive",
                       action: (
                         <Button
@@ -409,7 +411,7 @@ export function Resources() {
                           size="sm"
                           onClick={() => openVerificationModal()}
                         >
-                          Vérifier
+                          Certifier
                         </Button>
                       ),
                     });
