@@ -3,7 +3,7 @@ import { Helmet } from "react-helmet-async";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
 import { RequireAdminRole } from "./components/auth/RequireAdminRole";
@@ -12,6 +12,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { Spinner as Loader2 } from "@phosphor-icons/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { GlobalErrorBoundary } from "./components/errors/GlobalErrorBoundary";
+import { getCampusStatus } from "./services/api";
 
 // Lazy loaded pages
 const Landing = lazy(() => import("./pages/public/Landing").then(m => ({ default: m.Landing })));
@@ -60,6 +61,7 @@ const DataDeletion = lazy(() => import("./pages/public/DataDeletion").then(m => 
 const LegalNotice = lazy(() => import("./pages/public/LegalNotice").then(m => ({ default: m.LegalNotice })));
 const TermsOfSale = lazy(() => import("./pages/public/TermsOfSale").then(m => ({ default: m.TermsOfSale })));
 const Waitinglist = lazy(() => import("./pages/public/Waitinglist").then(m => ({ default: m.Waitinglist })));
+const CampusUnlock = lazy(() => import("./pages/public/CampusUnlock").then(m => ({ default: m.CampusUnlock })));
 const Policies = lazy(() => import("./pages/public/Policies").then(m => ({ default: m.Policies })));
 const ImpactScoreInfo = lazy(() => import("./pages/public/ImpactScoreInfo").then(m => ({ default: m.ImpactScoreInfo })));
 const Forbidden = lazy(() => import("./pages/public/Forbidden"));
@@ -99,8 +101,27 @@ const queryClient = new QueryClient({
   },
 });
 
+const CampusGate = ({ children, university }: { children: React.ReactNode; university: string }) => {
+  const { data: campusStatus, isLoading } = useQuery({
+    queryKey: ["campus-status", university],
+    queryFn: () => getCampusStatus(university),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  if (isLoading) {
+    return <PageLoader />;
+  }
+
+  if (campusStatus && !campusStatus.isOpen) {
+    return <Navigate to="/campus-unlock" replace />;
+  }
+
+  return <>{children}</>;
+};
+
 const Protected = ({ children, requireCompleteProfile = true }: { children: React.ReactNode, requireCompleteProfile?: boolean }) => {
   const { user, isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return <PageLoader />;
@@ -110,7 +131,16 @@ const Protected = ({ children, requireCompleteProfile = true }: { children: Reac
   if (requireCompleteProfile && user && user.is_profile_complete === false) {
     return <Navigate to="/onboarding" replace />;
   }
-  
+
+  // Campus unlock waitlist: Non-pilot universities stay locked until 50 registered
+  if (user && user.is_profile_complete !== false && location.pathname !== "/campus-unlock") {
+    const rawUniversity = (user.university || "").toLowerCase().trim();
+    const isPilot = rawUniversity === "iuc" || rawUniversity.includes("côte") || rawUniversity.includes("cote");
+    if (!isPilot && rawUniversity) {
+      return <CampusGate university={rawUniversity}>{children}</CampusGate>;
+    }
+  }
+
   return children;
 };
 
@@ -133,7 +163,7 @@ const ScrollToTop = (): null => {
   const { isAuthenticated } = useAuth();
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-    const isPublic = pathname.startsWith('/cs-inc') || pathname === '/login' || pathname === '/register' || pathname === '/forgot-password' || pathname === '/onboarding' || pathname === '/waitinglist' || (!isAuthenticated && pathname === '/');
+    const isPublic = pathname.startsWith('/cs-inc') || pathname === '/login' || pathname === '/register' || pathname === '/forgot-password' || pathname === '/onboarding' || pathname === '/campus-unlock' || pathname === '/waitinglist' || (!isAuthenticated && pathname === '/');
     if (isPublic) {
       document.documentElement.classList.remove('dark');
     }
@@ -169,6 +199,8 @@ const App = (): React.ReactElement => (
               </Protected>
             } />
             <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/campus-unlock" element={<CampusUnlock />} />
+            <Route path="/waitinglist" element={<Navigate to="/campus-unlock" replace />} />
 
             {/* SSO endpoints for Sphera cross-app authentication */}
             <Route path="/sso/bridge" element={<SSOBridge />} />

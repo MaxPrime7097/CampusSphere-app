@@ -260,3 +260,24 @@ export async function deleteUserAccount(confirmationText: string, token?: string
     clearTokens();
   }
 }
+
+export interface CampusStatusData {
+  slug: string;
+  name: string;
+  shortName: string;
+  city: string;
+  isOpen: boolean;
+  currentCount: number;
+  targetCount: number;
+  remainingCount: number;
+  percentage: number;
+  campuses?: CampusStatusData[];
+}
+
+export async function getCampusStatus(slug?: string): Promise<CampusStatusData> {
+  const query = slug ? `?slug=${encodeURIComponent(slug)}` : "";
+  const response = await apiFetch<any>(`api/auth/campus-status/${query}`);
+  const payload = (response as any)?.data ?? response;
+  return payload as CampusStatusData;
+}
+

@@ -125,6 +125,11 @@ export function EventCard({ event, onStatusChange, onShare, className = "" }: Ev
           <Badge variant="muted" size="sm" className="text-[10px] font-normal py-0">
             {meta.shortLabel}
           </Badge>
+          {event.registrationUrl && (
+            <Badge variant="outline" size="sm" className="text-[10px] font-normal py-0 border-primary/30 text-primary">
+              Externe
+            </Badge>
+          )}
           {localStatus === "going" && (
             <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
               <Check className="h-3 w-3" /> Inscrit

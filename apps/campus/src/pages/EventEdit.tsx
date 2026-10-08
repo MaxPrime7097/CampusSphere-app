@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Calendar, ArrowLeft, Check, Upload, X, Sparkle as Sparkles, Spinner as Loader2 } from "@phosphor-icons/react";
+import { Calendar, ArrowLeft, Check, Upload, X, Sparkle as Sparkles, Ticket, ArrowSquareOut, LinkSimple, Spinner as Loader2 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -40,6 +40,8 @@ export function EventEdit() {
     isOnline: false,
     onlineLink: "",
     maxAttendees: undefined,
+    hasTicketing: false,
+    registrationUrl: "",
     sphereId: undefined,
   });
 
@@ -66,6 +68,8 @@ export function EventEdit() {
         isOnline: Boolean(event.isOnline),
         onlineLink: event.onlineLink || "",
         maxAttendees: event.maxAttendees || undefined,
+        hasTicketing: Boolean(event.hasTicketing),
+        registrationUrl: event.registrationUrl || "",
         sphereId: event.sphereId || undefined,
       });
       if (event.coverImage) {
@@ -112,6 +116,8 @@ export function EventEdit() {
 
     updateMutation.mutate({
       ...formData,
+      hasTicketing: Boolean(formData.hasTicketing),
+      registrationUrl: formData.registrationUrl?.trim() || null,
       coverImage: coverFile || coverPreview,
       startDate: formData.startDate ? new Date(formData.startDate).toISOString() : undefined,
       endDate: formData.endDate ? new Date(formData.endDate).toISOString() : undefined,
@@ -258,6 +264,44 @@ export function EventEdit() {
               />
             </div>
           )}
+
+          {/* Billetterie & Inscription externe */}
+          <div className="space-y-4 pt-3 border-t border-border/50">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-1.5">
+                  <Ticket className="h-3.5 w-3.5 text-primary" />
+                  <Label className="text-xs font-bold text-foreground">Billetterie & QR Code</Label>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Génère un billet officiel et QR Code pour chaque participant.
+                </p>
+              </div>
+              <Switch
+                checked={Boolean(formData.hasTicketing)}
+                onCheckedChange={(checked) => setFormData({ ...formData, hasTicketing: checked })}
+              />
+            </div>
+
+            <div className="space-y-1.5 pt-2 border-t border-border/50">
+              <Label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                <ArrowSquareOut className="h-3.5 w-3.5 text-primary" />
+                Lien d'inscription externe (optionnel)
+              </Label>
+              <div className="relative">
+                <LinkSimple className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="https://eventbrite.com/e/... ou https://forms.gle/..."
+                  value={formData.registrationUrl || ""}
+                  onChange={(e) => setFormData({ ...formData, registrationUrl: e.target.value })}
+                  className="rounded-xl text-xs pl-9"
+                />
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Si l'inscription a lieu sur une autre plateforme, ce lien sera proposé aux participants.
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Banner */}

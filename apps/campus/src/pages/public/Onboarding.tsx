@@ -4,7 +4,7 @@ import { Spinner as Loader2, Info, ArrowRight } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { completeSupabaseProfile } from "@/services/api";
 import { cn } from "@/lib/utils";
@@ -53,14 +53,23 @@ const validateDateOfBirth = (value: string): string | null => {
 
 export function Onboarding() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { refreshUser, user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const initialCampus = () => {
+    const fromQuery = searchParams.get("campus") || searchParams.get("ref");
+    if (fromQuery) return fromQuery.toLowerCase().trim();
+    const fromStorage = localStorage.getItem("campus_ref");
+    if (fromStorage) return fromStorage.toLowerCase().trim();
+    return "iuc";
+  };
+
   const [formData, setFormData] = useState({
     dateOfBirth: "",
-    university: "iuc",
+    university: initialCampus(),
     faculty: "",
     studyYear: "",
   });
@@ -69,11 +78,12 @@ export function Onboarding() {
 
   // Pré-remplissage avec les informations déjà connues de l'utilisateur
   useEffect(() => {
+    const campusRef = searchParams.get("campus") || searchParams.get("ref") || localStorage.getItem("campus_ref") || "";
     if (user) {
       setFormData((prev) => ({
         ...prev,
         dateOfBirth: user.dateOfBirth || prev.dateOfBirth,
-        university: user.university || prev.university || "iuc",
+        university: user.university || (campusRef ? campusRef.toLowerCase().trim() : "") || prev.university || "iuc",
         faculty: user.faculty || prev.faculty,
         studyYear: user.studyYear || prev.studyYear,
       }));
@@ -81,8 +91,10 @@ export function Onboarding() {
         const dom = getDomainForFaculty(user.faculty);
         if (dom) setAcademicDomain(dom);
       }
+    } else if (campusRef) {
+      setFormData((prev) => ({ ...prev, university: campusRef.toLowerCase().trim() }));
     }
-  }, [user]);
+  }, [user, searchParams]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -140,16 +152,32 @@ export function Onboarding() {
       await completeSupabaseProfile(payload);
       await refreshUser();
 
-      // Déclencheurs pour la bienvenue et la modale de certification sur le feed
-      localStorage.setItem(WELCOME_FLAG_KEY, "1");
-      localStorage.setItem("cs_just_onboarded", "1");
+      try {
+        localStorage.removeItem("campus_ref");
+      } catch {}
 
-      toast({
-        title: "Bienvenue sur CampusSphere ! 🎓",
-        description: "Votre profil campus a été configuré avec succès.",
-      });
+      const normUni = (formData.university || "").toLowerCase().trim();
+      const isPilot = normUni === "iuc" || normUni.includes("côte") || normUni.includes("cote");
 
-      navigate("/", { replace: true });
+      if (isPilot) {
+        // Déclencheurs pour la bienvenue et la modale de certification sur le feed
+        localStorage.setItem(WELCOME_FLAG_KEY, "1");
+        localStorage.setItem("cs_just_onboarded", "1");
+
+        toast({
+          title: "Bienvenue sur CampusSphere ! 🎓",
+          description: "Votre profil campus a été configuré avec succès.",
+        });
+
+        navigate("/", { replace: true });
+      } else {
+        toast({
+          title: "Inscription enregistrée ! ⏳",
+          description: "Partagez avec votre promo pour débloquer votre établissement.",
+        });
+
+        navigate("/campus-unlock", { replace: true });
+      }
     } catch (err: any) {
       toast({
         title: "Erreur lors de l'enregistrement",

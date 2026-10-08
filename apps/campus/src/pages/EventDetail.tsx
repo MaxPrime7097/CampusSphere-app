@@ -1,10 +1,10 @@
 import { Helmet } from "react-helmet-async";
 import { parseSlugId, encodeHashId } from "@/lib/hashids";
-import { getEventUrl, getSphereUrl } from "@/lib/utils";
+import { getEventUrl, getSphereUrl, formatSlugToLabel } from "@/lib/utils";
 import { useState, useMemo, useEffect, useLayoutEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Calendar, Check, ArrowLeft, Sparkle as Sparkles, Trophy, Code, Microphone as Mic, BookOpen, Compass, WarningCircle as AlertCircle, Ticket, CheckCircle as CheckCircle2, SealCheck as BadgeCheck } from "@phosphor-icons/react";
+import { Calendar, Check, ArrowLeft, Sparkle as Sparkles, Trophy, Code, Microphone as Mic, BookOpen, Compass, WarningCircle as AlertCircle, Ticket, CheckCircle as CheckCircle2, SealCheck as BadgeCheck, ArrowSquareOut } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -390,6 +390,13 @@ export function EventDetail() {
               En ligne
             </Badge>
           )}
+
+          {event.registrationUrl && (
+            <Badge className="bg-background/80 text-foreground border border-border/40 font-semibold text-xs backdrop-blur-md px-3 py-1 flex items-center gap-1">
+              <ArrowSquareOut className="h-3 w-3" />
+              <span>Inscription externe</span>
+            </Badge>
+          )}
         </div>
 
         {/* Title & Date on Cover bottom */}
@@ -442,7 +449,7 @@ export function EventDetail() {
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground truncate">
-                  Organisateur • {event.organizer.faculty || event.organizer.university || "Membre CampusSphere"}
+                  Organisateur • {formatSlugToLabel(event.organizer.faculty) || formatSlugToLabel(event.organizer.university) || "Membre CampusSphere"}
                 </p>
               </div>
             </Link>
@@ -606,14 +613,69 @@ export function EventDetail() {
                 <Button disabled className="w-full rounded-xl text-xs" variant="outline">
                   Événement terminé
                 </Button>
+              ) : event.registrationUrl ? (
+                /* External Registration Flow */
+                <div className="space-y-3">
+                  <Button
+                    asChild
+                    size="lg"
+                    className="w-full rounded-xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs transition-all py-5 text-sm gap-2"
+                  >
+                    <a href={event.registrationUrl} target="_blank" rel="noopener noreferrer">
+                      <span>S'inscrire sur le site officiel</span>
+                      <ArrowSquareOut className="h-4 w-4 shrink-0" />
+                    </a>
+                  </Button>
+
+                  {isRegistered ? (
+                    <div className="space-y-2 pt-1">
+                      <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center justify-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                        <span>Vous participez (noté sur CampusSphere)</span>
+                      </div>
+
+                      {Boolean(event.hasTicketing) && (
+                        <Button
+                          onClick={() => setIsTicketOpen(true)}
+                          variant="secondary"
+                          className="w-full rounded-xl font-semibold text-xs py-3.5 gap-1.5"
+                        >
+                          <Ticket className="h-3.5 w-3.5" />
+                          <span>Afficher mon billet & QR Code</span>
+                        </Button>
+                      )}
+
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => unregisterMutation.mutate()}
+                        disabled={unregisterMutation.isPending}
+                        className="w-full rounded-xl text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      >
+                        Annuler ma présence sur CampusSphere
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      onClick={() => registerMutation.mutate("going")}
+                      disabled={registerMutation.isPending}
+                      className="w-full rounded-xl font-medium text-xs py-3.5 gap-1.5"
+                    >
+                      <Check className="h-3.5 w-3.5 text-primary" />
+                      <span>{registerMutation.isPending ? "Mise à jour..." : "Indiquer ma présence sur CampusSphere"}</span>
+                    </Button>
+                  )}
+                </div>
               ) : isRegistered ? (
+                /* Internal Registration: Registered State */
                 <div className="space-y-2.5">
                   <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center justify-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
                     <span>{isCheckedIn ? "Présence validée au check-in" : "Vous participez à cet événement"}</span>
                   </div>
 
-                  {event.hasTicketing !== false && (
+                  {Boolean(event.hasTicketing) && (
                     <Button
                       onClick={() => setIsTicketOpen(true)}
                       className="w-full rounded-xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs transition-all py-5 text-xs gap-1.5"
@@ -634,6 +696,7 @@ export function EventDetail() {
                   </Button>
                 </div>
               ) : (
+                /* Internal Registration: Not Registered State */
                 <div className="space-y-2">
                   <Button
                     onClick={() => registerMutation.mutate("going")}
@@ -644,7 +707,7 @@ export function EventDetail() {
                     <span>
                       {registerMutation.isPending
                         ? "Inscription en cours..."
-                        : event.hasTicketing !== false
+                        : Boolean(event.hasTicketing)
                         ? "Obtenir mon billet"
                         : "Je participe"}
                     </span>
@@ -709,6 +772,24 @@ export function EventDetail() {
                   </div>
                 )}
               </div>
+
+              {/* External Registration Link in Logistics */}
+              {event.registrationUrl && (
+                <div className="space-y-0.5 pt-2">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80 block">
+                    Inscription externe
+                  </span>
+                  <a
+                    href={event.registrationUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline break-all pt-0.5"
+                  >
+                    <span>Accéder au site d'inscription</span>
+                    <ArrowSquareOut className="h-3.5 w-3.5 shrink-0" />
+                  </a>
+                </div>
+              )}
             </div>
           </div>
         </div>

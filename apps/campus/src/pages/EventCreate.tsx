@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Calendar, Clock, MapPin, Globe, Upload, Users, Check, ArrowLeft, X, Ticket, Spinner as Loader2 } from "@phosphor-icons/react";
+import { Calendar, Clock, MapPin, Globe, Upload, Users, Check, ArrowLeft, X, Ticket, ArrowSquareOut, LinkSimple, Spinner as Loader2 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -40,7 +40,8 @@ export function EventCreate() {
     onlineLink: "",
     maxAttendees: undefined,
     isPublic: true,
-    hasTicketing: true,
+    hasTicketing: false,
+    registrationUrl: "",
     sphereId: undefined,
     isFeatured: false,
   });
@@ -117,6 +118,8 @@ export function EventCreate() {
 
     createMutation.mutate({
       ...formData,
+      hasTicketing: Boolean(formData.hasTicketing),
+      registrationUrl: formData.registrationUrl?.trim() || null,
       coverImage: coverFile,
       startDate: new Date(formData.startDate).toISOString(),
       endDate: formData.endDate ? new Date(formData.endDate).toISOString() : undefined,
@@ -409,9 +412,33 @@ export function EventCreate() {
                   </p>
                 </div>
                 <Switch
-                  checked={formData.hasTicketing !== false}
+                  checked={Boolean(formData.hasTicketing)}
                   onCheckedChange={(checked) => setFormData({ ...formData, hasTicketing: checked })}
                 />
+              </div>
+
+              {/* Lien d'inscription externe */}
+              <div className="space-y-1.5 pt-3 border-t border-border/40">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="registrationUrl" className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                    <ArrowSquareOut className="h-3.5 w-3.5 text-primary" />
+                    Lien d'inscription externe (optionnel)
+                  </Label>
+                  <span className="text-[10px] text-muted-foreground">Vitrine Meetup, Eventbrite...</span>
+                </div>
+                <div className="relative">
+                  <LinkSimple className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    id="registrationUrl"
+                    placeholder="https://eventbrite.com/e/... ou https://forms.gle/..."
+                    value={formData.registrationUrl || ""}
+                    onChange={(e) => setFormData({ ...formData, registrationUrl: e.target.value })}
+                    className="rounded-xl text-xs pl-9"
+                  />
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Si l'événement nécessite une inscription sur une plateforme externe, ce lien sera proposé aux participants.
+                </p>
               </div>
 
               <div className="flex items-center justify-between pt-3 border-t border-border/40">
