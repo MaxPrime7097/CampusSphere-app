@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { SearchDropdown } from "./SearchDropdown";
 import { useUnreadCounts, refreshCounts } from "@/hooks/useUnreadCounts";
 import { useAuth } from "@/contexts/AuthContext";
+import { getVerificationAccessStatus } from "@/utils/verification";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
 
 const CreateHubModal = lazy(() => import("@/components/modals/CreateHubModal").then((module) => ({ default: module.CreateHubModal })));
@@ -93,7 +94,8 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const isProfileLoading = isAuthLoading;
-  const isVerified = user?.isVerified ?? false;
+  const verificationStatus = getVerificationAccessStatus(user);
+  const isVerified = verificationStatus.isVerified;
 
   // Real-time notifications
   useEffect(() => {
@@ -176,12 +178,12 @@ export function AppLayout({ children }: AppLayoutProps) {
   const handleCreateAction = (e: React.MouseEvent, callback: () => void) => {
     if (isProfileLoading) return;
     
-    if (!isVerified) {
+    if (!verificationStatus.canPerformAction) {
       e.preventDefault();
       e.stopPropagation();
       toast({
-        title: "Compte non vérifié",
-        description: "Vous devez certifier votre compte pour effectuer cette action.",
+        title: "Compte non certifié",
+        description: "Votre période d'accès découverte de 24h a expiré. Certifiez votre statut d'étudiant pour effectuer cette action.",
         variant: "destructive",
         action: (
           <Button 
@@ -190,7 +192,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             size="sm" 
             onClick={() => openVerificationModal()}
           >
-            Vérifier
+            Certifier
           </Button>
         ),
       });

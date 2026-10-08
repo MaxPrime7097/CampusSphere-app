@@ -4,9 +4,11 @@ import { FriendSuggestions } from "@/components/feed/FriendSuggestions";
 import { ResourceFeedCard } from "@/components/feed/ResourceFeedCard";
 import { FeedSidebar } from "@/components/layout/FeedSidebar";
 import { WelcomeTeamModal } from "@/components/onboarding/WelcomeTeamModal";
+import { FeedVerificationBanner } from "@/components/feed/FeedVerificationBanner";
+import { FeedCertificationModal } from "@/components/feed/FeedCertificationModal";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Suspense, lazy } from "react";
 import { listPosts, listSpheres, listResources } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { House as HomeIcon, ArrowClockwise as RefreshCw, Spinner as Loader2 } from "@phosphor-icons/react";
@@ -14,6 +16,13 @@ import { useToast } from "@/hooks/use-toast";
 import { mapPostToCard } from "@/lib/postCardMapper";
 import { PostSkeleton } from "@/components/ui/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
+import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
+
+const VerificationModal = lazy(() =>
+  import("@/components/modals/VerificationModal").then((module) => ({
+    default: module.VerificationModal,
+  }))
+);
 import { useQuery } from "@tanstack/react-query";
 import type { PostCardData, Sphere } from "@/types";
 import type { Resource } from "@/types";
@@ -28,6 +37,7 @@ export function Home() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
 
   const spheresQuery = useQuery({
     queryKey: ["home", "popular-spheres"],
@@ -136,10 +146,24 @@ export function Home() {
   return (
     <div className="min-h-screen bg-background">
       <WelcomeTeamModal />
+      <FeedCertificationModal onOpenVerificationModal={() => setIsVerificationModalOpen(true)} />
+      {isVerificationModalOpen && (
+        <Suspense fallback={<ModalLoadingFallback />}>
+          <VerificationModal
+            open={isVerificationModalOpen}
+            onOpenChange={setIsVerificationModalOpen}
+          />
+        </Suspense>
+      )}
       <div className={isMobile ? "w-full pt-3.5 pb-8" : "container max-w-7xl mx-auto"}>
         <div className={isMobile ? "w-full" : "grid grid-cols-1 lg:grid-cols-12 gap-6 px-4"}>
           {/* Main Feed */}
           <div className={isMobile ? "w-full space-y-4" : "lg:col-span-8 xl:col-span-7 py-6 space-y-4 md:space-y-6"}>
+
+            {/* Verification & Grace Period Banner */}
+            <div className={cn("campus-animate-fade-in", isMobile && "px-3.5 sm:px-4")}>
+              <FeedVerificationBanner onOpenVerificationModal={() => setIsVerificationModalOpen(true)} />
+            </div>
 
             {/* Create Post */}
             <div className={cn("campus-animate-slide-up mb-2", isMobile && "px-3.5 sm:px-4")}>

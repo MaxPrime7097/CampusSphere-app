@@ -70,6 +70,7 @@ export interface UserProfile {
   phoneNumber?: string;
   dateOfBirth?: string;
   isVerified: boolean;
+  is_profile_complete?: boolean;
   stats: UserStats;
   [key: string]: any;
 }

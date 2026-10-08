@@ -11,11 +11,9 @@ import { useAuth } from "@/contexts/AuthContext";
 // which is university + faculty + study_year only. Drop "username" and "student_id" so the client-side
 // fallback matches needs_profile_completion. — documentation/FRONTEND_CHANGES.md
 const REQUIRED_PROFILE_FIELDS = [
-  "username",
   "university",
   "faculty",
   "study_year",
-  "student_id",
 ] as const;
 
 const isFieldFilled = (value: unknown) => {
@@ -30,9 +28,6 @@ const hasCompleteProfile = (profile: Record<string, unknown> | null | undefined)
   return REQUIRED_PROFILE_FIELDS.every((field) => {
     if (field === "study_year") {
       return isFieldFilled(profile.study_year ?? profile.studyYear);
-    }
-    if (field === "student_id") {
-      return isFieldFilled(profile.student_id ?? profile.studentId);
     }
     return isFieldFilled(profile[field]);
   });
