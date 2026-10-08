@@ -10,7 +10,8 @@ import { Helmet } from 'react-helmet-async';
 import { useSpheraAuth } from '../contexts/SpheraAuthContext';
 import confetti from 'canvas-confetti';
 import { playSound, preloadSounds, toggleMute, getMuteState } from '../utils/audioManager';
-import { SpeakerHigh as Volume2, SpeakerSimpleX as VolumeX, Lightning as Zap, Eye, ArrowLeft, Square } from "@phosphor-icons/react";
+import { SpeakerHigh as Volume2, SpeakerSimpleX as VolumeX, Lightning as Zap, Eye, ArrowLeft, Square, QrCode, Copy, Check, ArrowsOut, X } from "@phosphor-icons/react";
+import { QRCodeSVG } from 'qrcode.react';
 import { getQuizSessionByCode, getQuizSessionHostDetails, resetQuizSession } from '../services/spheraApi';
 import { QuizQuestionsDrawer } from '../components/quiz-live/QuizQuestionsDrawer';
 import { ConfirmationModal } from '../components/app/ConfirmationModal';
@@ -33,6 +34,23 @@ export default function QuizLiveHost() {
   const [isFetchingSession, setIsFetchingSession] = useState(!!codeParam);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isStopConfirmOpen, setIsStopConfirmOpen] = useState(false);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  const joinUrl = typeof window !== 'undefined' && session?.roomCode
+    ? `${window.location.protocol}//${window.location.host}/live/join?code=${session.roomCode}`
+    : '';
+
+  const handleCopyLink = async () => {
+    if (!joinUrl) return;
+    try {
+      await navigator.clipboard.writeText(joinUrl);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy link:", err);
+    }
+  };
 
   useEffect(() => {
     const code = searchParams.get('code');
@@ -295,29 +313,134 @@ export default function QuizLiveHost() {
         )}
 
         {phase === 'waiting' && (
-          <div className="w-full max-w-3xl mx-auto text-center flex flex-col items-center">
-            <h2 className="text-2xl font-bold text-white mb-2 uppercase tracking-widest">{t('host.joinCodeTitle')}</h2>
-            <div className="font-mono text-7xl sm:text-9xl font-bold tracking-[0.2em] text-sphera-green mb-8 select-all bg-sphera-surface-2 py-8 px-16 rounded-3xl border-2 border-sphera-green/50 shadow-[0_0_50px_rgba(34,197,94,0.3)]">
-              {session?.roomCode}
-            </div>
-
+          <div className="w-full max-w-4xl mx-auto text-center flex flex-col items-center">
             {session?.title && (
-              <h1 className="text-2xl sm:text-3xl font-display font-bold text-white mb-3">
+              <h1 className="text-2xl sm:text-3xl font-display font-bold text-white mb-6">
                 {session.title}
               </h1>
             )}
 
-            <button
-              type="button"
-              onClick={() => setIsDrawerOpen(true)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 mb-8 rounded-full bg-sphera-surface-2 border border-sphera-border hover:border-sphera-green/50 text-sphera-text-muted hover:text-white transition-all text-sm font-semibold shadow-lg group"
-            >
-              <Eye className="w-4 h-4 text-sphera-green group-hover:scale-110 transition-transform" />
-              <span>{t('host.quizQuestionsBtn', { count: session?.questions?.length || 0 })}</span>
-              <span className="text-xs text-sphera-green bg-sphera-green/10 border border-sphera-green/30 px-2.5 py-0.5 rounded-full ml-1 font-mono">
-                {t('host.viewEditBadge')}
-              </span>
-            </button>
+            {/* Carte Principale : Code de Salle & QR Code */}
+            <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch mb-8">
+              {/* Colonne Gauche : Code géant et actions directes */}
+              <div className="lg:col-span-7 bg-sphera-surface-2/90 backdrop-blur-md border border-sphera-border rounded-3xl p-6 sm:p-8 flex flex-col justify-between items-center text-center shadow-xl">
+                <div className="w-full">
+                  <h2 className="text-xs sm:text-sm font-bold text-sphera-text-muted mb-2 uppercase tracking-widest">
+                    {t('host.joinCodeTitle')}
+                  </h2>
+                  <div className="font-mono text-5xl sm:text-7xl md:text-8xl font-bold tracking-[0.2em] text-sphera-green my-2 select-all bg-sphera-bg py-4 px-4 sm:px-8 rounded-2xl border-2 border-sphera-green/50 shadow-[0_0_35px_rgba(34,197,94,0.25)]">
+                    {session?.roomCode}
+                  </div>
+                </div>
+
+                <div className="w-full mt-4 flex flex-wrap items-center justify-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={handleCopyLink}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sphera-bg border border-sphera-border hover:border-sphera-green/50 text-sphera-text-muted hover:text-white transition-all text-xs sm:text-sm font-medium"
+                    title={t('host.copyJoinLink')}
+                  >
+                    {copiedLink ? (
+                      <>
+                        <Check className="w-4 h-4 text-sphera-green" />
+                        <span className="text-sphera-green font-semibold">{t('host.linkCopied')}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4 text-sphera-text-muted" />
+                        <span>{t('host.copyJoinLink')}</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsDrawerOpen(true)}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sphera-bg border border-sphera-border hover:border-sphera-green/50 text-sphera-text-muted hover:text-white transition-all text-xs sm:text-sm font-medium"
+                  >
+                    <Eye className="w-4 h-4 text-sphera-green" />
+                    <span>{t('host.quizQuestionsBtn', { count: session?.questions?.length || 0 })}</span>
+                    <span className="text-[10px] text-sphera-green bg-sphera-green/10 border border-sphera-green/30 px-2 py-0.5 rounded-full ml-0.5 font-mono">
+                      {t('host.viewEditBadge')}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Colonne Droite : QR Code interactif (Scannable en direct) */}
+              <div className="lg:col-span-5 bg-sphera-surface-2/90 backdrop-blur-md border border-sphera-border rounded-3xl p-6 sm:p-7 flex flex-col items-center justify-center text-center shadow-xl relative group">
+                <div 
+                  onClick={() => setIsQrModalOpen(true)}
+                  className="bg-white p-3 rounded-2xl shadow-lg cursor-pointer hover:scale-105 transition-transform border-4 border-sphera-green/30 hover:border-sphera-green"
+                  title={t('host.enlargeQr')}
+                >
+                  <QRCodeSVG 
+                    value={joinUrl} 
+                    size={150} 
+                    level="M"
+                    includeMargin={false}
+                  />
+                </div>
+                <div className="mt-3.5 flex items-center gap-1.5 text-xs text-sphera-text-muted font-medium">
+                  <QrCode className="w-4 h-4 text-sphera-green" />
+                  <span>{t('host.qrCodeScanSubtitle')}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsQrModalOpen(true)}
+                  className="mt-2 text-xs text-sphera-green hover:underline inline-flex items-center gap-1 font-semibold"
+                >
+                  <ArrowsOut className="w-3.5 h-3.5" />
+                  <span>{t('host.enlargeQr')}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Agrandissement QR Code pour Amphi / Vidéoprojecteur */}
+            {isQrModalOpen && (
+              <div 
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-fadeIn"
+                onClick={() => setIsQrModalOpen(false)}
+              >
+                <div 
+                  className="bg-sphera-surface-2 border-2 border-sphera-green/60 rounded-3xl p-6 sm:p-8 max-w-md w-full flex flex-col items-center text-center shadow-[0_0_80px_rgba(34,197,94,0.35)] relative"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    onClick={() => setIsQrModalOpen(false)}
+                    className="absolute top-4 right-4 p-2 rounded-full bg-sphera-bg border border-sphera-border text-sphera-text-muted hover:text-white hover:border-sphera-green transition-colors"
+                    title={t('host.closeQr')}
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+
+                  <h3 className="text-xl sm:text-2xl font-bold text-white mb-1.5">
+                    {t('host.qrCodeScan')}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-sphera-text-muted mb-6">
+                    {t('host.qrCodeScanSubtitle')}
+                  </p>
+
+                  <div className="bg-white p-4 sm:p-5 rounded-3xl shadow-2xl border-4 border-sphera-green">
+                    <QRCodeSVG 
+                      value={joinUrl} 
+                      size={240} 
+                      level="H"
+                      includeMargin={false}
+                    />
+                  </div>
+
+                  <div className="mt-5 flex flex-col items-center gap-1">
+                    <span className="text-xs uppercase tracking-widest text-sphera-text-muted font-bold">
+                      {t('host.joinCodeTitle')}
+                    </span>
+                    <span className="font-mono text-3xl sm:text-4xl font-bold text-sphera-green tracking-widest">
+                      {session?.roomCode}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
             
             <div className="w-full bg-sphera-surface-2/80 backdrop-blur-md border border-sphera-border rounded-2xl p-6 mb-8">
               <h3 className="text-xl font-bold text-white mb-6 uppercase tracking-wider text-sphera-text-muted">

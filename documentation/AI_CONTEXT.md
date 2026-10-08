@@ -137,3 +137,30 @@ Comme pointé dans l'audit initial, certaines pages de `apps/campus` dépassent 
 ### 4. Extension de la Couverture de Tests
 - [ ] Ajouter des tests de composants pour `@cs/ui` (tester les états `Button`, `Dialog`, `Tabs`).
 - [ ] Ajouter des tests d'intégration Playwright / Cypress pour le flux critique : Connexion CampusSphere ➔ Redirection vers Sphera ➔ Validation de session.
+
+---
+
+## 📶 7. Sphera Live : Mode Hors-Ligne / Réseau Local (LAN / Hotspot)
+
+### 1. Architecture Réseau Local & Zéro Dépendance Internet
+- **Résolution IP Dynamique (`spheraApi.ts`)** :
+  - `getApiBase()` résout désormais automatiquement `window.location.hostname` (ex: `192.168.1.45`, `192.168.137.1`).
+  - L'URL de l'API et des WebSockets (`getQuizSocketUrl`) cible directement l'adresse IP locale du PC de l'hôte, permettant à tous les smartphones connectés au même Wi-Fi ou Hotspot mobile d'interagir avec le backend sans passer par Internet.
+- **Support Réseau Privé CORS (`apps/backend/src/app.ts`)** :
+  - La politique CORS autorise automatiquement les requêtes originaires des adresses IP locales et privées (`192.168.x.x`, `10.x.x.x`, `172.16-31.x.x`, `127.0.0.1`, `localhost`) sur les ports de développement/quiz.
+- **Écoute Réseau Vite (`apps/sphera/vite.config.ts`)** :
+  - Configuration `server: { host: true, port: 5174 }` pour exposer le frontend à tous les périphériques du réseau local.
+
+### 2. Interface Hôte & QR Code de Salon (`QuizLiveHost.tsx`)
+- **Affichage Dual Code & QR Code** :
+  - La salle d'attente affiche le code PIN géant sur fond vert néon et, en miroir, un **QR Code interactif haute définition** (`qrcode.react`) encodant l'URL locale complète `http://<IP_HÔTE>:5174/live/join?code=XXXXXX`.
+- **Bouton Copier le Lien Direct** :
+  - Permet à l'hôte de copier en un clic le lien exact avec feedback visuel temporisé.
+- **Modal Agrandissement QR Code Plein Écran** :
+  - Un clic sur le QR Code ou sur « Agrandir le QR Code » ouvre une vue modale grand format adaptée à la projection sur vidéoprojecteur d'amphithéâtre pour un scan instantané depuis le fond de la salle.
+
+### 3. Lanceur Automatique Windows (`start-sphera-offline.bat`)
+- Détection automatique de l'IP locale via PowerShell (`Get-NetIPAddress`).
+- Démarrage automatique des services (Backend sur `:3000` et Frontend sur `:5174`).
+- Ouverture automatique du navigateur hôte sur `http://localhost:5174/live/host`.
+

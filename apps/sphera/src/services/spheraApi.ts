@@ -7,7 +7,7 @@ export * from "@cs/types";
 
 const getApiBase = () => {
   if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
-  const { hostname } = window.location;
+  const { hostname, protocol } = window.location;
   if (
     hostname === "www.campussphere.app" ||
     hostname === "campussphere.app" ||
@@ -19,7 +19,10 @@ const getApiBase = () => {
   if (hostname.includes("onrender.com") && !hostname.includes("-backend")) {
     return "https://campus-sphere-backend-dyfu.onrender.com";
   }
-  return "http://127.0.0.1:3000";
+  // Mode Réseau Local / Hotspot / Hors-ligne / Développeur :
+  // Si un smartphone ou un PC accède via l'IP locale (ex: 192.168.x.x ou 10.x.x.x), cibler cette même IP pour le backend
+  const scheme = protocol === "https:" ? "https:" : "http:";
+  return `${scheme}//${hostname || "127.0.0.1"}:3000`;
 };
 export const API_BASE = getApiBase();
 
