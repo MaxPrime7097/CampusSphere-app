@@ -190,7 +190,7 @@ const completeProfileSchema = z.object({
   date_of_birth: z.string().nullable().optional(),
   university: z.string().max(100).optional(),
   faculty: z.string().max(100).optional(),
-  study_year: z.string().max(20).optional(),
+  study_year: z.string().max(100).optional(),
   student_id: z.string().max(50).optional(),
   campus: z.string().max(100).optional(),
   town: z.string().max(100).optional(),
