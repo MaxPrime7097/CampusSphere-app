@@ -124,6 +124,7 @@ const RESOURCE_TYPE_LABELS: Record<CanonicalResourceType, string> = Object.fromE
 const RESOURCE_TYPE_LEGACY_ALIASES: Record<string, CanonicalResourceType> = {
   note: "course_notes",
   notes: "course_notes",
+  cours: "course_notes",
   "note de cours": "course_notes",
   "notes de cours": "course_notes",
   resume: "course_notes",

@@ -1,6 +1,24 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Lightning as Zap, Download, FileText, BookOpen, FileCode, GraduationCap, Sparkle as Sparkles, Archive, ArrowRight, DotsThreeVertical as MoreVertical, Share, BookmarkSimple, SealCheck as BadgeCheck, X } from "@phosphor-icons/react";
+import {
+  Lightning as Zap,
+  Download,
+  FileText,
+  BookOpen,
+  GraduationCap,
+  Sparkle as Sparkles,
+  Archive,
+  ArrowRight,
+  DotsThreeVertical as MoreVertical,
+  Share,
+  BookmarkSimple,
+  SealCheck as BadgeCheck,
+  X,
+  FolderSimple as FolderGit2,
+  BookBookmark,
+  Notepad,
+  Question as QuestionMark,
+} from "@phosphor-icons/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,34 +37,34 @@ import { getStoredResourceRating, getStoredResourceImpactScore, setStoredResourc
 import { getAccessToken } from "@/services/api/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { normalizeResourceType } from "@/constants/resourceTypes";
 import type { Resource } from "@/types";
 
 // ─── Type configuration ─────────────────────────────────────────────────────
 const TYPE_CONFIG: Record<string, { label: string; iconColor: string; bg: string }> = {
-  notes: { label: "Notes de cours", iconColor: "text-blue-500", bg: "bg-blue-500/10" },
-  resumes: { label: "Resume", iconColor: "text-sky-500", bg: "bg-sky-500/10" },
-  exercises: { label: "Exercices", iconColor: "text-red-500", bg: "bg-red-500/10" },
-  exam_papers: { label: "Epreuve", iconColor: "text-emerald-500", bg: "bg-emerald-500/10" },
-  annales: { label: "Annale", iconColor: "text-purple-500", bg: "bg-purple-500/10" },
-  projects: { label: "Projet", iconColor: "text-pink-500", bg: "bg-pink-500/10" },
-  presentations: { label: "Slides", iconColor: "text-indigo-500", bg: "bg-indigo-500/10" },
-  other: { label: "Document", iconColor: "text-muted-foreground", bg: "bg-muted/40" },
+  course_notes: { label: "Note de cours", iconColor: "text-blue-500", bg: "bg-blue-500/10" },
+  td_tp:        { label: "TD / TP",       iconColor: "text-orange-500", bg: "bg-orange-500/10" },
+  exams:        { label: "Annale",        iconColor: "text-emerald-500", bg: "bg-emerald-500/10" },
+  project:      { label: "Projet",        iconColor: "text-violet-500", bg: "bg-violet-500/10" },
+  book:         { label: "Livre",         iconColor: "text-amber-500", bg: "bg-amber-500/10" },
+  other:        { label: "Autre",         iconColor: "text-muted-foreground", bg: "bg-muted/40" },
 };
 
 function getTypeConfig(type?: string) {
   if (!type) return TYPE_CONFIG.other;
-  return TYPE_CONFIG[type.toLowerCase()] ?? TYPE_CONFIG.other;
+  const canonical = normalizeResourceType(type);
+  return TYPE_CONFIG[canonical] ?? TYPE_CONFIG.other;
 }
 
 function getFileIcon(type?: string, className = "h-6 w-6") {
-  switch ((type || "").toLowerCase()) {
-    case "notes": return <BookOpen className={className} />;
-    case "resumes": return <FileText className={className} />;
-    case "exercises": return <FileCode className={className} />;
-    case "exam_papers": return <GraduationCap className={className} />;
-    case "annales": return <Sparkles className={className} />;
-    case "projects": return <Archive className={className} />;
-    default: return <FileText className={className} />;
+  const canonical = normalizeResourceType(type);
+  switch (canonical) {
+    case "course_notes": return <BookOpen className={className} />;
+    case "td_tp":        return <Notepad className={className} />;
+    case "exams":        return <GraduationCap className={className} />;
+    case "project":      return <FolderGit2 className={className} />;
+    case "book":         return <BookBookmark className={className} />;
+    default:             return <QuestionMark className={className} />;
   }
 }
 

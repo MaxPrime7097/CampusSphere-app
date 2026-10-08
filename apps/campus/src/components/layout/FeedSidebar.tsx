@@ -1,6 +1,19 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CaretRight as ChevronRight, UsersThree as Users, SealCheck as BadgeCheck, FileText, BookOpen, FileCode, GraduationCap, Sparkle as Sparkles, Archive } from "@phosphor-icons/react";
+import {
+  CaretRight as ChevronRight,
+  UsersThree as Users,
+  SealCheck as BadgeCheck,
+  FileText,
+  BookOpen,
+  GraduationCap,
+  Sparkle as Sparkles,
+  Archive,
+  FolderSimple as FolderGit2,
+  BookBookmark,
+  Notepad,
+  Question as QuestionMark,
+} from "@phosphor-icons/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,11 +27,11 @@ import {
 import { getEvents } from "@/services/eventService";
 import { useToast } from "@/hooks/use-toast";
 import { formatRelativeTime } from "@/lib/date";
-import { getSphereCategoryLabel } from "@/constants/sphereCategories";
+import { normalizeSphereType, SPHERE_TYPE_LABELS } from "@/config/sphereFeatures";
+import { normalizeResourceType } from "@/constants/resourceTypes";
 import {
   getResourceTypeLabel,
   getSubjectLabel,
-  normalizeResourceType,
   normalizeSubject,
 } from "@/lib/resourceMetadata";
 import { cn, formatSlugToLabel, getSphereUrl, getEventUrl, getResourceUrl, encodeHashId } from "@/lib/utils";
@@ -26,38 +39,44 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const RESOURCE_TYPE_STYLES: Record<string, { icon: string; bg: string }> = {
-  notes: { icon: "text-blue-500", bg: "bg-blue-500/10 border-blue-500/20" },
-  resumes: { icon: "text-sky-500", bg: "bg-sky-500/10 border-sky-500/20" },
-  exercises: { icon: "text-red-500", bg: "bg-red-500/10 border-red-500/20" },
-  exam_papers: { icon: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
-  annales: { icon: "text-purple-500", bg: "bg-purple-500/10 border-purple-500/20" },
-  projects: { icon: "text-pink-500", bg: "bg-pink-500/10 border-pink-500/20" },
-  presentations: { icon: "text-indigo-500", bg: "bg-indigo-500/10 border-indigo-500/20" },
-  other: { icon: "text-muted-foreground", bg: "bg-muted/30 border-border/40" },
+  course_notes: { icon: "text-blue-500", bg: "bg-blue-500/10 border-blue-500/20" },
+  td_tp:        { icon: "text-orange-500", bg: "bg-orange-500/10 border-orange-500/20" },
+  exams:        { icon: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
+  project:      { icon: "text-violet-500", bg: "bg-violet-500/10 border-violet-500/20" },
+  book:         { icon: "text-amber-500", bg: "bg-amber-500/10 border-amber-500/20" },
+  other:        { icon: "text-muted-foreground", bg: "bg-muted/30 border-border/40" },
+};
+
+const RESOURCE_TYPE_LABEL: Record<string, string> = {
+  course_notes: "Note de cours",
+  td_tp:        "TD / TP",
+  exams:        "Annale",
+  project:      "Projet",
+  book:         "Livre",
+  other:        "Autre",
 };
 
 function getResourceStyle(type?: string) {
   if (!type) return RESOURCE_TYPE_STYLES.other;
-  return RESOURCE_TYPE_STYLES[type.toLowerCase()] || RESOURCE_TYPE_STYLES.other;
+  const canonical = normalizeResourceType(type);
+  return RESOURCE_TYPE_STYLES[canonical] || RESOURCE_TYPE_STYLES.other;
 }
 
 function getResourceIcon(type?: string, className = "h-4 w-4") {
-  const key = (type || "").toLowerCase();
-  switch (key) {
-    case "notes":
+  const canonical = normalizeResourceType(type);
+  switch (canonical) {
+    case "course_notes":
       return <BookOpen className={className} />;
-    case "resumes":
-      return <FileText className={className} />;
-    case "exercises":
-      return <FileCode className={className} />;
-    case "exam_papers":
+    case "td_tp":
+      return <Notepad className={className} />;
+    case "exams":
       return <GraduationCap className={className} />;
-    case "annales":
-      return <Sparkles className={className} />;
-    case "projects":
-      return <Archive className={className} />;
+    case "project":
+      return <FolderGit2 className={className} />;
+    case "book":
+      return <BookBookmark className={className} />;
     default:
-      return <FileText className={className} />;
+      return <QuestionMark className={className} />;
   }
 }
 
@@ -268,41 +287,43 @@ export function FeedSidebar() {
           ) : popularSpheres.length === 0 ? (
             <p className="text-xs text-muted-foreground py-3 text-center">Aucune sphère à afficher.</p>
           ) : (
-            popularSpheres.map((sphere) => (
-            <button
-              key={sphere.id}
-              type="button"
-              onClick={() => openSphere(sphere)}
-              className="w-full flex items-center justify-between gap-3 px-2.5 py-2 rounded-xl hover:bg-muted/40 transition-colors text-left group cursor-pointer"
-            >
-              <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                <Avatar className="h-8 w-8 rounded-lg shrink-0 border border-border/40">
-                  <AvatarImage src={sphere.avatar || undefined} className="object-cover" />
-                  <AvatarFallback className="rounded-lg bg-muted text-muted-foreground font-semibold text-xs">
-                    {sphere.name?.[0]?.toUpperCase() || "S"}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <div className="text-xs font-semibold text-foreground truncate group-hover:underline">
-                    {sphere.name}
+            popularSpheres.map((sphere) => {
+              const sphereType = normalizeSphereType(sphere.sphere_type || sphere.sphereType || sphere.type || sphere.category);
+              const sphereTypeLabel = SPHERE_TYPE_LABELS[sphereType] || "Communauté";
+              return (
+                <button
+                  key={sphere.id}
+                  type="button"
+                  onClick={() => openSphere(sphere)}
+                  className="w-full flex items-center justify-between gap-3 px-2.5 py-2 rounded-xl hover:bg-muted/40 transition-colors text-left group cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <Avatar className="h-8 w-8 rounded-lg shrink-0 border border-border/40">
+                      <AvatarImage src={sphere.avatar || undefined} className="object-cover" />
+                      <AvatarFallback className="rounded-lg bg-muted text-muted-foreground font-semibold text-xs">
+                        {sphere.name?.[0]?.toUpperCase() || "S"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-semibold text-foreground truncate group-hover:underline">
+                        {sphere.name}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground truncate mt-0.5">
+                        {sphereTypeLabel}
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-[11px] text-muted-foreground truncate mt-0.5">
-                    {sphere.category
-                      ? (getSphereCategoryLabel(String(sphere.category).trim().toLowerCase()) || "Sphère")
-                      : "Sphère collaborative"}
-                  </div>
-                </div>
-              </div>
 
-              <div className="flex items-center gap-1.5 flex-shrink-0 text-muted-foreground">
-                <span className="text-[11px] font-medium flex items-center gap-1">
-                  <Users className="h-3 w-3" />
-                  {sphere.memberCount || 0}
-                </span>
-                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
-              </div>
-            </button>
-          ))
+                  <div className="flex items-center gap-1.5 flex-shrink-0 text-muted-foreground">
+                    <span className="text-[11px] font-medium flex items-center gap-1">
+                      <Users className="h-3 w-3" />
+                      {sphere.memberCount || 0}
+                    </span>
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
+                  </div>
+                </button>
+              );
+            })
           )}
         </div>
       </div>
@@ -458,33 +479,35 @@ export function FeedSidebar() {
             <p className="text-xs text-muted-foreground py-3 text-center">Aucune ressource récente.</p>
           ) : (
             recentResources.map((resource) => {
-            const style = getResourceStyle(resource.type);
-            return (
-              <button
-                key={resource.id}
-                type="button"
-                onClick={() => openResource(resource)}
-                className="w-full flex items-center justify-between gap-3 px-2.5 py-2 rounded-xl hover:bg-muted/40 transition-colors text-left group cursor-pointer"
-              >
-                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center shrink-0 border", style.bg, style.icon)}>
-                    {getResourceIcon(resource.type, "h-4 w-4")}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-xs font-semibold text-foreground truncate group-hover:underline">
-                      {resource.title}
+              const canonicalType = normalizeResourceType(resource.type);
+              const style = getResourceStyle(canonicalType);
+              const typeLabel = RESOURCE_TYPE_LABEL[canonicalType] || "Autre";
+              return (
+                <button
+                  key={resource.id}
+                  type="button"
+                  onClick={() => openResource(resource)}
+                  className="w-full flex items-center justify-between gap-3 px-2.5 py-2 rounded-xl hover:bg-muted/40 transition-colors text-left group cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center shrink-0 border", style.bg, style.icon)}>
+                      {getResourceIcon(canonicalType, "h-4 w-4")}
                     </div>
-                    <div className="text-[11px] text-muted-foreground truncate mt-0.5">
-                      <span>{getSubjectLabel(resource.subject)}</span>
-                      <span className="mx-1">·</span>
-                      <span>{formatRelativeTime(resource.createdAt)}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-semibold text-foreground truncate group-hover:underline">
+                        {resource.title}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground truncate mt-0.5">
+                        <span className="font-medium">{typeLabel}</span>
+                        <span className="mx-1">·</span>
+                        <span>{formatRelativeTime(resource.createdAt)}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" />
-              </button>
-            );
-          })
+                  <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" />
+                </button>
+              );
+            })
           )}
         </div>
       </div>
