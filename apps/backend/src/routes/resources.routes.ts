@@ -45,25 +45,31 @@ const VISIBILITIES = ["public", "university", "friends"] as const;
  */
 function normaliseResourceType(raw: string | undefined): ResourceType {
   const v = (raw ?? "other").toLowerCase().trim();
-  // New frontend canonical keys
-  if (v === "course_notes" || v === "notes" || v === "resumes" || v === "cours" || v === "resume" || v === "summary") return "NOTES";
-  if (v === "td_tp" || v === "exercises" || v === "exercices" || v === "td" || v === "tp") return "EXERCISES";
-  if (v === "exams" || v === "exam_papers" || v === "annales" || v === "annale" || v === "exam") return "EXAM_PAPERS";
-  if (v === "project" || v === "projects" || v === "presentations" || v === "slides" || v === "projet") return "PROJECTS";
-  if (v === "book" || v === "books" || v === "livre") return "RESUMES";
+  if (v === "course_notes" || v === "notes" || v === "resumes" || v === "cours" || v === "resume" || v === "summary") return "COURSE_NOTES";
+  if (v === "td_tp" || v === "exercises" || v === "exercices" || v === "td" || v === "tp") return "TD_TP";
+  if (v === "exams" || v === "exam_papers" || v === "annales" || v === "annale" || v === "exam") return "EXAMS";
+  if (v === "project" || v === "projects" || v === "presentations" || v === "slides" || v === "projet") return "PROJECT";
+  if (v === "book" || v === "books" || v === "livre") return "BOOK";
   if (v === "other") return "OTHER";
-  // Legacy DB values that map 1-to-1
-  const legacyMap: Record<string, ResourceType> = {
-    cours:         "COURS",
-    notes:         "NOTES",
-    resumes:       "RESUMES",
-    exercises:     "EXERCISES",
-    projects:      "PROJECTS",
-    presentations: "PRESENTATIONS",
-    exam_papers:   "EXAM_PAPERS",
-    other:         "OTHER",
+
+  const map: Record<string, ResourceType> = {
+    course_notes: "COURSE_NOTES",
+    cours: "COURSE_NOTES",
+    notes: "COURSE_NOTES",
+    resumes: "COURSE_NOTES",
+    td_tp: "TD_TP",
+    exercises: "TD_TP",
+    exam_papers: "EXAMS",
+    exams: "EXAMS",
+    annales: "EXAMS",
+    project: "PROJECT",
+    projects: "PROJECT",
+    presentations: "PROJECT",
+    book: "BOOK",
+    books: "BOOK",
+    other: "OTHER",
   };
-  return legacyMap[v] ?? "OTHER";
+  return map[v] ?? "OTHER";
 }
 
 /** Django accepted `private` as a synonym for `friends`; preserved on write. */

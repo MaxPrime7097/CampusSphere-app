@@ -111,13 +111,11 @@ enum ResourceVisibility {
 }
 
 enum ResourceType {
-  COURS
-  NOTES
-  RESUMES
-  EXERCISES
-  PROJECTS
-  PRESENTATIONS
-  EXAM_PAPERS
+  COURSE_NOTES
+  TD_TP
+  EXAMS
+  PROJECT
+  BOOK
   OTHER
 }
 
