@@ -81,6 +81,13 @@ export function Register() {
   const { refreshUser } = useAuth();
 
   useEffect(() => {
+    const campusParam = searchParams.get('campus') || searchParams.get('ref');
+    if (campusParam) {
+      try {
+        localStorage.setItem('campus_ref', campusParam.toLowerCase().trim());
+      } catch {}
+    }
+
     const verified = searchParams.get('verified');
     if (verified === 'true') {
       (async () => {

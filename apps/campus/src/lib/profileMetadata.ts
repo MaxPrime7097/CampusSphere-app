@@ -87,7 +87,54 @@ const STUDY_YEAR_ALIASES: Record<string, string> = {
 };
 
 const UNIVERSITY_LABELS: Record<string, string> = {
-  iuc: "Institut Universitaire de la Côte",
+  iuc: "Institut Universitaire de la Côte (IUC)",
+  iug: "Institut Universitaire du Golfe de Guinée (IUG)",
+  saint_jerome: "Institut Catholique Saint Jérôme de Douala",
+  ucac: "Université Catholique d'Afrique Centrale (UCAC)",
+  siantou: "Institut Universitaire Siantou (IUS)",
+  ict_university: "ICT University",
+  isj: "Institut Saint Jean (ISJ)",
+  isma: "Institut Supérieur de Management (ISMA)",
+  jfn: "JFN University / JFN Center",
+  istag: "Institut Supérieur de Technologie Appliquée et de Gestion (ISTAG)",
+  pigier: "Pigier Cameroun",
+  other: "Autre établissement privé",
+};
+
+const UNIVERSITY_ALIASES: Record<string, string> = {
+  "institut universitaire de la côte": "iuc",
+  "institut universitaire de la cote": "iuc",
+  "iuc": "iuc",
+  "institut universitaire du golfe de guinée": "iug",
+  "institut universitaire du golfe de guinee": "iug",
+  "iug": "iug",
+  "institut catholique saint jérôme de douala": "saint_jerome",
+  "institut catholique saint jerome de douala": "saint_jerome",
+  "saint jérôme": "saint_jerome",
+  "saint jerome": "saint_jerome",
+  "saint_jerome": "saint_jerome",
+  "université catholique d'afrique centrale": "ucac",
+  "universite catholique d'afrique centrale": "ucac",
+  "ucac": "ucac",
+  "institut universitaire siantou": "siantou",
+  "siantou": "siantou",
+  "ict university": "ict_university",
+  "ict": "ict_university",
+  "ict_university": "ict_university",
+  "institut saint jean": "isj",
+  "isj": "isj",
+  "institut supérieur de management": "isma",
+  "institut superieur de management": "isma",
+  "isma": "isma",
+  "jfn university": "jfn",
+  "jfn center": "jfn",
+  "jfn": "jfn",
+  "institut supérieur de technologie appliquée et de gestion": "istag",
+  "istag": "istag",
+  "pigier": "pigier",
+  "pigier cameroun": "pigier",
+  "autre": "other",
+  "other": "other",
 };
 
 function normalize(value: unknown): string {
@@ -119,7 +166,9 @@ export function getStudyYearLabel(value: unknown): string {
 }
 
 export function normalizeUniversity(value: unknown): string {
-  return normalize(value);
+  const normalized = normalize(value);
+  if (!normalized) return "";
+  return UNIVERSITY_ALIASES[normalized] || normalized;
 }
 
 export function getUniversityLabel(value: unknown): string {
@@ -127,3 +176,4 @@ export function getUniversityLabel(value: unknown): string {
   if (!normalized) return NOT_SPECIFIED;
   return UNIVERSITY_LABELS[normalized] || String(value).trim();
 }
+
