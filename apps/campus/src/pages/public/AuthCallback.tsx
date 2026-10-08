@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { exchangeSupabaseToken } from "@/services/api";
+import { getAccessToken } from "@/services/api/client";
 import { Spinner as Loader2 } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -113,6 +114,20 @@ export function AuthCallback() {
       } catch (err: any) {
         if (!isMounted) return;
         console.error('AuthCallback error:', err);
+
+        // Si des tokens ont déjà été enregistrés (ex: via un échange concurrent réussi),
+        // on tente de restaurer l'utilisateur pour ne pas le bloquer sur la page de login
+        const existingToken = getAccessToken();
+        if (existingToken) {
+          try {
+            await refreshUser();
+            navigate("/onboarding", { replace: true });
+            return;
+          } catch {
+            // continuer vers le flux d'erreur standard
+          }
+        }
+
         toast({
           title: "Erreur de connexion",
           description: err?.message || "Impossible de finaliser la connexion",

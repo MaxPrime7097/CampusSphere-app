@@ -63,14 +63,31 @@ export async function supabaseExchange(req: Request, res: Response): Promise<voi
   if (!user && claims.email) {
     const byEmail = await prisma.user.findFirst({
       where: { email: { equals: claims.email, mode: "insensitive" } },
-      select: { id: true },
+      select: { id: true, supabaseUid: true },
     });
     if (byEmail) {
-      user = await prisma.user.update({
-        where: { id: byEmail.id },
-        data: { supabaseUid: claims.sub },
-        select: userSelect,
-      });
+      if (byEmail.supabaseUid !== claims.sub) {
+        try {
+          user = await prisma.user.update({
+            where: { id: byEmail.id },
+            data: { supabaseUid: claims.sub },
+            select: userSelect,
+          });
+        } catch {
+          // If the update collided due to a race condition, fetch the resolved record
+          user = await prisma.user.findFirst({
+            where: {
+              OR: [
+                { supabaseUid: claims.sub },
+                { id: byEmail.id },
+              ],
+            },
+            select: userSelect,
+          });
+        }
+      } else {
+        user = await prisma.user.findFirst({ where: { id: byEmail.id }, select: userSelect });
+      }
     }
   }
 
@@ -85,19 +102,57 @@ export async function supabaseExchange(req: Request, res: Response): Promise<voi
         : null;
     const dateOfBirth = parseDateOfBirth(rawDob);
 
-    user = await prisma.user.create({
-      data: {
-        supabaseUid: claims.sub,
-        email: claims.email || `${claims.sub}@supabase.local`,
-        username: await reserveUsername(usernameSeed(claims.userMetadata, claims.email, claims.sub)),
-        firstName,
-        lastName,
-        dateOfBirth,
-        // No local password: this account authenticates through Supabase only.
-        passwordHash: null,
-      },
-      select: userSelect,
-    });
+    try {
+      user = await prisma.user.create({
+        data: {
+          supabaseUid: claims.sub,
+          email: claims.email || `${claims.sub}@supabase.local`,
+          username: await reserveUsername(usernameSeed(claims.userMetadata, claims.email, claims.sub)),
+          firstName,
+          lastName,
+          dateOfBirth,
+          // No local password: this account authenticates through Supabase only.
+          passwordHash: null,
+        },
+        select: userSelect,
+      });
+    } catch (createErr) {
+      if (createErr instanceof Prisma.PrismaClientKnownRequestError && createErr.code === "P2002") {
+        // Concurrency collision on supabaseUid, email, or username: recover by finding existing user
+        user = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { supabaseUid: claims.sub },
+              ...(claims.email ? [{ email: { equals: claims.email, mode: "insensitive" as const } }] : []),
+            ],
+          },
+          select: userSelect,
+        });
+
+        if (!user) {
+          // The collision was purely on the chosen username; retry with a guaranteed unique username
+          const safeUniqueUsername = `${usernameSeed(claims.userMetadata, claims.email, claims.sub).slice(0, 30)}_${Date.now().toString(36)}`;
+          user = await prisma.user.create({
+            data: {
+              supabaseUid: claims.sub,
+              email: claims.email || `${claims.sub}@supabase.local`,
+              username: safeUniqueUsername,
+              firstName,
+              lastName,
+              dateOfBirth,
+              passwordHash: null,
+            },
+            select: userSelect,
+          });
+        }
+      } else {
+        throw createErr;
+      }
+    }
+  }
+
+  if (!user) {
+    throw badRequest("Impossible de finaliser l'authentification.");
   }
 
   // [CHANGE] Derived, never stored. Django recomputed it from an empty required-field

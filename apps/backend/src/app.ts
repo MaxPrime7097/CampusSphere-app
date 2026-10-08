@@ -29,7 +29,12 @@ export function createApp(): Express {
       origin(origin, callback) {
         // Same-origin and non-browser callers send no Origin header.
         if (!origin) return callback(null, true);
-        callback(null, env.corsAllowedOrigins.includes(origin));
+        if (env.corsAllowedOrigins.includes(origin)) return callback(null, true);
+        // Mode Réseau Local / Hotspot : autoriser localhost et les adresses IP privées (192.168.x, 10.x, etc.)
+        if (/^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(?:1[6-9]|2\d|3[01])\.\d+\.\d+)(?::\d+)?$/.test(origin)) {
+          return callback(null, true);
+        }
+        callback(null, false);
       },
       credentials: true,
       exposedHeaders: ["Content-Disposition", "ETag"],
