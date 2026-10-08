@@ -1,6 +1,6 @@
 import { Suspense, lazy, useState, useRef } from "react";
 import { Helmet } from "react-helmet-async";
-import { CaretRight as ChevronRight, Check, Spinner as Loader2, Plus, X, Camera, Info, ArrowSquareOut as ExternalLink, Briefcase, Heart, Lightning as Zap } from "@phosphor-icons/react";
+import { CaretRight as ChevronRight, Check, Spinner as Loader2, Plus, X, Camera, Info, ArrowSquareOut as ExternalLink, Briefcase, Heart, Lightning as Zap, GraduationCap, Globe, Translate as Languages, User as UserIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input, REGISTRATION_MAX_LENGTHS } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -96,6 +96,14 @@ const COMMON_INTERESTS = [
   "Musique", "Cinéma", "Jeux Vidéo", "Bénévolat", "Mode", "Cuisine",
 ];
 
+const PRESET_SOCIAL_PLATFORMS = [
+  { name: "GitHub", placeholder: "https://github.com/votre-nom" },
+  { name: "LinkedIn", placeholder: "https://linkedin.com/in/votre-profil" },
+  { name: "Portfolio", placeholder: "https://mon-portfolio.com" },
+  { name: "X (Twitter)", placeholder: "https://x.com/votre-pseudo" },
+  { name: "Instagram", placeholder: "https://instagram.com/votre-compte" },
+];
+
 export function Onboarding() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -108,7 +116,13 @@ export function Onboarding() {
 
   const [isAddEducationOpen, setIsAddEducationOpen] = useState(false);
   const [isAddExperienceOpen, setIsAddExperienceOpen] = useState(false);
-  const [showExperiencesSection, setShowExperiencesSection] = useState(false);
+
+  // Progressive disclosure pour l'étape 2 (masqué par défaut pour une page compacte)
+  const [showInterestsInput, setShowInterestsInput] = useState(false);
+  const [showSkillsInput, setShowSkillsInput] = useState(false);
+  const [showLanguagesInput, setShowLanguagesInput] = useState(false);
+  const [showLinksInput, setShowLinksInput] = useState(false);
+
   const cardInputRef = useRef<HTMLInputElement>(null);
   const [cardImage, setCardImage] = useState<File | null>(null);
   const [cardPreview, setCardPreview] = useState<string | null>(null);
@@ -446,154 +460,221 @@ export function Onboarding() {
             </div>
           )}
 
-          {/* ── ÉTAPE 2 : Profil étudiant & Intérêts (aéré et sans cadre lourd) ── */}
+          {/* ── ÉTAPE 2 : Profil étudiant & Intérêts (progressive disclosure épuré & harmonieux) ── */}
           {step === 2 && (
-            <div className="space-y-8 animate-in fade-in duration-500 pb-8 py-2">
-              {/* 1. CENTRES D'INTÉRÊT (priorité immédiate) */}
+            <div className="space-y-6 animate-in fade-in duration-500 pb-8 py-2">
+              {/* 1. CENTRES D'INTÉRÊT */}
               <div>
-                <div className="flex items-center gap-2 border-b border-border/40 pb-2 mb-4">
-                  <Heart className="h-4 w-4 text-primary" />
-                  <h3 className="font-semibold text-foreground text-base">Vos centres d'intérêt</h3>
-                </div>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Ajoutez un intérêt (ex: IA, Entrepreneuriat, Musique...) puis Entrée"
-                    value={newInterestInput}
-                    onChange={(e) => setNewInterestInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        if (newInterestInput.trim() && !formData.interests.includes(newInterestInput.trim())) {
-                          setFormData((p) => ({ ...p, interests: [...p.interests, newInterestInput.trim()] }));
-                          setNewInterestInput("");
-                        }
-                      }
-                    }}
-                    className="flex-1"
-                  />
+                <div className="flex items-center justify-between border-b border-border/40 pb-2 mb-3">
+                  <div className="flex items-center gap-2">
+                    <Heart className="h-4 w-4 text-primary" />
+                    <h3 className="font-semibold text-foreground text-sm sm:text-base">Vos centres d'intérêt</h3>
+                    {formData.interests.length > 0 && (
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-normal">
+                        {formData.interests.length}
+                      </Badge>
+                    )}
+                  </div>
                   <Button
-                    variant="outline"
-                    size="icon"
-                    className="shrink-0"
-                    onClick={() => {
-                      if (newInterestInput.trim() && !formData.interests.includes(newInterestInput.trim())) {
-                        setFormData((p) => ({ ...p, interests: [...p.interests, newInterestInput.trim()] }));
-                        setNewInterestInput("");
-                      }
-                    }}
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 rounded-full px-2.5 text-primary hover:bg-primary/10 text-xs font-normal"
+                    onClick={() => setShowInterestsInput((prev) => !prev)}
                   >
-                    <Plus className="h-4 w-4" />
+                    {showInterestsInput ? (
+                      <>
+                        <X className="h-3 w-3 mr-1" /> Masquer
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="h-3 w-3 mr-1" /> Ajouter
+                      </>
+                    )}
                   </Button>
                 </div>
 
-                {/* Suggestions en pilules */}
-                {COMMON_INTERESTS.filter((i) => !formData.interests.includes(i)).length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-3">
-                    <span className="text-xs text-muted-foreground w-full mb-1">Suggestions rapides :</span>
-                    {COMMON_INTERESTS.filter((i) => !formData.interests.includes(i))
-                      .slice(0, 10)
-                      .map((item) => (
-                        <Badge
-                          key={item}
-                          variant="outline"
-                          className="cursor-pointer hover:bg-primary/10 hover:text-primary transition-colors text-xs font-normal"
-                          onClick={() => setFormData((p) => ({ ...p, interests: [...p.interests, item] }))}
-                        >
-                          <Plus className="h-3 w-3 mr-1 opacity-50" /> {item}
-                        </Badge>
-                      ))}
+                {/* Champ et suggestions (masqués par défaut) */}
+                {showInterestsInput && (
+                  <div className="space-y-3 mb-3 p-3 bg-muted/15 rounded-xl border border-border/40 animate-in fade-in duration-200">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Ajoutez un intérêt (ex: IA, Entrepreneuriat, Musique...) puis Entrée"
+                        value={newInterestInput}
+                        onChange={(e) => setNewInterestInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            if (newInterestInput.trim() && !formData.interests.includes(newInterestInput.trim())) {
+                              setFormData((p) => ({ ...p, interests: [...p.interests, newInterestInput.trim()] }));
+                              setNewInterestInput("");
+                            }
+                          }
+                        }}
+                        className="flex-1 bg-background"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="shrink-0"
+                        onClick={() => {
+                          if (newInterestInput.trim() && !formData.interests.includes(newInterestInput.trim())) {
+                            setFormData((p) => ({ ...p, interests: [...p.interests, newInterestInput.trim()] }));
+                            setNewInterestInput("");
+                          }
+                        }}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    {COMMON_INTERESTS.filter((i) => !formData.interests.includes(i)).length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        <span className="text-xs text-muted-foreground w-full mb-0.5">Suggestions rapides :</span>
+                        {COMMON_INTERESTS.filter((i) => !formData.interests.includes(i))
+                          .slice(0, 10)
+                          .map((item) => (
+                            <Badge
+                              key={item}
+                              variant="outline"
+                              className="cursor-pointer hover:bg-primary/10 hover:text-primary transition-colors text-xs font-normal"
+                              onClick={() => setFormData((p) => ({ ...p, interests: [...p.interests, item] }))}
+                            >
+                              <Plus className="h-3 w-3 mr-1 opacity-50" /> {item}
+                            </Badge>
+                          ))}
+                      </div>
+                    )}
                   </div>
                 )}
 
-                {/* Pilules sélectionnées */}
-                <div className="flex flex-wrap gap-1.5 mt-3">
-                  {formData.interests.map((s) => (
-                    <Badge
-                      key={s}
-                      variant="secondary"
-                      className="cursor-pointer hover:bg-destructive/20 hover:text-destructive transition-colors px-2.5 py-1 text-xs"
-                      onClick={() => setFormData((p) => ({ ...p, interests: p.interests.filter((x) => x !== s) }))}
-                    >
-                      {s} <X className="h-3 w-3 ml-1.5" />
-                    </Badge>
-                  ))}
-                </div>
+                {/* Éléments sélectionnés */}
+                {formData.interests.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {formData.interests.map((s) => (
+                      <Badge
+                        key={s}
+                        variant="secondary"
+                        className="cursor-pointer hover:bg-destructive/20 hover:text-destructive transition-colors px-2.5 py-1 text-xs"
+                        onClick={() => setFormData((p) => ({ ...p, interests: p.interests.filter((x) => x !== s) }))}
+                      >
+                        {s} <X className="h-3 w-3 ml-1.5" />
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* 2. COMPÉTENCES & MATIÈRES */}
               <div>
-                <div className="flex items-center gap-2 border-b border-border/40 pb-2 mb-4">
-                  <Zap className="h-4 w-4 text-primary" />
-                  <h3 className="font-semibold text-foreground text-base">Compétences & Matières préférées</h3>
-                </div>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Saisissez une compétence (ex: React, UI Design, Mathématiques...) puis Entrée"
-                    value={newSkillInput}
-                    onChange={(e) => setNewSkillInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        if (newSkillInput.trim() && !formData.skills.includes(newSkillInput.trim())) {
-                          setFormData((p) => ({ ...p, skills: [...p.skills, newSkillInput.trim()] }));
-                          setNewSkillInput("");
-                        }
-                      }
-                    }}
-                    className="flex-1"
-                  />
+                <div className="flex items-center justify-between border-b border-border/40 pb-2 mb-3">
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-primary" />
+                    <h3 className="font-semibold text-foreground text-sm sm:text-base">Compétences & Matières</h3>
+                    {formData.skills.length > 0 && (
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-normal">
+                        {formData.skills.length}
+                      </Badge>
+                    )}
+                  </div>
                   <Button
-                    variant="outline"
-                    size="icon"
-                    className="shrink-0"
-                    onClick={() => {
-                      if (newSkillInput.trim() && !formData.skills.includes(newSkillInput.trim())) {
-                        setFormData((p) => ({ ...p, skills: [...p.skills, newSkillInput.trim()] }));
-                        setNewSkillInput("");
-                      }
-                    }}
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 rounded-full px-2.5 text-primary hover:bg-primary/10 text-xs font-normal"
+                    onClick={() => setShowSkillsInput((prev) => !prev)}
                   >
-                    <Plus className="h-4 w-4" />
+                    {showSkillsInput ? (
+                      <>
+                        <X className="h-3 w-3 mr-1" /> Masquer
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="h-3 w-3 mr-1" /> Ajouter
+                      </>
+                    )}
                   </Button>
                 </div>
 
-                {/* Suggestions en pilules */}
-                {COMMON_SKILLS.filter((s) => !formData.skills.includes(s)).length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-3">
-                    <span className="text-xs text-muted-foreground w-full mb-1">Suggestions rapides :</span>
-                    {COMMON_SKILLS.filter((s) => !formData.skills.includes(s))
-                      .slice(0, 10)
-                      .map((s) => (
-                        <Badge
-                          key={s}
-                          variant="outline"
-                          className="cursor-pointer hover:bg-primary/10 hover:text-primary transition-colors text-xs font-normal"
-                          onClick={() => setFormData((p) => ({ ...p, skills: [...p.skills, s] }))}
-                        >
-                          <Plus className="h-3 w-3 mr-1 opacity-50" /> {s}
-                        </Badge>
-                      ))}
+                {/* Champ et suggestions (masqués par défaut) */}
+                {showSkillsInput && (
+                  <div className="space-y-3 mb-3 p-3 bg-muted/15 rounded-xl border border-border/40 animate-in fade-in duration-200">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Saisissez une compétence (ex: React, UI Design, Mathématiques...) puis Entrée"
+                        value={newSkillInput}
+                        onChange={(e) => setNewSkillInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            if (newSkillInput.trim() && !formData.skills.includes(newSkillInput.trim())) {
+                              setFormData((p) => ({ ...p, skills: [...p.skills, newSkillInput.trim()] }));
+                              setNewSkillInput("");
+                            }
+                          }
+                        }}
+                        className="flex-1 bg-background"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="shrink-0"
+                        onClick={() => {
+                          if (newSkillInput.trim() && !formData.skills.includes(newSkillInput.trim())) {
+                            setFormData((p) => ({ ...p, skills: [...p.skills, newSkillInput.trim()] }));
+                            setNewSkillInput("");
+                          }
+                        }}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    {COMMON_SKILLS.filter((s) => !formData.skills.includes(s)).length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        <span className="text-xs text-muted-foreground w-full mb-0.5">Suggestions rapides :</span>
+                        {COMMON_SKILLS.filter((s) => !formData.skills.includes(s))
+                          .slice(0, 10)
+                          .map((s) => (
+                            <Badge
+                              key={s}
+                              variant="outline"
+                              className="cursor-pointer hover:bg-primary/10 hover:text-primary transition-colors text-xs font-normal"
+                              onClick={() => setFormData((p) => ({ ...p, skills: [...p.skills, s] }))}
+                            >
+                              <Plus className="h-3 w-3 mr-1 opacity-50" /> {s}
+                            </Badge>
+                          ))}
+                      </div>
+                    )}
                   </div>
                 )}
 
-                {/* Pilules sélectionnées */}
-                <div className="flex flex-wrap gap-1.5 mt-3">
-                  {formData.skills.map((s) => (
-                    <Badge
-                      key={s}
-                      variant="secondary"
-                      className="cursor-pointer hover:bg-destructive/20 hover:text-destructive transition-colors px-2.5 py-1 text-xs"
-                      onClick={() => setFormData((p) => ({ ...p, skills: p.skills.filter((x) => x !== s) }))}
-                    >
-                      {s} <X className="h-3 w-3 ml-1.5" />
-                    </Badge>
-                  ))}
-                </div>
+                {/* Éléments sélectionnés */}
+                {formData.skills.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {formData.skills.map((s) => (
+                      <Badge
+                        key={s}
+                        variant="secondary"
+                        className="cursor-pointer hover:bg-destructive/20 hover:text-destructive transition-colors px-2.5 py-1 text-xs"
+                        onClick={() => setFormData((p) => ({ ...p, skills: p.skills.filter((x) => x !== s) }))}
+                      >
+                        {s} <X className="h-3 w-3 ml-1.5" />
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* 3. BIO COURTE */}
               <div>
-                <h3 className="font-semibold text-foreground text-base border-b border-border/40 pb-2 mb-4">À propos de vous</h3>
+                <div className="flex items-center gap-2 border-b border-border/40 pb-2 mb-3">
+                  <UserIcon className="h-4 w-4 text-primary" />
+                  <h3 className="font-semibold text-foreground text-sm sm:text-base">À propos de vous</h3>
+                </div>
                 <Textarea
                   value={formData.bio}
                   onChange={(e) => handleInputChange("bio", e.target.value)}
@@ -607,273 +688,375 @@ export function Onboarding() {
 
               {/* 4. LANGUES */}
               <div>
-                <h3 className="font-semibold text-foreground text-base border-b border-border/40 pb-2 mb-4">Langues</h3>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Saisissez une langue (ex: Français, Anglais...) puis Entrée"
-                    value={newLanguageInput}
-                    onChange={(e) => setNewLanguageInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        if (newLanguageInput.trim() && !formData.languages.includes(newLanguageInput.trim())) {
-                          setFormData((p) => ({ ...p, languages: [...p.languages, newLanguageInput.trim()] }));
-                          setNewLanguageInput("");
-                        }
-                      }
-                    }}
-                    className="flex-1"
-                  />
+                <div className="flex items-center justify-between border-b border-border/40 pb-2 mb-3">
+                  <div className="flex items-center gap-2">
+                    <Languages className="h-4 w-4 text-primary" />
+                    <h3 className="font-semibold text-foreground text-sm sm:text-base">Langues</h3>
+                    {formData.languages.length > 0 && (
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-normal">
+                        {formData.languages.length}
+                      </Badge>
+                    )}
+                  </div>
                   <Button
-                    variant="outline"
-                    size="icon"
-                    className="shrink-0"
-                    onClick={() => {
-                      if (newLanguageInput.trim() && !formData.languages.includes(newLanguageInput.trim())) {
-                        setFormData((p) => ({ ...p, languages: [...p.languages, newLanguageInput.trim()] }));
-                        setNewLanguageInput("");
-                      }
-                    }}
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 rounded-full px-2.5 text-primary hover:bg-primary/10 text-xs font-normal"
+                    onClick={() => setShowLanguagesInput((prev) => !prev)}
                   >
-                    <Plus className="h-4 w-4" />
+                    {showLanguagesInput ? (
+                      <>
+                        <X className="h-3 w-3 mr-1" /> Masquer
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="h-3 w-3 mr-1" /> Ajouter
+                      </>
+                    )}
                   </Button>
                 </div>
-                {/* Suggestions en pilules */}
-                {COMMON_LANGUAGES.filter((l) => !formData.languages.includes(l)).length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-3">
-                    {COMMON_LANGUAGES.filter((l) => !formData.languages.includes(l))
-                      .slice(0, 6)
-                      .map((l) => (
-                        <Badge
-                          key={l}
-                          variant="outline"
-                          className="cursor-pointer hover:bg-primary/10 hover:text-primary transition-colors text-xs font-normal"
-                          onClick={() => setFormData((p) => ({ ...p, languages: [...p.languages, l] }))}
-                        >
-                          <Plus className="h-3 w-3 mr-1 opacity-50" /> {l}
-                        </Badge>
-                      ))}
+
+                {/* Champ et suggestions (masqués par défaut) */}
+                {showLanguagesInput && (
+                  <div className="space-y-3 mb-3 p-3 bg-muted/15 rounded-xl border border-border/40 animate-in fade-in duration-200">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Saisissez une langue (ex: Français, Anglais...) puis Entrée"
+                        value={newLanguageInput}
+                        onChange={(e) => setNewLanguageInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            if (newLanguageInput.trim() && !formData.languages.includes(newLanguageInput.trim())) {
+                              setFormData((p) => ({ ...p, languages: [...p.languages, newLanguageInput.trim()] }));
+                              setNewLanguageInput("");
+                            }
+                          }
+                        }}
+                        className="flex-1 bg-background"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="shrink-0"
+                        onClick={() => {
+                          if (newLanguageInput.trim() && !formData.languages.includes(newLanguageInput.trim())) {
+                            setFormData((p) => ({ ...p, languages: [...p.languages, newLanguageInput.trim()] }));
+                            setNewLanguageInput("");
+                          }
+                        }}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    {COMMON_LANGUAGES.filter((l) => !formData.languages.includes(l)).length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        <span className="text-xs text-muted-foreground w-full mb-0.5">Suggestions rapides :</span>
+                        {COMMON_LANGUAGES.filter((l) => !formData.languages.includes(l))
+                          .slice(0, 8)
+                          .map((l) => (
+                            <Badge
+                              key={l}
+                              variant="outline"
+                              className="cursor-pointer hover:bg-primary/10 hover:text-primary transition-colors text-xs font-normal"
+                              onClick={() => setFormData((p) => ({ ...p, languages: [...p.languages, l] }))}
+                            >
+                              <Plus className="h-3 w-3 mr-1 opacity-50" /> {l}
+                            </Badge>
+                          ))}
+                      </div>
+                    )}
                   </div>
                 )}
-                {/* Pilules sélectionnées */}
-                <div className="flex flex-wrap gap-1.5 mt-3">
-                  {formData.languages.map((l) => (
-                    <Badge
-                      key={l}
-                      variant="secondary"
-                      className="cursor-pointer hover:bg-destructive/20 hover:text-destructive transition-colors px-2.5 py-1 text-xs"
-                      onClick={() => setFormData((p) => ({ ...p, languages: p.languages.filter((x) => x !== l) }))}
-                    >
-                      {l} <X className="h-3 w-3 ml-1.5" />
-                    </Badge>
-                  ))}
-                </div>
+
+                {/* Éléments sélectionnés */}
+                {formData.languages.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {formData.languages.map((l) => (
+                      <Badge
+                        key={l}
+                        variant="secondary"
+                        className="cursor-pointer hover:bg-destructive/20 hover:text-destructive transition-colors px-2.5 py-1 text-xs"
+                        onClick={() => setFormData((p) => ({ ...p, languages: p.languages.filter((x) => x !== l) }))}
+                      >
+                        {l} <X className="h-3 w-3 ml-1.5" />
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* 5. PORTFOLIO / LIENS */}
               <div>
-                <h3 className="font-semibold text-foreground text-base border-b border-border/40 pb-2 mb-4">Liens & Réseaux</h3>
-                <div className="flex gap-2 min-w-0 w-full">
-                  <Input
-                    maxLength={REGISTRATION_MAX_LENGTHS?.portfolioName || 50}
-                    placeholder="Titre (ex: GitHub, LinkedIn)"
-                    value={newLink.name}
-                    onChange={(e) => setNewLink((p) => ({ ...p, name: e.target.value }))}
-                    className="w-1/3 min-w-0"
-                  />
-                  <Input
-                    maxLength={REGISTRATION_MAX_LENGTHS?.portfolioUrl || 200}
-                    placeholder="https://..."
-                    value={newLink.url}
-                    onChange={(e) => setNewLink((p) => ({ ...p, url: e.target.value }))}
-                    className="flex-1 min-w-0"
-                  />
+                <div className="flex items-center justify-between border-b border-border/40 pb-2 mb-3">
+                  <div className="flex items-center gap-2">
+                    <Globe className="h-4 w-4 text-primary" />
+                    <h3 className="font-semibold text-foreground text-sm sm:text-base">Liens & Réseaux</h3>
+                    {formData.portfolioLinks.length > 0 && (
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-normal">
+                        {formData.portfolioLinks.length}
+                      </Badge>
+                    )}
+                  </div>
                   <Button
                     type="button"
-                    variant="outline"
-                    size="icon"
-                    className="shrink-0"
-                    onClick={() => {
-                      if (newLink.name.trim() && newLink.url.trim()) {
-                        setFormData((p) => ({
-                          ...p,
-                          portfolioLinks: [...p.portfolioLinks, { name: newLink.name.trim(), url: newLink.url.trim() }],
-                        }));
-                        setNewLink({ name: "", url: "" });
-                      }
-                    }}
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 rounded-full px-2.5 text-primary hover:bg-primary/10 text-xs font-normal"
+                    onClick={() => setShowLinksInput((prev) => !prev)}
                   >
-                    <Plus className="h-4 w-4" />
+                    {showLinksInput ? (
+                      <>
+                        <X className="h-3 w-3 mr-1" /> Masquer
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="h-3 w-3 mr-1" /> Ajouter
+                      </>
+                    )}
                   </Button>
                 </div>
-                <div className="space-y-2 mt-3 overflow-y-auto">
-                  {formData.portfolioLinks.map((l, i) => (
-                    <div key={i} className="flex items-center justify-between gap-2 p-2 border border-border/40 rounded-lg bg-muted/15 group">
-                      <div className="min-w-0 flex items-center gap-2">
-                        <ExternalLink className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-xs font-medium text-foreground truncate">
-                            {l.name}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground truncate" title={l.url}>
-                            {l.url}
-                          </span>
-                        </div>
-                      </div>
+
+                {/* Champ et suggestions (masqués par défaut) */}
+                {showLinksInput && (
+                  <div className="space-y-3 mb-3 p-3 bg-muted/15 rounded-xl border border-border/40 animate-in fade-in duration-200">
+                    <div className="flex flex-wrap gap-1.5">
+                      <span className="text-xs text-muted-foreground w-full mb-0.5">Plateformes suggérées :</span>
+                      {PRESET_SOCIAL_PLATFORMS.map((platform) => {
+                        const isAlreadyAdded = formData.portfolioLinks.some(
+                          (l) => l.name.toLowerCase() === platform.name.toLowerCase()
+                        );
+                        return (
+                          <Badge
+                            key={platform.name}
+                            variant={newLink.name.toLowerCase() === platform.name.toLowerCase() ? "default" : "outline"}
+                            className={cn(
+                              "cursor-pointer transition-colors text-xs font-normal",
+                              isAlreadyAdded && "opacity-50 line-through cursor-not-allowed hover:bg-transparent"
+                            )}
+                            onClick={() => {
+                              if (isAlreadyAdded) return;
+                              setNewLink({
+                                name: platform.name,
+                                url: platform.placeholder,
+                              });
+                            }}
+                          >
+                            <Plus className="h-3 w-3 mr-1 opacity-50" /> {platform.name}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+
+                    <div className="flex gap-2 min-w-0 w-full">
+                      <Input
+                        maxLength={REGISTRATION_MAX_LENGTHS?.portfolioName || 50}
+                        placeholder="Titre (ex: GitHub)"
+                        value={newLink.name}
+                        onChange={(e) => setNewLink((p) => ({ ...p, name: e.target.value }))}
+                        className="w-1/3 min-w-0 bg-background"
+                      />
+                      <Input
+                        maxLength={REGISTRATION_MAX_LENGTHS?.portfolioUrl || 200}
+                        placeholder="https://..."
+                        value={newLink.url}
+                        onChange={(e) => setNewLink((p) => ({ ...p, url: e.target.value }))}
+                        className="flex-1 min-w-0 bg-background"
+                      />
                       <Button
-                        variant="ghost"
-                        size="sm"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
-                        onClick={() =>
-                          setFormData((p) => ({
-                            ...p,
-                            portfolioLinks: p.portfolioLinks.filter((_, j) => j !== i),
-                          }))
-                        }
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="shrink-0"
+                        onClick={() => {
+                          if (newLink.name.trim() && newLink.url.trim()) {
+                            setFormData((p) => ({
+                              ...p,
+                              portfolioLinks: [...p.portfolioLinks, { name: newLink.name.trim(), url: newLink.url.trim() }],
+                            }));
+                            setNewLink({ name: "", url: "" });
+                          }
+                        }}
                       >
-                        <X className="h-3 w-3" />
+                        <Plus className="h-4 w-4" />
                       </Button>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
+
+                {/* Liens ajoutés */}
+                {formData.portfolioLinks.length > 0 && (
+                  <div className="space-y-2 overflow-y-auto">
+                    {formData.portfolioLinks.map((l, i) => (
+                      <div key={i} className="flex items-center justify-between gap-2 p-2 border border-border/40 rounded-lg bg-muted/15 group">
+                        <div className="min-w-0 flex items-center gap-2">
+                          <ExternalLink className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-xs font-medium text-foreground truncate">
+                              {l.name}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground truncate" title={l.url}>
+                              {l.url}
+                            </span>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                          onClick={() =>
+                            setFormData((p) => ({
+                              ...p,
+                              portfolioLinks: p.portfolioLinks.filter((_, j) => j !== i),
+                            }))
+                          }
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {/* 6. EXPÉRIENCES & PARCOURS (Section repliable discrète) */}
-              <div className="border border-dashed border-border/50 rounded-xl p-4 bg-muted/10">
-                <button
-                  type="button"
-                  onClick={() => setShowExperiencesSection((prev) => !prev)}
-                  className="flex items-center justify-between w-full text-left font-normal text-xs text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <span className="flex items-center gap-2">
-                    <Briefcase className="h-3.5 w-3.5 text-primary" />
-                    Expériences & Formations antérieures (optionnel)
-                  </span>
-                  <span className="text-xs text-primary">
-                    {showExperiencesSection ? "Masquer" : "Afficher / Ajouter"}
-                  </span>
-                </button>
+              {/* 6. EXPÉRIENCES PROFESSIONNELLES */}
+              <div>
+                <div className="flex items-center justify-between border-b border-border/40 pb-2 mb-3">
+                  <div className="flex items-center gap-2">
+                    <Briefcase className="h-4 w-4 text-primary" />
+                    <h3 className="font-semibold text-foreground text-sm sm:text-base">Expériences professionnelles</h3>
+                    {formData.experiences.length > 0 && (
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-normal">
+                        {formData.experiences.length}
+                      </Badge>
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 rounded-full px-2.5 text-primary hover:bg-primary/10 text-xs font-normal"
+                    onClick={() => setIsAddExperienceOpen(true)}
+                  >
+                    <Plus className="h-3 w-3 mr-1" /> Ajouter
+                  </Button>
+                </div>
 
-                {showExperiencesSection && (
-                  <div className="mt-4 space-y-5 pt-4 border-t border-border/30 animate-in fade-in">
-                    {/* EXPÉRIENCES */}
-                    <div>
-                      <div className="flex items-center justify-between pb-2 mb-2">
-                        <h4 className="font-medium text-foreground text-xs">Expériences professionnelles</h4>
+                {isAddExperienceOpen && (
+                  <Suspense fallback={<ModalLoadingFallback />}>
+                    <AddExperienceModal
+                      open={isAddExperienceOpen}
+                      onOpenChange={setIsAddExperienceOpen}
+                      existingExperiences={formData.experiences}
+                      onExperienceAdded={(exp) =>
+                        setFormData((p) => ({ ...p, experiences: [...p.experiences, exp] }))
+                      }
+                    />
+                  </Suspense>
+                )}
+
+                {formData.experiences.length > 0 && (
+                  <div className="space-y-2">
+                    {formData.experiences.map((exp, i) => (
+                      <div
+                        key={i}
+                        className="border border-border/40 pl-3 pr-2 py-2 bg-muted/15 rounded-lg flex items-center justify-between gap-2 group"
+                      >
+                        <div className="min-w-0">
+                          <p className="font-medium text-xs text-foreground truncate">{exp.title}</p>
+                          <p className="text-[11px] text-muted-foreground truncate">
+                            {exp.company} • {exp.duration}
+                          </p>
+                        </div>
                         <Button
-                          size="sm"
                           variant="ghost"
-                          className="h-7 rounded-full px-2.5 text-primary hover:bg-primary/10 text-xs font-normal"
-                          onClick={() => setIsAddExperienceOpen(true)}
+                          size="sm"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                          onClick={() =>
+                            setFormData((p) => ({
+                              ...p,
+                              experiences: p.experiences.filter((_, j) => j !== i),
+                            }))
+                          }
                         >
-                          <Plus className="h-3 w-3 mr-1" />
-                          Ajouter
+                          <X className="h-3 w-3" />
                         </Button>
                       </div>
-                      {isAddExperienceOpen && (
-                        <Suspense fallback={<ModalLoadingFallback />}>
-                          <AddExperienceModal
-                            open={isAddExperienceOpen}
-                            onOpenChange={setIsAddExperienceOpen}
-                            existingExperiences={formData.experiences}
-                            onExperienceAdded={(exp) =>
-                              setFormData((p) => ({ ...p, experiences: [...p.experiences, exp] }))
-                            }
-                          />
-                        </Suspense>
-                      )}
-                      {formData.experiences.length === 0 ? (
-                        <p className="text-xs text-muted-foreground italic">Aucune expérience ajoutée</p>
-                      ) : (
-                        formData.experiences.map((exp, i) => (
-                          <div
-                            key={i}
-                            className="border-l-2 border-primary/50 pl-3 py-2 bg-muted/20 rounded-r-md mb-2 flex justify-between gap-2 group"
-                          >
-                            <div className="min-w-0">
-                              <p className="font-semibold text-xs text-foreground truncate">{exp.title}</p>
-                              <p className="text-[11px] text-muted-foreground truncate">
-                                {exp.company} • {exp.duration}
-                              </p>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
-                              onClick={() =>
-                                setFormData((p) => ({
-                                  ...p,
-                                  experiences: p.experiences.filter((_, j) => j !== i),
-                                }))
-                              }
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        ))
-                      )}
-                    </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-                    {/* FORMATIONS */}
-                    <div>
-                      <div className="flex items-center justify-between pb-2 mb-2">
-                        <h4 className="font-medium text-foreground text-xs">Parcours antérieur</h4>
+              {/* 7. FORMATIONS ANTÉRIEURES */}
+              <div>
+                <div className="flex items-center justify-between border-b border-border/40 pb-2 mb-3">
+                  <div className="flex items-center gap-2">
+                    <GraduationCap className="h-4 w-4 text-primary" />
+                    <h3 className="font-semibold text-foreground text-sm sm:text-base">Formations antérieures</h3>
+                    {formData.previousEducation.length > 0 && (
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-normal">
+                        {formData.previousEducation.length}
+                      </Badge>
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 rounded-full px-2.5 text-primary hover:bg-primary/10 text-xs font-normal"
+                    onClick={() => setIsAddEducationOpen(true)}
+                  >
+                    <Plus className="h-3 w-3 mr-1" /> Ajouter
+                  </Button>
+                </div>
+
+                {isAddEducationOpen && (
+                  <Suspense fallback={<ModalLoadingFallback />}>
+                    <AddEducationModal
+                      open={isAddEducationOpen}
+                      onOpenChange={setIsAddEducationOpen}
+                      existingEducations={formData.previousEducation}
+                      onEducationAdded={(edu) =>
+                        setFormData((p) => ({
+                          ...p,
+                          previousEducation: [...p.previousEducation, edu],
+                        }))
+                      }
+                    />
+                  </Suspense>
+                )}
+
+                {formData.previousEducation.length > 0 && (
+                  <div className="space-y-2">
+                    {formData.previousEducation.map((edu, i) => (
+                      <div
+                        key={i}
+                        className="border border-border/40 pl-3 pr-2 py-2 bg-muted/15 rounded-lg flex items-center justify-between gap-2 group"
+                      >
+                        <div className="min-w-0">
+                          <p className="font-medium text-xs text-foreground truncate">{edu.degree}</p>
+                          <p className="text-[11px] text-muted-foreground truncate">
+                            {edu.school} • {edu.year}
+                          </p>
+                        </div>
                         <Button
-                          size="sm"
                           variant="ghost"
-                          className="h-7 rounded-full px-2.5 text-primary hover:bg-primary/10 text-xs font-normal"
-                          onClick={() => setIsAddEducationOpen(true)}
+                          size="sm"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                          onClick={() =>
+                            setFormData((p) => ({
+                              ...p,
+                              previousEducation: p.previousEducation.filter((_, j) => j !== i),
+                            }))
+                          }
                         >
-                          <Plus className="h-3 w-3 mr-1" />
-                          Ajouter
+                          <X className="h-3 w-3" />
                         </Button>
                       </div>
-                      {isAddEducationOpen && (
-                        <Suspense fallback={<ModalLoadingFallback />}>
-                          <AddEducationModal
-                            open={isAddEducationOpen}
-                            onOpenChange={setIsAddEducationOpen}
-                            existingEducations={formData.previousEducation}
-                            onEducationAdded={(edu) =>
-                              setFormData((p) => ({
-                                ...p,
-                                previousEducation: [...p.previousEducation, edu],
-                              }))
-                            }
-                          />
-                        </Suspense>
-                      )}
-                      {formData.previousEducation.length === 0 ? (
-                        <p className="text-xs text-muted-foreground italic">Aucune formation ajoutée</p>
-                      ) : (
-                        formData.previousEducation.map((edu, i) => (
-                          <div
-                            key={i}
-                            className="border-l-2 border-primary/50 pl-3 py-2 bg-muted/20 rounded-r-md mb-2 flex justify-between gap-2 group"
-                          >
-                            <div className="min-w-0">
-                              <p className="font-semibold text-xs text-foreground truncate">{edu.degree}</p>
-                              <p className="text-[11px] text-muted-foreground truncate">
-                                {edu.school} • {edu.year}
-                              </p>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
-                              onClick={() =>
-                                setFormData((p) => ({
-                                  ...p,
-                                  previousEducation: p.previousEducation.filter((_, j) => j !== i),
-                                }))
-                              }
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        ))
-                      )}
-                    </div>
+                    ))}
                   </div>
                 )}
               </div>

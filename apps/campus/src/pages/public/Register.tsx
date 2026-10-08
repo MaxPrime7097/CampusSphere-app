@@ -27,36 +27,8 @@ import { AuthSidePanel } from "@/components/auth/AuthSidePanel";
 import { useAuth } from "@/contexts/AuthContext";
 
 type Step = 1 | "verify";
-const MINIMUM_AGE = 16;
-const AGE_POLICY_URL = "/cs-inc/policies/terms#age-restriction";
 const RESEND_COOLDOWN_SECONDS = 60;
 const SUBMIT_DEBOUNCE_MS = 1000;
-
-const parseISODate = (value: string) => {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
-  const [year, month, day] = value.split("-").map(Number);
-  const parsed = new Date(Date.UTC(year, month - 1, day));
-  const isExactMatch =
-    parsed.getUTCFullYear() === year &&
-    parsed.getUTCMonth() === month - 1 &&
-    parsed.getUTCDate() === day;
-  return isExactMatch ? parsed : null;
-};
-
-const getAgeFromDate = (birthDate: Date, today: Date) => {
-  let age = today.getUTCFullYear() - birthDate.getUTCFullYear();
-  const hasHadBirthdayThisYear =
-    today.getUTCMonth() > birthDate.getUTCMonth() ||
-    (today.getUTCMonth() === birthDate.getUTCMonth() && today.getUTCDate() >= birthDate.getUTCDate());
-  if (!hasHadBirthdayThisYear) age -= 1;
-  return age;
-};
-
-const getBirthDateMax = () => {
-  const now = new Date();
-  const maxDate = new Date(Date.UTC(now.getUTCFullYear() - MINIMUM_AGE, now.getUTCMonth(), now.getUTCDate()));
-  return maxDate.toISOString().split("T")[0];
-};
 
 export function Register() {
   const navigate = useNavigate();
@@ -79,7 +51,7 @@ export function Register() {
 
   const [formData, setFormData] = useState({
     firstName: "", lastName: "", username: "", email: "",
-    phoneNumber: "", dateOfBirth: "", password: "", confirmPassword: "",
+    password: "", confirmPassword: "",
   });
 
   const getPasswordStrength = (password: string) => {
@@ -154,33 +126,11 @@ export function Register() {
     return () => window.clearTimeout(timeoutId);
   }, [resendCooldownRemaining]);
 
-  const minimumAgeMessage = `Vous devez avoir au moins ${MINIMUM_AGE} ans`;
   const step1Schema = z.object({
     firstName: z.string().trim().min(2, "Au moins 2 caractères"),
     lastName: z.string().trim().min(2, "Au moins 2 caractères"),
     username: z.string().trim().min(3, "Au moins 3 caractères"),
     email: z.string().email("Email invalide"),
-    phoneNumber: z.string()
-      .regex(/^(?:\d{9})?$/, "Le numéro doit contenir 9 chiffres")
-      .optional()
-      .or(z.literal("")),
-    dateOfBirth: z.string()
-      .min(1, "Requis")
-      .refine((value) => parseISODate(value) !== null, "Date de naissance invalide")
-      .refine((value) => {
-        const birthDate = parseISODate(value);
-        if (!birthDate) return false;
-        const today = new Date();
-        const todayUtc = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
-        return birthDate <= todayUtc;
-      }, "La date de naissance ne peut pas être dans le futur")
-      .refine((value) => {
-        const birthDate = parseISODate(value);
-        if (!birthDate) return false;
-        const today = new Date();
-        const todayUtc = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
-        return getAgeFromDate(birthDate, todayUtc) >= MINIMUM_AGE;
-      }, minimumAgeMessage),
     password: z.string()
       .min(8, "Le mot de passe doit contenir au moins 8 caractères"),
     confirmPassword: z.string(),
@@ -190,7 +140,7 @@ export function Register() {
   });
 
   const handleInputChange = (field: string, value: string) => {
-    const sensitiveFields = new Set(["username", "email", "phoneNumber"]);
+    const sensitiveFields = new Set(["username", "email"]);
     const sanitizedValue = sensitiveFields.has(field) ? value.trim() : value;
     setFormData(prev => ({ ...prev, [field]: sanitizedValue }));
     
@@ -302,7 +252,6 @@ export function Register() {
         first_name: formData.firstName,
         last_name: formData.lastName,
         username: formData.username,
-        date_of_birth: formData.dateOfBirth,
       });
 
       setResendCooldownRemaining(RESEND_COOLDOWN_SECONDS);
@@ -433,33 +382,6 @@ export function Register() {
                   <Input maxLength={REGISTRATION_MAX_LENGTHS.email} type="email" value={formData.email} onChange={e => handleInputChange("email", e.target.value)} className={`w-full min-w-0 ${errors.email ? "border-destructive" : ""}`} />
                   {availability.email.checking && <p className="text-xs text-muted-foreground mt-1">Vérification de l'email…</p>}
                   {errors.email && <p className="text-xs text-destructive mt-1">{errors.email}</p>}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="min-w-0">
-                  <Label>Date de naissance *</Label>
-                  <Input type="date" max={getBirthDateMax()} value={formData.dateOfBirth} onChange={e => handleInputChange("dateOfBirth", e.target.value)} className={`w-full min-w-0 ${errors.dateOfBirth ? "border-destructive" : ""}`} />
-                  {errors.dateOfBirth && <p className="text-xs text-destructive mt-1">{errors.dateOfBirth}</p>}
-                  <p className="text-xs text-muted-foreground mt-1.5">
-                    Pourquoi cette information ?{" "}
-                    <a
-                      href={AGE_POLICY_URL}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline"
-                    >
-                      CampusSphere est réservé aux personnes de {MINIMUM_AGE} ans et plus — en savoir plus
-                    </a>
-                  </p>
-                </div>
-                <div className="min-w-0">
-                  <Label>Téléphone</Label>
-                  <div className="flex min-w-0 w-full">
-                    <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-sm text-muted-foreground">+237</span>
-                    <Input maxLength={REGISTRATION_MAX_LENGTHS.phoneNumber} value={formData.phoneNumber} onChange={e => handleInputChange("phoneNumber", e.target.value)} className={`w-full min-w-0 rounded-l-none ${errors.phoneNumber ? "border-destructive" : ""}`} placeholder="6XXXXXXXX" />
-                  </div>
-                  {errors.phoneNumber && <p className="text-xs text-destructive mt-1">{errors.phoneNumber}</p>}
                 </div>
               </div>
 

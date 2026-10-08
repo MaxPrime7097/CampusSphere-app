@@ -451,10 +451,9 @@ export function Landing() {
                     <div className="absolute inset-0 bg-[#22c55e]/5 rounded-2xl animate-pulse" style={{ animationDuration: '3s' }} />
                     
                     <img 
-                      src="/sphera-logo.png" 
+                      src="/sphera_logo.svg" 
                       alt="Sphera Logo" 
                       className="w-24 h-24 object-contain drop-shadow-[0_0_15px_rgba(34,197,94,0.5)] group-hover:scale-110 transition-transform duration-500 z-10 rounded-2xl"
-                      style={{ filter: 'invert(58%) sepia(80%) saturate(400%) hue-rotate(100deg) brightness(105%)' }}
                     />
                     
                     <h3 className="font-display font-bold text-foreground mt-6 text-xl tracking-tight z-10">Sphera</h3>

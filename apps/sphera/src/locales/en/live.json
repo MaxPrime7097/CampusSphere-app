@@ -175,7 +175,7 @@
     "jsonImportSuccess": "JSON imported successfully ({{count}} questions). You can preview them below.",
     "errorInvalidJson": "JSON file format is invalid. Expected format: list of questions with question, options, correctIndex.",
     "errorNoFileOrId": "Please select a file or enter a document link/ID.",
-    "errorInvalidId": "Invalid document link or ID. Please enter a number (e.g.: 12) or a CampusSphere link.",
+    "errorInvalidId": "Invalid document link or ID. Please enter a number (e.g.: document) or a CampusSphere link.",
     "errorNoQuestionsGenerated": "AI could not generate questions from this document.",
     "errorGeneration": "Error generating quiz with Sphera.",
     "errorTitleRequired": "Please enter a title for the session.",
