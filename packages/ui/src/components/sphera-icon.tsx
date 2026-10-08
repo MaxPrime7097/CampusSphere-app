@@ -33,11 +33,11 @@ export function SpheraIcon({ className, size = "md", variant }: SpheraIconProps)
       aria-hidden="true"
       className={cn(SIZE_MAP[size], "inline-block flex-shrink-0 align-middle", bgClass, className)}
       style={{
-        WebkitMaskImage: 'url(/sphera-logo.png)',
+        WebkitMaskImage: 'url(/sphera_logo.svg)',
         WebkitMaskSize: 'contain',
         WebkitMaskRepeat: 'no-repeat',
         WebkitMaskPosition: 'center',
-        maskImage: 'url(/sphera-logo.png)',
+        maskImage: 'url(/sphera_logo.svg)',
         maskSize: 'contain',
         maskRepeat: 'no-repeat',
         maskPosition: 'center',
