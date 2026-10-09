@@ -85,15 +85,17 @@ export function serializeResource(resource: SerializableResource, ctx: ResourceV
 }
 
 export function serializeFolder(
-  folder: ResourceFolder & { _count?: { resources: number } },
+  folder: ResourceFolder & { _count?: { resources?: number; items?: number } },
   viewerId: number | null,
 ): Record<string, unknown> {
+  const resourceCount = (folder._count?.items ?? 0) + (folder._count?.resources ?? 0);
+
   return {
     id: folder.id,
     name: folder.name,
     description: folder.description,
     visibility: folder.visibility.toLowerCase(),
-    resource_count: folder._count?.resources ?? 0,
+    resource_count: resourceCount,
     can_edit: viewerId !== null && folder.ownerId === viewerId,
     created_at: folder.createdAt.toISOString(),
     updated_at: folder.updatedAt.toISOString(),

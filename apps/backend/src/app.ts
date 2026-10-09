@@ -41,9 +41,9 @@ export function createApp(): Express {
     }),
   );
 
-  // 100MB matches the upload cap for resources and files.
-  app.use(express.json({ limit: "100mb" }));
-  app.use(express.urlencoded({ extended: true, limit: "100mb" }));
+  // 250MB matches the upload cap for resources and files.
+  app.use(express.json({ limit: "250mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "250mb" }));
 
   // Development only. In production USE_S3 is mandatory (the server refuses to boot
   // otherwise), so uploads are served by the object store, not by this process.

@@ -30,8 +30,9 @@ resourcesRouter.use(autoInvalidate("resources"));
 // download and preview "visibility" — all readable anonymously, where anonymous
 // resolves to public-only. Mutating routes gate individually.
 
-const MAX_FOLDERS_PER_USER = 4;
-const MAX_RESOURCES_PER_FOLDER = 20;
+const MAX_FOLDERS_PER_USER = 10;
+const MAX_RESOURCES_PER_FOLDER = 50;
+const MAX_FOLDER_DOWNLOAD_BYTES = 1024 * 1024 * 1024; // 1 Go
 
 const VISIBILITIES = ["public", "university", "friends"] as const;
 
@@ -139,7 +140,7 @@ resourcesRouter.get("/folders/", requireAuth, httpCache({ namespace: "resources"
   const me = currentUser(req);
   const folders = await prisma.resourceFolder.findMany({
     where: { ownerId: me.id },
-    include: { _count: { select: { resources: true } } },
+    include: { _count: { select: { resources: true, items: true } } },
     orderBy: { name: "asc" },
   });
   list(res, folders.map((f) => serializeFolder(f, me.id)));
@@ -166,7 +167,7 @@ resourcesRouter.post("/folders/", requireAuth, async (req, res) => {
       description: input.description,
       visibility: normaliseVisibility(input.visibility),
     },
-    include: { _count: { select: { resources: true } } },
+    include: { _count: { select: { resources: true, items: true } } },
   });
   created(res, serializeFolder(folder, me.id));
 });
@@ -196,22 +197,124 @@ resourcesRouter.get("/folders/:folderId/", requireAuth, async (req, res) => {
   const me = currentUser(req);
   const folder = await prisma.resourceFolder.findUnique({
     where: { id: folderIdOf(req) },
-    include: { _count: { select: { resources: true } } },
+    include: { _count: { select: { resources: true, items: true } } },
   });
   if (!folder) throw notFound("Folder not found.");
   if (!(await canAccessFolder(folder, me.id))) throw notFound("Folder not found.");
 
-  const resources = await prisma.resource.findMany({
-    where: { folderId: folder.id },
-    include: resourceInclude,
-    orderBy: { createdAt: "desc" },
-  });
+  // Fetch both reference items (any visible resource) and legacy folderId resources
+  const [items, legacyResources] = await Promise.all([
+    prisma.resourceFolderItem.findMany({
+      where: { folderId: folder.id },
+      include: { resource: { include: resourceInclude } },
+      orderBy: { addedAt: "desc" },
+    }),
+    prisma.resource.findMany({
+      where: { folderId: folder.id },
+      include: resourceInclude,
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
+
+  const resourcesMap = new Map<number, any>();
+  for (const r of legacyResources) resourcesMap.set(r.id, r);
+  for (const it of items) resourcesMap.set(it.resource.id, it.resource);
+
+  const resources = Array.from(resourcesMap.values());
   const saved = await savedIds(resources.map((r) => r.id), me.id);
+  const totalBytes = resources.reduce((acc, r) => acc + (r.fileSize || 0), 0);
 
   ok(res, {
     ...serializeFolder(folder, me.id),
+    total_size: totalBytes,
+    resource_count: resources.length,
     resources: resources.map((r) => serializeResource(r, { viewerId: me.id, isSaved: saved.has(r.id) })),
   });
+});
+
+/** Add a resource (mine or another user's visible resource) to a folder. */
+resourcesRouter.post("/folders/:folderId/items/", requireAuth, async (req, res) => {
+  const me = currentUser(req);
+  const folder = await prisma.resourceFolder.findFirst({
+    where: { id: folderIdOf(req), ownerId: me.id },
+  });
+  if (!folder) throw notFound("Folder not found or not owned by you.");
+
+  const schema = z.object({
+    resource_id: z.coerce.number().int().positive(),
+  });
+  const { resource_id } = schema.parse(req.body);
+
+  // Must be visible to viewer
+  const resource = await loadVisibleResource(resource_id, me.id);
+
+  const currentCount = await prisma.resourceFolderItem.count({ where: { folderId: folder.id } });
+  if (currentCount >= MAX_RESOURCES_PER_FOLDER) {
+    throw badRequest(`Ce dossier a atteint la limite de ${MAX_RESOURCES_PER_FOLDER} ressources.`);
+  }
+
+  const item = await prisma.resourceFolderItem.upsert({
+    where: {
+      folderId_resourceId: {
+        folderId: folder.id,
+        resourceId: resource.id,
+      },
+    },
+    create: {
+      folderId: folder.id,
+      resourceId: resource.id,
+    },
+    update: {},
+  });
+
+  ok(res, { success: true, item_id: item.id, folder_id: folder.id, resource_id: resource.id }, "Ressource ajoutée au dossier.");
+});
+
+/** Remove a resource reference from a folder without deleting the resource file. */
+resourcesRouter.delete("/folders/:folderId/items/:resourceId/", requireAuth, async (req, res) => {
+  const me = currentUser(req);
+  const folder = await prisma.resourceFolder.findFirst({
+    where: { id: folderIdOf(req), ownerId: me.id },
+  });
+  if (!folder) throw notFound("Folder not found or not owned by you.");
+
+  const resourceId = Number(req.params.resourceId);
+  if (!Number.isInteger(resourceId) || resourceId <= 0) throw notFound("Resource not found.");
+
+  await prisma.resourceFolderItem.deleteMany({
+    where: { folderId: folder.id, resourceId },
+  });
+
+  await prisma.resource.updateMany({
+    where: { id: resourceId, folderId: folder.id },
+    data: { folderId: null },
+  });
+
+  ok(res, { success: true, message: "Ressource retirée du dossier." });
+});
+
+/** Query which of the user's folders contain this resource. */
+resourcesRouter.get("/user/resource-folders/:resourceId/", requireAuth, async (req, res) => {
+  const me = currentUser(req);
+  const resourceId = Number(req.params.resourceId);
+  if (!Number.isInteger(resourceId) || resourceId <= 0) throw notFound("Resource not found.");
+
+  const [items, directResources] = await Promise.all([
+    prisma.resourceFolderItem.findMany({
+      where: { resourceId, folder: { ownerId: me.id } },
+      select: { folderId: true },
+    }),
+    prisma.resource.findMany({
+      where: { id: resourceId, folder: { ownerId: me.id } },
+      select: { folderId: true },
+    }),
+  ]);
+
+  const folderIds = new Set<number>();
+  for (const it of items) folderIds.add(it.folderId);
+  for (const r of directResources) if (r.folderId) folderIds.add(r.folderId);
+
+  ok(res, Array.from(folderIds));
 });
 
 async function updateFolder(req: Request, res: import("express").Response) {
@@ -237,7 +340,7 @@ async function updateFolder(req: Request, res: import("express").Response) {
       ...(input.description !== undefined ? { description: input.description } : {}),
       ...(input.visibility !== undefined ? { visibility: normaliseVisibility(input.visibility) } : {}),
     },
-    include: { _count: { select: { resources: true } } },
+    include: { _count: { select: { resources: true, items: true } } },
   });
   ok(res, serializeFolder(updated, me.id));
 }
@@ -252,26 +355,58 @@ resourcesRouter.delete("/folders/:folderId/", requireAuth, async (req, res) => {
   });
   if (!folder) throw notFound("Folder not found.");
 
-  // Resources survive and lose their folder reference (schema onDelete: SetNull).
+  // Resources survive and lose their folder reference (schema onDelete: SetNull/Cascade on items).
   await prisma.resourceFolder.delete({ where: { id: folder.id } });
   ok(res, null, "Folder deleted.");
 });
 
+/** Download all resources in folder as a streamed ZIP file (up to 1 GB). */
 resourcesRouter.get("/folders/:folderId/download/", requireAuth, async (req, res) => {
   const me = currentUser(req);
   const folder = await prisma.resourceFolder.findUnique({ where: { id: folderIdOf(req) } });
   if (!folder) throw notFound("Folder not found.");
   if (!(await canAccessFolder(folder, me.id))) throw forbidden("You do not have access to this folder.");
 
-  const resources = await prisma.resource.findMany({ where: { folderId: folder.id } });
-  if (resources.length === 0) throw badRequest("This folder is empty.");
+  const [items, legacyResources] = await Promise.all([
+    prisma.resourceFolderItem.findMany({
+      where: { folderId: folder.id },
+      include: { resource: true },
+    }),
+    prisma.resource.findMany({
+      where: { folderId: folder.id },
+    }),
+  ]);
+
+  const resourcesMap = new Map<number, any>();
+  for (const r of legacyResources) resourcesMap.set(r.id, r);
+  for (const it of items) resourcesMap.set(it.resource.id, it.resource);
+
+  const allResources = Array.from(resourcesMap.values());
+  if (allResources.length === 0) throw badRequest("This folder is empty.");
+
+  // Filter to only resources still visible to viewer
+  const visiblePredicate = await visibleToUser(me.id);
+  const visibleRows = await prisma.resource.findMany({
+    where: { id: { in: allResources.map((r) => r.id) }, AND: visiblePredicate },
+    select: { id: true },
+  });
+  const visibleIds = new Set(visibleRows.map((r) => r.id));
+
+  const accessibleResources = allResources.filter((r) => visibleIds.has(r.id));
+  if (accessibleResources.length === 0) throw forbidden("No accessible resources found in this folder.");
+
+  // Cap cumulative size at 1 GB
+  const totalBytes = accessibleResources.reduce((acc, r) => acc + (r.fileSize || 0), 0);
+  if (totalBytes > MAX_FOLDER_DOWNLOAD_BYTES) {
+    throw badRequest(
+      `Le dossier dépasse la limite autorisée de 1 Go pour le téléchargement (${(totalBytes / (1024 * 1024 * 1024)).toFixed(2)} Go).`
+    );
+  }
 
   res.setHeader("Content-Type", "application/zip");
   res.setHeader("Content-Disposition", `attachment; filename="${folder.name.replace(/[^\w.-]+/g, "_")}.zip"`);
 
-  // The archiver package resolves to a namespace of classes here, not the callable
-  // factory its README shows, so the class is instantiated directly.
-  const archive = new ZipArchive({ zlib: { level: 9 } });
+  const archive = new ZipArchive({ zlib: { level: 6 } });
   archive.on("error", (err: Error) => {
     console.error("[resources] zip stream failed", err);
     res.destroy();
@@ -280,7 +415,7 @@ resourcesRouter.get("/folders/:folderId/download/", requireAuth, async (req, res
 
   // Deduplicate filenames so two resources with the same title do not collide.
   const used = new Map<string, number>();
-  for (const resource of resources) {
+  for (const resource of accessibleResources) {
     const key = resource.storageKey ?? keyFromUrl(resource.fileUrl);
     if (!key) continue;
     try {
@@ -293,6 +428,13 @@ resourcesRouter.get("/folders/:folderId/download/", requireAuth, async (req, res
       } else {
         used.set(name, 0);
       }
+
+      // Add appropriate extension if not present in title
+      const ext = resource.fileUrl ? resource.fileUrl.split(".").pop()?.split("?")[0] : "";
+      if (ext && ext.length <= 5 && !name.toLowerCase().endsWith(`.${ext.toLowerCase()}`)) {
+        name = `${name}.${ext}`;
+      }
+
       archive.append(buffer, { name });
     } catch (error) {
       console.warn(`[resources] skipping unreadable object for resource ${resource.id}`, error);
