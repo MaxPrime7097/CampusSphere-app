@@ -646,12 +646,26 @@ model ResourceFolder {
   createdAt   DateTime           @default(now()) @map("created_at")
   updatedAt   DateTime           @updatedAt @map("updated_at")
 
-  owner     User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  owner     User                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   resources Resource[]
+  items     ResourceFolderItem[]
 
   // Max 4 folders per owner and 20 resources per folder are API-layer rules.
   @@unique([ownerId, name])
   @@map("resource_folders")
+}
+
+model ResourceFolderItem {
+  id         Int      @id @default(autoincrement())
+  folderId   Int      @map("folder_id")
+  resourceId Int      @map("resource_id")
+  addedAt    DateTime @default(now()) @map("added_at")
+
+  folder   ResourceFolder @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  resource Resource       @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@unique([folderId, resourceId])
+  @@map("resource_folder_items")
 }
 
 /// A user's personal library item. NOT sphere-scoped — Django's serializer accepted
@@ -687,6 +701,7 @@ model Resource {
 
   author         User                 @relation(fields: [authorId], references: [id], onDelete: Cascade)
   folder         ResourceFolder?      @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  folderItems    ResourceFolderItem[]
   saves          ResourceSave[]
   views          ResourceView[]
   reports        ResourceReport[]
