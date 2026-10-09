@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { completeSupabaseProfile } from "@/services/api";
 import { cn } from "@/lib/utils";
@@ -54,6 +55,7 @@ const validateDateOfBirth = (value: string): string | null => {
 export function Onboarding() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const { refreshUser, user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
@@ -151,6 +153,7 @@ export function Onboarding() {
 
       await completeSupabaseProfile(payload);
       await refreshUser();
+      await queryClient.invalidateQueries({ queryKey: ["campus-status"] });
 
       try {
         localStorage.removeItem("campus_ref");
@@ -176,7 +179,7 @@ export function Onboarding() {
           description: "Partagez avec votre promo pour débloquer votre établissement.",
         });
 
-        navigate("/campus-unlock", { replace: true });
+        navigate(`/campus-unlock?campus=${encodeURIComponent(normUni)}`, { replace: true });
       }
     } catch (err: any) {
       toast({
@@ -323,7 +326,7 @@ export function Onboarding() {
                   </>
                 ) : (
                   <>
-                    Accéder à mon campus
+                    Accéder à mon espace
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </>
                 )}
