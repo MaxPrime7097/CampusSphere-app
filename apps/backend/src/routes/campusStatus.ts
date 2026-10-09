@@ -118,9 +118,9 @@ export function resolveCampusSlug(raw?: string | null): string {
   if (r === "iug" || r.includes("golfe") || r.includes("guinée") || r.includes("guinee")) return "iug";
   if (r === "saint_jerome" || r.includes("jérôme") || r.includes("jerome")) return "saint_jerome";
   if (r === "ucac" || r.includes("ucac") || r.includes("catholique d'afrique")) return "ucac";
-  if (r === "siantou" || r.includes("siantou")) return "siantou";
+  if (r === "siantou" || r.includes("siantou") || r === "ius") return "siantou";
   if (r === "ict_university" || r.includes("ict")) return "ict_university";
-  if (r === "isj" || r.includes("saint jean")) return "isj";
+  if (r === "isj" || r.includes("saint jean") || r.includes("saint-jean")) return "isj";
   if (r === "isma" || r.includes("isma")) return "isma";
   if (r === "jfn" || r.includes("jfn")) return "jfn";
   if (r === "istag" || r.includes("istag")) return "istag";
@@ -138,17 +138,19 @@ export function buildCampusFilter(slug: string): Prisma.UserWhereInput {
           { university: { equals: "iuc", mode: "insensitive" } },
           { university: { contains: "Institut Universitaire de la Côte", mode: "insensitive" } },
           { university: { contains: "IUC", mode: "insensitive" } },
+          { university: { contains: "côte", mode: "insensitive" } },
+          { university: { contains: "cote", mode: "insensitive" } },
         ],
-        isActive: true,
       };
     case "iug":
       return {
         OR: [
           { university: { equals: "iug", mode: "insensitive" } },
           { university: { contains: "Golfe de Guinée", mode: "insensitive" } },
+          { university: { contains: "Golfe de Guinee", mode: "insensitive" } },
           { university: { contains: "IUG", mode: "insensitive" } },
+          { university: { contains: "golfe", mode: "insensitive" } },
         ],
-        isActive: true,
       };
     case "saint_jerome":
       return {
@@ -156,8 +158,9 @@ export function buildCampusFilter(slug: string): Prisma.UserWhereInput {
           { university: { equals: "saint_jerome", mode: "insensitive" } },
           { university: { contains: "Saint Jérôme", mode: "insensitive" } },
           { university: { contains: "Saint Jerome", mode: "insensitive" } },
+          { university: { contains: "jerome", mode: "insensitive" } },
+          { university: { contains: "jérôme", mode: "insensitive" } },
         ],
-        isActive: true,
       };
     case "ucac":
       return {
@@ -165,16 +168,16 @@ export function buildCampusFilter(slug: string): Prisma.UserWhereInput {
           { university: { equals: "ucac", mode: "insensitive" } },
           { university: { contains: "UCAC", mode: "insensitive" } },
           { university: { contains: "Afrique Centrale", mode: "insensitive" } },
+          { university: { contains: "Catholique d'Afrique", mode: "insensitive" } },
         ],
-        isActive: true,
       };
     case "siantou":
       return {
         OR: [
           { university: { equals: "siantou", mode: "insensitive" } },
           { university: { contains: "Siantou", mode: "insensitive" } },
+          { university: { contains: "IUS", mode: "insensitive" } },
         ],
-        isActive: true,
       };
     case "ict_university":
       return {
@@ -182,15 +185,14 @@ export function buildCampusFilter(slug: string): Prisma.UserWhereInput {
           { university: { equals: "ict_university", mode: "insensitive" } },
           { university: { contains: "ICT", mode: "insensitive" } },
         ],
-        isActive: true,
       };
     case "isj":
       return {
         OR: [
           { university: { equals: "isj", mode: "insensitive" } },
           { university: { contains: "Saint Jean", mode: "insensitive" } },
+          { university: { contains: "ISJ", mode: "insensitive" } },
         ],
-        isActive: true,
       };
     case "isma":
       return {
@@ -198,7 +200,6 @@ export function buildCampusFilter(slug: string): Prisma.UserWhereInput {
           { university: { equals: "isma", mode: "insensitive" } },
           { university: { contains: "ISMA", mode: "insensitive" } },
         ],
-        isActive: true,
       };
     case "jfn":
       return {
@@ -206,7 +207,6 @@ export function buildCampusFilter(slug: string): Prisma.UserWhereInput {
           { university: { equals: "jfn", mode: "insensitive" } },
           { university: { contains: "JFN", mode: "insensitive" } },
         ],
-        isActive: true,
       };
     case "istag":
       return {
@@ -214,7 +214,6 @@ export function buildCampusFilter(slug: string): Prisma.UserWhereInput {
           { university: { equals: "istag", mode: "insensitive" } },
           { university: { contains: "ISTAG", mode: "insensitive" } },
         ],
-        isActive: true,
       };
     case "pigier":
       return {
@@ -222,7 +221,6 @@ export function buildCampusFilter(slug: string): Prisma.UserWhereInput {
           { university: { equals: "pigier", mode: "insensitive" } },
           { university: { contains: "Pigier", mode: "insensitive" } },
         ],
-        isActive: true,
       };
     case "other":
       return {
@@ -230,12 +228,13 @@ export function buildCampusFilter(slug: string): Prisma.UserWhereInput {
           { university: { equals: "other", mode: "insensitive" } },
           { university: { contains: "Autre", mode: "insensitive" } },
         ],
-        isActive: true,
       };
     default:
       return {
-        university: { equals: slug, mode: "insensitive" },
-        isActive: true,
+        OR: [
+          { university: { equals: slug, mode: "insensitive" } },
+          { university: { contains: slug, mode: "insensitive" } },
+        ],
       };
   }
 }
