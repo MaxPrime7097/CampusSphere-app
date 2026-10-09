@@ -1138,6 +1138,8 @@ model Event {
   maxAttendees Int?          @map("max_attendees")
   isPublic     Boolean       @default(true) @map("is_public")
   isFeatured   Boolean       @default(false) @map("is_featured")
+  hasTicketing Boolean       @default(false) @map("has_ticketing")
+  registrationUrl String?    @map("registration_url")
 
   createdAt    DateTime      @default(now()) @map("created_at")
   updatedAt    DateTime      @updatedAt @map("updated_at")
