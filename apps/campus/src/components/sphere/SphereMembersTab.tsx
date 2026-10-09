@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +47,7 @@ export function SphereMembersTab({
   onUpdateRole,
   onRemoveMember,
 }: SphereMembersTabProps) {
+  const { t } = useTranslation("spheres");
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
 
@@ -63,27 +65,27 @@ export function SphereMembersTab({
     if (m.isCreator) {
       return (
         <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-500/50 text-amber-600 dark:text-amber-400 bg-amber-500/10 gap-1 font-semibold">
-          <Crown className="h-3 w-3 text-amber-500" /> Créateur
+          <Crown className="h-3 w-3 text-amber-500" /> {t("detail.membership.creator")}
         </Badge>
       );
     }
     if (m.role === "teacher") {
       return (
         <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-indigo-500/50 text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 gap-1 font-semibold">
-          <GraduationCap className="h-3 w-3 text-indigo-500" /> Enseignant
+          <GraduationCap className="h-3 w-3 text-indigo-500" /> {t("detail.membership.teacher")}
         </Badge>
       );
     }
     if (m.role === "admin") {
       return (
         <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-primary/50 text-primary bg-primary/10 gap-1 font-semibold">
-          <ShieldCheck className="h-3 w-3 text-primary" /> Admin
+          <ShieldCheck className="h-3 w-3 text-primary" /> {t("detail.membership.admin")}
         </Badge>
       );
     }
     return (
       <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
-        Membre
+        {t("detail.membership.member")}
       </span>
     );
   };
@@ -95,9 +97,9 @@ export function SphereMembersTab({
         <div className="flex items-center gap-2">
           <Users className="h-4 w-4 text-primary" />
           <h3 className="font-bold text-sm">
-            Membres de la sphère
+            {t("membersTab.title")}
             <span className="ml-1.5 text-xs text-muted-foreground font-normal">
-              ({filteredMembers.length}{search.trim() ? ` sur ${members.length}` : ""})
+              ({search.trim() ? t("membersTab.outOf", { filtered: filteredMembers.length, total: members.length }) : members.length})
             </span>
           </h3>
         </div>
@@ -106,7 +108,7 @@ export function SphereMembersTab({
             <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Rechercher un membre..."
+              placeholder={t("membersTab.searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-8 h-8 text-xs rounded-lg"
@@ -117,7 +119,7 @@ export function SphereMembersTab({
 
       {filteredMembers.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground text-xs">
-          Aucun membre ne correspond à votre recherche.
+          {t("membersTab.empty")}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -157,13 +159,13 @@ export function SphereMembersTab({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48">
                       <DropdownMenuItem onClick={() => onUpdateRole(m.id, m.role)}>
-                        {m.role === "admin" ? "Retirer Admin" : "Nommer Admin"}
+                        {m.role === "admin" ? t("membersTab.demote") : t("membersTab.promote")}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         className="text-red-600 font-medium"
                         onClick={() => onRemoveMember(m.id)}
                       >
-                        Retirer de la sphère
+                        {t("membersTab.remove")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

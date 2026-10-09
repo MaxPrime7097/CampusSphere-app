@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   CaretRight as ChevronRight,
   UsersThree as Users,
@@ -47,15 +48,6 @@ const RESOURCE_TYPE_STYLES: Record<string, { icon: string; bg: string }> = {
   other:        { icon: "text-muted-foreground", bg: "bg-muted/30 border-border/40" },
 };
 
-const RESOURCE_TYPE_LABEL: Record<string, string> = {
-  course_notes: "Note de cours",
-  td_tp:        "TD / TP",
-  exams:        "Annale",
-  project:      "Projet",
-  book:         "Livre",
-  other:        "Autre",
-};
-
 function getResourceStyle(type?: string) {
   if (!type) return RESOURCE_TYPE_STYLES.other;
   const canonical = normalizeResourceType(type);
@@ -81,6 +73,7 @@ function getResourceIcon(type?: string, className = "h-4 w-4") {
 }
 
 export function FeedSidebar() {
+  const { t, i18n } = useTranslation(["feed", "resources"]);
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -200,11 +193,11 @@ export function FeedSidebar() {
   useEffect(() => {
     if (!loadError) return;
     toast({
-      title: "Sidebar incomplète",
-      description: (loadError as any)?.message || "Impossible de charger les données latérales",
+      title: t("sidebar.incompleteTitle"),
+      description: (loadError as any)?.message || t("sidebar.incompleteDesc"),
       variant: "destructive",
     });
-  }, [loadError, toast]);
+  }, [loadError, toast, t]);
 
   const handleConnectUser = async (userId: string, studentName: string) => {
     if (!currentUser?.id || connectingUserId) return;
@@ -213,15 +206,15 @@ export function FeedSidebar() {
       await createConnection(userId);
       setConnectedUserIds((prev) => new Set(prev).add(userId));
       toast({
-        title: "Demande envoyée",
-        description: `Demande de connexion envoyée à ${studentName}`,
+        title: t("sidebar.requestSentTitle"),
+        description: t("sidebar.requestSentDesc", { name: studentName }),
         duration: 2000,
       });
       queryClient.invalidateQueries({ queryKey: ["sidebar", "suggested-students"] });
     } catch {
       toast({
-        title: "Erreur",
-        description: "Impossible d'envoyer la demande de connexion.",
+        title: t("sidebar.error"),
+        description: t("sidebar.requestSendError"),
         variant: "destructive",
       });
     } finally {
@@ -266,14 +259,14 @@ export function FeedSidebar() {
       <div className="py-2 border-b border-border/40 pb-4">
         <div className="flex items-center justify-between px-2 mb-2.5">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/80">
-            Sphères actives
+            {t("sidebar.activeSpheres")}
           </h3>
           <button
             type="button"
             onClick={() => navigate("/spheres")}
             className="text-xs text-muted-foreground hover:text-foreground transition-colors font-medium cursor-pointer"
           >
-            Voir tout
+            {t("sidebar.viewAll")}
           </button>
         </div>
 
@@ -285,7 +278,7 @@ export function FeedSidebar() {
               ))}
             </div>
           ) : popularSpheres.length === 0 ? (
-            <p className="text-xs text-muted-foreground py-3 text-center">Aucune sphère à afficher.</p>
+            <p className="text-xs text-muted-foreground py-3 text-center">{t("sidebar.noSpheres")}</p>
           ) : (
             popularSpheres.map((sphere) => {
               const sphereType = normalizeSphereType(sphere.sphere_type || sphere.sphereType || sphere.type || sphere.category);
@@ -332,14 +325,14 @@ export function FeedSidebar() {
       <div className="py-2 border-b border-border/40 pb-4">
         <div className="flex items-center justify-between px-2 mb-2.5">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/80">
-            Prochains événements
+            {t("sidebar.upcomingEvents")}
           </h3>
           <button
             type="button"
             onClick={() => navigate("/events")}
             className="text-xs text-muted-foreground hover:text-foreground transition-colors font-medium cursor-pointer"
           >
-            Voir tout
+            {t("sidebar.viewAll")}
           </button>
         </div>
 
@@ -351,13 +344,13 @@ export function FeedSidebar() {
               ))}
             </div>
           ) : upcomingEvents.length === 0 ? (
-            <p className="text-xs text-muted-foreground py-3 text-center">Aucun événement prévu.</p>
+            <p className="text-xs text-muted-foreground py-3 text-center">{t("sidebar.noEvents")}</p>
           ) : (
             upcomingEvents.map((evt) => {
             const startDate = evt.startDate ? new Date(evt.startDate) : new Date();
             const day = !isNaN(startDate.getTime()) ? startDate.getDate() : 1;
             const month = !isNaN(startDate.getTime())
-              ? startDate.toLocaleDateString("fr-FR", { month: "short" }).toUpperCase()
+              ? startDate.toLocaleDateString(i18n.language?.startsWith("en") ? "en-US" : "fr-FR", { month: "short" }).toUpperCase()
               : "EVT";
 
             return (
@@ -376,7 +369,7 @@ export function FeedSidebar() {
                     {evt.title}
                   </div>
                   <div className="text-[11px] text-muted-foreground truncate mt-0.5">
-                    {evt.isOnline ? "En ligne" : (evt.location || "Campus")}
+                    {evt.isOnline ? t("sidebar.online") : (evt.location || t("sidebar.campus"))}
                   </div>
                 </div>
               </button>
@@ -391,14 +384,14 @@ export function FeedSidebar() {
         <div className="py-2 border-b border-border/40 pb-4">
           <div className="flex items-center justify-between px-2 mb-2.5">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/80">
-              Suggestions d'étudiants
+              {t("sidebar.studentSuggestions")}
             </h3>
             <button
               type="button"
               onClick={() => navigate("/connections")}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors font-medium cursor-pointer"
             >
-              Voir tout
+              {t("sidebar.viewAll")}
             </button>
           </div>
 
@@ -428,7 +421,7 @@ export function FeedSidebar() {
                       )}
                     </div>
                     <p className="text-[11px] text-muted-foreground truncate">
-                      {student.faculty || student.university || "Étudiant"}
+                      {student.faculty || student.university || t("sidebar.defaultStudent")}
                     </p>
                   </div>
                 </div>
@@ -445,7 +438,7 @@ export function FeedSidebar() {
                       : "bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border/40"
                   )}
                 >
-                  {connectedUserIds.has(student.id) ? "Envoyé" : "Connecter"}
+                  {connectedUserIds.has(student.id) ? t("sidebar.sent") : t("sidebar.connect")}
                 </Button>
               </div>
             ))}
@@ -457,14 +450,14 @@ export function FeedSidebar() {
       <div className="py-2 border-b border-border/40 pb-4">
         <div className="flex items-center justify-between px-2 mb-2.5">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/80">
-            Ressources récentes
+            {t("sidebar.recentResources")}
           </h3>
           <button
             type="button"
             onClick={() => navigate("/resources")}
             className="text-xs text-muted-foreground hover:text-foreground transition-colors font-medium cursor-pointer"
           >
-            Voir tout
+            {t("sidebar.viewAll")}
           </button>
         </div>
 
@@ -476,12 +469,12 @@ export function FeedSidebar() {
               ))}
             </div>
           ) : recentResources.length === 0 ? (
-            <p className="text-xs text-muted-foreground py-3 text-center">Aucune ressource récente.</p>
+            <p className="text-xs text-muted-foreground py-3 text-center">{t("sidebar.noResources")}</p>
           ) : (
             recentResources.map((resource) => {
               const canonicalType = normalizeResourceType(resource.type);
               const style = getResourceStyle(canonicalType);
-              const typeLabel = RESOURCE_TYPE_LABEL[canonicalType] || "Autre";
+              const typeLabel = t(`feedCard.types.${canonicalType}`, { ns: "resources", defaultValue: "Autre" });
               return (
                 <button
                   key={resource.id}

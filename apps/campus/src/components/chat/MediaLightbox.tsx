@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import {
   X,
   DownloadSimple,
@@ -22,6 +23,7 @@ function formatAudioTime(sec: number): string {
 }
 
 function LightboxVideoPlayer({ src }: { src: string }) {
+  const { t } = useTranslation("messages");
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [cachedUrl, setCachedUrl] = useState(src);
   const [isPlaying, setIsPlaying] = useState(true);
@@ -143,7 +145,7 @@ function LightboxVideoPlayer({ src }: { src: string }) {
             type="button"
             onClick={togglePlay}
             className="h-16 w-16 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-md transition-transform active:scale-95 pointer-events-auto shadow-2xl border border-white/20"
-            aria-label={isPlaying ? "Pause" : "Lecture"}
+            aria-label={isPlaying ? t("lightbox.pause") : t("lightbox.play")}
           >
             {isBuffering ? (
               <CircleNotch className="h-8 w-8 animate-spin" weight="bold" />
@@ -183,7 +185,7 @@ function LightboxVideoPlayer({ src }: { src: string }) {
               type="button"
               onClick={togglePlay}
               className="h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
-              aria-label={isPlaying ? "Pause" : "Lecture"}
+              aria-label={isPlaying ? t("lightbox.pause") : t("lightbox.play")}
             >
               {isPlaying ? <Pause className="h-4 w-4" weight="fill" /> : <Play className="h-4 w-4" weight="fill" />}
             </button>
@@ -197,8 +199,8 @@ function LightboxVideoPlayer({ src }: { src: string }) {
               type="button"
               onClick={toggleMute}
               className="h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
-              aria-label={isMuted ? "Activer le son" : "Couper le son"}
-              title={isMuted ? "Activer le son" : "Couper le son"}
+              aria-label={isMuted ? t("lightbox.unmute") : t("lightbox.mute")}
+              title={isMuted ? t("lightbox.unmute") : t("lightbox.mute")}
             >
               {isMuted ? <SpeakerSimpleSlash className="h-4 w-4" /> : <SpeakerHigh className="h-4 w-4" />}
             </button>
@@ -224,6 +226,7 @@ export function MediaLightbox({
   mediaType = "image",
   fileName,
 }: MediaLightboxProps) {
+  const { t } = useTranslation("messages");
   const [scale, setScale] = useState(1);
 
   useEffect(() => {
@@ -264,7 +267,7 @@ export function MediaLightbox({
       >
         <div className="flex items-center gap-2 text-white/90 min-w-0">
           <p className="text-xs sm:text-sm font-medium truncate max-w-xs sm:max-w-md">
-            {fileName || (isVideo ? "Vidéo" : "Photo")}
+            {fileName || (isVideo ? t("lightbox.video") : t("lightbox.photo"))}
           </p>
         </div>
 
@@ -275,8 +278,8 @@ export function MediaLightbox({
                 type="button"
                 onClick={zoomOut}
                 className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
-                title="Dézoomer"
-                aria-label="Dézoomer"
+                title={t("lightbox.zoomOut")}
+                aria-label={t("lightbox.zoomOut")}
               >
                 <MagnifyingGlassMinus className="h-4 w-4" />
               </button>
@@ -284,8 +287,8 @@ export function MediaLightbox({
                 type="button"
                 onClick={zoomIn}
                 className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
-                title="Zoomer"
-                aria-label="Zoomer"
+                title={t("lightbox.zoomIn")}
+                aria-label={t("lightbox.zoomIn")}
               >
                 <MagnifyingGlassPlus className="h-4 w-4" />
               </button>
@@ -295,8 +298,8 @@ export function MediaLightbox({
           <button
             type="button"
             className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
-            title="Télécharger sur l'appareil"
-            aria-label="Télécharger sur l'appareil"
+            title={t("lightbox.download")}
+            aria-label={t("lightbox.download")}
             onClick={(e) => {
               e.stopPropagation();
               void triggerDirectDownload(mediaUrl, fileName || (isVideo ? "video.mp4" : "image.jpg"));
@@ -309,8 +312,8 @@ export function MediaLightbox({
             type="button"
             onClick={onClose}
             className="h-9 w-9 rounded-full bg-white/15 hover:bg-rose-600 text-white flex items-center justify-center transition-colors ml-2"
-            title="Fermer (Échap)"
-            aria-label="Fermer"
+            title={t("lightbox.close")}
+            aria-label={t("lightbox.close")}
           >
             <X className="h-4 w-4" />
           </button>
@@ -324,7 +327,7 @@ export function MediaLightbox({
         ) : (
           <img
             src={mediaUrl}
-            alt={fileName || "Photo"}
+            alt={fileName || t("lightbox.photo")}
             style={{ transform: `scale(${scale})` }}
             className="max-h-[85vh] max-w-[90vw] rounded-xl shadow-2xl object-contain transition-transform duration-150 cursor-grab active:cursor-grabbing"
             onClick={(e) => {

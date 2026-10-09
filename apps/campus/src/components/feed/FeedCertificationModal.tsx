@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +19,7 @@ interface FeedCertificationModalProps {
 const STORAGE_KEY = "cs_cert_modal_dismissed";
 
 export function FeedCertificationModal({ onOpenVerificationModal }: FeedCertificationModalProps) {
+  const { t } = useTranslation("feed");
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -63,30 +65,30 @@ export function FeedCertificationModal({ onOpenVerificationModal }: FeedCertific
             <Shield className="h-6 w-6" weight="fill" />
           </div>
           <DialogTitle className="text-xl font-bold tracking-tight">
-            Bienvenue sur CampusSphere ! 🎓
+            {t("certificationModal.title")}
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
-            Vous bénéficiez d'une <strong>période découverte de 24h</strong> avec un accès complet à la plateforme.
+            {t("certificationModal.description")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3 py-3 text-sm">
           <div className="p-3 bg-muted/40 rounded-xl border border-border/50 space-y-2">
             <p className="font-medium text-foreground text-xs uppercase tracking-wider text-muted-foreground">
-              Pourquoi certifier votre statut ?
+              {t("certificationModal.whyCertify")}
             </p>
             <div className="space-y-2">
               <div className="flex items-center gap-2.5">
                 <SealCheck className="h-4 w-4 text-primary shrink-0" weight="fill" />
-                <span className="text-xs text-foreground/90">Obtenez le badge officiel <strong>Étudiant Vérifié</strong></span>
+                <span className="text-xs text-foreground/90">{t("certificationModal.benefit1")}</span>
               </div>
               <div className="flex items-center gap-2.5">
                 <Sparkle className="h-4 w-4 text-primary shrink-0" weight="fill" />
-                <span className="text-xs text-foreground/90">Pérennisez vos droits de publication et partage de cours</span>
+                <span className="text-xs text-foreground/90">{t("certificationModal.benefit2")}</span>
               </div>
               <div className="flex items-center gap-2.5">
                 <Clock className="h-4 w-4 text-primary shrink-0" weight="fill" />
-                <span className="text-xs text-foreground/90">Validation manuelle rapide par notre équipe sous 24h</span>
+                <span className="text-xs text-foreground/90">{t("certificationModal.benefit3")}</span>
               </div>
             </div>
           </div>
@@ -98,13 +100,13 @@ export function FeedCertificationModal({ onOpenVerificationModal }: FeedCertific
             onClick={handleDismiss}
             className="w-full sm:w-auto order-2 sm:order-1 text-xs text-muted-foreground hover:text-foreground"
           >
-            Explorer d'abord (24h)
+            {t("certificationModal.exploreFirst")}
           </Button>
           <Button
             onClick={handleStartVerification}
             className="w-full sm:flex-1 order-1 sm:order-2 campus-gradient text-white hover:opacity-90 text-xs font-medium"
           >
-            Soumettre ma carte étudiante
+            {t("certificationModal.submitCard")}
             <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
           </Button>
         </div>

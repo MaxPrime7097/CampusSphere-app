@@ -1,14 +1,14 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Calendar, Clock, MapPin, Globe, UsersThree as Users, Check, ShareNetwork as Share2, Sparkle as Sparkles, Trophy, Code, Microphone as Mic, BookOpen, Compass, ArrowRight, Ticket } from "@phosphor-icons/react";
+import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { Calendar, Clock, MapPin, Globe, UsersThree as Users, Check, ShareNetwork as Share2, Sparkle as Sparkles, Trophy, Code, Microphone as Mic, BookOpen, Compass } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getEventCategoryMeta } from "@/constants/eventCategories";
 import { registerToEvent, unregisterFromEvent } from "@/services/eventService";
 import { useToast } from "@/hooks/use-toast";
 import type { Event, AttendeeStatus } from "@/types/events.types";
-import { formatSlugToLabel, getEventUrl } from "@/lib/utils";
+import { getEventUrl } from "@/lib/utils";
 
 interface EventCardProps {
   event: Event;
@@ -29,23 +29,17 @@ const CategoryIconMap: Record<string, any> = {
 export function EventCard({ event, onStatusChange, onShare, className = "" }: EventCardProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t, i18n } = useTranslation("events");
   const [isRegistering, setIsRegistering] = useState(false);
   const [localStatus, setLocalStatus] = useState<AttendeeStatus | null>(event.userStatus || null);
   const [attendeesCount, setAttendeesCount] = useState<number>(Number(event.attendeesCount || 0));
 
   const meta = getEventCategoryMeta(event.category);
-  const IconComponent = CategoryIconMap[event.category] || Calendar;
-
+  const dateLocale = i18n.language === "en" ? "en-US" : "fr-FR";
   const startDate = new Date(event.startDate);
   const isPast = startDate < new Date();
 
-  const formattedDate = startDate.toLocaleDateString("fr-FR", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  });
-
-  const formattedTime = startDate.toLocaleTimeString("fr-FR", {
+  const formattedTime = startDate.toLocaleTimeString(dateLocale, {
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -64,8 +58,8 @@ export function EventCard({ event, onStatusChange, onShare, className = "" }: Ev
         setAttendeesCount((prev) => Math.max(0, prev - 1));
         onStatusChange?.(event.id, null);
         toast({
-          title: "Inscription annulée",
-          description: "Vous ne participez plus à cet événement.",
+          title: t("card.toasts.unregistered"),
+          description: t("card.toasts.unregisteredDesc"),
         });
       } else {
         await registerToEvent(event.id, "going");
@@ -73,14 +67,14 @@ export function EventCard({ event, onStatusChange, onShare, className = "" }: Ev
         setAttendeesCount((prev) => prev + 1);
         onStatusChange?.(event.id, "going");
         toast({
-          title: "Inscription confirmée",
-          description: `Vous êtes inscrit à "${event.title}".`,
+          title: t("card.toasts.registered"),
+          description: t("card.toasts.registeredDesc", { title: event.title }),
         });
       }
     } catch (err: any) {
       toast({
-        title: "Erreur",
-        description: err?.message || "Impossible de mettre à jour votre inscription.",
+        title: t("card.toasts.error"),
+        description: err?.message || t("card.toasts.errorDesc"),
         variant: "destructive",
       });
     } finally {
@@ -96,14 +90,15 @@ export function EventCard({ event, onStatusChange, onShare, className = "" }: Ev
     } else {
       navigator.clipboard?.writeText(`${window.location.origin}${getEventUrl(event)}`);
       toast({
-        title: "Lien copié !",
-        description: "Le lien de l'événement a été copié dans le presse-papier.",
+        title: t("card.toasts.linkCopied"),
+        description: t("card.toasts.linkCopiedDesc"),
       });
     }
   };
 
   const dayNumber = startDate.getDate();
-  const monthName = startDate.toLocaleDateString("fr-FR", { month: "short" }).toUpperCase().replace(".", "");
+  const monthName = startDate.toLocaleDateString(dateLocale, { month: "short" }).toUpperCase().replace(".", "");
+  const categoryLabel = t(`categories.${event.category}Short` as any, { defaultValue: meta.shortLabel });
 
   return (
     <div
@@ -123,16 +118,16 @@ export function EventCard({ event, onStatusChange, onShare, className = "" }: Ev
             {event.title}
           </h3>
           <Badge variant="muted" size="sm" className="text-[10px] font-normal py-0">
-            {meta.shortLabel}
+            {categoryLabel}
           </Badge>
           {event.registrationUrl && (
             <Badge variant="outline" size="sm" className="text-[10px] font-normal py-0 border-primary/30 text-primary">
-              Externe
+              {t("card.external")}
             </Badge>
           )}
           {localStatus === "going" && (
             <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
-              <Check className="h-3 w-3" /> Inscrit
+              <Check className="h-3 w-3" /> {t("card.registered")}
             </span>
           )}
         </div>
@@ -145,7 +140,7 @@ export function EventCard({ event, onStatusChange, onShare, className = "" }: Ev
           <span>·</span>
           <span className="flex items-center gap-1 truncate max-w-[150px]">
             {event.isOnline ? <Globe className="h-3 w-3 text-sky-500" /> : <MapPin className="h-3 w-3" />}
-            {event.isOnline ? "En ligne" : event.location || "Campus"}
+            {event.isOnline ? t("page.online") : event.location || t("page.campus")}
           </span>
           <span>·</span>
           <span className="flex items-center gap-1">
@@ -162,13 +157,13 @@ export function EventCard({ event, onStatusChange, onShare, className = "" }: Ev
           variant="ghost"
           className="h-8 w-8 text-muted-foreground hover:text-foreground hidden sm:inline-flex"
           onClick={handleShareClick}
-          aria-label="Partager"
+          aria-label={t("card.share")}
         >
           <Share2 className="h-4 w-4" />
         </Button>
 
         {isPast ? (
-          <span className="text-xs text-muted-foreground italic px-2">Terminé</span>
+          <span className="text-xs text-muted-foreground italic px-2">{t("card.finished")}</span>
         ) : localStatus === "going" || localStatus === "attended" ? (
           <Button
             variant="outline"
@@ -178,7 +173,7 @@ export function EventCard({ event, onStatusChange, onShare, className = "" }: Ev
             disabled={isRegistering}
           >
             <Check className="h-3.5 w-3.5 mr-1" />
-            <span>Inscrit</span>
+            <span>{t("card.registered")}</span>
           </Button>
         ) : (
           <Button
@@ -188,7 +183,7 @@ export function EventCard({ event, onStatusChange, onShare, className = "" }: Ev
             onClick={handleQuickRegister}
             disabled={isRegistering}
           >
-            {isRegistering ? "..." : "Participer"}
+            {isRegistering ? "..." : t("card.join")}
           </Button>
         )}
       </div>

@@ -124,6 +124,9 @@ importers:
       '@cs/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
+      '@cs/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@cs/sso':
         specifier: workspace:*
         version: link:../../packages/sso

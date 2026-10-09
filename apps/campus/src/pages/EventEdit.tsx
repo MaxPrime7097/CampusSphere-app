@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Calendar, ArrowLeft, Check, Upload, X, Sparkle as Sparkles, Ticket, ArrowSquareOut, LinkSimple, Spinner as Loader2 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ import { getEventUrl, encodeHashId } from "@/lib/utils";
 import type { EventCategory, UpdateEventInput } from "@/types/events.types";
 
 export function EventEdit() {
+  const { t } = useTranslation("events");
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -84,16 +86,16 @@ export function EventEdit() {
       queryClient.invalidateQueries({ queryKey: ["event", id] });
       queryClient.invalidateQueries({ queryKey: ["events"] });
       toast({
-        title: "Modifications enregistrées ! ✨",
-        description: "L'événement a été mis à jour avec succès.",
+        title: t("editForm.toasts.updated"),
+        description: t("editForm.toasts.updatedDesc", { title: event?.title || formData.title }),
       });
       const canonicalTarget = event ? getEventUrl(event) : (id ? `/events/${encodeHashId(id) || id}` : "/events");
       navigate(canonicalTarget);
     },
     onError: (err: any) => {
       toast({
-        title: "Erreur",
-        description: err?.message || "Impossible de mettre à jour l'événement.",
+        title: t("editForm.toasts.updateError"),
+        description: err?.message || t("editForm.toasts.updateErrorDesc"),
         variant: "destructive",
       });
     },
@@ -110,7 +112,11 @@ export function EventEdit() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title?.trim()) {
-      toast({ title: "Titre requis", variant: "destructive" });
+      toast({
+        title: t("createForm.toasts.titleRequired"),
+        description: t("createForm.toasts.titleRequiredDesc"),
+        variant: "destructive",
+      });
       return;
     }
 
@@ -145,23 +151,23 @@ export function EventEdit() {
           className="rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4 mr-1.5" />
-          Retour aux détails
+          {t("editForm.backToDetails")}
         </Button>
       </div>
 
       <div className="space-y-1">
         <h1 className="text-2xl md:text-3xl text-foreground">
-          Modifier l'événement
+          {t("editForm.title")}
         </h1>
         <p className="text-xs text-muted-foreground">
-          Mettez à jour les informations, la date, le lieu ou l'affiche de l'événement.
+          {t("editForm.subtitle")}
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Category */}
         <div className="p-6 rounded-3xl border border-border/70 bg-card space-y-3">
-          <Label className="text-xs font-bold text-foreground block">Catégorie</Label>
+          <Label className="text-xs font-bold text-foreground block">{t("createForm.category")}</Label>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {EVENT_CATEGORY_OPTIONS.filter((c) => c.value !== "all").map((cat) => {
               const isSelected = formData.category === cat.value;
@@ -176,7 +182,9 @@ export function EventEdit() {
                       : "border-border/60 bg-muted/30 hover:bg-muted/60"
                   }`}
                 >
-                  <span className="text-xs font-bold text-foreground block">{cat.shortLabel}</span>
+                  <span className="text-xs font-bold text-foreground block">
+                    {t(`categories.${cat.value}Short`, { defaultValue: cat.shortLabel || cat.label })}
+                  </span>
                 </button>
               );
             })}
@@ -187,7 +195,7 @@ export function EventEdit() {
         <div className="p-6 rounded-3xl border border-border/70 bg-card space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="title" className="text-xs font-bold text-foreground">
-              Titre de l'événement *
+              {t("createForm.eventTitle")} *
             </Label>
             <Input
               id="title"
@@ -200,7 +208,7 @@ export function EventEdit() {
 
           <div className="space-y-1.5">
             <Label htmlFor="description" className="text-xs font-bold text-foreground">
-              Description
+              {t("createForm.description")}
             </Label>
             <Textarea
               id="description"
@@ -216,7 +224,7 @@ export function EventEdit() {
         <div className="p-6 rounded-3xl border border-border/70 bg-card space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Date et heure de début</Label>
+              <Label className="text-xs text-muted-foreground">{t("createForm.startDate")}</Label>
               <Input
                 type="datetime-local"
                 value={formData.startDate || ""}
@@ -225,7 +233,7 @@ export function EventEdit() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Date et heure de fin</Label>
+              <Label className="text-xs text-muted-foreground">{t("createForm.endDate")}</Label>
               <Input
                 type="datetime-local"
                 value={formData.endDate || ""}
@@ -237,7 +245,7 @@ export function EventEdit() {
 
           <div className="flex items-center justify-between pt-2 border-t border-border/50">
             <div className="space-y-0.5">
-              <Label className="text-xs font-bold text-foreground">Événement en ligne</Label>
+              <Label className="text-xs font-bold text-foreground">{t("createForm.onlineEvent")}</Label>
             </div>
             <Switch
               checked={formData.isOnline}
@@ -247,7 +255,7 @@ export function EventEdit() {
 
           {formData.isOnline ? (
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Lien de visioconférence</Label>
+              <Label className="text-xs text-muted-foreground">{t("createForm.onlineLink")}</Label>
               <Input
                 value={formData.onlineLink || ""}
                 onChange={(e) => setFormData({ ...formData, onlineLink: e.target.value })}
@@ -256,7 +264,7 @@ export function EventEdit() {
             </div>
           ) : (
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Lieu physique</Label>
+              <Label className="text-xs text-muted-foreground">{t("createForm.physicalLocation")}</Label>
               <Input
                 value={formData.location || ""}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
@@ -271,10 +279,10 @@ export function EventEdit() {
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1.5">
                   <Ticket className="h-3.5 w-3.5 text-primary" />
-                  <Label className="text-xs font-bold text-foreground">Billetterie & QR Code</Label>
+                  <Label className="text-xs font-bold text-foreground">{t("createForm.ticketing")}</Label>
                 </div>
                 <p className="text-[11px] text-muted-foreground">
-                  Génère un billet officiel et QR Code pour chaque participant.
+                  {t("createForm.ticketingDesc")}
                 </p>
               </div>
               <Switch
@@ -286,19 +294,19 @@ export function EventEdit() {
             <div className="space-y-1.5 pt-2 border-t border-border/50">
               <Label className="text-xs font-bold text-foreground flex items-center gap-1.5">
                 <ArrowSquareOut className="h-3.5 w-3.5 text-primary" />
-                Lien d'inscription externe (optionnel)
+                {t("createForm.externalLink")}
               </Label>
               <div className="relative">
                 <LinkSimple className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
-                  placeholder="https://eventbrite.com/e/... ou https://forms.gle/..."
+                  placeholder={t("createForm.externalLinkHint")}
                   value={formData.registrationUrl || ""}
                   onChange={(e) => setFormData({ ...formData, registrationUrl: e.target.value })}
                   className="rounded-xl text-xs pl-9"
                 />
               </div>
               <p className="text-[11px] text-muted-foreground">
-                Si l'inscription a lieu sur une autre plateforme, ce lien sera proposé aux participants.
+                {t("createForm.externalLinkDesc")}
               </p>
             </div>
           </div>
@@ -306,7 +314,7 @@ export function EventEdit() {
 
         {/* Banner */}
         <div className="p-6 rounded-3xl border border-border/70 bg-card space-y-4">
-          <Label className="text-xs font-bold text-foreground block">Affiche de l'événement</Label>
+          <Label className="text-xs font-bold text-foreground block">{t("createForm.coverPhoto")}</Label>
           {coverPreview ? (
             <div className="relative h-44 w-full rounded-2xl overflow-hidden border border-border">
               <img src={coverPreview} alt="Aperçu" className="h-full w-full object-cover" />
@@ -326,7 +334,7 @@ export function EventEdit() {
           ) : (
             <label className="flex flex-col items-center justify-center h-32 rounded-2xl border-2 border-dashed border-border p-4 cursor-pointer">
               <Upload className="h-6 w-6 text-primary mb-1" />
-              <span className="text-xs font-bold">Changer l'affiche</span>
+              <span className="text-xs font-bold">{t("editForm.changeCover")}</span>
               <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
             </label>
           )}
@@ -338,7 +346,7 @@ export function EventEdit() {
           className="w-full rounded-2xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground py-6 text-sm shadow-md"
         >
           <Check className="h-5 w-5 mr-2" />
-          {updateMutation.isPending ? "Sauvegarde..." : "Enregistrer les modifications"}
+          {updateMutation.isPending ? t("editForm.updating") : t("editForm.update")}
         </Button>
       </form>
     </div>

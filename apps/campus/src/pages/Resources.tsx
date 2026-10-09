@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   listResources,
   listFolders,
@@ -51,6 +52,7 @@ function mapResourceCard(r: Resource | any): ResourceCardData {
 
 export function Resources() {
   const navigate = useNavigate();
+  const { t } = useTranslation("resources");
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
   const { canPerformAction } = getVerificationAccessStatus(currentUser);
@@ -152,9 +154,9 @@ export function Resources() {
         setSelectedFolder(null);
         setFolderResources([]);
       }
-      toast({ title: "Dossier supprimé", description: "Le dossier a bien été supprimé." });
+      toast({ title: t("page.toasts.folderDeleted"), description: t("page.toasts.folderDeletedDesc") });
     } catch (e: any) {
-      toast({ title: "Erreur", description: e?.message || "Impossible de supprimer le dossier", variant: "destructive" });
+      toast({ title: t("page.toasts.error"), description: e?.message || t("page.toasts.deleteFolderError"), variant: "destructive" });
     }
   };
 
@@ -162,12 +164,12 @@ export function Resources() {
     e.stopPropagation();
     if (!canPerformAction) {
       toast({
-        title: "Compte non certifié",
-        description: "Votre période d'accès découverte de 24h a expiré. Certifiez votre compte pour continuer à télécharger des ressources.",
+        title: t("page.toasts.uncertifiedTitle"),
+        description: t("page.toasts.uncertifiedDownloadDesc"),
         variant: "destructive",
         action: (
           <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>
-            Certifier
+            {t("page.toasts.certify")}
           </Button>
         ),
       });
@@ -177,9 +179,9 @@ export function Resources() {
     setDownloadingIds((prev) => new Set(prev).add(resourceId));
     try {
       await downloadResource(resourceId);
-      toast({ title: "Téléchargement réussi", description: "La ressource a été téléchargée." });
+      toast({ title: t("page.toasts.downloadSuccess"), description: t("page.toasts.downloadSuccessDesc") });
     } catch (error: any) {
-      toast({ title: "Erreur", description: error?.message || "Impossible de télécharger la ressource", variant: "destructive" });
+      toast({ title: t("page.toasts.error"), description: error?.message || t("page.toasts.downloadError"), variant: "destructive" });
     } finally {
       setDownloadingIds((prev) => {
         const next = new Set(prev);
@@ -205,11 +207,11 @@ export function Resources() {
         prev.map((r) => (r.id === resourceId ? { ...r, isSaved } : r))
       );
       toast({
-        title: isSaved ? "Ressource enregistrée" : "Ressource retirée",
-        description: isSaved ? "Ajoutée à vos favoris." : "Retirée de vos favoris.",
+        title: isSaved ? t("page.toasts.saved") : t("page.toasts.unsaved"),
+        description: isSaved ? t("page.toasts.savedDesc") : t("page.toasts.unsavedDesc"),
       });
     } catch (error: any) {
-      toast({ title: "Erreur", description: error?.message || "Action impossible", variant: "destructive" });
+      toast({ title: t("page.toasts.error"), description: error?.message || t("page.toasts.actionError"), variant: "destructive" });
     }
   };
 
@@ -238,9 +240,9 @@ export function Resources() {
         foldersQuery.refetch(),
         savedResourcesQuery.refetch(),
       ]);
-      toast({ title: "Ressources actualisées", description: "La bibliothèque est à jour." });
+      toast({ title: t("page.toasts.refreshed"), description: t("page.toasts.refreshedDesc") });
     } catch {
-      toast({ title: "Erreur", description: "Impossible d'actualiser", variant: "destructive" });
+      toast({ title: t("page.toasts.error"), description: t("page.toasts.refreshError"), variant: "destructive" });
     } finally {
       setIsRefreshing(false);
     }
@@ -291,12 +293,12 @@ export function Resources() {
 
   const handlePromptVerification = () => {
     toast({
-      title: "Compte non certifié",
-      description: "Votre période d'accès découverte de 24h a expiré. Certifiez votre compte pour partager des ressources.",
+      title: t("page.toasts.uncertifiedTitle"),
+      description: t("page.toasts.uncertifiedUploadDesc"),
       variant: "destructive",
       action: (
         <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>
-          Vérifier
+          {t("page.toasts.verify")}
         </Button>
       ),
     });
@@ -335,8 +337,12 @@ export function Resources() {
         <div className="flex items-center justify-between pt-1 pb-1">
           <span className="text-xs text-muted-foreground font-medium">
             {isFiltering
-              ? `${filteredResources.length} ${filteredResources.length > 1 ? "ressources trouvées" : "ressource trouvée"}`
-              : `${resources.length} ${resources.length > 1 ? "ressources disponibles" : "ressource disponible"}`}
+              ? (filteredResources.length > 1
+                  ? t("page.found_other", { count: filteredResources.length })
+                  : t("page.found_one", { count: filteredResources.length }))
+              : (resources.length > 1
+                  ? t("page.available_other", { count: resources.length })
+                  : t("page.available_one", { count: resources.length }))}
           </span>
           <div className="flex items-center gap-1 bg-muted/40 p-0.5 rounded-lg border border-border/40">
             <Button
@@ -351,7 +357,7 @@ export function Resources() {
               onClick={() => setViewMode("grid")}
             >
               <LayoutGrid className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Grille</span>
+              <span className="hidden sm:inline">{t("page.grid")}</span>
             </Button>
             <Button
               variant="ghost"
@@ -365,7 +371,7 @@ export function Resources() {
               onClick={() => setViewMode("list")}
             >
               <List className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Liste</span>
+              <span className="hidden sm:inline">{t("page.list")}</span>
             </Button>
           </div>
         </div>
@@ -402,8 +408,8 @@ export function Resources() {
                 onDownloadZip={async (f) => {
                   if (!canPerformAction) {
                     toast({
-                      title: "Compte non certifié",
-                      description: "Votre période d'accès découverte de 24h a expiré. Certifiez votre compte pour télécharger des dossiers ZIP.",
+                      title: t("page.toasts.uncertifiedTitle"),
+                      description: t("page.toasts.uncertifiedZipDesc"),
                       variant: "destructive",
                       action: (
                         <Button
@@ -411,14 +417,14 @@ export function Resources() {
                           size="sm"
                           onClick={() => openVerificationModal()}
                         >
-                          Certifier
+                          {t("page.toasts.certify")}
                         </Button>
                       ),
                     });
                     return;
                   }
                   await downloadFolderZip(f.id, f.name);
-                  toast({ title: "Téléchargement en cours..." });
+                  toast({ title: t("page.toasts.downloadingZip") });
                 }}
                 onEditFolder={(f) => {
                   setEditingFolder(f);

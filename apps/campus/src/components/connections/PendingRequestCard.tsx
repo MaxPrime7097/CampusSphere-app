@@ -1,6 +1,7 @@
 import { Check, X } from "@phosphor-icons/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 import type { ConnectionUser } from "./types";
 
 interface PendingRequestCardProps {
@@ -16,6 +17,8 @@ export function PendingRequestCard({
   onAccept,
   onReject,
 }: PendingRequestCardProps) {
+  const { t } = useTranslation("connections");
+
   return (
     <div className="flex items-center justify-between gap-3 py-3 px-2 sm:px-3 border-b border-border/40 hover:bg-muted/30 transition-colors">
       <div
@@ -42,7 +45,7 @@ export function PendingRequestCard({
           onClick={() => onAccept(request)}
         >
           <Check className="h-3.5 w-3.5 sm:mr-1.5" />
-          <span className="hidden sm:inline">Accepter</span>
+          <span className="hidden sm:inline">{t("actions.accept")}</span>
         </Button>
         <Button
           variant="ghost"
@@ -51,7 +54,7 @@ export function PendingRequestCard({
           onClick={() => onReject(request)}
         >
           <X className="h-3.5 w-3.5 sm:mr-1.5" />
-          <span className="hidden sm:inline">Refuser</span>
+          <span className="hidden sm:inline">{t("actions.decline")}</span>
         </Button>
       </div>
     </div>

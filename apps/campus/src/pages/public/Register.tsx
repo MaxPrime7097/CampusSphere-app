@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
+import { useTranslation } from "react-i18next";
 import { CaretRight as ChevronRight, Check, Spinner as Loader2, WarningCircle as AlertCircle, Eye, EyeSlash as EyeOff, X, Envelope as Mail, ArrowClockwise as RefreshCw } from "@phosphor-icons/react";
 import { FaFacebook } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
@@ -31,6 +32,7 @@ const RESEND_COOLDOWN_SECONDS = 60;
 const SUBMIT_DEBOUNCE_MS = 1000;
 
 export function Register() {
+  const { t } = useTranslation("auth");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
@@ -55,7 +57,7 @@ export function Register() {
   });
 
   const getPasswordStrength = (password: string) => {
-    if (!password) return { score: 0, label: "Faible", color: "text-muted-foreground" };
+    if (!password) return { score: 0, label: t("register.strengthWeak"), color: "text-muted-foreground" };
 
     let score = 0;
     if (password.length >= 8) score += 35;
@@ -69,9 +71,9 @@ export function Register() {
 
     const cappedScore = Math.min(score, 100);
 
-    if (cappedScore >= 75) return { score: cappedScore, label: "Fort", color: "text-emerald-600" };
-    if (cappedScore >= 45) return { score: cappedScore, label: "Moyen", color: "text-amber-600" };
-    return { score: cappedScore, label: "Faible", color: "text-red-500" };
+    if (cappedScore >= 75) return { score: cappedScore, label: t("register.strengthStrong"), color: "text-emerald-600" };
+    if (cappedScore >= 45) return { score: cappedScore, label: t("register.strengthMedium"), color: "text-amber-600" };
+    return { score: cappedScore, label: t("register.strengthWeak"), color: "text-red-500" };
   };
 
   const passwordStrength = getPasswordStrength(formData.password);
@@ -97,14 +99,14 @@ export function Register() {
             await exchangeSupabaseToken(session.access_token);
             await refreshUser();
             navigate("/onboarding");
-            toast({ title: "Email vérifié ✓", description: "Continuez votre inscription", duration: 3000 });
+            toast({ title: t("register.toast.emailVerifiedTitle"), description: t("register.toast.continueRegistrationDesc"), duration: 3000 });
           }
         } catch (err: any) {
-          toast({ title: "Erreur", description: err?.message, variant: "destructive" });
+          toast({ title: t("register.toast.error"), description: err?.message, variant: "destructive" });
         }
       })();
     }
-  }, [searchParams, toast, navigate, refreshUser]);
+  }, [searchParams, toast, navigate, refreshUser, t]);
 
   useEffect(() => {
     if (step !== "verify") return;
@@ -115,15 +117,15 @@ export function Register() {
           await exchangeSupabaseToken(session.access_token);
           await refreshUser();
           navigate("/onboarding");
-          toast({ title: "Email vérifié ✓", description: "Continuez votre inscription", duration: 3000 });
+          toast({ title: t("register.toast.emailVerifiedTitle"), description: t("register.toast.continueRegistrationDesc"), duration: 3000 });
         } catch (err: any) {
-          toast({ title: "Erreur", description: err?.message, variant: "destructive" });
+          toast({ title: t("register.toast.error"), description: err?.message, variant: "destructive" });
         }
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [step, navigate, toast, refreshUser]);
+  }, [step, navigate, toast, refreshUser, t]);
 
   useEffect(() => {
     if (resendCooldownRemaining <= 0) return;
@@ -134,14 +136,14 @@ export function Register() {
   }, [resendCooldownRemaining]);
 
   const step1Schema = z.object({
-    firstName: z.string().trim().min(2, "Au moins 2 caractères"),
-    lastName: z.string().trim().min(2, "Au moins 2 caractères"),
-    username: z.string().trim().min(3, "Au moins 3 caractères"),
-    email: z.string().email("Email invalide"),
-    password: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères"),
+    firstName: z.string().trim().min(2, t("validation.minChars", { count: 2 })),
+    lastName: z.string().trim().min(2, t("validation.minChars", { count: 2 })),
+    username: z.string().trim().min(3, t("validation.minChars", { count: 3 })),
+    email: z.string().email(t("validation.emailInvalid")),
+    password: z.string().min(8, t("validation.passwordMinChars", { count: 8 })),
     confirmPassword: z.string(),
   }).refine(d => d.password === d.confirmPassword, {
-    message: "Les mots de passe ne correspondent pas",
+    message: t("validation.passwordsMismatch"),
     path: ["confirmPassword"],
   });
 
@@ -174,8 +176,8 @@ export function Register() {
         setAvailability(prev => ({ ...prev, username: { checking: false, available: isAvailable, checkedValue: username } }));
         
         if (!isAvailable) {
-          setErrors(prev => ({ ...prev, username: "Ce nom d'utilisateur est déjà pris" }));
-        } else if (errors.username === "Ce nom d'utilisateur est déjà pris") {
+          setErrors(prev => ({ ...prev, username: t("register.usernameTaken") }));
+        } else if (errors.username === t("register.usernameTaken")) {
           setErrors(prev => { const e = { ...prev }; delete e.username; return e; });
         }
       } catch {
@@ -184,7 +186,7 @@ export function Register() {
     }, 400);
 
     return () => clearTimeout(timeout);
-  }, [formData.username, step]);
+  }, [formData.username, step, t, errors.username]);
 
   useEffect(() => {
     const email = formData.email.trim().toLowerCase();
@@ -201,8 +203,8 @@ export function Register() {
         setAvailability(prev => ({ ...prev, email: { checking: false, available: isAvailable, checkedValue: email } }));
         
         if (!isAvailable) {
-          setErrors(prev => ({ ...prev, email: "Cet email est déjà utilisé" }));
-        } else if (errors.email === "Cet email est déjà utilisé") {
+          setErrors(prev => ({ ...prev, email: t("register.emailTaken") }));
+        } else if (errors.email === t("register.emailTaken")) {
           setErrors(prev => { const e = { ...prev }; delete e.email; return e; });
         }
       } catch {
@@ -211,14 +213,14 @@ export function Register() {
     }, 400);
 
     return () => clearTimeout(timeout);
-  }, [formData.email, step]);
+  }, [formData.email, step, t, errors.email]);
 
   const handleGoogle = async () => {
     setIsGoogleLoading(true);
     try {
       await supabaseSignInWithGoogle();
     } catch (err: any) {
-      toast({ title: "Erreur", description: err?.message, variant: "destructive" });
+      toast({ title: t("register.toast.error"), description: err?.message, variant: "destructive" });
       setIsGoogleLoading(false);
     }
   };
@@ -241,12 +243,12 @@ export function Register() {
     }
 
     if (!availability.username.available) {
-      setErrors(prev => ({ ...prev, username: "Ce nom d'utilisateur est déjà pris" }));
+      setErrors(prev => ({ ...prev, username: t("register.usernameTaken") }));
       return;
     }
 
     if (!availability.email.available) {
-      setErrors(prev => ({ ...prev, email: "Cet email est déjà utilisé" }));
+      setErrors(prev => ({ ...prev, email: t("register.emailTaken") }));
       return;
     }
 
@@ -262,19 +264,19 @@ export function Register() {
 
       setResendCooldownRemaining(RESEND_COOLDOWN_SECONDS);
       setStep("verify");
-      toast({ title: "Compte créé !", description: "Veuillez vérifier votre email.", duration: 3000 });
+      toast({ title: t("register.toast.accountCreatedTitle"), description: t("register.toast.accountCreatedDesc"), duration: 3000 });
     } catch (err: any) {
       const rateLimit = getSupabaseRateLimitMetadata(err);
       if (rateLimit) {
         const waitSeconds = rateLimit.waitSeconds ?? RESEND_COOLDOWN_SECONDS;
         setResendCooldownRemaining(waitSeconds);
         toast({
-          title: "Limite atteinte",
-          description: `Veuillez patienter ${waitSeconds}s avant de réessayer.`,
+          title: t("register.toast.rateLimitTitle"),
+          description: t("register.toast.rateLimitDesc", { seconds: waitSeconds }),
           variant: "destructive",
         });
       } else {
-        toast({ title: "Erreur", description: err?.message, variant: "destructive" });
+        toast({ title: t("register.toast.error"), description: err?.message, variant: "destructive" });
       }
     } finally {
       setIsLoading(false);
@@ -296,19 +298,19 @@ export function Register() {
     try {
       await supabaseResendSignupEmail(formData.email);
       setResendCooldownRemaining(RESEND_COOLDOWN_SECONDS);
-      toast({ title: "Email renvoyé !", duration: 2000 });
+      toast({ title: t("register.toast.emailResent"), duration: 2000 });
     } catch (err: any) {
       const rateLimit = getSupabaseRateLimitMetadata(err);
       if (rateLimit) {
         const waitSeconds = rateLimit.waitSeconds ?? RESEND_COOLDOWN_SECONDS;
         setResendCooldownRemaining(waitSeconds);
         toast({
-          title: "Envoi limité temporairement",
-          description: `Merci de patienter ${waitSeconds}s avant de renvoyer l'email.`,
+          title: t("register.toast.rateLimitTitle"),
+          description: t("register.toast.rateLimitResendDesc", { seconds: waitSeconds }),
           variant: "destructive",
         });
       } else {
-        toast({ title: "Erreur", description: err?.message, variant: "destructive" });
+        toast({ title: t("register.toast.error"), description: err?.message, variant: "destructive" });
       }
     } finally {
       setIsResending(false);
@@ -318,8 +320,8 @@ export function Register() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5 grid lg:grid-cols-2 overflow-hidden">
       <Helmet>
-        <title>Inscription - CampusSphere</title>
-        <meta name="description" content="Rejoignez CampusSphere et connectez-vous avec des milliers d'étudiants. Créez votre profil, rejoignez des sphères et partagez vos ressources." />
+        <title>{t("register.metaTitle")}</title>
+        <meta name="description" content={t("register.metaDesc")} />
         <link rel="canonical" href="https://campussphere.app/register" />
       </Helmet>
       <div className="flex flex-col items-center justify-center p-4 sm:p-8 overflow-y-auto">
@@ -327,7 +329,7 @@ export function Register() {
         <div className="text-center mb-8 cursor-pointer" onClick={() => navigate("/cs-inc")}>
           <span className="text-2xl font-bold font-automata text-primary">CampusSphere</span>
           <p className="text-muted-foreground mt-2">
-            {step === "verify" ? "Vérification de l'email" : `Rejoignez CampusSphere !`}
+            {step === "verify" ? t("register.verifyEmailTitle") : t("register.joinCampusSphere")}
           </p>
         </div>
 
@@ -335,42 +337,42 @@ export function Register() {
           {Object.keys(errors).length > 0 && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>Veuillez corriger les erreurs ci-dessous</AlertDescription>
+              <AlertDescription>{t("register.validationError")}</AlertDescription>
             </Alert>
           )}
 
           {/* ── ÉTAPE 1 : Infos personnelles ── */}
           {step === 1 && (
             <div className="space-y-4">
-              <CardTitle className="text-center text-2xl">Créer votre compte</CardTitle>
+              <CardTitle className="text-center text-2xl">{t("register.createAccount")}</CardTitle>
 
               {/* Boutons OAuth */}
               <div className="space-y-2">
                 <Button variant="outline" className="w-full" onClick={handleGoogle} disabled={isGoogleLoading || isLoading} type="button">
                   {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FcGoogle className="mr-2 h-4 w-4" />}
-                  Continuer avec Google
+                  {t("login.google")}
                 </Button>
                 <Button variant="outline" className="hidden w-full disabled" onClick={() => supabaseSignInWithFacebook()} type="button">
                   <FaFacebook className="mr-2 h-4 w-4 text-blue-600" />
-                  Continuer avec Facebook
+                  {t("login.facebook")}
                 </Button>
               </div>
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center"><Separator /></div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">Ou avec email</span>
+                  <span className="bg-background px-2 text-muted-foreground">{t("register.orWithEmail")}</span>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="min-w-0">
-                  <Label>Nom *</Label>
+                  <Label>{t("register.lastNameLabel")} *</Label>
                   <Input maxLength={REGISTRATION_MAX_LENGTHS.firstName} value={formData.firstName} onChange={e => handleInputChange("firstName", e.target.value)} className={`w-full min-w-0 ${errors.firstName ? "border-destructive" : ""}`} />
                   {errors.firstName && <p className="text-xs text-destructive mt-1">{errors.firstName}</p>}
                 </div>
                 <div className="min-w-0">
-                  <Label>Prénom *</Label>
+                  <Label>{t("register.firstNameLabel")} *</Label>
                   <Input maxLength={REGISTRATION_MAX_LENGTHS.lastName} value={formData.lastName} onChange={e => handleInputChange("lastName", e.target.value)} className={`w-full min-w-0 ${errors.lastName ? "border-destructive" : ""}`} />
                   {errors.lastName && <p className="text-xs text-destructive mt-1">{errors.lastName}</p>}
                 </div>
@@ -378,23 +380,22 @@ export function Register() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="min-w-0">
-                  <Label>Nom d'utilisateur *</Label>
+                  <Label>{t("register.usernameLabel")} *</Label>
                   <Input maxLength={REGISTRATION_MAX_LENGTHS.username} value={formData.username} onChange={e => handleInputChange("username", e.target.value)} className={`w-full min-w-0 ${errors.username ? "border-destructive" : ""}`} />
-                  {availability.username.checking && <p className="text-xs text-muted-foreground mt-1">Vérification du nom d'utilisateur…</p>}
+                  {availability.username.checking && <p className="text-xs text-muted-foreground mt-1">{t("register.checkingUsername")}</p>}
                   {errors.username && <p className="text-xs text-destructive mt-1">{errors.username}</p>}
                 </div>
                 <div className="min-w-0">
-                  <Label>Email *</Label>
+                  <Label>{t("register.emailLabel")} *</Label>
                   <Input maxLength={REGISTRATION_MAX_LENGTHS.email} type="email" value={formData.email} onChange={e => handleInputChange("email", e.target.value)} className={`w-full min-w-0 ${errors.email ? "border-destructive" : ""}`} />
-                  {availability.email.checking && <p className="text-xs text-muted-foreground mt-1">Vérification de l'email…</p>}
+                  {availability.email.checking && <p className="text-xs text-muted-foreground mt-1">{t("register.checkingEmail")}</p>}
                   {errors.email && <p className="text-xs text-destructive mt-1">{errors.email}</p>}
                 </div>
               </div>
 
-
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="min-w-0">
-                  <Label>Mot de passe *</Label>
+                  <Label>{t("register.passwordLabel")} *</Label>
                   <div className="relative">
                     <Input maxLength={REGISTRATION_MAX_LENGTHS.password} type={showPassword ? "text" : "password"} value={formData.password} onChange={e => handleInputChange("password", e.target.value)} className={`w-full min-w-0 pr-10 ${errors.password ? "border-destructive" : ""}`} />
                     <Button type="button" variant="ghost" size="sm" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0" onClick={() => setShowPassword(!showPassword)}>
@@ -403,7 +404,7 @@ export function Register() {
                   </div>
                   <div className="mt-2 space-y-1">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Force du mot de passe</span>
+                      <span className="text-muted-foreground">{t("register.passwordStrength")}</span>
                       <span className={`font-medium ${passwordStrength.color}`}>{passwordStrength.label}</span>
                     </div>
                     <Progress value={passwordStrength.score} className="h-1.5" />
@@ -411,7 +412,7 @@ export function Register() {
                   {errors.password && <p className="text-xs text-destructive mt-1">{errors.password}</p>}
                 </div>
                 <div className="min-w-0">
-                  <Label>Confirmer *</Label>
+                  <Label>{t("register.confirmLabel")} *</Label>
                   <div className="relative">
                     <Input maxLength={REGISTRATION_MAX_LENGTHS.password} type={showConfirmPassword ? "text" : "password"} value={formData.confirmPassword} onChange={e => handleInputChange("confirmPassword", e.target.value)} className={`w-full min-w-0 pr-10 ${errors.confirmPassword ? "border-destructive" : ""}`} />
                     <Button type="button" variant="ghost" size="sm" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
@@ -421,7 +422,7 @@ export function Register() {
                   {hasConfirmInput && (
                     <p className={`mt-1 flex items-center gap-1 text-xs ${passwordsMatch ? "text-emerald-600" : "text-red-500"}`}>
                       {passwordsMatch ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
-                      {passwordsMatch ? "Les mots de passe correspondent" : "Les mots de passe ne correspondent pas"}
+                      {passwordsMatch ? t("register.passwordsMatch") : t("register.passwordsDoNotMatch")}
                     </p>
                   )}
                   {errors.confirmPassword && <p className="text-xs text-destructive mt-1">{errors.confirmPassword}</p>}
@@ -431,16 +432,16 @@ export function Register() {
               <div className="flex justify-end pt-4">
                 <Button onClick={handleStep1Submit} disabled={isLoading || availability.email.checking || availability.username.checking} className="campus-gradient text-white hover:opacity-90">
                   {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  Suivant <ChevronRight className="ml-2 h-4 w-4" />
+                  {t("register.next")} <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
 
               <div className="text-center mt-8 text-sm text-muted-foreground">
                 <p>
-                  En continuant, vous acceptez nos{" "}
-                  <Button variant="link" className="px-0 h-auto text-primary" onClick={() => navigate("/cs-inc/policies/terms")}>Conditions d'utilisation</Button>
-                  {" "}et notre{" "}
-                  <Button variant="link" className="px-0 h-auto text-primary" onClick={() => navigate("/cs-inc/policies/privacy")}>Politique de confidentialité</Button>
+                  {t("legalAgreement.byContinuing")}{" "}
+                  <Button variant="link" className="px-0 h-auto text-primary" onClick={() => navigate("/cs-inc/policies/terms")}>{t("legalAgreement.terms")}</Button>
+                  {" "}{t("legalAgreement.and")}{" "}
+                  <Button variant="link" className="px-0 h-auto text-primary" onClick={() => navigate("/cs-inc/policies/privacy")}>{t("legalAgreement.privacy")}</Button>
                 </p>
               </div>
             </div>
@@ -453,23 +454,23 @@ export function Register() {
                 <Mail className="h-10 w-10 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-bold mb-2">Vérifiez votre email</h2>
+                <h2 className="text-xl font-bold mb-2">{t("register.verifyStep.title")}</h2>
                 <p className="text-muted-foreground text-sm">
-                  Un lien de confirmation a été envoyé à<br />
+                  {t("register.verifyStep.sentTo")}<br />
                   <strong className="text-foreground">{formData.email}</strong>
                 </p>
               </div>
               <div className="bg-muted/50 rounded-lg p-4 text-sm text-muted-foreground">
-                <p>Cliquez sur le lien dans l'email pour continuer votre inscription.</p>
-                <p className="mt-1">Cette page se mettra à jour automatiquement.</p>
+                <p>{t("register.verifyStep.clickLink")}</p>
+                <p className="mt-1">{t("register.verifyStep.autoUpdate")}</p>
               </div>
               <div className="flex flex-col gap-2">
                 <Button variant="outline" onClick={handleResendEmail} disabled={isResending || resendCooldownRemaining > 0}>
                   {isResending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                  {resendCooldownRemaining > 0 ? `Renvoyer l'email (${resendCooldownRemaining}s)` : "Renvoyer l'email"}
+                  {resendCooldownRemaining > 0 ? t("register.verifyStep.resendCooldown", { seconds: resendCooldownRemaining }) : t("register.verifyStep.resend")}
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => setStep(1)}>
-                  Modifier l'email
+                  {t("register.verifyStep.changeEmail")}
                 </Button>
               </div>
             </div>
@@ -478,9 +479,9 @@ export function Register() {
 
         <div className="text-center mt-6">
           <p className="text-muted-foreground text-sm">
-            Déjà un compte ?{" "}
+            {t("register.alreadyHaveAccount")}{" "}
             <Button variant="link" className="p-0 text-primary" onClick={() => navigate("/login")}>
-              Se connecter
+              {t("register.signIn")}
             </Button>
           </p>
         </div>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { FileText, GridFour as LayoutGrid, List } from "@phosphor-icons/react";
 import { ResourceCard } from "@/components/resources/ResourceCard";
 import { ResourceTile } from "@/components/resources/ResourceTile";
@@ -33,6 +34,7 @@ export function ResourcesFilteredGrid({
   viewMode: controlledViewMode,
   onViewModeChange,
 }: ResourcesFilteredGridProps) {
+  const { t } = useTranslation("resources");
   const [internalViewMode, setInternalViewMode] = useState<"grid" | "list">("grid");
   const viewMode = controlledViewMode ?? internalViewMode;
 
@@ -49,8 +51,9 @@ export function ResourcesFilteredGrid({
       {/* Header with counter and Grid / List Switcher */}
       <div className="flex items-center justify-between px-1">
         <span className="text-xs font-semibold text-muted-foreground">
-          {resources.length}{" "}
-          {resources.length > 1 ? "ressources trouvées" : "ressource trouvée"}
+          {resources.length > 1
+            ? t("page.found_other", { count: resources.length })
+            : t("page.found_one", { count: resources.length })}
         </span>
 
         <div className="flex items-center gap-1 bg-muted/40 p-0.5 rounded-lg border border-border/40">
@@ -66,7 +69,7 @@ export function ResourcesFilteredGrid({
             onClick={() => handleToggle("grid")}
           >
             <LayoutGrid className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Grille</span>
+            <span className="hidden sm:inline">{t("page.grid")}</span>
           </Button>
           <Button
             variant="ghost"
@@ -80,7 +83,7 @@ export function ResourcesFilteredGrid({
             onClick={() => handleToggle("list")}
           >
             <List className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Liste</span>
+            <span className="hidden sm:inline">{t("page.list")}</span>
           </Button>
         </div>
       </div>
@@ -108,9 +111,9 @@ export function ResourcesFilteredGrid({
       ) : resources.length === 0 ? (
         <EmptyState
           icon={FileText}
-          title="Aucune ressource trouvée"
-          description="Essayez d'ajuster vos filtres ou effectuez une recherche avec d'autres termes."
-          actionLabel="Tout réinitialiser"
+          title={t("page.emptyTitle")}
+          description={t("page.emptyDesc")}
+          actionLabel={t("page.emptyReset")}
           onAction={onResetFilters}
         />
       ) : viewMode === "grid" ? (

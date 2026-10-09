@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,6 +20,7 @@ const TEAM_MEMBERS = [
  * juste après la fin de l'onboarding (l'utilisateur voit déjà l'application derrière).
  */
 export function WelcomeTeamModal() {
+  const { t } = useTranslation("auth");
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
 
@@ -28,6 +30,8 @@ export function WelcomeTeamModal() {
       setOpen(true);
     }
   }, []);
+
+  const greetingName = user?.firstName ? ` ${user.firstName}` : "";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -40,34 +44,23 @@ export function WelcomeTeamModal() {
             </span>
           </div>
           <DialogTitle className="text-xl sm:text-2xl font-bold font-raleway text-foreground mb-2">
-            Bienvenue dans l'aventure ! 🎉
+            {t("welcomeTeamModal.title")}
           </DialogTitle>
-          <DialogDescription className="sr-only">Message de bienvenue de l'équipe CampusSphere</DialogDescription>
+          <DialogDescription className="sr-only">
+            {t("welcomeTeamModal.description")}
+          </DialogDescription>
         </div>
 
         <div className="text-left text-sm sm:text-base leading-relaxed text-muted-foreground font-nunito space-y-3">
-          <p className="font-semibold text-foreground">Salut{user?.firstName ? ` ${user.firstName}` : ""} !</p>
-          <p>
-            Toute l'équipe de <strong className="text-foreground font-semibold">CampusSphere</strong> est ultra fière
-            de t'accueillir sur la plateforme.
+          <p className="font-semibold text-foreground">
+            {t("welcomeTeamModal.greeting", { name: greetingName })}
           </p>
-          <p>
-            On a créé cet espace autour d'une promesse simple :{" "}
-            <strong className="text-foreground font-semibold">Connect. Share. Grow.</strong>
-          </p>
+          <p>{t("welcomeTeamModal.proud")}</p>
+          <p>{t("welcomeTeamModal.promise")}</p>
           <div className="space-y-2 pl-3 border-l-2 border-primary/40 text-xs sm:text-sm">
-            <p>
-              <strong className="text-foreground font-medium">Connect :</strong> échange avec les étudiants de ton
-              campus et rejoins tes premières Sphères.
-            </p>
-            <p>
-              <strong className="text-foreground font-medium">Share :</strong> trouve et partage fiches, cours et
-              annales en un clic.
-            </p>
-            <p>
-              <strong className="text-foreground font-medium">Grow :</strong> avance sur tes projets à plusieurs et
-              booste tes révisions avec Sphera.
-            </p>
+            <p>{t("welcomeTeamModal.connect")}</p>
+            <p>{t("welcomeTeamModal.share")}</p>
+            <p>{t("welcomeTeamModal.grow")}</p>
           </div>
         </div>
 
@@ -83,7 +76,9 @@ export function WelcomeTeamModal() {
               />
             ))}
           </div>
-          <span className="font-semibold text-foreground text-sm font-poppins">— L'équipe CampusSphere 🧡</span>
+          <span className="font-semibold text-foreground text-sm font-poppins">
+            {t("welcomeTeamModal.teamSignature")}
+          </span>
         </div>
 
         <Button
@@ -91,7 +86,7 @@ export function WelcomeTeamModal() {
           size="lg"
           className="campus-gradient text-white hover:opacity-90 w-full rounded-xl"
         >
-          C'est parti, explorer CampusSphere 🚀
+          {t("welcomeTeamModal.cta")}
         </Button>
       </DialogContent>
     </Dialog>

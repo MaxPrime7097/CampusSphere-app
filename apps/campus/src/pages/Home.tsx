@@ -7,6 +7,7 @@ import { WelcomeTeamModal } from "@/components/onboarding/WelcomeTeamModal";
 import { FeedVerificationBanner } from "@/components/feed/FeedVerificationBanner";
 import { FeedCertificationModal } from "@/components/feed/FeedCertificationModal";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useMemo, Suspense, lazy } from "react";
 import { listPosts, listSpheres, listResources } from "@/services/api";
@@ -33,6 +34,7 @@ type FeedResource = { kind: "resource"; data: Resource; date: string };
 type FeedItem = FeedPost | FeedResource;
 
 export function Home() {
+  const { t } = useTranslation("feed");
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -101,7 +103,7 @@ export function Home() {
   }, [posts, resourcesQuery.data]);
 
   const loadError = postsQuery.error
-    ? (postsQuery.error as any)?.message || "Erreur de chargement du fil d'actualite"
+    ? (postsQuery.error as any)?.message || t("home.loadError")
     : null;
 
   const isInitialLoading = postsQuery.isLoading && posts.length === 0 && !postsQuery.data;
@@ -123,14 +125,14 @@ export function Home() {
       setLastRefresh(new Date());
 
       toast({
-        title: "Feed actualise",
-        description: "Les contenus ont ete mis a jour",
+        title: t("home.refreshedTitle"),
+        description: t("home.refreshedDesc"),
         duration: 2000,
       });
     } catch (e: any) {
       toast({
-        title: "Erreur",
-        description: e?.message || "Impossible de rafraichir le feed",
+        title: t("home.error"),
+        description: e?.message || t("home.refreshError"),
         variant: "destructive",
       });
     } finally {
@@ -194,9 +196,9 @@ export function Home() {
                 <div className={cn(isMobile && "px-3.5 sm:px-4")}>
                   <EmptyState
                     icon={HomeIcon}
-                    title="Fil d'actualite vide"
-                    description="Il n'y a pas encore de contenus a afficher. Soyez le premier a partager quelque chose !"
-                    actionLabel="Creer un post"
+                    title={t("home.emptyTitle")}
+                    description={t("home.emptyDesc")}
+                    actionLabel={t("home.emptyAction")}
                     onAction={() => window.scrollTo({ top: 0, behavior: "smooth" })}
                   />
                 </div>
@@ -227,10 +229,10 @@ export function Home() {
                 {isLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Chargement...
+                    {t("home.loading")}
                   </>
                 ) : (
-                  "Charger plus..."
+                  t("home.loadMore")
                 )}
               </Button>
             </div>

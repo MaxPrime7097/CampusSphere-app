@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Ticket, Calendar, Clock, MapPin, Globe, ShieldCheck, Download, Copy, Check, SealCheck as BadgeCheck } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
+import { Ticket, Calendar, Clock, MapPin, Globe, Download, Copy, Check, SealCheck as BadgeCheck } from "@phosphor-icons/react";
 import {
   Dialog,
   DialogContent,
@@ -27,35 +28,37 @@ export function EventTicketModal({
 }: EventTicketModalProps) {
   const { user: currentUser } = useAuth();
   const { toast } = useToast();
+  const { t, i18n } = useTranslation("events");
   const [copied, setCopied] = useState(false);
 
+  const dateLocale = i18n.language === "en" ? "en-US" : "fr-FR";
   const ticketCode =
     event.userTicketCode || `CS-EVT-${event.id}-${currentUser?.id || "ME"}-7C9B`;
   const meta = getEventCategoryMeta(event.category);
   const startDate = new Date(event.startDate);
 
-  const formattedDate = startDate.toLocaleDateString("fr-FR", {
+  const formattedDate = startDate.toLocaleDateString(dateLocale, {
     weekday: "long",
     day: "numeric",
     month: "long",
     year: "numeric",
   });
 
-  const formattedTime = startDate.toLocaleTimeString("fr-FR", {
+  const formattedTime = startDate.toLocaleTimeString(dateLocale, {
     hour: "2-digit",
     minute: "2-digit",
   });
 
   const facultyFormatted = currentUser?.faculty
     ? formatSlugToLabel(currentUser.faculty)
-    : currentUser?.university || "IUC Douala";
+    : currentUser?.university || "Campus";
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(ticketCode);
     setCopied(true);
     toast({
-      title: "Code de billet copié",
-      description: "Le code unique a été copié dans votre presse-papier.",
+      title: t("ticketModal.codeCopied"),
+      description: t("ticketModal.codeCopiedDesc"),
     });
     setTimeout(() => setCopied(false), 2000);
   };
@@ -74,11 +77,11 @@ export function EventTicketModal({
             <div className="flex items-center justify-between">
               <Badge className="bg-black/40 backdrop-blur-md text-white border-white/20 text-[11px] font-semibold">
                 <Ticket className="h-3.5 w-3.5 mr-1" />
-                {meta.shortLabel || "Billet officiel"}
+                {t(`categories.${event.category}Short` as any, { defaultValue: meta.shortLabel || t("ticketModal.officialPass") })}
               </Badge>
 
               <span className="text-[11px] font-bold tracking-wider text-white/90 uppercase">
-                CampusSphere Pass
+                {t("ticketModal.passTitle")}
               </span>
             </div>
 
@@ -125,7 +128,9 @@ export function EventTicketModal({
                 variant="outline"
                 className="text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
               >
-                {event.isCheckedIn || event.userStatus === "attended" ? "Validé (Présent)" : "Inscrit"}
+                {event.isCheckedIn || event.userStatus === "attended"
+                  ? t("attendeesModal.checkedIn")
+                  : t("card.registered")}
               </Badge>
             </div>
 
@@ -143,13 +148,13 @@ export function EventTicketModal({
                   <button
                     onClick={handleCopyCode}
                     className="text-muted-foreground hover:text-foreground transition-colors p-1 print:hidden"
-                    title="Copier le code"
+                    title={t("ticketModal.copyCode")}
                   >
                     {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
                   </button>
                 </div>
                 <p className="text-[10px] text-muted-foreground">
-                  Présentez ce QR code à l'entrée de l'événement pour valider votre accès.
+                  {t("ticketModal.entryPassInstruction")}
                 </p>
               </div>
             </div>
@@ -162,7 +167,7 @@ export function EventTicketModal({
                 <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
               )}
               <span className="font-medium text-foreground truncate">
-                {event.isOnline ? "Événement en ligne" : event.location || "Grand Amphi, Campus IUC"}
+                {event.isOnline ? t("page.online") : event.location || t("page.campus")}
               </span>
             </div>
 
@@ -175,7 +180,7 @@ export function EventTicketModal({
                 className="flex-1 rounded-xl text-xs font-semibold"
               >
                 <Download className="h-3.5 w-3.5 mr-1.5" />
-                Imprimer le billet
+                {t("ticketModal.print")}
               </Button>
               <Button
                 size="sm"
@@ -183,7 +188,7 @@ export function EventTicketModal({
                 onClick={() => onOpenChange(false)}
                 className="flex-1 rounded-xl text-xs font-semibold"
               >
-                Fermer
+                {t("createEvent.cancel")}
               </Button>
             </div>
           </div>

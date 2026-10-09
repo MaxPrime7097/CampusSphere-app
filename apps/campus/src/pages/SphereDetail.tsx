@@ -1,6 +1,7 @@
 import { parseSlugId, encodeHashId } from "@/lib/hashids";
 import { getSphereUrl } from "@/lib/utils";
 import { Suspense, lazy, useState, useEffect, useMemo, useLayoutEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -47,6 +48,7 @@ const ImageUploadModal = lazy(() =>
 );
 
 export function SphereDetail() {
+  const { t } = useTranslation("spheres");
   const { id: rawParam } = useParams();
   const realId = parseSlugId(rawParam) ?? rawParam;
   const id = realId ? String(realId) : undefined;
@@ -397,31 +399,31 @@ export function SphereDetail() {
   const availableTabs = useMemo(() => {
     if (canonicalSphereType === "cours") {
       return [
-        { id: "overview", label: "Vue d'ensemble" },
-        { id: "annonces", label: "Annonces" },
-        { id: "files", label: `Fichiers (${resources.length})` },
-        { id: "chat", label: "Discussion" },
-        { id: "sphera", label: "Sphera" },
-        ...(canModerateMembers ? [{ id: "pending", label: `Demandes (${pendingMembers.length})` }] : []),
+        { id: "overview", label: t("detail.tabs.overview") },
+        { id: "annonces", label: t("detail.tabs.announcements") },
+        { id: "files", label: `${t("detail.tabs.files")} (${resources.length})` },
+        { id: "chat", label: t("detail.tabs.chat") },
+        { id: "sphera", label: t("detail.tabs.sphera") },
+        ...(canModerateMembers ? [{ id: "pending", label: `${t("detail.tabs.pending")} (${pendingMembers.length})` }] : []),
       ];
     }
     if (canonicalSphereType === "projet") {
       return [
-        { id: "overview", label: "Vue d'ensemble" },
-        { id: "tasks", label: `Tâches (${tasks.length})` },
-        { id: "files", label: `Fichiers (${resources.length})` },
-        { id: "chat", label: "Discussion" },
-        { id: "sphera", label: "Sphera" },
-        ...(canModerateMembers ? [{ id: "pending", label: `Demandes (${pendingMembers.length})` }] : []),
+        { id: "overview", label: t("detail.tabs.overview") },
+        { id: "tasks", label: `${t("detail.tabs.tasks")} (${tasks.length})` },
+        { id: "files", label: `${t("detail.tabs.files")} (${resources.length})` },
+        { id: "chat", label: t("detail.tabs.chat") },
+        { id: "sphera", label: t("detail.tabs.sphera") },
+        ...(canModerateMembers ? [{ id: "pending", label: `${t("detail.tabs.pending")} (${pendingMembers.length})` }] : []),
       ];
     }
     // communaute
     return [
-      { id: "overview", label: "Vue d'ensemble" },
-      { id: "annonces", label: "Annonces" },
-      { id: "files", label: `Fichiers (${resources.length})` },
-      { id: "chat", label: "Discussion" },
-      ...(canModerateMembers ? [{ id: "pending", label: `Demandes (${pendingMembers.length})` }] : []),
+      { id: "overview", label: t("detail.tabs.overview") },
+      { id: "annonces", label: t("detail.tabs.announcements") },
+      { id: "files", label: `${t("detail.tabs.files")} (${resources.length})` },
+      { id: "chat", label: t("detail.tabs.chat") },
+      ...(canModerateMembers ? [{ id: "pending", label: `${t("detail.tabs.pending")} (${pendingMembers.length})` }] : []),
     ];
   }, [
     canonicalSphereType,
@@ -429,6 +431,7 @@ export function SphereDetail() {
     tasks.length,
     pendingMembers.length,
     canModerateMembers,
+    t,
   ]);
 
   useEffect(() => {
@@ -443,10 +446,10 @@ export function SphereDetail() {
 
   const sphereMemberCount = Math.max(sphere?.memberCount ?? 0, members.length);
   const membershipStateLabel = useMemo(() => {
-    if (isMember) return "Membre";
-    if (isPendingRequest) return "Demande en attente";
-    return "Non membre";
-  }, [isMember, isPendingRequest]);
+    if (isMember) return t("detail.membership.member");
+    if (isPendingRequest) return t("detail.membership.pending");
+    return t("detail.membership.nonMember");
+  }, [isMember, isPendingRequest, t]);
 
   const sphereCreatorId = useMemo(() => {
     const candidates = [
@@ -466,12 +469,12 @@ export function SphereDetail() {
   const handleJoinSphere = async () => {
     if (currentUser && !canPerformAction) {
       toast({
-        title: "Compte non certifié",
-        description: "Votre période d'accès découverte de 24h a expiré. Vous devez être certifié pour rejoindre une sphère.",
+        title: t("detail.toasts.uncertifiedTitle"),
+        description: t("detail.toasts.uncertifiedDesc"),
         variant: "destructive",
         action: (
           <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>
-            Vérifier
+            {t("detail.toasts.verifyAction")}
           </Button>
         ),
       });
@@ -483,12 +486,12 @@ export function SphereDetail() {
       if (res?.data?.status === "pending") {
         setIsPendingRequest(true);
         setIsMember(false);
-        toast({ title: "Demande envoyée" });
+        toast({ title: t("detail.toasts.requestedTitle") });
       } else {
         setIsMember(true);
         setIsPendingRequest(false);
         await loadSphereData();
-        toast({ title: "Bienvenue dans la sphère !" });
+        toast({ title: t("detail.toasts.joinedTitle") });
       }
     } catch (e: any) {
       const joinConflict = resolveJoinConflict(e);
@@ -496,20 +499,20 @@ export function SphereDetail() {
         setIsMember(true);
         setIsPendingRequest(false);
         toast({
-          title: "Déjà membre",
-          description: "Vous êtes déjà membre actif de cette sphère.",
+          title: t("detail.toasts.alreadyMember"),
+          description: t("detail.toasts.alreadyMemberDesc"),
         });
       } else if (joinConflict === "already_pending") {
         setIsMember(false);
         setIsPendingRequest(true);
         toast({
-          title: "Demande déjà en attente",
-          description: "Votre demande d'adhésion est déjà en cours de validation.",
+          title: t("detail.toasts.alreadyPending"),
+          description: t("detail.toasts.alreadyPendingDesc"),
         });
       } else {
         setIsMember(false);
         setIsPendingRequest(false);
-        toast({ title: "Erreur", description: e.message, variant: "destructive" });
+        toast({ title: t("detail.toasts.error"), description: e.message, variant: "destructive" });
       }
     } finally {
       setIsJoining(false);
@@ -520,9 +523,9 @@ export function SphereDetail() {
     try {
       await deleteTask(taskId);
       setTasks((prev) => prev.filter((t) => t.id !== taskId));
-      toast({ title: "Tâche supprimée" });
+      toast({ title: t("detail.toasts.taskDeleted") });
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      toast({ title: t("detail.toasts.error"), description: e.message, variant: "destructive" });
     }
   };
 
@@ -531,9 +534,9 @@ export function SphereDetail() {
       setProcessingMemberIds((p) => ({ ...p, [memberId]: true }));
       await removeSphereMember(String(id), memberId);
       await loadSphereData();
-      toast({ title: "Membre retiré" });
+      toast({ title: t("detail.toasts.memberRemoved") });
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      toast({ title: t("detail.toasts.error"), description: e.message, variant: "destructive" });
     } finally {
       setProcessingMemberIds((p) => ({ ...p, [memberId]: false }));
     }
@@ -546,7 +549,7 @@ export function SphereDetail() {
       });
       await loadSphereData();
     } catch (e: any) {
-      toast({ title: "Erreur", description: e?.message, variant: "destructive" });
+      toast({ title: t("detail.toasts.error"), description: e?.message, variant: "destructive" });
     }
   };
 
@@ -556,9 +559,9 @@ export function SphereDetail() {
       await cancelSphereJoinRequest(String(id));
       await loadSphereData();
       setIsPendingRequest(false);
-      toast({ title: "Demande annulée" });
+      toast({ title: t("detail.toasts.requestCancelled") });
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      toast({ title: t("detail.toasts.error"), description: e.message, variant: "destructive" });
     } finally {
       setIsCancellingRequest(false);
     }
@@ -569,9 +572,9 @@ export function SphereDetail() {
       setProcessingMemberIds((p) => ({ ...p, [memberId]: true }));
       await updateSphereMember(String(id), memberId, { status: "active" });
       await loadSphereData();
-      toast({ title: "Membre approuvé" });
+      toast({ title: t("detail.toasts.memberApproved") });
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      toast({ title: t("detail.toasts.error"), description: e.message, variant: "destructive" });
     } finally {
       setProcessingMemberIds((p) => ({ ...p, [memberId]: false }));
     }
@@ -582,9 +585,9 @@ export function SphereDetail() {
       setProcessingMemberIds((p) => ({ ...p, [memberId]: true }));
       await removeSphereMember(String(id), memberId);
       setPendingMembers((prev) => prev.filter((m) => String(m.id) !== String(memberId)));
-      toast({ title: "Demande rejetée" });
+      toast({ title: t("detail.toasts.requestRejected") });
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      toast({ title: t("detail.toasts.error"), description: e.message, variant: "destructive" });
     } finally {
       setProcessingMemberIds((p) => ({ ...p, [memberId]: false }));
     }
@@ -592,7 +595,7 @@ export function SphereDetail() {
 
   const handleSocialShare = (platform: string) => {
     const shareUrl = encodeURIComponent(window.location.href);
-    const shareText = encodeURIComponent(`Rejoins ma sphère "${sphere?.name}" sur CampusSphere !`);
+    const shareText = encodeURIComponent(t("detail.shareText", { name: sphere?.name }));
 
     let url = "";
     switch (platform) {
@@ -619,9 +622,9 @@ export function SphereDetail() {
     setIsCopyingLink(true);
     try {
       await navigator.clipboard.writeText(window.location.href);
-      toast({ title: "Lien copié !", description: "Le lien de la sphère a été copié." });
+      toast({ title: t("detail.toasts.linkCopied"), description: t("detail.toasts.linkCopiedDesc") });
     } catch {
-      toast({ title: "Erreur", description: "Impossible de copier le lien.", variant: "destructive" });
+      toast({ title: t("detail.toasts.error"), description: t("detail.toasts.copyLinkError"), variant: "destructive" });
     } finally {
       setIsCopyingLink(false);
     }
@@ -631,9 +634,9 @@ export function SphereDetail() {
     try {
       await deleteSphereFile(String(id), fileId);
       setResources((prev: any[]) => prev.filter((r: any) => r.id !== fileId));
-      toast({ title: "Fichier supprimé" });
+      toast({ title: t("detail.toasts.fileDeleted") });
     } catch (e: any) {
-      toast({ title: "Erreur", description: e?.message, variant: "destructive" });
+      toast({ title: t("detail.toasts.error"), description: e?.message, variant: "destructive" });
     }
   };
 
@@ -648,7 +651,7 @@ export function SphereDetail() {
             </div>
           </div>
           <p className="text-sm font-medium text-muted-foreground animate-pulse">
-            Chargement de votre sphère...
+            {t("detail.loading")}
           </p>
         </div>
       </div>
@@ -661,10 +664,10 @@ export function SphereDetail() {
         <div className="h-20 w-20 rounded-full bg-red-100 flex items-center justify-center mb-4">
           <AlertCircle className="h-10 w-10 text-red-600" />
         </div>
-        <h2 className="text-2xl font-bold mb-2">Oups ! Une erreur est survenue</h2>
+        <h2 className="text-2xl font-bold mb-2">{t("detail.errorTitle")}</h2>
         <p className="text-muted-foreground mb-6 max-w-md">{loadError}</p>
         <Button onClick={() => window.location.reload()} className="campus-gradient text-white">
-          Réessayer
+          {t("detail.retry")}
         </Button>
       </div>
     );
@@ -683,10 +686,10 @@ export function SphereDetail() {
               setSphere((prev: any) =>
                 prev ? { ...prev, banner_image_url: res.banner_image_url } : prev
               );
-              toast({ title: "Bannière mise à jour !" });
+              toast({ title: t("detail.bannerUpdated") });
             }}
-            title="Photo de couverture de la sphère"
-            description="Téléchargez une nouvelle bannière pour cette sphère."
+            title={t("detail.bannerModalTitle")}
+            description={t("detail.bannerModalDesc")}
             currentImage={sphereFallback.banner_image_url}
             shape="rect"
             aspectRatio={16 / 5}
@@ -700,7 +703,7 @@ export function SphereDetail() {
               onClick={() => navigate("/spheres")}
               className="gap-2 -ml-2"
             >
-              <ArrowLeft className="h-4 w-4" /> Retour
+              <ArrowLeft className="h-4 w-4" /> {t("detail.back")}
             </Button>
           </div>
 
@@ -804,7 +807,7 @@ export function SphereDetail() {
                       onClick={() => setActiveTab("overview")}
                       className="gap-1.5 text-xs text-muted-foreground hover:text-foreground -ml-2"
                     >
-                      <ArrowLeft className="h-3.5 w-3.5" /> Retour à la vue d'ensemble
+                      <ArrowLeft className="h-3.5 w-3.5" /> {t("detail.backToOverview")}
                     </Button>
                   </div>
                   <SphereMembersTab
@@ -850,13 +853,13 @@ export function SphereDetail() {
           ) : (
             <EmptyState
               icon={Shield}
-              title="Contenu Protégé"
+              title={t("detail.protectedTitle")}
               description={
                 isPendingRequest
-                  ? "Votre demande est en attente. Vous pourrez accéder au contenu dès qu'un administrateur l'aura validée."
-                  : "Rejoignez cette sphère pour accéder au chat, aux tâches et aux fichiers partagés."
+                  ? t("detail.protectedPendingDesc")
+                  : t("detail.protectedNonMemberDesc")
               }
-              actionLabel={!isPendingRequest ? "Rejoindre la sphère" : undefined}
+              actionLabel={!isPendingRequest ? t("detail.joinSphere") : undefined}
               onAction={!isPendingRequest ? handleJoinSphere : undefined}
               className="mx-4 md:mx-0"
             />

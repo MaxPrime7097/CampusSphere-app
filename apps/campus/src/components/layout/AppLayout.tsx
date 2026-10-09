@@ -19,6 +19,7 @@ import { useUnreadCounts, refreshCounts } from "@/hooks/useUnreadCounts";
 import { useAuth } from "@/contexts/AuthContext";
 import { getVerificationAccessStatus } from "@/utils/verification";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
+import { LanguageSwitcher, useTranslation } from "@cs/i18n";
 
 const CreateHubModal = lazy(() => import("@/components/modals/CreateHubModal").then((module) => ({ default: module.CreateHubModal })));
 const VerificationModal = lazy(() => import("@/components/modals/VerificationModal").then((module) => ({ default: module.VerificationModal })));
@@ -29,6 +30,7 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
+  const { t } = useTranslation('navigation');
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
@@ -241,7 +243,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                   <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
                   <Input
                     ref={searchInputRef}
-                    placeholder="Rechercher"
+                    placeholder={t('searchShortcut', { defaultValue: 'Rechercher...' })}
                     className="pl-10 pr-4 h-9.5 text-sm bg-muted/40 hover:bg-muted/60 focus:bg-background border border-border/40 focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary/20 rounded-xl transition-all w-full"
                     value={searchQuery}
                     onChange={(e) => {
@@ -265,7 +267,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                   <>
                     <Button variant="primary" size="sm" onClick={() => setIsCreateHubModalOpen(true)}>
                       <Plus className="h-4 w-4 mr-1.5" />
-                      Créer
+                      {t('publish', { defaultValue: 'Créer' })}
                     </Button>
                     {isCreateHubModalOpen && (
                       <Suspense fallback={<ModalLoadingFallback />}>
@@ -280,7 +282,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                       variant="ghost"
                       onClick={() => navigate('/notifications')}
                       className="relative h-10 w-10 p-0 rounded-full hover:bg-muted text-foreground flex items-center justify-center transition-colors"
-                      aria-label="Notifications"
+                      aria-label={t('notifications', { defaultValue: 'Notifications' })}
                     >
                       <Bell className="h-6 w-6" weight={counts.notifications > 0 ? "fill" : "regular"} />
                       {counts.notifications > 0 && (
@@ -292,6 +294,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                   </>
                 )}
 
+                <LanguageSwitcher variant="minimal" />
                 <ProfileBubble user={user} isLoading={isProfileLoading} />
               </div>
             </div>

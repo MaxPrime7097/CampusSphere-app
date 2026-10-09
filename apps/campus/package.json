@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@cs/api-client": "workspace:*",
+    "@cs/i18n": "workspace:*",
     "@cs/sso": "workspace:*",
     "@cs/types": "workspace:*",
     "@cs/ui": "workspace:*",

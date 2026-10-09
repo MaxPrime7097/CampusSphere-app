@@ -3,9 +3,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Button } from "@/components/ui/button";
 import { CaretDown as ChevronDown } from "@phosphor-icons/react";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 export function PoliciesButton(){
+  const { t } = useTranslation("navigation");
   const navigate = useNavigate();
   
     return (
@@ -14,34 +15,34 @@ export function PoliciesButton(){
           <Button
             className="font-poppins campus-gradient text-white hover:opacity-90 text-lg px-8 py-8 rounded-lg transition-all duration-300 hover:scale-105"
           >
-            Politiques
+            {t("policies")}
             <ChevronDown className="h-4 w-4 "/>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="font-nunito font-semibold">
           <DropdownMenuItem onClick={() => navigate('/cs-inc/policies/privacy')}>
-            Politique de Confidentialité
+            {t("privacyPolicy")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => navigate('/cs-inc/policies/terms')}>
-            Conditions d'Utilisation
+            {t("termsOfService")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => navigate('/cs-inc/policies/terms-of-sale')}>
-            Conditions de Vente (CGV)
+            {t("termsOfSale")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => navigate('/cs-inc/policies/legal-notice')}>
-            Mentions Légales
+            {t("legalNotice")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => navigate('/cs-inc/policies/community-guidelines')}>
-            Règles de la Communauté
+            {t("communityGuidelines")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => navigate('/cs-inc/policies/cookiepolicy')}>
-            Politique de Cookies
+            {t("cookiePolicy")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => navigate('/cs-inc/policies/copyright')}>
-            Politique de Droits d'auteur
+            {t("copyright")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => navigate('/cs-inc/policies/datadeletion')}>
-            Suppression des Données
+            {t("dataDeletion")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

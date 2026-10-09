@@ -1,6 +1,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Lightning as Zap } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 
 interface ResourceAuthModalProps {
   open: boolean;
@@ -15,25 +16,26 @@ export function ResourceAuthModal({
   onNavigateLogin,
   onNavigateRegister,
 }: ResourceAuthModalProps) {
+  const { t } = useTranslation("resources");
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Zap className="h-5 w-5 text-primary" weight="fill" />
-            Rejoignez CampusSphere
+            {t("detail.authModalTitle")}
           </DialogTitle>
           <DialogDescription>
-            Vous devez être connecté pour télécharger ou sauvegarder des ressources.
-            Créez un compte gratuitement pour accéder à tout le contenu.
+            {t("detail.authModalDesc")}
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3 mt-4">
           <Button onClick={onNavigateRegister} className="campus-gradient text-white w-full">
-            Créer un compte gratuitement
+            {t("detail.registerFree")}
           </Button>
           <Button variant="outline" onClick={onNavigateLogin} className="w-full">
-            Se connecter
+            {t("detail.login")}
           </Button>
         </div>
       </DialogContent>
