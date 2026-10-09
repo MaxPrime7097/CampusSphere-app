@@ -292,7 +292,7 @@ export function Resources() {
   const handlePromptVerification = () => {
     toast({
       title: "Compte non certifié",
-      description: "Certifiez votre compte pour partager des ressources.",
+      description: "Votre période d'accès découverte de 24h a expiré. Certifiez votre compte pour partager des ressources.",
       variant: "destructive",
       action: (
         <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>
@@ -310,7 +310,7 @@ export function Resources() {
           isRefreshing={isRefreshing}
           isFetching={resourcesQuery.isFetching}
           onRefresh={handleRefresh}
-          isVerified={Boolean(currentUser?.isVerified)}
+          isVerified={canPerformAction}
           isUploadOpen={isUploadResourceOpen}
           setIsUploadOpen={setIsUploadResourceOpen}
           onResourceUploaded={handleResourceUploaded}

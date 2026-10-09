@@ -102,18 +102,19 @@ const queryClient = new QueryClient({
 });
 
 const CampusGate = ({ children, university }: { children: React.ReactNode; university: string }) => {
-  const { data: campusStatus, isLoading } = useQuery({
+  const { data: campusStatus, isLoading, isError } = useQuery({
     queryKey: ["campus-status", university],
     queryFn: () => getCampusStatus(university),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60 * 1000,
   });
 
   if (isLoading) {
     return <PageLoader />;
   }
 
-  if (campusStatus && !campusStatus.isOpen) {
-    return <Navigate to="/campus-unlock" replace />;
+  // Non-pilot campuses are locked by default unless explicitly confirmed open
+  if (isError || !campusStatus || !campusStatus.isOpen) {
+    return <Navigate to={`/campus-unlock?campus=${encodeURIComponent(university)}`} replace />;
   }
 
   return <>{children}</>;
@@ -128,15 +129,19 @@ const Protected = ({ children, requireCompleteProfile = true }: { children: Reac
   }
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (requireCompleteProfile && user && user.is_profile_complete === false) {
+
+  if (requireCompleteProfile && user && (!user.is_profile_complete || !user.university)) {
     return <Navigate to="/onboarding" replace />;
   }
 
   // Campus unlock waitlist: Non-pilot universities stay locked until 50 registered
-  if (user && user.is_profile_complete !== false && location.pathname !== "/campus-unlock") {
+  if (user && location.pathname !== "/campus-unlock" && location.pathname !== "/onboarding") {
     const rawUniversity = (user.university || "").toLowerCase().trim();
+    if (!rawUniversity) {
+      return <Navigate to="/onboarding" replace />;
+    }
     const isPilot = rawUniversity === "iuc" || rawUniversity.includes("côte") || rawUniversity.includes("cote");
-    if (!isPilot && rawUniversity) {
+    if (!isPilot) {
       return <CampusGate university={rawUniversity}>{children}</CampusGate>;
     }
   }

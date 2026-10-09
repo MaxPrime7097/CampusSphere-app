@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
-import { exchangeSupabaseToken } from "@/services/api";
+import { exchangeSupabaseToken, getCampusStatus } from "@/services/api";
 import { getAccessToken } from "@/services/api/client";
 import { Spinner as Loader2 } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
@@ -102,6 +102,23 @@ export function AuthCallback() {
           console.info("[AuthCallback] Redirecting to onboarding");
           navigate("/onboarding", { replace: true });
         } else {
+          const authUser = (data?.user || user) as Record<string, any> | undefined;
+          const rawUniversity = (authUser?.university || "").toLowerCase().trim();
+          const isPilot = rawUniversity === "iuc" || rawUniversity.includes("côte") || rawUniversity.includes("cote");
+
+          if (!isPilot && rawUniversity) {
+            try {
+              const campusStatus = await getCampusStatus(rawUniversity);
+              if (!campusStatus || !campusStatus.isOpen) {
+                navigate(`/campus-unlock?campus=${encodeURIComponent(rawUniversity)}`, { replace: true });
+                return;
+              }
+            } catch {
+              navigate(`/campus-unlock?campus=${encodeURIComponent(rawUniversity)}`, { replace: true });
+              return;
+            }
+          }
+
           console.info("[AuthCallback] Login successful, redirecting to home");
           toast({ title: "Connexion réussie !", duration: 2000 });
           navigate("/", { replace: true });

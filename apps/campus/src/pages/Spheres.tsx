@@ -296,7 +296,7 @@ export function Spheres() {
               <span className="hidden sm:inline">Actualiser</span>
             </Button>
 
-            {currentUser?.isVerified ? (
+            {canPerformAction ? (
               <>
                 <Button
                   size="sm"
@@ -322,7 +322,7 @@ export function Spheres() {
                 onClick={() => {
                   toast({
                     title: "Compte non certifié",
-                    description: "Certifiez votre compte pour créer des sphères.",
+                    description: "Votre période d'accès découverte de 24h a expiré. Certifiez votre compte pour créer des sphères.",
                     variant: "destructive",
                     action: (
                       <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>

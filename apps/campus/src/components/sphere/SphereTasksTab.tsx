@@ -60,7 +60,7 @@ export function SphereTasksTab({
     if (!isVerifiedUser) {
       toast({
         title: "Compte non certifié",
-        description: "Certifiez votre compte pour créer des tâches.",
+        description: "Votre période d'accès découverte de 24h a expiré. Certifiez votre compte pour créer des tâches.",
         variant: "destructive",
         action: (
           <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>

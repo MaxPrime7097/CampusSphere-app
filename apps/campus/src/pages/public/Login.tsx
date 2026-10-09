@@ -13,7 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { supabaseSignIn, supabaseSignInWithGoogle, supabaseSignInWithFacebook, exchangeSupabaseToken } from "@/services/api";
+import { supabaseSignIn, supabaseSignInWithGoogle, supabaseSignInWithFacebook, exchangeSupabaseToken, getCampusStatus } from "@/services/api";
 import { AuthSidePanel } from "@/components/auth/AuthSidePanel";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -53,7 +53,7 @@ export function Login() {
       const data = await supabaseSignIn(formData.email, formData.password);
       if (!data.session) throw new Error("Session introuvable après connexion");
 
-      await exchangeSupabaseToken(data.session.access_token);
+      const exchangeRes = await exchangeSupabaseToken(data.session.access_token);
       await refreshUser();
 
       if (formData.rememberMe) {
@@ -62,6 +62,30 @@ export function Login() {
       }
 
       toast({ title: "Connexion réussie !", duration: 2000 });
+
+      const userData = exchangeRes?.data?.user;
+      const university = (userData?.university || "").toLowerCase().trim();
+      const isComplete = !exchangeRes?.data?.needs_profile_completion && Boolean(university && userData?.faculty && (userData?.study_year || userData?.studyYear));
+
+      if (!isComplete || !university) {
+        navigate("/onboarding", { replace: true });
+        return;
+      }
+
+      const isPilot = university === "iuc" || university.includes("côte") || university.includes("cote");
+      if (!isPilot) {
+        try {
+          const status = await getCampusStatus(university);
+          if (status && !status.isOpen) {
+            navigate(`/campus-unlock?campus=${encodeURIComponent(university)}`, { replace: true });
+            return;
+          }
+        } catch {
+          navigate(`/campus-unlock?campus=${encodeURIComponent(university)}`, { replace: true });
+          return;
+        }
+      }
+
       navigate(nextUrl);
     } catch (err: any) {
       const msg = err?.message || "Une erreur est survenue";

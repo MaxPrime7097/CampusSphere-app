@@ -28,7 +28,7 @@ import { normalizeUniversity } from "@/lib/profileMetadata";
 
 export function CampusUnlock(): JSX.Element {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user, isAuthenticated, logout, refreshUser } = useAuth();
@@ -60,12 +60,13 @@ export function CampusUnlock(): JSX.Element {
       const uNorm = normalizeUniversity(user.university);
       setSelectedSlug(uNorm);
       setTempUniversity(uNorm);
+      setSearchParams({ campus: uNorm }, { replace: true });
     }
     if (user?.phoneNumber) {
       setPhoneNumber(user.phoneNumber);
       setPhoneSaved(true);
     }
-  }, [user, searchParams]);
+  }, [user, searchParams, setSearchParams]);
 
   // Live polling (every 5s) with staleTime: 0 so palier increments live without page refresh
   const { data: campusData, refetch } = useQuery<CampusStatusData>({
@@ -157,7 +158,13 @@ export function CampusUnlock(): JSX.Element {
     }
 
     setSelectedSlug(finalVal);
+    setTempUniversity(finalVal);
     setIsSwitchingUniversity(false);
+    setSearchParams({ campus: finalVal }, { replace: true });
+
+    try {
+      localStorage.setItem("campus_ref", finalVal);
+    } catch {}
 
     if (isAuthenticated) {
       try {
@@ -458,6 +465,7 @@ export function CampusUnlock(): JSX.Element {
                   onClick={() => {
                     setSelectedSlug(c.slug);
                     setTempUniversity(c.slug);
+                    setSearchParams({ campus: c.slug }, { replace: true });
                   }}
                   className={`py-2 px-3 rounded-md flex items-center justify-between gap-3 text-xs cursor-pointer transition-colors ${
                     isSelected ? "bg-primary/10 font-medium" : "hover:bg-muted/60"

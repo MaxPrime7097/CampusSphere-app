@@ -16,6 +16,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { getEvents } from "@/services/eventService";
 import { useAuth } from "@/contexts/AuthContext";
 import { openVerificationModal } from "@/lib/events";
+import { getVerificationAccessStatus } from "@/utils/verification";
 import { getEventUrl, cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import type { Event, EventFilters, AttendeeStatus } from "@/types/events.types";
@@ -118,11 +119,13 @@ export function Events() {
     refetch();
   };
 
+  const { canPerformAction } = getVerificationAccessStatus(currentUser);
+
   const handleCreateClick = () => {
-    if (currentUser && currentUser.is_verified === false) {
+    if (currentUser && !canPerformAction) {
       toast({
         title: "Compte non certifié",
-        description: "Vous devez certifier votre compte pour publier un événement.",
+        description: "Votre période d'accès découverte de 24h a expiré. Vous devez certifier votre compte pour publier un événement.",
         variant: "destructive",
         action: (
           <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>

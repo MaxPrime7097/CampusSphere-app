@@ -24,6 +24,7 @@ import { getSphereFeatures, normalizeSphereType } from "@/config/sphereFeatures"
 import { useToast } from "@/hooks/use-toast";
 import { openVerificationModal } from "@/lib/events";
 import { useAuth } from "@/contexts/AuthContext";
+import { getVerificationAccessStatus } from "@/utils/verification";
 import { EmptyState } from "@/components/ui/empty-state";
 import { MiniChat } from "@/components/chat/MiniChat";
 import {
@@ -52,6 +53,7 @@ export function SphereDetail() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
+  const { canPerformAction } = getVerificationAccessStatus(currentUser);
   const queryClient = useQueryClient();
 
   // Pre-emptive immediate address bar rewrite if rawParam is pure numeric
@@ -462,10 +464,10 @@ export function SphereDetail() {
   );
 
   const handleJoinSphere = async () => {
-    if (currentUser && !currentUser.isVerified) {
+    if (currentUser && !canPerformAction) {
       toast({
         title: "Compte non certifié",
-        description: "Vous devez être certifié pour rejoindre une sphère.",
+        description: "Votre période d'accès découverte de 24h a expiré. Vous devez être certifié pour rejoindre une sphère.",
         variant: "destructive",
         action: (
           <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>
@@ -771,7 +773,7 @@ export function SphereDetail() {
                       onTasksChange={setTasks}
                       onDeleteTask={handleTaskDelete}
                       canModerate={canModerateMembers}
-                      isVerifiedUser={Boolean(currentUser?.isVerified)}
+                      isVerifiedUser={canPerformAction}
                       members={members}
                       onTaskCreated={loadSphereData}
                     />
