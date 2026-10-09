@@ -48,6 +48,7 @@ export function CampusUnlock(): JSX.Element {
   const [copySuccess, setCopySuccess] = useState(false);
   const [isSwitchingUniversity, setIsSwitchingUniversity] = useState(false);
   const [tempUniversity, setTempUniversity] = useState<string>(selectedSlug);
+  const [customTempUniversity, setCustomTempUniversity] = useState<string>("");
 
   useEffect(() => {
     const fromQuery = searchParams.get("campus") || searchParams.get("ref");
@@ -140,17 +141,27 @@ export function CampusUnlock(): JSX.Element {
   };
 
   const handleApplyCampusChange = async () => {
-    if (!tempUniversity || tempUniversity === selectedSlug) {
+    const finalVal = tempUniversity === "other" ? customTempUniversity.trim() : tempUniversity;
+    if (!finalVal) {
+      toast({
+        title: "Nom requis",
+        description: "Veuillez renseigner le nom complet de votre établissement.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (finalVal === selectedSlug) {
       setIsSwitchingUniversity(false);
       return;
     }
 
-    setSelectedSlug(tempUniversity);
+    setSelectedSlug(finalVal);
     setIsSwitchingUniversity(false);
 
     if (isAuthenticated) {
       try {
-        await updateUserProfile({ university: tempUniversity });
+        await updateUserProfile({ university: finalVal });
         await refreshUser();
         await queryClient.invalidateQueries({ queryKey: ["campus-status"] });
         await refetch();
@@ -252,6 +263,15 @@ export function CampusUnlock(): JSX.Element {
                 value={tempUniversity}
                 onValueChange={setTempUniversity}
               />
+              {tempUniversity === "other" && (
+                <Input
+                  type="text"
+                  placeholder="Nom complet de votre établissement *"
+                  value={customTempUniversity}
+                  onChange={(e) => setCustomTempUniversity(e.target.value)}
+                  className="text-xs h-9"
+                />
+              )}
               <Button
                 size="sm"
                 onClick={handleApplyCampusChange}
@@ -364,7 +384,7 @@ export function CampusUnlock(): JSX.Element {
               <Button
                 type="submit"
                 disabled={isSavingPhone}
-                className="h-9 px-4 text-xs font-bold whitespace-nowrap bg-primary hover:bg-primary/90 text-white shadow-sm"
+                className="h-9 px-4 text-xs font-bold whitespace-nowrap bg-primary hover:bg-primary/90 !text-white shadow-sm"
               >
                 {isSavingPhone ? "Enregistrement..." : phoneSaved ? "Enregistré ✓" : "M'avertir"}
               </Button>
@@ -378,40 +398,40 @@ export function CampusUnlock(): JSX.Element {
           </div>
         )}
 
-        {/* Ce que vous débloquez : Concise, precise, no card bloat */}
+        {/* Ce que vous débloquez : Flat, clean, no card wrappers */}
         <div className="pt-4 border-t border-border/50 space-y-3">
           <h2 className="text-xs uppercase tracking-wider font-bold text-muted-foreground text-center">
             Ce que votre promo débloque à 50 inscrits
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-left">
-            <div className="p-3 rounded-lg border border-border/60 bg-background/50 space-y-1">
+            <div className="space-y-1">
               <div className="flex items-center gap-1.5 text-foreground font-semibold text-xs">
                 <Books className="h-4 w-4 text-primary shrink-0" />
                 <span>Annales & corrigés</span>
               </div>
               <p className="text-[11px] text-muted-foreground leading-snug">
-                Sujets de partiels et rattrapages de votre filière résolus par les promotions précédentes.
+                Sujets d'examens et partiels résolus par les étudiants des promos supérieures.
               </p>
             </div>
 
-            <div className="p-3 rounded-lg border border-border/60 bg-background/50 space-y-1">
+            <div className="space-y-1">
               <div className="flex items-center gap-1.5 text-foreground font-semibold text-xs">
                 <Sparkle className="h-4 w-4 text-primary shrink-0" />
                 <span>Sphera AI</span>
               </div>
               <p className="text-[11px] text-muted-foreground leading-snug">
-                Assistant de cours pour expliquer vos chapitres et générer des quiz d'entraînement.
+                Assistant d'études pour résumer vos cours et s'entraîner aux examens.
               </p>
             </div>
 
-            <div className="p-3 rounded-lg border border-border/60 bg-background/50 space-y-1">
+            <div className="space-y-1">
               <div className="flex items-center gap-1.5 text-foreground font-semibold text-xs">
                 <Users className="h-4 w-4 text-primary shrink-0" />
                 <span>Sphères de promo</span>
               </div>
               <p className="text-[11px] text-muted-foreground leading-snug">
-                Entraide collective, partage de cours et révisions en petits groupes privés.
+                Espace d'entraide, partage de résumés et collaboration avec vos camarades.
               </p>
             </div>
           </div>

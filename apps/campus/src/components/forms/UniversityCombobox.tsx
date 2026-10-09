@@ -25,7 +25,7 @@ export const CAMEROON_PRIVATE_UNIVERSITIES: UniversityItem[] = [
   { value: "jfn", label: "JFN University / JFN Center" },
   { value: "istag", label: "Institut Supérieur de Technologie Appliquée et de Gestion (ISTAG)" },
   { value: "pigier", label: "Pigier Cameroun" },
-  { value: "other", label: "Autre établissement privé" },
+  { value: "other", label: "Autre établissement" },
 ]
 
 export function UniversityCombobox({

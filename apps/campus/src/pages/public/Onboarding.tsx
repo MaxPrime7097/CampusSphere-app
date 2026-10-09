@@ -9,7 +9,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { completeSupabaseProfile } from "@/services/api";
 import { cn } from "@/lib/utils";
-import { UniversityCombobox } from "@/components/forms/UniversityCombobox";
+import { UniversityCombobox, CAMEROON_PRIVATE_UNIVERSITIES } from "@/components/forms/UniversityCombobox";
 import { DomainCombobox } from "@/components/forms/DomainCombobox";
 import { FacultyCombobox } from "@/components/forms/FacultyCombobox";
 import { StudyLevelCombobox } from "@/components/forms/StudyLevelCombobox";
@@ -66,6 +66,10 @@ export function Onboarding() {
     if (fromQuery) return fromQuery.toLowerCase().trim();
     const fromStorage = localStorage.getItem("campus_ref");
     if (fromStorage) return fromStorage.toLowerCase().trim();
+    if (user?.university) {
+      const isKnown = CAMEROON_PRIVATE_UNIVERSITIES.some((u) => u.value === user.university);
+      return isKnown ? user.university : "other";
+    }
     return "iuc";
   };
 
@@ -76,16 +80,31 @@ export function Onboarding() {
     studyYear: "",
   });
 
+  const [customUniversity, setCustomUniversity] = useState(() => {
+    if (user?.university) {
+      const isKnown = CAMEROON_PRIVATE_UNIVERSITIES.some((u) => u.value === user.university);
+      if (!isKnown && user.university !== "other") {
+        return user.university;
+      }
+    }
+    return "";
+  });
+
   const [academicDomain, setAcademicDomain] = useState<string>("");
 
   // Pré-remplissage avec les informations déjà connues de l'utilisateur
   useEffect(() => {
     const campusRef = searchParams.get("campus") || searchParams.get("ref") || localStorage.getItem("campus_ref") || "";
     if (user) {
+      const isKnown = CAMEROON_PRIVATE_UNIVERSITIES.some((u) => u.value === user.university);
+      const uniVal = user.university ? (isKnown ? user.university : "other") : (campusRef ? campusRef.toLowerCase().trim() : "iuc");
+      if (!isKnown && user.university) {
+        setCustomUniversity(user.university);
+      }
       setFormData((prev) => ({
         ...prev,
         dateOfBirth: user.dateOfBirth || prev.dateOfBirth,
-        university: user.university || (campusRef ? campusRef.toLowerCase().trim() : "") || prev.university || "iuc",
+        university: uniVal,
         faculty: user.faculty || prev.faculty,
         studyYear: user.studyYear || prev.studyYear,
       }));
@@ -118,6 +137,8 @@ export function Onboarding() {
     // Validation université
     if (!formData.university.trim()) {
       newErrors.university = "Veuillez sélectionner votre université";
+    } else if (formData.university === "other" && !customUniversity.trim()) {
+      newErrors.customUniversity = "Veuillez indiquer le nom complet de votre établissement";
     }
 
     // Validation filière
@@ -144,9 +165,13 @@ export function Onboarding() {
     setIsLoading(true);
 
     try {
+      const finalUniversity = formData.university === "other"
+        ? customUniversity.trim()
+        : formData.university.trim();
+
       const payload = {
         date_of_birth: formData.dateOfBirth,
-        university: formData.university,
+        university: finalUniversity,
         faculty: formData.faculty,
         study_year: formData.studyYear,
       };
@@ -159,7 +184,7 @@ export function Onboarding() {
         localStorage.removeItem("campus_ref");
       } catch {}
 
-      const normUni = (formData.university || "").toLowerCase().trim();
+      const normUni = finalUniversity.toLowerCase();
       const isPilot = normUni === "iuc" || normUni.includes("côte") || normUni.includes("cote");
 
       if (isPilot) {
@@ -179,7 +204,7 @@ export function Onboarding() {
           description: "Partagez avec votre promo pour débloquer votre établissement.",
         });
 
-        navigate(`/campus-unlock?campus=${encodeURIComponent(normUni)}`, { replace: true });
+        navigate(`/campus-unlock?campus=${encodeURIComponent(finalUniversity)}`, { replace: true });
       }
     } catch (err: any) {
       toast({
@@ -198,7 +223,7 @@ export function Onboarding() {
         <title>Configuration Campus - CampusSphere</title>
       </Helmet>
 
-      <div className="w-full max-w-xl">
+      <div className="w-full max-w-lg mx-auto">
         {/* Entête */}
         <div className="text-center mb-6">
           <span className="text-2xl sm:text-3xl font-bold font-automata campus-gradient bg-clip-text text-transparent">
@@ -212,128 +237,148 @@ export function Onboarding() {
           </p>
         </div>
 
-        {/* Carte de formulaire épurée */}
-        <div className="bg-card border border-border/60 rounded-2xl p-6 sm:p-8 shadow-sm">
-          {user?.firstName && (
-            <div className="flex items-center gap-2 p-3 bg-primary/5 border border-primary/20 text-foreground/80 rounded-xl text-xs mb-5">
-              <Info className="h-4 w-4 shrink-0 text-primary" />
-              <span>
-                Ravi de vous compter parmi nous, <strong>{user.firstName}</strong> ! Vous pourrez personnaliser votre bio et vos compétences plus tard sur votre profil.
-              </span>
-            </div>
-          )}
+        {user?.firstName && (
+          <p className="text-xs text-center text-muted-foreground mb-5">
+            Ravi de vous compter parmi nous, <strong className="text-foreground">{user.firstName}</strong> !
+          </p>
+        )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* 1. Date de naissance */}
-            <div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* 1. Date de naissance */}
+          <div>
+            <Label className="text-xs font-semibold">
+              Date de naissance <span className="text-primary">*</span>
+            </Label>
+            <Input
+              type="date"
+              max={getBirthDateMax()}
+              value={formData.dateOfBirth}
+              onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
+              className={cn("mt-1.5", errors.dateOfBirth && "border-destructive")}
+            />
+            {errors.dateOfBirth ? (
+              <p className="text-xs text-destructive mt-1">{errors.dateOfBirth}</p>
+            ) : (
+              <p className="text-[11px] text-muted-foreground mt-1">
+                CampusSphere est réservé aux personnes de {MINIMUM_AGE} ans et plus.
+              </p>
+            )}
+          </div>
+
+          {/* 2. Université / Établissement */}
+          <div>
+            <Label className="text-xs font-semibold">
+              Université / Établissement <span className="text-primary">*</span>
+            </Label>
+            <UniversityCombobox
+              value={formData.university}
+              onValueChange={(v) => handleInputChange("university", v)}
+              className="mt-1.5"
+            />
+            {errors.university && (
+              <p className="text-xs text-destructive mt-1">{errors.university}</p>
+            )}
+          </div>
+
+          {/* Saisie explicite du nom complet si autre établissement */}
+          {formData.university === "other" && (
+            <div className="space-y-1">
               <Label className="text-xs font-semibold">
-                Date de naissance <span className="text-primary">*</span>
+                Nom complet de votre établissement <span className="text-primary">*</span>
               </Label>
               <Input
-                type="date"
-                max={getBirthDateMax()}
-                value={formData.dateOfBirth}
-                onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
-                className={cn("mt-1.5", errors.dateOfBirth && "border-destructive")}
+                type="text"
+                placeholder="Ex : Université des Montagnes, ISTDI, ESMT..."
+                value={customUniversity}
+                onChange={(e) => {
+                  setCustomUniversity(e.target.value);
+                  if (errors.customUniversity) setErrors((prev) => ({ ...prev, customUniversity: "" }));
+                }}
+                className={cn("mt-1.5", errors.customUniversity && "border-destructive")}
               />
-              {errors.dateOfBirth ? (
-                <p className="text-xs text-destructive mt-1">{errors.dateOfBirth}</p>
+              {errors.customUniversity ? (
+                <p className="text-xs text-destructive mt-1">{errors.customUniversity}</p>
               ) : (
                 <p className="text-[11px] text-muted-foreground mt-1">
-                  CampusSphere est réservé aux personnes de {MINIMUM_AGE} ans et plus.
+                  Indiquez le nom complet ou le sigle officiel de votre établissement au Cameroun.
                 </p>
               )}
             </div>
+          )}
 
-            {/* 2. Université / Institut */}
+          {/* 3. Domaine d'études */}
+          <div>
+            <Label className="text-xs font-semibold">
+              Domaine d'études <span className="text-muted-foreground text-[11px] font-normal">(optionnel)</span>
+            </Label>
+            <DomainCombobox
+              value={academicDomain}
+              onValueChange={(dom) => {
+                setAcademicDomain(dom);
+                if (formData.faculty && getDomainForFaculty(formData.faculty) !== dom) {
+                  handleInputChange("faculty", "");
+                }
+              }}
+              className="mt-1.5"
+            />
+          </div>
+
+          {/* 4. Filière & Niveau */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label className="text-xs font-semibold">
-                Université / Établissement <span className="text-primary">*</span>
+                Filière <span className="text-primary">*</span>
               </Label>
-              <UniversityCombobox
-                value={formData.university}
-                onValueChange={(v) => handleInputChange("university", v)}
+              <FacultyCombobox
+                domain={academicDomain}
+                onDomainChange={(dom) => {
+                  if (dom && dom !== academicDomain) setAcademicDomain(dom);
+                }}
+                value={formData.faculty}
+                onValueChange={(v) => handleInputChange("faculty", v)}
                 className="mt-1.5"
               />
-              {errors.university && (
-                <p className="text-xs text-destructive mt-1">{errors.university}</p>
+              {errors.faculty && (
+                <p className="text-xs text-destructive mt-1">{errors.faculty}</p>
               )}
             </div>
 
-            {/* 3. Domaine d'études */}
             <div>
               <Label className="text-xs font-semibold">
-                Domaine d'études <span className="text-muted-foreground text-[11px] font-normal">(optionnel)</span>
+                Niveau d'études <span className="text-primary">*</span>
               </Label>
-              <DomainCombobox
-                value={academicDomain}
-                onValueChange={(dom) => {
-                  setAcademicDomain(dom);
-                  if (formData.faculty && getDomainForFaculty(formData.faculty) !== dom) {
-                    handleInputChange("faculty", "");
-                  }
-                }}
+              <StudyLevelCombobox
+                value={formData.studyYear}
+                onValueChange={(v) => handleInputChange("studyYear", v)}
                 className="mt-1.5"
               />
+              {errors.studyYear && (
+                <p className="text-xs text-destructive mt-1">{errors.studyYear}</p>
+              )}
             </div>
+          </div>
 
-            {/* 4. Filière & Niveau */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label className="text-xs font-semibold">
-                  Filière <span className="text-primary">*</span>
-                </Label>
-                <FacultyCombobox
-                  domain={academicDomain}
-                  onDomainChange={(dom) => {
-                    if (dom && dom !== academicDomain) setAcademicDomain(dom);
-                  }}
-                  value={formData.faculty}
-                  onValueChange={(v) => handleInputChange("faculty", v)}
-                  className="mt-1.5"
-                />
-                {errors.faculty && (
-                  <p className="text-xs text-destructive mt-1">{errors.faculty}</p>
-                )}
-              </div>
-
-              <div>
-                <Label className="text-xs font-semibold">
-                  Niveau d'études <span className="text-primary">*</span>
-                </Label>
-                <StudyLevelCombobox
-                  value={formData.studyYear}
-                  onValueChange={(v) => handleInputChange("studyYear", v)}
-                  className="mt-1.5"
-                />
-                {errors.studyYear && (
-                  <p className="text-xs text-destructive mt-1">{errors.studyYear}</p>
-                )}
-              </div>
-            </div>
-
-            {/* Bouton de validation */}
-            <div className="pt-4 border-t border-border/50">
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="w-full campus-gradient text-white hover:opacity-90 h-11 text-sm font-semibold shadow-sm"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Configuration de votre espace...
-                  </>
-                ) : (
-                  <>
-                    Accéder à mon espace
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </>
-                )}
-              </Button>
-            </div>
-          </form>
-        </div>
+          {/* Bouton de validation */}
+          <div className="pt-3 border-t border-border/50">
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="w-full campus-gradient text-white hover:opacity-90 h-11 text-sm font-semibold shadow-sm"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Configuration de votre espace...
+                </>
+              ) : (
+                <>
+                  Accéder à mon espace
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </>
+              )}
+            </Button>
+          </div>
+        </form>
       </div>
     </div>
   );
