@@ -13,6 +13,8 @@ import { Spinner as Loader2 } from "@phosphor-icons/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { GlobalErrorBoundary } from "./components/errors/GlobalErrorBoundary";
 import { getCampusStatus } from "./services/api";
+import { UploadQueueProvider } from "./contexts/UploadQueueContext";
+import { UploadProgressDock } from "./components/upload/UploadProgressDock";
 
 // Lazy loaded pages
 const Landing = lazy(() => import("./pages/public/Landing").then(m => ({ default: m.Landing })));
@@ -180,7 +182,8 @@ const App = (): React.ReactElement => (
   <GlobalErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Helmet>
+        <UploadQueueProvider>
+          <Helmet>
           <title>CampusSphere - Le réseau social qui connecte les étudiants</title>
           <meta name="description" content="CampusSphere est le réseau social moderne dédié aux étudiants. Connectez-vous, partagez et grandissez avec la communauté." />
           <link rel="canonical" href="https://campussphere.app/" />
@@ -427,7 +430,9 @@ const App = (): React.ReactElement => (
           </Suspense>
         </BrowserRouter>
         <SpeedInsights />
+        <UploadProgressDock />
       </TooltipProvider>
+      </UploadQueueProvider>
     </AuthProvider>
   </QueryClientProvider>
 </GlobalErrorBoundary>

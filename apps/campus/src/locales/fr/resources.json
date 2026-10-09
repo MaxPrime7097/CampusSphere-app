@@ -5,7 +5,7 @@
     "file": "Fichier",
     "chooseFile": "Choisir un fichier",
     "fileRequired": "Le fichier est requis",
-    "fileTooLarge": "Le fichier ne doit pas dépasser 100 Mo",
+    "fileTooLarge": "Le fichier ne doit pas dépasser 250 Mo",
     "invalidFileType": "Type de fichier non accepté",
     "title_field": "Titre",
     "titleRequired": "Le titre est requis",
@@ -62,7 +62,7 @@
       "friends": "Amis uniquement"
     },
     "fileTooLargeTitle": "Fichier trop volumineux",
-    "fileTooLargeDesc": "La taille maximale est de 100 Mo",
+    "fileTooLargeDesc": "La taille maximale est de 250 Mo",
     "fileTypeUnsupportedTitle": "Type de fichier non supporté",
     "fileTypeUnsupportedDesc": "Ce format de fichier n'est pas autorisé. Vérifiez que l'extension est correcte.",
     "fileSelectedTitle": "Fichier sélectionné",
@@ -179,7 +179,7 @@
     }
   },
   "folders": {
-    "myFolders": "Mes Dossiers ({{count}}/4)",
+    "myFolders": "Mes Dossiers ({{count}}/10)",
     "newFolder": "Nouveau dossier",
     "createFirst": "Créer un premier dossier",
     "close": "Fermer",
@@ -189,7 +189,9 @@
     "rename": "Renommer",
     "delete": "Supprimer",
     "files_one": "{{count}} fichier",
-    "files_other": "{{count}} fichiers"
+    "files_other": "{{count}} fichiers",
+    "addToFolder": "Ajouter à un dossier",
+    "removeFromFolder": "Retirer du dossier"
   },
   "carousels": {
     "back": "← Retour",

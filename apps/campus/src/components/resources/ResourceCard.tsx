@@ -13,10 +13,15 @@ import {
   BookBookmark,
   Notepad,
   Question as QuestionMark,
+  FolderPlus,
+  X,
 } from "@phosphor-icons/react";
 import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { formatFileSize, cn, getResourceUrl } from "@/lib/utils";
 import { StudyToolsModal } from "@/sphera/components/study/StudyToolsModal";
+import { AddToFolderModal } from "@/components/modals/AddToFolderModal";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import type { ResourceCardData, Resource } from "@/types";
 
 interface ResourceCardProps {
@@ -26,6 +31,7 @@ interface ResourceCardProps {
   onDownload?: (e: React.MouseEvent) => void;
   onSave?: (e: React.MouseEvent) => void;
   onPreview?: (e: React.MouseEvent) => void;
+  onRemoveFromFolder?: (e: React.MouseEvent) => void;
   className?: string;
 }
 
@@ -92,12 +98,16 @@ export const ResourceCard = React.memo(
     onDownload,
     onSave,
     onPreview,
+    onRemoveFromFolder,
     className,
   }: ResourceCardProps) => {
     const navigate = useNavigate();
     const { t } = useTranslation("resources");
+    const { user } = useAuth();
+    const { toast } = useToast();
     const style = getTypeStyle(resource.type);
     const [studyOpen, setStudyOpen] = React.useState(false);
+    const [folderModalOpen, setFolderModalOpen] = React.useState(false);
 
     const typeLabel = t(`page.chips.${resource.type}` as any, { defaultValue: style.label });
 
@@ -155,6 +165,38 @@ export const ResourceCard = React.memo(
             className="flex items-center gap-1 shrink-0"
             onClick={(e) => e.stopPropagation()}
           >
+            {onRemoveFromFolder ? (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                onClick={onRemoveFromFolder}
+                title={t("folders.removeFromFolder", { defaultValue: "Retirer du dossier" })}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!user) {
+                    toast({
+                      title: "Connexion requise",
+                      description: "Connectez-vous pour ajouter cette ressource à vos dossiers.",
+                    });
+                    return;
+                  }
+                  setFolderModalOpen(true);
+                }}
+                title={t("folders.addToFolder", { defaultValue: "Ajouter à un dossier" })}
+              >
+                <FolderPlus className="h-4 w-4" />
+              </Button>
+            )}
+
             <Button
               size="icon"
               variant="ghost"
@@ -202,6 +244,14 @@ export const ResourceCard = React.memo(
         <StudyToolsModal
           isOpen={studyOpen}
           onClose={() => setStudyOpen(false)}
+          resourceId={resource.id}
+          resourceTitle={resource.title}
+        />
+
+        {/* Modal Ajouter à un dossier */}
+        <AddToFolderModal
+          isOpen={folderModalOpen}
+          onClose={() => setFolderModalOpen(false)}
           resourceId={resource.id}
           resourceTitle={resource.title}
         />

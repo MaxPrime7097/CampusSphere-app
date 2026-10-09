@@ -9,7 +9,7 @@
     "descriptionTooLong": "Description cannot exceed 500 characters",
     "file": "File",
     "fileRequired": "File is required",
-    "fileTooLarge": "File must not exceed 100 MB",
+    "fileTooLarge": "File must not exceed 250 MB",
     "invalidFileType": "File type not supported",
     "maxTags": "You cannot add more than 5 tags",
     "publish": "Publish",
@@ -62,7 +62,7 @@
       "friends": "Friends only"
     },
     "fileTooLargeTitle": "File too large",
-    "fileTooLargeDesc": "Maximum size is 100 MB",
+    "fileTooLargeDesc": "Maximum size is 250 MB",
     "fileTypeUnsupportedTitle": "File type not supported",
     "fileTypeUnsupportedDesc": "This file format is not allowed. Check that the extension is correct.",
     "fileSelectedTitle": "File selected",
@@ -179,7 +179,7 @@
     }
   },
   "folders": {
-    "myFolders": "My Folders ({{count}}/4)",
+    "myFolders": "My Folders ({{count}}/10)",
     "newFolder": "New folder",
     "createFirst": "Create a first folder",
     "close": "Close",
@@ -189,7 +189,9 @@
     "rename": "Rename",
     "delete": "Delete",
     "files_one": "{{count}} file",
-    "files_other": "{{count}} files"
+    "files_other": "{{count}} files",
+    "addToFolder": "Add to folder",
+    "removeFromFolder": "Remove from folder"
   },
   "carousels": {
     "back": "← Back",

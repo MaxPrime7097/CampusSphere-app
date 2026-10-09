@@ -91,6 +91,45 @@ export async function downloadFolderZip(id: number | string, name: string, token
   URL.revokeObjectURL(link.href);
 }
 
+export async function addResourceToFolder(
+  folderId: number | string,
+  resourceId: number | string,
+  token?: string
+): Promise<{ success: boolean; message?: string }> {
+  const response = await apiFetch<any>(`api/resources/folders/${folderId}/items/`, {
+    method: "POST",
+    body: { resource_id: Number(resourceId) },
+    token: token || getAccessToken(),
+  });
+  return unwrapItem<any>(response);
+}
+
+export async function removeResourceFromFolder(
+  folderId: number | string,
+  resourceId: number | string,
+  token?: string
+): Promise<{ success: boolean; message?: string }> {
+  const response = await apiFetch<any>(`api/resources/folders/${folderId}/items/${resourceId}/`, {
+    method: "DELETE",
+    token: token || getAccessToken(),
+  });
+  return unwrapItem<any>(response);
+}
+
+export async function getUserResourceFolders(
+  resourceId: number | string,
+  token?: string
+): Promise<number[]> {
+  try {
+    const response = await apiFetch<any>(`api/resources/user/resource-folders/${resourceId}/`, {
+      token: token || getAccessToken(),
+    });
+    return unwrapList<number>(response);
+  } catch {
+    return [];
+  }
+}
+
 // ============================================================================
 // RESOURCES CRUD
 // ============================================================================
@@ -111,7 +150,8 @@ export async function getResource(id: number | string, token?: string) {
 export function createResource(
   data: FormData,
   token?: string,
-  onProgress?: (progress: number) => void
+  onProgress?: (progress: number) => void,
+  onXhrCreated?: (xhr: XMLHttpRequest) => void
 ): Promise<any> {
   const rawType = data.get("type");
   if (typeof rawType === "string" && rawType) {
@@ -120,6 +160,9 @@ export function createResource(
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
+    if (onXhrCreated) {
+      onXhrCreated(xhr);
+    }
     const url = `${API_BASE_URL.replace(/\/$/, "")}/api/resources/`;
     const effectiveToken = token || getAccessToken();
 

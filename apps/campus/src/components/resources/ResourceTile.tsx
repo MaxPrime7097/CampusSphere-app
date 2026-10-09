@@ -13,12 +13,16 @@ import {
   Question as QuestionMark,
   Eye,
   Lightning as Zap,
+  FolderPlus,
 } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { formatFileSize, cn, getResourceUrl } from "@/lib/utils";
 import { StudyToolsModal } from "@/sphera/components/study/StudyToolsModal";
+import { AddToFolderModal } from "@/components/modals/AddToFolderModal";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import type { ResourceCardData, Resource } from "@/types";
 
 interface ResourceTileProps {
@@ -98,8 +102,11 @@ export const ResourceTile = React.memo(
   }: ResourceTileProps) => {
     const navigate = useNavigate();
     const { t } = useTranslation("resources");
+    const { user } = useAuth();
+    const { toast } = useToast();
     const config = getTypeConfig(resource.type);
     const [studyOpen, setStudyOpen] = useState(false);
+    const [folderModalOpen, setFolderModalOpen] = useState(false);
 
     const ext = resource.fileUrl?.split(".").pop()?.toUpperCase() || "DOC";
     const size = (resource as any).fileSize || (resource as any).file_size;
@@ -171,6 +178,26 @@ export const ResourceTile = React.memo(
                   className="h-7 w-7 rounded-full bg-background/80 backdrop-blur-md hover:bg-background border border-border/40 shadow-xs text-muted-foreground hover:text-foreground shrink-0"
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (!user) {
+                      toast({
+                        title: "Connexion requise",
+                        description: "Connectez-vous pour ajouter cette ressource à vos dossiers.",
+                      });
+                      return;
+                    }
+                    setFolderModalOpen(true);
+                  }}
+                  title={t("folders.addToFolder", { defaultValue: "Ajouter à un dossier" })}
+                >
+                  <FolderPlus className="h-3.5 w-3.5" />
+                </Button>
+
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7 rounded-full bg-background/80 backdrop-blur-md hover:bg-background border border-border/40 shadow-xs text-muted-foreground hover:text-foreground shrink-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
                     setStudyOpen(true);
                   }}
                   title={t("card.reviseAi")}
@@ -235,6 +262,14 @@ export const ResourceTile = React.memo(
         <StudyToolsModal
           isOpen={studyOpen}
           onClose={() => setStudyOpen(false)}
+          resourceId={resource.id}
+          resourceTitle={resource.title}
+        />
+
+        {/* Modal Ajouter à un dossier */}
+        <AddToFolderModal
+          isOpen={folderModalOpen}
+          onClose={() => setFolderModalOpen(false)}
           resourceId={resource.id}
           resourceTitle={resource.title}
         />
