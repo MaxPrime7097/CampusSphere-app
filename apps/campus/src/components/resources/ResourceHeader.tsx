@@ -24,6 +24,7 @@ import {
   getCategoryLabel,
 } from "@/lib/resourceMetadata";
 import { impactRateResource, type ResourceFolder } from "@/services/api";
+import { AddToFolderModal } from "@/components/modals/AddToFolderModal";
 
 interface ResourceHeaderProps {
   resource: {
@@ -87,6 +88,7 @@ export function ResourceHeader({
   const { user } = useAuth();
   const [showFolderSelect, setShowFolderSelect] = useState(false);
   const [isMovingToFolder, setIsMovingToFolder] = useState(false);
+  const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
 
   // Option A Rating state
   const [impactScore, setImpactScore] = useState(Number(resource.impactScore || 0));
@@ -275,7 +277,8 @@ export function ResourceHeader({
   };
 
   return (
-    <div className="pb-6 mb-4 border-b border-border/40">
+    <>
+      <div className="pb-6 mb-4 border-b border-border/40">
       <div>
         {/* Title & Badges */}
         <div className="mb-4">
@@ -450,56 +453,17 @@ export function ResourceHeader({
               </Button>
             )}
 
-            {resource.canEdit && folders.length > 0 && !showFolderSelect && (
+            {user && (
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowFolderSelect(true)}
+                onClick={() => setIsFolderModalOpen(true)}
                 className="gap-2"
-                aria-label={t("detail.folder")}
+                aria-label={t("detail.folder", { defaultValue: "Dossiers" })}
               >
                 <FolderInput className="h-4 w-4" />
-                <span className="hidden md:inline">{t("detail.folder")}</span>
+                <span className="hidden md:inline">{t("detail.folder", { defaultValue: "Dossiers" })}</span>
               </Button>
-            )}
-
-            {resource.canEdit && folders.length > 0 && showFolderSelect && (
-              <div className="flex items-center gap-1">
-                <Select
-                  value={currentFolderId}
-                  onValueChange={handleFolderChange}
-                >
-                  <SelectTrigger className="h-8 text-xs w-36">
-                    {isMovingToFolder ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <SelectValue placeholder={t("detail.chooseFolder")} />
-                    )}
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">{t("detail.noFolder")}</SelectItem>
-                    {folders.map((f) => (
-                      <SelectItem
-                        key={f.id}
-                        value={String(f.id)}
-                        disabled={
-                          f.resource_count >= 20 && currentFolderId !== String(f.id)
-                        }
-                      >
-                        {f.name} ({f.resource_count}/20)
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setShowFolderSelect(false)}
-                >
-                  <X className="h-3.5 w-3.5" />
-                </Button>
-              </div>
             )}
 
             {resource.canDelete && (
@@ -555,5 +519,12 @@ export function ResourceHeader({
         </div>
       </div>
     </div>
-  );
+    <AddToFolderModal
+      isOpen={isFolderModalOpen}
+      onClose={() => setIsFolderModalOpen(false)}
+      resourceId={resource.id}
+      resourceTitle={resource.title}
+    />
+  </>
+);
 }

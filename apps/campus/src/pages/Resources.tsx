@@ -10,6 +10,7 @@ import {
   getSavedResources,
   deleteFolder,
   downloadFolderZip,
+  removeResourceFromFolder,
 } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { openVerificationModal } from "@/lib/events";
@@ -139,10 +140,40 @@ export function Resources() {
     setSelectedFolder(folder);
     try {
       const res = await getFolderDetail(folder.id);
+      setSelectedFolder((prev) => (prev ? { ...prev, ...res } : res));
       const items = Array.isArray(res) ? res : (res as any)?.resources || (res as any)?.data || [];
       setFolderResources(items.map(mapResourceCard));
     } catch {
       setFolderResources([]);
+    }
+  };
+
+  const handleRemoveResourceFromFolder = async (folderId: string | number, resourceId: string) => {
+    try {
+      await removeResourceFromFolder(folderId, resourceId);
+      setFolderResources((prev) => prev.filter((r) => String(r.id) !== String(resourceId)));
+      setSelectedFolder((prev) =>
+        prev
+          ? {
+              ...prev,
+              resource_count: Math.max(0, (prev.resource_count || 1) - 1),
+            }
+          : prev
+      );
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["resource-folders"] }),
+        queryClient.invalidateQueries({ queryKey: ["user-resource-folders", String(resourceId)] }),
+      ]);
+      toast({
+        title: "Ressource retirée",
+        description: "La ressource a été retirée du dossier.",
+      });
+    } catch (e: any) {
+      toast({
+        title: "Erreur",
+        description: e?.message || "Impossible de retirer la ressource du dossier.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -446,6 +477,7 @@ export function Resources() {
                 onDownloadResource={handleDownload}
                 onSaveResource={handleSave}
                 onPreviewResource={handlePreview}
+                onRemoveResourceFromFolder={handleRemoveResourceFromFolder}
               />
             )}
 

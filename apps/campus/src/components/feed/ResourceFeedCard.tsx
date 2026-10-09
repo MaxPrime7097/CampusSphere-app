@@ -19,6 +19,7 @@ import {
   BookBookmark,
   Notepad,
   Question as QuestionMark,
+  FolderPlus,
 } from "@phosphor-icons/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { StudyToolsModal } from "@/sphera/components/study/StudyToolsModal";
+import { AddToFolderModal } from "@/components/modals/AddToFolderModal";
 import { cn, getResourceUrl, formatFileSize } from "@/lib/utils";
 import { formatRelativeTime } from "@/lib/date";
 import { downloadResource, saveResource, impactRateResource } from "@/services/api";
@@ -83,6 +85,7 @@ export function ResourceFeedCard({ resource }: ResourceFeedCardProps) {
   const [impactScore, setImpactScore] = useState(Number(resource.impactScore || 0));
   const [userImpactRating, setUserImpactRating] = useState<number | null>(null);
   const [studyOpen, setStudyOpen] = useState(false);
+  const [folderModalOpen, setFolderModalOpen] = useState(false);
 
   // Option A Rating picker state & refs
   const [showRatingPicker, setShowRatingPicker] = useState(false);
@@ -408,6 +411,21 @@ export function ResourceFeedCard({ resource }: ResourceFeedCardProps) {
                   <BookmarkSimple className="h-4 w-4 mr-2" weight={isSaved ? "fill" : "regular"} />
                   {isSaved ? t("feedCard.unsave") : t("feedCard.save")}
                 </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    if (!user) {
+                      toast({
+                        title: "Connexion requise",
+                        description: "Connectez-vous pour ajouter cette ressource à vos dossiers.",
+                      });
+                      return;
+                    }
+                    setFolderModalOpen(true);
+                  }}
+                >
+                  <FolderPlus className="h-4 w-4 mr-2" />
+                  {t("feedCard.addToFolder", { defaultValue: "Ajouter à un dossier" })}
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleShare}>
                   <Share className="h-4 w-4 mr-2" />
                   {t("feedCard.share")}
@@ -593,6 +611,14 @@ export function ResourceFeedCard({ resource }: ResourceFeedCardProps) {
       <StudyToolsModal
         isOpen={studyOpen}
         onClose={() => setStudyOpen(false)}
+        resourceId={resource.id}
+        resourceTitle={resource.title}
+      />
+
+      {/* ─── Add to Folder Modal ────────────────────────────────────────── */}
+      <AddToFolderModal
+        isOpen={folderModalOpen}
+        onClose={() => setFolderModalOpen(false)}
         resourceId={resource.id}
         resourceTitle={resource.title}
       />
