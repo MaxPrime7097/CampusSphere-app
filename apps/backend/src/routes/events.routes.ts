@@ -69,7 +69,19 @@ const CreateEventSchema = z.object({
   ),
   isPublic: z.boolean().optional().default(true),
   isFeatured: z.boolean().optional().default(false),
-  hasTicketing: z.boolean().optional().default(true),
+  hasTicketing: z.boolean().optional().default(false),
+  registrationUrl: z.preprocess(
+    (val) => {
+      if (!val || val === "" || val === null) return null;
+      let s = String(val).trim();
+      if (!s) return null;
+      if (!/^https?:\/\//i.test(s)) {
+        s = `https://${s}`;
+      }
+      return s;
+    },
+    z.string().nullable().optional()
+  ),
   sphereId: z.preprocess(
     (val) => (val === "" || val === undefined || val === null || val === "none" ? null : Number(val)),
     z.number().int().positive().nullable().optional()
@@ -374,6 +386,8 @@ eventsRouter.post("/", requireAuth, async (req, res) => {
     maxAttendees,
     isPublic,
     isFeatured,
+    hasTicketing,
+    registrationUrl,
     sphereId,
   } = parsed.data;
 
@@ -401,6 +415,8 @@ eventsRouter.post("/", requireAuth, async (req, res) => {
       maxAttendees: maxAttendees || null,
       isPublic,
       isFeatured: Boolean(isFeatured),
+      hasTicketing: Boolean(hasTicketing),
+      registrationUrl: registrationUrl || null,
       sphereId: sphereId || null,
       organizerId: user.id,
     },
@@ -471,6 +487,8 @@ eventsRouter.put("/:id", requireAuth, async (req, res) => {
   if (parsed.data.maxAttendees !== undefined) data.maxAttendees = parsed.data.maxAttendees;
   if (parsed.data.isPublic !== undefined) data.isPublic = parsed.data.isPublic;
   if (parsed.data.isFeatured !== undefined) data.isFeatured = parsed.data.isFeatured;
+  if (parsed.data.hasTicketing !== undefined) data.hasTicketing = parsed.data.hasTicketing;
+  if (parsed.data.registrationUrl !== undefined) data.registrationUrl = parsed.data.registrationUrl;
   if (parsed.data.sphereId !== undefined) {
     data.sphere = parsed.data.sphereId ? { connect: { id: parsed.data.sphereId } } : { disconnect: true };
   }
