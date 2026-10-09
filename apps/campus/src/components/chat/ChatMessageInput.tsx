@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   PaperPlaneTilt as Send,
   Spinner as Loader2,
@@ -98,10 +99,11 @@ export function ChatMessageInput({
   onChange,
   onSend,
   isSending,
-  placeholder = "Écrivez un message...",
+  placeholder,
   replyingTo,
   onCancelReply,
 }: ChatMessageInputProps) {
+  const { t } = useTranslation("messages");
   const { toast } = useToast();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -237,11 +239,11 @@ export function ChatMessageInput({
     } catch (err: any) {
       console.error("Unable to access microphone:", err);
       toast({
-        title: "Microphone inaccessible",
+        title: t("toasts.micUnavailable"),
         description:
           err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError"
-            ? "L'accès au micro a été refusé. Veuillez vérifier les autorisations de votre navigateur ou de votre système."
-            : "Impossible d'accéder au microphone sur cet appareil.",
+            ? t("toasts.micDenied")
+            : t("toasts.micGeneric"),
         variant: "destructive",
       });
     }
@@ -311,28 +313,28 @@ export function ChatMessageInput({
       />
 
       <div className="max-w-4xl mx-auto flex flex-col gap-1.5">
-        {/* Reply Preview Bar (Clean French translation & Phosphor icons) */}
+        {/* Reply Preview Bar (Clean localized translation & Phosphor icons) */}
         {replyingTo && (
           <div className="flex items-center justify-between bg-card border border-border/70 border-l-4 border-l-primary px-3.5 py-2 rounded-2xl text-xs shadow-xs animate-in slide-in-from-bottom-2 duration-150 mx-1">
             <div className="min-w-0 flex-1 pr-2">
               <p className="font-semibold text-primary truncate text-[11px]">
-                Réponse à @{replyingTo.senderUsername || replyingTo.sender || "message"}
+                {t("input.replyTo", { name: replyingTo.senderUsername || replyingTo.sender || t("input.message") })}
               </p>
               <p className="text-muted-foreground truncate text-[11px] flex items-center gap-1">
                 {replyingTo.mediaType === "image" ? (
                   <>
-                    <Camera className="h-3 w-3 inline flex-shrink-0" /> Photo
+                    <Camera className="h-3 w-3 inline flex-shrink-0" /> {t("input.photo")}
                   </>
                 ) : replyingTo.mediaType === "audio" ? (
                   <>
-                    <Microphone className="h-3 w-3 inline flex-shrink-0" /> Message vocal
+                    <Microphone className="h-3 w-3 inline flex-shrink-0" /> {t("input.voiceMessage")}
                   </>
                 ) : replyingTo.fileName ? (
                   <>
                     <FileText className="h-3 w-3 inline flex-shrink-0" /> {replyingTo.fileName}
                   </>
                 ) : (
-                  replyingTo.content || "Message"
+                  replyingTo.content || t("input.message")
                 )}
               </p>
             </div>
@@ -340,7 +342,7 @@ export function ChatMessageInput({
               type="button"
               onClick={onCancelReply}
               className="h-6 w-6 rounded-full hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-              title="Annuler la réponse"
+              title={t("input.cancelReply")}
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -360,7 +362,7 @@ export function ChatMessageInput({
               ) : (
                 <img
                   src={previewUrl}
-                  alt="Aperçu"
+                  alt={t("input.preview")}
                   className="h-12 w-12 object-cover rounded-xl border border-border/40"
                 />
               )
@@ -395,8 +397,8 @@ export function ChatMessageInput({
               type="button"
               onClick={cancelRecording}
               className="h-8 w-8 rounded-full flex items-center justify-center text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-950/40 transition-colors flex-shrink-0"
-              title="Annuler l'enregistrement"
-              aria-label="Annuler l'enregistrement"
+              title={t("input.cancelRecording")}
+              aria-label={t("input.cancelRecording")}
             >
               <Trash className="h-4 w-4" />
             </button>
@@ -420,7 +422,7 @@ export function ChatMessageInput({
               </div>
 
               <span className="text-[11px] text-muted-foreground hidden sm:inline truncate">
-                Enregistrement audio...
+                {t("input.recordingAudio")}
               </span>
             </div>
 
@@ -429,8 +431,8 @@ export function ChatMessageInput({
               type="button"
               onClick={stopAndSendRecording}
               className="h-8 w-8 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center shadow-xs transition-transform active:scale-95 flex-shrink-0"
-              title="Envoyer le vocal"
-              aria-label="Envoyer le vocal"
+              title={t("input.sendVoice")}
+              aria-label={t("input.sendVoice")}
             >
               <Send className="h-3.5 w-3.5" weight="fill" />
             </button>
@@ -444,8 +446,8 @@ export function ChatMessageInput({
                 <button
                   type="button"
                   className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
-                  title="Émojis"
-                  aria-label="Choisir un émoji"
+                  title={t("input.emojis")}
+                  aria-label={t("input.chooseEmoji")}
                 >
                   <Smiley className="h-5 w-5" />
                 </button>
@@ -496,8 +498,8 @@ export function ChatMessageInput({
                 <button
                   type="button"
                   className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
-                  aria-label="Ajouter une pièce jointe"
-                  title="Pièce jointe"
+                  aria-label={t("input.addAttachment")}
+                  title={t("input.attachment")}
                 >
                   <Paperclip className="h-5 w-5" />
                 </button>
@@ -508,14 +510,14 @@ export function ChatMessageInput({
                   className="gap-2.5 cursor-pointer rounded-xl py-2 px-3 text-xs"
                 >
                   <ImageIcon className="h-4 w-4 text-emerald-500" />
-                  <span>Photo / Image</span>
+                  <span>{t("input.photoImage")}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => fileInputRef.current?.click()}
                   className="gap-2.5 cursor-pointer rounded-xl py-2 px-3 text-xs"
                 >
                   <FileText className="h-4 w-4 text-blue-500" />
-                  <span>Document / Fichier</span>
+                  <span>{t("input.documentFile")}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -525,7 +527,7 @@ export function ChatMessageInput({
               <textarea
                 ref={textareaRef}
                 rows={1}
-                placeholder={placeholder}
+                placeholder={placeholder || t("input.placeholder")}
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -540,8 +542,8 @@ export function ChatMessageInput({
                 type="button"
                 className="h-9 w-9 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center transition-transform active:scale-95 shadow-xs flex-shrink-0"
                 onClick={startRecording}
-                aria-label="Enregistrer un message vocal"
-                title="Enregistrer un message vocal"
+                aria-label={t("input.recordVoice")}
+                title={t("input.recordVoice")}
               >
                 <Microphone className="h-4.5 w-4.5" weight="fill" />
               </button>
@@ -551,7 +553,7 @@ export function ChatMessageInput({
                 onClick={handleTriggerSend}
                 className="h-9 w-9 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center transition-transform active:scale-95 shadow-xs flex-shrink-0"
                 disabled={(!value.trim() && !attachedFile) || isSending}
-                aria-label="Envoyer"
+                aria-label={t("input.send")}
               >
                 {isSending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

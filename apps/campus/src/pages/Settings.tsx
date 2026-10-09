@@ -32,14 +32,17 @@ import {
   BlockListModal,
   DeleteAccountModal,
 } from "@/components/settings";
+import { useLanguage, useTranslation } from "@cs/i18n";
 
 export function Settings() {
+  const { currentLanguage, changeLanguage } = useLanguage();
+  const { t } = useTranslation('settings');
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user: currentUser, refreshUser } = useAuth();
   const [darkMode, setDarkMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [language, setLanguage] = useState("fr");
+  const language = currentLanguage;
 
   useEffect(() => {
     const storedTheme = localStorage.getItem("theme");
@@ -173,10 +176,10 @@ export function Settings() {
   };
 
   const handleLanguageChange = (value: string) => {
-    setLanguage(value);
+    changeLanguage(value as 'fr' | 'en');
     toast({
-      title: "Langue modifiée",
-      description: `Interface changée en ${value === 'fr' ? 'Français' : 'English'}`,
+      title: t('toast.languageUpdated'),
+      description: `${t('toast.languageChanged')} (${value === 'fr' ? 'Français' : 'English'})`,
       duration: 2000,
     });
   };
@@ -418,10 +421,10 @@ export function Settings() {
         <div className="mb-4 campus-animate-fade-in pb-4 border-b border-border/40">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
-              Paramètres
+              {t('title')}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Gérez vos préférences, vos options de confidentialité et votre compte
+              {t('subtitle')}
             </p>
           </div>
         </div>

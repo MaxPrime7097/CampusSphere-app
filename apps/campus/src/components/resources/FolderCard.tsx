@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Folder, FolderOpen, Download, Spinner as Loader2, DotsThreeVertical as MoreVertical, PencilSimple, Trash as Trash2 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +28,7 @@ export function FolderCard({
   onEdit,
   onDelete,
 }: FolderCardProps) {
+  const { t } = useTranslation("resources");
   const [isDownloading, setIsDownloading] = useState(false);
 
   const handleDownload = async (e: React.MouseEvent) => {
@@ -61,7 +63,7 @@ export function FolderCard({
             className="h-7 px-2 text-[11px] font-medium gap-1 text-muted-foreground hover:text-foreground"
             onClick={handleDownload}
             disabled={isDownloading || folder.resource_count === 0}
-            title={folder.resource_count === 0 ? "Dossier vide" : "Télécharger en ZIP"}
+            title={folder.resource_count === 0 ? t("folders.emptyTooltip") : t("folders.downloadZip")}
           >
             {isDownloading ? (
               <Loader2 className="h-3 w-3 animate-spin" />
@@ -90,7 +92,7 @@ export function FolderCard({
                   }}
                   className="text-xs"
                 >
-                  <PencilSimple className="h-3.5 w-3.5 mr-2" /> Renommer
+                  <PencilSimple className="h-3.5 w-3.5 mr-2" /> {t("folders.rename")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-xs text-destructive font-medium"
@@ -99,7 +101,7 @@ export function FolderCard({
                     onDelete?.(folder.id);
                   }}
                 >
-                  <Trash2 className="h-3.5 w-3.5 mr-2" /> Supprimer
+                  <Trash2 className="h-3.5 w-3.5 mr-2" /> {t("folders.delete")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -113,7 +115,9 @@ export function FolderCard({
           {folder.name}
         </h3>
         <p className="text-xs text-muted-foreground mt-0.5">
-          {folder.resource_count} {folder.resource_count > 1 ? "fichiers" : "fichier"}
+          {folder.resource_count > 1
+            ? t("folders.files_other", { count: folder.resource_count })
+            : t("folders.files_one", { count: folder.resource_count })}
         </p>
       </div>
     </div>

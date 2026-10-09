@@ -44,7 +44,7 @@ interface UploadResourceModalProps {
 
 export function UploadResourceModal({ children, onResourceUploaded, open: controlledOpen, onOpenChange: setControlledOpen }: UploadResourceModalProps) {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t } = useTranslation("resources");
   const [internalOpen, setInternalOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [tags, setTags] = useState<string[]>([]);
@@ -72,21 +72,24 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
     }
   }, [open]);
   const resourceSchema = z.object({
-    title: z.string().trim().min(3, { message: t('modals.uploadResource.titleRequired') }).max(100, { message: t('modals.uploadResource.titleTooLong') }),
-    description: z.string().trim().max(500, { message: t('modals.uploadResource.descriptionTooLong') }).optional(),
-    type: z.string().min(1, { message: t('modals.uploadResource.typeRequired') }),
-    file: z.custom<File>((val) => val instanceof File, { message: t('modals.uploadResource.fileRequired') })
-      .refine((file) => file.size <= MAX_FILE_SIZE, { message: t('modals.uploadResource.fileTooLarge') })
-      .refine((file) => (ACCEPTED_FILE_TYPES as string[]).includes(file.type), { message: t('modals.uploadResource.invalidFileType') }),
+    title: z.string().trim().min(3, { message: t('uploadResource.titleRequired') }).max(100, { message: t('uploadResource.titleTooLong') }),
+    description: z.string().trim().max(500, { message: t('uploadResource.descriptionTooLong') }).optional(),
+    type: z.string().min(1, { message: t('uploadResource.typeRequired') }),
+    file: z.custom<File>((val) => val instanceof File, { message: t('uploadResource.fileRequired') })
+      .refine((file) => file.size <= MAX_FILE_SIZE, { message: t('uploadResource.fileTooLarge') })
+      .refine((file) => (ACCEPTED_FILE_TYPES as string[]).includes(file.type), { message: t('uploadResource.invalidFileType') }),
   });
 
 
-  const types = RESOURCE_TYPE_OPTIONS;
+  const types = RESOURCE_TYPE_OPTIONS.map((opt) => ({
+    ...opt,
+    label: t(`feedCard.types.${opt.value}` as any, { defaultValue: opt.label }),
+  }));
 
   const visibilities = [
-    { value: "public", label: "Public" },
-    { value: "university", label: "Université uniquement" },
-    { value: "friends", label: "Amis uniquement" }
+    { value: "public", label: t('uploadResource.visibilities.public') },
+    { value: "university", label: t('uploadResource.visibilities.university') },
+    { value: "friends", label: t('uploadResource.visibilities.friends') }
   ];
 
   const audiences = [
@@ -117,8 +120,8 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
     if (selectedFile.size > MAX_FILE_SIZE) {
       toast({ 
         variant: "destructive", 
-        title: "Fichier trop volumineux", 
-        description: "La taille maximale est de 100 Mo" 
+        title: t('uploadResource.fileTooLargeTitle'), 
+        description: t('uploadResource.fileTooLargeDesc') 
       });
       return;
     }
@@ -130,8 +133,8 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
     if (!isMimeAccepted && !isExtAccepted) {
       toast({ 
         variant: "destructive", 
-        title: "Type de fichier non supporté", 
-        description: "Ce format de fichier n'est pas autorisé. Vérifiez que l'extension est correcte." 
+        title: t('uploadResource.fileTypeUnsupportedTitle'), 
+        description: t('uploadResource.fileTypeUnsupportedDesc') 
       });
       return;
     }
@@ -144,7 +147,7 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
     }
 
     toast({
-      title: "Fichier sélectionné",
+      title: t('uploadResource.fileSelectedTitle'),
       description: `${selectedFile.name} (${(selectedFile.size / 1024 / 1024).toFixed(2)} MB)`,
       duration: 2000,
     });
@@ -174,11 +177,11 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
     const trimmedTag = newTag.trim();
     if (!trimmedTag) return;
     if (trimmedTag.length > 20) {
-      toast({ variant: "destructive", title: t('modals.uploadResource.tagTooLong') });
+      toast({ variant: "destructive", title: t('uploadResource.tagTooLong') });
       return;
     }
     if (tags.length >= 5) {
-      toast({ variant: "destructive", title: t('modals.uploadResource.maxTags') });
+      toast({ variant: "destructive", title: t('uploadResource.maxTags') });
       return;
     }
     if (!tags.includes(trimmedTag)) {
@@ -193,18 +196,18 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
 
   const handleSubmit = async () => {
     if (!file) {
-      toast({ variant: "destructive", title: t('modals.uploadResource.fileRequired') });
+      toast({ variant: "destructive", title: t('uploadResource.fileRequired') });
       return;
     }
 
     if (!title.trim()) {
-      toast({ variant: "destructive", title: "Le titre est requis" });
+      toast({ variant: "destructive", title: t('uploadResource.titleRequired') });
       return;
     }
 
 
     if (!type) {
-      toast({ variant: "destructive", title: "Veuillez sélectionner un type de ressource" });
+      toast({ variant: "destructive", title: t('uploadResource.typeRequiredSelect') });
       return;
     }
 
@@ -232,8 +235,8 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
       setUploadProgress(100);
       
       toast({ 
-        title: "Ressource uploadée avec succès !", 
-        description: `"${title}" est maintenant disponible dans la bibliothèque`,
+        title: t('uploadResource.uploadSuccessTitle'), 
+        description: t('uploadResource.uploadSuccessDesc', { title }),
         duration: 3000,
       });
       
@@ -256,8 +259,8 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
       setIsUploading(false);
       toast({
         variant: "destructive",
-        title: "Erreur d'upload",
-        description: error?.message || "Une erreur est survenue lors de l'upload de la ressource",
+        title: t('uploadResource.uploadErrorTitle'),
+        description: error?.message || t('uploadResource.uploadErrorDefault'),
       });
     }
   };
@@ -282,9 +285,9 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5" />
-            {t('modals.uploadResource.title')}
+            {t('uploadResource.title')}
           </DialogTitle>
-          <DialogDescription className="sr-only">Formulaire d'upload de ressource</DialogDescription>
+          <DialogDescription className="sr-only">{t('uploadResource.srDescription')}</DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4 min-w-0 pt-1">
@@ -337,7 +340,7 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
                         disabled={isUploading}
                         className="cursor-pointer text-xs"
                       >
-                        <span>{t('modals.uploadResource.chooseFile')}</span>
+                        <span>{t('uploadResource.chooseFile')}</span>
                       </Button>
                     </label>
                     <input 
@@ -351,7 +354,7 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
                     />
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-2">
-                    Glissez-déposez un fichier ou parcourez (PDF, Docs, Images... max 100 Mo)
+                    {t('uploadResource.dropzoneHint')}
                   </p>
                 </div>
               )}
@@ -360,7 +363,7 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
               {isUploading && (
                 <div className="mt-3">
                   <div className="flex items-center justify-between text-xs mb-1.5">
-                    <span>Upload en cours...</span>
+                    <span>{t('uploadResource.uploadingProgress')}</span>
                     <span>{uploadProgress}%</span>
                   </div>
                   <div className="w-full bg-secondary rounded-full h-1.5">
@@ -379,10 +382,10 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
           {/* Primary Fields: Title & Type */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="min-w-0">
-              <Label htmlFor="title" className="text-xs font-medium">{t('modals.uploadResource.title_field')} *</Label>
+              <Label htmlFor="title" className="text-xs font-medium">{t('uploadResource.title_field')} *</Label>
               <Input 
                 id="title" 
-                placeholder={t('modals.uploadResource.titlePlaceholder', { defaultValue: "Ex : Notes - Algèbre linéaire" })} 
+                placeholder={t('uploadResource.titlePlaceholder', { defaultValue: "Ex : Notes - Algèbre linéaire" })} 
                 value={title} 
                 onChange={(e) => setTitle(e.target.value)} 
                 maxLength={100} 
@@ -391,10 +394,10 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
             </div>
 
             <div>
-              <Label className="text-xs font-medium">Type de ressource *</Label>
+              <Label className="text-xs font-medium">{t('uploadResource.resourceTypeField')} *</Label>
               <Select value={type} onValueChange={setType}>
                 <SelectTrigger className="mt-1 h-9 text-xs sm:text-sm">
-                  <SelectValue placeholder="Sélectionner..." />
+                  <SelectValue placeholder={t('uploadResource.selectPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {types.map((type) => (
@@ -420,7 +423,7 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
               )}
             >
               <SlidersHorizontal className="h-3.5 w-3.5" />
-              <span>Options</span>
+              <span>{t('uploadResource.options')}</span>
               {showAdvanced ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
             </Button>
 
@@ -429,11 +432,11 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
                 {/* Description */}
                 <div>
                   <Label htmlFor="description" className="text-xs font-medium">
-                    {t('modals.uploadResource.description')} <span className="text-muted-foreground font-normal">(optionnel)</span>
+                    {t('uploadResource.description')} <span className="text-muted-foreground font-normal">{t('uploadResource.optional')}</span>
                   </Label>
                   <Textarea 
                     id="description" 
-                    placeholder={t('modals.uploadResource.descPlaceholder', { defaultValue: "Décrivez brièvement le document..." })} 
+                    placeholder={t('uploadResource.descPlaceholder', { defaultValue: "Décrivez brièvement le document..." })} 
                     rows={2} 
                     value={description} 
                     onChange={(e) => setDescription(e.target.value)} 
@@ -445,13 +448,13 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
                 {/* Visibility & Audience */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-xs font-medium">Niveau d'audience</Label>
+                    <Label className="text-xs font-medium">{t('uploadResource.audienceLevel')}</Label>
                     <Select value={audience || "all"} onValueChange={setAudience}>
                       <SelectTrigger className="mt-1 h-9 text-xs">
-                        <SelectValue placeholder="Tous niveaux" />
+                        <SelectValue placeholder={t('uploadResource.allAudiences')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all" className="text-xs">Tous niveaux</SelectItem>
+                        <SelectItem value="all" className="text-xs">{t('uploadResource.allAudiences')}</SelectItem>
                         {audiences.map((aud) => (
                           <SelectItem key={aud.value} value={aud.value} className="text-xs">
                             {aud.label}
@@ -461,10 +464,10 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-xs font-medium">Visibilité</Label>
+                    <Label className="text-xs font-medium">{t('uploadResource.visibility')}</Label>
                     <Select value={visibility || "public"} onValueChange={setVisibility}>
                       <SelectTrigger className="mt-1 h-9 text-xs">
-                        <SelectValue placeholder="Public" />
+                        <SelectValue placeholder={t('uploadResource.visibilities.public')} />
                       </SelectTrigger>
                       <SelectContent>
                         {visibilities.map((vis) => (
@@ -481,14 +484,14 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
                 {folders.length > 0 && (
                   <div>
                     <Label className="text-xs font-medium">
-                      Ajouter à un dossier <span className="text-muted-foreground font-normal">(optionnel)</span>
+                      {t('uploadResource.addToFolder')} <span className="text-muted-foreground font-normal">{t('uploadResource.optional')}</span>
                     </Label>
                     <Select value={selectedFolderId || "none"} onValueChange={setSelectedFolderId}>
                       <SelectTrigger className="mt-1 h-9 text-xs">
-                        <SelectValue placeholder="Aucun dossier" />
+                        <SelectValue placeholder={t('uploadResource.noFolder')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none" className="text-xs">Aucun dossier</SelectItem>
+                        <SelectItem value="none" className="text-xs">{t('uploadResource.noFolder')}</SelectItem>
                         {folders.map((f) => (
                           <SelectItem
                             key={f.id}
@@ -506,17 +509,17 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
 
                 {/* Tags */}
                 <div>
-                  <Label className="text-xs font-medium">Tags</Label>
+                  <Label className="text-xs font-medium">{t('uploadResource.tags')}</Label>
                   <div className="flex gap-2 mt-1">
                     <Input
-                      placeholder="Ajouter un tag..."
+                      placeholder={t('uploadResource.tagPlaceholder')}
                       value={newTag}
                       onChange={(e) => setNewTag(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
                       className="h-8 text-xs"
                     />
                     <Button type="button" onClick={addTag} variant="secondary" size="sm" className="h-8 px-3 text-xs shrink-0">
-                      Ajouter
+                      {t('uploadResource.addTag')}
                     </Button>
                   </div>
                   {tags.length > 0 && (
@@ -551,7 +554,7 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
               }}
               disabled={isUploading}
             >
-              {t('modals.uploadResource.cancel')}
+              {t('uploadResource.cancel')}
             </Button>
             <Button 
               className="flex-1 bg-secondary text-secondary-foreground hover:bg-muted border border-border/60 text-xs sm:text-sm h-9" 
@@ -561,12 +564,12 @@ export function UploadResourceModal({ children, onResourceUploaded, open: contro
               {isUploading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Upload...
+                  {t('uploadResource.uploadingBtn')}
                 </>
               ) : (
                 <>
                   <Check className="h-4 w-4 mr-2" />
-                  {t('modals.uploadResource.publish')}
+                  {t('uploadResource.publish')}
                 </>
               )}
             </Button>

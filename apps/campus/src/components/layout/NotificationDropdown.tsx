@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Bell } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +27,7 @@ interface NotificationItem {
 }
 
 export function NotificationDropdown() {
+  const { t } = useTranslation("notifications");
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
@@ -123,13 +125,13 @@ export function NotificationDropdown() {
 
       <SheetContent side="right" className="w-[400px] sm:w-[540px]">
         <SheetHeader>
-          <SheetTitle>Notifications</SheetTitle>
+          <SheetTitle>{t("title")}</SheetTitle>
         </SheetHeader>
 
         <div className="mt-6 space-y-3">
           {notifications.length === 0 && (
             <div className="rounded-lg border p-4 text-sm text-muted-foreground">
-              Aucune notification pour le moment.
+              {t("empty.description")}
             </div>
           )}
 
@@ -172,7 +174,7 @@ export function NotificationDropdown() {
           ))}
 
           <Button variant="outline" className="w-full mt-4" onClick={() => navigate("/notifications")}>
-            Voir toutes les notifications
+            {t("viewAll")}
           </Button>
         </div>
       </SheetContent>

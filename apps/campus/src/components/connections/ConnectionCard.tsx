@@ -2,6 +2,7 @@ import { UserCheck, Lightning as Zap, SealCheck as BadgeCheck } from "@phosphor-
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { formatSlugToLabel, truncate } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 import type { ConnectionUser } from "./types";
 
 interface ConnectionCardProps {
@@ -15,6 +16,8 @@ export function ConnectionCard({
   onNavigateProfile,
   onNavigateMessage,
 }: ConnectionCardProps) {
+  const { t } = useTranslation("connections");
+
   return (
     <div
       className="flex items-center justify-between gap-3 py-3 px-2 sm:px-3 border-b border-border/40 hover:bg-muted/30 transition-colors cursor-pointer"
@@ -47,7 +50,7 @@ export function ConnectionCard({
             {connection.mutualFriends ? (
               <>
                 <span>·</span>
-                <span>{connection.mutualFriends} en commun</span>
+                <span>{t("mutualFriends", { count: connection.mutualFriends })}</span>
               </>
             ) : null}
           </div>
@@ -63,7 +66,7 @@ export function ConnectionCard({
         }}
       >
         <UserCheck className="h-3.5 w-3.5 mr-1.5" />
-        Message
+        {t("actions.message")}
       </Button>
     </div>
   );

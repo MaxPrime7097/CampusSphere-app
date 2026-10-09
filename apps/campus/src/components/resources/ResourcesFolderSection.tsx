@@ -1,4 +1,5 @@
 import { Suspense, lazy } from "react";
+import { useTranslation } from "react-i18next";
 import { Folder, FolderOpen, Plus } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { FolderCard } from "@/components/resources/FolderCard";
@@ -56,11 +57,13 @@ export function ResourcesFolderSection({
   onSaveResource,
   onPreviewResource,
 }: ResourcesFolderSectionProps) {
+  const { t } = useTranslation("resources");
+
   return (
     <section className="flex flex-col w-full max-w-full overflow-hidden">
       <div className="flex justify-between items-center mb-3 px-1">
         <h2 className="text-base sm:text-lg font-bold text-foreground">
-          Mes Dossiers ({folders.length}/4)
+          {t("folders.myFolders", { count: folders.length })}
         </h2>
         <Button
           variant="ghost"
@@ -73,7 +76,7 @@ export function ResourcesFolderSection({
           disabled={folders.length >= 4}
         >
           <Plus className="h-3.5 w-3.5 mr-1" />
-          Nouveau dossier
+          {t("folders.newFolder")}
         </Button>
       </div>
 
@@ -92,7 +95,7 @@ export function ResourcesFolderSection({
           onClick={onOpenCreateFolder}
         >
           <Folder className="h-6 w-6 text-muted-foreground/70" />
-          <span className="text-xs font-medium">Créer un premier dossier</span>
+          <span className="text-xs font-medium">{t("folders.createFirst")}</span>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
@@ -124,12 +127,12 @@ export function ResourcesFolderSection({
               className="h-7 text-xs px-2 text-muted-foreground hover:text-foreground"
               onClick={onCloseFolder}
             >
-              Fermer
+              {t("folders.close")}
             </Button>
           </div>
           {folderResources.length === 0 ? (
             <div className="py-4 text-center text-muted-foreground text-xs">
-              Ce dossier est actuellement vide.
+              {t("folders.empty")}
             </div>
           ) : (
             <div className="flex flex-col">

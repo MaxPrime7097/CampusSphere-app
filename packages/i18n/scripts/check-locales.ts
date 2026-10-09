@@ -9,6 +9,7 @@ const rootDir = path.resolve(__dirname, '../../..');
 const LOCALE_DIRS = [
   path.resolve(rootDir, 'packages/i18n/src/locales'),
   path.resolve(rootDir, 'apps/sphera/src/locales'),
+  path.resolve(rootDir, 'apps/campus/src/locales'),
 ];
 
 function flattenKeys(obj: Record<string, unknown>, prefix = ''): Record<string, string> {

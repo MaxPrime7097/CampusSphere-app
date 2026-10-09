@@ -1,0 +1,64 @@
+{
+  "title": "Paramètres",
+  "subtitle": "Gérez vos préférences et votre compte",
+  "notifications": {
+    "title": "Notifications",
+    "posts": "Publications et interactions",
+    "postsDesc": "J'aime, commentaires et mentions",
+    "messages": "Messages",
+    "messagesDesc": "Nouveaux messages privés et de groupe",
+    "events": "Événements",
+    "eventsDesc": "Rappels et nouveaux événements",
+    "marketing": "Communications marketing",
+    "marketingDesc": "Actualités et conseils d'utilisation"
+  },
+  "appearance": {
+    "title": "Apparence et langue",
+    "darkTheme": "Thème sombre",
+    "darkThemeDesc": "Basculer entre le thème clair et sombre",
+    "light": "Clair",
+    "dark": "Sombre",
+    "language": "Langue de l'interface",
+    "timezone": "Fuseau horaire"
+  },
+  "account": {
+    "title": "Compte",
+    "personalInfo": "Informations personnelles",
+    "password": "Mot de passe",
+    "emailAuth": "Email et authentification",
+    "deleteAccount": "Supprimer le compte"
+  },
+  "privacy": {
+    "title": "Confidentialité",
+    "profileVisibility": "Visibilité du profil",
+    "postVisibility": "Visibilité des publications",
+    "dataDownloads": "Données et téléchargements",
+    "blockedUsers": "Utilisateurs bloqués",
+    "public": "Public",
+    "friends": "Amis uniquement",
+    "private": "Privé",
+    "onlyMe": "Moi seulement",
+    "updated": "Confidentialité mise à jour"
+  },
+  "about": {
+    "version": "Version 1.0.0",
+    "terms": "Conditions d'utilisation",
+    "privacyPolicy": "Politique de confidentialité",
+    "support": "Assistance"
+  },
+  "deleteDialog": {
+    "title": "Êtes-vous absolument sûr ?",
+    "description": "Cette action ne peut pas être annulée. Cela supprimera définitivement votre compte et toutes vos données de nos serveurs.",
+    "cancel": "Annuler",
+    "confirm": "Supprimer le compte"
+  },
+  "toast": {
+    "themeUpdated": "Thème mis à jour",
+    "switchedTo": "Basculé en mode",
+    "languageUpdated": "Langue mise à jour",
+    "languageChanged": "La langue de l'interface a été changée",
+    "accountDeletion": "Suppression du compte initiée",
+    "accountDeletionDesc": "Votre demande de suppression de compte a été reçue",
+    "comingSoon": "Bientôt disponible"
+  }
+}

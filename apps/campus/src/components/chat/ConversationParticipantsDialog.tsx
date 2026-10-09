@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import type { ConversationParticipant } from "@/types";
@@ -32,6 +33,7 @@ export function ConversationParticipantsDialog({
   onRemoveMember,
   onAddMember,
 }: ConversationParticipantsDialogProps) {
+  const { t } = useTranslation("messages");
   const effectiveParticipants =
     participants.length > 0 ? participants : fallbackParticipants;
 
@@ -39,11 +41,11 @@ export function ConversationParticipantsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg" aria-describedby={undefined}>
         <DialogHeader>
-          <DialogTitle>Participants de la conversation</DialogTitle>
+          <DialogTitle>{t("participantsDialog.title")}</DialogTitle>
         </DialogHeader>
         {loading ? (
           <p className="text-sm text-muted-foreground py-4">
-            Chargement des participants...
+            {t("participantsDialog.loading")}
           </p>
         ) : (
           <div className="space-y-4">
@@ -53,7 +55,7 @@ export function ConversationParticipantsDialog({
                   participant.full_name ||
                   participant.name ||
                   participant.username ||
-                  "Utilisateur";
+                  t("participantsDialog.user");
                 const isCurrent =
                   String(participant.id) === String(currentUserId || "");
                 return (
@@ -76,7 +78,7 @@ export function ConversationParticipantsDialog({
                         }
                         disabled={pendingParticipantId === String(participant.id)}
                       >
-                        Retirer
+                        {t("participantsDialog.remove")}
                       </Button>
                     )}
                   </div>
@@ -86,7 +88,7 @@ export function ConversationParticipantsDialog({
 
             {isGroup && (
               <div className="border-t pt-3 space-y-2">
-                <p className="text-sm font-medium">Ajouter un membre</p>
+                <p className="text-sm font-medium">{t("participantsDialog.addMember")}</p>
                 <div className="space-y-2 max-h-40 overflow-y-auto">
                   {connections
                     .filter(
@@ -110,7 +112,7 @@ export function ConversationParticipantsDialog({
                             pendingParticipantId === String(contact.id)
                           }
                         >
-                          Ajouter
+                          {t("participantsDialog.add")}
                         </Button>
                       </div>
                     ))}

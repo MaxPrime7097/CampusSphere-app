@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { createPost, searchUsers, uploadFile } from "@/services/api";
 import { Button } from "@/components/ui/button";
@@ -55,6 +56,7 @@ const mapPostVisibilityForApi = (uiVisibility: string): "public" | "sphere" | "f
 };
 
 export function CreatePostModal({ children, onPostCreated, open: controlledOpen, onOpenChange: setControlledOpen }: CreatePostModalProps) {
+  const { t } = useTranslation("feed");
   const navigate = useNavigate();
   const [content, setContent] = useState("");
   const [tags, setTags] = useState<string[]>([]);
@@ -114,16 +116,14 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
     }
   }, [mentionUsersQuery.data, mentionUsersQuery.error, normalizedMentionQuery, showMentions]);
 
-  
-
   const addTag = () => {
     if (newTag.trim() && !tags.includes(newTag.trim()) && tags.length < 5) {
       setTags([...tags, newTag.trim()]);
       setNewTag("");
     } else if (tags.length >= 5) {
       toast({
-        title: "Limite de tags atteinte",
-        description: "Vous ne pouvez pas ajouter plus de 5 tags",
+        title: t("createPost.toasts.tagLimitTitle"),
+        description: t("createPost.toasts.tagLimitDesc"),
         variant: "destructive"
       });
     }
@@ -133,7 +133,7 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
 
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
       // Compress images before checking total size, so large images don't get falsely blocked if compression makes them fit
@@ -143,8 +143,8 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
       
       if (totalSize > 50 * 1024 * 1024) { // 50MB limit
         toast({
-          title: "Fichier trop volumineux",
-          description: "La taille totale des fichiers ne peut pas dépasser 50MB",
+          title: t("createPost.toasts.fileTooLargeTitle"),
+          description: t("createPost.toasts.fileTooLargeDesc"),
           variant: "destructive"
         });
         return;
@@ -152,8 +152,8 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
       
       setUploadedFiles([...uploadedFiles, ...compressedNewFiles]);
       toast({
-        title: "Fichier ajouté",
-        description: `${compressedNewFiles.length} fichier(s) ajouté(s)`
+        title: t("createPost.toasts.fileAddedTitle"),
+        description: t("createPost.toasts.fileAddedDesc", { count: compressedNewFiles.length })
       });
     }
   };
@@ -178,8 +178,8 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
     localStorage.setItem('postDraft', JSON.stringify(draft));
     setIsDraft(true);
     toast({
-      title: "Brouillon sauvegardé",
-      description: "Votre post a été sauvegardé comme brouillon",
+      title: t("createPost.toasts.draftSavedTitle"),
+      description: t("createPost.toasts.draftSavedDesc"),
       duration: 2000,
     });
   };
@@ -195,8 +195,8 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
       setUploadedFiles(parsedDraft.files || []);
       setIsDraft(false);
       toast({
-        title: "Brouillon chargé",
-        description: "Votre brouillon a été restauré",
+        title: t("createPost.toasts.draftLoadedTitle"),
+        description: t("createPost.toasts.draftLoadedDesc"),
         duration: 2000,
       });
     }
@@ -205,8 +205,8 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
   const handleSubmit = async () => {
     if (!content.trim()) {
       toast({
-        title: "Contenu requis",
-        description: "Veuillez saisir du contenu pour votre post",
+        title: t("createPost.toasts.contentRequiredTitle"),
+        description: t("createPost.toasts.contentRequiredDesc"),
         variant: "destructive"
       });
       return;
@@ -215,8 +215,8 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
     const invalidMentions = findInvalidMentions(content);
     if (invalidMentions.length > 0) {
       toast({
-        title: "Mentions invalides",
-        description: `Format invalide: ${invalidMentions.map((mention) => `@${mention}`).join(", ")}`,
+        title: t("createPost.toasts.invalidMentionsTitle"),
+        description: t("createPost.toasts.invalidMentionsDesc", { mentions: invalidMentions.map((mention) => `@${mention}`).join(", ") }),
         variant: "destructive"
       });
       return;
@@ -225,8 +225,8 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
     const apiVisibility = mapPostVisibilityForApi(visibility);
     if (!apiVisibility) {
       toast({
-        title: "Visibilité invalide",
-        description: "Impossible de publier ce post: option de visibilité non supportée.",
+        title: t("createPost.toasts.invalidVisibilityTitle"),
+        description: t("createPost.toasts.invalidVisibilityDesc"),
         variant: "destructive"
       });
       return;
@@ -294,8 +294,8 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
       }
       
       toast({
-        title: "Post publié !",
-        description: "Votre post a été partagé avec succès.",
+        title: t("createPost.toasts.publishedTitle"),
+        description: t("createPost.toasts.publishedDesc"),
         duration: 3000,
       });
       
@@ -312,8 +312,8 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
       
     } catch (error: any) {
       toast({
-        title: "Erreur",
-        description: error?.message || "Une erreur est survenue lors de la publication",
+        title: t("createPost.toasts.errorTitle"),
+        description: error?.message || t("createPost.toasts.errorDefault"),
         variant: "destructive"
       });
     } finally {
@@ -357,7 +357,7 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
         <DialogHeader className="px-6 pt-2 pb-2 sm:p-6 sm:pb-2">
           <DialogTitle className="flex items-center gap-2">
               <Plus className="h-5 w-5 text-white"/>
-              Nouveau Post
+              {t("createPost.title")}
           </DialogTitle>
         </DialogHeader>
         
@@ -366,7 +366,7 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
           <div className="space-y-2">
             <Textarea
               id="content"
-              placeholder="Quoi de neuf sur le campus ?"
+              placeholder={t("createPost.placeholder")}
               value={content}
               onChange={(e) => {
                 const value = e.target.value;
@@ -424,7 +424,7 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
                 className="h-9 w-9 p-0 rounded-full hover:bg-primary/10 hover:text-primary transition-colors"
-                title="Ajouter une photo ou vidéo"
+                title={t("createPost.addMedia")}
               >
                 <Image className="h-5 w-5" />
               </Button>
@@ -437,7 +437,7 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
                   "h-9 w-9 p-0 rounded-full transition-colors",
                   showMentions ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-muted"
                 )}
-                title="Mentionner un étudiant"
+                title={t("createPost.mentionUser")}
               >
                 <AtSign className="h-5 w-5" />
               </Button>
@@ -454,7 +454,7 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
               )}
             >
               <SlidersHorizontal className="h-3.5 w-3.5" />
-              <span>Options</span>
+              <span>{t("createPost.options")}</span>
             </Button>
           </div>
 
@@ -462,24 +462,24 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
           {showAdvanced && (
             <div className="space-y-3.5 p-3.5 rounded-xl border border-border/50 bg-muted/20 campus-animate-slide-up">
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium">Visibilité du post</Label>
+                <Label className="text-xs font-medium">{t("createPost.visibility")}</Label>
                 <Select value={visibility} onValueChange={setVisibility}>
                   <SelectTrigger className="h-9 bg-background border shadow-sm text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="public">Public (Tout le campus)</SelectItem>
-                    <SelectItem value="university">Université uniquement</SelectItem>
-                    <SelectItem value="private">Amis uniquement</SelectItem>
+                    <SelectItem value="public">{t("createPost.visibilityPublic")}</SelectItem>
+                    <SelectItem value="university">{t("createPost.visibilityUniversity")}</SelectItem>
+                    <SelectItem value="private">{t("createPost.visibilityFriends")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium">Tags</Label>
+                <Label className="text-xs font-medium">{t("createPost.tags")}</Label>
                 <div className="flex gap-2">
                   <Input 
-                    placeholder="Ajouter un tag (#cours, #stage...)" 
+                    placeholder={t("createPost.tagPlaceholder")} 
                     value={newTag} 
                     onChange={(e) => setNewTag(e.target.value)} 
                     onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
@@ -503,8 +503,8 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
 
               <div className="flex items-center justify-between pt-1">
                 <div>
-                  <Label className="text-xs font-medium">Autoriser les commentaires</Label>
-                  <p className="text-[11px] text-muted-foreground">Permettre aux autres de répondre</p>
+                  <Label className="text-xs font-medium">{t("createPost.allowComments")}</Label>
+                  <p className="text-[11px] text-muted-foreground">{t("createPost.allowCommentsDesc")}</p>
                 </div>
                 <Switch checked={allowComments} onCheckedChange={setAllowComments} className="scale-75 origin-right" />
               </div>
@@ -533,7 +533,7 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
           {/* Footer Actions */}
           <div className="flex justify-end gap-3 pt-4">
             <Button variant="ghost" onClick={() => setOpen(false)} disabled={isSubmitting} className="text-muted-foreground hover:text-foreground">
-              Annuler
+              {t("createPost.cancel")}
             </Button>
             <Button 
               onClick={handleSubmit}
@@ -543,10 +543,10 @@ export function CreatePostModal({ children, onPostCreated, open: controlledOpen,
               {isSubmitting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Publication...
+                  {t("createPost.publishing")}
                 </>
               ) : (
-                "Publier"
+                t("createPost.publish")
               )}
             </Button>
           </div>

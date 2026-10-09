@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Download,
   BookmarkSimple,
@@ -96,11 +97,13 @@ export const ResourceTile = React.memo(
     className,
   }: ResourceTileProps) => {
     const navigate = useNavigate();
+    const { t } = useTranslation("resources");
     const config = getTypeConfig(resource.type);
     const [studyOpen, setStudyOpen] = useState(false);
 
     const ext = resource.fileUrl?.split(".").pop()?.toUpperCase() || "DOC";
     const size = (resource as any).fileSize || (resource as any).file_size;
+    const typeLabel = t(`page.chips.${resource.type}` as any, { defaultValue: config.label });
 
     return (
       <>
@@ -124,7 +127,7 @@ export const ResourceTile = React.memo(
             {/* Top Row: Type Pill & Bookmark */}
             <div className="flex items-center justify-between z-10">
               <span className="rounded-lg bg-background/85 backdrop-blur-md px-2 py-0.5 text-[10px] font-semibold text-foreground border border-border/40 shadow-2xs">
-                {config.label}
+                {typeLabel}
               </span>
 
               <Button
@@ -138,7 +141,7 @@ export const ResourceTile = React.memo(
                   e.stopPropagation();
                   onSave?.(e);
                 }}
-                title="Sauvegarder"
+                title={t("card.save")}
               >
                 <BookmarkSimple className="h-3.5 w-3.5" weight={isSaved ? "fill" : "regular"} />
               </Button>
@@ -170,7 +173,7 @@ export const ResourceTile = React.memo(
                     e.stopPropagation();
                     setStudyOpen(true);
                   }}
-                  title="Réviser avec l'IA"
+                  title={t("card.reviseAi")}
                 >
                   <SpheraIcon size="sm" />
                 </Button>
@@ -181,7 +184,7 @@ export const ResourceTile = React.memo(
                   className="h-7 w-7 rounded-full bg-secondary hover:bg-muted border border-border/40 shadow-xs text-secondary-foreground shrink-0"
                   onClick={onDownload}
                   disabled={isDownloading}
-                  title="Télécharger"
+                  title={t("card.download")}
                 >
                   {isDownloading ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -206,11 +209,15 @@ export const ResourceTile = React.memo(
                   <span> · </span>
                 </>
               )}
-              <span>{(resource as any).authorName || (resource as any).author?.name || "Étudiant"}</span>
+              <span>{(resource as any).authorName || (resource as any).author?.name || t("card.student")}</span>
             </p>
 
             <div className="flex items-center gap-2 text-[11px] text-muted-foreground pt-0.5">
-              <span>{resource.downloadCount || 0} téléchargements</span>
+              <span>
+                {resource.downloadCount > 1
+                  ? t("card.downloads_other", { count: resource.downloadCount })
+                  : t("card.downloads_one", { count: resource.downloadCount || 0 })}
+              </span>
               {resource.impactScore ? (
                 <>
                   <span>·</span>

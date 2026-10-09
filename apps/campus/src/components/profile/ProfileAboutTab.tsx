@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
 import { formatSlugToLabel, truncate } from "@/lib/utils";
 import { formatFrenchDate } from "@/lib/date";
+import { useTranslation } from "react-i18next";
 
 const EditAcademicModal = lazy(() =>
   import("@/components/modals/EditAcademicModal").then((module) => ({
@@ -42,12 +43,6 @@ const EditPortfolioModal = lazy(() =>
   }))
 );
 
-const EmptyField = () => (
-  <span className="italic text-muted-foreground text-xs font-normal">
-    Aucun pour l'instant
-  </span>
-);
-
 export interface ProfileAboutUser {
   university?: string;
   faculty?: string;
@@ -77,6 +72,7 @@ export function ProfileAboutTab({
   isOwnProfile,
   displayStudyYear,
 }: ProfileAboutTabProps) {
+  const { t } = useTranslation("profile");
   const [isEditAcademicOpen, setIsEditAcademicOpen] = useState(false);
   const [isEditPersonalOpen, setIsEditPersonalOpen] = useState(false);
   const [isEditEducationOpen, setIsEditEducationOpen] = useState(false);
@@ -84,6 +80,12 @@ export function ProfileAboutTab({
   const [isEditSkillsOpen, setIsEditSkillsOpen] = useState(false);
   const [isEditInterestsOpen, setIsEditInterestsOpen] = useState(false);
   const [isEditPortfolioOpen, setIsEditPortfolioOpen] = useState(false);
+
+  const EmptyField = () => (
+    <span className="italic text-muted-foreground text-xs font-normal">
+      {t("about.emptyField")}
+    </span>
+  );
 
   const handleModalSuccess = () => {
     window.location.reload();
@@ -95,7 +97,7 @@ export function ProfileAboutTab({
         {/* 1. Informations académiques */}
         <div className="p-5 sm:p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground">Informations académiques</h3>
+            <h3 className="text-sm font-semibold text-foreground">{t("about.academicInfo")}</h3>
             {isOwnProfile && (
               <>
                 <Button
@@ -128,29 +130,29 @@ export function ProfileAboutTab({
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
             <div>
-              <p className="text-xs text-muted-foreground">Université</p>
+              <p className="text-xs text-muted-foreground">{t("about.labels.university")}</p>
               <p className="font-medium text-sm mt-0.5" title={formatSlugToLabel(user.university)}>
                 {truncate(formatSlugToLabel(user.university), 35) || <EmptyField />}
               </p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Filière</p>
+              <p className="text-xs text-muted-foreground">{t("about.labels.faculty")}</p>
               <p className="font-medium text-sm mt-0.5">
                 {formatSlugToLabel(user.faculty) || <EmptyField />}
               </p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Niveau</p>
+              <p className="text-xs text-muted-foreground">{t("about.labels.studyYear")}</p>
               <p className="font-medium text-sm mt-0.5">{displayStudyYear || <EmptyField />}</p>
             </div>
             {isOwnProfile && (
               <div>
-                <p className="text-xs text-muted-foreground">Matricule</p>
+                <p className="text-xs text-muted-foreground">{t("about.labels.studentId")}</p>
                 <p className="font-medium text-sm mt-0.5">{user.studentId || <EmptyField />}</p>
               </div>
             )}
             <div>
-              <p className="text-xs text-muted-foreground">Campus</p>
+              <p className="text-xs text-muted-foreground">{t("about.labels.campus")}</p>
               <p className="font-medium text-sm mt-0.5">{user.campus || <EmptyField />}</p>
             </div>
           </div>
@@ -159,7 +161,7 @@ export function ProfileAboutTab({
         {/* 2. Informations personnelles */}
         <div className="p-5 sm:p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground">Informations personnelles</h3>
+            <h3 className="text-sm font-semibold text-foreground">{t("about.personalInfo")}</h3>
             {isOwnProfile && (
               <>
                 <Button
@@ -194,15 +196,15 @@ export function ProfileAboutTab({
             {isOwnProfile && (
               <>
                 <div>
-                  <p className="text-xs text-muted-foreground">Email</p>
+                  <p className="text-xs text-muted-foreground">{t("about.labels.email")}</p>
                   <p className="font-medium text-sm mt-0.5">{user.email || <EmptyField />}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Téléphone</p>
+                  <p className="text-xs text-muted-foreground">{t("about.labels.phone")}</p>
                   <p className="font-medium text-sm mt-0.5">{user.phoneNumber || <EmptyField />}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Date de naissance</p>
+                  <p className="text-xs text-muted-foreground">{t("about.labels.dateOfBirth")}</p>
                   <p className="font-medium text-sm mt-0.5">
                     {user.dateOfBirth ? formatFrenchDate(user.dateOfBirth) : <EmptyField />}
                   </p>
@@ -210,13 +212,13 @@ export function ProfileAboutTab({
               </>
             )}
             <div>
-              <p className="text-xs text-muted-foreground">Ville</p>
+              <p className="text-xs text-muted-foreground">{t("about.labels.town")}</p>
               <p className="font-medium text-sm mt-0.5">
                 {formatSlugToLabel(user.town) || <EmptyField />}
               </p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Langues</p>
+              <p className="text-xs text-muted-foreground">{t("about.labels.language")}</p>
               <p className="font-medium text-sm mt-0.5">
                 {Array.isArray(user.language) && user.language.length > 0
                   ? user.language.map(formatSlugToLabel).join(", ")
@@ -229,7 +231,7 @@ export function ProfileAboutTab({
         {/* 3. Formations précédentes */}
         <div className="p-5 sm:p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground">Formations précédentes</h3>
+            <h3 className="text-sm font-semibold text-foreground">{t("about.education")}</h3>
             {isOwnProfile && (
               <>
                 <Button
@@ -285,7 +287,7 @@ export function ProfileAboutTab({
         {/* 4. Expériences */}
         <div className="p-5 sm:p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground">Expériences</h3>
+            <h3 className="text-sm font-semibold text-foreground">{t("about.experiences")}</h3>
             {isOwnProfile && (
               <>
                 <Button
@@ -339,7 +341,7 @@ export function ProfileAboutTab({
         {/* 5. Compétences */}
         <div className="p-5 sm:p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground">Compétences</h3>
+            <h3 className="text-sm font-semibold text-foreground">{t("about.skills")}</h3>
             {isOwnProfile && (
               <>
                 <Button
@@ -384,7 +386,7 @@ export function ProfileAboutTab({
         {/* 6. Centres d'intérêt */}
         <div className="p-5 sm:p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground">Centres d'intérêt</h3>
+            <h3 className="text-sm font-semibold text-foreground">{t("about.interests")}</h3>
             {isOwnProfile && (
               <>
                 <Button
@@ -429,7 +431,7 @@ export function ProfileAboutTab({
         {/* 7. Portfolio */}
         <div className="p-5 sm:p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground">Portfolio</h3>
+            <h3 className="text-sm font-semibold text-foreground">{t("about.portfolio")}</h3>
             {isOwnProfile && (
               <>
                 <Button

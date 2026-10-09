@@ -36,55 +36,59 @@ function isAdminUser(user?: NavigationUser | null) {
   return Boolean(user.is_staff || user.is_superuser || role === "admin" || userType === "admin");
 }
 
-export function getNavigationSections(user?: NavigationUser | null): NavigationSections {
+export function getNavigationSections(
+  user?: NavigationUser | null,
+  t?: (key: string, options?: { defaultValue?: string }) => string
+): NavigationSections {
+  const tr = (key: string, fallback: string) => (t ? t(key, { defaultValue: fallback }) : fallback);
   const isAuthenticated = Boolean(user?.username) || Boolean(localStorage.getItem("access"));
   const profileUrl = `/profile/${user?.username || "current"}`;
   const newPost = "#create-post";
-  const adminEntry = isAdminUser(user) ? [{ title: "Admin", url: "/admin/dashboard", icon: Shield }] : [];
+  const adminEntry = isAdminUser(user) ? [{ title: tr("admin", "Admin"), url: "/admin/dashboard", icon: Shield }] : [];
 
   // Define basic navigation items
   const navigationItems: NavigationItem[] = [
-    { title: "Accueil", url: "/", icon: Home },
+    { title: tr("home", "Accueil"), url: "/", icon: Home },
   ];
 
   // Add protected items only if authenticated
   if (isAuthenticated) {
-    navigationItems.push({ title: "Profil", url: profileUrl, icon: User });
+    navigationItems.push({ title: tr("profile", "Profil"), url: profileUrl, icon: User });
   }
   
   // Resources is now public-read
-  navigationItems.push({ title: "Ressources", url: "/resources", icon: FolderOpen });
-  navigationItems.push({ title: "Événements", url: "/events", icon: Calendar });
+  navigationItems.push({ title: tr("resources", "Ressources"), url: "/resources", icon: FolderOpen });
+  navigationItems.push({ title: tr("events", "Événements"), url: "/events", icon: Calendar });
   
   if (isAuthenticated) {
-    navigationItems.push({ title: "Sphères", url: "/spheres", icon: Sphere });
+    navigationItems.push({ title: tr("spheres", "Sphères"), url: "/spheres", icon: Sphere });
   }
 
   const quickActions: NavigationItem[] = [];
   if (isAuthenticated) {
     quickActions.push(
-      { title: "Connexions", url:"/connections", icon: Link },
-      { title: "Messages", url: "/messages", icon: MessageSquare },
-      { title: "Enregistrements", url: "/saved", icon: BookmarkSimple },
-      { title: "Paramètres", url: "/settings", icon: Settings }
+      { title: tr("connections", "Connexions"), url:"/connections", icon: Link },
+      { title: tr("messages", "Messages"), url: "/messages", icon: MessageSquare },
+      { title: tr("saved", "Enregistrements"), url: "/saved", icon: BookmarkSimple },
+      { title: tr("settings", "Paramètres"), url: "/settings", icon: Settings }
     );
   }
 
   const utilities: NavigationItem[] = [
-    { title: "Ouvrir Sphera", url: "/sphera/sso", icon: SpheraIcon, external: true },
+    { title: tr("openSphera", "Ouvrir Sphera"), url: "/sphera/sso", icon: SpheraIcon, external: true },
     ...adminEntry,
-    { title: "Impact Score", url: "/cs-inc/impact-score", icon: Zap, external: true },
-    { title: "À propos", url: "/cs-inc/about", icon: Info, external: true },
-    { title: "Politiques", url: "/cs-inc/policies", icon: Scale, external: true },
-    { title: "Aide", url: "/cs-inc/contact", icon: LifeBuoy, external: true },
+    { title: tr("impactScore", "Impact Score"), url: "/cs-inc/impact-score", icon: Zap, external: true },
+    { title: tr("about", "À propos"), url: "/cs-inc/about", icon: Info, external: true },
+    { title: tr("policies", "Politiques"), url: "/cs-inc/policies", icon: Scale, external: true },
+    { title: tr("help", "Aide"), url: "/cs-inc/contact", icon: LifeBuoy, external: true },
   ];
 
   const mobileItems: NavigationItem[] = [
-    { title: "Accueil", url: "/", icon: Home },
-    { title: "Ressources", url: "/resources", icon: FolderOpen },
-    { title: "Publier", url: newPost, icon: Plus },
-    { title: "Événements", url: "/events", icon: Calendar },
-    { title: "Sphères", url: "/spheres", icon: Sphere },
+    { title: tr("home", "Accueil"), url: "/", icon: Home },
+    { title: tr("resources", "Ressources"), url: "/resources", icon: FolderOpen },
+    { title: tr("publish", "Publier"), url: newPost, icon: Plus },
+    { title: tr("events", "Événements"), url: "/events", icon: Calendar },
+    { title: tr("spheres", "Sphères"), url: "/spheres", icon: Sphere },
   ];
 
   return {

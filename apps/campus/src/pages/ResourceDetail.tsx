@@ -19,6 +19,7 @@ import {
 import { CaretLeft as ChevronLeft, Spinner as Loader2 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 import {
   normalizeAudience,
   normalizeCategory,
@@ -81,6 +82,7 @@ function mapResourceDetail(data: any) {
 }
 
 export function ResourceDetail() {
+  const { t } = useTranslation("resources");
   const { id: rawParam } = useParams();
   const realId = parseSlugId(rawParam) ?? rawParam;
   const id = realId ? String(realId) : undefined;
@@ -250,9 +252,9 @@ export function ResourceDetail() {
       }
     } else if (resourceQuery.error) {
       toast({
-        title: "Erreur",
+        title: t("feedCard.toasts.error"),
         description:
-          (resourceQuery.error as any)?.message || "Impossible de charger la ressource",
+          (resourceQuery.error as any)?.message || t("detail.toasts.loadError"),
         variant: "destructive",
       });
     }
@@ -341,14 +343,14 @@ export function ResourceDetail() {
           );
 
           toast({
-            title: "Téléchargement démarré !",
-            description: "Votre fichier va être téléchargé dans quelques instants",
+            title: t("detail.toasts.downloadStarted"),
+            description: t("detail.toasts.downloadStartedDesc"),
             duration: 3000,
           });
         } catch (e: any) {
           toast({
-            title: "Erreur",
-            description: e?.message || "Impossible de télécharger la ressource",
+            title: t("feedCard.toasts.error"),
+            description: e?.message || t("feedCard.toasts.downloadError"),
             variant: "destructive",
           });
         } finally {
@@ -382,15 +384,15 @@ export function ResourceDetail() {
         );
 
         toast({
-          title: saved ? "Ressource sauvegardée" : "Ressource retirée des sauvegardes",
+          title: saved ? t("detail.toasts.savedTitle") : t("detail.toasts.unsavedTitle"),
           description: saved
-            ? "Cette ressource est maintenant enregistrée dans vos favoris"
-            : "Cette ressource a été retirée de vos favoris",
+            ? t("detail.toasts.savedDesc")
+            : t("detail.toasts.unsavedDesc"),
         });
       } catch (e: any) {
         toast({
-          title: "Erreur",
-          description: e?.message || "Impossible de modifier l'état de sauvegarde",
+          title: t("feedCard.toasts.error"),
+          description: e?.message || t("feedCard.toasts.actionFailed"),
           variant: "destructive",
         });
       } finally {
@@ -402,7 +404,7 @@ export function ResourceDetail() {
   const handleSocialShare = (platform: string) => {
     const shareUrl = encodeURIComponent(window.location.href);
     const shareText = encodeURIComponent(
-      `Découvre cette ressource sur CampusSphere : ${resource?.title}`
+      t("detail.socialShareText", { title: resource?.title || "" })
     );
 
     let url = "";
@@ -432,14 +434,14 @@ export function ResourceDetail() {
     try {
       await navigator.clipboard.writeText(window.location.href);
       toast({
-        title: "Lien copié !",
-        description: "Le lien a été copié dans votre presse-papiers.",
+        title: t("detail.toasts.linkCopied"),
+        description: t("detail.toasts.linkCopiedDesc"),
       });
       trackResourceShare(id!, { channel: "copy_link" }).catch(() => {});
     } catch {
       toast({
-        title: "Erreur",
-        description: "Impossible de copier le lien.",
+        title: t("feedCard.toasts.error"),
+        description: t("feedCard.toasts.actionFailed"),
         variant: "destructive",
       });
     } finally {
@@ -458,14 +460,14 @@ export function ResourceDetail() {
             details: "Signalé depuis la page de détail de la ressource.",
           });
           toast({
-            title: "Signalement envoyé",
-            description: "Merci pour votre signalement. Nous examinerons cette ressource",
+            title: t("detail.toasts.reportSent"),
+            description: t("detail.toasts.reportSentDesc"),
             duration: 3000,
           });
         } catch (e: any) {
           toast({
-            title: "Échec du signalement",
-            description: e?.message || "Impossible d'envoyer le signalement pour le moment.",
+            title: t("detail.toasts.reportFailed"),
+            description: e?.message || t("detail.toasts.reportFailedDesc"),
             variant: "destructive",
           });
         } finally {
@@ -480,8 +482,8 @@ export function ResourceDetail() {
     const title = draftTitle.trim();
     if (!title) {
       toast({
-        title: "Titre requis",
-        description: "Le titre ne peut pas être vide.",
+        title: t("detail.toasts.titleRequired"),
+        description: t("detail.toasts.titleRequiredDesc"),
         variant: "destructive",
       });
       return;
@@ -501,16 +503,16 @@ export function ResourceDetail() {
               description: updated?.description ?? draftDescription.trim(),
             }
           : prev
-      );
+        );
       setShowEditDialog(false);
       toast({
-        title: "Ressource modifiée",
-        description: "La ressource a été mise à jour.",
+        title: t("detail.toasts.resourceUpdated"),
+        description: t("detail.toasts.resourceUpdatedDesc"),
       });
     } catch (e: any) {
       toast({
-        title: "Échec de modification",
-        description: e?.message || "Impossible de modifier cette ressource.",
+        title: t("detail.toasts.updateFailed"),
+        description: e?.message || t("feedCard.toasts.actionFailed"),
         variant: "destructive",
       });
     } finally {
@@ -527,15 +529,15 @@ export function ResourceDetail() {
     try {
       await deleteResource(id);
       toast({
-        title: "Ressource supprimée",
-        description: "La ressource a été supprimée définitivement.",
+        title: t("detail.toasts.resourceDeleted"),
+        description: t("detail.toasts.resourceDeletedDesc"),
       });
       navigate("/resources");
     } catch (e: any) {
       setResource(snapshot);
       toast({
-        title: "Échec de suppression",
-        description: e?.message || "Impossible de supprimer la ressource.",
+        title: t("detail.toasts.deleteFailed"),
+        description: e?.message || t("feedCard.toasts.actionFailed"),
         variant: "destructive",
       });
     } finally {
@@ -549,11 +551,11 @@ export function ResourceDetail() {
     await updateResource(resource.id, { folder_id: folderId });
     setCurrentFolderId(folderIdVal);
     toast({
-      title: folderIdVal === "none" ? "Retiré du dossier" : "Déplacé dans le dossier",
+      title: folderIdVal === "none" ? t("detail.toasts.removedFromFolder") : t("detail.toasts.movedToFolder"),
       description:
         folderIdVal === "none"
-          ? "La ressource n'est plus dans un dossier."
-          : `Ressource déplacée dans "${folders.find((f) => String(f.id) === folderIdVal)?.name}".`,
+          ? t("detail.toasts.removedFromFolderDesc")
+          : t("detail.toasts.movedToFolderDesc", { name: folders.find((f) => String(f.id) === folderIdVal)?.name || "" }),
     });
   };
 
@@ -564,8 +566,8 @@ export function ResourceDetail() {
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
           <p>
             {isDeletingResource
-              ? "Suppression de la ressource..."
-              : "Chargement de la ressource..."}
+              ? t("detail.deleting")
+              : t("detail.loading")}
           </p>
         </div>
       </div>
@@ -608,7 +610,7 @@ export function ResourceDetail() {
             onClick={() => navigate("/resources")}
           >
             <ChevronLeft className="h-4 w-4" />
-            Retour aux ressources
+            {t("detail.back")}
           </Button>
 
           <ResourceHeader

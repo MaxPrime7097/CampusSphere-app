@@ -1,4 +1,5 @@
 import { Suspense, lazy, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { UsersThree as Users, FileText, Gear as Settings, DotsThreeVertical as MoreVertical, Spinner as Loader2, UserPlus, UserCheck, Camera, ShareNetwork as Share2, Target, Sphere, Trophy, BookOpen, UsersFour } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -79,6 +80,7 @@ export function SphereHeader({
   onRefreshData,
   onSphereDeleted,
 }: SphereHeaderProps) {
+  const { t } = useTranslation("spheres");
   const [isSphereSettingsOpen, setIsSphereSettingsOpen] = useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
 
@@ -125,7 +127,7 @@ export function SphereHeader({
             className="absolute top-3 right-3 bg-black/50 hover:bg-black/70 text-white rounded-lg px-2 py-1.5 flex items-center gap-1.5 text-xs cursor-pointer transition-colors opacity-0 group-hover:opacity-100"
           >
             <Camera className="h-3.5 w-3.5" />
-            Changer la bannière
+            {t("detail.changeBanner")}
           </button>
         )}
       </div>
@@ -142,13 +144,13 @@ export function SphereHeader({
               type="button"
               onClick={() => onSelectTab("members")}
               className="flex items-center gap-1.5 hover:text-primary transition-colors cursor-pointer group"
-              title="Afficher la liste des membres"
+              title={t("detail.viewMembersList")}
             >
               <Users className="h-4 w-4 text-primary group-hover:scale-110 transition-transform" />
-              <span>{sphereMemberCount} membres</span>
+              <span>{t("detail.members", { count: sphereMemberCount })}</span>
             </button>
             <span className="flex items-center gap-1.5">
-              <FileText className="h-4 w-4 text-primary" /> {filesCount} fichiers
+              <FileText className="h-4 w-4 text-primary" /> {t("detail.files", { count: filesCount })}
             </span>
             {(sphere?.tags || sphereFallback.tags || []).map((tag: string) => (
               <Badge key={tag} variant="secondary">
@@ -185,7 +187,7 @@ export function SphereHeader({
                   {iconName === "UsersFour" && <UsersFour className="h-3.5 w-3.5" />}
                   {iconName === "Trophy" && <Trophy className="h-3.5 w-3.5" />}
                   {iconName === "Pencil" && <FileText className="h-3.5 w-3.5" />}
-                  {SPHERE_TYPE_LABELS[canonicalType] ?? canonicalType}
+                  {t(`card.${canonicalType}`, { defaultValue: SPHERE_TYPE_LABELS[canonicalType] ?? canonicalType })}
                 </span>
               );
             })()}
@@ -209,7 +211,7 @@ export function SphereHeader({
                       onClick={() => setIsSphereSettingsOpen(true)}
                     >
                       <Settings className="h-4 w-4" />{" "}
-                      <span className="hidden sm:inline">Paramètres</span>
+                      <span className="hidden sm:inline">{t("detail.settings")}</span>
                     </Button>
                     {isSphereSettingsOpen && (
                       <Suspense fallback={<ModalLoadingFallback />}>
@@ -232,7 +234,7 @@ export function SphereHeader({
                   onClick={() => onSelectTab("members")}
                 >
                   <Users className="h-4 w-4" />{" "}
-                  <span>Membres</span>
+                  <span>{t("detail.members")}</span>
                   <span className="text-xs opacity-75">({membersCount})</span>
                 </Button>
 
@@ -245,7 +247,7 @@ export function SphereHeader({
                       onClick={() => setIsAddMemberOpen(true)}
                     >
                       <UserPlus className="h-4 w-4" />{" "}
-                      <span className="hidden sm:inline">Inviter</span>
+                      <span className="hidden sm:inline">{t("detail.invite")}</span>
                     </Button>
                     {isAddMemberOpen && (
                       <Suspense fallback={<ModalLoadingFallback />}>
@@ -274,7 +276,7 @@ export function SphereHeader({
                     <UserPlus className="h-4 w-4" />
                   )}
                   <span className="hidden sm:inline">
-                    {isPendingRequest ? "Demande en attente" : "Rejoindre la Sphère"}
+                    {isPendingRequest ? t("detail.pendingRequests") : t("detail.joinSphere")}
                   </span>
                 </Button>
 
@@ -288,7 +290,7 @@ export function SphereHeader({
                     {isCancellingRequest && (
                       <Loader2 className="h-4 w-4 animate-spin mr-1" />
                     )}
-                    <span className="hidden sm:inline">Annuler la demande</span>
+                    <span className="hidden sm:inline">{t("detail.cancelRequest")}</span>
                   </Button>
                 )}
               </>
@@ -302,7 +304,7 @@ export function SphereHeader({
               className="gap-2"
             >
               <Share2 className="h-4 w-4" />
-              Partager
+              {t("detail.share")}
             </Button>
 
             {/* Mobile menu */}
@@ -314,11 +316,11 @@ export function SphereHeader({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => onSelectTab("members")}>
-                  <Users className="h-4 w-4 mr-2" /> Membres ({membersCount})
+                  <Users className="h-4 w-4 mr-2" /> {t("detail.members")} ({membersCount})
                 </DropdownMenuItem>
                 {canModerateMembers && (
                   <DropdownMenuItem onClick={() => onSelectTab("pending")}>
-                    <UserCheck className="h-4 w-4 mr-2" /> Demandes ({pendingMembersCount})
+                    <UserCheck className="h-4 w-4 mr-2" /> {t("detail.pendingRequests")} ({pendingMembersCount})
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>

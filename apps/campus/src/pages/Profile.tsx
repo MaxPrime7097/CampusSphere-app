@@ -28,6 +28,7 @@ import {
   normalizeId,
   NOT_AVAILABLE_TEXT,
 } from "@/constants/profileConstants";
+import { useTranslation } from "react-i18next";
 import {
   ProfileHeader,
   ProfilePostsTab,
@@ -182,6 +183,7 @@ function mapProfileToViewModel({
 }
 
 export function Profile() {
+  const { t } = useTranslation("profile");
   const navigate = useNavigate();
   const location = useLocation();
   const { username } = useParams<{ username?: string }>();
@@ -484,8 +486,8 @@ export function Profile() {
           setConnectionStatus("accepted");
           setIsFollowing(true);
           toast({
-            title: "Connexion acceptée",
-            description: `Vous êtes maintenant connecté(e) à ${user.name}`,
+            title: t("toasts.accepted"),
+            description: t("toasts.acceptedDesc", { name: user.name }),
             duration: 2000,
           });
         } else {
@@ -494,12 +496,12 @@ export function Profile() {
           setConnectionStatus(null);
           setIsRecipient(false);
           setIsFollowing(false);
+          const isDisconnected = previousIsFollowing && connectionStatus === "accepted";
           toast({
-            title: previousIsFollowing && connectionStatus === "accepted" ? "Connexion supprimée" : "Demande annulée",
-            description:
-              previousIsFollowing && connectionStatus === "accepted"
-                ? `Vous n'êtes plus connecté(e) à ${user.name}`
-                : `La demande de connexion à ${user.name} a été annulée`,
+            title: isDisconnected ? t("toasts.disconnected") : t("toasts.canceled"),
+            description: isDisconnected
+              ? t("toasts.disconnectedDesc", { name: user.name })
+              : t("toasts.canceledDesc", { name: user.name }),
             duration: 2000,
           });
         }
@@ -511,8 +513,8 @@ export function Profile() {
         setConnectionStatus("pending");
         setIsRecipient(false);
         toast({
-          title: "Connexion envoyée",
-          description: `Demande de connexion envoyée à ${user.name}`,
+          title: t("toasts.requestSent"),
+          description: t("toasts.requestSentDesc", { name: user.name }),
           duration: 2000,
         });
       }
@@ -525,10 +527,10 @@ export function Profile() {
       }
 
       toast({
-        title: "Erreur",
+        title: t("toasts.error"),
         description:
           error?.message ||
-          (previousIsFollowing ? "Impossible de supprimer la connexion" : "Impossible de créer la connexion"),
+          (previousIsFollowing ? t("toasts.errorDesc") : t("toasts.errorDesc")),
         variant: "destructive",
       });
     } finally {
@@ -539,8 +541,8 @@ export function Profile() {
   const handleViewProfile = (profileUsername?: string, connectionName?: string, showToast = false) => {
     if (!profileUsername) {
       toast({
-        title: "Profil indisponible",
-        description: "Impossible d'ouvrir ce profil pour le moment : username manquant.",
+        title: t("toasts.unavailableProfile"),
+        description: t("toasts.missingUsername"),
         variant: "destructive",
       });
       return;
@@ -553,8 +555,8 @@ export function Profile() {
 
     if (showToast && connectionName) {
       toast({
-        title: "Navigation vers profil",
-        description: `Ouverture du profil de ${connectionName}`,
+        title: t("toasts.navigatingProfile"),
+        description: t("toasts.navigatingProfileDesc", { name: connectionName }),
         duration: 2000,
       });
     }
@@ -563,8 +565,8 @@ export function Profile() {
   const handleDownloadFile = async (resourceId?: string | number, fileName?: string) => {
     if (!resourceId) {
       toast({
-        title: "Téléchargement indisponible",
-        description: "Cette contribution ne possède pas d'identifiant de ressource valide.",
+        title: t("toasts.downloadUnavailable"),
+        description: t("toasts.invalidResourceId"),
         variant: "destructive",
       });
       return;
@@ -582,8 +584,8 @@ export function Profile() {
       window.URL.revokeObjectURL(objectUrl);
 
       toast({
-        title: "Téléchargement démarré",
-        description: `Le fichier "${result.filename || fileName || `resource-${resourceId}`}" va être téléchargé`,
+        title: t("toasts.downloadStarted"),
+        description: t("toasts.downloadStartedDesc", { name: result.filename || fileName || `resource-${resourceId}` }),
         duration: 2000,
       });
     } catch (error: any) {
@@ -596,10 +598,10 @@ export function Profile() {
         message.includes("not authorized");
 
       toast({
-        title: isPermissionError ? "Téléchargement non autorisé" : "Erreur de téléchargement",
+        title: isPermissionError ? t("toasts.downloadForbidden") : t("toasts.downloadError"),
         description: isPermissionError
-          ? "Vous n'avez pas l'autorisation de télécharger cette ressource. Vérifiez sa visibilité ou contactez son propriétaire."
-          : error?.message || "Impossible de télécharger cette ressource pour le moment.",
+          ? t("toasts.downloadForbiddenDesc")
+          : error?.message || t("toasts.errorDesc"),
         variant: "destructive",
       });
     }
@@ -611,9 +613,9 @@ export function Profile() {
       await updateUserProfile({ current_mood: mood });
       await refreshUser();
       setShowMoodModal(false);
-      toast({ title: "Mood mis à jour !", description: "Votre mood du moment a été changé", duration: 2000 });
+      toast({ title: t("toasts.moodUpdated"), description: t("toasts.moodUpdatedDesc"), duration: 2000 });
     } catch (error: any) {
-      toast({ title: "Erreur", description: error?.message || "Impossible de mettre à jour le mood", variant: "destructive" });
+      toast({ title: t("toasts.error"), description: error?.message || t("toasts.errorDesc"), variant: "destructive" });
     } finally {
       setIsSavingMood(false);
     }
@@ -639,11 +641,11 @@ export function Profile() {
       <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
         <div className="container max-w-4xl mx-auto py-6 px-4">
           <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-6 text-center space-y-2">
-            <h2 className="text-base font-semibold text-destructive">Erreur de chargement</h2>
+            <h2 className="text-base font-semibold text-destructive">{t("errors.loadTitle")}</h2>
             <p className="text-sm text-muted-foreground">
               {profileUnavailableDueToOnboarding
-                ? "Ce profil n’est pas encore accessible : l’onboarding de ce compte n’est pas terminé."
-                : "Le profil reçu est invalide ou obsolète. Veuillez recharger la page."}
+                ? t("errors.onboardingPending")
+                : t("errors.invalidProfile")}
             </p>
           </div>
         </div>
@@ -660,12 +662,12 @@ export function Profile() {
             onClose={() => setShowAvatarModal(false)}
             onSave={async (f) => {
               await uploadAvatar(currentUser!.id, f);
-              toast({ title: "Avatar mis à jour !", duration: 3000 });
+              toast({ title: t("toasts.avatarUpdated"), duration: 3000 });
               setShowAvatarModal(false);
               await refreshUser();
             }}
-            title="Photo de profil"
-            description="Téléchargez une nouvelle photo de profil pour votre compte."
+            title={t("avatarModal.title")}
+            description={t("avatarModal.desc")}
             currentImage={currentUser?.avatar}
             shape="round"
             aspectRatio={1}
@@ -677,12 +679,12 @@ export function Profile() {
             onClose={() => setShowCoverPhotoModal(false)}
             onSave={async (f) => {
               await uploadCoverPhoto(currentUser!.id, f);
-              toast({ title: "Photo de couverture mise à jour !", duration: 3000 });
+              toast({ title: t("toasts.coverUpdated"), duration: 3000 });
               setShowCoverPhotoModal(false);
               await refreshUser();
             }}
-            title="Photo de couverture"
-            description="Téléchargez une nouvelle photo de couverture."
+            title={t("coverModal.title")}
+            description={t("coverModal.desc")}
             currentImage={currentUser?.coverPhoto}
             shape="rect"
             aspectRatio={16 / 5}
@@ -713,10 +715,10 @@ export function Profile() {
         <div className="mt-4 campus-animate-slide-up w-full overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <ul className="inline-grid grid-flow-col text-center border-b border-border/40 text-muted-foreground min-w-full">
             {[
-              { id: "posts", label: "Posts" },
-              { id: "about", label: "À propos" },
-              { id: "connections", label: "Connections" },
-              { id: "contributions", label: "Contributions" },
+              { id: "posts", label: t("tabs.posts") },
+              { id: "about", label: t("tabs.about") },
+              { id: "connections", label: t("tabs.connections") },
+              { id: "contributions", label: t("tabs.contributions") },
             ].map((tab) => (
               <li key={tab.id}>
                 <button

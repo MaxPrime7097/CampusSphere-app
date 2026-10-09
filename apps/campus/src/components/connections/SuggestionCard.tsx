@@ -2,6 +2,7 @@ import { Link, Lightning as Zap } from "@phosphor-icons/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { formatSlugToLabel, truncate } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 import type { ConnectionUser } from "./types";
 
 interface SuggestionCardProps {
@@ -15,6 +16,8 @@ export function SuggestionCard({
   onNavigateProfile,
   onConnect,
 }: SuggestionCardProps) {
+  const { t } = useTranslation("connections");
+
   return (
     <div
       className="flex items-center justify-between gap-3 py-3 px-2 sm:px-3 border-b border-border/40 hover:bg-muted/30 transition-colors cursor-pointer"
@@ -53,7 +56,7 @@ export function SuggestionCard({
         onClick={(e) => onConnect(e, suggestion)}
       >
         <Link className="h-3.5 w-3.5 mr-1.5" />
-        Connecter
+        {t("actions.connect")}
       </Button>
     </div>
   );

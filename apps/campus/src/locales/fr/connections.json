@@ -1,0 +1,80 @@
+{
+  "title": "Connexions",
+  "subtitle": "Gérez vos connexions et découvrez de nouveaux étudiants",
+  "searchPlaceholder": "Rechercher des connexions...",
+  "defaultUser": "Utilisateur",
+  "status": {
+    "calculatingMutual": "Calcul des amis communs...",
+    "mutualUpdated": "Amis communs mis à jour."
+  },
+  "filters": {
+    "all": "Tous",
+    "connections": "Mes connexions",
+    "university": "Université",
+    "faculty": "Filière",
+    "mutual": "Amis communs",
+    "impact": "Impact",
+    "filterPlaceholder": "Filtrer",
+    "sameUniversity": "Même université",
+    "sameFaculty": "Même filière",
+    "pending": "En attente",
+    "suggestions": "Suggestions"
+  },
+  "sections": {
+    "pendingRequests": "Demandes en attente",
+    "suggestions": "Suggestions d'étudiants",
+    "myConnections": "Mes connexions",
+    "viewAll": "Voir tout ({{count}})",
+    "viewAllSimple": "Voir tout",
+    "backToDashboard": "Retour aux connexions",
+    "connectionsResults": "Résultats de vos connexions",
+    "suggestionsResults": "Résultats des suggestions"
+  },
+  "mutualFriends_one": "{{count}} ami en commun",
+  "mutualFriends_other": "{{count}} amis en commun",
+  "reasons": {
+    "sameUniversity": "Même université",
+    "sameFaculty": "Même filière",
+    "suggested": "Suggéré pour vous"
+  },
+  "actions": {
+    "message": "Message",
+    "viewProfile": "Voir le profil",
+    "disconnect": "Se déconnecter",
+    "confirmDisconnect": "Êtes-vous sûr de vouloir retirer cette connexion ?",
+    "accept": "Accepter",
+    "decline": "Refuser",
+    "connect": "Connecter",
+    "pending": "En attente",
+    "requestSent": "Demande envoyée",
+    "reset": "Réinitialiser",
+    "back": "Retour"
+  },
+  "empty": {
+    "connectionsTitle": "Aucune connexion pour le moment",
+    "connectionsDesc": "Explorez les suggestions et connectez-vous avec d'autres étudiants.",
+    "pendingTitle": "Aucune demande en attente",
+    "pendingDesc": "Vous n'avez aucune demande de connexion pour le moment.",
+    "suggestionsTitle": "Aucune suggestion",
+    "suggestionsDesc": "Revenez plus tard pour découvrir de nouveaux profils.",
+    "searchTitle": "Aucun résultat",
+    "searchDesc": "Aucun profil ne correspond à votre recherche."
+  },
+  "toasts": {
+    "info": "Information",
+    "accepted": "Connexion acceptée",
+    "acceptedDesc": "Vous êtes désormais connecté avec {{name}}",
+    "declined": "Demande refusée",
+    "declinedDesc": "La demande de connexion a été refusée",
+    "disconnected": "Connexion retirée",
+    "disconnectedDesc": "Vous n'êtes plus connecté avec {{name}}",
+    "requestSent": "Demande envoyée",
+    "requestSentDesc": "Votre demande a été envoyée à {{name}}",
+    "error": "Erreur",
+    "acceptFailed": "Impossible d'accepter la demande",
+    "declineFailed": "Impossible de refuser la demande",
+    "disconnectFailed": "Impossible de retirer la connexion",
+    "requestFailed": "Impossible d'envoyer la demande",
+    "mutualUnavailable": "Le calcul des amis communs n'est pas disponible pour le moment."
+  }
+}

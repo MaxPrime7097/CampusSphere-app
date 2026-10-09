@@ -3,12 +3,14 @@ import { getVerificationAccessStatus } from "@/utils/verification";
 import { Shield, Hourglass, CheckCircle, ArrowRight } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useTranslation } from "react-i18next";
 
 interface FeedVerificationBannerProps {
   onOpenVerificationModal: () => void;
 }
 
 export function FeedVerificationBanner({ onOpenVerificationModal }: FeedVerificationBannerProps) {
+  const { t } = useTranslation("feed");
   const { user } = useAuth();
   const status = getVerificationAccessStatus(user);
 
@@ -28,14 +30,14 @@ export function FeedVerificationBanner({ onOpenVerificationModal }: FeedVerifica
           <div>
             <div className="flex items-center gap-2">
               <h3 className="font-semibold text-sm text-foreground">
-                Certification en cours d'examen
+                {t("verificationBanner.underReviewTitle")}
               </h3>
               <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 bg-primary/15 text-primary border-primary/20">
-                En attente
+                {t("verificationBanner.pendingBadge")}
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Votre justificatif a bien été reçu. Notre équipe l'examine très prochainement. Vos accès restent pleinement actifs.
+              {t("verificationBanner.underReviewDesc")}
             </p>
           </div>
         </div>
@@ -54,14 +56,14 @@ export function FeedVerificationBanner({ onOpenVerificationModal }: FeedVerifica
           <div>
             <div className="flex items-center gap-2">
               <h3 className="font-semibold text-sm text-amber-950 dark:text-amber-100">
-                Accès Découverte actif • {status.hoursRemainingInGrace}h restantes
+                {t("verificationBanner.discoveryTitle", { hours: status.hoursRemainingInGrace })}
               </h3>
               <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-amber-500/40 text-amber-700 dark:text-amber-300">
-                24h gratuites
+                {t("verificationBanner.freeBadge")}
               </Badge>
             </div>
             <p className="text-xs text-amber-900/80 dark:text-amber-200/80 mt-0.5">
-              Profitez de toutes les fonctionnalités ! Soumettez votre carte d'étudiant pour pérenniser vos accès et obtenir votre badge officiel.
+              {t("verificationBanner.discoveryDesc")}
             </p>
           </div>
         </div>
@@ -70,7 +72,7 @@ export function FeedVerificationBanner({ onOpenVerificationModal }: FeedVerifica
           onClick={onOpenVerificationModal}
           className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white shadow-sm shrink-0 text-xs font-medium h-8"
         >
-          Certifier mon compte
+          {t("verificationBanner.certifyAccount")}
           <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
         </Button>
       </div>
@@ -86,10 +88,10 @@ export function FeedVerificationBanner({ onOpenVerificationModal }: FeedVerifica
         </div>
         <div>
           <h3 className="font-semibold text-sm text-red-950 dark:text-red-100">
-            Compte non certifié — Mode lecture seule
+            {t("verificationBanner.readOnlyTitle")}
           </h3>
           <p className="text-xs text-red-900/80 dark:text-red-200/80 mt-0.5">
-            Votre période d'accès découverte de 24h a pris fin. Certifiez votre statut d'étudiant pour continuer à publier et interagir.
+            {t("verificationBanner.readOnlyDesc")}
           </p>
         </div>
       </div>
@@ -98,7 +100,7 @@ export function FeedVerificationBanner({ onOpenVerificationModal }: FeedVerifica
         onClick={onOpenVerificationModal}
         className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white shadow-sm shrink-0 text-xs font-medium h-8"
       >
-        Certifier mon compte
+        {t("verificationBanner.certifyAccount")}
         <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
       </Button>
     </div>

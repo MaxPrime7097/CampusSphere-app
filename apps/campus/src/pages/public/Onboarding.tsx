@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
-import { Spinner as Loader2, Info, ArrowRight } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
+import { Spinner as Loader2, ArrowRight } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,18 +42,19 @@ const getBirthDateMax = () => {
     .split("T")[0];
 };
 
-const validateDateOfBirth = (value: string): string | null => {
-  if (!value) return "Date de naissance requise";
+const validateDateOfBirth = (value: string, t: (key: string, opt?: any) => string): string | null => {
+  if (!value) return t("onboarding.errors.dobRequired");
   const birthDate = parseISODate(value);
-  if (!birthDate) return "Date de naissance invalide";
+  if (!birthDate) return t("onboarding.errors.dobInvalid");
   const now = new Date();
   const todayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  if (birthDate > todayUtc) return "La date de naissance ne peut pas être dans le futur";
-  if (getAgeFromDate(birthDate, todayUtc) < MINIMUM_AGE) return `Vous devez avoir au moins ${MINIMUM_AGE} ans`;
+  if (birthDate > todayUtc) return t("onboarding.errors.dobFuture");
+  if (getAgeFromDate(birthDate, todayUtc) < MINIMUM_AGE) return t("onboarding.errors.minAge", { age: MINIMUM_AGE });
   return null;
 };
 
 export function Onboarding() {
+  const { t } = useTranslation("auth");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -129,33 +131,33 @@ export function Onboarding() {
     const newErrors: Record<string, string> = {};
 
     // Validation date de naissance
-    const dobError = validateDateOfBirth(formData.dateOfBirth);
+    const dobError = validateDateOfBirth(formData.dateOfBirth, t);
     if (dobError) {
       newErrors.dateOfBirth = dobError;
     }
 
     // Validation université
     if (!formData.university.trim()) {
-      newErrors.university = "Veuillez sélectionner votre université";
+      newErrors.university = t("onboarding.errors.selectUniversity");
     } else if (formData.university === "other" && !customUniversity.trim()) {
-      newErrors.customUniversity = "Veuillez indiquer le nom complet de votre établissement";
+      newErrors.customUniversity = t("onboarding.errors.enterCustomUniversity");
     }
 
     // Validation filière
     if (!formData.faculty.trim()) {
-      newErrors.faculty = "Veuillez sélectionner votre filière";
+      newErrors.faculty = t("onboarding.errors.selectFaculty");
     }
 
     // Validation niveau
     if (!formData.studyYear.trim()) {
-      newErrors.studyYear = "Veuillez sélectionner votre niveau d'études";
+      newErrors.studyYear = t("onboarding.errors.selectStudyYear");
     }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       toast({
-        title: "Informations incomplètes",
-        description: "Veuillez renseigner tous les champs obligatoires.",
+        title: t("onboarding.errors.incompleteInfo"),
+        description: t("onboarding.errors.fillAllFields"),
         variant: "destructive",
       });
       return;
@@ -193,22 +195,22 @@ export function Onboarding() {
         localStorage.setItem("cs_just_onboarded", "1");
 
         toast({
-          title: "Bienvenue sur CampusSphere ! 🎓",
-          description: "Votre profil campus a été configuré avec succès.",
+          title: t("onboarding.toast.welcomeTitle"),
+          description: t("onboarding.toast.welcomeDesc"),
         });
 
         navigate("/", { replace: true });
       } else {
         toast({
-          title: "Inscription enregistrée ! ⏳",
-          description: "Partagez avec votre promo pour débloquer votre établissement.",
+          title: t("onboarding.toast.registeredTitle"),
+          description: t("onboarding.toast.registeredDesc"),
         });
 
         navigate(`/campus-unlock?campus=${encodeURIComponent(finalUniversity)}`, { replace: true });
       }
     } catch (err: any) {
       toast({
-        title: "Erreur lors de l'enregistrement",
+        title: t("onboarding.toast.saveError"),
         description: err?.message || "Une erreur est survenue. Veuillez réessayer.",
         variant: "destructive",
       });
@@ -220,7 +222,7 @@ export function Onboarding() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5 flex flex-col items-center justify-center p-4 sm:p-8">
       <Helmet>
-        <title>Configuration Campus - CampusSphere</title>
+        <title>{t("onboarding.metaTitle")}</title>
       </Helmet>
 
       <div className="w-full max-w-lg mx-auto">
@@ -230,16 +232,16 @@ export function Onboarding() {
             CampusSphere
           </span>
           <h1 className="text-xl sm:text-2xl font-bold text-foreground mt-3">
-            Où étudiez-vous ? 🎓
+            {t("onboarding.title")}
           </h1>
           <p className="text-muted-foreground mt-1.5 text-xs sm:text-sm max-w-md mx-auto">
-            Renseignez votre établissement pour être directement connecté aux cours, ressources et étudiants de votre campus.
+            {t("onboarding.subtitle")}
           </p>
         </div>
 
         {user?.firstName && (
           <p className="text-xs text-center text-muted-foreground mb-5">
-            Ravi de vous compter parmi nous, <strong className="text-foreground">{user.firstName}</strong> !
+            {t("onboarding.welcomeBack", { name: user.firstName })}
           </p>
         )}
 
@@ -247,7 +249,7 @@ export function Onboarding() {
           {/* 1. Date de naissance */}
           <div>
             <Label className="text-xs font-semibold">
-              Date de naissance <span className="text-primary">*</span>
+              {t("onboarding.birthDate")} <span className="text-primary">*</span>
             </Label>
             <Input
               type="date"
@@ -260,7 +262,7 @@ export function Onboarding() {
               <p className="text-xs text-destructive mt-1">{errors.dateOfBirth}</p>
             ) : (
               <p className="text-[11px] text-muted-foreground mt-1">
-                CampusSphere est réservé aux personnes de {MINIMUM_AGE} ans et plus.
+                {t("onboarding.ageRequirement", { age: MINIMUM_AGE })}
               </p>
             )}
           </div>
@@ -268,7 +270,7 @@ export function Onboarding() {
           {/* 2. Université / Établissement */}
           <div>
             <Label className="text-xs font-semibold">
-              Université / Établissement <span className="text-primary">*</span>
+              {t("onboarding.university")} <span className="text-primary">*</span>
             </Label>
             <UniversityCombobox
               value={formData.university}
@@ -284,11 +286,11 @@ export function Onboarding() {
           {formData.university === "other" && (
             <div className="space-y-1">
               <Label className="text-xs font-semibold">
-                Nom complet de votre établissement <span className="text-primary">*</span>
+                {t("onboarding.customUniversity")} <span className="text-primary">*</span>
               </Label>
               <Input
                 type="text"
-                placeholder="Ex : Université des Montagnes, ISTDI, ESMT..."
+                placeholder={t("onboarding.customUniversityPlaceholder")}
                 value={customUniversity}
                 onChange={(e) => {
                   setCustomUniversity(e.target.value);
@@ -300,7 +302,7 @@ export function Onboarding() {
                 <p className="text-xs text-destructive mt-1">{errors.customUniversity}</p>
               ) : (
                 <p className="text-[11px] text-muted-foreground mt-1">
-                  Indiquez le nom complet ou le sigle officiel de votre établissement au Cameroun.
+                  {t("onboarding.customUniversityHint")}
                 </p>
               )}
             </div>
@@ -309,7 +311,7 @@ export function Onboarding() {
           {/* 3. Domaine d'études */}
           <div>
             <Label className="text-xs font-semibold">
-              Domaine d'études <span className="text-muted-foreground text-[11px] font-normal">(optionnel)</span>
+              {t("onboarding.fieldOfStudy")} <span className="text-muted-foreground text-[11px] font-normal">{t("onboarding.optional")}</span>
             </Label>
             <DomainCombobox
               value={academicDomain}
@@ -327,7 +329,7 @@ export function Onboarding() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label className="text-xs font-semibold">
-                Filière <span className="text-primary">*</span>
+                {t("onboarding.faculty")} <span className="text-primary">*</span>
               </Label>
               <FacultyCombobox
                 domain={academicDomain}
@@ -345,7 +347,7 @@ export function Onboarding() {
 
             <div>
               <Label className="text-xs font-semibold">
-                Niveau d'études <span className="text-primary">*</span>
+                {t("onboarding.studyYear")} <span className="text-primary">*</span>
               </Label>
               <StudyLevelCombobox
                 value={formData.studyYear}
@@ -368,11 +370,11 @@ export function Onboarding() {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Configuration de votre espace...
+                  {t("onboarding.submitting")}
                 </>
               ) : (
                 <>
-                  Accéder à mon espace
+                  {t("onboarding.submit")}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </>
               )}

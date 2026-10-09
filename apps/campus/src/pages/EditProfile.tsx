@@ -22,8 +22,10 @@ import { formatSlugToLabel } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { compressImageFile } from "@/lib/imageCompression";
 import { getBirthDateMax, validateBirthDate } from "@/lib/date";
+import { useTranslation } from "react-i18next";
 
 export function EditProfile() {
+  const { t } = useTranslation("profile");
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user: currentUser, isLoading: isAuthLoading } = useAuth();
@@ -66,8 +68,8 @@ export function EditProfile() {
     if (!currentUser) {
       toast({
         variant: "destructive",
-        title: "Erreur",
-        description: "Impossible de charger votre profil.",
+        title: t("toasts.error"),
+        description: t("toasts.loadError"),
       });
       navigate("/profile");
       return;
@@ -110,8 +112,8 @@ export function EditProfile() {
       const dobValidation = validateBirthDate(dateOfBirth);
       if (!dobValidation.valid) {
         toast({
-          title: "Date de naissance invalide",
-          description: dobValidation.error || "Vous devez avoir au moins 16 ans",
+          title: t("toasts.invalidDob"),
+          description: dobValidation.error || t("toasts.invalidDobDesc"),
           variant: "destructive",
         });
         return;
@@ -147,15 +149,15 @@ export function EditProfile() {
       }
 
       toast({
-        title: "Succès",
-        description: "Votre profil a été mis à jour avec succès.",
+        title: t("toasts.success"),
+        description: t("toasts.successDesc"),
       });
       navigate(`/profile/${username}`);
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Erreur",
-        description: "Une erreur est survenue lors de la sauvegarde.",
+        title: t("toasts.error"),
+        description: t("toasts.errorDesc"),
       });
     } finally {
       setIsSaving(false);
@@ -177,8 +179,8 @@ export function EditProfile() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Modifier le profil</h1>
-          <p className="text-muted-foreground">Gérez vos informations personnelles et académiques.</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t("edit.title")}</h1>
+          <p className="text-muted-foreground">{t("edit.subtitle")}</p>
         </div>
       </div>
 
@@ -187,27 +189,27 @@ export function EditProfile() {
         <section className="pb-8 border-b border-border/40 space-y-4">
           <div className="flex items-center gap-2 pb-2">
             <User className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold tracking-tight text-foreground">Identité</h2>
+            <h2 className="text-lg font-semibold tracking-tight text-foreground">{t("edit.identity")}</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="firstName">Nom</Label>
+              <Label htmlFor="firstName">{t("edit.firstName")}</Label>
               <Input id="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="lastName">Prénom</Label>
+              <Label htmlFor="lastName">{t("edit.lastName")}</Label>
               <Input id="lastName" value={lastName} onChange={(e) => setLastName(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="dob">Date de naissance *</Label>
+              <Label htmlFor="dob">{t("edit.dob")}</Label>
               <div className="relative">
                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input id="dob" type="date" max={getBirthDateMax()} value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} className="pl-10" />
               </div>
-              <p className="text-xs text-muted-foreground">Âge minimum requis : 16 ans</p>
+              <p className="text-xs text-muted-foreground">{t("edit.minAge")}</p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="username">Nom d'utilisateur</Label>
+              <Label htmlFor="username">{t("edit.username")}</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">@</span>
                 <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} className="pl-7" />
@@ -215,8 +217,8 @@ export function EditProfile() {
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="bio">Biographie</Label>
-            <Textarea id="bio" value={bio} onChange={(e) => setBio(e.target.value)} className="min-h-[120px] resize-none" placeholder="Partagez votre parcours..." />
+            <Label htmlFor="bio">{t("edit.bio")}</Label>
+            <Textarea id="bio" value={bio} onChange={(e) => setBio(e.target.value)} className="min-h-[120px] resize-none" placeholder={t("edit.bioPlaceholder")} />
           </div>
         </section>
 
@@ -224,15 +226,15 @@ export function EditProfile() {
         <section className="pb-8 border-b border-border/40 space-y-4">
           <div className="flex items-center gap-2 pb-2">
             <MapPin className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold tracking-tight text-foreground">Contact & Localisation</h2>
+            <h2 className="text-lg font-semibold tracking-tight text-foreground">{t("edit.contact")}</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email professionnel</Label>
+              <Label htmlFor="email">{t("edit.email")}</Label>
               <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">Téléphone</Label>
+              <Label htmlFor="phone">{t("edit.phone")}</Label>
               <div className="flex">
                 <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-sm text-muted-foreground">+237</span>
                 <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} className="rounded-l-none" />
@@ -240,14 +242,14 @@ export function EditProfile() {
             </div>
           </div>
           <div className="p-4 rounded-xl border border-border/40 bg-muted/10 space-y-3">
-            <Label className="font-medium">Localisation actuelle (Style LinkedIn)</Label>
+            <Label className="font-medium">{t("edit.location")}</Label>
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1">
                 <CityCombobox value={town} onValueChange={setTown} />
               </div>
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background border border-border/40 text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4 text-primary" />
-                {town || "Non renseigné"}
+                {town || t("edit.notSet")}
               </div>
             </div>
           </div>
@@ -257,15 +259,15 @@ export function EditProfile() {
         <section className="pb-8 border-b border-border/40 space-y-6">
           <div className="flex items-center gap-2 pb-2">
             <GraduationCap className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold tracking-tight text-foreground">Cursus Académique</h2>
+            <h2 className="text-lg font-semibold tracking-tight text-foreground">{t("edit.academicPath")}</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Université</Label>
+              <Label>{t("about.labels.university")}</Label>
               <UniversityCombobox value={university} onValueChange={setUniversity} />
             </div>
             <div className="space-y-2">
-              <Label>Domaine d'études</Label>
+              <Label>{t("edit.domain")}</Label>
               <DomainCombobox
                 value={academicDomain}
                 onValueChange={(d) => {
@@ -277,7 +279,7 @@ export function EditProfile() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Filière</Label>
+              <Label>{t("about.labels.faculty")}</Label>
               <FacultyCombobox
                 domain={academicDomain}
                 onDomainChange={(d) => {
@@ -288,11 +290,11 @@ export function EditProfile() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Niveau d'étude</Label>
+              <Label>{t("edit.studyLevel")}</Label>
               <StudyLevelCombobox value={studyYear} onValueChange={setStudyYear} />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="studentId">Matricule / ID</Label>
+              <Label htmlFor="studentId">{t("edit.studentId")}</Label>
               <Input id="studentId" value={studentId} onChange={(e) => setStudentId(e.target.value)} />
             </div>
           </div>
@@ -300,13 +302,13 @@ export function EditProfile() {
           <div className="p-5 rounded-xl border border-dashed border-primary/30 bg-primary/5 space-y-3">
             <div className="flex items-center gap-2">
               <Shield className="h-5 w-5 text-primary" />
-              <h4 className="font-semibold text-foreground">Certification Étudiante</h4>
+              <h4 className="font-semibold text-foreground">{t("edit.studentCertification")}</h4>
             </div>
-            <p className="text-sm text-muted-foreground">L'importation d'une carte d'étudiant valide vous permet d'obtenir le badge certifié.</p>
+            <p className="text-sm text-muted-foreground">{t("edit.studentCertificationDesc")}</p>
             <div className="flex items-center gap-4">
               <Button variant="outline" onClick={() => studentCardInputRef.current?.click()} className="bg-background">
                 <Upload className="mr-2 h-4 w-4" />
-                Choisir un fichier
+                {t("edit.chooseFile")}
               </Button>
               {studentCardFile && <span className="text-sm font-medium text-primary bg-primary/10 px-3 py-1 rounded-full">{studentCardFile.name}</span>}
               <input type="file" className="hidden" ref={studentCardInputRef} accept="image/*" onChange={async (e) => { const f = e.target.files?.[0]; if (f) { const compressed = await compressImageFile(f); setStudentCardFile(compressed); } else { setStudentCardFile(null); } }} />
@@ -318,12 +320,12 @@ export function EditProfile() {
         <section className="pb-8 border-b border-border/40 space-y-8">
           <div className="flex items-center gap-2 pb-2">
             <Zap className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold tracking-tight text-foreground">Compétences & Langues</h2>
+            <h2 className="text-lg font-semibold tracking-tight text-foreground">{t("edit.skillsAndLanguages")}</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Skills */}
             <div className="space-y-4">
-              <Label className="text-base font-semibold">Compétences techniques</Label>
+              <Label className="text-base font-semibold">{t("edit.technicalSkills")}</Label>
               <div className="flex gap-2">
                 <div className="flex-1">
                   <SkillsCombobox 
@@ -351,7 +353,7 @@ export function EditProfile() {
 
             {/* Languages */}
             <div className="space-y-4">
-              <Label className="text-base font-semibold">Langues</Label>
+              <Label className="text-base font-semibold">{t("edit.languages")}</Label>
               <div className="flex gap-2">
                 <div className="flex-1">
                   <LanguageCombobox 
@@ -380,7 +382,7 @@ export function EditProfile() {
 
           {/* Interests */}
           <div className="space-y-4">
-            <Label className="text-base font-semibold">Centres d'intérêt</Label>
+            <Label className="text-base font-semibold">{t("edit.interests")}</Label>
             <div className="flex gap-2">
               <div className="flex-1">
                 <InterestsCombobox 
@@ -412,10 +414,10 @@ export function EditProfile() {
           <div className="flex items-center justify-between pb-2">
             <div className="flex items-center gap-2">
               <Briefcase className="h-5 w-5 text-primary" />
-              <h2 className="text-lg font-semibold tracking-tight text-foreground">Expériences Professionnelles</h2>
+              <h2 className="text-lg font-semibold tracking-tight text-foreground">{t("edit.professionalExperiences")}</h2>
             </div>
             <Button variant="outline" size="sm" onClick={() => setExperiences([{ title: "", company: "", duration: "", description: "" }, ...experiences])}>
-              <Plus className="mr-2 h-4 w-4" /> Ajouter
+              <Plus className="mr-2 h-4 w-4" /> {t("edit.add")}
             </Button>
           </div>
           <div className="space-y-4">
@@ -426,20 +428,20 @@ export function EditProfile() {
                 </Button>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Poste</Label>
-                    <Input value={exp.title} onChange={(e) => { const n = [...experiences]; n[i].title = e.target.value; setExperiences(n); }} placeholder="Ex: Développeur React" />
+                    <Label>{t("edit.position")}</Label>
+                    <Input value={exp.title} onChange={(e) => { const n = [...experiences]; n[i].title = e.target.value; setExperiences(n); }} placeholder={t("edit.positionPlaceholder")} />
                   </div>
                   <div className="space-y-2">
-                    <Label>Entreprise</Label>
-                    <Input value={exp.company} onChange={(e) => { const n = [...experiences]; n[i].company = e.target.value; setExperiences(n); }} placeholder="Ex: Google" />
+                    <Label>{t("edit.company")}</Label>
+                    <Input value={exp.company} onChange={(e) => { const n = [...experiences]; n[i].company = e.target.value; setExperiences(n); }} placeholder={t("edit.companyPlaceholder")} />
                   </div>
                   <div className="md:col-span-2 space-y-2">
-                    <Label>Durée</Label>
-                    <Input value={exp.duration} onChange={(e) => { const n = [...experiences]; n[i].duration = e.target.value; setExperiences(n); }} placeholder="Ex: Juin 2023 - Présent" />
+                    <Label>{t("edit.duration")}</Label>
+                    <Input value={exp.duration} onChange={(e) => { const n = [...experiences]; n[i].duration = e.target.value; setExperiences(n); }} placeholder={t("edit.durationPlaceholder")} />
                   </div>
                   <div className="md:col-span-2 space-y-2">
-                    <Label>Description</Label>
-                    <Textarea value={exp.description} onChange={(e) => { const n = [...experiences]; n[i].description = e.target.value; setExperiences(n); }} rows={3} placeholder="Détaillez vos missions..." />
+                    <Label>{t("edit.description")}</Label>
+                    <Textarea value={exp.description} onChange={(e) => { const n = [...experiences]; n[i].description = e.target.value; setExperiences(n); }} rows={3} placeholder={t("edit.descriptionPlaceholder")} />
                   </div>
                 </div>
               </div>
@@ -450,18 +452,18 @@ export function EditProfile() {
         {/* ACTIONS FINALES */}
         <div className="flex items-center justify-between py-4 px-2 bg-background/80 backdrop-blur-md border-t border-border/40 sticky bottom-0 z-10">
           <Button variant="outline" size="lg" onClick={() => navigate(-1)}>
-            Annuler les modifications
+            {t("edit.cancel")}
           </Button>
           <Button size="lg" className="campus-gradient text-white px-10 shadow-lg shadow-primary/20" onClick={handleSave} disabled={isSaving}>
             {isSaving ? (
               <>
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Enregistrement...
+                {t("edit.saving")}
               </>
             ) : (
               <>
                 <Check className="mr-2 h-5 w-5" />
-                Enregistrer le profil
+                {t("edit.save")}
               </>
             )}
           </Button>

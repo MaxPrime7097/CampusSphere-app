@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Calendar, Clock, MapPin, Globe, Upload, Users, Check, ArrowLeft, X, Ticket, ArrowSquareOut, LinkSimple, Spinner as Loader2 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ import { cn, getEventUrl } from "@/lib/utils";
 import type { EventCategory, CreateEventInput } from "@/types/events.types";
 
 export function EventCreate() {
+  const { t, i18n } = useTranslation("events");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -56,15 +58,15 @@ export function EventCreate() {
     mutationFn: (payload: CreateEventInput) => createEvent(payload),
     onSuccess: (created) => {
       toast({
-        title: "Événement créé avec succès",
-        description: `"${created.title}" est maintenant en ligne.`,
+        title: t("createForm.toasts.created"),
+        description: t("createForm.toasts.createdDesc", { title: created.title }),
       });
       navigate(getEventUrl(created));
     },
     onError: (err: any) => {
       toast({
-        title: "Erreur lors de la création",
-        description: err?.message || "Impossible de publier l'événement.",
+        title: t("createForm.toasts.createError"),
+        description: err?.message || t("createForm.toasts.createErrorDesc"),
         variant: "destructive",
       });
     },
@@ -75,8 +77,8 @@ export function EventCreate() {
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
         toast({
-          title: "Image trop lourde",
-          description: "Veuillez choisir une image de moins de 5 Mo.",
+          title: t("createForm.toasts.imageTooLarge"),
+          description: t("createForm.toasts.imageTooLargeDesc"),
           variant: "destructive",
         });
         return;
@@ -100,8 +102,8 @@ export function EventCreate() {
 
     if (!formData.title.trim()) {
       toast({
-        title: "Titre obligatoire",
-        description: "Veuillez indiquer un titre pour votre événement.",
+        title: t("createForm.toasts.titleRequired"),
+        description: t("createForm.toasts.titleRequiredDesc"),
         variant: "destructive",
       });
       return;
@@ -109,8 +111,8 @@ export function EventCreate() {
 
     if (!formData.startDate) {
       toast({
-        title: "Date requise",
-        description: "Veuillez sélectionner une date de début.",
+        title: t("createForm.toasts.dateRequired"),
+        description: t("createForm.toasts.dateRequiredDesc"),
         variant: "destructive",
       });
       return;
@@ -127,9 +129,10 @@ export function EventCreate() {
   };
 
   const previewDate = formData.startDate ? new Date(formData.startDate) : new Date();
-  const previewMonth = previewDate.toLocaleDateString("fr-FR", { month: "short" }).toUpperCase().replace(".", "");
+  const dateLocale = i18n.language.startsWith("en") ? "en-US" : "fr-FR";
+  const previewMonth = previewDate.toLocaleDateString(dateLocale, { month: "short" }).toUpperCase().replace(".", "");
   const previewDay = previewDate.getDate();
-  const previewTime = previewDate.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  const previewTime = previewDate.toLocaleTimeString(dateLocale, { hour: "2-digit", minute: "2-digit" });
   const categoryMeta = getEventCategoryMeta(formData.category);
 
   return (
@@ -146,10 +149,10 @@ export function EventCreate() {
         </Button>
         <div>
           <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
-            Créer un événement
+            {t("createForm.title")}
           </h1>
           <p className="text-xs md:text-sm text-muted-foreground">
-            Publiez une activité, un atelier ou une rencontre pour la communauté.
+            {t("createForm.subtitle")}
           </p>
         </div>
       </div>
@@ -161,17 +164,17 @@ export function EventCreate() {
           {/* Section: Informations générales */}
           <div className="rounded-2xl border border-border/50 bg-card p-5 sm:p-6 space-y-4">
             <div>
-              <h2 className="text-sm font-semibold text-foreground">Informations générales</h2>
-              <p className="text-xs text-muted-foreground">Titre, catégorie et description de l'événement.</p>
+              <h2 className="text-sm font-semibold text-foreground">{t("createForm.generalInfo")}</h2>
+              <p className="text-xs text-muted-foreground">{t("createForm.generalInfoDesc")}</p>
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="title" className="text-xs font-medium text-foreground">
-                Titre de l'événement <span className="text-destructive">*</span>
+                {t("createForm.eventTitle")} <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="title"
-                placeholder="Ex: Cérémonie d'intégration 2026, Hackathon IA..."
+                placeholder={t("createForm.titlePlaceholder")}
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 className="rounded-xl text-xs sm:text-sm font-medium"
@@ -181,7 +184,7 @@ export function EventCreate() {
 
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-foreground">
-                Catégorie <span className="text-destructive">*</span>
+                {t("createForm.category")} <span className="text-destructive">*</span>
               </Label>
               <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 {EVENT_CATEGORY_OPTIONS.filter((c) => c.value !== "all").map((cat) => {
@@ -198,7 +201,7 @@ export function EventCreate() {
                           : "bg-muted/40 text-muted-foreground border-border/60 hover:bg-muted/80 hover:text-foreground"
                       )}
                     >
-                      {cat.shortLabel || cat.label}
+                      {t(`categories.${cat.value}Short`, { defaultValue: cat.shortLabel || cat.label })}
                     </button>
                   );
                 })}
@@ -207,11 +210,11 @@ export function EventCreate() {
 
             <div className="space-y-1.5">
               <Label htmlFor="description" className="text-xs font-medium text-foreground">
-                Description
+                {t("createForm.description")}
               </Label>
               <Textarea
                 id="description"
-                placeholder="Présentez l'événement, les objectifs, les prix à gagner ou le déroulement..."
+                placeholder={t("createForm.descriptionPlaceholder")}
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={5}
@@ -223,14 +226,14 @@ export function EventCreate() {
           {/* Section: Date, Heure & Lieu */}
           <div className="rounded-2xl border border-border/50 bg-card p-5 sm:p-6 space-y-4">
             <div>
-              <h2 className="text-sm font-semibold text-foreground">Date, Heure & Lieu</h2>
-              <p className="text-xs text-muted-foreground">Précisez le planning et la localisation de l'événement.</p>
+              <h2 className="text-sm font-semibold text-foreground">{t("createForm.dateTimeLocation")}</h2>
+              <p className="text-xs text-muted-foreground">{t("createForm.dateTimeLocationDesc")}</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="startDate" className="text-xs font-medium text-foreground">
-                  Date et heure de début <span className="text-destructive">*</span>
+                  {t("createForm.startDate")} <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="startDate"
@@ -244,7 +247,7 @@ export function EventCreate() {
 
               <div className="space-y-1.5">
                 <Label htmlFor="endDate" className="text-xs font-medium text-foreground">
-                  Date et heure de fin (optionnel)
+                  {t("createForm.endDate")}
                 </Label>
                 <Input
                   id="endDate"
@@ -259,9 +262,9 @@ export function EventCreate() {
             <div className="space-y-3 pt-3 border-t border-border/40">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label className="text-xs font-medium text-foreground">Événement en ligne</Label>
+                  <Label className="text-xs font-medium text-foreground">{t("createForm.onlineEvent")}</Label>
                   <p className="text-[11px] text-muted-foreground">
-                    Cochez si l'événement a lieu via visioconférence (Google Meet, Zoom, Discord).
+                    {t("createForm.onlineEventDesc")}
                   </p>
                 </div>
                 <Switch
@@ -273,7 +276,7 @@ export function EventCreate() {
               {formData.isOnline ? (
                 <div className="space-y-1.5 pt-1">
                   <Label htmlFor="onlineLink" className="text-xs font-medium text-foreground">
-                    Lien de la visioconférence
+                    {t("createForm.onlineLink")}
                   </Label>
                   <div className="relative">
                     <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -289,13 +292,13 @@ export function EventCreate() {
               ) : (
                 <div className="space-y-1.5 pt-1">
                   <Label htmlFor="location" className="text-xs font-medium text-foreground">
-                    Lieu physique sur le campus
+                    {t("createForm.physicalLocation")}
                   </Label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                     <Input
                       id="location"
-                      placeholder="Ex: Amphi B2, IUC Douala / Campus Lab..."
+                      placeholder={t("createForm.physicalLocationPlaceholder")}
                       value={formData.location || ""}
                       onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                       className="rounded-xl text-xs pl-9"
@@ -309,8 +312,8 @@ export function EventCreate() {
           {/* Section: Affiche / Bannière */}
           <div className="rounded-2xl border border-border/50 bg-card p-5 sm:p-6 space-y-4">
             <div>
-              <h2 className="text-sm font-semibold text-foreground">Affiche de l'événement</h2>
-              <p className="text-xs text-muted-foreground">Image de couverture affichée en haut de la page et sur les cartes.</p>
+              <h2 className="text-sm font-semibold text-foreground">{t("createForm.coverPhoto")}</h2>
+              <p className="text-xs text-muted-foreground">{t("createForm.coverPhotoDesc")}</p>
             </div>
 
             {coverPreview ? (
@@ -323,17 +326,17 @@ export function EventCreate() {
                   onClick={removeCoverImage}
                   className="absolute top-2.5 right-2.5 h-7 px-2.5 text-xs bg-background/80 hover:bg-background backdrop-blur-md rounded-lg shadow-xs"
                 >
-                  <X className="h-3.5 w-3.5 mr-1" /> Supprimer
+                  <X className="h-3.5 w-3.5 mr-1" /> {t("createForm.remove")}
                 </Button>
               </div>
             ) : (
               <label className="flex flex-col items-center justify-center h-32 rounded-xl border border-dashed border-border/80 hover:border-primary/50 bg-muted/20 hover:bg-muted/40 transition-colors cursor-pointer p-4 text-center">
                 <Upload className="h-5 w-5 text-muted-foreground mb-1.5" />
                 <span className="text-xs font-medium text-foreground">
-                  Téléverser une affiche
+                  {t("createForm.uploadCover")}
                 </span>
                 <span className="text-[11px] text-muted-foreground mt-0.5">
-                  PNG, JPG jusqu'à 5 Mo
+                  {t("createForm.coverHint")}
                 </span>
                 <input
                   type="file"
@@ -348,21 +351,21 @@ export function EventCreate() {
           {/* Section: Options & Visibilité */}
           <div className="rounded-2xl border border-border/50 bg-card p-5 sm:p-6 space-y-4">
             <div>
-              <h2 className="text-sm font-semibold text-foreground">Options & Visibilité</h2>
-              <p className="text-xs text-muted-foreground">Billetterie, capacité et liaison à une sphère.</p>
+              <h2 className="text-sm font-semibold text-foreground">{t("createForm.optionsAndVisibility")}</h2>
+              <p className="text-xs text-muted-foreground">{t("createForm.optionsAndVisibilityDesc")}</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="maxAttendees" className="text-xs font-medium text-foreground">
-                  Participants maximum
+                  {t("createForm.maxAttendees")}
                 </Label>
                 <div className="relative">
                   <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <Input
                     id="maxAttendees"
                     type="number"
-                    placeholder="Illimité"
+                    placeholder={t("createForm.unlimited")}
                     value={formData.maxAttendees || ""}
                     onChange={(e) =>
                       setFormData({
@@ -377,7 +380,7 @@ export function EventCreate() {
 
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-foreground">
-                  Lier à une sphère
+                  {t("createForm.linkSphere")}
                 </Label>
                 <Select
                   value={formData.sphereId ? String(formData.sphereId) : "none"}
@@ -386,10 +389,10 @@ export function EventCreate() {
                   }
                 >
                   <SelectTrigger className="rounded-xl text-xs">
-                    <SelectValue placeholder="Aucune sphère liée" />
+                    <SelectValue placeholder={t("createForm.noLinkedSphere")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Aucune (Événement général)</SelectItem>
+                    <SelectItem value="none">{t("createForm.generalEvent")}</SelectItem>
                     {userSpheres.map((sphere: any) => (
                       <SelectItem key={sphere.id} value={String(sphere.id)}>
                         {sphere.name}
@@ -405,10 +408,10 @@ export function EventCreate() {
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-1.5">
                     <Ticket className="h-3.5 w-3.5 text-primary" />
-                    <Label className="text-xs font-medium text-foreground">Billetterie & QR Code</Label>
+                    <Label className="text-xs font-medium text-foreground">{t("createForm.ticketing")}</Label>
                   </div>
                   <p className="text-[11px] text-muted-foreground">
-                    Génère un billet numérique officiel avec QR Code pour chaque participant.
+                    {t("createForm.ticketingDesc")}
                   </p>
                 </div>
                 <Switch
@@ -422,9 +425,9 @@ export function EventCreate() {
                 <div className="flex items-center justify-between">
                   <Label htmlFor="registrationUrl" className="text-xs font-medium text-foreground flex items-center gap-1.5">
                     <ArrowSquareOut className="h-3.5 w-3.5 text-primary" />
-                    Lien d'inscription externe (optionnel)
+                    {t("createForm.externalLink")}
                   </Label>
-                  <span className="text-[10px] text-muted-foreground">Vitrine Meetup, Eventbrite...</span>
+                  <span className="text-[10px] text-muted-foreground">{t("createForm.externalLinkHint")}</span>
                 </div>
                 <div className="relative">
                   <LinkSimple className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -437,15 +440,15 @@ export function EventCreate() {
                   />
                 </div>
                 <p className="text-[11px] text-muted-foreground">
-                  Si l'événement nécessite une inscription sur une plateforme externe, ce lien sera proposé aux participants.
+                  {t("createForm.externalLinkDesc")}
                 </p>
               </div>
 
               <div className="flex items-center justify-between pt-3 border-t border-border/40">
                 <div className="space-y-0.5">
-                  <Label className="text-xs font-medium text-foreground">Mettre à la une</Label>
+                  <Label className="text-xs font-medium text-foreground">{t("createForm.featureEvent")}</Label>
                   <p className="text-[11px] text-muted-foreground">
-                    Met en avant cet événement dans les recommandations prioritaires.
+                    {t("createForm.featureEventDesc")}
                   </p>
                 </div>
                 <Switch
@@ -466,12 +469,12 @@ export function EventCreate() {
             {createMutation.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Publication en cours...
+                {t("createForm.publishing")}
               </>
             ) : (
               <>
                 <Check className="h-4 w-4 mr-2" />
-                Publier l'événement
+                {t("createForm.publish")}
               </>
             )}
           </Button>
@@ -481,7 +484,7 @@ export function EventCreate() {
         <div className="space-y-3">
           <div className="sticky top-20 space-y-3">
             <span className="text-xs font-semibold text-muted-foreground block">
-              Aperçu en direct
+              {t("createForm.livePreview")}
             </span>
 
             <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
@@ -504,7 +507,7 @@ export function EventCreate() {
                 </div>
                 <div className="absolute top-2.5 right-2.5">
                   <span className="rounded-md bg-background/90 backdrop-blur-md px-2 py-0.5 text-[10px] font-medium text-foreground border border-border/40">
-                    {categoryMeta?.shortLabel || formData.category}
+                    {t(`categories.${formData.category}Short`, { defaultValue: categoryMeta?.shortLabel || formData.category })}
                   </span>
                 </div>
               </div>
@@ -512,10 +515,10 @@ export function EventCreate() {
               {/* Card Body */}
               <div className="p-3.5 space-y-1.5">
                 <h3 className="font-semibold text-sm text-foreground line-clamp-1">
-                  {formData.title || "Titre de l'événement"}
+                  {formData.title || t("createForm.defaultTitle")}
                 </h3>
                 <p className="text-xs text-muted-foreground line-clamp-2">
-                  {formData.description || "Description succincte de l'événement..."}
+                  {formData.description || t("createForm.defaultDescription")}
                 </p>
                 <div className="pt-2 border-t border-border/40 text-[11px] text-muted-foreground flex items-center justify-between">
                   <span className="flex items-center gap-1">
@@ -526,12 +529,12 @@ export function EventCreate() {
                     {formData.isOnline ? (
                       <>
                         <Globe className="h-3 w-3 text-sky-500 shrink-0" />
-                        <span>En ligne</span>
+                        <span>{t("createForm.online")}</span>
                       </>
                     ) : (
                       <>
                         <MapPin className="h-3 w-3 shrink-0" />
-                        <span className="truncate">{formData.location || "Campus"}</span>
+                        <span className="truncate">{formData.location || t("createForm.campus")}</span>
                       </>
                     )}
                   </span>

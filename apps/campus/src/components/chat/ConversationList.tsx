@@ -1,4 +1,5 @@
 import { Suspense, lazy } from "react";
+import { useTranslation } from "react-i18next";
 import {
   MagnifyingGlass as Search,
   Plus,
@@ -47,6 +48,7 @@ export function ConversationList({
   onGroupCreated,
   onPrefetchConversation,
 }: ConversationListProps) {
+  const { t } = useTranslation("messages");
   const filteredConversations = conversations.filter(
     (conv) =>
       conv.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -64,7 +66,7 @@ export function ConversationList({
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <h2 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
-              Messages
+              {t("conversationList.title")}
             </h2>
             {conversations.length > 0 && (
               <span className="text-xs font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
@@ -77,9 +79,9 @@ export function ConversationList({
               size="sm"
               variant="ghost"
               className="h-8 w-8 p-0 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground"
-              aria-label="Nouveau groupe"
+              aria-label={t("conversationList.newGroup")}
               onClick={() => onSetShowCreateGroupModal(true)}
-              title="Créer un groupe"
+              title={t("conversationList.createGroup")}
             >
               <Users className="h-4 w-4" />
             </Button>
@@ -87,9 +89,9 @@ export function ConversationList({
               size="sm"
               variant="ghost"
               className="h-8 w-8 p-0 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground"
-              aria-label="Nouveau message"
+              aria-label={t("conversationList.newMessage")}
               onClick={onOpenNewPrivate}
-              title="Nouveau message privé"
+              title={t("conversationList.newPrivateMessage")}
             >
               <Plus className="h-4 w-4" />
             </Button>
@@ -110,7 +112,7 @@ export function ConversationList({
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Rechercher une discussion..."
+            placeholder={t("conversationList.searchPlaceholder")}
             className="w-full bg-slate-100 dark:bg-zinc-800/80 border-0 rounded-full pl-9 pr-4 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
@@ -139,10 +141,10 @@ export function ConversationList({
             </div>
             <div>
               <p className="text-xs font-semibold text-foreground">
-                {searchQuery ? "Aucun résultat" : "Aucune conversation"}
+                {searchQuery ? t("conversationList.noResults") : t("conversationList.noConversations")}
               </p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                {searchQuery ? "Essayez un autre mot-clé" : "Démarrez une nouvelle conversation"}
+                {searchQuery ? t("conversationList.tryOtherKeyword") : t("conversationList.startNewConversation")}
               </p>
             </div>
           </div>
@@ -201,7 +203,7 @@ export function ConversationList({
                             isSelected ? "font-bold text-foreground" : "font-semibold text-foreground"
                           }`}
                         >
-                          {conversation.name || "Conversation"}
+                          {conversation.name || t("conversationList.defaultConversation")}
                         </h3>
                         <div className="flex items-center gap-1 flex-shrink-0">
                           {isMuted && <BellSlash className="h-3 w-3 text-muted-foreground/60" />}
@@ -215,8 +217,8 @@ export function ConversationList({
                         <p className="text-xs text-muted-foreground truncate min-w-0">
                           {conversation.lastMessage ||
                             (conversation.type === "group"
-                              ? "Conversation de groupe"
-                              : "Nouvelle discussion")}
+                              ? t("conversationList.groupConversation")
+                              : t("conversationList.newDiscussion"))}
                         </p>
                         {conversation.unread > 0 && (
                           <span
@@ -244,8 +246,8 @@ export function ConversationList({
         type="button"
         onClick={onOpenNewPrivate}
         className="absolute right-4 bottom-5 w-11 h-11 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 z-10"
-        title="Nouveau message"
-        aria-label="Nouveau message"
+        title={t("conversationList.newMessage")}
+        aria-label={t("conversationList.newMessage")}
       >
         <PencilSimple className="w-5 h-5" />
       </button>

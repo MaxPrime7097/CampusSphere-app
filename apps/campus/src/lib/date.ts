@@ -1,5 +1,12 @@
 import { format, formatDistanceToNowStrict, isValid, parseISO } from "date-fns";
 import { fr } from "date-fns/locale/fr";
+import { enUS } from "date-fns/locale/en-US";
+import i18n from "../i18n";
+
+function getDateLocale() {
+  const current = i18n.language || "fr";
+  return current.startsWith("en") ? enUS : fr;
+}
 
 function toDate(value?: string | number | Date | null) {
   if (!value) return null;
@@ -14,19 +21,24 @@ function toDate(value?: string | number | Date | null) {
 
 export function formatRelativeTime(value?: string | number | Date | null) {
   const date = toDate(value);
-  if (!date) return "Date inconnue";
+  if (!date) return i18n.language?.startsWith("en") ? "Unknown date" : "Date inconnue";
 
   return formatDistanceToNowStrict(date, {
     addSuffix: true,
-    locale: fr,
+    locale: getDateLocale(),
   });
 }
 
-export function formatFrenchDate(value?: string | number | Date | null, pattern = "dd/MM/yyyy") {
+export function formatLocalDate(value?: string | number | Date | null, pattern?: string) {
   const date = toDate(value);
-  if (!date) return "Date inconnue";
+  if (!date) return i18n.language?.startsWith("en") ? "Unknown date" : "Date inconnue";
 
-  return format(date, pattern, { locale: fr });
+  const defaultPattern = i18n.language?.startsWith("en") ? "MM/dd/yyyy" : "dd/MM/yyyy";
+  return format(date, pattern || defaultPattern, { locale: getDateLocale() });
+}
+
+export function formatFrenchDate(value?: string | number | Date | null, pattern = "dd/MM/yyyy") {
+  return formatLocalDate(value, pattern);
 }
 
 export const MINIMUM_AGE = 16;

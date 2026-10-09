@@ -3,6 +3,7 @@ import { CreatePost } from "@/components/feed/CreatePost";
 import { PostCard } from "@/components/feed/PostCard";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PostSkeleton } from "@/components/ui/skeletons";
+import { useTranslation } from "react-i18next";
 
 interface ProfilePostsTabProps {
   isOwnProfile: boolean;
@@ -11,6 +12,8 @@ interface ProfilePostsTabProps {
 }
 
 export function ProfilePostsTab({ isOwnProfile, posts, isLoading }: ProfilePostsTabProps) {
+  const { t } = useTranslation("profile");
+
   return (
     <section className="space-y-4 mt-6">
       {isOwnProfile && (
@@ -27,8 +30,8 @@ export function ProfilePostsTab({ isOwnProfile, posts, isLoading }: ProfilePosts
       ) : posts.length === 0 ? (
         <EmptyState
           icon={FileText}
-          title="Aucun post"
-          description="Cet utilisateur n'a pas encore partagé de publications."
+          title={t("posts.emptyTitle")}
+          description={t("posts.emptyDesc")}
         />
       ) : (
         posts.map((post) => (

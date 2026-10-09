@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,21 +24,22 @@ interface CreateSphereModalProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-const sphereSchema = z.object({
-  name: z.string().min(3, "Le nom doit contenir au moins 3 caractères").max(50),
-  description: z.string().min(10, "La description doit contenir au moins 10 caractères").max(500),
-  objective: z.string().max(300).optional(),
-  sphere_type: z.enum(["cours", "projet", "communaute", "club", "revision"] as [string, ...string[]], {
-    errorMap: () => ({ message: "Veuillez sélectionner un type de sphère" }),
-  }),
-});
-
 type Step = 0 | 1;
 
 export function CreateSphereModal({ children, onSphereCreated, open: controlledOpen, onOpenChange: setControlledOpen }: CreateSphereModalProps) {
+  const { t } = useTranslation("spheres");
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState<Step>(0);
+
+  const sphereSchema = z.object({
+    name: z.string().min(3, t("createModal.validation.nameMin")).max(50),
+    description: z.string().min(10, t("createModal.validation.descriptionMin")).max(500),
+    objective: z.string().max(300).optional(),
+    sphere_type: z.enum(["cours", "projet", "communaute", "club", "revision"] as [string, ...string[]], {
+      errorMap: () => ({ message: t("createModal.validation.typeRequired") }),
+    }),
+  });
 
   // Basics
   const [sphereType, setSphereType] = useState<SphereType | "">("");
@@ -54,34 +56,34 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
   const { toast } = useToast();
 
   const targetAudienceOptions = [
-    "Tous les étudiants",
-    "Étudiants en informatique",
-    "Étudiants en business",
-    "Étudiants en sciences",
-    "Étudiants en arts",
-    "Étudiants en médecine",
-    "Étudiants en ingénierie",
-    "Étudiants en droit",
-    "Étudiants en économie",
-    "Autre",
+    { value: "all", label: t("createModal.targetAudiences.all") },
+    { value: "cs", label: t("createModal.targetAudiences.cs") },
+    { value: "business", label: t("createModal.targetAudiences.business") },
+    { value: "science", label: t("createModal.targetAudiences.science") },
+    { value: "arts", label: t("createModal.targetAudiences.arts") },
+    { value: "medicine", label: t("createModal.targetAudiences.medicine") },
+    { value: "engineering", label: t("createModal.targetAudiences.engineering") },
+    { value: "law", label: t("createModal.targetAudiences.law") },
+    { value: "economics", label: t("createModal.targetAudiences.economics") },
+    { value: "other", label: t("createModal.targetAudiences.other") },
   ];
 
   const durationOptions = [
-    "Court terme (1-3 mois)",
-    "Moyen terme (3-6 mois)",
-    "Long terme (6-12 mois)",
-    "Permanent",
-    "Flexible",
+    { value: "short", label: t("createModal.durations.short") },
+    { value: "medium", label: t("createModal.durations.medium") },
+    { value: "long", label: t("createModal.durations.long") },
+    { value: "permanent", label: t("createModal.durations.permanent") },
+    { value: "flexible", label: t("createModal.durations.flexible") },
   ];
 
   const collaborationTypes = [
-    "Partage de ressources",
-    "Collaboration sur projets",
-    "Discussion et échanges",
-    "Mentorat",
-    "Études de groupe",
-    "Événements",
-    "Recherche collaborative",
+    { key: "resources", label: t("createModal.collaborationTypes.resources") },
+    { key: "projects", label: t("createModal.collaborationTypes.projects") },
+    { key: "discussion", label: t("createModal.collaborationTypes.discussion") },
+    { key: "mentorship", label: t("createModal.collaborationTypes.mentorship") },
+    { key: "study", label: t("createModal.collaborationTypes.study") },
+    { key: "events", label: t("createModal.collaborationTypes.events") },
+    { key: "research", label: t("createModal.collaborationTypes.research") },
   ];
 
   const toggleCollaborationType = (type: string) => {
@@ -120,8 +122,8 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
       }
 
       toast({
-        title: "Sphère créée avec succès !",
-        description: `${name} est maintenant disponible.`,
+        title: t("createModal.toasts.successTitle"),
+        description: t("createModal.toasts.successDesc", { name }),
         duration: 3000,
       });
 
@@ -138,16 +140,16 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
       setIsCreating(false);
       if (error instanceof z.ZodError) {
         toast({
-          title: "Erreur de validation",
+          title: t("createModal.toasts.validationError"),
           description: error.errors[0].message,
           variant: "destructive",
         });
         return;
       }
 
-      const message = (error as any)?.message || "Impossible de créer la sphère";
+      const message = (error as any)?.message || t("createModal.toasts.createError");
       toast({
-        title: "Erreur",
+        title: t("createModal.toasts.error"),
         description: message,
         variant: "destructive",
       });
@@ -167,7 +169,13 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
     setIsCreating(false);
   };
 
-  const selectedOption = SPHERE_TYPE_OPTIONS_V1.find((o) => o.value === sphereType);
+  const sphereTypeOptions = SPHERE_TYPE_OPTIONS_V1.map((opt) => ({
+    ...opt,
+    label: t(`createModal.types.${opt.value}.label`, { defaultValue: opt.label }),
+    description: t(`createModal.types.${opt.value}.description`, { defaultValue: opt.description }),
+  }));
+
+  const selectedOption = sphereTypeOptions.find((o) => o.value === sphereType);
 
   const open = controlledOpen !== undefined ? controlledOpen : isOpen;
   const setOpen = setControlledOpen ?? setIsOpen;
@@ -183,14 +191,14 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
                 type="button"
                 onClick={() => setStep(0)}
                 className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-full hover:bg-muted"
-                title="Changer de type"
+                title={t("createModal.changeType")}
               >
                 <ArrowLeft className="h-4 w-4" />
               </button>
             )}
             <div>
               <DialogTitle className="text-base sm:text-lg">
-                {step === 0 ? "Quel type de sphère ?" : selectedOption ? selectedOption.label : "Créer une sphère"}
+                {step === 0 ? t("createModal.step0Title") : selectedOption ? selectedOption.label : t("createModal.defaultTitle")}
               </DialogTitle>
             </div>
           </div>
@@ -213,11 +221,11 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
           {step === 0 && (
             <div className="space-y-3.5">
               <p className="text-xs text-muted-foreground">
-                Choisissez le type d'espace adapté à votre usage :
+                {t("createModal.step0Subtitle")}
               </p>
 
               <div className="grid gap-3">
-                {SPHERE_TYPE_OPTIONS_V1.map((option) => (
+                {sphereTypeOptions.map((option) => (
                   <button
                     key={option.value}
                     type="button"
@@ -256,7 +264,7 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
                   onClick={() => { resetForm(); setOpen(false); }}
                   className="text-xs sm:text-sm h-9 text-muted-foreground hover:text-foreground"
                 >
-                  Annuler
+                  {t("createModal.cancel")}
                 </Button>
               </div>
             </div>
@@ -267,10 +275,10 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
             <div className="space-y-4">
               {/* Nom */}
               <div>
-                <Label htmlFor="name" className="text-xs font-medium">Nom de la Sphère *</Label>
+                <Label htmlFor="name" className="text-xs font-medium">{t("createModal.nameLabel")}</Label>
                 <Input
                   id="name"
-                  placeholder="Ex: Algorithmique L2, Projet Web 2025..."
+                  placeholder={t("createModal.namePlaceholder")}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   maxLength={50}
@@ -281,10 +289,10 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
 
               {/* Description */}
               <div>
-                <Label htmlFor="description" className="text-xs font-medium">Description *</Label>
+                <Label htmlFor="description" className="text-xs font-medium">{t("createModal.descriptionLabel")}</Label>
                 <Textarea
                   id="description"
-                  placeholder="Décrivez votre sphère et son contexte..."
+                  placeholder={t("createModal.descriptionPlaceholder")}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   maxLength={500}
@@ -296,11 +304,11 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
               {/* Objectif */}
               <div>
                 <Label htmlFor="objective" className="text-xs font-medium">
-                  Objectif <span className="text-muted-foreground font-normal">(optionnel)</span>
+                  {t("createModal.objectiveLabel")} <span className="text-muted-foreground font-normal">{t("createModal.optional")}</span>
                 </Label>
                 <Input
                   id="objective"
-                  placeholder="Ex: Réussir l'examen final, Développer un MVP..."
+                  placeholder={t("createModal.objectivePlaceholder")}
                   value={objective}
                   onChange={(e) => setObjective(e.target.value)}
                   maxLength={300}
@@ -321,7 +329,7 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
                   )}
                 >
                   <SlidersHorizontal className="h-3.5 w-3.5" />
-                  <span>Options</span>
+                  <span>{t("createModal.options")}</span>
                   {showAdvanced ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                 </Button>
 
@@ -331,15 +339,15 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <Label htmlFor="targetAudience" className="text-xs font-medium">
-                          Public cible <span className="text-muted-foreground font-normal">(optionnel)</span>
+                          {t("createModal.targetAudienceLabel")} <span className="text-muted-foreground font-normal">{t("createModal.optional")}</span>
                         </Label>
                         <Select value={targetAudience} onValueChange={setTargetAudience}>
                           <SelectTrigger className="mt-1 h-9 text-xs">
-                            <SelectValue placeholder="Tous les étudiants" />
+                            <SelectValue placeholder={t("createModal.targetAudiences.all")} />
                           </SelectTrigger>
                           <SelectContent>
                             {targetAudienceOptions.map((audience) => (
-                              <SelectItem key={audience} value={audience} className="text-xs">{audience}</SelectItem>
+                              <SelectItem key={audience.value} value={audience.label} className="text-xs">{audience.label}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -347,15 +355,15 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
 
                       <div>
                         <Label htmlFor="expectedDuration" className="text-xs font-medium">
-                          Durée attendue <span className="text-muted-foreground font-normal">(optionnel)</span>
+                          {t("createModal.expectedDurationLabel")} <span className="text-muted-foreground font-normal">{t("createModal.optional")}</span>
                         </Label>
                         <Select value={expectedDuration} onValueChange={setExpectedDuration}>
                           <SelectTrigger className="mt-1 h-9 text-xs">
-                            <SelectValue placeholder="Flexible" />
+                            <SelectValue placeholder={t("createModal.durations.flexible")} />
                           </SelectTrigger>
                           <SelectContent>
                             {durationOptions.map((duration) => (
-                              <SelectItem key={duration} value={duration} className="text-xs">{duration}</SelectItem>
+                              <SelectItem key={duration.value} value={duration.label} className="text-xs">{duration.label}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -365,24 +373,24 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
                     {/* Types de collaboration */}
                     <div>
                       <Label className="text-xs font-medium">
-                        Collaboration <span className="text-muted-foreground font-normal">(optionnel)</span>
+                        {t("createModal.collaborationLabel")} <span className="text-muted-foreground font-normal">{t("createModal.optional")}</span>
                       </Label>
                       <div className="flex flex-wrap gap-1.5 mt-2">
                         {collaborationTypes.map((type) => (
                           <Button
-                            key={type}
+                            key={type.key}
                             type="button"
-                            variant={collaborationType.includes(type) ? "default" : "outline"}
+                            variant={collaborationType.includes(type.label) ? "default" : "outline"}
                             size="sm"
-                            onClick={() => toggleCollaborationType(type)}
+                            onClick={() => toggleCollaborationType(type.label)}
                             className={cn(
                               "text-[11px] h-7 py-0 px-2.5 rounded-full transition-colors",
-                              collaborationType.includes(type)
+                              collaborationType.includes(type.label)
                                 ? "bg-secondary text-secondary-foreground hover:bg-muted border border-border/60"
                                 : "text-muted-foreground hover:text-foreground"
                             )}
                           >
-                            {type}
+                            {type.label}
                           </Button>
                         ))}
                       </div>
@@ -403,7 +411,7 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
                   className="text-xs gap-1.5 h-9 text-muted-foreground hover:text-foreground"
                 >
                   <ArrowLeft className="h-3.5 w-3.5" />
-                  <span>Retour</span>
+                  <span>{t("createModal.back")}</span>
                 </Button>
                 <Button
                   onClick={handleSubmit}
@@ -413,12 +421,12 @@ export function CreateSphereModal({ children, onSphereCreated, open: controlledO
                   {isCreating ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Création...
+                      {t("createModal.creating")}
                     </>
                   ) : (
                     <>
                       <Check className="h-4 w-4 mr-2" />
-                      Créer la Sphère
+                      {t("createModal.create")}
                     </>
                   )}
                 </Button>

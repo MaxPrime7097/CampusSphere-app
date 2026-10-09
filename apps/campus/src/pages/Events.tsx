@@ -1,14 +1,14 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Calendar, Sparkle as Sparkles, Plus, Compass, UsersThree as Users, Trophy, ArrowClockwise as RefreshCw, MagnifyingGlass as Search, Funnel as Filter, GridFour as LayoutGrid, List, MapPin, ArrowRight } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
+import { Calendar, Plus, UsersThree as Users, ArrowClockwise as RefreshCw, GridFour as LayoutGrid, List, MapPin, ArrowRight } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs } from "@/components/ui/tabs";
 import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
 import { EventCard } from "@/components/events/EventCard";
 import { EventTile } from "@/components/events/EventTile";
-import { EventCarousel } from "@/components/events/EventCarousel";
 import { EventFiltersBar } from "@/components/events/EventFiltersBar";
 import { getEventCategoryMeta } from "@/constants/eventCategories";
 import { EventShareModal } from "@/components/events/EventShareModal";
@@ -25,6 +25,8 @@ export function Events() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
+  const { t, i18n } = useTranslation("events");
+  const dateLocale = i18n.language === "en" ? "en-US" : "fr-FR";
 
   const [activeTab, setActiveTab] = useState<string>("upcoming");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -51,12 +53,6 @@ export function Events() {
   });
 
   const isInitialLoading = isLoading && rawEvents.length === 0;
-
-  // Upcoming events for horizontal Spotify-style carousel
-  const upcomingCarouselEvents = useMemo(() => {
-    const now = new Date();
-    return rawEvents.filter((e) => new Date(e.startDate) >= now);
-  }, [rawEvents]);
 
   // Filter events based on active tab
   const filteredEvents = useMemo(() => {
@@ -124,12 +120,12 @@ export function Events() {
   const handleCreateClick = () => {
     if (currentUser && !canPerformAction) {
       toast({
-        title: "Compte non certifié",
-        description: "Votre période d'accès découverte de 24h a expiré. Vous devez certifier votre compte pour publier un événement.",
+        title: t("page.unverifiedToast.title"),
+        description: t("page.unverifiedToast.desc"),
         variant: "destructive",
         action: (
           <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>
-            Vérifier
+            {t("page.unverifiedToast.action")}
           </Button>
         ),
       });
@@ -144,10 +140,10 @@ export function Events() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 campus-animate-fade-in">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Événements Campus
+            {t("page.title")}
           </h1>
           <p className="text-muted-foreground mt-2 text-sm">
-            Découvrez les activités campus, compétitions académiques, hackathons et conférences
+            {t("page.subtitle")}
           </p>
         </div>
 
@@ -160,7 +156,7 @@ export function Events() {
             className="gap-2"
           >
             <RefreshCw className={`h-4 w-4 ${isRefetching ? "animate-spin" : ""}`} />
-            <span className="hidden sm:inline">Actualiser</span>
+            <span className="hidden sm:inline">{t("page.refresh")}</span>
           </Button>
 
           <Button
@@ -169,7 +165,7 @@ export function Events() {
             className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 flex-1 sm:flex-none font-semibold"
           >
             <Plus className="h-4 w-4" />
-            <span>Créer</span>
+            <span>{t("page.create")}</span>
           </Button>
         </div>
       </div>
@@ -192,7 +188,7 @@ export function Events() {
                   />
                   <div className="absolute top-1.5 left-1.5">
                     <Badge className="bg-background/90 backdrop-blur-md text-foreground font-semibold text-[10px] px-1.5 py-0.5 border border-border/40 shadow-xs">
-                      À la une
+                      {t("page.spotlightBadge")}
                     </Badge>
                   </div>
                 </div>
@@ -202,7 +198,7 @@ export function Events() {
                     {new Date(featuredEvent.startDate).getDate()}
                   </span>
                   <span className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase leading-none mt-1">
-                    {new Date(featuredEvent.startDate).toLocaleDateString("fr-FR", { month: "short" }).toUpperCase()}
+                    {new Date(featuredEvent.startDate).toLocaleDateString(dateLocale, { month: "short" }).toUpperCase()}
                   </span>
                 </div>
               )}
@@ -211,14 +207,14 @@ export function Events() {
               <div className="min-w-0 flex-1 space-y-1.5">
                 <div className="flex items-center gap-2 flex-wrap">
                   <Badge variant="outline" className="text-[11px] font-medium text-foreground bg-muted/40 border-border/60">
-                    {getEventCategoryMeta(featuredEvent.category).label}
+                    {t(`categories.${featuredEvent.category}Short` as any, { defaultValue: getEventCategoryMeta(featuredEvent.category).label })}
                   </Badge>
                   <span className="text-xs text-muted-foreground">
-                    {new Date(featuredEvent.startDate).toLocaleDateString("fr-FR", {
+                    {new Date(featuredEvent.startDate).toLocaleDateString(dateLocale, {
                       weekday: "long",
                       day: "numeric",
                       month: "long",
-                    })} · {new Date(featuredEvent.startDate).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+                    })} · {new Date(featuredEvent.startDate).toLocaleTimeString(dateLocale, { hour: "2-digit", minute: "2-digit" })}
                   </span>
                 </div>
 
@@ -235,12 +231,12 @@ export function Events() {
                 <div className="flex items-center gap-3 pt-1 text-xs text-muted-foreground flex-wrap">
                   <span className="flex items-center gap-1 font-medium">
                     <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span>{featuredEvent.attendeesCount || 0} participant{Number(featuredEvent.attendeesCount || 0) > 1 ? "s" : ""}</span>
+                    <span>{t("card.attendees", { count: featuredEvent.attendeesCount || 0 })}</span>
                   </span>
                   <span>·</span>
                   <span className="flex items-center gap-1">
                     <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span>{featuredEvent.isOnline ? "En ligne" : (featuredEvent.location || "Campus")}</span>
+                    <span>{featuredEvent.isOnline ? t("page.online") : (featuredEvent.location || t("page.campus"))}</span>
                   </span>
                 </div>
               </div>
@@ -256,7 +252,7 @@ export function Events() {
                   navigate(getEventUrl(featuredEvent));
                 }}
               >
-                Découvrir l'événement
+                {t("page.discoverEvent")}
                 <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
               </Button>
             </div>
@@ -271,10 +267,10 @@ export function Events() {
         className="w-full space-y-4"
       >
         <SharedTabsList containerClassName="mb-4">
-          <SharedTabsTrigger value="upcoming">À venir</SharedTabsTrigger>
-          <SharedTabsTrigger value="all">Tous les événements ({rawEvents.length})</SharedTabsTrigger>
-          <SharedTabsTrigger value="mine">Mes inscriptions</SharedTabsTrigger>
-          <SharedTabsTrigger value="past">Passés</SharedTabsTrigger>
+          <SharedTabsTrigger value="upcoming">{t("page.tabs.upcoming")}</SharedTabsTrigger>
+          <SharedTabsTrigger value="all">{t("page.tabs.all", { count: rawEvents.length })}</SharedTabsTrigger>
+          <SharedTabsTrigger value="mine">{t("page.tabs.mine")}</SharedTabsTrigger>
+          <SharedTabsTrigger value="past">{t("page.tabs.past")}</SharedTabsTrigger>
         </SharedTabsList>
 
         {/* Filters Bar with Search & Category Pills */}
@@ -288,7 +284,7 @@ export function Events() {
         {/* View Mode Switcher Toolbar */}
         <div className="flex items-center justify-between pt-1 pb-1">
           <span className="text-xs text-muted-foreground font-medium">
-            {filteredEvents.length} {filteredEvents.length > 1 ? "événements trouvés" : "événement trouvé"}
+            {t("page.eventsCount", { count: filteredEvents.length })}
           </span>
           <div className="flex items-center gap-1 bg-muted/40 p-0.5 rounded-lg border border-border/40">
             <Button
@@ -303,7 +299,7 @@ export function Events() {
               onClick={() => setViewMode("grid")}
             >
               <LayoutGrid className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Grille</span>
+              <span className="hidden sm:inline">{t("page.viewMode.grid")}</span>
             </Button>
             <Button
               variant="ghost"
@@ -317,7 +313,7 @@ export function Events() {
               onClick={() => setViewMode("list")}
             >
               <List className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Liste</span>
+              <span className="hidden sm:inline">{t("page.viewMode.list")}</span>
             </Button>
           </div>
         </div>
@@ -359,20 +355,20 @@ export function Events() {
               icon={Calendar}
               title={
                 activeTab === "mine"
-                  ? "Aucune inscription"
-                  : "Aucun événement trouvé"
+                  ? t("page.empty.noMineTitle")
+                  : t("page.empty.noEventsTitle")
               }
               description={
                 activeTab === "mine"
-                  ? "Vous ne participez à aucun événement pour le moment. Explorez la liste des événements à venir."
-                  : "Aucun événement ne correspond à vos critères de recherche."
+                  ? t("page.empty.noMineDesc")
+                  : t("page.empty.noEventsDesc")
               }
               action={
                 <Button
                   onClick={activeTab === "mine" ? () => setActiveTab("upcoming") : handleResetFilters}
                   className="mt-4 rounded-xl font-semibold bg-secondary text-secondary-foreground hover:bg-muted border border-border/60 text-xs"
                 >
-                  {activeTab === "mine" ? "Explorer les événements" : "Réinitialiser les filtres"}
+                  {activeTab === "mine" ? t("page.empty.exploreEvents") : t("page.empty.resetFilters")}
                 </Button>
               }
             />
@@ -411,3 +407,5 @@ export function Events() {
     </div>
   );
 }
+
+export default Events;

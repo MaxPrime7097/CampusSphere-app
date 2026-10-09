@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Download, Spinner as Loader2 } from "@phosphor-icons/react";
 
@@ -22,13 +23,15 @@ export function ResourcePreview({
   isPdf,
   onDownload,
 }: ResourcePreviewProps) {
+  const { t } = useTranslation("resources");
+
   return (
     <div className="py-4 border-b border-border/40 space-y-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <h3 className="font-semibold text-lg">Aperçu du document</h3>
+            <h3 className="font-semibold text-lg">{t("detail.previewTitle")}</h3>
             <p className="text-sm text-muted-foreground">
-              Consultez directement le document ci-dessous ou téléchargez-le sur votre appareil.
+              {t("detail.previewSubtitle")}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -38,14 +41,14 @@ export function ResourcePreview({
               onClick={onDownload}
               disabled={isDownloading}
               className="gap-2"
-              aria-label="Télécharger la ressource"
+              aria-label={t("card.download")}
             >
               {isDownloading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Download className="h-4 w-4" />
               )}
-              <span className="hidden md:inline">Télécharger</span>
+              <span className="hidden md:inline">{t("card.download")}</span>
             </Button>
           </div>
         </div>
@@ -60,7 +63,7 @@ export function ResourcePreview({
           </div>
         ) : !isPreviewable ? (
           <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-            Ce format n’est pas prévisualisable directement dans le navigateur. Utilisez le bouton Télécharger pour l'ouvrir.
+            {t("detail.previewNotSupported")}
           </div>
         ) : previewSrc ? (
           <div className="rounded-lg border overflow-hidden bg-background">
@@ -80,7 +83,7 @@ export function ResourcePreview({
           </div>
         ) : (
           <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-            Chargement de l’aperçu du document...
+            {t("detail.previewLoading")}
           </div>
         )}
     </div>

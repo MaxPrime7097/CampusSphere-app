@@ -1,9 +1,9 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  FileText,
   Download,
   BookmarkSimple,
   Spinner as Loader2,
@@ -95,8 +95,11 @@ export const ResourceCard = React.memo(
     className,
   }: ResourceCardProps) => {
     const navigate = useNavigate();
+    const { t } = useTranslation("resources");
     const style = getTypeStyle(resource.type);
     const [studyOpen, setStudyOpen] = React.useState(false);
+
+    const typeLabel = t(`page.chips.${resource.type}` as any, { defaultValue: style.label });
 
     return (
       <>
@@ -125,7 +128,7 @@ export const ResourceCard = React.memo(
                   {resource.title}
                 </h3>
                 <Badge variant="muted" size="sm" className="hidden sm:inline-flex text-[10px] shrink-0 font-normal">
-                  {style.label}
+                  {typeLabel}
                 </Badge>
               </div>
 
@@ -136,7 +139,7 @@ export const ResourceCard = React.memo(
                     <span>·</span>
                   </>
                 )}
-                <span className="truncate max-w-[100px]">{(resource as any).authorName || (resource as any).author?.name || "Étudiant"}</span>
+                <span className="truncate max-w-[100px]">{(resource as any).authorName || (resource as any).author?.name || t("card.student")}</span>
                 {((resource as any).fileSize || (resource as any).file_size) && (
                   <>
                     <span>·</span>
@@ -160,7 +163,7 @@ export const ResourceCard = React.memo(
                 isSaved && "text-foreground fill-foreground"
               )}
               onClick={onSave}
-              title="Sauvegarder"
+              title={t("card.save")}
             >
               <BookmarkSimple className="h-4 w-4" weight={isSaved ? "fill" : "regular"} />
             </Button>
@@ -173,7 +176,7 @@ export const ResourceCard = React.memo(
                 e.stopPropagation();
                 setStudyOpen(true);
               }}
-              title="Réviser avec l'IA"
+              title={t("card.reviseAi")}
             >
               <SpheraIcon size="sm" />
             </Button>
@@ -190,7 +193,7 @@ export const ResourceCard = React.memo(
               ) : (
                 <Download className="h-3 w-3" />
               )}
-              <span className="hidden sm:inline">Télécharger</span>
+              <span className="hidden sm:inline">{t("card.download")}</span>
             </Button>
           </div>
         </div>

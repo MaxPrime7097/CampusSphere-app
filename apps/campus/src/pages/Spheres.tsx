@@ -1,5 +1,6 @@
 import { Suspense, lazy, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { listSpheres, joinSphere, getUserSpheres, leaveSphere } from "@/services/api";
 import { SPHERE_AUDIENCE_OPTIONS } from "@/constants/sphereCategories";
 import { Button } from "@/components/ui/button";
@@ -27,14 +28,8 @@ const CreateSphereModal = lazy(() =>
   }))
 );
 
-export const SPHERE_TYPE_CHIPS = [
-  { value: "all", label: "Toutes les sphères" },
-  { value: "cours", label: "Cours" },
-  { value: "projet", label: "Projet" },
-  { value: "communaute", label: "Communauté" },
-] as const;
-
 export function Spheres() {
+  const { t } = useTranslation("spheres");
   const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -184,12 +179,12 @@ export function Spheres() {
 
     if (!canPerformAction) {
       toast({
-        title: "Compte non certifié",
-        description: "Votre période d'accès découverte de 24h a expiré. Certifiez votre statut d'étudiant pour rejoindre une sphère.",
+        title: t("page.toasts.uncertifiedTitle"),
+        description: t("page.toasts.uncertifiedDesc"),
         variant: "destructive",
         action: (
           <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>
-            Certifier
+            {t("page.toasts.verify")}
           </Button>
         ),
       });
@@ -206,9 +201,15 @@ export function Spheres() {
       if (result?.data?.status === "pending") {
         setPendingJoinRequests((prev) => (prev.includes(sphereId) ? prev : [...prev, sphereId]));
         setUserJoinedSpheres((prev) => prev.filter((id) => String(id) !== String(sphereId)));
-        toast({ title: "Demande envoyée", description: `Attente d'approbation pour ${sphereName}` });
+        toast({
+          title: t("page.toasts.requestedTitle"),
+          description: t("page.toasts.requestedDesc", { name: sphereName }),
+        });
       } else {
-        toast({ title: "Sphère rejointe", description: `Vous avez rejoint ${sphereName}` });
+        toast({
+          title: t("page.toasts.joinedTitle", { name: sphereName }),
+          description: t("page.toasts.joinedDesc"),
+        });
         setUserJoinedSpheres((prev) => [...prev, sphereId]);
         setPendingJoinRequests((prev) => prev.filter((id) => String(id) !== String(sphereId)));
         const joinedSphere = allSpheres.find((sphere) => String(sphere.id) === String(sphereId));
@@ -221,7 +222,7 @@ export function Spheres() {
       }
     } catch (e: any) {
       debugApiError(`POST /spheres/${sphereId}/join`, e);
-      toast({ title: "Erreur", description: e?.message, variant: "destructive" });
+      toast({ title: t("detail.toasts.error"), description: e?.message || t("page.toasts.joinError"), variant: "destructive" });
     } finally {
       setIsJoining(null);
     }
@@ -232,12 +233,12 @@ export function Spheres() {
     try {
       await refreshMembershipState();
       toast({
-        title: "Sphères actualisées",
-        description: "La liste des sphères a été mise à jour.",
+        title: t("page.toasts.refreshedTitle"),
+        description: t("page.toasts.refreshedDesc"),
       });
     } catch (e: any) {
       debugApiError("GET /spheres + GET /users/me/spheres", e);
-      toast({ title: "Erreur", description: e?.message || "Impossible d'actualiser", variant: "destructive" });
+      toast({ title: t("detail.toasts.error"), description: e?.message || t("page.toasts.joinError"), variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -277,10 +278,10 @@ export function Spheres() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2 campus-animate-fade-in">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground">
-              Sphères Collaboratives
+              {t("page.title")}
             </h1>
             <p className="text-muted-foreground mt-2 text-sm">
-              Rejoignez des projets, révisez ensemble et collaborez au sein de la communauté étudiante
+              {t("page.subtitle")}
             </p>
           </div>
 
@@ -293,7 +294,7 @@ export function Spheres() {
               className="gap-2"
             >
               <RefreshCw className={cn("h-4 w-4", (isLoading || spheresQuery.isFetching) && "animate-spin")} />
-              <span className="hidden sm:inline">Actualiser</span>
+              <span className="hidden sm:inline">{t("page.refresh")}</span>
             </Button>
 
             {canPerformAction ? (
@@ -303,7 +304,7 @@ export function Spheres() {
                   className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 flex-1 sm:flex-none font-semibold"
                   onClick={() => setIsCreateSphereOpen(true)}
                 >
-                  <Plus className="h-4 w-4" /> <span>Créer</span>
+                  <Plus className="h-4 w-4" /> <span>{t("page.create")}</span>
                 </Button>
                 {isCreateSphereOpen && (
                   <Suspense fallback={<ModalLoadingFallback />}>
@@ -321,18 +322,18 @@ export function Spheres() {
                 className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 flex-1 sm:flex-none font-semibold"
                 onClick={() => {
                   toast({
-                    title: "Compte non certifié",
-                    description: "Votre période d'accès découverte de 24h a expiré. Certifiez votre compte pour créer des sphères.",
+                    title: t("page.toasts.uncertifiedTitle"),
+                    description: t("page.toasts.uncertifiedDesc"),
                     variant: "destructive",
                     action: (
                       <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>
-                        Vérifier
+                        {t("page.toasts.verify")}
                       </Button>
                     ),
                   });
                 }}
               >
-                <Plus className="h-4 w-4" /> <span>Créer</span>
+                <Plus className="h-4 w-4" /> <span>{t("page.create")}</span>
               </Button>
             )}
           </div>
@@ -344,7 +345,7 @@ export function Spheres() {
             <div className="relative flex-1">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Rechercher une sphère par nom, description ou projet..."
+                placeholder={t("page.searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 pr-9 text-xs rounded-xl h-10 border-border/80 bg-card focus-visible:ring-primary shadow-xs"
@@ -371,7 +372,7 @@ export function Spheres() {
                   ? "border-primary text-primary bg-primary/5"
                   : ""
               )}
-              title="Filtres"
+              title={t("page.filters")}
             >
               <Filter className="h-4 w-4" />
             </Button>
@@ -380,7 +381,7 @@ export function Spheres() {
             <div className="hidden sm:flex items-center gap-2 shrink-0">
               <Select value={filterAudience} onValueChange={setFilterAudience}>
                 <SelectTrigger className="w-56 h-10 rounded-xl text-xs border-border/80 bg-card">
-                  <SelectValue placeholder="Tous publics" />
+                  <SelectValue placeholder={t("page.allAudiences")} />
                 </SelectTrigger>
                 <SelectContent>
                   {SPHERE_AUDIENCE_OPTIONS.map((a) => (
@@ -403,7 +404,7 @@ export function Spheres() {
                   className="rounded-xl text-xs h-10 text-muted-foreground hover:text-foreground"
                 >
                   <X className="h-3.5 w-3.5 mr-1" />
-                  Réinitialiser
+                  {t("page.reset")}
                 </Button>
               )}
             </div>
@@ -414,7 +415,7 @@ export function Spheres() {
             <div className="flex items-center gap-2 sm:hidden animate-in fade-in duration-200">
               <Select value={filterAudience} onValueChange={setFilterAudience}>
                 <SelectTrigger className="w-full h-10 rounded-xl text-xs border-border/80 bg-card">
-                  <SelectValue placeholder="Tous publics" />
+                  <SelectValue placeholder={t("page.allAudiences")} />
                 </SelectTrigger>
                 <SelectContent>
                   {SPHERE_AUDIENCE_OPTIONS.map((a) => (
@@ -437,7 +438,7 @@ export function Spheres() {
                   className="text-xs text-muted-foreground hover:text-foreground shrink-0 h-10"
                 >
                   <X className="h-3.5 w-3.5 mr-1" />
-                  Effacer
+                  {t("page.clear")}
                 </Button>
               )}
             </div>
@@ -445,7 +446,12 @@ export function Spheres() {
 
           {/* Bottom Row: Horizontal Type Chips (Sans scrollbar visible) */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pt-1 border-t border-border/40">
-            {SPHERE_TYPE_CHIPS.map((chip) => {
+            {[
+              { value: "all", label: t("page.allSpheres") },
+              { value: "cours", label: t("card.cours") },
+              { value: "projet", label: t("card.projet") },
+              { value: "communaute", label: t("card.communaute") },
+            ].map((chip) => {
               const isSelected = filterType === chip.value;
               return (
                 <button
@@ -470,8 +476,8 @@ export function Spheres() {
         <div className="flex items-center justify-between pt-1 pb-1">
           <span className="text-xs text-muted-foreground font-medium">
             {isFiltering
-              ? `${filteredSpheres.length} ${filteredSpheres.length > 1 ? "sphères trouvées" : "sphère trouvée"}`
-              : `${allSpheres.length} ${allSpheres.length > 1 ? "sphères disponibles" : "sphère disponible"}`}
+              ? (filteredSpheres.length > 1 ? t("page.found_other", { count: filteredSpheres.length }) : t("page.found_one", { count: filteredSpheres.length }))
+              : (allSpheres.length > 1 ? t("page.available_other", { count: allSpheres.length }) : t("page.available_one", { count: allSpheres.length }))}
           </span>
           <div className="flex items-center gap-1 bg-muted/40 p-0.5 rounded-lg border border-border/40">
             <Button
@@ -486,7 +492,7 @@ export function Spheres() {
               onClick={() => setViewMode("grid")}
             >
               <LayoutGrid className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Grille</span>
+              <span className="hidden sm:inline">{t("page.grid")}</span>
             </Button>
             <Button
               variant="ghost"
@@ -500,7 +506,7 @@ export function Spheres() {
               onClick={() => setViewMode("list")}
             >
               <List className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Liste</span>
+              <span className="hidden sm:inline">{t("page.list")}</span>
             </Button>
           </div>
         </div>
@@ -525,9 +531,9 @@ export function Spheres() {
             ) : filteredSpheres.length === 0 ? (
               <EmptyState
                 icon={SphereIcon}
-                title="Aucune sphère trouvée"
-                description="Essayez d'ajuster vos filtres pour trouver ce que vous cherchez."
-                actionLabel="Tout réinitialiser"
+                title={t("page.emptyTitle")}
+                description={t("page.emptyDesc")}
+                actionLabel={t("page.emptyReset")}
                 onAction={() => {
                   setSearchQuery("");
                   setFilterType("all");
@@ -574,7 +580,7 @@ export function Spheres() {
                 <section className="space-y-3">
                   <div className="flex justify-between items-center pb-2 border-b border-border/40 px-1">
                     <h2 className="text-sm font-semibold tracking-wide text-foreground">
-                      Mes Sphères ({mySpheres.length})
+                      {t("page.sections.mySpheres", { count: mySpheres.length })}
                     </h2>
                   </div>
                   {viewMode === "grid" ? (
@@ -637,7 +643,7 @@ export function Spheres() {
                 <section className="space-y-3">
                   <div className="flex justify-between items-center pb-2 border-b border-border/40 px-1">
                     <h2 className="text-sm font-semibold tracking-wide text-foreground">
-                      Sphères Populaires & Tendances
+                      {t("page.sections.trending")}
                     </h2>
                   </div>
                   {viewMode === "grid" ? (
@@ -685,11 +691,11 @@ export function Spheres() {
 
             {/* Rows 3+: Par Type de Sphère */}
             {[
-              { value: "cours", label: "Cours, TD & Académique" },
-              { value: "projet", label: "Projets & Groupes de Travail" },
-              { value: "communaute", label: "Communautés & Échanges" },
-              { value: "club", label: "Clubs & Associations" },
-              { value: "revision", label: "Groupes de Révision & Annales" },
+              { value: "cours", label: t("page.sections.academic") },
+              { value: "projet", label: t("page.sections.projects") },
+              { value: "communaute", label: t("page.sections.community") },
+              { value: "club", label: t("page.sections.clubs") },
+              { value: "revision", label: t("page.sections.revision") },
             ].map((typeObj) => {
               const catSpheres = allSpheres.filter((s) => {
                 const sType = (s.sphere_type || s.sphereType || "").toLowerCase();
@@ -711,7 +717,7 @@ export function Spheres() {
                           setFilterType(typeObj.value);
                         }}
                       >
-                        Voir tout ({catSpheres.length})
+                        {t("page.sections.viewAllCount", { count: catSpheres.length })}
                       </Button>
                     )}
                   </div>
