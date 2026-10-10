@@ -42,13 +42,13 @@ export const FILE_FORMAT_DEFS = [
 
 // Backward compatibility export
 export const RESOURCE_CHIPS = [
-  { value: "all",          label: "Toutes",       icon: Layers },
-  { value: "course_notes", label: "Note de cours", icon: BookOpen },
-  { value: "td_tp",        label: "TD / TP",       icon: Notepad },
-  { value: "exams",        label: "Annales",        icon: GraduationCap },
-  { value: "project",      label: "Projet",         icon: FolderGit2 },
-  { value: "book",         label: "Livre",          icon: BookBookmark },
-  { value: "other",        label: "Autre",          icon: QuestionMark },
+  { value: "all",          label: "Toutes",             icon: Layers },
+  { value: "course_notes", label: "Cours",              icon: BookOpen },
+  { value: "td_tp",        label: "TD / TP",            icon: Notepad },
+  { value: "exams",        label: "Anciennes épreuves", icon: GraduationCap },
+  { value: "project",      label: "Projet",             icon: FolderGit2 },
+  { value: "book",         label: "Livre",              icon: BookBookmark },
+  { value: "other",        label: "Autre",              icon: QuestionMark },
 ] as const;
 
 export const FILE_FORMATS = [

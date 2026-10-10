@@ -37,7 +37,7 @@ interface ResourceTileProps {
 
 const TYPE_CONFIG: Record<string, { label: string; gradient: string; iconColor: string }> = {
   course_notes: {
-    label: "Note de cours",
+    label: "Cours",
     gradient: "from-blue-500/10 via-blue-500/5 to-muted/40",
     iconColor: "text-blue-500",
   },
@@ -47,7 +47,7 @@ const TYPE_CONFIG: Record<string, { label: string; gradient: string; iconColor: 
     iconColor: "text-orange-500",
   },
   exams: {
-    label: "Annale",
+    label: "Anciennes épreuves",
     gradient: "from-emerald-500/10 via-emerald-500/5 to-muted/40",
     iconColor: "text-emerald-500",
   },

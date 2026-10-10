@@ -1,10 +1,16 @@
 import { useTranslation } from "react-i18next";
+import { FileText } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { ResourceCard } from "@/components/resources/ResourceCard";
 import { ResourceTile } from "@/components/resources/ResourceTile";
 import { ResourceSkeleton } from "@/components/ui/skeletons";
+import { EmptyState } from "@/components/ui/empty-state";
 import { RESOURCE_TYPE_OPTIONS } from "@/constants/resourceTypes";
 import type { ResourceCardData } from "@/types";
+
+const MAX_CAROUSEL_ITEMS = 15;
+const MAX_CAROUSEL_LIST_ITEMS = 8;
+const MAX_SUGGESTIONS_ITEMS = 12;
 
 interface ResourcesCategoryCarouselsProps {
   resources: ResourceCardData[];
@@ -66,7 +72,13 @@ export function ResourcesCategoryCarousels({
           <span className="text-xs text-muted-foreground">({categoryResources.length})</span>
         </div>
 
-        {viewMode === "grid" ? (
+        {categoryResources.length === 0 ? (
+          <EmptyState
+            icon={FileText}
+            title={t("page.emptyTitle")}
+            description={t("page.emptyDesc")}
+          />
+        ) : viewMode === "grid" ? (
           <div className="grid grid-cols-1 min-[440px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 pt-2">
             {categoryResources.map((resource) => (
               <ResourceTile
@@ -101,7 +113,7 @@ export function ResourcesCategoryCarousels({
 
   const suggestions = [...resources]
     .sort((a, b) => (b.impactScore || 0) - (a.impactScore || 0))
-    .slice(0, 8);
+    .slice(0, MAX_SUGGESTIONS_ITEMS);
 
   return (
     <div className="space-y-8">
@@ -205,7 +217,7 @@ export function ResourcesCategoryCarousels({
                     </div>
                   ))
                 ) : (
-                  categoryResources.slice(0, 8).map((resource) => (
+                  categoryResources.slice(0, MAX_CAROUSEL_ITEMS).map((resource) => (
                     <div
                       key={resource.id}
                       className="w-[200px] sm:w-[220px] md:w-[235px] shrink-0 snap-start"
@@ -229,7 +241,7 @@ export function ResourcesCategoryCarousels({
                     <ResourceSkeleton key={i} />
                   ))
                 ) : (
-                  categoryResources.slice(0, 4).map((resource) => (
+                  categoryResources.slice(0, MAX_CAROUSEL_LIST_ITEMS).map((resource) => (
                     <ResourceCard
                       key={resource.id}
                       resource={resource}

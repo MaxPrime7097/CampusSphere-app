@@ -35,10 +35,10 @@
       "other": "Autre"
     },
     "types": {
-      "notes": "Notes de cours",
+      "notes": "Cours",
       "slides": "Diapositives",
       "exercises": "Exercices",
-      "exams": "Examens",
+      "exams": "Anciennes épreuves",
       "tutorials": "Tutoriels",
       "other": "Autre"
     },
@@ -78,9 +78,9 @@
   },
   "feedCard": {
     "types": {
-      "course_notes": "Note de cours",
+      "course_notes": "Cours",
       "td_tp": "TD / TP",
-      "exams": "Annale",
+      "exams": "Anciennes épreuves",
       "project": "Projet",
       "book": "Livre",
       "other": "Autre"
@@ -120,7 +120,7 @@
   },
   "page": {
     "title": "Ressources Académiques",
-    "subtitle": "Consultez, partagez et téléchargez les cours, annales corrigées, fiches et TD du campus",
+    "subtitle": "Consultez, partagez et téléchargez les cours, anciennes épreuves, fiches et TD du campus",
     "refresh": "Actualiser",
     "upload": "Uploader",
     "searchPlaceholder": "Rechercher par matière, mot-clé, cours ou auteur...",
@@ -137,9 +137,9 @@
     "clear": "Effacer",
     "chips": {
       "all": "Toutes",
-      "course_notes": "Note de cours",
+      "course_notes": "Cours",
       "td_tp": "TD / TP",
-      "exams": "Annales",
+      "exams": "Anciennes épreuves",
       "project": "Projet",
       "book": "Livre",
       "other": "Autre"

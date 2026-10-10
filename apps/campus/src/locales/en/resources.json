@@ -35,10 +35,10 @@
     "type": "Type",
     "typeRequired": "Type is required",
     "types": {
-      "notes": "Lecture Notes",
+      "notes": "Courses",
       "slides": "Slides",
       "exercises": "Exercises",
-      "exams": "Exams",
+      "exams": "Past exams",
       "tutorials": "Tutorials",
       "other": "Other"
     },
@@ -78,7 +78,7 @@
   },
   "feedCard": {
     "types": {
-      "course_notes": "Course notes",
+      "course_notes": "Courses",
       "td_tp": "Tutorial / Lab",
       "exams": "Past exam",
       "project": "Project",
@@ -137,7 +137,7 @@
     "clear": "Clear",
     "chips": {
       "all": "All",
-      "course_notes": "Course notes",
+      "course_notes": "Courses",
       "td_tp": "Tutorials / Labs",
       "exams": "Past exams",
       "project": "Project",
