@@ -531,10 +531,12 @@ resourcesRouter.get("/", httpCache({ namespace: "resources", ttlSeconds: 60 }), 
   const viewerId = req.user?.id ?? null;
   const { page, pageSize, skip } = paginationParams(req.query as Record<string, unknown>);
   const search = String(req.query.search ?? "").trim();
+  const rawType = req.query.type ? String(req.query.type).trim() : null;
 
   const where: Prisma.ResourceWhereInput = {
     AND: [
       await visibleToUser(viewerId),
+      ...(rawType && rawType !== "all" ? [{ type: normaliseResourceType(rawType) }] : []),
       ...(search
         ? [{ OR: [{ title: { contains: search, mode: "insensitive" as const } }, { description: { contains: search, mode: "insensitive" as const } }] }]
         : []),

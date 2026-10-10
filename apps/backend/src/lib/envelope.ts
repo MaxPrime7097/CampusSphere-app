@@ -66,9 +66,14 @@ export function paginate(totalItems: number, page: number, pageSize: number): Pa
   };
 }
 
-/** Parse `?page=` / `?page_size=` per API_CONTRACT §1.5. */
+/** Parse `?page=` / `?page_size=` / `?limit=` per API_CONTRACT §1.5. */
 export function paginationParams(query: Record<string, unknown>): { page: number; pageSize: number; skip: number } {
   const page = Math.max(1, Number(query.page) || 1);
-  const pageSize = Math.min(100, Math.max(1, Number(query.page_size) || 20));
+  const rawSize = query.page_size ?? query.limit;
+  const isAll = String(rawSize).toLowerCase() === "all" || String(query.all).toLowerCase() === "true";
+  if (isAll) {
+    return { page: 1, pageSize: 1000, skip: 0 };
+  }
+  const pageSize = Math.min(500, Math.max(1, Number(rawSize) || 20));
   return { page, pageSize, skip: (page - 1) * pageSize };
 }
