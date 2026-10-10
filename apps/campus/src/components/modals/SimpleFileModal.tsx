@@ -108,7 +108,7 @@ export function SimpleFileModal({ children, onFileUploaded }: SimpleFileModalPro
             <Label htmlFor="fileName">Nom du fichier *</Label>
             <Input
               id="fileName"
-              placeholder="Ex: Notes de cours"
+              placeholder="Ex: Cours"
               value={fileName}
               onChange={(e) => setFileName(e.target.value)}
               className="mt-2"

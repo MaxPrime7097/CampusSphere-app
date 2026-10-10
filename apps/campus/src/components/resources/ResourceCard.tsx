@@ -39,7 +39,7 @@ const TYPE_STYLES: Record<string, { icon: string; bg: string; label: string }> =
   course_notes: {
     icon: "text-blue-500",
     bg: "bg-blue-500/10 border-blue-500/20",
-    label: "Note de cours",
+    label: "Cours",
   },
   td_tp: {
     icon: "text-orange-500",
@@ -49,7 +49,7 @@ const TYPE_STYLES: Record<string, { icon: string; bg: string; label: string }> =
   exams: {
     icon: "text-emerald-500",
     bg: "bg-emerald-500/10 border-emerald-500/20",
-    label: "Annale",
+    label: "Anciennes épreuves",
   },
   project: {
     icon: "text-violet-500",

@@ -43,9 +43,9 @@ export const RESOURCE_TYPE_ALIASES: Record<string, CanonicalResourceType> = {
 };
 
 export const RESOURCE_TYPE_OPTIONS: Array<{ value: CanonicalResourceType; label: string }> = [
-  { value: "course_notes", label: "Note de cours" },
+  { value: "course_notes", label: "Cours" },
   { value: "td_tp",        label: "TD / TP" },
-  { value: "exams",        label: "Annale" },
+  { value: "exams",        label: "Anciennes épreuves" },
   { value: "project",      label: "Projet" },
   { value: "book",         label: "Livre" },
   { value: "other",        label: "Autre" },
@@ -53,9 +53,9 @@ export const RESOURCE_TYPE_OPTIONS: Array<{ value: CanonicalResourceType; label:
 
 /** Display labels (uppercase, as shown on cards) */
 export const RESOURCE_TYPE_DISPLAY: Record<CanonicalResourceType, string> = {
-  course_notes: "NOTE DE COURS",
+  course_notes: "COURS",
   td_tp:        "TD / TP",
-  exams:        "ANNALE",
+  exams:        "ANCIENNES ÉPREUVES",
   project:      "PROJET",
   book:         "LIVRE",
   other:        "AUTRE",
