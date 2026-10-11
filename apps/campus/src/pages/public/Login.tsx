@@ -13,7 +13,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { supabaseSignIn, supabaseSignInWithGoogle, supabaseSignInWithFacebook, exchangeSupabaseToken, getCampusStatus } from "@/services/api";
+import {
+  supabaseSignIn,
+  supabaseSignInWithGoogle,
+  supabaseSignInWithFacebook,
+  exchangeSupabaseToken,
+  getCampusStatus,
+  login as backendLogin,
+} from "@/services/api";
 import { AuthSidePanel } from "@/components/auth/AuthSidePanel";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "react-i18next";
@@ -57,10 +64,26 @@ export function Login() {
 
     setIsLoading(true);
     try {
-      const data = await supabaseSignIn(formData.email, formData.password);
-      if (!data.session) throw new Error("Session introuvable après connexion");
+      let exchangeRes: any = null;
+      let userData: any = null;
 
-      const exchangeRes = await exchangeSupabaseToken(data.session.access_token);
+      try {
+        const data = await supabaseSignIn(formData.email, formData.password);
+        if (data?.session?.access_token) {
+          exchangeRes = await exchangeSupabaseToken(data.session.access_token);
+          userData = exchangeRes?.data?.user;
+        }
+      } catch (sbErr: any) {
+        // Fallback: Tentative de connexion directe via le backend API (Argon2)
+        try {
+          const directLoginRes = await backendLogin({ email: formData.email, password: formData.password });
+          userData = (directLoginRes as any)?.data?.user ?? (directLoginRes as any)?.user;
+        } catch {
+          // Si les deux échouent, relancer l'erreur originale
+          throw sbErr;
+        }
+      }
+
       await refreshUser();
 
       if (formData.rememberMe) {
@@ -70,7 +93,16 @@ export function Login() {
 
       toast({ title: t('login.success', { defaultValue: "Connexion réussie !" }), duration: 2000 });
 
-      const userData = exchangeRes?.data?.user;
+      // Les comptes Impact Partner ne passent pas par l'onboarding étudiant ni par CampusGate
+      const isPartner =
+        (userData?.role || "").toLowerCase() === "impact_partner" ||
+        Boolean(userData?.partnerProfile || userData?.partner_profile);
+
+      if (isPartner) {
+        navigate(userData?.username ? `/profile/partner/${userData.username}` : nextUrl, { replace: true });
+        return;
+      }
+
       const university = (userData?.university || "").toLowerCase().trim();
       const isComplete = !exchangeRes?.data?.needs_profile_completion && Boolean(university && userData?.faculty && (userData?.study_year || userData?.studyYear));
 

@@ -1,4 +1,4 @@
-import { UsersThree as Users, UserPlus } from "@phosphor-icons/react";
+import { UsersThree as Users, UserPlus, Buildings } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { ConnectionSkeleton } from "@/components/ui/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -6,13 +6,16 @@ import { useTranslation } from "react-i18next";
 import { ConnectionCard } from "./ConnectionCard";
 import { SuggestionCard } from "./SuggestionCard";
 import { PendingRequestCard } from "./PendingRequestCard";
+import { PartnerCard } from "./PartnerCard";
 import type { ConnectionUser } from "./types";
+import type { UserProfile } from "@/types";
 
 interface ConnectionsDashboardSectionsProps {
   loading: boolean;
   pendingRequests: ConnectionUser[];
   connections: ConnectionUser[];
   suggestions: ConnectionUser[];
+  impactPartners?: UserProfile[];
   onViewAll: (section: string) => void;
   onNavigateProfile: (username: string) => void;
   onNavigateMessage: (id: string) => void;
@@ -26,6 +29,7 @@ export function ConnectionsDashboardSections({
   pendingRequests,
   connections,
   suggestions,
+  impactPartners = [],
   onViewAll,
   onNavigateProfile,
   onNavigateMessage,
@@ -160,6 +164,30 @@ export function ConnectionsDashboardSections({
           </div>
         )}
       </section>
+
+      {/* Row 4: Impact Partners */}
+      {impactPartners.length > 0 && (
+        <section className="space-y-1">
+          <div className="flex justify-between items-center pb-2 border-b border-border/40 px-1">
+            <h2 className="text-sm font-semibold tracking-wide flex items-center gap-2 text-foreground">
+              <Buildings className="h-4 w-4 text-primary" />
+              Impact Partners ({impactPartners.length})
+            </h2>
+            <span className="text-xs text-muted-foreground font-normal hidden sm:inline">
+              Organisations, clubs & entreprises partenaires
+            </span>
+          </div>
+          <div className="flex flex-col">
+            {impactPartners.map((partner) => (
+              <PartnerCard
+                key={partner.id}
+                partner={partner}
+                onNavigateProfile={(uname) => onNavigateProfile("partner/" + uname)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
