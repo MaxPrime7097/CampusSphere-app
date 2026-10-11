@@ -501,14 +501,27 @@ export async function apiFetch<T>(
     ...headers,
   };
 
-  if (!(body instanceof FormData) && !Object.prototype.hasOwnProperty.call(builtHeaders, "Content-Type")) {
+  if (
+    body !== undefined &&
+    !(body instanceof FormData) &&
+    !Object.prototype.hasOwnProperty.call(builtHeaders, "Content-Type")
+  ) {
     builtHeaders["Content-Type"] = "application/json";
   }
+
+  const serializedBody =
+    body instanceof FormData
+      ? body
+      : typeof body === "string"
+        ? body
+        : body !== undefined
+          ? JSON.stringify(body)
+          : undefined;
 
   const res = await fetch(url, {
     method,
     headers: builtHeaders,
-    body: body instanceof FormData ? (body as FormData) : body ? JSON.stringify(body) : undefined,
+    body: serializedBody,
     credentials: "include",
     signal,
   });
