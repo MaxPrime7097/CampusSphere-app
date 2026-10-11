@@ -1,4 +1,5 @@
 import { Suspense, lazy, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,6 +13,7 @@ interface CreatePostProps {
 }
 
 export function CreatePost({ onPostCreated }: CreatePostProps) {
+  const { t } = useTranslation("feed");
   const [isHubOpen, setIsHubOpen] = useState(false);
   const { user: currentUser } = useAuth();
 
@@ -30,8 +32,8 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
           </Avatar>
 
           <div className="flex-1 px-4 py-2.5 bg-muted/40 hover:bg-muted/70 rounded-full text-muted-foreground text-sm transition-colors border border-border/40 flex items-center justify-between">
-            <span>Quoi de neuf sur le campus ?</span>
-            <span className="hidden sm:inline-block text-xs font-semibold text-primary">Créer</span>
+            <span>{t("sharePrompt")}</span>
+            <span className="hidden sm:inline-block text-xs font-semibold text-primary">{t("create")}</span>
           </div>
         </div>
       </div>

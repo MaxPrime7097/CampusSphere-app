@@ -48,6 +48,7 @@ export interface Event {
   isPublic: boolean;
   isFeatured?: boolean;
   hasTicketing?: boolean;
+  registrationUrl?: string | null;
   attendeesCount: number;
   userStatus?: AttendeeStatus | null;
   userTicketCode?: string | null;
@@ -82,6 +83,7 @@ export interface CreateEventInput {
   isPublic?: boolean;
   isFeatured?: boolean;
   hasTicketing?: boolean;
+  registrationUrl?: string | null;
   sphereId?: string | number | null;
 }
 

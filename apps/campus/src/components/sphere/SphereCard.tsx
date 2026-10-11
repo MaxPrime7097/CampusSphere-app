@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -52,6 +53,7 @@ export const SphereCard = React.memo(
     className,
     layout = "list",
   }: SphereCardProps) => {
+    const { t } = useTranslation("spheres");
     const navigate = useNavigate();
 
     const bannerImage = sphere.banner_url || sphere.bannerUrl || sphere.cover_image || sphere.coverImage;
@@ -60,10 +62,11 @@ export const SphereCard = React.memo(
     );
     const meta = SPHERE_TYPE_META[canonicalType] || SPHERE_TYPE_META.default;
     const IconComponent = meta.icon;
+    const typeLabel = t(`card.${canonicalType}`, { defaultValue: meta.label });
 
     const memberCount = Number(sphere.member_count ?? sphere.memberCount ?? 1);
     const creator = sphere.created_by_info || sphere.createdBy || sphere.creator_info;
-    const creatorName = creator?.name || creator?.username || "Créateur";
+    const creatorName = creator?.name || creator?.username || t("card.defaultCreator");
 
     const isMember = membership === "active";
     const isPending = membership === "pending";
@@ -101,7 +104,7 @@ export const SphereCard = React.memo(
             {/* Category badge floating top-right */}
             <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
               <span className="rounded-lg bg-background/85 backdrop-blur-md px-2 py-0.5 text-[10px] font-medium text-foreground border border-border/40 shadow-2xs">
-                {meta.label}
+                {typeLabel}
               </span>
             </div>
 
@@ -115,7 +118,7 @@ export const SphereCard = React.memo(
             {isMember && (
               <div className="absolute bottom-2.5 left-2.5">
                 <span className="flex items-center gap-1 rounded-lg bg-emerald-500/90 text-white backdrop-blur-md px-2 py-0.5 text-[10px] font-semibold shadow-xs">
-                  <Check className="h-3 w-3" /> Membre
+                  <Check className="h-3 w-3" /> {t("card.member")}
                 </span>
               </div>
             )}
@@ -128,13 +131,13 @@ export const SphereCard = React.memo(
             </h3>
 
             <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-              {sphere.description || sphere.objective || "Sphère d'échange et de travail collaboratif."}
+              {sphere.description || sphere.objective || t("card.defaultDesc")}
             </p>
 
             <div className="flex items-center justify-between pt-1">
               <span className="text-[11px] text-muted-foreground flex items-center gap-1">
                 <Users className="h-3 w-3" />
-                <span>{memberCount} membre{memberCount > 1 ? "s" : ""}</span>
+                <span>{t("card.members", { count: memberCount })}</span>
               </span>
 
               <div onClick={(e) => e.stopPropagation()}>
@@ -146,7 +149,7 @@ export const SphereCard = React.memo(
                     onClick={handleActionClick}
                   >
                     <Check className="h-3 w-3 mr-1" />
-                    <span>Ouvrir</span>
+                    <span>{t("card.open")}</span>
                   </Button>
                 ) : isPending ? (
                   <Button
@@ -156,7 +159,7 @@ export const SphereCard = React.memo(
                     className="h-7 px-2 text-[11px] text-muted-foreground rounded-lg font-normal"
                   >
                     <Clock className="h-3 w-3 mr-1" />
-                    <span>Envoyée</span>
+                    <span>{t("card.requested")}</span>
                   </Button>
                 ) : (
                   <Button
@@ -166,7 +169,7 @@ export const SphereCard = React.memo(
                     onClick={handleActionClick}
                     disabled={isJoining}
                   >
-                    {isJoining ? "..." : "Rejoindre"}
+                    {isJoining ? "..." : t("card.join")}
                   </Button>
                 )}
               </div>
@@ -212,30 +215,30 @@ export const SphereCard = React.memo(
               {sphere.name}
             </h3>
             <Badge variant="muted" size="sm" className="text-[10px] font-normal py-0">
-              {meta.label}
+              {typeLabel}
             </Badge>
             {isMember && (
               <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
-                <Check className="h-3 w-3" /> Membre
+                <Check className="h-3 w-3" /> {t("card.member")}
               </span>
             )}
             {isPending && (
               <span className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
-                <Clock className="h-3 w-3" /> En attente
+                <Clock className="h-3 w-3" /> {t("card.pending")}
               </span>
             )}
           </div>
 
           <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-            {sphere.description || sphere.objective || "Sphère d'échange et de travail collaboratif."}
+            {sphere.description || sphere.objective || t("card.defaultDesc")}
           </p>
 
           <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1 flex-wrap">
-            <span className="truncate max-w-[120px]">Par {creatorName}</span>
+            <span className="truncate max-w-[120px]">{t("card.byCreator", { name: creatorName })}</span>
             <span>·</span>
             <span className="flex items-center gap-1">
               <Users className="h-3 w-3" />
-              {memberCount} membre{memberCount > 1 ? "s" : ""}
+              {t("card.members", { count: memberCount })}
             </span>
           </div>
         </div>
@@ -250,7 +253,7 @@ export const SphereCard = React.memo(
               onClick={handleActionClick}
             >
               <Check className="h-3.5 w-3.5 mr-1" />
-              <span>Ouvrir</span>
+              <span>{t("card.open")}</span>
             </Button>
           ) : isPending ? (
             <Button
@@ -260,7 +263,7 @@ export const SphereCard = React.memo(
               className="h-8 px-2.5 text-xs text-muted-foreground font-normal"
             >
               <Clock className="h-3.5 w-3.5 mr-1" />
-              <span>Envoyée</span>
+              <span>{t("card.requested")}</span>
             </Button>
           ) : (
             <Button
@@ -270,7 +273,7 @@ export const SphereCard = React.memo(
               onClick={handleActionClick}
               disabled={isJoining}
             >
-              {isJoining ? "..." : "Rejoindre"}
+              {isJoining ? "..." : t("card.join")}
             </Button>
           )}
         </div>

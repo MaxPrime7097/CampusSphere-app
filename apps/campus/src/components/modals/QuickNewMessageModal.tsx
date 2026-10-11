@@ -44,7 +44,7 @@ export function QuickNewMessageModal({ open, onOpenChange }: QuickNewMessageModa
 
     try {
       const result = await createPrivateConversation(targetUserId);
-      const conversationId = result?.data?.id ?? result?.id;
+      const conversationId = result?.data?.hash_id ?? result?.hash_id ?? result?.data?.id ?? result?.id;
 
       onOpenChange(false);
       setSearch("");

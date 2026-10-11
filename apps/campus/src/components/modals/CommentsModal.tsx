@@ -84,7 +84,7 @@ function normalizeCommentAuthor(rawAuthor: any, fallbackName?: string) {
 }
 
 export function CommentsModal({ open, onOpenChange, postId, allowComments = true }: CommentsModalProps) {
-  const { t } = useTranslation();
+  const { t } = useTranslation("feed");
   const { toast } = useToast();
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -236,7 +236,7 @@ export function CommentsModal({ open, onOpenChange, postId, allowComments = true
   }, [mentionUsersQuery.data, mentionUsersQuery.error, normalizedMentionQuery, open, showMentions]);
 
   const commentSchema = z.object({
-    content: z.string().trim().min(1, { message: t("modals.comments.validation.tooShort") }).max(500, { message: t("modals.comments.validation.tooLong") }),
+    content: z.string().trim().min(1, { message: t("comments.validation.tooShort") }).max(500, { message: t("comments.validation.tooLong") }),
   });
 
   const handleSubmit = async () => {
@@ -245,7 +245,7 @@ export function CommentsModal({ open, onOpenChange, postId, allowComments = true
     if (!validation.success) {
       toast({
         variant: "destructive",
-        title: t("modals.comments.invalidTitle", { defaultValue: "Commentaire invalide" }),
+        title: t("comments.invalidTitle"),
         description: validation.error.errors[0].message,
       });
       return;
@@ -255,8 +255,8 @@ export function CommentsModal({ open, onOpenChange, postId, allowComments = true
     if (invalidMentions.length > 0) {
       toast({
         variant: "destructive",
-        title: "Mentions invalides",
-        description: `Format invalide: ${invalidMentions.map((item) => `@${item}`).join(", ")}`,
+        title: t("comments.validation.invalidMentions"),
+        description: t("comments.validation.invalidMentionFormat", { mentions: invalidMentions.map((item) => `@${item}`).join(", ") }),
       });
       return;
     }
@@ -283,14 +283,14 @@ export function CommentsModal({ open, onOpenChange, postId, allowComments = true
       setNewComment("");
 
       toast({
-        title: t("modals.comments.validation.posted"),
-        description: "Votre commentaire a été publié avec succès",
+        title: t("comments.validation.posted"),
+        description: t("comments.validation.postedSuccess"),
       });
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Erreur",
-        description: error?.message || "Une erreur est survenue lors de l'ajout du commentaire",
+        title: t("comments.validation.error"),
+        description: error?.message || t("comments.validation.errorAdd"),
       });
     } finally {
       setIsSubmitting(false);
@@ -304,8 +304,8 @@ export function CommentsModal({ open, onOpenChange, postId, allowComments = true
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Erreur",
-        description: error?.message || "Impossible d'aimer ce commentaire",
+        title: t("comments.validation.error"),
+        description: error?.message || t("comments.validation.errorLike"),
         duration: 2000,
       });
     }
@@ -401,12 +401,12 @@ export function CommentsModal({ open, onOpenChange, postId, allowComments = true
         ...prev,
         [parentId]: Math.max(prev[parentId] || 0, 10),
       }));
-      toast({ title: "Réponse ajoutée", description: "Votre réponse a été publiée avec succès" });
+      toast({ title: t("comments.validation.posted"), description: t("comments.validation.postedSuccess") });
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Erreur",
-        description: error?.message || "Une erreur est survenue lors de l'ajout de la réponse",
+        title: t("comments.validation.error"),
+        description: error?.message || t("comments.validation.errorAdd"),
       });
     } finally {
       setIsSubmitting(false);
@@ -425,7 +425,7 @@ export function CommentsModal({ open, onOpenChange, postId, allowComments = true
     if (!editingCommentId || isUpdatingComment) return;
     const nextContent = editingCommentContent.trim();
     if (!nextContent) {
-      toast({ title: "Commentaire vide", description: "Le commentaire ne peut pas être vide.", variant: "destructive" });
+      toast({ title: t("comments.invalidTitle"), description: t("comments.validation.tooShort"), variant: "destructive" });
       return;
     }
 
@@ -436,9 +436,9 @@ export function CommentsModal({ open, onOpenChange, postId, allowComments = true
       setComments((prev) => updateCommentInTree(prev, editingCommentId, nextContent));
       setEditingCommentId(null);
       setEditingCommentContent("");
-      toast({ title: "Commentaire modifié", description: "Votre modification a bien été enregistrée." });
+      toast({ title: t("comments.validation.updated"), description: t("comments.validation.updated") });
     } catch (error: any) {
-      toast({ title: "Échec de modification", description: error?.message || "Impossible de modifier ce commentaire.", variant: "destructive" });
+      toast({ title: t("comments.validation.error"), description: error?.message || t("comments.validation.errorAdd"), variant: "destructive" });
     } finally {
       setIsUpdatingComment(false);
     }
@@ -456,10 +456,10 @@ export function CommentsModal({ open, onOpenChange, postId, allowComments = true
 
     try {
       await deleteComment(targetId);
-      toast({ title: "Commentaire supprimé", description: "Le commentaire a été supprimé." });
+      toast({ title: t("comments.validation.deleted"), description: t("comments.validation.deleted") });
     } catch (error: any) {
       setComments(previous);
-      toast({ title: "Échec de suppression", description: error?.message || "Impossible de supprimer ce commentaire.", variant: "destructive" });
+      toast({ title: t("comments.validation.error"), description: error?.message || t("comments.validation.error"), variant: "destructive" });
     } finally {
       setIsDeletingComment(false);
     }
@@ -528,7 +528,7 @@ export function CommentsModal({ open, onOpenChange, postId, allowComments = true
               <button
                 type="button"
                 className={`flex items-center gap-1 hover:text-primary transition-colors ${comment.isLiked ? "text-red-500 font-medium" : ""}`}
-                aria-label="Aimer"
+                aria-label={t("comments.like")}
                 onClick={() => handleLikeComment(comment.id)}
               >
                 <Heart className={`h-3 w-3 ${comment.isLiked ? "fill-current" : ""}`} />
@@ -541,7 +541,7 @@ export function CommentsModal({ open, onOpenChange, postId, allowComments = true
                   className="hover:text-foreground font-medium transition-colors"
                   onClick={() => startReply(comment)}
                 >
-                  Répondre
+                  {t("comments.reply")}
                 </button>
               )}
 
@@ -551,7 +551,7 @@ export function CommentsModal({ open, onOpenChange, postId, allowComments = true
                     <button
                       type="button"
                       className="opacity-0 group-hover:opacity-100 transition-opacity hover:text-foreground p-0.5 ml-auto"
-                      aria-label="Plus d'options"
+                      aria-label={t("comments.moreOptions")}
                     >
                       <MoreHorizontal className="h-3.5 w-3.5" />
                     </button>
@@ -559,11 +559,11 @@ export function CommentsModal({ open, onOpenChange, postId, allowComments = true
                   <DropdownMenuContent align="end" className="w-36">
                     <DropdownMenuItem onClick={() => openEditComment(comment)}>
                       <PencilSimple className="h-3.5 w-3.5 mr-2" />
-                      Modifier
+                      {t("comments.edit")}
                     </DropdownMenuItem>
                     <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setCommentToDelete(comment)}>
                       <Trash2 className="h-3.5 w-3.5 mr-2" />
-                      Supprimer
+                      {t("comments.delete")}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -581,7 +581,7 @@ export function CommentsModal({ open, onOpenChange, postId, allowComments = true
                   >
                     <span className="w-6 h-[1.5px] bg-border group-hover:bg-foreground/40 transition-colors" />
                     <span>
-                      Voir les {totalReplies} {totalReplies > 1 ? "réponses" : "réponse"}
+                      {totalReplies > 1 ? t("comments.seeReplies", { count: totalReplies }) : t("comments.seeReply")}
                     </span>
                   </button>
                 ) : (
@@ -599,7 +599,7 @@ export function CommentsModal({ open, onOpenChange, postId, allowComments = true
                         >
                           <span className="w-5 h-[1.5px] bg-border group-hover:bg-foreground/40 transition-colors" />
                           <span>
-                            Voir plus de réponses ({totalReplies - shownRepliesCount} restantes)
+                            {t("comments.seeMoreReplies", { count: totalReplies - shownRepliesCount })}
                           </span>
                         </button>
                       ) : null}
@@ -608,7 +608,7 @@ export function CommentsModal({ open, onOpenChange, postId, allowComments = true
                         onClick={() => hideReplies(comment.id)}
                         className="text-xs text-muted-foreground/70 hover:text-foreground transition-colors"
                       >
-                        Masquer
+                        {t("comments.hideReplies")}
                       </button>
                     </div>
                   </div>
@@ -630,7 +630,7 @@ export function CommentsModal({ open, onOpenChange, postId, allowComments = true
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <DialogTitle className="text-base font-semibold tracking-tight text-foreground">
-                {t('modals.comments.title') || "Commentaires"}
+                {t("comments.title")}
               </DialogTitle>
               {comments.length > 0 && (
                 <span className="text-xs text-muted-foreground font-normal">
@@ -651,8 +651,8 @@ export function CommentsModal({ open, onOpenChange, postId, allowComments = true
             </>
           ) : comments.length === 0 ? (
             <div className="text-center py-12 space-y-1">
-              <p className="text-sm font-medium text-foreground">Aucun commentaire</p>
-              <p className="text-xs text-muted-foreground">Soyez le premier à commenter !</p>
+              <p className="text-sm font-medium text-foreground">{t("comments.noComments")}</p>
+              <p className="text-xs text-muted-foreground">{t("comments.beFirstToComment")}</p>
             </div>
           ) : (
             comments.map((comment) => renderComment(comment))
@@ -684,14 +684,14 @@ export function CommentsModal({ open, onOpenChange, postId, allowComments = true
               <div className="flex items-center gap-1.5 truncate">
                 <Reply className="h-3 w-3 shrink-0 text-primary" />
                 <span className="truncate">
-                  Répondre à <strong className="text-foreground font-semibold">@{replyingToComment.author.username}</strong>
+                  {t("comments.replyingTo")} <strong className="text-foreground font-semibold">@{replyingToComment.author.username}</strong>
                 </span>
               </div>
               <button
                 type="button"
                 onClick={cancelReply}
                 className="p-1 hover:text-foreground text-muted-foreground/70 rounded-full hover:bg-muted transition-colors shrink-0"
-                title="Annuler"
+                title={t("comments.cancel")}
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -701,7 +701,7 @@ export function CommentsModal({ open, onOpenChange, postId, allowComments = true
           {/* Minimalist single-line rounded bar */}
           {!allowComments ? (
             <div className="w-full p-3 text-center text-xs text-muted-foreground bg-muted/30 border border-border/40 rounded-xl">
-              Les commentaires sont désactivés pour cette publication.
+              {t("comments.disabled")}
             </div>
           ) : (
             <div className="flex items-center gap-2.5">
@@ -716,7 +716,7 @@ export function CommentsModal({ open, onOpenChange, postId, allowComments = true
               <input
                 ref={inputRef}
                 type="text"
-                placeholder={replyingToComment ? `Répondre à @${replyingToComment.author.username}...` : "Ajouter un commentaire..."}
+                placeholder={replyingToComment ? t("comments.replyPlaceholder", { username: replyingToComment.author.username }) : t("comments.placeholder")}
                 value={replyingToComment ? replyContent : newComment}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -752,7 +752,7 @@ export function CommentsModal({ open, onOpenChange, postId, allowComments = true
                 type="button"
                 onClick={() => setShowMentions(!showMentions)}
                 className={`p-1 transition-colors shrink-0 ${showMentions ? "text-primary" : "text-muted-foreground/70 hover:text-foreground"}`}
-                title="Mentionner"
+                title={t("comments.mention")}
               >
                 <AtSign className="h-4 w-4" />
               </button>
@@ -773,7 +773,7 @@ export function CommentsModal({ open, onOpenChange, postId, allowComments = true
                     ? "text-primary hover:bg-primary/10 active:scale-95"
                     : "text-muted-foreground/30 cursor-not-allowed"
                 )}
-                title="Publier"
+                title={t("comments.publish")}
               >
                 {isSubmitting ? (
                   <Loader2 className="h-4 w-4 animate-spin text-primary" />
@@ -788,7 +788,7 @@ export function CommentsModal({ open, onOpenChange, postId, allowComments = true
       </DialogContent>
     </Dialog>
 
-            {/* Edit Comment Dialog */}
+    {/* Edit Comment Dialog */}
       <Dialog 
         open={Boolean(editingCommentId)} 
         onOpenChange={(isOpen) => {
@@ -799,8 +799,8 @@ export function CommentsModal({ open, onOpenChange, postId, allowComments = true
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Modifier le commentaire</DialogTitle>
-            <DialogDescription>Les changements seront visibles immédiatement après validation.</DialogDescription>
+            <DialogTitle>{t("comments.editModal.title")}</DialogTitle>
+            <DialogDescription>{t("comments.editModal.description")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <Textarea 
@@ -815,15 +815,15 @@ export function CommentsModal({ open, onOpenChange, postId, allowComments = true
                 onClick={() => setEditingCommentId(null)} 
                 disabled={isUpdatingComment}
               >
-                Annuler
+                {t("comments.cancel")}
               </Button>
               <Button 
                 onClick={handleUpdateComment} 
                 disabled={isUpdatingComment}
               >
                 {isUpdatingComment ? (
-                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Enregistrement...</>
-                ) : "Enregistrer"}
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t("comments.saving")}</>
+                ) : t("comments.save")}
               </Button>
             </div>
           </div>
@@ -841,8 +841,8 @@ export function CommentsModal({ open, onOpenChange, postId, allowComments = true
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Supprimer ce commentaire ?</DialogTitle>
-            <DialogDescription>Cette action est irréversible.</DialogDescription>
+            <DialogTitle>{t("comments.deleteModal.title")}</DialogTitle>
+            <DialogDescription>{t("comments.deleteModal.description")}</DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-2">
             <Button 
@@ -850,7 +850,7 @@ export function CommentsModal({ open, onOpenChange, postId, allowComments = true
               onClick={() => setCommentToDelete(null)} 
               disabled={isDeletingComment}
             >
-              Annuler
+              {t("comments.cancel")}
             </Button>
             <Button 
               variant="destructive" 
@@ -858,8 +858,8 @@ export function CommentsModal({ open, onOpenChange, postId, allowComments = true
               disabled={isDeletingComment}
             >
               {isDeletingComment ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Suppression...</>
-              ) : "Supprimer"}
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t("comments.deleting")}</>
+              ) : t("comments.delete")}
             </Button>
           </div>
         </DialogContent>

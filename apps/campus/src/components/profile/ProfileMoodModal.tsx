@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { MOOD_OPTIONS } from "@/constants/profileConstants";
+import { useTranslation } from "react-i18next";
 
 interface ProfileMoodModalProps {
   open: boolean;
@@ -21,6 +22,7 @@ export function ProfileMoodModal({
   onSaveMood,
   isSaving = false,
 }: ProfileMoodModalProps) {
+  const { t } = useTranslation("profile");
   const [moodText, setMoodText] = useState(currentMood || "");
 
   useEffect(() => {
@@ -41,22 +43,22 @@ export function ProfileMoodModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span className="text-lg">😊</span>
-            Changer votre mood
+            {t("mood.title")}
           </DialogTitle>
           <DialogDescription>
-            Partagez votre état d'esprit actuel avec votre communauté.
+            {t("mood.subtitle")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div>
-            <Label htmlFor="mood">Mood du moment (max 100 car.)</Label>
+            <Label htmlFor="mood">{t("mood.label")}</Label>
             <div className="relative mt-2">
               <Input
                 id="mood"
                 value={moodText}
                 onChange={(e) => setMoodText(e.target.value.slice(0, 100))}
-                placeholder="Comment vous sentez-vous ?"
+                placeholder={t("mood.placeholder")}
                 className="pr-12"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">
@@ -64,12 +66,12 @@ export function ProfileMoodModal({
               </span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Exprimez votre état d'esprit actuel librement.
+              {t("mood.hint")}
             </p>
           </div>
 
           <div>
-            <Label>Suggestions</Label>
+            <Label>{t("mood.suggestions")}</Label>
             <div className="grid grid-cols-2 gap-2 mt-2">
               {MOOD_OPTIONS.map((mood) => (
                 <Button
@@ -94,7 +96,7 @@ export function ProfileMoodModal({
               setMoodText("");
             }}
           >
-            Annuler
+            {t("mood.cancel")}
           </Button>
           <Button
             onClick={handleSubmit}
@@ -102,7 +104,7 @@ export function ProfileMoodModal({
             className="bg-secondary hover:bg-muted text-secondary-foreground border border-border/60"
           >
             {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
-            {isSaving ? "Mise à jour..." : "Mettre à jour"}
+            {isSaving ? t("mood.updating") : t("mood.update")}
           </Button>
         </div>
       </DialogContent>

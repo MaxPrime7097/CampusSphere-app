@@ -1,0 +1,142 @@
+{
+  "home": "Accueil",
+  "profile": "Profil",
+  "resources": "Ressources",
+  "events": "Événements",
+  "spheres": "Sphères",
+  "connections": "Connexions",
+  "messages": "Messages",
+  "saved": "Enregistrements",
+  "settings": "Paramètres",
+  "openSphera": "Ouvrir Sphera",
+  "admin": "Admin",
+  "impactScore": "Impact Score",
+  "about": "À propos",
+  "contact": "Contact",
+  "faq": "FAQ",
+  "policies": "Politiques",
+  "help": "Aide",
+  "publish": "Publier",
+  "searchPlaceholder": "Rechercher sur CampusSphere...",
+  "searchShortcut": "Rechercher...",
+  "login": "Connexion",
+  "register": "S'inscrire",
+  "joinCommunity": "Rejoins la communauté",
+  "logout": "Se déconnecter",
+  "notifications": "Notifications",
+  "newPost": "Créer un post",
+  "quickActions": "Actions rapides",
+  "utilities": "Utilitaires",
+  "menu": "Menu",
+  "navigation": "Navigation",
+  "collapse": "Réduire",
+  "company": "Entreprise",
+  "privacyPolicy": "Politique de Confidentialité",
+  "termsOfService": "Conditions d'Utilisation",
+  "termsOfSale": "Conditions de Vente (CGV)",
+  "legalNotice": "Mentions Légales",
+  "communityGuidelines": "Règles de la Communauté",
+  "cookiePolicy": "Politique de Cookies",
+  "copyright": "Droits d'auteur",
+  "dataDeletion": "Suppression des Données",
+  "footerTagline": "La plateforme qui connecte les étudiants et enrichit l'expérience universitaire. Ensemble, nous construisons l'avenir de l'éducation collaborative.",
+  "allRightsReserved": "Tous droits réservés. Construit avec passion pour les étudiants.",
+  "savedItems": {
+    "title": "Éléments enregistrés",
+    "subtitle": "Retrouvez rapidement vos publications et ressources académiques mises de côté",
+    "tabs": {
+      "posts": "Posts",
+      "resources": "Ressources"
+    },
+    "emptyPosts": {
+      "title": "Aucun post enregistré",
+      "description": "Les posts que vous enregistrez apparaîtront ici."
+    },
+    "emptyResources": {
+      "title": "Aucune ressource enregistrée",
+      "description": "Les ressources que vous sauvegardez apparaîtront ici.",
+      "action": "Parcourir les ressources"
+    },
+    "toasts": {
+      "postRemoved": "Post retiré des sauvegardes",
+      "postRemovedDesc": "Le post a été retiré de vos enregistrements",
+      "resourceRemoved": "Ressource retirée des sauvegardes",
+      "removeFailed": "Impossible de retirer le post",
+      "downloadFailed": "Téléchargement échoué"
+    }
+  },
+  "search": {
+    "placeholder": "Rechercher des publications, événements, étudiants, cours, TD, sphères...",
+    "clear": "Effacer la recherche",
+    "sort": {
+      "label": "Trier :",
+      "placeholder": "Trier par",
+      "relevance": "Pertinence",
+      "name": "Nom"
+    },
+    "tabs": {
+      "all": "Tout",
+      "posts": "Publications",
+      "events": "Événements",
+      "users": "Personnes",
+      "resources": "Ressources",
+      "spheres": "Sphères"
+    },
+    "discovery": {
+      "suggestedTitle": "Recherches suggérées",
+      "eventsTitle": "Événements du campus",
+      "allEvents": "Tous les événements",
+      "viewEvent": "Voir l'événement",
+      "spheresTitle": "Sphères d'étude à explorer",
+      "allSpheres": "Toutes les sphères",
+      "explore": "Explorer",
+      "resourcesTitle": "Ressources de cours récentes",
+      "allResources": "Toutes les ressources",
+      "consult": "Consulter"
+    },
+    "empty": {
+      "title": "Aucun résultat pour « {{query}} »",
+      "description": "Vérifiez l'orthographe de vos termes ou essayez un mot-clé plus générique (matière, université, nom)."
+    },
+    "dropdown": {
+      "searching": "Recherche en cours...",
+      "noResults": "Aucun résultat trouvé pour « {{query}} »",
+      "pressEnter": "Appuyez sur Entrée pour lancer une recherche complète.",
+      "byAuthor": "Par {{author}}",
+      "author": "Auteur",
+      "document": "Document",
+      "sphere": "Sphère",
+      "members": "membres",
+      "online": "En ligne",
+      "campus": "Campus",
+      "seeAll": "Voir tous les résultats pour « {{query}} »",
+      "enterKey": "↵ Entrée"
+    }
+  },
+  "notFound": {
+    "title": "Oops! Page introuvable",
+    "returnHome": "Retour à l'accueil"
+  },
+  "forbidden": {
+    "title": "Accès interdit",
+    "description": "Vous n'avez pas les permissions administrateur requises pour accéder à cette page.",
+    "returnHome": "Retour à l'accueil"
+  },
+  "postDetail": {
+    "backToFeed": "Retour au fil d'actualité",
+    "guestTitle": "Cette discussion vous intéresse ?",
+    "guestDesc": "Rejoignez CampusSphere pour échanger avec vos camarades et accéder aux ressources.",
+    "guestCta": "Rejoindre la communauté"
+  },
+  "offline": {
+    "connectionLost": "Connexion internet interrompue",
+    "refresh": "Actualiser"
+  },
+  "cookieBanner": {
+    "title": "Cookies",
+    "description": "Nous utilisons des cookies essentiels pour le fonctionnement de la plateforme et des cookies de performance pour améliorer votre expérience.",
+    "learnMore": "En savoir plus",
+    "decline": "Refuser",
+    "accept": "Accepter"
+  }
+}

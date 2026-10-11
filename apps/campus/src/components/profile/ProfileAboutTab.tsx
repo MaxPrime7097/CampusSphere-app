@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
 import { formatSlugToLabel, truncate } from "@/lib/utils";
 import { formatFrenchDate } from "@/lib/date";
+import { useTranslation } from "react-i18next";
 
 const EditAcademicModal = lazy(() =>
   import("@/components/modals/EditAcademicModal").then((module) => ({
@@ -42,13 +43,16 @@ const EditPortfolioModal = lazy(() =>
   }))
 );
 
-const EmptyField = () => (
-  <span className="italic text-muted-foreground text-xs font-normal">
-    Aucun pour l'instant
-  </span>
-);
-
 export interface ProfileAboutUser {
+  role?: string;
+  partnerProfile?: {
+    organizationName?: string;
+    organizationType?: string;
+    sector?: string;
+    website?: string;
+    isVerified?: boolean;
+  } | null;
+  bio?: string;
   university?: string;
   faculty?: string;
   studyYear?: string;
@@ -77,6 +81,7 @@ export function ProfileAboutTab({
   isOwnProfile,
   displayStudyYear,
 }: ProfileAboutTabProps) {
+  const { t } = useTranslation("profile");
   const [isEditAcademicOpen, setIsEditAcademicOpen] = useState(false);
   const [isEditPersonalOpen, setIsEditPersonalOpen] = useState(false);
   const [isEditEducationOpen, setIsEditEducationOpen] = useState(false);
@@ -85,9 +90,113 @@ export function ProfileAboutTab({
   const [isEditInterestsOpen, setIsEditInterestsOpen] = useState(false);
   const [isEditPortfolioOpen, setIsEditPortfolioOpen] = useState(false);
 
+  const EmptyField = () => (
+    <span className="italic text-muted-foreground text-xs font-normal">
+      {t("about.emptyField")}
+    </span>
+  );
+
   const handleModalSuccess = () => {
     window.location.reload();
   };
+
+  const isPartner = (user.role || "").toLowerCase() === "impact_partner";
+
+  if (isPartner) {
+    return (
+      <section className="mt-6">
+        <div className="rounded-2xl border border-border/40 bg-card divide-y divide-border/30 overflow-hidden shadow-xs">
+          {/* 1. Informations sur l'organisation */}
+          <div className="p-5 sm:p-6 space-y-4">
+            <h3 className="text-sm font-semibold text-foreground">Informations sur l'organisation</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
+              <div>
+                <p className="text-xs text-muted-foreground">Type d'organisation</p>
+                <p className="font-medium text-sm mt-0.5 capitalize">
+                  {user.partnerProfile?.organizationType || <EmptyField />}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Secteur d'activité</p>
+                <p className="font-medium text-sm mt-0.5">
+                  {user.partnerProfile?.sector || "Technologie / Enseignement / Partenariats"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Site web officiel</p>
+                {user.partnerProfile?.website ? (
+                  <a
+                    href={user.partnerProfile.website.startsWith("http") ? user.partnerProfile.website : `https://${user.partnerProfile.website}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-sm mt-0.5 text-primary hover:underline flex items-center gap-1"
+                  >
+                    {user.partnerProfile.website}
+                    <ExternalLink className="h-3.5 w-3.5 inline" />
+                  </a>
+                ) : (
+                  <EmptyField />
+                )}
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Email de contact</p>
+                <p className="font-medium text-sm mt-0.5">{user.email || <EmptyField />}</p>
+              </div>
+              {user.town && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Localisation</p>
+                  <p className="font-medium text-sm mt-0.5">{user.town}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 2. Présentation détaillée */}
+          <div className="p-5 sm:p-6 space-y-3">
+            <h3 className="text-sm font-semibold text-foreground">Présentation & Mission</h3>
+            <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line">
+              {user.bio || "Impact Partner officiel sur CampusSphere."}
+            </p>
+          </div>
+
+          {/* 3. Liens et réseaux */}
+          {user.portfolioLinks && user.portfolioLinks.length > 0 && (
+            <div className="p-5 sm:p-6 space-y-4">
+              <h3 className="text-sm font-semibold text-foreground">Liens et réseaux</h3>
+              <div className="flex flex-wrap gap-2.5">
+                {user.portfolioLinks.map((link, idx) => (
+                  <a
+                    key={idx}
+                    href={link.url?.startsWith("http") ? link.url : `https://${link.url}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/50 bg-muted/40 hover:bg-muted text-xs font-medium transition-colors"
+                  >
+                    <span>{link.title || link.label || link.url}</span>
+                    <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 4. Domaines et technologies */}
+          {user.skills && user.skills.length > 0 && (
+            <div className="p-5 sm:p-6 space-y-4">
+              <h3 className="text-sm font-semibold text-foreground">Domaines d'expertise</h3>
+              <div className="flex flex-wrap gap-2">
+                {user.skills.map((skill: any, idx: number) => (
+                  <Badge key={idx} variant="secondary">
+                    {typeof skill === "string" ? skill : skill.name || skill.label}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="mt-6">
@@ -95,7 +204,7 @@ export function ProfileAboutTab({
         {/* 1. Informations académiques */}
         <div className="p-5 sm:p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground">Informations académiques</h3>
+            <h3 className="text-sm font-semibold text-foreground">{t("about.academicInfo")}</h3>
             {isOwnProfile && (
               <>
                 <Button
@@ -128,29 +237,29 @@ export function ProfileAboutTab({
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
             <div>
-              <p className="text-xs text-muted-foreground">Université</p>
+              <p className="text-xs text-muted-foreground">{t("about.labels.university")}</p>
               <p className="font-medium text-sm mt-0.5" title={formatSlugToLabel(user.university)}>
                 {truncate(formatSlugToLabel(user.university), 35) || <EmptyField />}
               </p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Filière</p>
+              <p className="text-xs text-muted-foreground">{t("about.labels.faculty")}</p>
               <p className="font-medium text-sm mt-0.5">
                 {formatSlugToLabel(user.faculty) || <EmptyField />}
               </p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Niveau</p>
+              <p className="text-xs text-muted-foreground">{t("about.labels.studyYear")}</p>
               <p className="font-medium text-sm mt-0.5">{displayStudyYear || <EmptyField />}</p>
             </div>
             {isOwnProfile && (
               <div>
-                <p className="text-xs text-muted-foreground">Matricule</p>
+                <p className="text-xs text-muted-foreground">{t("about.labels.studentId")}</p>
                 <p className="font-medium text-sm mt-0.5">{user.studentId || <EmptyField />}</p>
               </div>
             )}
             <div>
-              <p className="text-xs text-muted-foreground">Campus</p>
+              <p className="text-xs text-muted-foreground">{t("about.labels.campus")}</p>
               <p className="font-medium text-sm mt-0.5">{user.campus || <EmptyField />}</p>
             </div>
           </div>
@@ -159,7 +268,7 @@ export function ProfileAboutTab({
         {/* 2. Informations personnelles */}
         <div className="p-5 sm:p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground">Informations personnelles</h3>
+            <h3 className="text-sm font-semibold text-foreground">{t("about.personalInfo")}</h3>
             {isOwnProfile && (
               <>
                 <Button
@@ -194,15 +303,15 @@ export function ProfileAboutTab({
             {isOwnProfile && (
               <>
                 <div>
-                  <p className="text-xs text-muted-foreground">Email</p>
+                  <p className="text-xs text-muted-foreground">{t("about.labels.email")}</p>
                   <p className="font-medium text-sm mt-0.5">{user.email || <EmptyField />}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Téléphone</p>
+                  <p className="text-xs text-muted-foreground">{t("about.labels.phone")}</p>
                   <p className="font-medium text-sm mt-0.5">{user.phoneNumber || <EmptyField />}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Date de naissance</p>
+                  <p className="text-xs text-muted-foreground">{t("about.labels.dateOfBirth")}</p>
                   <p className="font-medium text-sm mt-0.5">
                     {user.dateOfBirth ? formatFrenchDate(user.dateOfBirth) : <EmptyField />}
                   </p>
@@ -210,13 +319,13 @@ export function ProfileAboutTab({
               </>
             )}
             <div>
-              <p className="text-xs text-muted-foreground">Ville</p>
+              <p className="text-xs text-muted-foreground">{t("about.labels.town")}</p>
               <p className="font-medium text-sm mt-0.5">
                 {formatSlugToLabel(user.town) || <EmptyField />}
               </p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Langues</p>
+              <p className="text-xs text-muted-foreground">{t("about.labels.language")}</p>
               <p className="font-medium text-sm mt-0.5">
                 {Array.isArray(user.language) && user.language.length > 0
                   ? user.language.map(formatSlugToLabel).join(", ")
@@ -229,7 +338,7 @@ export function ProfileAboutTab({
         {/* 3. Formations précédentes */}
         <div className="p-5 sm:p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground">Formations précédentes</h3>
+            <h3 className="text-sm font-semibold text-foreground">{t("about.education")}</h3>
             {isOwnProfile && (
               <>
                 <Button
@@ -285,7 +394,7 @@ export function ProfileAboutTab({
         {/* 4. Expériences */}
         <div className="p-5 sm:p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground">Expériences</h3>
+            <h3 className="text-sm font-semibold text-foreground">{t("about.experiences")}</h3>
             {isOwnProfile && (
               <>
                 <Button
@@ -339,7 +448,7 @@ export function ProfileAboutTab({
         {/* 5. Compétences */}
         <div className="p-5 sm:p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground">Compétences</h3>
+            <h3 className="text-sm font-semibold text-foreground">{t("about.skills")}</h3>
             {isOwnProfile && (
               <>
                 <Button
@@ -384,7 +493,7 @@ export function ProfileAboutTab({
         {/* 6. Centres d'intérêt */}
         <div className="p-5 sm:p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground">Centres d'intérêt</h3>
+            <h3 className="text-sm font-semibold text-foreground">{t("about.interests")}</h3>
             {isOwnProfile && (
               <>
                 <Button
@@ -429,7 +538,7 @@ export function ProfileAboutTab({
         {/* 7. Portfolio */}
         <div className="p-5 sm:p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground">Portfolio</h3>
+            <h3 className="text-sm font-semibold text-foreground">{t("about.portfolio")}</h3>
             {isOwnProfile && (
               <>
                 <Button

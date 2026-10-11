@@ -1,0 +1,236 @@
+{
+  "title": "Sphères",
+  "createGroup": {
+    "title": "Créer une nouvelle sphère",
+    "name": "Nom de la sphère",
+    "nameRequired": "Le nom est requis",
+    "nameTooLong": "Le nom ne peut pas dépasser 50 caractères",
+    "description": "Description",
+    "descriptionTooLong": "La description ne peut pas dépasser 200 caractères",
+    "category": "Catégorie",
+    "categoryRequired": "La catégorie est requise",
+    "privateGroup": "Sphère privée",
+    "requireApproval": "Nécessite une approbation",
+    "cancel": "Annuler",
+    "create": "Créer la sphère",
+    "categories": {
+      "academic": "Académique",
+      "sports": "Sports",
+      "arts": "Arts",
+      "tech": "Technologie",
+      "social": "Social",
+      "other": "Autre"
+    },
+    "toast": {
+      "created": "Sphère créée",
+      "createdDesc": "Votre sphère a été créée avec succès"
+    }
+  },
+  "createModal": {
+    "validation": {
+      "nameMin": "Le nom doit contenir au moins 3 caractères",
+      "descriptionMin": "La description doit contenir au moins 10 caractères",
+      "typeRequired": "Veuillez sélectionner un type de sphère"
+    },
+    "types": {
+      "cours": {
+        "label": "Sphère de Cours",
+        "description": "Cours, TDs, annales & révision avec Sphera intégrée"
+      },
+      "projet": {
+        "label": "Sphère de Projet",
+        "description": "Kanban, tâches assignées & fichiers partagés"
+      },
+      "communaute": {
+        "label": "Communauté",
+        "description": "Espace ouvert pour une filière, association ou promotion"
+      }
+    },
+    "step0Title": "Quel type de sphère ?",
+    "step0Subtitle": "Choisissez le type d'espace adapté à votre usage :",
+    "defaultTitle": "Créer une sphère",
+    "changeType": "Changer de type",
+    "nameLabel": "Nom de la Sphère *",
+    "namePlaceholder": "Ex: Algorithmique L2, Projet Web 2025...",
+    "descriptionLabel": "Description *",
+    "descriptionPlaceholder": "Décrivez votre sphère et son contexte...",
+    "objectiveLabel": "Objectif",
+    "objectivePlaceholder": "Ex: Réussir l'examen final, Développer un MVP...",
+    "optional": "(optionnel)",
+    "options": "Options",
+    "targetAudienceLabel": "Public cible",
+    "expectedDurationLabel": "Durée attendue",
+    "collaborationLabel": "Collaboration",
+    "back": "Retour",
+    "cancel": "Annuler",
+    "create": "Créer la Sphère",
+    "creating": "Création...",
+    "targetAudiences": {
+      "all": "Tous les étudiants",
+      "cs": "Étudiants en informatique",
+      "business": "Étudiants en business",
+      "science": "Étudiants en sciences",
+      "arts": "Étudiants en arts",
+      "medicine": "Étudiants en médecine",
+      "engineering": "Étudiants en ingénierie",
+      "law": "Étudiants en droit",
+      "economics": "Étudiants en économie",
+      "other": "Autre"
+    },
+    "durations": {
+      "short": "Court terme (1-3 mois)",
+      "medium": "Moyen terme (3-6 mois)",
+      "long": "Long terme (6-12 mois)",
+      "permanent": "Permanent",
+      "flexible": "Flexible"
+    },
+    "collaborationTypes": {
+      "resources": "Partage de ressources",
+      "projects": "Collaboration sur projets",
+      "discussion": "Discussion et échanges",
+      "mentorship": "Mentorat",
+      "study": "Études de groupe",
+      "events": "Événements",
+      "research": "Recherche collaborative"
+    },
+    "toasts": {
+      "successTitle": "Sphère créée avec succès !",
+      "successDesc": "{{name}} est maintenant disponible.",
+      "validationError": "Erreur de validation",
+      "createError": "Impossible de créer la sphère",
+      "error": "Erreur"
+    }
+  },
+  "card": {
+    "cours": "Cours",
+    "projet": "Projet",
+    "communaute": "Communauté",
+    "defaultDesc": "Sphère d'échange et de travail collaboratif.",
+    "member": "Membre",
+    "pending": "En attente",
+    "requested": "Envoyée",
+    "open": "Ouvrir",
+    "join": "Rejoindre",
+    "members_one": "{{count}} membre",
+    "members_other": "{{count}} membres",
+    "byCreator": "Par {{name}}",
+    "defaultCreator": "Créateur"
+  },
+  "page": {
+    "title": "Sphères Collaboratives",
+    "subtitle": "Rejoignez des projets, révisez ensemble et collaborez au sein de la communauté étudiante",
+    "refresh": "Actualiser",
+    "create": "Créer",
+    "searchPlaceholder": "Rechercher une sphère par nom, description ou projet...",
+    "allAudiences": "Tous publics",
+    "filters": "Filtres",
+    "reset": "Réinitialiser",
+    "clear": "Effacer",
+    "allSpheres": "Toutes les sphères",
+    "found_one": "{{count}} sphère trouvée",
+    "found_other": "{{count}} sphères trouvées",
+    "available_one": "{{count}} sphère disponible",
+    "available_other": "{{count}} sphères disponibles",
+    "grid": "Grille",
+    "list": "Liste",
+    "emptyTitle": "Aucune sphère trouvée",
+    "emptyDesc": "Essayez d'ajuster vos filtres pour trouver ce que vous cherchez.",
+    "emptyReset": "Tout réinitialiser",
+    "sections": {
+      "mySpheres": "Mes Sphères ({{count}})",
+      "trending": "Sphères Populaires & Tendances",
+      "academic": "Cours, TD & Académique",
+      "projects": "Projets & Groupes de Travail",
+      "community": "Communautés & Échanges",
+      "clubs": "Clubs & Associations",
+      "revision": "Groupes de Révision & Annales",
+      "viewAllCount": "Voir tout ({{count}})"
+    },
+    "toasts": {
+      "uncertifiedTitle": "Compte non certifié",
+      "uncertifiedDesc": "Votre période d'accès découverte de 24h a expiré. Certifiez votre compte pour créer des sphères.",
+      "verify": "Vérifier",
+      "joinedTitle": "Bienvenue dans {{name}} !",
+      "joinedDesc": "Vous êtes maintenant membre de cette sphère",
+      "requestedTitle": "Demande envoyée",
+      "requestedDesc": "Votre demande pour rejoindre {{name}} a été envoyée aux modérateurs",
+      "joinError": "Impossible de rejoindre la sphère",
+      "refreshedTitle": "Sphères actualisées",
+      "refreshedDesc": "La liste a été mise à jour"
+    }
+  },
+  "detail": {
+    "back": "Retour",
+    "loading": "Chargement de votre sphère...",
+    "errorTitle": "Oups ! Une erreur est survenue",
+    "retry": "Réessayer",
+    "bannerModalTitle": "Photo de couverture de la sphère",
+    "bannerModalDesc": "Téléchargez une nouvelle bannière pour cette sphère.",
+    "bannerUpdated": "Bannière mise à jour !",
+    "changeBanner": "Changer la bannière",
+    "members_one": "{{count}} membre",
+    "members_other": "{{count}} membres",
+    "files_one": "{{count}} fichier",
+    "files_other": "{{count}} fichiers",
+    "viewMembersList": "Afficher la liste des membres",
+    "settings": "Paramètres",
+    "members": "Membres",
+    "invite": "Inviter",
+    "share": "Partager",
+    "pendingRequests": "Demandes en attente",
+    "joinSphere": "Rejoindre la Sphère",
+    "cancelRequest": "Annuler la demande",
+    "backToOverview": "Retour à la vue d'ensemble",
+    "protectedTitle": "Contenu Protégé",
+    "protectedPendingDesc": "Votre demande est en attente. Vous pourrez accéder au contenu dès qu'un administrateur l'aura validée.",
+    "protectedNonMemberDesc": "Rejoignez cette sphère pour accéder au chat, aux tâches et aux fichiers partagés.",
+    "shareText": "Rejoins ma sphère \"{{name}}\" sur CampusSphere !",
+    "tabs": {
+      "overview": "Vue d'ensemble",
+      "announcements": "Annonces",
+      "files": "Fichiers",
+      "tasks": "Tâches",
+      "chat": "Discussion",
+      "sphera": "Sphera",
+      "pending": "Demandes"
+    },
+    "membership": {
+      "member": "Membre",
+      "pending": "Demande en attente",
+      "nonMember": "Non membre",
+      "creator": "Créateur",
+      "teacher": "Enseignant",
+      "admin": "Admin"
+    },
+    "toasts": {
+      "alreadyMember": "Déjà membre",
+      "alreadyMemberDesc": "Vous êtes déjà membre actif de cette sphère.",
+      "alreadyPending": "Demande déjà en attente",
+      "alreadyPendingDesc": "Votre demande d'adhésion est déjà en cours de validation.",
+      "uncertifiedTitle": "Compte non certifié",
+      "uncertifiedDesc": "Votre période d'accès découverte de 24h a expiré. Vous devez être certifié pour rejoindre une sphère.",
+      "verifyAction": "Vérifier",
+      "joinedTitle": "Bienvenue dans la sphère !",
+      "requestedTitle": "Demande envoyée",
+      "taskDeleted": "Tâche supprimée",
+      "memberRemoved": "Membre retiré",
+      "requestCancelled": "Demande annulée",
+      "memberApproved": "Membre approuvé",
+      "requestRejected": "Demande rejetée",
+      "linkCopied": "Lien copié !",
+      "linkCopiedDesc": "Le lien de la sphère a été copié.",
+      "copyLinkError": "Impossible de copier le lien.",
+      "fileDeleted": "Fichier supprimé",
+      "error": "Erreur"
+    }
+  },
+  "membersTab": {
+    "title": "Membres de la sphère",
+    "searchPlaceholder": "Rechercher un membre...",
+    "outOf": "{{filtered}} sur {{total}}",
+    "remove": "Retirer de la sphère",
+    "promote": "Promouvoir admin",
+    "demote": "Rétrograder membre",
+    "empty": "Aucun membre trouvé"
+  }
+}

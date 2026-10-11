@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -34,6 +35,7 @@ export function NewConversationDialog({
   isCreatingPrivate,
   onCreatePrivate,
 }: NewConversationDialogProps) {
+  const { t } = useTranslation("messages");
   const filteredConnections = connections.filter((contact) => {
     const query = search.toLowerCase().trim();
     if (!query) return true;
@@ -47,11 +49,11 @@ export function NewConversationDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent aria-describedby={undefined}>
         <DialogHeader>
-          <DialogTitle>Nouveau message</DialogTitle>
+          <DialogTitle>{t("newConversationDialog.title")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <Input
-            placeholder="Rechercher dans vos connexions..."
+            placeholder={t("newConversationDialog.searchPlaceholder")}
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
           />
@@ -59,13 +61,15 @@ export function NewConversationDialog({
             {/* Connections */}
             <div className="space-y-2">
               <p className="text-[10px] font-bold text-muted-foreground px-1">
-                Vos connexions
+                {t("newConversationDialog.connections")}
               </p>
               {loadingConnections ? (
-                <div className="text-sm text-muted-foreground px-1">Chargement...</div>
+                <div className="text-sm text-muted-foreground px-1">
+                  {t("newConversationDialog.loading")}
+                </div>
               ) : filteredConnections.length === 0 ? (
                 <div className="text-sm text-muted-foreground px-1 opacity-70">
-                  {search ? "Aucun match" : "Aucune connexion trouvée"}
+                  {search ? t("newConversationDialog.noMatch") : t("newConversationDialog.noConnections")}
                 </div>
               ) : (
                 filteredConnections.map((contact) => (
@@ -85,7 +89,7 @@ export function NewConversationDialog({
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{contact.name}</p>
                       <p className="text-xs text-muted-foreground truncate">
-                        {contact.username ? `@${contact.username}` : "Utilisateur"}
+                        {contact.username ? `@${contact.username}` : t("newConversationDialog.user")}
                       </p>
                     </div>
                   </button>
@@ -97,15 +101,15 @@ export function NewConversationDialog({
             {search.trim().length >= 2 && (
               <div className="space-y-2 border-t pt-3">
                 <p className="text-[10px] font-bold text-muted-foreground px-1">
-                  Global (Tous les membres)
+                  {t("newConversationDialog.globalMembers")}
                 </p>
                 {loadingGlobalUsers ? (
                   <div className="text-sm text-muted-foreground px-1">
-                    Recherche globale...
+                    {t("newConversationDialog.globalSearching")}
                   </div>
                 ) : globalUsers.length === 0 ? (
                   <div className="text-sm text-muted-foreground px-1 opacity-70">
-                    Aucun membre trouvé
+                    {t("newConversationDialog.noMemberFound")}
                   </div>
                 ) : (
                   globalUsers

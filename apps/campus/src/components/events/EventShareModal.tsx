@@ -1,6 +1,7 @@
 import type { Event } from "@/types/events.types";
 import { getEventUrl } from "@/lib/utils";
 import { UniversalShareModal } from "@/components/shared/UniversalShareModal";
+import { useTranslation } from "react-i18next";
 
 interface EventShareModalProps {
   open: boolean;
@@ -9,18 +10,19 @@ interface EventShareModalProps {
 }
 
 export function EventShareModal({ open, onOpenChange, event }: EventShareModalProps) {
+  const { t, i18n } = useTranslation("events");
   if (!event) return null;
 
   const eventUrl = getEventUrl(event);
   const formattedDate = event.startDate
-    ? new Date(event.startDate).toLocaleDateString("fr-FR", {
+    ? new Date(event.startDate).toLocaleDateString(i18n.language === "en" ? "en-US" : "fr-FR", {
         weekday: "short",
         day: "numeric",
         month: "short",
         hour: "2-digit",
         minute: "2-digit",
       })
-    : "Date à venir";
+    : "";
 
   return (
     <UniversalShareModal
@@ -31,9 +33,9 @@ export function EventShareModal({ open, onOpenChange, event }: EventShareModalPr
       title={event.title}
       preview={{
         title: event.title,
-        description: event.description || "Découvrez et participez à cet événement sur CampusSphere.",
+        description: event.description || t("detail.sharePreviewText"),
         subtitle: `${formattedDate}${event.location ? ` • ${event.location}` : ""}`,
-        badge: event.category || "Événement",
+        badge: t(`categories.${event.category}Short` as any, { defaultValue: event.category }),
         imageUrl: event.coverImage || null,
       }}
       allowDirectShare={true}

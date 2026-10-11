@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -55,6 +56,7 @@ export function ChatDetailsSidebar({
   onNavigateProfile,
   onOpenMedia,
 }: ChatDetailsSidebarProps) {
+  const { t } = useTranslation("messages");
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"media" | "files" | "members">("media");
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
@@ -93,15 +95,19 @@ export function ChatDetailsSidebar({
         nextList = list.filter((id) => id !== conversation.id);
         nextState = false;
         toast({
-          title: "Notifications réactivées",
-          description: `Les notifications pour ${conversation.name || "cette conversation"} sont maintenant actives.`,
+          title: t("toasts.notificationsUnmuted"),
+          description: t("toasts.notificationsUnmutedDesc", {
+            name: conversation.name || t("detailsSidebar.conversation"),
+          }),
         });
       } else {
         nextList = [...list, conversation.id];
         nextState = true;
         toast({
-          title: "Conversation en sourdine",
-          description: `Les notifications pour ${conversation.name || "cette conversation"} ont été coupées.`,
+          title: t("toasts.notificationsMuted"),
+          description: t("toasts.notificationsMutedDesc", {
+            name: conversation.name || t("detailsSidebar.conversation"),
+          }),
         });
       }
       localStorage.setItem("chat:muted_conversations", JSON.stringify(nextList));
@@ -158,13 +164,13 @@ export function ChatDetailsSidebar({
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3.5 border-b flex-shrink-0">
         <h3 className="font-semibold text-sm text-foreground">
-          {isGroup ? "Détails du groupe" : "Infos du contact"}
+          {isGroup ? t("detailsSidebar.groupDetails") : t("detailsSidebar.contactInfo")}
         </h3>
         <button
           type="button"
           onClick={onClose}
           className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-          aria-label="Fermer"
+          aria-label={t("detailsSidebar.close")}
         >
           <X className="h-4 w-4" />
         </button>
@@ -222,8 +228,8 @@ export function ChatDetailsSidebar({
                       setIsAvatarModalOpen(true);
                     }}
                     className="absolute inset-0 bg-black/45 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-white"
-                    title="Changer la photo du groupe"
-                    aria-label="Changer la photo du groupe"
+                    title={t("detailsSidebar.changeGroupPhoto")}
+                    aria-label={t("detailsSidebar.changeGroupPhoto")}
                   >
                     <Camera className="h-6 w-6" />
                   </button>
@@ -231,7 +237,7 @@ export function ChatDetailsSidebar({
               </div>
 
               <h4 className="font-semibold text-base text-foreground max-w-[240px] truncate">
-                {conversation.name || "Conversation"}
+                {conversation.name || t("detailsSidebar.conversation")}
               </h4>
 
               {isGroup && (
@@ -241,27 +247,27 @@ export function ChatDetailsSidebar({
                   className="mt-1 text-xs text-primary hover:underline font-medium flex items-center gap-1.5"
                 >
                   <Camera className="h-3.5 w-3.5" />
-                  Modifier la photo
+                  {t("detailsSidebar.modifyPhoto")}
                 </button>
               )}
 
               {isGroup ? (
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {conversation.participants?.length || 0} membres
+                  {t("detailsSidebar.members", { count: conversation.participants?.length || 0 })}
                   {onlineCount !== undefined && onlineCount > 0 && (
                     <span className="text-emerald-500 font-medium ml-1.5">
-                      • 🟢 {onlineCount} en ligne
+                      {t("detailsSidebar.onlineCount", { count: onlineCount })}
                     </span>
                   )}
                 </p>
               ) : conversation.isOnline ? (
                 <p className="text-xs text-emerald-500 font-medium mt-0.5 flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  En ligne
+                  {t("detailsSidebar.online")}
                 </p>
               ) : (
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {otherParticipant?.username ? `@${otherParticipant.username}` : "Hors ligne"}
+                  {otherParticipant?.username ? `@${otherParticipant.username}` : t("detailsSidebar.offline")}
                 </p>
               )}
 
@@ -278,7 +284,7 @@ export function ChatDetailsSidebar({
                     <Bell className="h-4 w-4 mb-1" />
                   )}
                   <span className="text-[11px] font-medium truncate max-w-full">
-                    {notificationsMuted ? "Sourdine" : "Notifs"}
+                    {notificationsMuted ? t("detailsSidebar.mute") : t("detailsSidebar.notifications")}
                   </span>
                 </button>
 
@@ -289,7 +295,7 @@ export function ChatDetailsSidebar({
                     className="flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-xl bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors text-xs"
                   >
                     <PencilSimple className="h-4 w-4 mb-1" />
-                    <span className="text-[11px] font-medium truncate max-w-full">Renommer</span>
+                    <span className="text-[11px] font-medium truncate max-w-full">{t("detailsSidebar.rename")}</span>
                   </button>
                 ) : (
                   <button
@@ -300,7 +306,7 @@ export function ChatDetailsSidebar({
                     className="flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-xl bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors text-xs"
                   >
                     <User className="h-4 w-4 mb-1" />
-                    <span className="text-[11px] font-medium truncate max-w-full">Profil</span>
+                    <span className="text-[11px] font-medium truncate max-w-full">{t("detailsSidebar.profile")}</span>
                   </button>
                 )}
 
@@ -311,7 +317,7 @@ export function ChatDetailsSidebar({
                     className="flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-xl bg-muted/50 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-muted-foreground hover:text-rose-500 transition-colors text-xs"
                   >
                     <SignOut className="h-4 w-4 mb-1" />
-                    <span className="text-[11px] font-medium truncate max-w-full">Quitter</span>
+                    <span className="text-[11px] font-medium truncate max-w-full">{t("detailsSidebar.leave")}</span>
                   </button>
                 )}
               </div>
@@ -329,7 +335,7 @@ export function ChatDetailsSidebar({
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  Médias ({sharedMedia.length})
+                  {t("detailsSidebar.mediaTab", { count: sharedMedia.length })}
                 </button>
                 <button
                   type="button"
@@ -340,7 +346,7 @@ export function ChatDetailsSidebar({
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  Fichiers ({sharedFiles.length})
+                  {t("detailsSidebar.filesTab", { count: sharedFiles.length })}
                 </button>
                 {isGroup && (
                   <button
@@ -352,7 +358,7 @@ export function ChatDetailsSidebar({
                         : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    Membres
+                    {t("detailsSidebar.membersTab")}
                   </button>
                 )}
               </div>
@@ -364,7 +370,7 @@ export function ChatDetailsSidebar({
                     {sharedMedia.length === 0 ? (
                       <div className="text-center py-8 text-xs text-muted-foreground">
                         <ImageIcon className="h-7 w-7 mx-auto mb-2 opacity-30" />
-                        Aucune photo partagée
+                        {t("detailsSidebar.noMedia")}
                       </div>
                     ) : (
                       <div className="grid grid-cols-3 gap-1.5">
@@ -399,7 +405,7 @@ export function ChatDetailsSidebar({
                               ) : (
                                 <img
                                   src={m.mediaUrl!}
-                                  alt="Média"
+                                  alt={t("detailsSidebar.mediaAlt")}
                                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                                   loading="lazy"
                                 />
@@ -418,7 +424,7 @@ export function ChatDetailsSidebar({
                     {sharedFiles.length === 0 ? (
                       <div className="text-center py-8 text-xs text-muted-foreground">
                         <FileText className="h-7 w-7 mx-auto mb-2 opacity-30" />
-                        Aucun fichier partagé
+                        {t("detailsSidebar.noFiles")}
                       </div>
                     ) : (
                       sharedFiles.map((m) => (
@@ -431,7 +437,7 @@ export function ChatDetailsSidebar({
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-medium truncate text-foreground">
-                              {m.fileName || "Document"}
+                              {m.fileName || t("detailsSidebar.defaultDocument")}
                             </p>
                           </div>
                           <a
@@ -459,7 +465,7 @@ export function ChatDetailsSidebar({
                       className="w-full text-xs gap-1.5 rounded-xl border-dashed"
                     >
                       <UserPlus className="h-3.5 w-3.5" />
-                      Gérer les membres
+                      {t("detailsSidebar.manageMembers")}
                     </Button>
 
                     <div className="divide-y divide-border/40 pt-1">
@@ -480,7 +486,7 @@ export function ChatDetailsSidebar({
                             </Avatar>
                             <div className="min-w-0 flex-1">
                               <p className="text-xs font-medium truncate text-foreground">
-                                {p.full_name || p.name || p.username || "Utilisateur"}
+                                {p.full_name || p.name || p.username || t("detailsSidebar.user")}
                               </p>
                               <p className="text-[10px] text-muted-foreground truncate">
                                 {p.username ? `@${p.username}` : ""}
@@ -488,11 +494,11 @@ export function ChatDetailsSidebar({
                             </div>
                             {isAdmin ? (
                               <span className="text-[9px] font-semibold bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-                                Admin
+                                {t("detailsSidebar.admin")}
                               </span>
                             ) : isYou ? (
                               <span className="text-[9px] font-semibold bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
-                                Vous
+                                {t("detailsSidebar.you")}
                               </span>
                             ) : null}
                           </div>
@@ -514,8 +520,8 @@ export function ChatDetailsSidebar({
           await onAvatarUpload(file);
           setIsAvatarModalOpen(false);
         }}
-        title="Photo du groupe"
-        description="Recadrez et ajustez l'image du groupe."
+        title={t("detailsSidebar.groupPhotoTitle")}
+        description={t("detailsSidebar.groupPhotoDesc")}
         currentImage={conversation.avatar ?? undefined}
         shape="round"
         aspectRatio={1}

@@ -2,6 +2,7 @@ import { Globe, Moon, Sun } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useTranslation } from "react-i18next";
 
 interface SettingsAppearanceCardProps {
   darkMode: boolean;
@@ -16,6 +17,8 @@ export function SettingsAppearanceCard({
   language,
   onLanguageChange,
 }: SettingsAppearanceCardProps) {
+  const { t } = useTranslation('settings');
+
   return (
     <div className="py-5 border-b border-border/40 space-y-4">
       <div className="flex items-center gap-3">
@@ -23,28 +26,28 @@ export function SettingsAppearanceCard({
           <Globe className="h-4 w-4" />
         </div>
         <div>
-          <h2 className="text-base font-semibold tracking-tight text-foreground">Apparence et langue</h2>
-          <p className="text-xs text-muted-foreground">Personnalisez le thème visuel et la langue</p>
+          <h2 className="text-base font-semibold tracking-tight text-foreground">{t('appearance.title')}</h2>
+          <p className="text-xs text-muted-foreground">{t('appearance.darkThemeDesc')}</p>
         </div>
       </div>
       <div className="space-y-4 pt-1">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex-1">
-            <Label className="text-sm font-medium">Thème d'affichage</Label>
+            <Label className="text-sm font-medium">{t('appearance.darkTheme')}</Label>
             <p className="text-xs text-muted-foreground">
-              Basculer entre le thème clair et sombre
+              {t('appearance.darkThemeDesc')}
             </p>
           </div>
           <Button variant="outline" onClick={onToggleTheme} size="sm" className="w-full sm:w-auto h-8 px-3 text-xs">
             {darkMode ? (
               <>
                 <Sun className="h-3.5 w-3.5 mr-2" />
-                Clair
+                {t('appearance.light')}
               </>
             ) : (
               <>
                 <Moon className="h-3.5 w-3.5 mr-2" />
-                Sombre
+                {t('appearance.dark')}
               </>
             )}
           </Button>
@@ -52,9 +55,9 @@ export function SettingsAppearanceCard({
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
           <div>
-            <Label className="text-sm font-medium">Langue de l'interface</Label>
+            <Label className="text-sm font-medium">{t('appearance.language')}</Label>
             <p className="text-xs text-muted-foreground">
-              Sélectionnez la langue utilisée dans l'application
+              {t('appearance.language')}
             </p>
           </div>
           <Select value={language} onValueChange={onLanguageChange}>
@@ -62,8 +65,8 @@ export function SettingsAppearanceCard({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="fr">Français</SelectItem>
-              <SelectItem value="en">English (Coming soon)</SelectItem>
+              <SelectItem value="fr">🇫🇷 Français</SelectItem>
+              <SelectItem value="en">🇬🇧 English</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -71,4 +74,3 @@ export function SettingsAppearanceCard({
     </div>
   );
 }
-

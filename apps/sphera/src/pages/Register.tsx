@@ -101,7 +101,7 @@ export default function Register() {
         {/* Top Header Bar: Logo + Sélecteur de langue */}
         <div className="flex items-center justify-between w-full max-w-md mx-auto pt-2 pb-6 border-b border-sphera-border/40 mb-6">
           <Link to="/" className="inline-flex items-center gap-3 group">
-            <img src="/sphera-logo-dark.png" alt="Sphera logo" className="h-9 w-auto group-hover:scale-105 transition-transform" />
+            <img src="/sphera_logo.svg" alt="Sphera logo" className="h-9 w-auto group-hover:scale-105 transition-transform" />
             <span className="font-display font-bold text-2xl tracking-tight text-white">Sphera</span>
             <span className="text-[10px] font-bold text-sphera-green bg-sphera-green/10 border border-sphera-green/30 px-2 py-0.5 rounded-full uppercase tracking-wider">
               Bêta

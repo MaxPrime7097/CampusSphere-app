@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Calendar, MagnifyingGlass as Search, Funnel as Filter, X } from "@phosphor-icons/react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ export function EventFiltersBar({
   onFilterChange,
   onReset,
 }: EventFiltersBarProps) {
+  const { t } = useTranslation("events");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const activeCategory = filters.category || "all";
   const activeTimeframe = filters.timeframe || "all";
@@ -42,7 +44,7 @@ export function EventFiltersBar({
         <div className="relative flex-1">
           <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Rechercher un événement, Welcome Week, MathScam, amphi..."
+            placeholder={t("filters.searchPlaceholder")}
             value={filters.search || ""}
             onChange={(e) => onFilterChange({ search: e.target.value })}
             className="pl-10 pr-9 rounded-xl bg-card border-border/80 text-xs focus-visible:ring-primary shadow-xs h-10"
@@ -66,7 +68,7 @@ export function EventFiltersBar({
             "sm:hidden h-10 w-10 rounded-xl shrink-0 border-border/80",
             showMobileFilters || activeTimeframe !== "all" ? "border-primary text-primary bg-primary/5" : ""
           )}
-          title="Filtres"
+          title={t("filters.filterTooltip")}
         >
           <Filter className="h-4 w-4" />
         </Button>
@@ -78,14 +80,14 @@ export function EventFiltersBar({
             onValueChange={(val) => onFilterChange({ timeframe: val as any })}
           >
             <SelectTrigger className="w-[160px] h-10 rounded-xl bg-card border-border/80 text-xs">
-              <SelectValue placeholder="Période" />
+              <SelectValue placeholder={t("filters.period")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all" className="text-xs">Toutes dates</SelectItem>
-              <SelectItem value="today" className="text-xs">Aujourd'hui</SelectItem>
-              <SelectItem value="this_week" className="text-xs">Cette semaine</SelectItem>
-              <SelectItem value="this_month" className="text-xs">Ce mois-ci</SelectItem>
-              <SelectItem value="past" className="text-xs">Passés</SelectItem>
+              <SelectItem value="all" className="text-xs">{t("filters.allDates")}</SelectItem>
+              <SelectItem value="today" className="text-xs">{t("filters.today")}</SelectItem>
+              <SelectItem value="this_week" className="text-xs">{t("filters.thisWeek")}</SelectItem>
+              <SelectItem value="this_month" className="text-xs">{t("filters.thisMonth")}</SelectItem>
+              <SelectItem value="past" className="text-xs">{t("filters.past")}</SelectItem>
             </SelectContent>
           </Select>
 
@@ -97,7 +99,7 @@ export function EventFiltersBar({
               className="text-xs text-muted-foreground hover:text-foreground h-10"
             >
               <X className="h-3.5 w-3.5 mr-1" />
-              Réinitialiser
+              {t("filters.reset")}
             </Button>
           )}
         </div>
@@ -111,14 +113,14 @@ export function EventFiltersBar({
             onValueChange={(val) => onFilterChange({ timeframe: val as any })}
           >
             <SelectTrigger className="w-full h-10 rounded-xl bg-card border-border/80 text-xs">
-              <SelectValue placeholder="Période" />
+              <SelectValue placeholder={t("filters.period")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all" className="text-xs">Toutes dates</SelectItem>
-              <SelectItem value="today" className="text-xs">Aujourd'hui</SelectItem>
-              <SelectItem value="this_week" className="text-xs">Cette semaine</SelectItem>
-              <SelectItem value="this_month" className="text-xs">Ce mois-ci</SelectItem>
-              <SelectItem value="past" className="text-xs">Passés</SelectItem>
+              <SelectItem value="all" className="text-xs">{t("filters.allDates")}</SelectItem>
+              <SelectItem value="today" className="text-xs">{t("filters.today")}</SelectItem>
+              <SelectItem value="this_week" className="text-xs">{t("filters.thisWeek")}</SelectItem>
+              <SelectItem value="this_month" className="text-xs">{t("filters.thisMonth")}</SelectItem>
+              <SelectItem value="past" className="text-xs">{t("filters.past")}</SelectItem>
             </SelectContent>
           </Select>
 
@@ -130,7 +132,7 @@ export function EventFiltersBar({
               className="text-xs text-muted-foreground hover:text-foreground shrink-0 h-10"
             >
               <X className="h-3.5 w-3.5 mr-1" />
-              Effacer
+              {t("filters.clear")}
             </Button>
           )}
         </div>
@@ -140,6 +142,7 @@ export function EventFiltersBar({
       <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         {EVENT_CATEGORY_OPTIONS.map((cat) => {
           const isSelected = activeCategory === cat.value;
+          const label = t(`categories.${cat.value}Short` as any, { defaultValue: cat.shortLabel || cat.label });
 
           return (
             <button
@@ -152,7 +155,7 @@ export function EventFiltersBar({
                   : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent"
               )}
             >
-              <span>{cat.shortLabel || cat.label}</span>
+              <span>{label}</span>
             </button>
           );
         })}

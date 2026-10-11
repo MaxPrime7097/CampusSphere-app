@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { UsersThree as Users, MagnifyingGlass as Search, Check, ShieldCheck, Download, QrCode, CheckCircle as CheckCircle2, SealCheck as BadgeCheck } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
+import { UsersThree as Users, MagnifyingGlass as Search, Check, Download, QrCode, CheckCircle as CheckCircle2, SealCheck as BadgeCheck } from "@phosphor-icons/react";
 import {
   Dialog,
   DialogContent,
@@ -50,6 +51,7 @@ export function EventAttendeesModal({
 }: EventAttendeesModalProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation("events");
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "going" | "attended">("all");
   const [isExporting, setIsExporting] = useState(false);
@@ -104,13 +106,13 @@ export function EventAttendeesModal({
       setIsExporting(true);
       await exportAttendeesCsv(eventId, eventTitle);
       toast({
-        title: "Export réussi",
-        description: "Le fichier CSV des participants a été téléchargé.",
+        title: t("attendeesModal.exportSuccess"),
+        description: t("attendeesModal.exportSuccessDesc"),
       });
     } catch {
       toast({
-        title: "Erreur d'export",
-        description: "Impossible d'exporter la liste des participants.",
+        title: t("attendeesModal.exportError"),
+        description: t("attendeesModal.exportErrorDesc"),
         variant: "destructive",
       });
     } finally {
@@ -124,13 +126,13 @@ export function EventAttendeesModal({
       const res = await checkInAttendee(eventId, attendee.ticketCode || attendee.user.id);
       onAttendeeUpdated?.(res.attendee);
       toast({
-        title: "Présence validée",
-        description: `Entrée validée pour ${getAttendeeName(attendee.user)}.`,
+        title: t("attendeesModal.checkInSuccess"),
+        description: t("attendeesModal.checkInSuccessDesc", { name: getAttendeeName(attendee.user) }),
       });
     } catch (err: any) {
       toast({
-        title: "Erreur",
-        description: err?.message || "Impossible de valider la présence.",
+        title: t("attendeesModal.checkInError"),
+        description: err?.message || t("attendeesModal.checkInErrorDesc"),
         variant: "destructive",
       });
     }
@@ -145,7 +147,7 @@ export function EventAttendeesModal({
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <DialogTitle className="flex items-center gap-2 text-base sm:text-lg font-bold">
               <Users className="h-5 w-5 text-muted-foreground" />
-              <span>Participants ({totalRegistered})</span>
+              <span>{t("attendeesModal.title", { count: totalRegistered })}</span>
             </DialogTitle>
 
             <div className="flex items-center gap-2">
@@ -157,7 +159,7 @@ export function EventAttendeesModal({
                   className="rounded-xl text-xs font-semibold h-8"
                 >
                   <QrCode className="h-3.5 w-3.5 mr-1" />
-                  Scanner
+                  {t("attendeesModal.scan")}
                 </Button>
               )}
 
@@ -170,7 +172,7 @@ export function EventAttendeesModal({
                   className="rounded-xl text-xs font-semibold h-8"
                 >
                   <Download className="h-3.5 w-3.5 mr-1" />
-                  {isExporting ? "Export..." : "CSV"}
+                  {isExporting ? t("attendeesModal.exporting") : t("attendeesModal.csv")}
                 </Button>
               )}
             </div>
@@ -192,7 +194,7 @@ export function EventAttendeesModal({
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <span>Tous</span>
+              <span>{t("attendeesModal.tabs.all")}</span>
               <span className="text-[11px] opacity-70">({totalRegistered})</span>
             </button>
             <button
@@ -206,7 +208,7 @@ export function EventAttendeesModal({
               )}
             >
               <Check className="h-3 w-3 text-muted-foreground shrink-0" />
-              <span className="truncate">Inscrits</span>
+              <span className="truncate">{t("attendeesModal.tabs.going")}</span>
               <span className="text-[11px] opacity-70">({goingAttendees.length})</span>
             </button>
             <button
@@ -220,7 +222,7 @@ export function EventAttendeesModal({
               )}
             >
               <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
-              <span className="truncate">Présents</span>
+              <span className="truncate">{t("attendeesModal.tabs.attended")}</span>
               <span className="text-[11px] opacity-70">({attendedAttendees.length})</span>
             </button>
           </div>
@@ -228,7 +230,7 @@ export function EventAttendeesModal({
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Rechercher par nom, promo ou filière..."
+              placeholder={t("attendeesModal.searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 text-xs rounded-xl h-9"
@@ -240,7 +242,7 @@ export function EventAttendeesModal({
         <div className="flex-1 overflow-y-auto space-y-2 pr-1 min-h-[180px] mt-2">
           {displayedList.length === 0 ? (
             <div className="py-12 text-center text-xs text-muted-foreground">
-              Aucun participant dans cette liste.
+              {t("attendeesModal.emptyList")}
             </div>
           ) : (
             displayedList.map((attendee) => {
@@ -295,7 +297,7 @@ export function EventAttendeesModal({
                         className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[10px] font-bold"
                       >
                         <CheckCircle2 className="h-3 w-3 mr-1" />
-                        Présent
+                        {t("attendeesModal.checkedIn")}
                       </Badge>
                     ) : (
                       <div className="flex items-center gap-1.5">
@@ -303,7 +305,7 @@ export function EventAttendeesModal({
                           variant="outline"
                           className="text-[10px] font-medium text-muted-foreground border-border/50 bg-muted/40"
                         >
-                          Inscrit
+                          {t("attendeesModal.tabs.going")}
                         </Badge>
                         {isOrganizer && (
                           <Button
@@ -312,7 +314,7 @@ export function EventAttendeesModal({
                             onClick={() => handleManualCheckIn(attendee)}
                             className="h-6 text-[10px] rounded-lg px-2 text-muted-foreground hover:text-foreground"
                           >
-                            Valider
+                            {t("attendeesModal.manualCheckin")}
                           </Button>
                         )}
                       </div>

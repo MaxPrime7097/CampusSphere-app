@@ -6,11 +6,13 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { ArrowSquareOut as ExternalLink } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { getNavigationSections, type NavigationUser, type NavigationItem } from "./navigationConfig";
 import { useUnreadCounts } from "@/hooks/useUnreadCounts";
 import { SpheraIcon } from "@/components/ui/sphera-icon";
 
 export function AppSidebar({ user: externalUser }: { user?: NavigationUser }) {
+  const { t } = useTranslation('navigation');
   const { state } = useSidebar();
   const location = useLocation();
   const isCollapsed = state === "collapsed";
@@ -18,7 +20,7 @@ export function AppSidebar({ user: externalUser }: { user?: NavigationUser }) {
   const { user: authUser } = useAuth();
   const user = externalUser || authUser || {};
 
-  const { navigationItems, quickActions, utilities } = getNavigationSections(user);
+  const { navigationItems, quickActions, utilities } = getNavigationSections(user, t);
 
   const isActive = (path: string) =>
     path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
@@ -103,7 +105,7 @@ export function AppSidebar({ user: externalUser }: { user?: NavigationUser }) {
       <SidebarContent className="pt-[60px]">
         {navigationItems.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel className="sr-only">Navigation</SidebarGroupLabel>
+            <SidebarGroupLabel className="sr-only">{t('navigation', { defaultValue: 'Navigation' })}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>{navigationItems.map(renderItem)}</SidebarMenu>
             </SidebarGroupContent>
@@ -112,7 +114,7 @@ export function AppSidebar({ user: externalUser }: { user?: NavigationUser }) {
 
         {quickActions.length > 0 && (
           <SidebarGroup className="mt-4">
-            <SidebarGroupLabel className="sr-only">Actions</SidebarGroupLabel>
+            <SidebarGroupLabel className="sr-only">{t('quickActions', { defaultValue: 'Actions' })}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>{quickActions.map(renderItem)}</SidebarMenu>
             </SidebarGroupContent>
@@ -121,7 +123,7 @@ export function AppSidebar({ user: externalUser }: { user?: NavigationUser }) {
 
         {utilities.length > 0 && (
           <SidebarGroup className="mt-4">
-            <SidebarGroupLabel className="sr-only">Utilitaires</SidebarGroupLabel>
+            <SidebarGroupLabel className="sr-only">{t('utilities', { defaultValue: 'Utilitaires' })}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>{utilities.map(renderItem)}</SidebarMenu>
             </SidebarGroupContent>
@@ -131,7 +133,7 @@ export function AppSidebar({ user: externalUser }: { user?: NavigationUser }) {
 
       <SidebarFooter className="p-2 border-t border-sidebar-border/40">
         <div className={cn("flex items-center", isCollapsed ? "justify-center" : "justify-between px-2")}>
-          {!isCollapsed && <span className="text-xs text-muted-foreground font-medium">Réduire</span>}
+          {!isCollapsed && <span className="text-xs text-muted-foreground font-medium">{t('collapse', { defaultValue: 'Réduire' })}</span>}
           <SidebarTrigger className="text-muted-foreground hover:text-foreground hover:bg-accent transition-colors" />
         </div>
       </SidebarFooter>

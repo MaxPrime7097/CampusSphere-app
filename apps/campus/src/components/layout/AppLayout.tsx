@@ -17,7 +17,9 @@ import { useToast } from "@/hooks/use-toast";
 import { SearchDropdown } from "./SearchDropdown";
 import { useUnreadCounts, refreshCounts } from "@/hooks/useUnreadCounts";
 import { useAuth } from "@/contexts/AuthContext";
+import { getVerificationAccessStatus } from "@/utils/verification";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
+import { LanguageSwitcher, useTranslation } from "@cs/i18n";
 
 const CreateHubModal = lazy(() => import("@/components/modals/CreateHubModal").then((module) => ({ default: module.CreateHubModal })));
 const VerificationModal = lazy(() => import("@/components/modals/VerificationModal").then((module) => ({ default: module.VerificationModal })));
@@ -28,6 +30,7 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
+  const { t } = useTranslation('navigation');
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
@@ -93,7 +96,8 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const isProfileLoading = isAuthLoading;
-  const isVerified = user?.isVerified ?? false;
+  const verificationStatus = getVerificationAccessStatus(user);
+  const isVerified = verificationStatus.isVerified;
 
   // Real-time notifications
   useEffect(() => {
@@ -108,9 +112,25 @@ export function AppLayout({ children }: AppLayoutProps) {
     
     let socket: WebSocket | null = null;
     let retryTimeout: number | null = null;
+    let retryCount = 0;
+    const MAX_RETRIES = 5;
 
     const connect = () => {
-      socket = new WebSocket(wsUrl);
+      if (retryCount >= MAX_RETRIES) {
+        // Stop infinite reconnection spam when WebSockets are disabled upstream (e.g. Cloudflare proxy).
+        // Background polling via useUnreadCounts continues to keep badge counts accurate.
+        return;
+      }
+
+      try {
+        socket = new WebSocket(wsUrl);
+      } catch {
+        return;
+      }
+
+      socket.onopen = () => {
+        retryCount = 0;
+      };
 
       socket.onmessage = (event) => {
         try {
@@ -136,8 +156,16 @@ export function AppLayout({ children }: AppLayoutProps) {
         }
       };
 
+      socket.onerror = () => {
+        // Handled via onclose
+      };
+
       socket.onclose = () => {
-        retryTimeout = window.setTimeout(connect, 5000);
+        retryCount++;
+        if (retryCount < MAX_RETRIES) {
+          const delay = Math.min(5000 * Math.pow(2, retryCount - 1), 60000);
+          retryTimeout = window.setTimeout(connect, delay);
+        }
       };
     };
 
@@ -152,12 +180,12 @@ export function AppLayout({ children }: AppLayoutProps) {
   const handleCreateAction = (e: React.MouseEvent, callback: () => void) => {
     if (isProfileLoading) return;
     
-    if (!isVerified) {
+    if (!verificationStatus.canPerformAction) {
       e.preventDefault();
       e.stopPropagation();
       toast({
-        title: "Compte non vérifié",
-        description: "Vous devez certifier votre compte pour effectuer cette action.",
+        title: "Compte non certifié",
+        description: "Votre période d'accès découverte de 24h a expiré. Certifiez votre statut d'étudiant pour effectuer cette action.",
         variant: "destructive",
         action: (
           <Button 
@@ -166,7 +194,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             size="sm" 
             onClick={() => openVerificationModal()}
           >
-            Vérifier
+            Certifier
           </Button>
         ),
       });
@@ -215,7 +243,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                   <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
                   <Input
                     ref={searchInputRef}
-                    placeholder="Rechercher"
+                    placeholder={t('searchShortcut', { defaultValue: 'Rechercher...' })}
                     className="pl-10 pr-4 h-9.5 text-sm bg-muted/40 hover:bg-muted/60 focus:bg-background border border-border/40 focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary/20 rounded-xl transition-all w-full"
                     value={searchQuery}
                     onChange={(e) => {
@@ -239,7 +267,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                   <>
                     <Button variant="primary" size="sm" onClick={() => setIsCreateHubModalOpen(true)}>
                       <Plus className="h-4 w-4 mr-1.5" />
-                      Créer
+                      {t('publish', { defaultValue: 'Créer' })}
                     </Button>
                     {isCreateHubModalOpen && (
                       <Suspense fallback={<ModalLoadingFallback />}>
@@ -254,7 +282,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                       variant="ghost"
                       onClick={() => navigate('/notifications')}
                       className="relative h-10 w-10 p-0 rounded-full hover:bg-muted text-foreground flex items-center justify-center transition-colors"
-                      aria-label="Notifications"
+                      aria-label={t('notifications', { defaultValue: 'Notifications' })}
                     >
                       <Bell className="h-6 w-6" weight={counts.notifications > 0 ? "fill" : "regular"} />
                       {counts.notifications > 0 && (
@@ -266,6 +294,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                   </>
                 )}
 
+                <LanguageSwitcher variant="minimal" />
                 <ProfileBubble user={user} isLoading={isProfileLoading} />
               </div>
             </div>

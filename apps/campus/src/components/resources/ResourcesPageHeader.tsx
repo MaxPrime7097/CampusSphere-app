@@ -1,4 +1,5 @@
 import { Suspense, lazy } from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowClockwise as RefreshCw, Upload } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -31,14 +32,16 @@ export function ResourcesPageHeader({
   onResourceUploaded,
   onVerificationPrompt,
 }: ResourcesPageHeaderProps) {
+  const { t } = useTranslation("resources");
+
   return (
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2 campus-animate-fade-in">
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-foreground">
-          Ressources Académiques
+          {t("page.title")}
         </h1>
         <p className="text-muted-foreground mt-2 text-sm">
-          Consultez, partagez et téléchargez les cours, annales corrigées, fiches et TD du campus
+          {t("page.subtitle")}
         </p>
       </div>
 
@@ -51,7 +54,7 @@ export function ResourcesPageHeader({
           className="gap-2"
         >
           <RefreshCw className={cn("h-4 w-4", (isRefreshing || isFetching) && "animate-spin")} />
-          <span className="hidden sm:inline">Actualiser</span>
+          <span className="hidden sm:inline">{t("page.refresh")}</span>
         </Button>
 
         {isVerified ? (
@@ -62,7 +65,7 @@ export function ResourcesPageHeader({
               onClick={() => setIsUploadOpen(true)}
             >
               <Upload className="h-4 w-4" />
-              <span>Uploader</span>
+              <span>{t("page.upload")}</span>
             </Button>
             {isUploadOpen && (
               <Suspense fallback={<ModalLoadingFallback />}>
@@ -81,7 +84,7 @@ export function ResourcesPageHeader({
             onClick={onVerificationPrompt}
           >
             <Upload className="h-4 w-4" />
-            <span>Uploader</span>
+            <span>{t("page.upload")}</span>
           </Button>
         )}
       </div>

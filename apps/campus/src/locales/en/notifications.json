@@ -1,0 +1,53 @@
+{
+  "title": "Notifications",
+  "unreadCount_one": "{{count}} new notification",
+  "unreadCount_other": "{{count}} new notifications",
+  "allCaughtUp": "All your notifications are up to date",
+  "deletingStatus": "Deleting notification...",
+  "deletedStatus": "Notification deleted.",
+  "markAllAsRead": "Mark all as read",
+  "markAsRead": "Mark as read",
+  "delete": "Delete",
+  "viewAll": "View all notifications",
+  "empty": {
+    "title": "No notifications",
+    "description": "You do not have any notifications yet."
+  },
+  "sender": {
+    "member": "Member",
+    "system": "CampusSphere"
+  },
+  "toasts": {
+    "markedRead": "Notification marked as read",
+    "markedAllRead": "All notifications marked as read",
+    "deleted": "Notification deleted",
+    "error": "Error",
+    "markReadFailed": "Could not mark notification as read",
+    "markAllReadFailed": "Could not mark all notifications as read",
+    "loadFailed": "Could not load notifications",
+    "deleteFailed": "Could not delete notification",
+    "deleteFailedNamed": "Could not delete notification \"{{title}}\""
+  },
+  "settings": {
+    "dialogTitle": "Notification settings",
+    "trigger": "Settings",
+    "loading": "Loading...",
+    "emailSection": "Email notifications",
+    "pushSection": "Push notifications",
+    "inAppSection": "In-app notifications",
+    "systemSection": "System notifications",
+    "postLikes": "Likes on my posts",
+    "postComments": "Comments on my posts",
+    "sphereInvitations": "Sphere invitations",
+    "taskAssignments": "New tasks",
+    "messages": "Direct messages",
+    "systemUpdates": "Updates and maintenance",
+    "marketingEmails": "Marketing and promotional emails",
+    "toasts": {
+      "updated": "Setting updated",
+      "updatedDesc": "Your notification preferences have been updated",
+      "saveFailed": "Could not save setting",
+      "loadFailed": "Could not load notification settings"
+    }
+  }
+}

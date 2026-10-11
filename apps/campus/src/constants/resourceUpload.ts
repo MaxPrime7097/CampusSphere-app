@@ -1,3 +1,6 @@
+export const MAX_RESOURCE_FILE_SIZE = 250 * 1024 * 1024; // 250 Mo
+export const MAX_RESOURCE_FILE_SIZE_LABEL = "250 Mo";
+
 export const ACCEPTED_RESOURCE_MIME_TYPES = [
   // Images
   "image/jpeg",
@@ -45,7 +48,7 @@ export const ACCEPTED_RESOURCE_FILE_EXTENSIONS =
   ".jpeg,.jpg,.png,.webp," +
 
   // Documents
-  ".pdf,.doc,.docx,.odt,.txt," +
+  ".pdf,.doc,.docx,.odt,.txt,.md,.markdown," +
 
   // Présentations
   ".ppt,.pptx," +

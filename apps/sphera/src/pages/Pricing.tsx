@@ -30,11 +30,11 @@ export default function Pricing() {
         <meta property="og:description" content={t('seo.ogDescription')} />
         <meta property="og:url" content="https://sphera.campussphere.app/pricing" />
         <meta property="og:type" content="website" />
-        <meta property="og:image" content="https://sphera.campussphere.app/sphera-logo-dark.png" />
+        <meta property="og:image" content="https://sphera.campussphere.app/sphera_logo.svg" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={t('seo.twitterTitle')} />
         <meta name="twitter:description" content={t('seo.twitterDescription')} />
-        <meta name="twitter:image" content="https://sphera.campussphere.app/sphera-logo-dark.png" />
+        <meta name="twitter:image" content="https://sphera.campussphere.app/sphera_logo.svg" />
       </Helmet>
 
       <SpheraHeader />

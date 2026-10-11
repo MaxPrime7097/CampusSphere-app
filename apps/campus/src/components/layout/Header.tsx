@@ -1,9 +1,12 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PublicMenu } from './PublicMenu';
+import { LanguageSwitcher } from '@cs/i18n';
+import { useTranslation } from 'react-i18next';
 
 export function Header(): JSX.Element {
   const navigate = useNavigate();
+  const { t } = useTranslation('navigation');
 
   return (
     <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/60 transition-colors duration-200">
@@ -16,24 +19,27 @@ export function Header(): JSX.Element {
         </div>
 
         <div className="hidden lg:flex items-center gap-5 font-nunito font-semibold">
-          <a href="/cs-inc/about" className="text-muted-foreground hover:text-foreground transition-colors">À propos</a>
-          <a href="/cs-inc/contact" className="text-muted-foreground hover:text-foreground transition-colors">Contact</a>
-          <a href="/cs-inc/faq" className="text-muted-foreground hover:text-foreground transition-colors">FAQ</a>
-          <a href="/cs-inc/policies" className="text-muted-foreground hover:text-foreground transition-colors">Politiques</a>
+          <a href="/cs-inc/about" className="text-muted-foreground hover:text-foreground transition-colors">{t('about')}</a>
+          <a href="/cs-inc/contact" className="text-muted-foreground hover:text-foreground transition-colors">{t('contact')}</a>
+          <a href="/cs-inc/faq" className="text-muted-foreground hover:text-foreground transition-colors">{t('faq')}</a>
+          <a href="/cs-inc/policies" className="text-muted-foreground hover:text-foreground transition-colors">{t('policies')}</a>
           
           <div className="h-4 w-px bg-border/80" />
 
-          <a href="/login" className="text-primary hover:text-foreground transition-colors">Connexion</a>
+          <LanguageSwitcher variant="minimal" />
+
+          <a href="/login" className="text-primary hover:text-foreground transition-colors">{t('login')}</a>
           <button
             onClick={() => navigate('/register')}
             className="campus-gradient text-white hover:opacity-90 px-4 py-2 rounded-lg transition-all duration-300 font-poppins text-sm font-semibold"
           >
-            Rejoins la communauté
+            {t('joinCommunity')}
           </button>
         </div>
 
-        {/* Mobile controls (Menu Hamburger) */}
+        {/* Mobile controls (Language + Menu Hamburger) */}
         <div className="flex items-center gap-2 lg:hidden">
+          <LanguageSwitcher variant="minimal" />
           <PublicMenu />
         </div>
       </div>

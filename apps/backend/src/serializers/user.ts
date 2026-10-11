@@ -48,6 +48,17 @@ export const userSelect = {
   isStaff: true,
   isSuperuser: true,
   isVerified: true,
+  role: true,
+  partnerProfile: {
+    select: {
+      organizationName: true,
+      organizationType: true,
+      sector: true,
+      website: true,
+      isVerified: true,
+      verifiedAt: true,
+    },
+  },
 } satisfies Prisma.UserSelect;
 
 export type SerializableUser = Prisma.UserGetPayload<{ select: typeof userSelect }>;
@@ -56,10 +67,12 @@ export interface UserCounts {
   joinedSpheres?: number;
   connections?: number;
   contributions?: number;
+  followers?: number;
 }
 
 /** The single source of truth for profile completeness. */
-export function isProfileComplete(user: Pick<SerializableUser, "university" | "faculty" | "studyYear">): boolean {
+export function isProfileComplete(user: Pick<SerializableUser, "university" | "faculty" | "studyYear"> & { role?: string }): boolean {
+  if ((user as any).role === "IMPACT_PARTNER" || (user as any).role === "impact_partner") return true;
   return Boolean(user.university?.trim() && user.faculty?.trim() && user.studyYear?.trim());
 }
 
@@ -82,9 +95,24 @@ function iso(value: Date | null): string | null {
 
 export function serializeUser(
   user: SerializableUser,
-  options: { viewerId?: number | null; counts?: UserCounts } = {},
+  options: { viewerId?: number | null; counts?: UserCounts; isFollowing?: boolean } = {},
 ): Record<string, unknown> {
-  const { viewerId = null, counts = {} } = options;
+  const { viewerId = null, counts = {}, isFollowing = false } = options;
+
+  const partnerProfileData = user.partnerProfile
+    ? {
+        organization_name: user.partnerProfile.organizationName,
+        organizationName: user.partnerProfile.organizationName,
+        organization_type: user.partnerProfile.organizationType.toLowerCase(),
+        organizationType: user.partnerProfile.organizationType.toLowerCase(),
+        sector: user.partnerProfile.sector,
+        website: user.partnerProfile.website,
+        is_verified: user.partnerProfile.isVerified,
+        isVerified: user.partnerProfile.isVerified,
+        verified_at: iso(user.partnerProfile.verifiedAt),
+        verifiedAt: iso(user.partnerProfile.verifiedAt),
+      }
+    : null;
 
   const payload: Record<string, unknown> = {
     id: user.id,
@@ -119,6 +147,13 @@ export function serializeUser(
     joined_spheres_count: counts.joinedSpheres ?? 0,
     connections_count: counts.connections ?? 0,
     contributions_count: counts.contributions ?? 0,
+    followers_count: counts.followers ?? 0,
+    followersCount: counts.followers ?? 0,
+    is_following: isFollowing,
+    isFollowing: isFollowing,
+    role: user.role.toLowerCase(),
+    partner_profile: partnerProfileData,
+    partnerProfile: partnerProfileData,
     date_joined: iso(user.dateJoined),
     updated_at: iso(user.updatedAt),
     is_staff: user.isStaff,

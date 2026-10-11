@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -20,17 +21,19 @@ export function RenameGroupDialog({
   onConfirm,
   isUpdating,
 }: RenameGroupDialogProps) {
+  const { t } = useTranslation("messages");
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm" aria-describedby={undefined}>
         <DialogHeader>
-          <DialogTitle>Renommer le groupe</DialogTitle>
+          <DialogTitle>{t("renameDialog.title")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <Input
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            placeholder="Nouveau nom..."
+            placeholder={t("renameDialog.placeholder")}
             maxLength={50}
             onKeyDown={(e) => e.key === "Enter" && onConfirm()}
             autoFocus
@@ -41,7 +44,7 @@ export function RenameGroupDialog({
               onClick={() => onOpenChange(false)}
               disabled={isUpdating}
             >
-              Annuler
+              {t("renameDialog.cancel")}
             </Button>
             <Button
               onClick={onConfirm}
@@ -51,7 +54,7 @@ export function RenameGroupDialog({
               {isUpdating ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                "Renommer"
+                t("renameDialog.rename")
               )}
             </Button>
           </div>

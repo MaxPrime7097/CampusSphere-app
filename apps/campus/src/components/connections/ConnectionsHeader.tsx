@@ -1,16 +1,19 @@
+import { useTranslation } from "react-i18next";
+
 interface ConnectionsHeaderProps {
   mutualCountStatus: string | null;
 }
 
 export function ConnectionsHeader({ mutualCountStatus }: ConnectionsHeaderProps) {
+  const { t } = useTranslation("connections");
   return (
     <div className="mb-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-foreground">
-          Connexions
+          {t("title")}
         </h1>
         <p className="text-sm text-muted-foreground mt-2">
-          Gérez vos connexions et découvrez de nouveaux étudiants
+          {t("subtitle")}
         </p>
       </div>
       {mutualCountStatus && (

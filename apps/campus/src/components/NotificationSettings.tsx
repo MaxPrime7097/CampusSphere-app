@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Gear as Settings, Spinner as Loader2 } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 import { getNotificationSettings, updateNotificationSettings } from "@/services/api";
 
 interface NotificationSettingsProps {
@@ -18,6 +19,7 @@ export function NotificationSettings({
   className = "",
   variant = "button" 
 }: NotificationSettingsProps) {
+  const { t } = useTranslation("notifications");
   const { toast } = useToast();
   const [showSettings, setShowSettings] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -64,8 +66,8 @@ export function NotificationSettings({
     } catch (error) {
       console.error('Failed to load notification settings:', error);
       toast({
-        title: "Erreur",
-        description: "Impossible de charger les paramètres de notifications",
+        title: t("toasts.error"),
+        description: t("settings.toasts.loadFailed"),
         variant: "destructive",
       });
     } finally {
@@ -82,8 +84,8 @@ export function NotificationSettings({
     try {
       await updateNotificationSettings({ [key]: value });
       toast({
-        title: "Paramètre modifié",
-        description: "Vos préférences de notifications ont été mises à jour",
+        title: t("settings.toasts.updated"),
+        description: t("settings.toasts.updatedDesc"),
         duration: 2000,
       });
     } catch (error) {
@@ -91,8 +93,8 @@ export function NotificationSettings({
       // Revert local state on error
       setNotificationSettings(prev => ({ ...prev, [key]: !value }));
       toast({
-        title: "Erreur",
-        description: "Impossible de sauvegarder le paramètre",
+        title: t("toasts.error"),
+        description: t("settings.toasts.saveFailed"),
         variant: "destructive",
       });
     } finally {
@@ -105,18 +107,18 @@ export function NotificationSettings({
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-6 w-6 animate-spin" />
-          <span className="ml-2">Chargement...</span>
+          <span className="ml-2">{t("settings.loading")}</span>
         </div>
       ) : (
         <>
           {/* Email Notifications */}
           <div>
             <h4 className="font-medium mb-3 text-sm text-muted-foreground uppercase tracking-wide">
-              Notifications par email
+              {t("settings.emailSection")}
             </h4>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label htmlFor="email_post_likes" className="text-sm">J'aimes sur mes posts</Label>
+                <Label htmlFor="email_post_likes" className="text-sm">{t("settings.postLikes")}</Label>
                 <Switch
                   id="email_post_likes"
                   checked={notificationSettings.email_post_likes}
@@ -125,7 +127,7 @@ export function NotificationSettings({
                 />
               </div>
               <div className="flex items-center justify-between">
-                <Label htmlFor="email_post_comments" className="text-sm">Commentaires sur mes posts</Label>
+                <Label htmlFor="email_post_comments" className="text-sm">{t("settings.postComments")}</Label>
                 <Switch
                   id="email_post_comments"
                   checked={notificationSettings.email_post_comments}
@@ -134,7 +136,7 @@ export function NotificationSettings({
                 />
               </div>
               <div className="flex items-center justify-between">
-                <Label htmlFor="email_sphere_invitations" className="text-sm">Invitations à des sphères</Label>
+                <Label htmlFor="email_sphere_invitations" className="text-sm">{t("settings.sphereInvitations")}</Label>
                 <Switch
                   id="email_sphere_invitations"
                   checked={notificationSettings.email_sphere_invitations}
@@ -143,7 +145,7 @@ export function NotificationSettings({
                 />
               </div>
               <div className="flex items-center justify-between">
-                <Label htmlFor="email_task_assignments" className="text-sm">Nouvelles tâches</Label>
+                <Label htmlFor="email_task_assignments" className="text-sm">{t("settings.taskAssignments")}</Label>
                 <Switch
                   id="email_task_assignments"
                   checked={notificationSettings.email_task_assignments}
@@ -152,7 +154,7 @@ export function NotificationSettings({
                 />
               </div>
               <div className="flex items-center justify-between">
-                <Label htmlFor="email_messages" className="text-sm">Messages privés</Label>
+                <Label htmlFor="email_messages" className="text-sm">{t("settings.messages")}</Label>
                 <Switch
                   id="email_messages"
                   checked={notificationSettings.email_messages}
@@ -166,11 +168,11 @@ export function NotificationSettings({
           {/* Push Notifications */}
           <div>
             <h4 className="font-medium mb-3 text-sm text-muted-foreground uppercase tracking-wide">
-              Notifications push
+              {t("settings.pushSection")}
             </h4>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label htmlFor="push_post_likes" className="text-sm">J'aimes sur mes posts</Label>
+                <Label htmlFor="push_post_likes" className="text-sm">{t("settings.postLikes")}</Label>
                 <Switch
                   id="push_post_likes"
                   checked={notificationSettings.push_post_likes}
@@ -179,7 +181,7 @@ export function NotificationSettings({
                 />
               </div>
               <div className="flex items-center justify-between">
-                <Label htmlFor="push_post_comments" className="text-sm">Commentaires sur mes posts</Label>
+                <Label htmlFor="push_post_comments" className="text-sm">{t("settings.postComments")}</Label>
                 <Switch
                   id="push_post_comments"
                   checked={notificationSettings.push_post_comments}
@@ -188,7 +190,7 @@ export function NotificationSettings({
                 />
               </div>
               <div className="flex items-center justify-between">
-                <Label htmlFor="push_messages" className="text-sm">Messages privés</Label>
+                <Label htmlFor="push_messages" className="text-sm">{t("settings.messages")}</Label>
                 <Switch
                   id="push_messages"
                   checked={notificationSettings.push_messages}
@@ -202,11 +204,11 @@ export function NotificationSettings({
           {/* In-App Notifications */}
           <div>
             <h4 className="font-medium mb-3 text-sm text-muted-foreground uppercase tracking-wide">
-              Notifications dans l'app
+              {t("settings.inAppSection")}
             </h4>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label htmlFor="in_app_post_likes" className="text-sm">J'aimes sur mes posts</Label>
+                <Label htmlFor="in_app_post_likes" className="text-sm">{t("settings.postLikes")}</Label>
                 <Switch
                   id="in_app_post_likes"
                   checked={notificationSettings.in_app_post_likes}
@@ -215,7 +217,7 @@ export function NotificationSettings({
                 />
               </div>
               <div className="flex items-center justify-between">
-                <Label htmlFor="in_app_post_comments" className="text-sm">Commentaires sur mes posts</Label>
+                <Label htmlFor="in_app_post_comments" className="text-sm">{t("settings.postComments")}</Label>
                 <Switch
                   id="in_app_post_comments"
                   checked={notificationSettings.in_app_post_comments}
@@ -224,7 +226,7 @@ export function NotificationSettings({
                 />
               </div>
               <div className="flex items-center justify-between">
-                <Label htmlFor="in_app_messages" className="text-sm">Messages privés</Label>
+                <Label htmlFor="in_app_messages" className="text-sm">{t("settings.messages")}</Label>
                 <Switch
                   id="in_app_messages"
                   checked={notificationSettings.in_app_messages}
@@ -238,11 +240,11 @@ export function NotificationSettings({
           {/* System Notifications */}
           <div>
             <h4 className="font-medium mb-3 text-sm text-muted-foreground uppercase tracking-wide">
-              Notifications système
+              {t("settings.systemSection")}
             </h4>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label htmlFor="system_updates" className="text-sm">Mises à jour et maintenance</Label>
+                <Label htmlFor="system_updates" className="text-sm">{t("settings.systemUpdates")}</Label>
                 <Switch
                   id="system_updates"
                   checked={notificationSettings.system_updates}
@@ -251,7 +253,7 @@ export function NotificationSettings({
                 />
               </div>
               <div className="flex items-center justify-between">
-                <Label htmlFor="marketing_emails" className="text-sm">Emails marketing et promotions</Label>
+                <Label htmlFor="marketing_emails" className="text-sm">{t("settings.marketingEmails")}</Label>
                 <Switch
                   id="marketing_emails"
                   checked={notificationSettings.marketing_emails}
@@ -276,13 +278,13 @@ export function NotificationSettings({
         {children || (
           <Button variant="outline" size="sm" className={className}>
             <Settings className="h-4 w-4 mr-2" />
-            Paramètres
+            {t("settings.trigger")}
           </Button>
         )}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Paramètres de notifications</DialogTitle>
+          <DialogTitle>{t("settings.dialogTitle")}</DialogTitle>
         </DialogHeader>
         {settingsContent}
       </DialogContent>

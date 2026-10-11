@@ -2,6 +2,7 @@ import { useState, useEffect, useLayoutEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Helmet } from "react-helmet-async";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { getPost } from "@/services/api";
 import { PostCard } from "@/components/feed/PostCard";
 import { CaretLeft as ChevronLeft, FileText } from "@phosphor-icons/react";
@@ -13,6 +14,7 @@ import { parseSlugId, encodeHashId } from "@/lib/hashids";
 import { getPostUrl } from "@/lib/utils";
 
 export function PostDetail() {
+  const { t } = useTranslation("navigation");
   const { id: rawParam } = useParams();
   const realId = parseSlugId(rawParam) ?? rawParam;
   const navigate = useNavigate();
@@ -120,7 +122,7 @@ export function PostDetail() {
             className="gap-1.5 text-muted-foreground hover:text-foreground -ml-2 h-9 px-3 rounded-xl transition-colors"
           >
             <ChevronLeft className="h-4 w-4" />
-            <span>Retour au fil d'actualité</span>
+            <span>{t("postDetail.backToFeed")}</span>
           </Button>
         </div>
 
@@ -146,17 +148,17 @@ export function PostDetail() {
             {!localStorage.getItem("access") && (
               <div className="mt-6 p-5 sm:p-6 rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="space-y-1">
-                  <h3 className="text-base font-semibold text-foreground">Cette discussion vous intéresse ?</h3>
+                  <h3 className="text-base font-semibold text-foreground">{t("postDetail.guestTitle")}</h3>
                   <p className="text-muted-foreground text-xs sm:text-sm max-w-md leading-relaxed">
-                    Rejoignez CampusSphere pour liker, commenter et participer aux échanges avec les étudiants de votre campus.
+                    {t("postDetail.guestDesc")}
                   </p>
                 </div>
                 <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0">
                   <Button onClick={() => navigate("/register")} className="h-9 px-4 rounded-xl text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm">
-                    S'inscrire
+                    {t("register", { defaultValue: "S'inscrire" })}
                   </Button>
                   <Button variant="outline" onClick={() => navigate("/login")} className="h-9 px-4 rounded-xl text-xs font-medium border-border/60 hover:bg-muted/50">
-                    Connexion
+                    {t("login", { defaultValue: "Connexion" })}
                   </Button>
                 </div>
               </div>
@@ -167,12 +169,12 @@ export function PostDetail() {
             <div className="w-12 h-12 rounded-full bg-muted/60 flex items-center justify-center mx-auto text-muted-foreground">
               <FileText className="h-6 w-6" />
             </div>
-            <h3 className="text-base font-semibold text-foreground">Post introuvable</h3>
+            <h3 className="text-base font-semibold text-foreground">{t("errors.notFound", { defaultValue: "Post introuvable" })}</h3>
             <p className="text-sm text-muted-foreground max-w-sm mx-auto">
               Ce post a peut-être été supprimé ou n'est plus accessible.
             </p>
             <Button variant="outline" size="sm" onClick={() => navigate("/home")} className="rounded-xl mt-2">
-              Retour à l'accueil
+              {t("notFound.returnHome")}
             </Button>
           </div>
         )}

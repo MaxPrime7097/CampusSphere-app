@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   createConnection,
   deleteConnection,
@@ -112,6 +113,7 @@ interface SearchEvent {
 }
 
 export function SearchResults() {
+  const { t } = useTranslation("navigation");
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -452,7 +454,7 @@ export function SearchResults() {
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Rechercher des publications, événements, étudiants, cours, TD, sphères..."
+                placeholder={t("search.placeholder")}
                 className="w-full bg-transparent text-sm sm:text-base md:text-lg font-medium text-foreground placeholder:text-muted-foreground/60 outline-none border-none ring-0 focus:ring-0 focus:outline-none"
                 autoFocus
               />
@@ -462,7 +464,7 @@ export function SearchResults() {
                   type="button"
                   onClick={handleClearSearch}
                   className="p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
-                  title="Effacer la recherche"
+                  title={t("search.clear")}
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -491,7 +493,7 @@ export function SearchResults() {
                     : "bg-muted/30 hover:bg-muted text-muted-foreground border border-border/30"
                 )}
               >
-                Tout {hasActiveQuery && `(${totalResults})`}
+                {t("search.tabs.all")} {hasActiveQuery && `(${totalResults})`}
               </button>
 
               <button
@@ -504,7 +506,7 @@ export function SearchResults() {
                     : "bg-muted/30 hover:bg-muted text-muted-foreground border border-border/30"
                 )}
               >
-                Publications {hasActiveQuery && `(${sortedResults.posts.length})`}
+                {t("search.tabs.posts")} {hasActiveQuery && `(${sortedResults.posts.length})`}
               </button>
 
               <button
@@ -517,7 +519,7 @@ export function SearchResults() {
                     : "bg-muted/30 hover:bg-muted text-muted-foreground border border-border/30"
                 )}
               >
-                Événements {hasActiveQuery && `(${sortedResults.events.length})`}
+                {t("search.tabs.events")} {hasActiveQuery && `(${sortedResults.events.length})`}
               </button>
 
               <button
@@ -530,7 +532,7 @@ export function SearchResults() {
                     : "bg-muted/30 hover:bg-muted text-muted-foreground border border-border/30"
                 )}
               >
-                Personnes {hasActiveQuery && `(${sortedResults.users.length})`}
+                {t("search.tabs.users")} {hasActiveQuery && `(${sortedResults.users.length})`}
               </button>
 
               <button
@@ -543,7 +545,7 @@ export function SearchResults() {
                     : "bg-muted/30 hover:bg-muted text-muted-foreground border border-border/30"
                 )}
               >
-                Ressources {hasActiveQuery && `(${sortedResults.resources.length})`}
+                {t("search.tabs.resources")} {hasActiveQuery && `(${sortedResults.resources.length})`}
               </button>
 
               <button
@@ -556,24 +558,24 @@ export function SearchResults() {
                     : "bg-muted/30 hover:bg-muted text-muted-foreground border border-border/30"
                 )}
               >
-                Sphères {hasActiveQuery && `(${sortedResults.spheres.length})`}
+                {t("search.tabs.spheres")} {hasActiveQuery && `(${sortedResults.spheres.length})`}
               </button>
             </div>
 
             {/* Sort Selector */}
             {hasActiveQuery && (
               <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
-                <span className="text-xs text-muted-foreground">Trier :</span>
+                <span className="text-xs text-muted-foreground">{t("search.sort.label")}</span>
                 <Select
                   value={sortBy}
                   onValueChange={(val) => setSortBy(ensureValidSortKey(val, SEARCH_SORT_KEYS, "relevance"))}
                 >
                   <SelectTrigger className="w-32 h-8 text-xs rounded-xl border-border/40">
-                    <SelectValue placeholder="Trier par" />
+                    <SelectValue placeholder={t("search.sort.placeholder")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="relevance">Pertinence</SelectItem>
-                    <SelectItem value="name">Nom</SelectItem>
+                    <SelectItem value="relevance">{t("search.sort.relevance")}</SelectItem>
+                    <SelectItem value="name">{t("search.sort.name")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -587,7 +589,7 @@ export function SearchResults() {
             {/* Suggestions Chips */}
             <div className="space-y-3">
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/80 block">
-                Recherches suggérées
+                {t("search.discovery.suggestedTitle")}
               </span>
               <div className="flex flex-wrap gap-2">
                 {SUGGESTED_SEARCHES.map((item) => (
@@ -607,13 +609,13 @@ export function SearchResults() {
             {discoveryEventsQuery.data && discoveryEventsQuery.data.length > 0 && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-foreground">Événements du campus</h3>
+                  <h3 className="text-sm font-bold text-foreground">{t("search.discovery.eventsTitle")}</h3>
                   <button
                     type="button"
                     onClick={() => navigate("/events")}
                     className="text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer"
                   >
-                    Tous les événements
+                    {t("search.discovery.allEvents")}
                   </button>
                 </div>
 
@@ -663,7 +665,7 @@ export function SearchResults() {
                             <Users className="h-3.5 w-3.5" />
                             <span>{evt.attendeesCount ?? evt.attendee_count ?? (Array.isArray(evt.attendees) ? evt.attendees.length : 0)} participants</span>
                           </span>
-                          <span className="font-medium text-foreground">Voir l'événement</span>
+                          <span className="font-medium text-foreground">{t("search.discovery.viewEvent")}</span>
                         </div>
                       </div>
                     );
@@ -676,13 +678,13 @@ export function SearchResults() {
             {discoverySpheresQuery.data && discoverySpheresQuery.data.length > 0 && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-foreground">Sphères d'étude à explorer</h3>
+                  <h3 className="text-sm font-bold text-foreground">{t("search.discovery.spheresTitle")}</h3>
                   <button
                     type="button"
                     onClick={() => navigate("/spheres")}
                     className="text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer"
                   >
-                    Toutes les sphères
+                    {t("search.discovery.allSpheres")}
                   </button>
                 </div>
 
@@ -718,7 +720,7 @@ export function SearchResults() {
                           <Users className="h-3.5 w-3.5" />
                           <span>{sphere.memberCount || 0} membres</span>
                         </span>
-                        <span className="font-medium text-foreground">Explorer</span>
+                        <span className="font-medium text-foreground">{t("search.discovery.explore")}</span>
                       </div>
                     </div>
                   ))}
@@ -730,13 +732,13 @@ export function SearchResults() {
             {discoveryResourcesQuery.data && discoveryResourcesQuery.data.length > 0 && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-foreground">Ressources de cours récentes</h3>
+                  <h3 className="text-sm font-bold text-foreground">{t("search.discovery.resourcesTitle")}</h3>
                   <button
                     type="button"
                     onClick={() => navigate("/resources")}
                     className="text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer"
                   >
-                    Toutes les ressources
+                    {t("search.discovery.allResources")}
                   </button>
                 </div>
 
@@ -763,7 +765,7 @@ export function SearchResults() {
 
                       <div className="flex items-center justify-between pt-2 border-t border-border/30 text-xs text-muted-foreground">
                         <span className="truncate">{res.authorName || "Étudiant"}</span>
-                        <span className="font-medium text-foreground">Consulter</span>
+                        <span className="font-medium text-foreground">{t("search.discovery.consult")}</span>
                       </div>
                     </div>
                   ))}
@@ -784,10 +786,10 @@ export function SearchResults() {
                 </div>
                 <div className="space-y-1">
                   <h3 className="text-base font-bold text-foreground">
-                    Aucun résultat pour « {debouncedSearchTerm} »
+                    {t("search.empty.title", { query: debouncedSearchTerm })}
                   </h3>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Vérifiez l'orthographe de vos termes ou essayez un mot-clé plus générique (matière, université, nom).
+                    {t("search.empty.description")}
                   </p>
                 </div>
                 <div className="pt-2 flex flex-wrap justify-center gap-2">

@@ -15,6 +15,7 @@ export * from "./notifications.api";
 export * from "./admin.api";
 export * from "./common.api";
 export * from "./sphera.api";
+export * from "./partners.api";
 
 import { apiFetch } from "./client";
 export const http = { apiFetch };

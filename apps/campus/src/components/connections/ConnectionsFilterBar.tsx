@@ -2,6 +2,7 @@ import { MagnifyingGlass as Search, Funnel as Filter } from "@phosphor-icons/rea
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useTranslation } from "react-i18next";
 import type { ConnectionFilter } from "./types";
 
 interface ConnectionsFilterBarProps {
@@ -21,6 +22,8 @@ export function ConnectionsFilterBar({
   showMobileFilters,
   onToggleMobileFilters,
 }: ConnectionsFilterBarProps) {
+  const { t } = useTranslation("connections");
+
   return (
     <div className="mb-6">
       {/* Mobile */}
@@ -28,7 +31,7 @@ export function ConnectionsFilterBar({
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Rechercher des connexions..."
+            placeholder={t("searchPlaceholder")}
             className="pl-10"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
@@ -46,13 +49,13 @@ export function ConnectionsFilterBar({
       {showMobileFilters && (
         <div className="mt-2 sm:hidden">
           <Select value={activeFilter} onValueChange={(v) => onFilterChange(v as ConnectionFilter)}>
-            <SelectTrigger><SelectValue placeholder="Filtrer" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder={t("filters.filterPlaceholder")} /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tous</SelectItem>
-              <SelectItem value="university">Université</SelectItem>
-              <SelectItem value="faculty">Filière</SelectItem>
-              <SelectItem value="mutual">Amis communs</SelectItem>
-              <SelectItem value="impact">Impact</SelectItem>
+              <SelectItem value="all">{t("filters.all")}</SelectItem>
+              <SelectItem value="university">{t("filters.university")}</SelectItem>
+              <SelectItem value="faculty">{t("filters.faculty")}</SelectItem>
+              <SelectItem value="mutual">{t("filters.mutual")}</SelectItem>
+              <SelectItem value="impact">{t("filters.impact")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -62,20 +65,20 @@ export function ConnectionsFilterBar({
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Rechercher des connexions..."
+            placeholder={t("searchPlaceholder")}
             className="pl-10"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
           />
         </div>
         <Select value={activeFilter} onValueChange={(v) => onFilterChange(v as ConnectionFilter)}>
-          <SelectTrigger className="w-44"><SelectValue placeholder="Filtrer" /></SelectTrigger>
+          <SelectTrigger className="w-44"><SelectValue placeholder={t("filters.filterPlaceholder")} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Tous</SelectItem>
-            <SelectItem value="university">Université</SelectItem>
-            <SelectItem value="faculty">Filière</SelectItem>
-            <SelectItem value="mutual">Amis communs</SelectItem>
-            <SelectItem value="impact">Impact</SelectItem>
+            <SelectItem value="all">{t("filters.all")}</SelectItem>
+            <SelectItem value="university">{t("filters.university")}</SelectItem>
+            <SelectItem value="faculty">{t("filters.faculty")}</SelectItem>
+            <SelectItem value="mutual">{t("filters.mutual")}</SelectItem>
+            <SelectItem value="impact">{t("filters.impact")}</SelectItem>
           </SelectContent>
         </Select>
       </div>

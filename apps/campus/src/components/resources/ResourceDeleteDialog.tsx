@@ -1,5 +1,6 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 
 interface ResourceDeleteDialogProps {
   open: boolean;
@@ -14,12 +15,14 @@ export function ResourceDeleteDialog({
   isDeleting,
   onConfirm,
 }: ResourceDeleteDialogProps) {
+  const { t } = useTranslation("resources");
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Supprimer cette ressource ?</DialogTitle>
-          <DialogDescription>Cette action est destructive et ne peut pas être annulée.</DialogDescription>
+          <DialogTitle>{t("detail.deleteTitle")}</DialogTitle>
+          <DialogDescription>{t("detail.deleteDesc")}</DialogDescription>
         </DialogHeader>
         <div className="flex justify-end gap-2">
           <Button
@@ -27,14 +30,14 @@ export function ResourceDeleteDialog({
             onClick={() => onOpenChange(false)}
             disabled={isDeleting}
           >
-            Annuler
+            {t("detail.cancel")}
           </Button>
           <Button
             variant="destructive"
             onClick={onConfirm}
             disabled={isDeleting}
           >
-            {isDeleting ? "Suppression..." : "Supprimer"}
+            {isDeleting ? t("detail.deletingBtn") : t("detail.delete")}
           </Button>
         </div>
       </DialogContent>

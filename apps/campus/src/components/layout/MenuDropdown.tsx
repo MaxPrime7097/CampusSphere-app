@@ -19,11 +19,13 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { type MouseEvent, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { getNavigationSections, type NavigationUser } from "./navigationConfig";
 import { resolveAdminRole } from "@/lib/adminPermissions";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function MenuDropdown({ user: externalUser }: { user?: NavigationUser }) {
+  const { t } = useTranslation("navigation");
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
   const navigate = useNavigate();
@@ -35,8 +37,8 @@ export function MenuDropdown({ user: externalUser }: { user?: NavigationUser }) 
     isActive 
       ? "bg-accent text-foreground font-medium" 
       : "hover:bg-accent text-primary";
-  const { quickActions, utilities, navigationItems } = getNavigationSections(user);
-  const profileUrl = navigationItems.find((item) => item.title === "Profil")?.url || "/profile/current";
+  const { quickActions, utilities, navigationItems } = getNavigationSections(user, t);
+  const profileUrl = navigationItems.find((item) => item.title === t("profile", { defaultValue: "Profil" }))?.url || "/profile/current";
 
   const isAuthenticated = Boolean(user?.username);
   const displayName = user?.name || user?.username || "Invité";
@@ -63,7 +65,7 @@ export function MenuDropdown({ user: externalUser }: { user?: NavigationUser }) 
       <SheetContent className="pt-5 overflow-y-auto" onClickCapture={handleContainerClickCapture}>
         <SheetHeader>
           <h1 className="text-xl font-bold tracking-tight text-foreground">
-            Menu
+            {t("menu")}
           </h1>
         </SheetHeader>
         
@@ -96,10 +98,10 @@ export function MenuDropdown({ user: externalUser }: { user?: NavigationUser }) 
         ) : (
           <div className="mt-6 flex flex-col gap-3">
             <Button onClick={() => { closeMenu(); navigate('/login'); }} className="bg-secondary hover:bg-muted text-secondary-foreground border border-border/60 w-full">
-              Se connecter
+              {t("login")}
             </Button>
             <Button variant="outline" onClick={() => { closeMenu(); navigate('/register'); }} className="w-full">
-              Créer un compte
+              {t("register")}
             </Button>
           </div>
         )}
@@ -107,7 +109,7 @@ export function MenuDropdown({ user: externalUser }: { user?: NavigationUser }) 
         {/* Section Navigation Principale (Accueil, Événements, Sphères, Ressources) */}
         {navigationItems.length > 0 && (
           <SidebarGroup className="mt-4">
-            <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+            <SidebarGroupLabel>{t("navigation")}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {navigationItems.map((item) => (
@@ -128,7 +130,7 @@ export function MenuDropdown({ user: externalUser }: { user?: NavigationUser }) 
         {/* Section Actions Rapides (Connexions, Messages, Sphera, Sauvegardes, Paramètres) */}
         {quickActions.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel>Actions</SidebarGroupLabel>
+            <SidebarGroupLabel>{t("quickActions")}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {quickActions.map((item) => (
@@ -148,7 +150,7 @@ export function MenuDropdown({ user: externalUser }: { user?: NavigationUser }) 
 
         {utilities.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel>Utilitaires</SidebarGroupLabel>
+            <SidebarGroupLabel>{t("utilities")}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {utilities.map((item) => (

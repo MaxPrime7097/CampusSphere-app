@@ -1,6 +1,26 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Lightning as Zap, Download, FileText, BookOpen, FileCode, GraduationCap, Sparkle as Sparkles, Archive, ArrowRight, DotsThreeVertical as MoreVertical, Share, BookmarkSimple, SealCheck as BadgeCheck, X } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
+import {
+  Lightning as Zap,
+  Download,
+  FileText,
+  BookOpen,
+  GraduationCap,
+  Sparkle as Sparkles,
+  Archive,
+  ArrowRight,
+  DotsThreeVertical as MoreVertical,
+  Share,
+  BookmarkSimple,
+  SealCheck as BadgeCheck,
+  X,
+  FolderSimple as FolderGit2,
+  BookBookmark,
+  Notepad,
+  Question as QuestionMark,
+  FolderPlus,
+} from "@phosphor-icons/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +32,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { StudyToolsModal } from "@/sphera/components/study/StudyToolsModal";
+import { AddToFolderModal } from "@/components/modals/AddToFolderModal";
 import { cn, getResourceUrl, formatFileSize } from "@/lib/utils";
 import { formatRelativeTime } from "@/lib/date";
 import { downloadResource, saveResource, impactRateResource } from "@/services/api";
@@ -19,34 +40,34 @@ import { getStoredResourceRating, getStoredResourceImpactScore, setStoredResourc
 import { getAccessToken } from "@/services/api/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { normalizeResourceType } from "@/constants/resourceTypes";
 import type { Resource } from "@/types";
 
 // ─── Type configuration ─────────────────────────────────────────────────────
-const TYPE_CONFIG: Record<string, { label: string; iconColor: string; bg: string }> = {
-  notes: { label: "Notes de cours", iconColor: "text-blue-500", bg: "bg-blue-500/10" },
-  resumes: { label: "Resume", iconColor: "text-sky-500", bg: "bg-sky-500/10" },
-  exercises: { label: "Exercices", iconColor: "text-red-500", bg: "bg-red-500/10" },
-  exam_papers: { label: "Epreuve", iconColor: "text-emerald-500", bg: "bg-emerald-500/10" },
-  annales: { label: "Annale", iconColor: "text-purple-500", bg: "bg-purple-500/10" },
-  projects: { label: "Projet", iconColor: "text-pink-500", bg: "bg-pink-500/10" },
-  presentations: { label: "Slides", iconColor: "text-indigo-500", bg: "bg-indigo-500/10" },
-  other: { label: "Document", iconColor: "text-muted-foreground", bg: "bg-muted/40" },
+const TYPE_CONFIG: Record<string, { labelKey: string; iconColor: string; bg: string }> = {
+  course_notes: { labelKey: "feedCard.types.course_notes", iconColor: "text-blue-500", bg: "bg-blue-500/10" },
+  td_tp:        { labelKey: "feedCard.types.td_tp",       iconColor: "text-orange-500", bg: "bg-orange-500/10" },
+  exams:        { labelKey: "feedCard.types.exams",        iconColor: "text-emerald-500", bg: "bg-emerald-500/10" },
+  project:      { labelKey: "feedCard.types.project",      iconColor: "text-violet-500", bg: "bg-violet-500/10" },
+  book:         { labelKey: "feedCard.types.book",         iconColor: "text-amber-500", bg: "bg-amber-500/10" },
+  other:        { labelKey: "feedCard.types.other",        iconColor: "text-muted-foreground", bg: "bg-muted/40" },
 };
 
 function getTypeConfig(type?: string) {
   if (!type) return TYPE_CONFIG.other;
-  return TYPE_CONFIG[type.toLowerCase()] ?? TYPE_CONFIG.other;
+  const canonical = normalizeResourceType(type);
+  return TYPE_CONFIG[canonical] ?? TYPE_CONFIG.other;
 }
 
 function getFileIcon(type?: string, className = "h-6 w-6") {
-  switch ((type || "").toLowerCase()) {
-    case "notes": return <BookOpen className={className} />;
-    case "resumes": return <FileText className={className} />;
-    case "exercises": return <FileCode className={className} />;
-    case "exam_papers": return <GraduationCap className={className} />;
-    case "annales": return <Sparkles className={className} />;
-    case "projects": return <Archive className={className} />;
-    default: return <FileText className={className} />;
+  const canonical = normalizeResourceType(type);
+  switch (canonical) {
+    case "course_notes": return <BookOpen className={className} />;
+    case "td_tp":        return <Notepad className={className} />;
+    case "exams":        return <GraduationCap className={className} />;
+    case "project":      return <FolderGit2 className={className} />;
+    case "book":         return <BookBookmark className={className} />;
+    default:             return <QuestionMark className={className} />;
   }
 }
 
@@ -55,6 +76,7 @@ interface ResourceFeedCardProps {
 }
 
 export function ResourceFeedCard({ resource }: ResourceFeedCardProps) {
+  const { t } = useTranslation("resources");
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -63,6 +85,7 @@ export function ResourceFeedCard({ resource }: ResourceFeedCardProps) {
   const [impactScore, setImpactScore] = useState(Number(resource.impactScore || 0));
   const [userImpactRating, setUserImpactRating] = useState<number | null>(null);
   const [studyOpen, setStudyOpen] = useState(false);
+  const [folderModalOpen, setFolderModalOpen] = useState(false);
 
   // Option A Rating picker state & refs
   const [showRatingPicker, setShowRatingPicker] = useState(false);
@@ -143,14 +166,14 @@ export function ResourceFeedCard({ resource }: ResourceFeedCardProps) {
     try {
       await downloadResource(resource.id);
       toast({
-        title: "Telechargement lance",
+        title: t("feedCard.toasts.downloadStarted"),
         description: resource.title,
         duration: 2000,
       });
     } catch {
       toast({
-        title: "Erreur",
-        description: "Impossible de telecharger la ressource",
+        title: t("feedCard.toasts.error"),
+        description: t("feedCard.toasts.downloadError"),
         variant: "destructive",
         duration: 2000,
       });
@@ -162,7 +185,7 @@ export function ResourceFeedCard({ resource }: ResourceFeedCardProps) {
   const handleSave = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user) {
-      toast({ title: "Connexion requise", description: "Connectez-vous pour sauvegarder", duration: 2000 });
+      toast({ title: t("feedCard.toasts.loginRequired"), description: t("feedCard.toasts.loginToSave"), duration: 2000 });
       return;
     }
     const nextSaved = !isSaved;
@@ -170,14 +193,14 @@ export function ResourceFeedCard({ resource }: ResourceFeedCardProps) {
     try {
       await saveResource(resource.id);
       toast({
-        title: nextSaved ? "Ressource enregistree" : "Retiree des enregistrements",
+        title: nextSaved ? t("feedCard.toasts.saved") : t("feedCard.toasts.unsaved"),
         duration: 2000,
       });
     } catch {
       setIsSaved(!nextSaved);
       toast({
-        title: "Erreur",
-        description: "Action impossible",
+        title: t("feedCard.toasts.error"),
+        description: t("feedCard.toasts.actionFailed"),
         variant: "destructive",
       });
     }
@@ -198,8 +221,8 @@ export function ResourceFeedCard({ resource }: ResourceFeedCardProps) {
     } else {
       await navigator.clipboard.writeText(fullUrl);
       toast({
-        title: "Lien copie",
-        description: "Le lien de la ressource a ete copie",
+        title: t("feedCard.toasts.linkCopied"),
+        description: t("feedCard.toasts.linkCopiedDesc"),
         duration: 2000,
       });
     }
@@ -207,7 +230,7 @@ export function ResourceFeedCard({ resource }: ResourceFeedCardProps) {
 
   const handleImpactRate = async (value: number | null) => {
     if (!user && !getAccessToken()) {
-      toast({ title: "Connexion requise", description: "Connectez-vous pour voter", duration: 2000 });
+      toast({ title: t("feedCard.toasts.loginRequired"), description: t("feedCard.toasts.loginToVote"), duration: 2000 });
       return;
     }
 
@@ -223,7 +246,7 @@ export function ResourceFeedCard({ resource }: ResourceFeedCardProps) {
     setStoredResourceRating(canonicalId, value, optimisticScore);
 
     toast({
-      title: value === null ? "Vote retiré" : `Impact noté : +${value}`,
+      title: value === null ? t("feedCard.toasts.voteRemoved") : t("feedCard.toasts.impactVoted", { value }),
       duration: 1500,
     });
 
@@ -240,8 +263,8 @@ export function ResourceFeedCard({ resource }: ResourceFeedCardProps) {
       setUserImpactRating(prevRating);
       setStoredResourceRating(canonicalId, prevRating, prevScore);
       toast({
-        title: "Erreur",
-        description: error?.message || "Impossible d'enregistrer votre vote",
+        title: t("feedCard.toasts.error"),
+        description: error?.message || t("feedCard.toasts.voteFailed"),
         variant: "destructive",
         duration: 2000,
       });
@@ -253,7 +276,7 @@ export function ResourceFeedCard({ resource }: ResourceFeedCardProps) {
     longPressTimerRef.current = setTimeout(() => {
       isLongPressRef.current = true;
       if (!user && !getAccessToken()) {
-        toast({ title: "Connexion requise", description: "Connectez-vous pour voter", duration: 2000 });
+        toast({ title: t("feedCard.toasts.loginRequired"), description: t("feedCard.toasts.loginToVote"), duration: 2000 });
         return;
       }
       setShowRatingPicker(true);
@@ -306,7 +329,7 @@ export function ResourceFeedCard({ resource }: ResourceFeedCardProps) {
       return;
     }
     if (!user && !getAccessToken()) {
-      toast({ title: "Connexion requise", description: "Connectez-vous pour voter", duration: 2000 });
+      toast({ title: t("feedCard.toasts.loginRequired"), description: t("feedCard.toasts.loginToVote"), duration: 2000 });
       return;
     }
     setShowRatingPicker(false);
@@ -328,7 +351,7 @@ export function ResourceFeedCard({ resource }: ResourceFeedCardProps) {
     (resource as any).isVerified ||
     (resource as any).is_verified
   );
-  const authorName = resource.author?.name || resource.authorName || "Etudiant";
+  const authorName = resource.author?.name || resource.authorName || t("feedCard.defaultAuthor");
   const authorAvatar = resource.author?.avatar;
   const authorInitial = authorName.charAt(0).toUpperCase();
   const relativeTime = resource.createdAt ? formatRelativeTime(resource.createdAt) : null;
@@ -362,11 +385,11 @@ export function ResourceFeedCard({ resource }: ResourceFeedCardProps) {
                   )}
                   <span className="text-xs text-muted-foreground/50">·</span>
                   <span className="text-xs text-muted-foreground shrink-0">
-                    {relativeTime || "Recent"}
+                    {relativeTime || t("feedCard.recent")}
                   </span>
                   <span className="text-xs text-muted-foreground/50">·</span>
                   <span className="text-[10px] font-medium text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded shrink-0 border border-border/40">
-                    Ressource
+                    {t("feedCard.resourceBadge")}
                   </span>
                 </div>
               </div>
@@ -386,11 +409,26 @@ export function ResourceFeedCard({ resource }: ResourceFeedCardProps) {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={handleSave}>
                   <BookmarkSimple className="h-4 w-4 mr-2" weight={isSaved ? "fill" : "regular"} />
-                  {isSaved ? "Retirer des sauvegardes" : "Enregistrer"}
+                  {isSaved ? t("feedCard.unsave") : t("feedCard.save")}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    if (!user) {
+                      toast({
+                        title: "Connexion requise",
+                        description: "Connectez-vous pour ajouter cette ressource à vos dossiers.",
+                      });
+                      return;
+                    }
+                    setFolderModalOpen(true);
+                  }}
+                >
+                  <FolderPlus className="h-4 w-4 mr-2" />
+                  {t("feedCard.addToFolder", { defaultValue: "Ajouter à un dossier" })}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleShare}>
                   <Share className="h-4 w-4 mr-2" />
-                  Partager
+                  {t("feedCard.share")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -423,7 +461,7 @@ export function ResourceFeedCard({ resource }: ResourceFeedCardProps) {
                     variant="secondary"
                     className="text-[10px] px-2 py-0.5 h-4.5 rounded-full font-medium"
                   >
-                    {config.label}
+                    {t(config.labelKey)}
                   </Badge>
 
                   {formattedSize ? (
@@ -454,12 +492,14 @@ export function ResourceFeedCard({ resource }: ResourceFeedCardProps) {
                 <Download className="h-3.5 w-3.5 shrink-0" />
                 <span>
                   {resource.downloadCount != null && resource.downloadCount > 0
-                    ? `${resource.downloadCount} ${resource.downloadCount > 1 ? "telechargements" : "telechargement"}`
-                    : "0 telechargement"}
+                    ? (resource.downloadCount > 1
+                      ? t("feedCard.downloadCount_plural", { count: resource.downloadCount })
+                      : t("feedCard.downloadCount", { count: resource.downloadCount }))
+                    : t("feedCard.zeroDownloads")}
                 </span>
               </span>
               <span className="inline-flex items-center gap-1 text-foreground/80 font-medium group-hover:text-foreground group-hover:translate-x-0.5 transition-all">
-                Voir la ressource
+                {t("feedCard.viewResource")}
                 <ArrowRight className="h-3.5 w-3.5" />
               </span>
             </div>
@@ -500,7 +540,7 @@ export function ResourceFeedCard({ resource }: ResourceFeedCardProps) {
                           ? "bg-primary text-primary-foreground shadow-sm scale-110"
                           : "hover:bg-primary/20 hover:text-primary text-foreground"
                       )}
-                      title={`Noter ${value}/5`}
+                      title={t("feedCard.rateScoreTooltip", { value })}
                     >
                       {value}
                     </button>
@@ -514,7 +554,7 @@ export function ResourceFeedCard({ resource }: ResourceFeedCardProps) {
                         handleImpactRate(null);
                       }}
                       className="h-7 w-7 rounded-full text-xs flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
-                      title="Retirer mon vote"
+                      title={t("feedCard.removeVote")}
                     >
                       <X className="h-3.5 w-3.5" />
                     </button>
@@ -535,11 +575,11 @@ export function ResourceFeedCard({ resource }: ResourceFeedCardProps) {
                     ? "bg-primary/15 border-primary/35 text-primary font-semibold hover:bg-primary/20"
                     : "bg-muted/50 hover:bg-muted/80 text-muted-foreground hover:text-foreground border-border/30"
                 )}
-                title={userImpactRating ? `Impact attribue (${userImpactRating}/5) — Cliquer pour retirer` : "Cliquer pour +1 Impact ou maintenir pour evaluer de 1 a 5"}
+                title={userImpactRating ? t("feedCard.impactAssignedTitle", { score: userImpactRating }) : t("feedCard.impactClickTitle")}
               >
                 <Zap className={cn("h-5 w-5 shrink-0 transition-transform", userImpactRating ? "text-primary scale-110" : "text-muted-foreground group-hover:text-primary")} weight={userImpactRating ? "fill" : "regular"} />
                 <span>{impactScore}</span>
-                <span className="hidden sm:inline">Impact</span>
+                <span className="hidden sm:inline">{t("feedCard.impact")}</span>
               </Button>
             </div>
 
@@ -561,7 +601,7 @@ export function ResourceFeedCard({ resource }: ResourceFeedCardProps) {
               onClick={handleDownload}
             >
               <Download className={cn("h-5 w-5 shrink-0", isDownloading && "animate-bounce")} />
-              <span>{isDownloading ? "..." : "Telecharger"}</span>
+              <span>{isDownloading ? "..." : t("feedCard.download")}</span>
             </Button>
           </div>
         </div>
@@ -571,6 +611,14 @@ export function ResourceFeedCard({ resource }: ResourceFeedCardProps) {
       <StudyToolsModal
         isOpen={studyOpen}
         onClose={() => setStudyOpen(false)}
+        resourceId={resource.id}
+        resourceTitle={resource.title}
+      />
+
+      {/* ─── Add to Folder Modal ────────────────────────────────────────── */}
+      <AddToFolderModal
+        isOpen={folderModalOpen}
+        onClose={() => setFolderModalOpen(false)}
         resourceId={resource.id}
         resourceTitle={resource.title}
       />

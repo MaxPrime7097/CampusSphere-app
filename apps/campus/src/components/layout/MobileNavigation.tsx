@@ -1,5 +1,6 @@
 import { Fragment, Suspense, lazy, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { getNavigationSections, type NavigationUser } from "./navigationConfig";
 import { useUnreadCounts } from "@/hooks/useUnreadCounts";
@@ -13,10 +14,11 @@ const CreateHubModal = lazy(() =>
 );
 
 export function MobileNavigation({ user: externalUser }: { user?: NavigationUser }) {
+  const { t } = useTranslation('navigation');
   const [isCreateHubModalOpen, setIsCreateHubModalOpen] = useState(false);
   const { user: authUser } = useAuth();
   const user = externalUser || authUser || {};
-  const { mobileItems } = getNavigationSections(user);
+  const { mobileItems } = getNavigationSections(user, t);
   const counts = useUnreadCounts();
   const location = useLocation();
 

@@ -239,8 +239,8 @@ export function SidebarLayout() {
       {!isSessionPage && (
         <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-sphera-surface-2 border-b border-sphera-border px-4 flex items-center justify-between z-30">
           <Link to="/dashboard" className="flex items-center gap-2.5">
-            <img src="/sphera-logo-dark.png" alt="Sphera logo" className="h-7 w-auto dark-logo" />
-            <img src="/sphera-logo-light.png" alt="Sphera logo" className="h-7 w-auto light-logo" />
+            <img src="/sphera_logo.svg" alt="Sphera logo" className="h-7 w-auto dark-logo" />
+            <img src="/sphera_logo.svg" alt="Sphera logo" className="h-7 w-auto light-logo" />
             <span className="font-display font-bold text-lg text-white tracking-tight">Sphera</span>
           </Link>
           <button
@@ -271,8 +271,8 @@ export function SidebarLayout() {
         {/* Mobile Drawer Header */}
         <div className="h-16 flex items-center justify-between px-5 border-b border-sphera-border shrink-0">
           <Link to="/dashboard" className="flex items-center gap-2.5">
-            <img src="/sphera-logo-dark.png" alt="Sphera logo" className="h-7 w-auto dark-logo" />
-            <img src="/sphera-logo-light.png" alt="Sphera logo" className="h-7 w-auto light-logo" />
+            <img src="/sphera_logo.svg" alt="Sphera logo" className="h-7 w-auto dark-logo" />
+            <img src="/sphera_logo.svg" alt="Sphera logo" className="h-7 w-auto light-logo" />
             <span className="font-display font-bold text-lg text-white tracking-tight">Sphera</span>
           </Link>
           <button
@@ -439,8 +439,8 @@ export function SidebarLayout() {
         <div className="h-16 flex items-center justify-between px-4 border-b border-sphera-border shrink-0">
           {!isCollapsed ? (
             <Link to="/dashboard" className="flex items-center gap-3 min-w-0">
-              <img src="/sphera-logo-dark.png" alt="Sphera logo" className="h-8 w-auto shrink-0 dark-logo" />
-              <img src="/sphera-logo-light.png" alt="Sphera logo" className="h-8 w-auto shrink-0 light-logo" />
+              <img src="/sphera_logo.svg" alt="Sphera logo" className="h-8 w-auto shrink-0 dark-logo" />
+              <img src="/sphera_logo.svg" alt="Sphera logo" className="h-8 w-auto shrink-0 light-logo" />
               <div className="flex flex-col min-w-0">
                 <span className="font-display font-bold text-lg text-white tracking-tight leading-none truncate">
                   Sphera
@@ -452,8 +452,8 @@ export function SidebarLayout() {
             </Link>
           ) : (
             <Link to="/dashboard" className="mx-auto" title="Sphera Dashboard">
-              <img src="/sphera-logo-dark.png" alt="Sphera logo" className="h-7 w-auto dark-logo" />
-              <img src="/sphera-logo-light.png" alt="Sphera logo" className="h-7 w-auto light-logo" />
+              <img src="/sphera_logo.svg" alt="Sphera logo" className="h-7 w-auto dark-logo" />
+              <img src="/sphera_logo.svg" alt="Sphera logo" className="h-7 w-auto light-logo" />
             </Link>
           )}
 

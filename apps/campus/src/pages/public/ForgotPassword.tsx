@@ -7,8 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabaseResetPassword } from "@/services/api";
+import { useTranslation } from "react-i18next";
 
 export function ForgotPassword() {
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const { toast } = useToast();
   const [email, setEmail] = useState("");
@@ -23,7 +25,7 @@ export function ForgotPassword() {
       await supabaseResetPassword(email.trim());
       setSent(true);
     } catch (err: any) {
-      toast({ title: "Erreur", description: err?.message || "Impossible d'envoyer l'email", variant: "destructive" });
+      toast({ title: t('login.errorTitle', { defaultValue: "Erreur" }), description: err?.message || "Impossible d'envoyer l'email", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -33,7 +35,7 @@ export function ForgotPassword() {
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <Button variant="ghost" onClick={() => navigate("/login")} className="mb-4">
-          <ArrowLeft className="h-4 w-4 mr-2" />Retour
+          <ArrowLeft className="h-4 w-4 mr-2" />{t('forgotPassword.back', { defaultValue: "Retour" })}
         </Button>
 
         <Card className="cs-card">
@@ -42,32 +44,32 @@ export function ForgotPassword() {
               {sent ? <Check className="h-8 w-8 text-white" /> : <Mail className="h-8 w-8 text-white" />}
             </div>
             <CardTitle className="text-2xl">
-              {sent ? "Email envoyé !" : "Mot de passe oublié ?"}
+              {sent ? t('forgotPassword.emailSentTitle', { defaultValue: "Email envoyé !" }) : t('forgotPassword.title', { defaultValue: "Mot de passe oublié ?" })}
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-2">
               {sent
-                ? "Vérifiez votre boîte mail pour réinitialiser votre mot de passe"
-                : "Entrez votre email pour recevoir un lien de réinitialisation"}
+                ? t('forgotPassword.emailSentDesc', { defaultValue: "Vérifiez votre boîte mail pour réinitialiser votre mot de passe" })
+                : t('forgotPassword.subtitle', { defaultValue: "Entrez votre email pour recevoir un lien de réinitialisation" })}
             </p>
           </CardHeader>
           <CardContent>
             {!sent ? (
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" placeholder="votre.email@exemple.com" value={email} onChange={e => setEmail(e.target.value)} required />
+                  <Label htmlFor="email">{t('forgotPassword.emailLabel', { defaultValue: "Email" })}</Label>
+                  <Input id="email" type="email" placeholder={t('forgotPassword.emailPlaceholder', { defaultValue: "votre.email@exemple.com" })} value={email} onChange={e => setEmail(e.target.value)} required />
                 </div>
                 <Button type="submit" className="w-full campus-gradient text-white hover:opacity-90" disabled={isLoading}>
-                  {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Envoi...</> : "Envoyer le lien"}
+                  {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('forgotPassword.submittingButton', { defaultValue: "Envoi..." })}</> : t('forgotPassword.submitButton', { defaultValue: "Envoyer le lien" })}
                 </Button>
               </form>
             ) : (
               <div className="space-y-4">
                 <div className="text-center p-4 bg-primary/10 rounded-lg">
-                  <p className="text-sm">Un email a été envoyé à <strong>{email}</strong></p>
+                  <p className="text-sm">{t('forgotPassword.emailSentTo', { defaultValue: "Un email a été envoyé à" })}{" "}<strong>{email}</strong></p>
                 </div>
-                <Button onClick={() => navigate("/login")} className="w-full" variant="outline">Retour à la connexion</Button>
-                <Button onClick={() => setSent(false)} variant="ghost" className="w-full text-sm">Renvoyer l'email</Button>
+                <Button onClick={() => navigate("/login")} className="w-full" variant="outline">{t('forgotPassword.backToLogin', { defaultValue: "Retour à la connexion" })}</Button>
+                <Button onClick={() => setSent(false)} variant="ghost" className="w-full text-sm">{t('forgotPassword.resend', { defaultValue: "Renvoyer l'email" })}</Button>
               </div>
             )}
           </CardContent>

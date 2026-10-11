@@ -1,5 +1,6 @@
 import { UniversalShareModal } from "@/components/shared/UniversalShareModal";
 import { Suspense, lazy, useEffect, useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Heart, ChatTeardrop, Share, BookmarkSimple, UsersThree as Users, DotsThreeVertical as MoreVertical, Lightning as Zap, Copy, Flag, ArrowSquareOut as ExternalLink, Plus, Minus, X, PencilSimple, Trash as Trash2, Spinner as Loader2, FileText, Download, CaretLeft as ChevronLeft, CaretRight as ChevronRight, MagnifyingGlass as Search, FacebookLogo as Facebook, InstagramLogo as Instagram, TwitterLogo as Twitter, LinkedinLogo as Linkedin, Info, SealCheck as BadgeCheck } from "@phosphor-icons/react";
 import { FaFacebook, FaTwitter, FaInstagram, FaWhatsapp, FaLinkedin } from 'react-icons/fa';
 
@@ -44,6 +45,7 @@ interface PostCardProps {
 }
 
 export function PostCard({ post, onToggleSave }: PostCardProps) {
+  const { t } = useTranslation("feed");
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { toast } = useToast();
@@ -121,7 +123,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
     if (isUpdating) return;
     const nextContent = editingContent.trim();
     if (!nextContent) {
-      toast({ title: "Contenu invalide", description: "Le contenu ne peut pas être vide.", variant: "destructive" });
+      toast({ title: t("postCard.toasts.contentInvalid"), description: t("postCard.toasts.contentCannotBeEmpty"), variant: "destructive" });
       return;
     }
 
@@ -132,9 +134,9 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
       setContent(updated?.content ?? nextContent);
       setAllowComments(editingAllowComments);
       setShowEditDialog(false);
-      toast({ title: "Post modifié", description: "Votre post a été mis à jour avec succès." });
+      toast({ title: t("postCard.toasts.postUpdated"), description: t("postCard.toasts.postUpdatedDesc") });
     } catch (error: any) {
-      toast({ title: "Échec de modification", description: error?.message || "Impossible de modifier ce post.", variant: "destructive" });
+      toast({ title: t("postCard.toasts.updateFailed"), description: error?.message || t("postCard.toasts.updateFailed"), variant: "destructive" });
     } finally {
       setIsUpdating(false);
     }
@@ -148,10 +150,10 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
     setIsDeleted(true);
     try {
       await deletePost(post.id);
-      toast({ title: "Post supprimé", description: "Le post a été supprimé définitivement." });
+      toast({ title: t("postCard.toasts.postDeleted"), description: t("postCard.toasts.postDeletedDesc") });
     } catch (error: any) {
       setIsDeleted(false);
-      toast({ title: "Échec de suppression", description: error?.message || "Impossible de supprimer ce post.", variant: "destructive" });
+      toast({ title: t("postCard.toasts.deleteFailed"), description: error?.message || t("postCard.toasts.deleteFailed"), variant: "destructive" });
     } finally {
       setIsDeleting(false);
     }
@@ -180,15 +182,15 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
 
         if (liked) {
           toast({
-            title: "Post aimé !",
-            description: "Vous avez aimé ce post",
+            title: t("postCard.toasts.postLiked"),
+            description: t("postCard.toasts.postLikedDesc"),
             duration: 2000,
           });
         }
       } catch (error: any) {
         toast({
-          title: "Erreur",
-          description: error?.message || "Impossible d'aimer ce post",
+          title: t("postCard.toasts.updateFailed"),
+          description: error?.message || t("postCard.toasts.updateFailed"),
           variant: "destructive",
           duration: 2000,
         });
@@ -202,8 +204,8 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
       const hasSeenExplanation = localStorage.getItem("impact_explanation_shown");
       if (!hasSeenExplanation) {
         toast({
-          title: "Qu'est-ce que l'Impact Score ?",
-          description: "C'est une mesure de l'utilite du post. Plus un post aide la communaute, plus son Impact Score grimpe. Un appui long permet d'evaluer de 1 a 5.",
+          title: t("postCard.toasts.whatIsImpactTitle"),
+          description: t("postCard.toasts.whatIsImpactDesc"),
           duration: 6000,
         });
         localStorage.setItem("impact_explanation_shown", "true");
@@ -228,8 +230,8 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
         setImpactScore(prevScore);
         setUserImpactRating(prevRating);
         toast({
-          title: "Erreur",
-          description: error?.message || "Impossible de noter l'impact du post",
+          title: t("postCard.toasts.error"),
+          description: error?.message || t("postCard.toasts.impactRateError"),
           variant: "destructive",
           duration: 2000,
         });
@@ -301,16 +303,16 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
         onToggleSave?.(saved);
 
         toast({
-          title: saved ? "Post sauvegardé !" : "Post retiré des sauvegardes",
+          title: saved ? t("postCard.toasts.postSaved") : t("postCard.toasts.postUnsaved"),
           description: saved
-            ? "Le post a été ajouté à vos sauvegardes"
-            : "Le post a été retiré de vos sauvegardes",
+            ? t("postCard.toasts.postSavedDesc")
+            : t("postCard.toasts.postUnsavedDesc"),
           duration: 2000,
         });
       } catch (error: any) {
         toast({
-          title: "Erreur",
-          description: error?.message || "Impossible de mettre à jour l'état de sauvegarde du post",
+          title: t("postCard.toasts.error"),
+          description: error?.message || t("postCard.toasts.updateFailed"),
           variant: "destructive",
         });
       } finally {
@@ -345,7 +347,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
         break;
       case "instagram":
         handleCopyLink();
-        toast({ title: "Lien copié !", description: "Instagram ne permet pas le partage direct. Collez le lien dans votre application." });
+        toast({ title: t("postCard.toasts.linkCopied"), description: t("postCard.toasts.instagramNoDirectShare") });
         return;
     }
 
@@ -358,7 +360,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
     if (sendingToUserId) return;
     setSendingToUserId(contactId);
     const postUrl = `${window.location.origin}${getPostUrl(post)}`;
-    const messageContent = `Post partagé par ${post.author.name} :\n${postUrl}`;
+    const messageContent = t("postCard.toasts.sharedPostContent", { name: post.author.name, url: postUrl });
     try {
       // Rechercher d'abord si une conversation existe déjà (plus robuste)
       const convs = await getUserConversations();
@@ -376,11 +378,11 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
         convId = conv?.id != null ? String(conv.id) : null;
       }
 
-      if (!convId) throw new Error("Conversation introuvable");
+      if (!convId) throw new Error(t("postCard.toasts.conversationNotFound"));
       await sendMessage(convId, messageContent);
-      toast({ title: "Post partagé !", description: `Envoyé à ${contactName}`, duration: 2000 });
+      toast({ title: t("postCard.toasts.postShared"), description: t("postCard.toasts.sentTo", { name: contactName }), duration: 2000 });
     } catch (e: any) {
-      toast({ title: "Erreur", description: e?.message || "Impossible d'envoyer le message", variant: "destructive" });
+      toast({ title: t("postCard.toasts.error"), description: e?.message || t("postCard.toasts.errorSendingMessage"), variant: "destructive" });
     } finally {
       setSendingToUserId(null);
     }
@@ -394,14 +396,14 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
     try {
       await navigator.clipboard.writeText(postUrl);
       toast({
-        title: "Lien copié !",
-        description: "Le lien du post a été copié dans le presse-papiers",
+        title: t("postCard.toasts.linkCopied"),
+        description: t("postCard.toasts.linkCopiedDesc"),
         duration: 2000,
       });
     } catch {
       toast({
-        title: "Erreur",
-        description: "Impossible de copier le lien pour le moment.",
+        title: t("postCard.toasts.error"),
+        description: t("postCard.toasts.copyError"),
         variant: "destructive",
       });
     } finally {
@@ -429,17 +431,17 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
     try {
       await reportPost(post.id, { reason });
       toast({
-        title: "Post signalé",
-        description: `Le post a été signalé pour : ${reason}`,
+        title: t("postCard.toasts.postReported"),
+        description: t("postCard.toasts.postReportedDesc", { reason }),
         duration: 3000,
       });
     } catch (error: any) {
       setReportedReason(null);
-      setReportError(error?.message || "Impossible d'envoyer le signalement.");
+      setReportError(error?.message || t("postCard.toasts.reportFailed"));
       setShowReportDialog(true);
       toast({
-        title: "Échec du signalement",
-        description: error?.message || "Veuillez réessayer dans un instant.",
+        title: t("postCard.toasts.reportFailed"),
+        description: error?.message || t("postCard.toasts.reportFailed"),
         variant: "destructive",
       });
     } finally {
@@ -543,7 +545,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                   )}
                   <span className="text-xs text-muted-foreground/50">·</span>
                   <span className="text-xs text-muted-foreground shrink-0">
-                    {post.createdAt ? formatRelativeTime(post.createdAt) : post.timestamp || "Date inconnue"}
+                    {post.createdAt ? formatRelativeTime(post.createdAt) : post.timestamp || t("postCard.dateUnknown")}
                   </span>
                   {categoryLabel && categoryLabel.toLowerCase() !== "général" && categoryLabel.toLowerCase() !== "general" && (
                     <>
@@ -566,33 +568,33 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                 <DropdownMenuItem onClick={handleSave} disabled={isSaving}>
                   <BookmarkSimple className="h-4 w-4 mr-2" weight={isSaved ? "fill" : "regular"} />
                   {isSaving
-                    ? "Mise à jour..."
+                    ? t("postCard.saving")
                     : isSaved
-                      ? "Retirer des sauvegardes"
-                      : "Enregistrer"}
+                      ? t("postCard.saved")
+                      : t("postCard.save")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleShare}>
                   <Share className="h-4 w-4 mr-2" />
-                  Partager
+                  {t("postCard.share")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleCopyLink} disabled={isCopyingLink}>
                   <Copy className="h-4 w-4 mr-2" />
-                  {isCopyingLink ? "Copie..." : "Copier le lien"}
+                  {isCopyingLink ? t("postCard.copying") : t("postCard.copyLink")}
                 </DropdownMenuItem>
                 <DropdownMenuItem className="text-destructive" onClick={handleReport}>
                   <Flag className="h-4 w-4 mr-2" />
-                  Signaler
+                  {t("postCard.report")}
                 </DropdownMenuItem>
                 {post.canEdit && (
                   <DropdownMenuItem onClick={handleOpenEdit}>
                     <PencilSimple className="h-4 w-4 mr-2" />
-                    Modifier
+                    {t("postCard.edit")}
                   </DropdownMenuItem>
                 )}
                 {post.canDelete && (
                   <DropdownMenuItem className="text-destructive" onClick={() => setShowDeleteDialog(true)} disabled={isDeleting}>
                     {isDeleting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
-                    Supprimer
+                    {t("postCard.delete")}
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>
@@ -683,10 +685,10 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                           </div>
                           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                             <Button variant="ghost" size="sm" asChild>
-                              <a href={file.url} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4 mr-1" />Ouvrir</a>
+                              <a href={file.url} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4 mr-1" />{t("postCard.open")}</a>
                             </Button>
                             <Button variant="ghost" size="sm" asChild>
-                              <a href={file.url} download={file.name}><Download className="h-4 w-4 mr-1" />Télécharger</a>
+                              <a href={file.url} download={file.name}><Download className="h-4 w-4 mr-1" />{t("postCard.download")}</a>
                             </Button>
                           </div>
                         </div>
@@ -727,7 +729,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                             ? "bg-primary text-primary-foreground shadow-sm scale-110"
                             : "hover:bg-primary/20 hover:text-primary text-foreground"
                         )}
-                        title={`Noter ${value}/5`}
+                        title={t("postCard.rateScoreTooltip", { value })}
                       >
                         {value}
                       </button>
@@ -741,7 +743,7 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                           handleImpactRate(null);
                         }}
                         className="h-7 w-7 rounded-full text-xs flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
-                        title="Retirer mon vote"
+                        title={t("postCard.removeVote")}
                       >
                         <X className="h-3.5 w-3.5" />
                       </button>
@@ -775,25 +777,25 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                       ? "bg-primary/15 border-primary/35 text-primary font-semibold hover:bg-primary/20"
                       : "bg-muted/50 hover:bg-muted/80 text-muted-foreground hover:text-foreground border-border/30"
                   )}
-                  title={userImpactRating ? `Impact attribue (${userImpactRating}/5) — Cliquer pour retirer` : "Cliquer pour +1 Impact ou maintenir pour evaluer de 1 a 5"}
+                  title={userImpactRating ? t("postCard.impactAssignedTitle", { score: userImpactRating }) : t("postCard.impactClickTitle")}
                 >
                   <Zap className={cn("h-5 w-5 shrink-0 transition-transform", userImpactRating ? "text-primary scale-110" : "text-muted-foreground group-hover:text-primary")} weight={userImpactRating ? "fill" : "regular"} />
                   <span>{impactScore}</span>
-                  <span className="hidden sm:inline">Impact</span>
+                  <span className="hidden sm:inline">{t("postCard.impact")}</span>
                 </Button>
               </div>
 
               {/* Middle: Comments */}
               {allowComments && (
-<Button
-                variant="ghost"
-                className="w-full h-9 sm:h-9.5 px-2 flex items-center justify-center gap-1.5 sm:gap-2 rounded-full text-xs sm:text-sm font-medium bg-muted/50 hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border/30 transition-all active:scale-95"
-                onClick={() => requireAuth(() => setCommentsOpen(true))}
-              >
-                <ChatTeardrop className="h-5 w-5 shrink-0" />
-                <span>{post.comments}</span>
-                <span className="hidden sm:inline">{post.comments > 1 ? "Commentaires" : "Commentaire"}</span>
-              </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full h-9 sm:h-9.5 px-2 flex items-center justify-center gap-1.5 sm:gap-2 rounded-full text-xs sm:text-sm font-medium bg-muted/50 hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border/30 transition-all active:scale-95"
+                  onClick={() => requireAuth(() => setCommentsOpen(true))}
+                >
+                  <ChatTeardrop className="h-5 w-5 shrink-0" />
+                  <span>{post.comments}</span>
+                  <span className="hidden sm:inline">{post.comments > 1 ? t("postCard.comments") : t("postCard.comment")}</span>
+                </Button>
               )}
 
               {/* Right: Share */}
@@ -801,10 +803,10 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
                 variant="ghost"
                 className="w-full h-9 sm:h-9.5 px-2 flex items-center justify-center gap-1.5 sm:gap-2 rounded-full text-xs sm:text-sm font-medium bg-muted/50 hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border/30 transition-all active:scale-95"
                 onClick={handleShare}
-                title="Partager ce post"
+                title={t("postCard.sharePostTooltip")}
               >
                 <Share className="h-5 w-5 shrink-0" />
-                <span>Partager</span>
+                <span>{t("postCard.share")}</span>
               </Button>
             </div>
           </div>
@@ -866,9 +868,9 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
           url={getPostUrl(post)}
           title={post.content ? (post.content.length > 60 ? post.content.substring(0, 60) + "..." : post.content) : "Post"}
           preview={{
-            title: post.content ? (post.content.length > 70 ? post.content.substring(0, 70) + "..." : post.content) : "Post de discussion",
+            title: post.content ? (post.content.length > 70 ? post.content.substring(0, 70) + "..." : post.content) : t("postCard.discussionPost"),
             description: post.content ? (post.content.length > 140 ? post.content.substring(0, 140) + "..." : post.content) : undefined,
-            subtitle: post.author?.name ? `Par ${post.author.name}` : "Discussion étudiante",
+            subtitle: post.author?.name ? t("postCard.byAuthor", { name: post.author.name }) : t("postCard.studentDiscussion"),
             badge: "Post",
             imageUrl: imageAttachments[0]?.url || null,
           }}
@@ -880,16 +882,15 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
       <Dialog open={showReportDialog} onOpenChange={setShowReportDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Signaler ce post</DialogTitle>
+            <DialogTitle>{t("postCard.reportModal.title")}</DialogTitle>
             <DialogDescription>
-              Aidez-nous à maintenir une communauté respectueuse en signalant ce contenu.
-              Les signalements sont persistés côté serveur.
+              {t("postCard.reportModal.description")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             {reportedReason && (
               <p className="text-sm rounded-md border border-primary/30 bg-primary/5 p-2">
-                Signalement déjà envoyé pour : <strong>{reportedReason}</strong>
+                {t("postCard.reportModal.alreadyReported", { reason: reportedReason })}
               </p>
             )}
             {reportError && (
@@ -898,25 +899,25 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
               </p>
             )}
             <p className="text-sm text-muted-foreground">
-              Pourquoi signalez-vous ce post ?
+              {t("postCard.reportModal.whyReport")}
             </p>
             <div className="space-y-2">
               {[
-                "Contenu inapproprié",
-                "Spam ou publicité",
-                "Harcèlement",
-                "Fausses informations",
-                "Violence",
-                "Autre"
-              ].map((reason) => (
+                { key: "inappropriate", label: t("postCard.reportModal.reasons.inappropriate") },
+                { key: "spam", label: t("postCard.reportModal.reasons.spam") },
+                { key: "harassment", label: t("postCard.reportModal.reasons.harassment") },
+                { key: "misinformation", label: t("postCard.reportModal.reasons.misinformation") },
+                { key: "violence", label: t("postCard.reportModal.reasons.violence") },
+                { key: "other", label: t("postCard.reportModal.reasons.other") }
+              ].map(({ key, label }) => (
                 <Button
-                  key={reason}
+                  key={key}
                   variant="outline"
                   className="w-full justify-start"
-                  onClick={() => handleSubmitReport(reason)}
+                  onClick={() => handleSubmitReport(label)}
                   disabled={isReporting}
                 >
-                  {isReporting ? "Envoi..." : reason}
+                  {isReporting ? t("postCard.reportModal.sending") : label}
                 </Button>
               ))}
             </div>
@@ -927,14 +928,14 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Modifier le post</DialogTitle>
-            <DialogDescription>Mettez à jour votre contenu puis validez.</DialogDescription>
+            <DialogTitle>{t("postCard.editModal.title")}</DialogTitle>
+            <DialogDescription>{t("postCard.editModal.description")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <Textarea value={editingContent} onChange={(e) => setEditingContent(e.target.value)} className="min-h-[120px]" maxLength={2000} />
             <div className="flex items-center justify-between py-1 px-1">
               <label htmlFor="edit-allow-comments" className="text-sm font-medium cursor-pointer">
-                Autoriser les commentaires
+                {t("postCard.editModal.allowComments")}
               </label>
               <Switch
                 id="edit-allow-comments"
@@ -943,9 +944,9 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
               />
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowEditDialog(false)} disabled={isUpdating}>Annuler</Button>
+              <Button variant="outline" onClick={() => setShowEditDialog(false)} disabled={isUpdating}>{t("postCard.editModal.cancel")}</Button>
               <Button onClick={handleConfirmEdit} disabled={isUpdating}>
-                {isUpdating ? "Enregistrement..." : "Enregistrer"}
+                {isUpdating ? t("postCard.editModal.saving") : t("postCard.editModal.save")}
               </Button>
             </div>
           </div>
@@ -955,15 +956,15 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Supprimer ce post ?</DialogTitle>
+            <DialogTitle>{t("postCard.deleteModal.title")}</DialogTitle>
             <DialogDescription>
-              Cette action est destructive et irréversible.
+              {t("postCard.deleteModal.description")}
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)} disabled={isDeleting}>Annuler</Button>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)} disabled={isDeleting}>{t("postCard.deleteModal.cancel")}</Button>
             <Button variant="destructive" onClick={handleConfirmDelete} disabled={isDeleting}>
-              {isDeleting ? "Suppression..." : "Supprimer"}
+              {isDeleting ? t("postCard.deleteModal.deleting") : t("postCard.deleteModal.delete")}
             </Button>
           </div>
         </DialogContent>
@@ -973,19 +974,18 @@ export function PostCard({ post, onToggleSave }: PostCardProps) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Zap className="h-5 w-5 text-foreground" weight="fill" />
-              Rejoignez CampusSphere
+              {t("postCard.authModal.title")}
             </DialogTitle>
             <DialogDescription>
-              Vous devez être connecté pour liker, commenter ou enregistrer des publications.
-              Créez un compte gratuitement pour rejoindre la discussion !
+              {t("postCard.authModal.description")}
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-3 mt-4">
             <Button onClick={() => navigate("/register")} className="bg-secondary hover:bg-muted text-secondary-foreground border border-border/60 w-full">
-              Créer un compte gratuitement
+              {t("postCard.authModal.createAccount")}
             </Button>
             <Button variant="outline" onClick={() => navigate("/login")} className="w-full">
-              Se connecter
+              {t("postCard.authModal.login")}
             </Button>
           </div>
         </DialogContent>

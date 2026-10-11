@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { getUser, listNotifications, markNotificationRead, markAllNotificationsRead, deleteNotification as deleteNotificationApi } from "@/services/api";
 import { Button } from "@/components/ui/button";
@@ -81,6 +82,7 @@ function mapNotificationsList(data: any): NotificationListItem[] {
 }
 
 export function Notifications() {
+  const { t, i18n } = useTranslation("notifications");
   const queryClient = useQueryClient();
   const [notifications, setNotifications] = useState<NotificationListItem[]>(() => {
     const cached = queryClient.getQueryData<any>(["notifications"]);
@@ -106,12 +108,12 @@ export function Notifications() {
       setNotifications(mapNotificationsList(notificationsQuery.data));
     } else if (notificationsQuery.error) {
       toast({
-        title: "Erreur",
-        description: (notificationsQuery.error as any)?.message || "Impossible de charger les notifications",
+        title: t("toasts.error"),
+        description: (notificationsQuery.error as any)?.message || t("toasts.loadFailed"),
         variant: "destructive",
       });
     }
-  }, [notificationsQuery.data, notificationsQuery.error, toast]);
+  }, [notificationsQuery.data, notificationsQuery.error, toast, t]);
 
   const getNotificationIcon = (type: CanonicalNotificationType) => {
     switch (type) {
@@ -142,13 +144,13 @@ export function Notifications() {
       await markNotificationRead(id);
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
       toast({
-        title: "Notification marquée comme lue",
+        title: t("toasts.markedRead"),
         duration: 1000,
       });
     } catch (e: any) {
       toast({
-        title: "Erreur",
-        description: "Impossible de marquer la notification comme lue",
+        title: t("toasts.error"),
+        description: t("toasts.markReadFailed"),
         variant: "destructive",
       });
     }
@@ -159,13 +161,13 @@ export function Notifications() {
       await markAllNotificationsRead();
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       toast({
-        title: "Toutes les notifications ont été marquées comme lues",
+        title: t("toasts.markedAllRead"),
         duration: 2000,
       });
     } catch (e: any) {
       toast({
-        title: "Erreur",
-        description: "Impossible de marquer toutes les notifications comme lues",
+        title: t("toasts.error"),
+        description: t("toasts.markAllReadFailed"),
         variant: "destructive",
       });
     }
@@ -174,22 +176,22 @@ export function Notifications() {
   const deleteNotification = async (id: string) => {
     const previousNotifications = [...notifications];
     const targetNotification = notifications.find((notification) => notification.id === id);
-    setStatusText("Suppression de la notification...");
+    setStatusText(t("deletingStatus"));
     setNotifications(prev => prev.filter(n => n.id !== id));
 
     try {
       await deleteNotificationApi(id);
-      setStatusText("Notification supprimée.");
+      setStatusText(t("deletedStatus"));
       toast({
-        title: "Notification supprimée",
+        title: t("toasts.deleted"),
         duration: 1000,
       });
     } catch (error: any) {
       setNotifications(previousNotifications);
       setStatusText(null);
       toast({
-        title: "Erreur",
-        description: error?.message || `Impossible de supprimer la notification${targetNotification?.title ? ` "${targetNotification.title}"` : ""}`,
+        title: t("toasts.error"),
+        description: error?.message || (targetNotification?.title ? t("toasts.deleteFailedNamed", { title: targetNotification.title }) : t("toasts.deleteFailed")),
         variant: "destructive",
       });
     }
@@ -237,16 +239,16 @@ export function Notifications() {
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">Notifications</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">{t("title")}</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              {unreadCount > 0 ? `${unreadCount} nouvelles notifications` : "Toutes vos notifications sont à jour"}
+              {unreadCount > 0 ? t("unreadCount", { count: unreadCount }) : t("allCaughtUp")}
             </p>
             {statusText && <p className="text-xs text-muted-foreground mt-1">{statusText}</p>}
           </div>
           {unreadCount > 0 && (
             <Button variant="outline" size="sm" onClick={handleMarkAllAsRead} className="gap-2">
               <CheckCheck className="h-4 w-4" />
-              <span className="hidden md:block">Tout marquer comme lu</span>
+              <span className="hidden md:block">{t("markAllAsRead")}</span>
             </Button>
           )}
         </div>
@@ -266,9 +268,9 @@ export function Notifications() {
           {!loading && notifications.length === 0 && (
             <div className="py-16 text-center">
               <Bell className="h-10 w-10 text-muted-foreground/60 mb-3 mx-auto" />
-              <h3 className="text-base font-semibold mb-1">Aucune notification</h3>
+              <h3 className="text-base font-semibold mb-1">{t("empty.title")}</h3>
               <p className="text-sm text-muted-foreground">
-                Vous n'avez pas encore de notifications.
+                {t("empty.description")}
               </p>
             </div>
           )}
@@ -306,7 +308,7 @@ export function Notifications() {
                           {notification.title}
                         </span>
                         <span className="text-xs text-muted-foreground flex-shrink-0">
-                          {new Date(notification.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
+                          {new Date(notification.createdAt).toLocaleDateString(i18n.language === "en" ? "en-US" : "fr-FR", { day: '2-digit', month: '2-digit' })}
                         </span>
                       </div>
 
@@ -331,7 +333,7 @@ export function Notifications() {
                             </Avatar>
                           )}
                           <span className="text-xs text-muted-foreground truncate">
-                            {notification.sender?.name || (notification.type === "system" ? "CampusSphere" : "Membre")}
+                            {notification.sender?.name || (notification.type === "system" ? t("sender.system") : t("sender.member"))}
                           </span>
                         </div>
                         <div className="flex items-center gap-1 flex-shrink-0">
@@ -341,7 +343,7 @@ export function Notifications() {
                               size="icon"
                               onClick={(e) => { e.stopPropagation(); markAsRead(notification.id); }}
                               className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                              title="Marquer comme lu"
+                              title={t("markAsRead")}
                             >
                               <CheckCheck className="h-3.5 w-3.5" />
                             </Button>
@@ -351,7 +353,7 @@ export function Notifications() {
                             size="icon"
                             onClick={(e) => { e.stopPropagation(); deleteNotification(notification.id); }}
                             className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                            title="Supprimer"
+                            title={t("delete")}
                           >
                             <X className="h-3.5 w-3.5" />
                           </Button>

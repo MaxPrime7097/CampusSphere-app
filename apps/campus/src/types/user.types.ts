@@ -1,7 +1,34 @@
+export type UserRole = "student" | "teacher" | "impact_partner" | "admin";
+
+export type PartnerOrganizationType = "entreprise" | "club" | "association" | "institution";
+
+export interface PartnerProfile {
+  id?: number;
+  organizationName: string;
+  organizationType: PartnerOrganizationType | string;
+  sector?: string;
+  website?: string;
+  isVerified: boolean;
+  verifiedAt?: string | null;
+}
+
+export interface PartnerApplication {
+  id: number;
+  organizationName: string;
+  organizationType: PartnerOrganizationType | string;
+  contactEmail: string;
+  description: string;
+  status: "PENDING" | "APPROVED" | "REJECTED" | "pending" | "approved" | "rejected";
+  createdAt: string;
+  reviewedAt?: string | null;
+  reviewedBy?: { id: number; username: string; firstName: string; lastName: string } | null;
+}
+
 export interface UserStats {
   posts: number;
   connections: number;
   contributions: number;
+  followers?: number;
 }
 
 export type ProfileVisibility = "public" | "connections" | "private";
@@ -65,11 +92,17 @@ export interface UserProfile {
   portfolioLinks: UserPortfolioLink[];
   joinedSpheresCount: number;
   connectionsCount: number;
+  followersCount?: number;
+  isFollowing?: boolean;
+  role?: UserRole;
+  partnerProfile?: PartnerProfile | null;
+  partner_profile?: PartnerProfile | null;
   dateJoined: string | null;
   updatedAt: string | null;
   phoneNumber?: string;
   dateOfBirth?: string;
   isVerified: boolean;
+  is_profile_complete?: boolean;
   stats: UserStats;
   [key: string]: any;
 }
@@ -90,4 +123,6 @@ export interface UserSearchResult {
   university?: string;
   faculty?: string;
   isVerified?: boolean;
+  role?: UserRole;
+  partnerProfile?: PartnerProfile | null;
 }

@@ -14,6 +14,8 @@ export interface ConversationParticipant {
 
 export interface Conversation {
   id: string;
+  hash_id?: string;
+  numericId?: number;
   type: ConversationType;
   name: string;
   avatar: string | null;

@@ -18,9 +18,11 @@ import { badRequest, forbidden, notFound } from "../lib/errors.js";
 import { resolveSphereId } from "../lib/sphereLookup.js";
 import { currentUser, requireAuth } from "../middleware/auth.js";
 import { createNotification } from "../services/notifications.js";
+import { httpCache, autoInvalidate } from "../lib/cache.js";
 
 export const tasksRouter: Router = Router();
 tasksRouter.use(requireAuth);
+tasksRouter.use(autoInvalidate(["tasks", "spheres"]));
 
 const PRIORITIES = ["low", "medium", "high"] as const;
 const KANBAN = ["todo", "in_progress", "review", "done"] as const;
@@ -89,7 +91,7 @@ const createSchema = z.object({
   kanban_status: z.enum(KANBAN).default("todo"),
 });
 
-tasksRouter.get("/", async (req, res) => {
+tasksRouter.get("/", httpCache({ namespace: "tasks", ttlSeconds: 60 }), async (req, res) => {
   const me = currentUser(req);
   const { page, pageSize, skip } = paginationParams(req.query as Record<string, unknown>);
   const search = String(req.query.search ?? "").trim();
@@ -198,12 +200,12 @@ async function listTasksFor(req: Request, res: Response, where: Prisma.TaskWhere
   );
 }
 
-tasksRouter.get("/user/", async (req, res) => {
+tasksRouter.get("/user/", httpCache({ namespace: "tasks", ttlSeconds: 60 }), async (req, res) => {
   const me = currentUser(req);
   await listTasksFor(req, res, { assignedToId: me.id, sphereId: { in: await memberSphereIds(me.id) } });
 });
 
-tasksRouter.get("/user/:userId/", async (req, res) => {
+tasksRouter.get("/user/:userId/", httpCache({ namespace: "tasks", ttlSeconds: 60 }), async (req, res) => {
   const me = currentUser(req);
   // Still scoped to the caller's spheres: you may look at another member's tasks,
   // but only within spheres you both belong to.
@@ -213,7 +215,7 @@ tasksRouter.get("/user/:userId/", async (req, res) => {
   });
 });
 
-tasksRouter.get("/sphere/:sphereId/", async (req, res) => {
+tasksRouter.get("/sphere/:sphereId/", httpCache({ namespace: "tasks", ttlSeconds: 60 }), async (req, res) => {
   const me = currentUser(req);
   const sphereId = await resolveSphereId(req.params.sphereId);
 
@@ -235,7 +237,7 @@ const updateSchema = z.object({
   kanban_status: z.enum(KANBAN).optional(),
 });
 
-tasksRouter.get("/:id/", async (req, res) => {
+tasksRouter.get("/:id/", httpCache({ namespace: "tasks", ttlSeconds: 60 }), async (req, res) => {
   const { task, membership, me } = await loadTask(req);
   ok(res, serializeTask(task, { viewerId: me.id, membership }));
 });

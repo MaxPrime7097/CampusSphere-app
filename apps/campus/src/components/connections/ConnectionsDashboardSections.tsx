@@ -2,6 +2,7 @@ import { UsersThree as Users, UserPlus } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { ConnectionSkeleton } from "@/components/ui/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useTranslation } from "react-i18next";
 import { ConnectionCard } from "./ConnectionCard";
 import { SuggestionCard } from "./SuggestionCard";
 import { PendingRequestCard } from "./PendingRequestCard";
@@ -32,6 +33,8 @@ export function ConnectionsDashboardSections({
   onRejectRequest,
   onConnectSuggestion,
 }: ConnectionsDashboardSectionsProps) {
+  const { t } = useTranslation("connections");
+
   return (
     <div className="flex flex-col gap-10 mt-6 pb-12">
       {/* Row 1: Demandes (Only if > 0) */}
@@ -39,7 +42,7 @@ export function ConnectionsDashboardSections({
         <section className="space-y-1">
           <div className="flex justify-between items-center pb-2 border-b border-border/40 px-1">
             <h2 className="text-sm font-semibold tracking-wide flex items-center gap-2">
-              Demandes en attente ({pendingRequests.length})
+              {t("sections.pendingRequests")} ({pendingRequests.length})
             </h2>
             {pendingRequests.length > 4 && (
               <Button
@@ -48,7 +51,7 @@ export function ConnectionsDashboardSections({
                 className="text-xs text-muted-foreground hover:text-foreground font-medium h-7 px-2"
                 onClick={() => onViewAll("requests")}
               >
-                Voir tout
+                {t("sections.viewAllSimple")}
               </Button>
             )}
           </div>
@@ -76,7 +79,7 @@ export function ConnectionsDashboardSections({
       <section className="space-y-1">
         <div className="flex justify-between items-center pb-2 border-b border-border/40 px-1">
           <h2 className="text-sm font-semibold tracking-wide flex items-center gap-2">
-            Mes Connexions ({connections.length})
+            {t("sections.myConnections")} ({connections.length})
           </h2>
           {connections.length > 5 && (
             <Button
@@ -85,7 +88,7 @@ export function ConnectionsDashboardSections({
               className="text-xs text-muted-foreground hover:text-foreground font-medium h-7 px-2"
               onClick={() => onViewAll("connections")}
             >
-              Voir tout
+              {t("sections.viewAllSimple")}
             </Button>
           )}
         </div>
@@ -98,8 +101,8 @@ export function ConnectionsDashboardSections({
         ) : connections.length === 0 ? (
           <EmptyState
             icon={Users}
-            title="Aucune connexion"
-            description="Commencez à vous connecter avec d'autres étudiants !"
+            title={t("empty.connectionsTitle")}
+            description={t("empty.connectionsDesc")}
           />
         ) : (
           <div className="flex flex-col">
@@ -119,7 +122,7 @@ export function ConnectionsDashboardSections({
       <section className="space-y-1">
         <div className="flex justify-between items-center pb-2 border-b border-border/40 px-1">
           <h2 className="text-sm font-semibold tracking-wide flex items-center gap-2">
-            Suggestions ({suggestions.length})
+            {t("sections.suggestions")} ({suggestions.length})
           </h2>
           {suggestions.length > 5 && (
             <Button
@@ -128,7 +131,7 @@ export function ConnectionsDashboardSections({
               className="text-xs text-muted-foreground hover:text-foreground font-medium h-7 px-2"
               onClick={() => onViewAll("suggestions")}
             >
-              Voir tout
+              {t("sections.viewAllSimple")}
             </Button>
           )}
         </div>
@@ -141,8 +144,8 @@ export function ConnectionsDashboardSections({
         ) : suggestions.length === 0 ? (
           <EmptyState
             icon={UserPlus}
-            title="Aucune suggestion"
-            description="Revenez plus tard, de nouveaux étudiants rejoignent la plateforme."
+            title={t("empty.suggestionsTitle")}
+            description={t("empty.suggestionsDesc")}
           />
         ) : (
           <div className="flex flex-col">

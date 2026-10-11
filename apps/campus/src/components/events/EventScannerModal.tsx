@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { QrCode, CheckCircle as CheckCircle2, Warning as AlertTriangle, XCircle, MagnifyingGlass as Search, Users, Camera, ArrowClockwise as RefreshCw, Sparkle as Sparkles } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
+import { QrCode, CheckCircle as CheckCircle2, Warning as AlertTriangle, XCircle, Camera } from "@phosphor-icons/react";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +28,7 @@ export function EventScannerModal({
   attendees,
   onCheckInSuccess,
 }: EventScannerModalProps) {
+  const { t } = useTranslation("events");
   const [ticketInput, setTicketInput] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [scanResult, setScanResult] = useState<{
@@ -51,13 +53,14 @@ export function EventScannerModal({
       if (res.alreadyCheckedIn) {
         setScanResult({
           status: "already_scanned",
-          message: "Attention : Ce billet a déjà été validé précédemment.",
+          message: t("scannerModal.alreadyScanned"),
           attendee: res.attendee,
         });
       } else {
+        const studentName = res.attendee?.user?.name || res.attendee?.user?.username || "";
         setScanResult({
           status: "success",
-          message: `Présence validée avec succès pour ${res.attendee?.user?.name || res.attendee?.user?.username || "l'étudiant"}.`,
+          message: t("scannerModal.scanSuccess", { name: studentName }),
           attendee: res.attendee,
         });
         onCheckInSuccess(res.attendee);
@@ -66,7 +69,7 @@ export function EventScannerModal({
     } catch (err: any) {
       setScanResult({
         status: "error",
-        message: err?.message || "Billet introuvable pour cet événement.",
+        message: err?.message || t("scannerModal.scanError"),
       });
     } finally {
       setIsProcessing(false);
@@ -80,10 +83,10 @@ export function EventScannerModal({
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-2 text-lg font-bold">
               <QrCode className="h-5 w-5 text-muted-foreground" />
-              <span>Contrôle d'accès & Check-in</span>
+              <span>{t("scannerModal.title")}</span>
             </DialogTitle>
             <Badge variant="secondary" className="text-xs font-semibold">
-              {checkedInCount} / {attendees.length} entrées
+              {t("scannerModal.entriesCount", { checked: checkedInCount, total: attendees.length })}
             </Badge>
           </div>
           <p className="text-xs text-muted-foreground line-clamp-1">{event.title}</p>
@@ -96,22 +99,22 @@ export function EventScannerModal({
 
           <Camera className="h-10 w-10 text-muted-foreground mb-1" />
           <span className="text-xs font-bold tracking-wide">
-            Viseur de scan actif
+            {t("scannerModal.viewfinderActive")}
           </span>
           <span className="text-[10px] text-white/60">
-            Pointez vers le QR code de l'étudiant
+            {t("scannerModal.instruction")}
           </span>
         </div>
 
         {/* Manual Code Input */}
         <div className="space-y-2">
           <label className="text-xs font-bold text-foreground block">
-            Ou saisir le code de billet manuellement :
+            {t("scannerModal.instruction")}
           </label>
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
               <Input
-                placeholder="Ex: CS-EVT-1-42-9B3F"
+                placeholder={t("scannerModal.manualPlaceholder")}
                 value={ticketInput}
                 onChange={(e) => setTicketInput(e.target.value)}
                 onKeyDown={(e) => {
@@ -126,7 +129,7 @@ export function EventScannerModal({
               disabled={isProcessing || !ticketInput.trim()}
               className="rounded-xl font-bold text-xs shrink-0"
             >
-              {isProcessing ? "Validation..." : "Valider"}
+              {isProcessing ? t("scannerModal.validating") : t("scannerModal.validate")}
             </Button>
           </div>
         </div>
@@ -154,10 +157,10 @@ export function EventScannerModal({
               )}
               <span>
                 {scanResult.status === "success"
-                  ? "Entrée Validée"
+                  ? t("attendeesModal.checkInSuccess")
                   : scanResult.status === "already_scanned"
-                  ? "Billet Déjà Validé"
-                  : "Erreur de validation"}
+                  ? t("scannerModal.alreadyScanned")
+                  : t("attendeesModal.checkInError")}
               </span>
             </div>
             <p className="text-[11px] leading-relaxed">{scanResult.message}</p>
@@ -167,7 +170,7 @@ export function EventScannerModal({
         {/* Quick check-in from registered list */}
         <div className="space-y-2 pt-2 border-t border-border/50">
           <span className="text-xs font-bold text-muted-foreground block">
-            Participants inscrits récents :
+            {t("attendeesModal.tabs.going")} :
           </span>
           <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1">
             {attendees.slice(0, 5).map((att) => (
@@ -181,7 +184,7 @@ export function EventScannerModal({
 
                 {att.status === "attended" || att.isCheckedIn ? (
                   <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[10px]">
-                    Présent
+                    {t("attendeesModal.checkedIn")}
                   </Badge>
                 ) : (
                   <Button
@@ -190,7 +193,7 @@ export function EventScannerModal({
                     onClick={() => handleValidateTicket(att.ticketCode || String(att.user.id))}
                     className="h-6 text-[10px] rounded-lg"
                   >
-                    Valider l'entrée
+                    {t("attendeesModal.manualCheckin")}
                   </Button>
                 )}
               </div>
@@ -203,7 +206,7 @@ export function EventScannerModal({
           onClick={() => onOpenChange(false)}
           className="w-full rounded-xl text-xs font-semibold"
         >
-          Terminer le contrôle
+          {t("createEvent.cancel")}
         </Button>
       </DialogContent>
     </Dialog>

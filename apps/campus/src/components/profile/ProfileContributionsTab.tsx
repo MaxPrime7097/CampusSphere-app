@@ -4,6 +4,7 @@ import { ResourceSkeleton } from "@/components/ui/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
 import { normalizeResourceType, normalizeSubject } from "@/lib/resourceMetadata";
 import { NOT_AVAILABLE_TEXT } from "@/constants/profileConstants";
+import { useTranslation } from "react-i18next";
 
 export interface SharedFileItem {
   id: string | number;
@@ -32,12 +33,14 @@ export function ProfileContributionsTab({
   resourcesAvailable,
   onDownloadFile,
 }: ProfileContributionsTabProps) {
+  const { t } = useTranslation("profile");
+
   return (
     <section className="mt-6">
       <div className="flex items-center justify-between pb-3 border-b border-border/40 mb-2">
         <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
           <FileText className="h-4 w-4 text-muted-foreground" />
-          Fichiers partagés <span className="text-muted-foreground font-normal">({sharedFiles.length})</span>
+          {t("contributions.title")} <span className="text-muted-foreground font-normal">({sharedFiles.length})</span>
         </h3>
       </div>
       {loading ? (
@@ -51,12 +54,12 @@ export function ProfileContributionsTab({
           icon={FileText}
           title={
             resourcesAvailable
-              ? "Aucune contribution pour le moment"
-              : "Contributions non disponibles"
+              ? t("contributions.emptyTitle")
+              : t("contributions.unavailableTitle")
           }
           description={
             resourcesAvailable
-              ? "Cet utilisateur n'a pas encore partagé de ressources."
+              ? t("contributions.emptyDesc")
               : NOT_AVAILABLE_TEXT
           }
         />

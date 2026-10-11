@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Download, Eye, BookmarkSimple, Lightning as Zap, SealCheck as BadgeCheck, PencilSimple, FolderSimplePlus as FolderInput, Trash as Trash2, ShareNetwork as Share2, Flag, Spinner as Loader2, X } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -23,6 +24,7 @@ import {
   getCategoryLabel,
 } from "@/lib/resourceMetadata";
 import { impactRateResource, type ResourceFolder } from "@/services/api";
+import { AddToFolderModal } from "@/components/modals/AddToFolderModal";
 
 interface ResourceHeaderProps {
   resource: {
@@ -81,10 +83,12 @@ export function ResourceHeader({
   onMoveToFolder,
 }: ResourceHeaderProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation("resources");
   const { toast } = useToast();
   const { user } = useAuth();
   const [showFolderSelect, setShowFolderSelect] = useState(false);
   const [isMovingToFolder, setIsMovingToFolder] = useState(false);
+  const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
 
   // Option A Rating state
   const [impactScore, setImpactScore] = useState(Number(resource.impactScore || 0));
@@ -152,7 +156,7 @@ export function ResourceHeader({
 
   const handleImpactRate = async (value: number | null) => {
     if (!user && !getAccessToken()) {
-      toast({ title: "Connexion requise", description: "Connectez-vous pour voter", duration: 2000 });
+      toast({ title: t("feedCard.toasts.loginRequired"), description: t("feedCard.toasts.loginToVote"), duration: 2000 });
       return;
     }
 
@@ -168,7 +172,7 @@ export function ResourceHeader({
     setStoredResourceRating(canonicalId, value, optimisticScore);
 
     toast({
-      title: value === null ? "Vote retiré" : `Impact noté : +${value}`,
+      title: value === null ? t("feedCard.toasts.voteRemoved") : t("feedCard.toasts.impactVoted", { value }),
       duration: 1500,
     });
 
@@ -185,8 +189,8 @@ export function ResourceHeader({
       setUserImpactRating(prevRating);
       setStoredResourceRating(canonicalId, prevRating, prevScore);
       toast({
-        title: "Erreur",
-        description: error?.message || "Impossible d'enregistrer votre vote",
+        title: t("feedCard.toasts.error"),
+        description: error?.message || t("feedCard.toasts.voteFailed"),
         variant: "destructive",
         duration: 2000,
       });
@@ -198,7 +202,7 @@ export function ResourceHeader({
     longPressTimerRef.current = setTimeout(() => {
       isLongPressRef.current = true;
       if (!user && !getAccessToken()) {
-        toast({ title: "Connexion requise", description: "Connectez-vous pour voter", duration: 2000 });
+        toast({ title: t("feedCard.toasts.loginRequired"), description: t("feedCard.toasts.loginToVote"), duration: 2000 });
         return;
       }
       setShowRatingPicker(true);
@@ -251,7 +255,7 @@ export function ResourceHeader({
       return;
     }
     if (!user && !getAccessToken()) {
-      toast({ title: "Connexion requise", description: "Connectez-vous pour voter", duration: 2000 });
+      toast({ title: t("feedCard.toasts.loginRequired"), description: t("feedCard.toasts.loginToVote"), duration: 2000 });
       return;
     }
     setShowRatingPicker(false);
@@ -273,7 +277,8 @@ export function ResourceHeader({
   };
 
   return (
-    <div className="pb-6 mb-4 border-b border-border/40">
+    <>
+      <div className="pb-6 mb-4 border-b border-border/40">
       <div>
         {/* Title & Badges */}
         <div className="mb-4">
@@ -288,7 +293,7 @@ export function ResourceHeader({
               <Badge variant="outline">{getCategoryLabel(resource.category)}</Badge>
             )}
             <Badge variant="outline">
-              {resource.format ? resource.format.toUpperCase() : "Non défini"}
+              {resource.format ? resource.format.toUpperCase() : t("detail.notDefined")}
             </Badge>
           </div>
           <h1 className="text-2xl md:text-3xl font-bold mb-2 break-words break-all sm:break-normal">
@@ -347,7 +352,7 @@ export function ResourceHeader({
                         ? "bg-primary text-primary-foreground shadow-sm scale-110"
                         : "hover:bg-primary/20 hover:text-primary text-foreground"
                     )}
-                    title={`Noter ${value}/5`}
+                    title={t("feedCard.rateScoreTooltip", { value })}
                   >
                     {value}
                   </button>
@@ -361,7 +366,7 @@ export function ResourceHeader({
                       handleImpactRate(null);
                     }}
                     className="h-7 w-7 rounded-full text-xs flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
-                    title="Retirer mon vote"
+                    title={t("feedCard.removeVote")}
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
@@ -383,13 +388,13 @@ export function ResourceHeader({
               )}
               title={
                 userImpactRating
-                  ? `Impact attribue (${userImpactRating}/5) — Cliquer pour retirer`
-                  : "Cliquer pour +1 Impact ou maintenir pour evaluer de 1 a 5"
+                  ? t("feedCard.impactAssignedTitle", { score: userImpactRating })
+                  : t("feedCard.impactClickTitle")
               }
             >
               <Zap className="h-4 w-4 text-primary" weight={userImpactRating ? "fill" : "regular"} />
               <span className="text-xs font-bold text-primary">{impactScore}</span>
-              <span className="text-xs text-muted-foreground hidden sm:inline">Impact</span>
+              <span className="text-xs text-muted-foreground hidden sm:inline">{t("detail.impact")}</span>
             </button>
           </div>
         </div>
@@ -415,7 +420,7 @@ export function ResourceHeader({
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                {resource.uploader.contributions} contributions
+                {t("detail.contributions", { count: resource.uploader.contributions })}
               </p>
             </div>
           </div>
@@ -427,11 +432,11 @@ export function ResourceHeader({
               onClick={onSave}
               disabled={isSaving}
               className="gap-2"
-              aria-label={isSaved ? "Retirer des enregistrements" : "Enregistrer la ressource"}
+              aria-label={isSaved ? t("detail.savedAria") : t("detail.saveAria")}
             >
               <BookmarkSimple className="h-4 w-4" weight={isSaved ? "fill" : "regular"} />
               <span className="hidden md:inline">
-                {isSaved ? "Enregistré" : "Enregistrer"}
+                {isSaved ? t("detail.saved") : t("detail.save")}
               </span>
             </Button>
 
@@ -441,63 +446,24 @@ export function ResourceHeader({
                 size="sm"
                 onClick={onOpenEdit}
                 className="gap-2"
-                aria-label="Modifier la ressource"
+                aria-label={t("detail.edit")}
               >
                 <PencilSimple className="h-4 w-4" />
-                <span className="hidden md:inline">Modifier</span>
+                <span className="hidden md:inline">{t("detail.edit")}</span>
               </Button>
             )}
 
-            {resource.canEdit && folders.length > 0 && !showFolderSelect && (
+            {user && (
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowFolderSelect(true)}
+                onClick={() => setIsFolderModalOpen(true)}
                 className="gap-2"
-                aria-label="Déplacer vers un dossier"
+                aria-label={t("detail.folder", { defaultValue: "Dossiers" })}
               >
                 <FolderInput className="h-4 w-4" />
-                <span className="hidden md:inline">Dossier</span>
+                <span className="hidden md:inline">{t("detail.folder", { defaultValue: "Dossiers" })}</span>
               </Button>
-            )}
-
-            {resource.canEdit && folders.length > 0 && showFolderSelect && (
-              <div className="flex items-center gap-1">
-                <Select
-                  value={currentFolderId}
-                  onValueChange={handleFolderChange}
-                >
-                  <SelectTrigger className="h-8 text-xs w-36">
-                    {isMovingToFolder ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <SelectValue placeholder="Choisir dossier" />
-                    )}
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Aucun dossier</SelectItem>
-                    {folders.map((f) => (
-                      <SelectItem
-                        key={f.id}
-                        value={String(f.id)}
-                        disabled={
-                          f.resource_count >= 20 && currentFolderId !== String(f.id)
-                        }
-                      >
-                        {f.name} ({f.resource_count}/20)
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setShowFolderSelect(false)}
-                >
-                  <X className="h-3.5 w-3.5" />
-                </Button>
-              </div>
             )}
 
             {resource.canDelete && (
@@ -507,14 +473,14 @@ export function ResourceHeader({
                 onClick={onOpenDelete}
                 disabled={isDeleting}
                 className="gap-2"
-                aria-label="Supprimer la ressource"
+                aria-label={t("detail.delete")}
               >
                 {isDeleting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <Trash2 className="h-4 w-4" />
                 )}
-                <span className="hidden md:inline">Supprimer</span>
+                <span className="hidden md:inline">{t("detail.delete")}</span>
               </Button>
             )}
 
@@ -524,14 +490,14 @@ export function ResourceHeader({
               onClick={onShare}
               disabled={isSharing}
               className="gap-2"
-              aria-label="Partager la ressource"
+              aria-label={t("detail.share")}
             >
               {isSharing ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Share2 className="h-4 w-4" />
               )}
-              <span className="hidden md:inline">Partager</span>
+              <span className="hidden md:inline">{t("detail.share")}</span>
             </Button>
 
             <Button
@@ -540,18 +506,25 @@ export function ResourceHeader({
               onClick={onReport}
               disabled={isReporting}
               className="gap-2"
-              aria-label="Signaler la ressource"
+              aria-label={t("detail.report")}
             >
               {isReporting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Flag className="h-4 w-4" />
               )}
-              <span className="hidden md:inline">Signaler</span>
+              <span className="hidden md:inline">{t("detail.report")}</span>
             </Button>
           </div>
         </div>
       </div>
     </div>
-  );
+    <AddToFolderModal
+      isOpen={isFolderModalOpen}
+      onClose={() => setIsFolderModalOpen(false)}
+      resourceId={resource.id}
+      resourceTitle={resource.title}
+    />
+  </>
+);
 }

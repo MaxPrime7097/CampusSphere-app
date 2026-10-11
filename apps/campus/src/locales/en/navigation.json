@@ -1,0 +1,142 @@
+{
+  "about": "About",
+  "admin": "Admin",
+  "collapse": "Collapse",
+  "connections": "Connections",
+  "contact": "Contact",
+  "events": "Events",
+  "faq": "FAQ",
+  "help": "Help",
+  "home": "Home",
+  "impactScore": "Impact Score",
+  "joinCommunity": "Join the community",
+  "login": "Sign In",
+  "logout": "Log out",
+  "menu": "Menu",
+  "messages": "Messages",
+  "navigation": "Navigation",
+  "newPost": "Create post",
+  "notifications": "Notifications",
+  "openSphera": "Open Sphera",
+  "policies": "Policies",
+  "profile": "Profile",
+  "publish": "Post",
+  "quickActions": "Quick actions",
+  "register": "Sign Up",
+  "resources": "Resources",
+  "saved": "Saved items",
+  "searchPlaceholder": "Search on CampusSphere...",
+  "searchShortcut": "Search...",
+  "settings": "Settings",
+  "spheres": "Spheres",
+  "utilities": "Utilities",
+  "company": "Company",
+  "privacyPolicy": "Privacy Policy",
+  "termsOfService": "Terms of Service",
+  "termsOfSale": "Terms of Sale (CGV)",
+  "legalNotice": "Legal Notice",
+  "communityGuidelines": "Community Guidelines",
+  "cookiePolicy": "Cookie Policy",
+  "copyright": "Copyright",
+  "dataDeletion": "Data Deletion",
+  "footerTagline": "The platform connecting students and enhancing the university experience. Together, we build the future of collaborative education.",
+  "allRightsReserved": "All rights reserved. Built with passion for students.",
+  "savedItems": {
+    "title": "Saved items",
+    "subtitle": "Quickly find your saved posts and academic resources",
+    "tabs": {
+      "posts": "Posts",
+      "resources": "Resources"
+    },
+    "emptyPosts": {
+      "title": "No saved posts",
+      "description": "Posts you save will appear here."
+    },
+    "emptyResources": {
+      "title": "No saved resources",
+      "description": "Resources you save will appear here.",
+      "action": "Browse resources"
+    },
+    "toasts": {
+      "postRemoved": "Post removed from saves",
+      "postRemovedDesc": "The post was removed from your saved items",
+      "resourceRemoved": "Resource removed from saves",
+      "removeFailed": "Could not remove post",
+      "downloadFailed": "Download failed"
+    }
+  },
+  "search": {
+    "placeholder": "Search posts, events, students, courses, tutorials, spheres...",
+    "clear": "Clear search",
+    "sort": {
+      "label": "Sort:",
+      "placeholder": "Sort by",
+      "relevance": "Relevance",
+      "name": "Name"
+    },
+    "tabs": {
+      "all": "All",
+      "posts": "Posts",
+      "events": "Events",
+      "users": "People",
+      "resources": "Resources",
+      "spheres": "Spheres"
+    },
+    "discovery": {
+      "suggestedTitle": "Suggested searches",
+      "eventsTitle": "Campus events",
+      "allEvents": "All events",
+      "viewEvent": "View event",
+      "spheresTitle": "Study spheres to explore",
+      "allSpheres": "All spheres",
+      "explore": "Explore",
+      "resourcesTitle": "Recent course resources",
+      "allResources": "All resources",
+      "consult": "View"
+    },
+    "empty": {
+      "title": "No results for \"{{query}}\"",
+      "description": "Check your spelling or try a more general keyword (subject, university, name)."
+    },
+    "dropdown": {
+      "searching": "Searching...",
+      "noResults": "No results found for \"{{query}}\"",
+      "pressEnter": "Press Enter to launch a full search.",
+      "byAuthor": "By {{author}}",
+      "author": "Author",
+      "document": "Document",
+      "sphere": "Sphere",
+      "members": "members",
+      "online": "Online",
+      "campus": "Campus",
+      "seeAll": "See all results for \"{{query}}\"",
+      "enterKey": "↵ Enter"
+    }
+  },
+  "notFound": {
+    "title": "Oops! Page not found",
+    "returnHome": "Return to Home"
+  },
+  "forbidden": {
+    "title": "Access Forbidden",
+    "description": "You do not have the required administrator permissions to access this page.",
+    "returnHome": "Return to Home"
+  },
+  "postDetail": {
+    "backToFeed": "Back to feed",
+    "guestTitle": "Interested in this discussion?",
+    "guestDesc": "Join CampusSphere to exchange with peers and access study resources.",
+    "guestCta": "Join the community"
+  },
+  "offline": {
+    "connectionLost": "Internet connection lost",
+    "refresh": "Refresh"
+  },
+  "cookieBanner": {
+    "title": "Cookies",
+    "description": "We use essential cookies for platform functionality and performance cookies to improve your experience.",
+    "learnMore": "Learn more",
+    "decline": "Decline",
+    "accept": "Accept"
+  }
+}

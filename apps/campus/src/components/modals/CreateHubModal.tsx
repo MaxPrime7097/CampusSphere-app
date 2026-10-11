@@ -1,5 +1,6 @@
 import { useState, useEffect, Suspense, lazy } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Pen as PenLine, Upload, UsersThree as Users, Calendar, ChatCircle as MessageSquare, ArrowRight } from "@phosphor-icons/react";
 import { useAuth } from "@/contexts/AuthContext";
+import { getVerificationAccessStatus } from "@/utils/verification";
 import { useToast } from "@/hooks/use-toast";
 import { openVerificationModal } from "@/lib/events";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
@@ -48,13 +50,14 @@ export function CreateHubModal({
   onResourceUploaded,
   onSphereCreated,
 }: CreateHubModalProps) {
+  const { t } = useTranslation("feed");
   const navigate = useNavigate();
   const [internalOpen, setInternalOpen] = useState(false);
   const [selectedAction, setSelectedAction] = useState<ActionType | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const isVerified = (user as any)?.isVerified ?? false;
+  const { canPerformAction } = getVerificationAccessStatus(user);
 
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
   const setOpen = setControlledOpen ?? setInternalOpen;
@@ -66,10 +69,10 @@ export function CreateHubModal({
   }, [open]);
 
   const handleActionClick = (type: ActionType) => {
-    if (!isVerified) {
+    if (!canPerformAction) {
       toast({
-        title: "Compte non certifié",
-        description: "Vous devez certifier votre compte pour effectuer cette action.",
+        title: t("createHub.unverifiedTitle"),
+        description: t("createHub.unverifiedDesc"),
         variant: "destructive",
         action: (
           <button
@@ -77,7 +80,7 @@ export function CreateHubModal({
             className="text-xs font-bold underline cursor-pointer"
             onClick={() => openVerificationModal()}
           >
-            Vérifier
+            {t("createHub.verifyAction")}
           </button>
         ),
       });
@@ -104,40 +107,40 @@ export function CreateHubModal({
   const actions = [
     {
       id: "post" as const,
-      title: "Nouveau post",
-      description: "Partagez une réflexion, question ou actualité avec le campus",
+      title: t("createHub.actions.post.title"),
+      description: t("createHub.actions.post.description"),
       icon: PenLine,
       iconColor: "text-blue-500 dark:text-blue-400",
       iconBg: "bg-blue-500/10 border-blue-500/20",
     },
     {
       id: "resource" as const,
-      title: "Partager une ressource",
-      description: "Publiez un cours, une fiche de révision, un TD ou des annales",
+      title: t("createHub.actions.resource.title"),
+      description: t("createHub.actions.resource.description"),
       icon: Upload,
       iconColor: "text-emerald-500 dark:text-emerald-400",
       iconBg: "bg-emerald-500/10 border-emerald-500/20",
     },
     {
       id: "sphere" as const,
-      title: "Créer une sphère",
-      description: "Lancez un espace de travail, un projet ou une communauté",
+      title: t("createHub.actions.sphere.title"),
+      description: t("createHub.actions.sphere.description"),
       icon: Users,
       iconColor: "text-violet-500 dark:text-violet-400",
       iconBg: "bg-violet-500/10 border-violet-500/20",
     },
     {
       id: "event" as const,
-      title: "Créer un événement",
-      description: "Organisez une soirée, un atelier, un hackathon ou une conférence",
+      title: t("createHub.actions.event.title"),
+      description: t("createHub.actions.event.description"),
       icon: Calendar,
       iconColor: "text-rose-500 dark:text-rose-400",
       iconBg: "bg-rose-500/10 border-rose-500/20",
     },
     {
       id: "message" as const,
-      title: "Démarrer une discussion",
-      description: "Recherchez un étudiant et commencez un échange privé",
+      title: t("createHub.actions.message.title"),
+      description: t("createHub.actions.message.description"),
       icon: MessageSquare,
       iconColor: "text-amber-500 dark:text-amber-400",
       iconBg: "bg-amber-500/10 border-amber-500/20",
@@ -158,9 +161,9 @@ export function CreateHubModal({
         {children ? <DialogTrigger asChild>{children}</DialogTrigger> : null}
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-base sm:text-lg">Que souhaitez-vous créer ?</DialogTitle>
+            <DialogTitle className="text-base sm:text-lg">{t("createHub.title")}</DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              Sélectionnez une action rapide pour ouvrir le formulaire dédié
+              {t("createHub.description")}
             </DialogDescription>
           </DialogHeader>
 
@@ -206,7 +209,7 @@ export function CreateHubModal({
               }}
               className="text-xs text-muted-foreground hover:text-foreground"
             >
-              Fermer
+              {t("createHub.cancel")}
             </Button>
           </div>
         </DialogContent>

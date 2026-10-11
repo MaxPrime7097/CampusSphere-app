@@ -29,16 +29,21 @@ export function createApp(): Express {
       origin(origin, callback) {
         // Same-origin and non-browser callers send no Origin header.
         if (!origin) return callback(null, true);
-        callback(null, env.corsAllowedOrigins.includes(origin));
+        if (env.corsAllowedOrigins.includes(origin)) return callback(null, true);
+        // Mode Réseau Local / Hotspot : autoriser localhost et les adresses IP privées (192.168.x, 10.x, etc.)
+        if (/^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(?:1[6-9]|2\d|3[01])\.\d+\.\d+)(?::\d+)?$/.test(origin)) {
+          return callback(null, true);
+        }
+        callback(null, false);
       },
       credentials: true,
       exposedHeaders: ["Content-Disposition", "ETag"],
     }),
   );
 
-  // 50MB matches the Django FILE_UPLOAD_MAX_MEMORY_SIZE and the resource cap.
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+  // 250MB matches the upload cap for resources and files.
+  app.use(express.json({ limit: "250mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "250mb" }));
 
   // Development only. In production USE_S3 is mandatory (the server refuses to boot
   // otherwise), so uploads are served by the object store, not by this process.
@@ -53,6 +58,21 @@ export function createApp(): Express {
   // After attachUser: the anonymous limit exempts authenticated callers, matching
   // DRF's AnonRateThrottle, so it has to know whether a token was presented.
   app.use("/api", anonymousRateLimit, apiRouter);
+
+  // WebSocket endpoints fallback: if a reverse proxy (like Cloudflare) or client
+  // forwards a WebSocket request as plain HTTP without upgrading, inform the client
+  // that a WebSocket handshake is required rather than a generic 404.
+  app.all(/^\/ws(?:\/.*)?$/, (_req, res) => {
+    res.status(426).set({
+      Upgrade: "WebSocket",
+      Connection: "Upgrade",
+    }).json({
+      success: false,
+      error: "Upgrade Required",
+      code: "upgrade_required",
+      detail: "This endpoint requires a WebSocket connection (wss://).",
+    });
+  });
 
   app.use(notFoundHandler);
   app.use(errorHandler);

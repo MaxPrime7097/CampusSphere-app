@@ -103,6 +103,34 @@ const GLOSSARY: Record<string, string> = {
   'Étudiant': 'Student',
   'Illimité': 'Unlimited',
   'Passer à Sphera Pro': 'Upgrade to Sphera Pro',
+
+  // CampusSphere Concepts
+  'CampusSphere': 'CampusSphere',
+  'Sphère': 'Sphere',
+  'Sphères': 'Spheres',
+  'Créer une sphère': 'Create a Sphere',
+  'Rejoindre la sphère': 'Join Sphere',
+  'Membres': 'Members',
+  'Fil d\'actualité': 'Feed',
+  'Publication': 'Post',
+  'Publications': 'Posts',
+  'Publier': 'Post',
+  'Créer un post': 'Create a Post',
+  'Commentaire': 'Comment',
+  'Commentaires': 'Comments',
+  'Ressource': 'Resource',
+  'Ressources': 'Resources',
+  'Télécharger une ressource': 'Upload a Resource',
+  'Événement': 'Event',
+  'Événements': 'Events',
+  'Créer un événement': 'Create an Event',
+  'Connexions': 'Connections',
+  'Filière': 'Field of Study',
+  'Promotion': 'Graduating Class',
+  'Université': 'University',
+  'Campus': 'Campus',
+  'Enregistrements': 'Saved Items',
+  'Signaler': 'Report',
 };
 
 function autoTranslateText(text: string): string {
@@ -187,8 +215,13 @@ export function syncNamespace(frPath: string, enPath: string): { added: number; 
   }
 
   const synchronized = traverse(frData, enData);
-  fs.mkdirSync(path.dirname(enPath), { recursive: true });
-  fs.writeFileSync(enPath, JSON.stringify(synchronized, null, 2) + '\n', 'utf8');
+  const newContent = JSON.stringify(synchronized, null, 2) + '\n';
+  const oldContent = fs.existsSync(enPath) ? fs.readFileSync(enPath, 'utf8') : '';
+
+  if (newContent !== oldContent) {
+    fs.mkdirSync(path.dirname(enPath), { recursive: true });
+    fs.writeFileSync(enPath, newContent, 'utf8');
+  }
 
   return { added: addedCount, total: totalCount };
 }
@@ -199,6 +232,7 @@ export function syncAllLocales(targetDir?: string) {
     : [
         path.resolve(rootDir, 'packages/i18n/src/locales'),
         path.resolve(rootDir, 'apps/sphera/src/locales'),
+        path.resolve(rootDir, 'apps/campus/src/locales'),
       ];
 
   console.log('🌐 Synchronizing and translating locales (fr -> en)...\n');

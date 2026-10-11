@@ -3,6 +3,7 @@ import type { Icon as LucideIcon } from "@phosphor-icons/react";
 export type AdminSectionKey =
   | "dashboard"
   | "users"
+  | "partners"
   | "verification"
   | "spheres"
   | "moderation"

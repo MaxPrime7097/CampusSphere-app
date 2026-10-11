@@ -1,6 +1,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 
 interface ResourceEditDialogProps {
   open: boolean;
@@ -23,25 +24,27 @@ export function ResourceEditDialog({
   isUpdating,
   onConfirm,
 }: ResourceEditDialogProps) {
+  const { t } = useTranslation("resources");
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Modifier la ressource</DialogTitle>
-          <DialogDescription>Mettre à jour le titre et la description.</DialogDescription>
+          <DialogTitle>{t("detail.editTitle")}</DialogTitle>
+          <DialogDescription>{t("detail.editDesc")}</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <Textarea
             value={draftTitle}
             onChange={(e) => onChangeTitle(e.target.value)}
             className="min-h-[60px]"
-            placeholder="Titre de la ressource"
+            placeholder={t("detail.editTitlePlaceholder")}
           />
           <Textarea
             value={draftDescription}
             onChange={(e) => onChangeDescription(e.target.value)}
             className="min-h-[120px]"
-            placeholder="Description de la ressource"
+            placeholder={t("detail.editDescPlaceholder")}
           />
           <div className="flex justify-end gap-2">
             <Button
@@ -49,10 +52,10 @@ export function ResourceEditDialog({
               onClick={() => onOpenChange(false)}
               disabled={isUpdating}
             >
-              Annuler
+              {t("detail.cancel")}
             </Button>
             <Button onClick={onConfirm} disabled={isUpdating}>
-              {isUpdating ? "Enregistrement..." : "Enregistrer"}
+              {isUpdating ? t("detail.saving") : t("detail.save")}
             </Button>
           </div>
         </div>

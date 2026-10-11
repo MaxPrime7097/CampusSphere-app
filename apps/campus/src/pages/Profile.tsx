@@ -15,6 +15,8 @@ import {
   getUserConnectionRelation,
   isApiRequestErrorStatus,
   acceptConnection,
+  followPartner,
+  unfollowPartner,
 } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -28,6 +30,7 @@ import {
   normalizeId,
   NOT_AVAILABLE_TEXT,
 } from "@/constants/profileConstants";
+import { useTranslation } from "react-i18next";
 import {
   ProfileHeader,
   ProfilePostsTab,
@@ -104,30 +107,35 @@ function mapProfileToViewModel({
       phoneNumber: "",
       dateOfBirth: "",
       avatar: "/placeholder-avatar.jpg",
-      coverPhoto: null,
+      coverPhoto: null as string | null,
       bio: "",
       town: "",
       language: "",
-      impactScore: null,
+      impactScore: null as number | null,
       currentMood: "",
       university: "",
       faculty: "",
       studyYear: "",
       studentId: "",
       campus: "",
-      previousEducation: [],
-      experiences: [],
-      skills: [],
-      interests: [],
-      portfolioLinks: [],
-      sharedFiles: [],
+      previousEducation: [] as any[],
+      experiences: [] as any[],
+      skills: [] as any[],
+      interests: [] as any[],
+      portfolioLinks: [] as any[],
+      sharedFiles: [] as any[],
       stats: {
         posts: 0,
         connections: 0,
         contributions: null as number | null,
+        followers: 0,
       },
-      badges: [],
+      badges: [] as any[],
       isVerified: false,
+      role: "student",
+      partnerProfile: null as any,
+      followersCount: 0,
+      isFollowing: false,
     };
   }
 
@@ -172,16 +180,25 @@ function mapProfileToViewModel({
       posts: posts?.length || 0,
       connections: connections?.length || 0,
       contributions: resourcesAvailable ? resources.length : null,
+      followers: profile.followersCount ?? profile.followers_count ?? 0,
     },
+    role: (profile.role || "student").toLowerCase(),
+    partnerProfile: profile.partnerProfile ?? profile.partner_profile ?? null,
+    followersCount: profile.followersCount ?? profile.followers_count ?? 0,
+    isFollowing: Boolean(profile.isFollowing ?? profile.is_following ?? false),
     badges: [
       ...(profile.is_staff || profile.isStaff
         ? [{ id: "admin", label: "CampusSphere Admin", color: "bg-gradient-to-r from-primary to-accent text-white" }]
+        : []),
+      ...((profile.role || "").toLowerCase() === "impact_partner"
+        ? [{ id: "impact_partner", label: "Impact Partner Vérifié", color: "bg-primary/10 text-primary border border-primary/20" }]
         : []),
     ],
   };
 }
 
 export function Profile() {
+  const { t } = useTranslation("profile");
   const navigate = useNavigate();
   const location = useLocation();
   const { username } = useParams<{ username?: string }>();
@@ -409,6 +426,15 @@ export function Profile() {
       return;
     }
 
+    if ((targetUser?.role || "").toLowerCase() === "impact_partner") {
+      setIsFollowing(Boolean(targetUser.isFollowing ?? targetUser.is_following));
+      setConnectionStatus(null);
+      setIsRecipient(false);
+      setCurrentConnectionId(null);
+      setRelationActionUnavailable(false);
+      return;
+    }
+
     if (relationQuery.data) {
       const relation = relationQuery.data;
       setRelationActionUnavailable(false);
@@ -422,7 +448,7 @@ export function Profile() {
       setCurrentConnectionId(null);
       setRelationActionUnavailable(isApiRequestErrorStatus(relationQuery.error, 403));
     }
-  }, [currentUser?.id, targetUser?.id, isOwnProfile, relationQuery.data, relationQuery.error]);
+  }, [currentUser?.id, targetUser?.id, targetUser?.role, targetUser?.isFollowing, targetUser?.is_following, isOwnProfile, relationQuery.data, relationQuery.error]);
 
   useEffect(() => {
     if (isOwnProfile && currentUser) {
@@ -463,8 +489,53 @@ export function Profile() {
     [user.studyYear]
   );
 
+  const isTargetPartner = (targetUser?.role || "").toLowerCase() === "impact_partner";
+
+  useEffect(() => {
+    if (isTargetPartner && (activeTab === "connections" || activeTab === "contributions")) {
+      setActiveTab("posts");
+    }
+  }, [isTargetPartner, activeTab]);
+
   const handleFollow = async () => {
     if (!currentUser?.id || !targetUser?.id || isFollowingLoading) return;
+
+    if (isTargetPartner) {
+      const previousIsFollowing = isFollowing;
+      setIsFollowing(!previousIsFollowing);
+      setIsFollowingLoading(true);
+
+      try {
+        if (previousIsFollowing) {
+          await unfollowPartner(targetUser.id);
+          setIsFollowing(false);
+          toast({
+            title: "Désabonnement",
+            description: `Vous ne suivez plus ${user.name}.`,
+            duration: 2000,
+          });
+        } else {
+          await followPartner(targetUser.id);
+          setIsFollowing(true);
+          toast({
+            title: "Abonnement réussi",
+            description: `Vous suivez désormais ${user.name}.`,
+            duration: 2000,
+          });
+        }
+        queryClient.invalidateQueries({ queryKey: ["profile-user", username] });
+      } catch (error: any) {
+        setIsFollowing(previousIsFollowing);
+        toast({
+          title: t("toasts.error"),
+          description: error?.message || "Une erreur est survenue lors de l'action de suivi.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsFollowingLoading(false);
+      }
+      return;
+    }
 
     const previousIsFollowing = isFollowing;
     const previousConnectionId = currentConnectionId;
@@ -484,8 +555,8 @@ export function Profile() {
           setConnectionStatus("accepted");
           setIsFollowing(true);
           toast({
-            title: "Connexion acceptée",
-            description: `Vous êtes maintenant connecté(e) à ${user.name}`,
+            title: t("toasts.accepted"),
+            description: t("toasts.acceptedDesc", { name: user.name }),
             duration: 2000,
           });
         } else {
@@ -494,12 +565,12 @@ export function Profile() {
           setConnectionStatus(null);
           setIsRecipient(false);
           setIsFollowing(false);
+          const isDisconnected = previousIsFollowing && connectionStatus === "accepted";
           toast({
-            title: previousIsFollowing && connectionStatus === "accepted" ? "Connexion supprimée" : "Demande annulée",
-            description:
-              previousIsFollowing && connectionStatus === "accepted"
-                ? `Vous n'êtes plus connecté(e) à ${user.name}`
-                : `La demande de connexion à ${user.name} a été annulée`,
+            title: isDisconnected ? t("toasts.disconnected") : t("toasts.canceled"),
+            description: isDisconnected
+              ? t("toasts.disconnectedDesc", { name: user.name })
+              : t("toasts.canceledDesc", { name: user.name }),
             duration: 2000,
           });
         }
@@ -511,8 +582,8 @@ export function Profile() {
         setConnectionStatus("pending");
         setIsRecipient(false);
         toast({
-          title: "Connexion envoyée",
-          description: `Demande de connexion envoyée à ${user.name}`,
+          title: t("toasts.requestSent"),
+          description: t("toasts.requestSentDesc", { name: user.name }),
           duration: 2000,
         });
       }
@@ -525,10 +596,10 @@ export function Profile() {
       }
 
       toast({
-        title: "Erreur",
+        title: t("toasts.error"),
         description:
           error?.message ||
-          (previousIsFollowing ? "Impossible de supprimer la connexion" : "Impossible de créer la connexion"),
+          (previousIsFollowing ? t("toasts.errorDesc") : t("toasts.errorDesc")),
         variant: "destructive",
       });
     } finally {
@@ -539,8 +610,8 @@ export function Profile() {
   const handleViewProfile = (profileUsername?: string, connectionName?: string, showToast = false) => {
     if (!profileUsername) {
       toast({
-        title: "Profil indisponible",
-        description: "Impossible d'ouvrir ce profil pour le moment : username manquant.",
+        title: t("toasts.unavailableProfile"),
+        description: t("toasts.missingUsername"),
         variant: "destructive",
       });
       return;
@@ -553,8 +624,8 @@ export function Profile() {
 
     if (showToast && connectionName) {
       toast({
-        title: "Navigation vers profil",
-        description: `Ouverture du profil de ${connectionName}`,
+        title: t("toasts.navigatingProfile"),
+        description: t("toasts.navigatingProfileDesc", { name: connectionName }),
         duration: 2000,
       });
     }
@@ -563,8 +634,8 @@ export function Profile() {
   const handleDownloadFile = async (resourceId?: string | number, fileName?: string) => {
     if (!resourceId) {
       toast({
-        title: "Téléchargement indisponible",
-        description: "Cette contribution ne possède pas d'identifiant de ressource valide.",
+        title: t("toasts.downloadUnavailable"),
+        description: t("toasts.invalidResourceId"),
         variant: "destructive",
       });
       return;
@@ -582,8 +653,8 @@ export function Profile() {
       window.URL.revokeObjectURL(objectUrl);
 
       toast({
-        title: "Téléchargement démarré",
-        description: `Le fichier "${result.filename || fileName || `resource-${resourceId}`}" va être téléchargé`,
+        title: t("toasts.downloadStarted"),
+        description: t("toasts.downloadStartedDesc", { name: result.filename || fileName || `resource-${resourceId}` }),
         duration: 2000,
       });
     } catch (error: any) {
@@ -596,10 +667,10 @@ export function Profile() {
         message.includes("not authorized");
 
       toast({
-        title: isPermissionError ? "Téléchargement non autorisé" : "Erreur de téléchargement",
+        title: isPermissionError ? t("toasts.downloadForbidden") : t("toasts.downloadError"),
         description: isPermissionError
-          ? "Vous n'avez pas l'autorisation de télécharger cette ressource. Vérifiez sa visibilité ou contactez son propriétaire."
-          : error?.message || "Impossible de télécharger cette ressource pour le moment.",
+          ? t("toasts.downloadForbiddenDesc")
+          : error?.message || t("toasts.errorDesc"),
         variant: "destructive",
       });
     }
@@ -611,9 +682,9 @@ export function Profile() {
       await updateUserProfile({ current_mood: mood });
       await refreshUser();
       setShowMoodModal(false);
-      toast({ title: "Mood mis à jour !", description: "Votre mood du moment a été changé", duration: 2000 });
+      toast({ title: t("toasts.moodUpdated"), description: t("toasts.moodUpdatedDesc"), duration: 2000 });
     } catch (error: any) {
-      toast({ title: "Erreur", description: error?.message || "Impossible de mettre à jour le mood", variant: "destructive" });
+      toast({ title: t("toasts.error"), description: error?.message || t("toasts.errorDesc"), variant: "destructive" });
     } finally {
       setIsSavingMood(false);
     }
@@ -639,11 +710,11 @@ export function Profile() {
       <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
         <div className="container max-w-4xl mx-auto py-6 px-4">
           <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-6 text-center space-y-2">
-            <h2 className="text-base font-semibold text-destructive">Erreur de chargement</h2>
+            <h2 className="text-base font-semibold text-destructive">{t("errors.loadTitle")}</h2>
             <p className="text-sm text-muted-foreground">
               {profileUnavailableDueToOnboarding
-                ? "Ce profil n’est pas encore accessible : l’onboarding de ce compte n’est pas terminé."
-                : "Le profil reçu est invalide ou obsolète. Veuillez recharger la page."}
+                ? t("errors.onboardingPending")
+                : t("errors.invalidProfile")}
             </p>
           </div>
         </div>
@@ -660,12 +731,12 @@ export function Profile() {
             onClose={() => setShowAvatarModal(false)}
             onSave={async (f) => {
               await uploadAvatar(currentUser!.id, f);
-              toast({ title: "Avatar mis à jour !", duration: 3000 });
+              toast({ title: t("toasts.avatarUpdated"), duration: 3000 });
               setShowAvatarModal(false);
               await refreshUser();
             }}
-            title="Photo de profil"
-            description="Téléchargez une nouvelle photo de profil pour votre compte."
+            title={t("avatarModal.title")}
+            description={t("avatarModal.desc")}
             currentImage={currentUser?.avatar}
             shape="round"
             aspectRatio={1}
@@ -677,12 +748,12 @@ export function Profile() {
             onClose={() => setShowCoverPhotoModal(false)}
             onSave={async (f) => {
               await uploadCoverPhoto(currentUser!.id, f);
-              toast({ title: "Photo de couverture mise à jour !", duration: 3000 });
+              toast({ title: t("toasts.coverUpdated"), duration: 3000 });
               setShowCoverPhotoModal(false);
               await refreshUser();
             }}
-            title="Photo de couverture"
-            description="Téléchargez une nouvelle photo de couverture."
+            title={t("coverModal.title")}
+            description={t("coverModal.desc")}
             currentImage={currentUser?.coverPhoto}
             shape="rect"
             aspectRatio={16 / 5}
@@ -712,12 +783,18 @@ export function Profile() {
         {/* Custom Tabs Bar */}
         <div className="mt-4 campus-animate-slide-up w-full overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <ul className="inline-grid grid-flow-col text-center border-b border-border/40 text-muted-foreground min-w-full">
-            {[
-              { id: "posts", label: "Posts" },
-              { id: "about", label: "À propos" },
-              { id: "connections", label: "Connections" },
-              { id: "contributions", label: "Contributions" },
-            ].map((tab) => (
+            {(isTargetPartner
+              ? [
+                  { id: "posts", label: t("tabs.posts") },
+                  { id: "about", label: t("tabs.about") },
+                ]
+              : [
+                  { id: "posts", label: t("tabs.posts") },
+                  { id: "about", label: t("tabs.about") },
+                  { id: "connections", label: t("tabs.connections") },
+                  { id: "contributions", label: t("tabs.contributions") },
+                ]
+            ).map((tab) => (
               <li key={tab.id}>
                 <button
                   onClick={() => setActiveTab(tab.id)}

@@ -1,7 +1,10 @@
 import Sphere3D from "@/components/layout/Sphere3D";
-import { UsersThree as Users, BookOpen, ChatCircle as MessageSquare, Lightning as Zap } from "@phosphor-icons/react";
+import { UsersThree as Users, BookOpen, Lightning as Zap } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 
 export function AuthSidePanel() {
+  const { t } = useTranslation("auth");
+
   return (
     <div className="hidden lg:flex relative h-full w-full flex-col items-center justify-center overflow-hidden border-l border-border/50 bg-gradient-to-br from-background via-primary/5 to-accent/10">
       {/* Pattern background pour donner un effet de grille high-tech */}
@@ -24,8 +27,8 @@ export function AuthSidePanel() {
               <Users className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-foreground">Réseau Étudiant</p>
-              <p className="text-xs text-muted-foreground mt-1">Connectez-vous avec vos pairs de votre université.</p>
+              <p className="text-sm font-semibold text-foreground">{t("sidePanel.studentNetworkTitle")}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("sidePanel.studentNetworkDesc")}</p>
             </div>
           </div>
         </div>
@@ -37,8 +40,8 @@ export function AuthSidePanel() {
               <BookOpen className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-foreground">Ressources Illimitées</p>
-              <p className="text-xs text-muted-foreground mt-1">Partagez et accédez à des milliers de documents de cours.</p>
+              <p className="text-sm font-semibold text-foreground">{t("sidePanel.resourcesTitle")}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("sidePanel.resourcesDesc")}</p>
             </div>
           </div>
         </div>
@@ -50,8 +53,8 @@ export function AuthSidePanel() {
               <Zap className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-foreground">Impact Score</p>
-              <p className="text-xs text-muted-foreground mt-1">Contribuez et faites évoluer votre profil académique.</p>
+              <p className="text-sm font-semibold text-foreground">{t("sidePanel.impactScoreTitle")}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("sidePanel.impactScoreDesc")}</p>
             </div>
           </div>
         </div>
@@ -61,11 +64,10 @@ export function AuthSidePanel() {
       {/* Texte de bas de page ou overlay subtil */}
       <div className="absolute bottom-10 text-center z-10 w-full px-8">
         <h3 className="text-2xl font-bold font-automata campus-gradient bg-clip-text text-transparent mb-2 drop-shadow-sm">
-          L'écosystème étudiant nouvelle génération
+          {t("sidePanel.tagline")}
         </h3>
         <p className="text-muted-foreground text-sm max-w-md mx-auto">
-          Rejoignez la plus grande communauté académique. 
-          Apprenez, partagez et réussissez ensemble.
+          {t("sidePanel.subtagline")}
         </p>
       </div>
     </div>

@@ -4,6 +4,22 @@ const CACHE_NAME = "chat-media-cache-v1";
 const memoryUrlMap = new Map<string, string>();
 
 /**
+ * Returns true if `url` is cross-origin relative to the current page.
+ * Cross-origin media (e.g. S3 presigned URLs) cannot be fetched without CORS
+ * headers on the server side, so we skip the fetch-and-cache step and let the
+ * browser handle the URL natively (which does NOT require CORS for <img>/<audio>/<video>).
+ */
+function isCrossOrigin(url: string): boolean {
+  if (!url || url.startsWith("blob:") || url.startsWith("data:")) return false;
+  try {
+    const u = new URL(url, window.location.href);
+    return u.origin !== window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Checks whether a given media URL is already cached locally
  * (either in memory as a blob or in the CacheStorage API).
  */
@@ -62,6 +78,10 @@ export async function downloadAndCacheMedia(src: string): Promise<string> {
   if (src.startsWith("blob:") || src.startsWith("data:")) return src;
   if (memoryUrlMap.has(src)) return memoryUrlMap.get(src)!;
 
+  // Cross-origin URLs (e.g. S3) cannot be fetched without CORS headers —
+  // return the URL as-is and let <audio>/<video> handle it natively.
+  if (isCrossOrigin(src)) return src;
+
   if (typeof window === "undefined" || !("caches" in window)) {
     return src;
   }
@@ -84,8 +104,8 @@ export async function downloadAndCacheMedia(src: string): Promise<string> {
       memoryUrlMap.set(src, blobUrl);
       return blobUrl;
     }
-  } catch (err) {
-    console.warn("Failed to download and cache media:", err);
+  } catch {
+    // silently fall back — no console.warn for cross-origin CORS noise
   }
 
   return src;
@@ -94,10 +114,16 @@ export async function downloadAndCacheMedia(src: string): Promise<string> {
 /**
  * WhatsApp-style persistent media cache lookup.
  * Returns local blob URL if cached; otherwise returns the original URL.
+ * For cross-origin URLs (S3), returns the URL directly — the browser's
+ * native <img>/<audio>/<video> handles them without CORS.
  */
 export async function getCachedMediaUrl(src: string, autoFetch = true): Promise<string> {
   if (!src || src.startsWith("blob:") || src.startsWith("data:")) return src;
   if (memoryUrlMap.has(src)) return memoryUrlMap.get(src)!;
+
+  // Cross-origin URL: return as-is, browser native tags handle it without CORS
+  if (isCrossOrigin(src)) return src;
+
   if (typeof window === "undefined" || !("caches" in window)) return src;
 
   try {
@@ -113,7 +139,7 @@ export async function getCachedMediaUrl(src: string, autoFetch = true): Promise<
     if (autoFetch) {
       return await downloadAndCacheMedia(src);
     }
-  } catch (err) {
+  } catch {
     // Fallback to original URL
   }
 
@@ -122,8 +148,15 @@ export async function getCachedMediaUrl(src: string, autoFetch = true): Promise<
 
 /**
  * Direct file download without SPA routing interception.
+ * For cross-origin URLs (S3 presigned), opens in a new tab — fetch would fail CORS.
  */
 export async function triggerDirectDownload(url: string, filename?: string) {
+  // S3 / cross-origin: can't fetch without CORS; open directly
+  if (isCrossOrigin(url)) {
+    window.open(url, "_blank");
+    return;
+  }
+
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error("Fetch failed");

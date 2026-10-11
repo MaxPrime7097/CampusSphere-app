@@ -6,8 +6,10 @@ import { Label } from "@/components/ui/label";
 import { GraduationCap, Spinner as Loader2, Check } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { UniversityCombobox } from "@/components/forms/UniversityCombobox";
+import { DomainCombobox } from "@/components/forms/DomainCombobox";
 import { FacultyCombobox } from "@/components/forms/FacultyCombobox";
 import { StudyLevelCombobox } from "@/components/forms/StudyLevelCombobox";
+import { getDomainForFaculty } from "@/constants/academicData";
 import { updateUserProfile } from "@/services/api";
 
 interface EditAcademicModalProps {
@@ -27,6 +29,7 @@ interface EditAcademicModalProps {
 export function EditAcademicModal({ children, initialData, onSuccess, open: controlledOpen, onOpenChange: setControlledOpen }: EditAcademicModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [university, setUniversity] = useState(initialData.university);
+  const [academicDomain, setAcademicDomain] = useState(() => getDomainForFaculty(initialData.faculty) || "");
   const [faculty, setFaculty] = useState(initialData.faculty);
   const [studyYear, setStudyYear] = useState(initialData.studyYear);
   const [studentId, setStudentId] = useState(initialData.studentId);
@@ -92,8 +95,28 @@ export function EditAcademicModal({ children, initialData, onSuccess, open: cont
           </div>
 
           <div className="space-y-2">
+            <Label>Domaine d'études</Label>
+            <DomainCombobox
+              value={academicDomain}
+              onValueChange={(d) => {
+                setAcademicDomain(d);
+                if (faculty && getDomainForFaculty(faculty) !== d) {
+                  setFaculty("");
+                }
+              }}
+            />
+          </div>
+
+          <div className="space-y-2">
             <Label>Filière *</Label>
-            <FacultyCombobox value={faculty} onValueChange={setFaculty} />
+            <FacultyCombobox
+              domain={academicDomain}
+              onDomainChange={(d) => {
+                if (d && d !== academicDomain) setAcademicDomain(d);
+              }}
+              value={faculty}
+              onValueChange={setFaculty}
+            />
           </div>
 
           <div className="space-y-2">

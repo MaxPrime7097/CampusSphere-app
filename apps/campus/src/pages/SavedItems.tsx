@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { SharedTabsList, SharedTabsTrigger } from "@/components/ui/shared-tabs";
 import { ResourceCard } from "@/components/resources/ResourceCard";
@@ -158,6 +159,7 @@ function mapSavedResources(data: any): any[] {
 }
 
 export function SavedItems() {
+  const { t } = useTranslation("navigation");
   const queryClient = useQueryClient();
   const [savedPosts, setSavedPosts] = useState<any[]>(() => {
     const cached = queryClient.getQueryData<any[]>(["saved-posts"]);
@@ -215,7 +217,7 @@ export function SavedItems() {
     try {
       await downloadResource(resourceId);
     } catch (err: any) {
-      toast({ title: "Erreur", description: err?.message || "Téléchargement échoué", variant: "destructive" });
+      toast({ title: t("status.error", { defaultValue: "Erreur" }), description: err?.message || t("savedItems.toasts.downloadFailed"), variant: "destructive" });
     } finally {
       setDownloadingIds((prev) => { const next = new Set(prev); next.delete(resourceId); return next; });
     }
@@ -229,9 +231,9 @@ export function SavedItems() {
       queryClient.setQueryData(["saved-resources"], (old: any) =>
         Array.isArray(old) ? old.filter((r: any) => String(r.id) !== String(resourceId)) : []
       );
-      toast({ title: "Ressource retirée des sauvegardes", duration: 2000 });
+      toast({ title: t("savedItems.toasts.resourceRemoved"), duration: 2000 });
     } catch (err: any) {
-      toast({ title: "Erreur", description: err?.message, variant: "destructive" });
+      toast({ title: t("status.error", { defaultValue: "Erreur" }), description: err?.message, variant: "destructive" });
     }
   };
 
@@ -244,14 +246,14 @@ export function SavedItems() {
         Array.isArray(old) ? old.filter((p: any) => String(p.id) !== String(postId)) : []
       );
       toast({
-        title: "Post retiré des sauvegardes",
-        description: "Le post a été retiré de vos enregistrements",
+        title: t("savedItems.toasts.postRemoved"),
+        description: t("savedItems.toasts.postRemovedDesc"),
         duration: 2000,
       });
     } catch (err: any) {
       toast({
-        title: "Erreur",
-        description: err?.message || "Impossible de retirer le post",
+        title: t("status.error", { defaultValue: "Erreur" }),
+        description: err?.message || t("savedItems.toasts.removeFailed"),
         variant: "destructive",
       });
     }
@@ -262,17 +264,17 @@ export function SavedItems() {
       <div className="max-w-3xl mx-auto py-6 md:py-8 px-4 sm:px-6 space-y-6 animate-in fade-in duration-300">
         <div className="mb-6">
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
-            Éléments enregistrés
+            {t("savedItems.title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Retrouvez rapidement vos publications et ressources académiques mises de côté
+            {t("savedItems.subtitle")}
           </p>
         </div>
 
         <Tabs defaultValue="posts" className="w-full">
           <SharedTabsList containerClassName="mb-6">
-            <SharedTabsTrigger value="posts">Posts</SharedTabsTrigger>
-            <SharedTabsTrigger value="resources">Ressources</SharedTabsTrigger>
+            <SharedTabsTrigger value="posts">{t("savedItems.tabs.posts")}</SharedTabsTrigger>
+            <SharedTabsTrigger value="resources">{t("savedItems.tabs.resources")}</SharedTabsTrigger>
           </SharedTabsList>
 
           <TabsContent value="posts" className="space-y-3">
@@ -285,8 +287,8 @@ export function SavedItems() {
             ) : savedPosts.length === 0 ? (
               <EmptyState
                 icon={BookOpen}
-                title="Aucun post enregistré"
-                description="Les posts que vous enregistrez apparaîtront ici."
+                title={t("savedItems.emptyPosts.title")}
+                description={t("savedItems.emptyPosts.description")}
               />
             ) : (
               savedPosts.map((post) => (
@@ -308,9 +310,9 @@ export function SavedItems() {
             ) : savedResources.length === 0 ? (
               <EmptyState
                 icon={BookmarkSimple}
-                title="Aucune ressource enregistrée"
-                description="Les ressources que vous sauvegardez apparaîtront ici."
-                actionLabel="Parcourir les ressources"
+                title={t("savedItems.emptyResources.title")}
+                description={t("savedItems.emptyResources.description")}
+                actionLabel={t("savedItems.emptyResources.action")}
                 onAction={() => navigate("/resources")}
               />
             ) : (

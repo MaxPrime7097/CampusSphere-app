@@ -330,7 +330,7 @@ spheresRouter.post("/:id/extend-duration/", async (req, res) => {
 
 // ── Members ─────────────────────────────────────────────────────────────────
 
-spheresRouter.get("/:id/members/", async (req, res) => {
+spheresRouter.get("/:id/members/", httpCache({ namespace: "spheres", ttlSeconds: 60 }), async (req, res) => {
   const { sphere, membership, me } = await loadVisibleSphere(req);
   if (membership?.status !== "ACTIVE" && sphere.createdById !== me.id) {
     throw forbidden("You must be a member of this sphere.");
@@ -594,7 +594,7 @@ spheresRouter.post("/:id/files/", singleUpload("file", "sphereFile"), async (req
   });
 });
 
-spheresRouter.get("/:id/files/", async (req, res) => {
+spheresRouter.get("/:id/files/", httpCache({ namespace: "spheres", ttlSeconds: 60 }), async (req, res) => {
   const { sphere, membership } = await loadVisibleSphere(req);
   if (membership?.status !== "ACTIVE") throw forbidden("You must be a member of this sphere.");
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, NavLink } from "react-router-dom";
-import { Moon, Sun, SignOut as LogOut, CaretRight as ChevronRight, ArrowSquareOut as ExternalLink, SealCheck as BadgeCheck, Link as LinkIcon, ChatCircle as MessageSquare, BookmarkSimple, Gear as Settings, Shield, Info, Scales as Scale, Lifebuoy as LifeBuoy } from "@phosphor-icons/react";
+import { Moon, Sun, SignOut as LogOut, CaretRight as ChevronRight, ArrowSquareOut as ExternalLink, SealCheck as BadgeCheck, Link as LinkIcon, ChatCircle as MessageSquare, BookmarkSimple, Gear as Settings, Shield, Info, Scales as Scale, Lifebuoy as LifeBuoy, Globe } from "@phosphor-icons/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,8 +8,11 @@ import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { formatSlugToLabel } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { getNavigationSections } from "@/components/layout/navigationConfig";
+import { LanguageSwitcher, useLanguage, useTranslation } from "@cs/i18n";
 
 export function MobileMenu() {
+  const { t } = useTranslation(['navigation', 'settings']);
+  const { currentLanguage } = useLanguage();
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
   const [darkMode, setDarkMode] = useState(false);
@@ -26,7 +29,7 @@ export function MobileMenu() {
     localStorage.setItem("theme", next ? "dark" : "light");
   };
 
-  const { utilities } = getNavigationSections(user);
+  const { utilities } = getNavigationSections(user, t);
   const appVersion = import.meta.env.VITE_APP_VERSION || "2.0.0";
   const profileUrl = user?.username ? `/profile/${user.username}` : "/profile/current";
 
@@ -80,9 +83,11 @@ export function MobileMenu() {
           </div>
         ) : (
           <div className="p-5 rounded-2xl border border-border/40 bg-card text-center space-y-3 shadow-xs">
-            <h3 className="font-semibold text-sm text-foreground">Rejoignez la communauté</h3>
+            <h3 className="font-semibold text-sm text-foreground">{t('joinCommunity', { defaultValue: 'Rejoignez la communauté' })}</h3>
             <p className="text-xs text-muted-foreground">
-              Connectez-vous pour échanger des ressources, rejoindre des sphères et participer aux événements.
+              {currentLanguage === 'en'
+                ? 'Sign in to share resources, join spheres, and attend campus events.'
+                : 'Connectez-vous pour échanger des ressources, rejoindre des sphères et participer aux événements.'}
             </p>
             <div className="flex items-center gap-2 pt-1">
               <Button
@@ -90,7 +95,7 @@ export function MobileMenu() {
                 onClick={() => navigate("/login")}
                 className="flex-1 bg-primary/15 text-primary hover:bg-primary/25 border border-primary/30 font-medium"
               >
-                Connexion
+                {t('login', { defaultValue: 'Connexion' })}
               </Button>
               <Button
                 variant="outline"
@@ -98,7 +103,7 @@ export function MobileMenu() {
                 onClick={() => navigate("/register")}
                 className="flex-1 font-medium"
               >
-                Créer un compte
+                {t('register', { defaultValue: 'Créer un compte' })}
               </Button>
             </div>
           </div>
@@ -111,9 +116,9 @@ export function MobileMenu() {
               {darkMode ? <Moon className="h-4 w-4 text-primary" /> : <Sun className="h-4 w-4 text-primary" />}
             </div>
             <div>
-              <p className="text-xs font-semibold text-foreground">Thème d'affichage</p>
+              <p className="text-xs font-semibold text-foreground">{t('settings:appearance.darkTheme', { defaultValue: "Thème d'affichage" })}</p>
               <p className="text-[11px] text-muted-foreground">
-                {darkMode ? "Mode sombre activé" : "Mode clair activé"}
+                {darkMode ? t('settings:appearance.dark', { defaultValue: 'Sombre' }) : t('settings:appearance.light', { defaultValue: 'Clair' })}
               </p>
             </div>
           </div>
@@ -123,8 +128,24 @@ export function MobileMenu() {
             onClick={toggleTheme}
             className="rounded-lg text-xs font-semibold px-3 h-8 bg-muted/60 hover:bg-muted"
           >
-            {darkMode ? "Clair" : "Sombre"}
+            {darkMode ? t('settings:appearance.light', { defaultValue: 'Clair' }) : t('settings:appearance.dark', { defaultValue: 'Sombre' })}
           </Button>
+        </div>
+
+        {/* Language Switcher */}
+        <div className="flex items-center justify-between p-3.5 rounded-xl border border-border/40 bg-card shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-muted text-foreground">
+              <Globe className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-foreground">{t('settings:appearance.language', { defaultValue: 'Langue' })}</p>
+              <p className="text-[11px] text-muted-foreground">
+                {currentLanguage === 'fr' ? 'Français' : 'English'}
+              </p>
+            </div>
+          </div>
+          <LanguageSwitcher variant="toggle" />
         </div>
 
         {/* Sphera Standalone Direct Link Card */}
@@ -139,7 +160,7 @@ export function MobileMenu() {
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
-                  Ouvrir Sphera
+                  {t('openSphera', { defaultValue: 'Ouvrir Sphera' })}
                 </span>
                 <Badge
                   variant="secondary"
@@ -149,7 +170,7 @@ export function MobileMenu() {
                 </Badge>
               </div>
               <p className="text-[11px] text-muted-foreground truncate mt-0.5">
-                Fiches, quiz, flashcards & corrections
+                {currentLanguage === 'en' ? 'Study sheets, quizzes, flashcards & feedback' : 'Fiches, quiz, flashcards & corrections'}
               </p>
             </div>
           </div>
@@ -160,7 +181,7 @@ export function MobileMenu() {
         {isAuthenticated && (
           <div className="space-y-1">
             <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80 px-2">
-              Espaces & Outils
+              {t('quickActions', { defaultValue: 'Espaces & Outils' })}
             </span>
             <div className="rounded-2xl border border-border/40 bg-card overflow-hidden divide-y divide-border/30">
               <NavLink
@@ -173,7 +194,7 @@ export function MobileMenu() {
               >
                 <div className="flex items-center gap-3">
                   <LinkIcon className="h-4 w-4 text-muted-foreground" />
-                  <span>Connexions</span>
+                  <span>{t('connections', { defaultValue: 'Connexions' })}</span>
                 </div>
                 <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40" />
               </NavLink>
@@ -188,7 +209,7 @@ export function MobileMenu() {
               >
                 <div className="flex items-center gap-3">
                   <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                  <span>Messages</span>
+                  <span>{t('messages', { defaultValue: 'Messages' })}</span>
                 </div>
                 <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40" />
               </NavLink>
@@ -203,7 +224,7 @@ export function MobileMenu() {
               >
                 <div className="flex items-center gap-3">
                   <BookmarkSimple className="h-4 w-4 text-muted-foreground" />
-                  <span>Enregistrements</span>
+                  <span>{t('saved', { defaultValue: 'Enregistrements' })}</span>
                 </div>
                 <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40" />
               </NavLink>
@@ -218,7 +239,7 @@ export function MobileMenu() {
               >
                 <div className="flex items-center gap-3">
                   <Settings className="h-4 w-4 text-muted-foreground" />
-                  <span>Paramètres</span>
+                  <span>{t('settings', { defaultValue: 'Paramètres' })}</span>
                 </div>
                 <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40" />
               </NavLink>
@@ -229,7 +250,7 @@ export function MobileMenu() {
         {/* Section: Informations & Aide */}
         <div className="space-y-1">
           <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80 px-2">
-            Informations & Aide
+            {t('help', { defaultValue: 'Informations & Aide' })}
           </span>
           <div className="rounded-2xl border border-border/40 bg-card overflow-hidden divide-y divide-border/30">
             {utilities
@@ -262,7 +283,7 @@ export function MobileMenu() {
             className="w-full h-11 rounded-xl text-xs font-semibold text-destructive hover:bg-destructive/10 hover:text-destructive justify-center gap-2 border border-destructive/20 cursor-pointer"
           >
             <LogOut className="h-4 w-4" />
-            <span>Déconnexion</span>
+            <span>{t('logout', { defaultValue: 'Déconnexion' })}</span>
           </Button>
         )}
 

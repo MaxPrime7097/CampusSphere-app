@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Helmet } from "react-helmet-async";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Scroll as ScrollText, WarningCircle as AlertCircle, CheckCircle, XCircle, Shield, Heart, FacebookLogo as Facebook, TwitterLogo as Twitter, LinkedinLogo as Linkedin, InstagramLogo as Instagram, YoutubeLogo as Youtube, CaretDown as ChevronDown, User, LockKey as BookLock, Envelope as Mail } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -11,6 +11,16 @@ import { PoliciesButton }  from "@/components/layout/PoliciesButton"
 
 export function Terms(): JSX.Element {
   const navigate = useNavigate();
+  const { hash } = useLocation();
+
+  useEffect(() => {
+    if (!hash) return;
+    // Laisse le temps au ScrollToTop global de s'exécuter, puis cible la section
+    const timer = window.setTimeout(() => {
+      document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 150);
+    return () => window.clearTimeout(timer);
+  }, [hash]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5">
@@ -102,7 +112,7 @@ export function Terms(): JSX.Element {
               </div>
             </div>
 
-            <div className="campus-animate-slide-up">
+            <div id="age-restriction" className="campus-animate-slide-up scroll-mt-24">
               <div className="p-0">
                 <CardTitle className="font-poppins flex items-center gap-3 p-0">
                   Inscription, Âge Minimum & Compte

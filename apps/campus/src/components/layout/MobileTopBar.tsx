@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { MagnifyingGlass as Search, List as Menu, X, Bell } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,7 @@ interface MobileTopBarProps {
 }
 
 export function MobileTopBar({ onMenuClick, user, isLoading }: MobileTopBarProps) {
+  const { t } = useTranslation("navigation");
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const location = useLocation();
@@ -40,7 +42,7 @@ export function MobileTopBar({ onMenuClick, user, isLoading }: MobileTopBarProps
             <div className="relative flex-1">
               <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground z-10" />
               <Input
-                placeholder="Rechercher..."
+                placeholder={t("searchShortcut")}
                 className="pl-11 h-10 rounded-xl"
                 value={searchQuery}
                 onChange={(e) => {
@@ -69,7 +71,7 @@ export function MobileTopBar({ onMenuClick, user, isLoading }: MobileTopBarProps
             size="icon"
             className="h-10 w-10 p-0 rounded-full flex items-center justify-center shrink-0"
             onClick={() => setSearchOpen(false)}
-            aria-label="Fermer la recherche"
+            aria-label={t("search.clear")}
           >
             <X className="h-6 w-6" />
           </Button>
@@ -84,7 +86,7 @@ export function MobileTopBar({ onMenuClick, user, isLoading }: MobileTopBarProps
                 size="icon"
                 className="h-10 w-10 p-0 rounded-full flex items-center justify-center hover:bg-muted text-foreground"
                 onClick={onMenuClick}
-                aria-label="Menu"
+                aria-label={t("menu")}
               >
                 <Menu className="h-6 w-6" />
               </Button>
@@ -105,7 +107,7 @@ export function MobileTopBar({ onMenuClick, user, isLoading }: MobileTopBarProps
               size="icon"
               className="h-10 w-10 p-0 rounded-full flex items-center justify-center hover:bg-muted text-foreground active:scale-95 transition-transform"
               onClick={() => setSearchOpen(true)}
-              aria-label="Rechercher"
+              aria-label={t("searchShortcut")}
             >
               <Search className="h-6 w-6" />
             </Button>
@@ -115,7 +117,7 @@ export function MobileTopBar({ onMenuClick, user, isLoading }: MobileTopBarProps
               size="icon"
               onClick={() => navigate("/notifications")}
               className="relative h-10 w-10 p-0 rounded-full flex items-center justify-center hover:bg-muted text-foreground active:scale-95 transition-transform"
-              aria-label="Notifications"
+              aria-label={t("notifications")}
             >
               <Bell className="h-6 w-6" weight={counts.notifications > 0 ? "fill" : "regular"} />
               {counts.notifications > 0 && (
@@ -129,7 +131,7 @@ export function MobileTopBar({ onMenuClick, user, isLoading }: MobileTopBarProps
               size="icon"
               onClick={() => { if (location.pathname === "/menu") { navigate(-1); } else { navigate("/menu"); } }}
               className="h-10 w-10 p-0 rounded-full flex items-center justify-center hover:bg-muted text-foreground active:scale-95 transition-transform"
-              aria-label="Menu"
+              aria-label={t("menu")}
             >
               {location.pathname === "/menu" ? (
                 <X className="h-6 w-6" />

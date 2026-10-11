@@ -2,6 +2,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Link, ArrowClockwise as RefreshCw, Check } from "@phosphor-icons/react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { searchUsers, getUserConnections, createConnection } from "@/services/api";
@@ -20,6 +21,7 @@ type FriendSuggestion = {
 };
 
 export function FriendSuggestions() {
+  const { t } = useTranslation("feed");
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
@@ -55,7 +57,7 @@ export function FriendSuggestions() {
           .slice(0, 10)
           .map((user: any) => ({
             id: String(user.id),
-            name: user.name || "Utilisateur",
+            name: user.name || t("friendSuggestions.defaultUser"),
             username: user.username || "user",
             avatar: user.avatar || null,
             faculty: formatSlugToLabel(user.faculty) || "",
@@ -79,8 +81,8 @@ export function FriendSuggestions() {
     const result = await refetch();
     if (result.isSuccess) {
       toast({
-        title: "Suggestions mises à jour",
-        description: "Nouvelles suggestions chargées",
+        title: t("friendSuggestions.toasts.refreshedTitle"),
+        description: t("friendSuggestions.toasts.refreshedDesc"),
         duration: 2000,
       });
     }
@@ -94,15 +96,15 @@ export function FriendSuggestions() {
     try {
       await createConnection(friendId);
       toast({
-        title: "Demande envoyée !",
-        description: `Demande envoyée à ${friendName}`,
+        title: t("friendSuggestions.toasts.requestSentTitle"),
+        description: t("friendSuggestions.toasts.requestSentDesc", { name: friendName }),
         duration: 2500,
       });
     } catch {
       setAddedFriends((prev) => prev.filter((id) => id !== friendId));
       toast({
-        title: "Erreur",
-        description: "Impossible d'envoyer la demande",
+        title: t("friendSuggestions.toasts.error"),
+        description: t("friendSuggestions.toasts.sendError"),
         variant: "destructive",
       });
     }
@@ -113,7 +115,9 @@ export function FriendSuggestions() {
       <div className="flex items-center justify-between mb-2.5 px-3.5 sm:px-4">
         <div className="flex items-center gap-2">
           <div className="h-3.5 w-1 bg-primary rounded-full" />
-          <h2 className="text-[12px] font-bold tracking-tight text-foreground/85">Suggestions de connexion</h2>
+          <h2 className="text-[12px] font-bold tracking-tight text-foreground/85">
+            {t("friendSuggestions.title")}
+          </h2>
         </div>
         <div className="flex items-center gap-1">
           <Button
@@ -122,7 +126,7 @@ export function FriendSuggestions() {
             onClick={() => navigate("/connections")}
             className="h-6 px-2.5 text-[11px] text-muted-foreground hover:text-foreground font-medium rounded-full hover:bg-muted/60 transition-colors"
           >
-            Voir tout
+            {t("friendSuggestions.viewAll")}
           </Button>
           <Button 
             variant="ghost" 
@@ -130,7 +134,7 @@ export function FriendSuggestions() {
             onClick={handleManualRefresh} 
             disabled={isFetching}
             className="h-7 w-7 rounded-full hover:bg-muted"
-            aria-label="Rafraîchir les suggestions"
+            aria-label={t("friendSuggestions.refreshAria")}
           >
             <RefreshCw className={cn("h-3.5 w-3.5 text-muted-foreground", isFetching && "animate-spin")} />
           </Button>
@@ -146,7 +150,7 @@ export function FriendSuggestions() {
           ) : friends.length === 0 ? (
             <div className="w-full flex flex-col items-center justify-center py-6 text-center text-muted-foreground bg-muted/20 rounded-xl border border-dashed border-border/60 min-w-[280px]">
               <Link className="h-5 w-5 mb-1.5 opacity-30 text-muted-foreground" />
-              <p className="text-[11px]">Aucune suggestion pour le moment</p>
+              <p className="text-[11px]">{t("friendSuggestions.empty")}</p>
             </div>
           ) : (
             friends.map((friend) => (
@@ -176,7 +180,7 @@ export function FriendSuggestions() {
                   </p>
                   
                   <p className="text-[10px] text-muted-foreground truncate leading-tight mt-0.5">
-                    {friend.faculty || friend.university || "Etudiant"}
+                    {friend.faculty || friend.university || t("friendSuggestions.defaultStudent")}
                   </p>
                 </div>
 
@@ -195,12 +199,12 @@ export function FriendSuggestions() {
                   {addedFriends.includes(friend.id) ? (
                     <div className="flex items-center gap-1">
                       <Check className="h-3 w-3 stroke-[2.5]" />
-                      <span>Ajouté</span>
+                      <span>{t("friendSuggestions.added")}</span>
                     </div>
                   ) : (
                     <div className="flex items-center justify-center gap-1">
                       <Link className="h-3 w-3 stroke-[2.5]" />
-                      <span>Connect</span>
+                      <span>{t("friendSuggestions.connect")}</span>
                     </div>
                   )}
                 </Button>

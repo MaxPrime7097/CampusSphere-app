@@ -1,0 +1,53 @@
+{
+  "title": "Notifications",
+  "unreadCount_one": "{{count}} nouvelle notification",
+  "unreadCount_other": "{{count}} nouvelles notifications",
+  "allCaughtUp": "Toutes vos notifications sont à jour",
+  "deletingStatus": "Suppression de la notification...",
+  "deletedStatus": "Notification supprimée.",
+  "markAllAsRead": "Tout marquer comme lu",
+  "markAsRead": "Marquer comme lu",
+  "delete": "Supprimer",
+  "viewAll": "Voir toutes les notifications",
+  "empty": {
+    "title": "Aucune notification",
+    "description": "Vous n'avez pas encore de notifications."
+  },
+  "sender": {
+    "member": "Membre",
+    "system": "CampusSphere"
+  },
+  "toasts": {
+    "markedRead": "Notification marquée comme lue",
+    "markedAllRead": "Toutes les notifications ont été marquées comme lues",
+    "deleted": "Notification supprimée",
+    "error": "Erreur",
+    "markReadFailed": "Impossible de marquer la notification comme lue",
+    "markAllReadFailed": "Impossible de marquer toutes les notifications comme lues",
+    "loadFailed": "Impossible de charger les notifications",
+    "deleteFailed": "Impossible de supprimer la notification",
+    "deleteFailedNamed": "Impossible de supprimer la notification \"{{title}}\""
+  },
+  "settings": {
+    "dialogTitle": "Paramètres de notifications",
+    "trigger": "Paramètres",
+    "loading": "Chargement...",
+    "emailSection": "Notifications par email",
+    "pushSection": "Notifications push",
+    "inAppSection": "Notifications dans l'app",
+    "systemSection": "Notifications système",
+    "postLikes": "J'aimes sur mes posts",
+    "postComments": "Commentaires sur mes posts",
+    "sphereInvitations": "Invitations à des sphères",
+    "taskAssignments": "Nouvelles tâches",
+    "messages": "Messages privés",
+    "systemUpdates": "Mises à jour et maintenance",
+    "marketingEmails": "Emails marketing et promotions",
+    "toasts": {
+      "updated": "Paramètre modifié",
+      "updatedDesc": "Vos préférences de notifications ont été mises à jour",
+      "saveFailed": "Impossible de sauvegarder le paramètre",
+      "loadFailed": "Impossible de charger les paramètres de notifications"
+    }
+  }
+}

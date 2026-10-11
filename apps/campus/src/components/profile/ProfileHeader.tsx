@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
 import { getImpactLevelInfo, getMoodLabel } from "@/constants/profileConstants";
+import { useTranslation } from "react-i18next";
 
 const VerificationModal = lazy(() =>
   import("@/components/modals/VerificationModal").then((module) => ({
@@ -33,6 +34,15 @@ export interface ProfileHeaderUser {
   isVerified?: boolean;
   impactScore?: number | null;
   currentMood?: string | null;
+  role?: string;
+  partnerProfile?: {
+    organizationName?: string;
+    organizationType?: string;
+    sector?: string;
+    website?: string;
+    isVerified?: boolean;
+  } | null;
+  followersCount?: number;
   stats: {
     posts: number;
     connections: number;
@@ -76,24 +86,26 @@ export function ProfileHeader({
   onOpenMoodModal,
   onRefreshUser,
 }: ProfileHeaderProps) {
+  const { t } = useTranslation("profile");
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
   const [isEditAccountOpen, setIsEditAccountOpen] = useState(false);
+  const isPartner = (user.role || "").toLowerCase() === "impact_partner";
 
   return (
     <>
       {/* Compte non certifié banner */}
-      {isOwnProfile && !currentUser?.isVerified && (
+      {isOwnProfile && !currentUser?.isVerified && !isPartner && (
         <div className="mx-4 sm:mx-0 p-4 bg-amber-500/10 border border-amber-500/50 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-amber-500/20 rounded-full">
               <Shield className="h-5 w-5 text-amber-600" />
             </div>
             <div>
-              <h3 className="font-bold text-amber-900 dark:text-amber-100">Compte non certifié</h3>
+              <h3 className="font-bold text-amber-900 dark:text-amber-100">{t("header.uncertifiedTitle")}</h3>
               <p className="text-sm text-amber-800/80 dark:text-amber-200/80">
-                Votre accès est limité au mode lecture. Certifiez votre statut d'étudiant pour publier.
+                {t("header.uncertifiedDesc")}
               </p>
             </div>
           </div>
@@ -102,7 +114,7 @@ export function ProfileHeader({
               className="bg-amber-600 hover:bg-amber-700 text-white w-full sm:w-auto shadow-lg shadow-amber-600/20"
               onClick={() => setIsVerificationModalOpen(true)}
             >
-              Certifier mon statut
+              {t("header.certifyStatus")}
             </Button>
             {isVerificationModalOpen && (
               <Suspense fallback={<ModalLoadingFallback />}>
@@ -126,7 +138,7 @@ export function ProfileHeader({
           {user.coverPhoto ? (
             <OptimizedImage
               src={user.coverPhoto}
-              alt="Photo de couverture"
+              alt={t("header.coverPhoto")}
               className="w-full h-full object-cover"
               containerClassName="w-full h-full absolute inset-0"
             />
@@ -134,7 +146,7 @@ export function ProfileHeader({
             <div className="w-full h-full bg-gradient-to-br from-primary/30 via-accent/30 to-primary/40 flex items-center justify-center">
               <div className="text-center text-white/80">
                 <Camera className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p className="text-sm opacity-75">Photo de couverture</p>
+                <p className="text-sm opacity-75">{t("header.coverPhoto")}</p>
               </div>
             </div>
           )}
@@ -147,7 +159,7 @@ export function ProfileHeader({
               onClick={onOpenCoverModal}
             >
               <Camera className="h-4 w-4 mr-2" />
-              Changer
+              {t("header.changeCover")}
             </Button>
           )}
         </div>
@@ -178,44 +190,71 @@ export function ProfileHeader({
               <div className="flex gap-2 pt-1 md:pt-0">
                 {!isOwnProfile && (
                   <div className="space-y-1">
-                    <Button
-                      variant={isFollowing ? "outline" : "default"}
-                      onClick={onFollow}
-                      disabled={isFollowingLoading || relationActionUnavailable}
-                      className={!isFollowing ? "bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 font-medium shadow-none" : ""}
-                      size="sm"
-                    >
-                      {isFollowingLoading ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : isFollowing ? (
-                        connectionStatus === "pending" ? (
-                          isRecipient ? (
-                            <>
-                              <Check className="h-4 w-4 mr-2" />
-                              <span className="inline">Accepter</span>
-                            </>
+                    {isPartner ? (
+                      <Button
+                        variant={isFollowing ? "outline" : "default"}
+                        onClick={onFollow}
+                        disabled={isFollowingLoading}
+                        className={cn(
+                          "w-full sm:w-auto font-medium transition-all",
+                          isFollowing ? "border-primary/40 text-primary hover:bg-primary/5" : "bg-primary text-primary-foreground hover:bg-primary/90"
+                        )}
+                        size="sm"
+                      >
+                        {isFollowingLoading ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : isFollowing ? (
+                          <>
+                            <Check className="h-4 w-4 mr-2" />
+                            <span className="inline">Suivi ✓</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="mr-1 text-base font-semibold leading-none">+</span>
+                            <span className="inline">Suivre</span>
+                          </>
+                        )}
+                      </Button>
+                    ) : (
+                      <Button
+                        variant={isFollowing ? "outline" : "default"}
+                        onClick={onFollow}
+                        disabled={isFollowingLoading || relationActionUnavailable}
+                        className={!isFollowing ? "bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 font-medium shadow-none" : ""}
+                        size="sm"
+                      >
+                        {isFollowingLoading ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : isFollowing ? (
+                          connectionStatus === "pending" ? (
+                            isRecipient ? (
+                              <>
+                                <Check className="h-4 w-4 mr-2" />
+                                <span className="inline">{t("header.actions.accept")}</span>
+                              </>
+                            ) : (
+                              <>
+                                <Check className="h-4 w-4 mr-2" />
+                                <span className="inline">{t("header.actions.pending")}</span>
+                              </>
+                            )
                           ) : (
                             <>
-                              <Check className="h-4 w-4 mr-2" />
-                              <span className="inline">En attente</span>
+                              <Unlink className="h-4 w-4 mr-2" />
+                              <span className="inline">{t("header.actions.disconnect")}</span>
                             </>
                           )
                         ) : (
                           <>
-                            <Unlink className="h-4 w-4 mr-2" />
-                            <span className="inline">Se déconnecter</span>
+                            <LinkIcon className="h-4 w-4 mr-2" />
+                            <span className="inline">{t("header.actions.connect")}</span>
                           </>
-                        )
-                      ) : (
-                        <>
-                          <LinkIcon className="h-4 w-4 mr-2" />
-                          <span className="inline">Se connecter</span>
-                        </>
-                      )}
-                    </Button>
-                    {relationActionUnavailable && (
+                        )}
+                      </Button>
+                    )}
+                    {relationActionUnavailable && !isPartner && (
                       <p className="text-xs text-muted-foreground">
-                        L'action de connexion est indisponible pour ce profil.
+                        {t("header.actions.unavailableAction")}
                       </p>
                     )}
                   </div>
@@ -228,7 +267,7 @@ export function ProfileHeader({
                       onClick={() => setIsEditAccountOpen(true)}
                     >
                       <PencilSimple className="h-4 w-4 mr-2" />
-                      <span className="inline">Modifier</span>
+                      <span className="inline">{t("header.actions.edit")}</span>
                     </Button>
                     {isEditAccountOpen && (
                       <Suspense fallback={<ModalLoadingFallback />}>
@@ -253,130 +292,186 @@ export function ProfileHeader({
             {/* Profile Info: right column on PC, flows directly under avatar row on mobile */}
             <div className="flex-1 space-y-4">
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <h1 className="text-2xl font-bold">{user.name}</h1>
-                  {user.isVerified && (
-                    <BadgeCheck className="h-5 w-5 text-primary" weight="fill" />
+                  {isPartner ? (
+                    <>
+                      <Badge variant="secondary" className="bg-primary/10 text-primary border border-primary/20 gap-1 text-xs font-semibold">
+                        <BadgeCheck className="h-4 w-4 text-primary" weight="fill" />
+                        Impact Partner Vérifié
+                      </Badge>
+                      {user.partnerProfile?.organizationType && (
+                        <Badge variant="outline" className="capitalize text-xs">
+                          {user.partnerProfile.organizationType}
+                        </Badge>
+                      )}
+                    </>
+                  ) : (
+                    user.isVerified && (
+                      <BadgeCheck className="h-5 w-5 text-primary" weight="fill" />
+                    )
                   )}
                 </div>
                 <p className="text-muted-foreground">@{user.username}</p>
               </div>
 
               <p className="text-foreground leading-relaxed">
-                {user.bio || "Pas de bio pour l'instant"}
+                {user.bio || (isPartner ? "Impact Partner officiel sur CampusSphere." : t("header.noBio"))}
               </p>
 
-            {/* Impact Score et Mood (45% / 55%) */}
-            <div className="grid grid-cols-[9fr_11fr] gap-2 sm:gap-3 w-full p-2.5 sm:p-3 bg-muted/40 border border-border/40 rounded-xl">
-              {/* 45% Impact Score */}
-              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                <div className="w-8 h-8 sm:w-9 sm:h-9 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
-                  <Zap className="h-4 w-4 text-primary" weight="fill" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1">
-                    <p className="text-xs sm:text-sm font-semibold truncate">Impact Score</p>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-4 w-4 sm:h-5 sm:w-5 p-0 rounded-full hover:bg-muted transition-colors shrink-0"
-                          aria-label="Informations sur l'Impact Score"
-                        >
-                          <Info className="h-3 w-3 text-muted-foreground" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-72 sm:w-80 p-4 space-y-3 z-50 text-left" align="start">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                            <Zap className="h-4 w-4 text-primary" weight="fill" />
-                          </div>
-                          <div>
-                            <h4 className="font-semibold text-sm leading-none">Impact Score</h4>
-                            <span className="text-[11px] text-muted-foreground">Système d'entraide</span>
-                          </div>
-                        </div>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          Le Score d'Impact mesure la valeur et l'utilité des partages (ressources, réponses, entraide) apportés à la communauté CampusSphere.
-                        </p>
-                        <div className="pt-2 flex items-center justify-between border-t border-border/40">
-                          <Button
-                            variant="link"
-                            size="sm"
-                            onClick={() => navigate("/cs-inc/impact-score")}
-                            className="p-0 h-auto text-primary font-semibold text-xs inline-flex items-center gap-1 hover:gap-1.5 transition-all"
-                          >
-                            <span>En savoir plus</span>
-                            <ArrowRight className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  <div className="flex items-center gap-1.5 sm:gap-2">
-                    <p
-                      className={cn(
-                        "text-sm sm:text-lg font-bold text-foreground truncate transition-all duration-300",
-                        animateScore && "animate-pop"
-                      )}
-                    >
-                      {user.impactScore ?? 0}
+            {/* Impact Score et Mood pour étudiant OU Bloc Entreprise pour Impact Partner */}
+            {isPartner ? (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-muted/40 border border-border/40 rounded-xl">
+                <div className="space-y-1">
+                  {user.partnerProfile?.sector && (
+                    <p className="text-xs text-muted-foreground">
+                      <span className="font-semibold text-foreground">Secteur d'activité : </span>
+                      {user.partnerProfile.sector}
                     </p>
-                    {user.impactScore !== null && (
-                      <div
+                  )}
+                  {user.partnerProfile?.website && (
+                    <p className="text-xs text-muted-foreground">
+                      <span className="font-semibold text-foreground">Site web : </span>
+                      <a
+                        href={user.partnerProfile.website.startsWith("http") ? user.partnerProfile.website : `https://${user.partnerProfile.website}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        {user.partnerProfile.website}
+                      </a>
+                    </p>
+                  )}
+                </div>
+                <div className="text-xs font-medium text-muted-foreground bg-background/80 px-3 py-1.5 rounded-lg border border-border/40 self-start sm:self-center">
+                  <span className="font-bold text-foreground mr-1">{user.followersCount ?? 0}</span> Spherians suivent cette page
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-[9fr_11fr] gap-2 sm:gap-3 w-full p-2.5 sm:p-3 bg-muted/40 border border-border/40 rounded-xl">
+                {/* 45% Impact Score */}
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                    <Zap className="h-4 w-4 text-primary" weight="fill" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1">
+                      <p className="text-xs sm:text-sm font-semibold truncate">{t("header.impactScore")}</p>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-4 w-4 sm:h-5 sm:w-5 p-0 rounded-full hover:bg-muted transition-colors shrink-0"
+                            aria-label={t("header.impactScore")}
+                          >
+                            <Info className="h-3 w-3 text-muted-foreground" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-72 sm:w-80 p-4 space-y-3 z-50 text-left" align="start">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                              <Zap className="h-4 w-4 text-primary" weight="fill" />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-sm leading-none">{t("header.helpTitle")}</h4>
+                              <span className="text-[11px] text-muted-foreground">{t("header.helpSubtitle")}</span>
+                            </div>
+                          </div>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            {t("header.helpDesc")}
+                          </p>
+                          <div className="pt-2 flex items-center justify-between border-t border-border/40">
+                            <Button
+                              variant="link"
+                              size="sm"
+                              onClick={() => navigate("/cs-inc/impact-score")}
+                              className="p-0 h-auto text-primary font-semibold text-xs inline-flex items-center gap-1 hover:gap-1.5 transition-all"
+                            >
+                              <span>{t("header.learnMore")}</span>
+                              <ArrowRight className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <div className="flex items-center gap-1.5 sm:gap-2">
+                      <p
                         className={cn(
-                          "flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold text-white bg-gradient-to-r shadow-sm",
-                          getImpactLevelInfo(user.impactScore).currentLevel.color
+                          "text-sm sm:text-lg font-bold text-foreground truncate transition-all duration-300",
+                          animateScore && "animate-pop"
                         )}
                       >
-                        <span>{getImpactLevelInfo(user.impactScore).currentLevel.icon}</span>
-                      </div>
-                    )}
+                        {user.impactScore ?? 0}
+                      </p>
+                      {user.impactScore !== null && (
+                        <div
+                          className={cn(
+                            "flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold text-white bg-gradient-to-r shadow-sm",
+                            getImpactLevelInfo(user.impactScore).currentLevel.color
+                          )}
+                        >
+                          <span>{getImpactLevelInfo(user.impactScore).currentLevel.icon}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* 55% Mood du moment */}
-              <div
-                className={cn(
-                  "flex items-center gap-2 sm:gap-3 min-w-0 rounded-lg p-1 sm:p-1.5 transition-colors border-l border-border/50 pl-2 sm:pl-3",
-                  isOwnProfile ? "cursor-pointer hover:bg-muted/60" : ""
-                )}
-                onClick={() => isOwnProfile && onOpenMoodModal()}
-              >
-                <div className="w-8 h-8 sm:w-9 sm:h-9 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
-                  <Smile className="h-4 w-4 text-primary" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-1">
-                    <p className="text-xs sm:text-sm font-semibold truncate">Mood du moment</p>
-                    {isOwnProfile && (
-                      <Settings className="h-3 w-3 text-muted-foreground shrink-0 hidden sm:block" />
-                    )}
+                {/* 55% Mood du moment */}
+                <div
+                  className={cn(
+                    "flex items-center gap-2 sm:gap-3 min-w-0 rounded-lg p-1 sm:p-1.5 transition-colors border-l border-border/50 pl-2 sm:pl-3",
+                    isOwnProfile ? "cursor-pointer hover:bg-muted/60" : ""
+                  )}
+                  onClick={() => isOwnProfile && onOpenMoodModal()}
+                >
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                    <Smile className="h-4 w-4 text-primary" />
                   </div>
-                  <p className="text-xs text-muted-foreground break-words line-clamp-2 leading-snug" title={getMoodLabel(user.currentMood)}>
-                    {getMoodLabel(user.currentMood)}
-                  </p>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-1">
+                      <p className="text-xs sm:text-sm font-semibold truncate">{t("header.currentMood")}</p>
+                      {isOwnProfile && (
+                        <Settings className="h-3 w-3 text-muted-foreground shrink-0 hidden sm:block" />
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground break-words line-clamp-2 leading-snug" title={getMoodLabel(user.currentMood)}>
+                      {getMoodLabel(user.currentMood)}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Stats */}
-            <div className="flex gap-6 text-sm">
-              <div>
-                <span className="font-semibold">{user.stats.posts}</span>
-                <span className="text-muted-foreground ml-1">Posts</span>
+            {isPartner ? (
+              <div className="flex gap-6 text-sm">
+                <div>
+                  <span className="font-semibold">{user.stats.posts}</span>
+                  <span className="text-muted-foreground ml-1">Publications</span>
+                </div>
+                <div>
+                  <span className="font-semibold">{user.followersCount ?? 0}</span>
+                  <span className="text-muted-foreground ml-1">Abonnés</span>
+                </div>
               </div>
-              <div>
-                <span className="font-semibold">{user.stats.connections}</span>
-                <span className="text-muted-foreground ml-1">Connections</span>
+            ) : (
+              <div className="flex gap-6 text-sm">
+                <div>
+                  <span className="font-semibold">{user.stats.posts}</span>
+                  <span className="text-muted-foreground ml-1">{t("header.stats.posts")}</span>
+                </div>
+                <div>
+                  <span className="font-semibold">{user.stats.connections}</span>
+                  <span className="text-muted-foreground ml-1">{t("header.stats.connections")}</span>
+                </div>
+                <div>
+                  <span className="font-semibold">{user.stats.contributions}</span>
+                  <span className="text-muted-foreground ml-1">{t("header.stats.contributions")}</span>
+                </div>
               </div>
-              <div>
-                <span className="font-semibold">{user.stats.contributions}</span>
-                <span className="text-muted-foreground ml-1">Contributions</span>
-              </div>
-            </div>
+            )}
 
             {/* Badges */}
             <div className="flex flex-wrap gap-2">

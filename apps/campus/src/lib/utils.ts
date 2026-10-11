@@ -2,6 +2,7 @@ import { encodeHashId, decodeHashId, parseSlugId } from "./hashids";
 export { encodeHashId, decodeHashId, parseSlugId };
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { FACULTY_BILINGUAL_MAP } from "@/constants/academicData";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -55,6 +56,11 @@ export function formatFileSize(bytesOrString: unknown): string {
 export function formatSlugToLabel(slug: string | null | undefined): string {
   if (!slug) return "";
   
+  const lower = slug.toLowerCase().trim();
+  if (FACULTY_BILINGUAL_MAP[lower]) {
+    return FACULTY_BILINGUAL_MAP[lower];
+  }
+
   // Cas spéciaux connus (diplômes, etc.)
   const specials: Record<string, string> = {
     "gce_a": "GCE A Level",

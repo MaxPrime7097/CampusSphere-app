@@ -75,24 +75,44 @@ export async function supabaseSignOut() {
   await supabase.auth.signOut();
 }
 
+let inFlightExchange: {
+  token: string;
+  promise: Promise<any>;
+} | null = null;
+
 export async function exchangeSupabaseToken(supabaseAccessToken: string) {
-  const response = await apiFetch<{
-    success: boolean;
-    data: {
-      tokens: { accessToken: string; refreshToken: string };
-      user: any;
-      needs_profile_completion?: boolean;
-      is_new_user?: boolean;
-    };
-  }>("api/auth/supabase/exchange/", {
-    method: "POST",
-    body: { access_token: supabaseAccessToken },
-  });
-  const tokens = response?.data?.tokens;
-  if (tokens?.accessToken) {
-    setTokens(tokens.accessToken, tokens.refreshToken);
+  if (inFlightExchange && inFlightExchange.token === supabaseAccessToken) {
+    return inFlightExchange.promise;
   }
-  return response;
+
+  const exchangePromise = (async () => {
+    try {
+      const response = await apiFetch<{
+        success: boolean;
+        data: {
+          tokens: { accessToken: string; refreshToken: string };
+          user: any;
+          needs_profile_completion?: boolean;
+          is_new_user?: boolean;
+        };
+      }>("api/auth/supabase/exchange/", {
+        method: "POST",
+        body: { access_token: supabaseAccessToken },
+      });
+      const tokens = response?.data?.tokens;
+      if (tokens?.accessToken) {
+        setTokens(tokens.accessToken, tokens.refreshToken);
+      }
+      return response;
+    } finally {
+      if (inFlightExchange?.token === supabaseAccessToken) {
+        inFlightExchange = null;
+      }
+    }
+  })();
+
+  inFlightExchange = { token: supabaseAccessToken, promise: exchangePromise };
+  return exchangePromise;
 }
 
 export async function completeSupabaseProfile(data: {
@@ -240,3 +260,24 @@ export async function deleteUserAccount(confirmationText: string, token?: string
     clearTokens();
   }
 }
+
+export interface CampusStatusData {
+  slug: string;
+  name: string;
+  shortName: string;
+  city: string;
+  isOpen: boolean;
+  currentCount: number;
+  targetCount: number;
+  remainingCount: number;
+  percentage: number;
+  campuses?: CampusStatusData[];
+}
+
+export async function getCampusStatus(slug?: string): Promise<CampusStatusData> {
+  const query = slug ? `?slug=${encodeURIComponent(slug)}` : "";
+  const response = await apiFetch<any>(`api/auth/campus-status/${query}`);
+  const payload = (response as any)?.data ?? response;
+  return payload as CampusStatusData;
+}
+

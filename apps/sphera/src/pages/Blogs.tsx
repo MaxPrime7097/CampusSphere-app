@@ -41,7 +41,7 @@ export default function Blogs(): JSX.Element {
       '@type': 'Organization',
       name: 'CampusSphere',
       url: 'https://campussphere.app',
-      logo: 'https://sphera.campussphere.app/sphera-logo-dark.png',
+      logo: 'https://sphera.campussphere.app/sphera_logo.svg',
     },
     hasPart: blogPosts.map(post => ({
       '@type': 'BlogPosting',
@@ -64,13 +64,13 @@ export default function Blogs(): JSX.Element {
         <meta property="og:url" content="https://sphera.campussphere.app/blogs" />
         <meta property="og:title" content={t('seo.ogTitle')} />
         <meta property="og:description" content={t('seo.ogDescription')} />
-        <meta property="og:image" content="https://sphera.campussphere.app/sphera-logo-dark.png" />
+        <meta property="og:image" content="https://sphera.campussphere.app/sphera_logo.svg" />
 
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:url" content="https://sphera.campussphere.app/blogs" />
         <meta name="twitter:title" content={t('seo.ogTitle')} />
         <meta name="twitter:description" content={t('seo.ogDescription')} />
-        <meta name="twitter:image" content="https://sphera.campussphere.app/sphera-logo-dark.png" />
+        <meta name="twitter:image" content="https://sphera.campussphere.app/sphera_logo.svg" />
 
         {/* Schema.org CollectionPage */}
         <script type="application/ld+json">

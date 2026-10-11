@@ -1,0 +1,80 @@
+{
+  "title": "Connections",
+  "subtitle": "Manage your connections and discover new students",
+  "searchPlaceholder": "Search connections...",
+  "defaultUser": "User",
+  "status": {
+    "calculatingMutual": "Calculating mutual friends...",
+    "mutualUpdated": "Mutual friends updated."
+  },
+  "filters": {
+    "all": "All",
+    "connections": "My connections",
+    "university": "University",
+    "faculty": "Faculty",
+    "mutual": "Mutual friends",
+    "impact": "Impact",
+    "filterPlaceholder": "Filter",
+    "sameUniversity": "Same university",
+    "sameFaculty": "Same faculty",
+    "pending": "Pending",
+    "suggestions": "Suggestions"
+  },
+  "sections": {
+    "pendingRequests": "Pending requests",
+    "suggestions": "Student suggestions",
+    "myConnections": "My connections",
+    "viewAll": "View all ({{count}})",
+    "viewAllSimple": "View all",
+    "backToDashboard": "Back to connections",
+    "connectionsResults": "Connection results",
+    "suggestionsResults": "Suggestion results"
+  },
+  "mutualFriends_one": "{{count}} mutual friend",
+  "mutualFriends_other": "{{count}} mutual friends",
+  "reasons": {
+    "sameUniversity": "Same university",
+    "sameFaculty": "Same faculty",
+    "suggested": "Suggested for you"
+  },
+  "actions": {
+    "message": "Message",
+    "viewProfile": "View profile",
+    "disconnect": "Disconnect",
+    "confirmDisconnect": "Are you sure you want to remove this connection?",
+    "accept": "Accept",
+    "decline": "Decline",
+    "connect": "Connect",
+    "pending": "Pending",
+    "requestSent": "Request sent",
+    "reset": "Reset",
+    "back": "Back"
+  },
+  "empty": {
+    "connectionsTitle": "No connections yet",
+    "connectionsDesc": "Explore suggestions and connect with fellow students.",
+    "pendingTitle": "No pending requests",
+    "pendingDesc": "You have no pending connection requests right now.",
+    "suggestionsTitle": "No suggestions",
+    "suggestionsDesc": "Check back later to discover new student profiles.",
+    "searchTitle": "No results found",
+    "searchDesc": "No profiles match your search criteria."
+  },
+  "toasts": {
+    "info": "Information",
+    "accepted": "Connection accepted",
+    "acceptedDesc": "You are now connected with {{name}}",
+    "declined": "Request declined",
+    "declinedDesc": "The connection request was declined",
+    "disconnected": "Connection removed",
+    "disconnectedDesc": "You are no longer connected with {{name}}",
+    "requestSent": "Request sent",
+    "requestSentDesc": "Your request has been sent to {{name}}",
+    "error": "Error",
+    "acceptFailed": "Could not accept request",
+    "declineFailed": "Could not decline request",
+    "disconnectFailed": "Could not remove connection",
+    "requestFailed": "Could not send request",
+    "mutualUnavailable": "Mutual friend calculation is currently unavailable."
+  }
+}

@@ -1,4 +1,17 @@
-import { MagnifyingGlass as Search, X, Funnel as Filter, Stack as Layers, BookOpen, FileText, FileCsv as FileSpreadsheet, GraduationCap, Archive, FolderSimple as FolderGit2, Presentation } from "@phosphor-icons/react";
+import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  MagnifyingGlass as Search,
+  X,
+  Funnel as Filter,
+  Stack as Layers,
+  BookOpen,
+  GraduationCap,
+  FolderSimple as FolderGit2,
+  BookBookmark,
+  Notepad,
+  Question as QuestionMark,
+} from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -10,15 +23,32 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
+export const RESOURCE_CHIP_DEFS = [
+  { value: "all",          icon: Layers },
+  { value: "course_notes", icon: BookOpen },
+  { value: "td_tp",        icon: Notepad },
+  { value: "exams",        icon: GraduationCap },
+  { value: "project",      icon: FolderGit2 },
+  { value: "book",         icon: BookBookmark },
+  { value: "other",        icon: QuestionMark },
+] as const;
+
+export const FILE_FORMAT_DEFS = [
+  { value: "all" },
+  { value: "pdf" },
+  { value: "doc" },
+  { value: "image" },
+] as const;
+
+// Backward compatibility export
 export const RESOURCE_CHIPS = [
-  { value: "all", label: "Toutes les ressources", icon: Layers },
-  { value: "notes", label: "Notes de cours", icon: BookOpen },
-  { value: "resumes", label: "Résumés & Fiches", icon: FileText },
-  { value: "exercises", label: "Exercices & TD", icon: FileSpreadsheet },
-  { value: "exam_papers", label: "Épreuves d'examen", icon: GraduationCap },
-  { value: "annales", label: "Annales corrigées", icon: Archive },
-  { value: "projects", label: "Projets & Rapports", icon: FolderGit2 },
-  { value: "presentations", label: "Présentations / Slides", icon: Presentation },
+  { value: "all",          label: "Toutes",             icon: Layers },
+  { value: "course_notes", label: "Cours",              icon: BookOpen },
+  { value: "td_tp",        label: "TD / TP",            icon: Notepad },
+  { value: "exams",        label: "Anciennes épreuves", icon: GraduationCap },
+  { value: "project",      label: "Projet",             icon: FolderGit2 },
+  { value: "book",         label: "Livre",              icon: BookBookmark },
+  { value: "other",        label: "Autre",              icon: QuestionMark },
 ] as const;
 
 export const FILE_FORMATS = [
@@ -53,6 +83,26 @@ export function ResourcesFilterBar({
   isFiltering,
   onResetFilters,
 }: ResourcesFilterBarProps) {
+  const { t } = useTranslation("resources");
+
+  const chips = useMemo(
+    () =>
+      RESOURCE_CHIP_DEFS.map((c) => ({
+        ...c,
+        label: t(`page.chips.${c.value}` as any, { defaultValue: c.value }),
+      })),
+    [t]
+  );
+
+  const fileFormats = useMemo(
+    () =>
+      FILE_FORMAT_DEFS.map((f) => ({
+        ...f,
+        label: t(`page.formats.${f.value}` as any, { defaultValue: f.value }),
+      })),
+    [t]
+  );
+
   return (
     <div className="space-y-3">
       {/* Top Row: Search Input + Format Select */}
@@ -60,7 +110,7 @@ export function ResourcesFilterBar({
         <div className="relative flex-1">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Rechercher par matière, mot-clé, cours ou auteur..."
+            placeholder={t("page.searchPlaceholder")}
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
             className="pl-10 pr-9 text-xs rounded-xl h-10 border-border/80 bg-card focus-visible:ring-primary shadow-xs"
@@ -87,7 +137,7 @@ export function ResourcesFilterBar({
               ? "border-primary text-primary bg-primary/5"
               : ""
           )}
-          title="Filtres"
+          title={t("page.filters")}
         >
           <Filter className="h-4 w-4" />
         </Button>
@@ -96,10 +146,10 @@ export function ResourcesFilterBar({
         <div className="hidden sm:flex items-center gap-2 shrink-0">
           <Select value={selectedFileFormat} onValueChange={onSelectFileFormat}>
             <SelectTrigger className="w-52 h-10 rounded-xl text-xs border-border/80 bg-card">
-              <SelectValue placeholder="Format" />
+              <SelectValue placeholder={t("page.formatPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
-              {FILE_FORMATS.map((f) => (
+              {fileFormats.map((f) => (
                 <SelectItem key={f.value} value={f.value} className="text-xs">
                   {f.label}
                 </SelectItem>
@@ -115,7 +165,7 @@ export function ResourcesFilterBar({
               className="rounded-xl text-xs h-10 text-muted-foreground hover:text-foreground"
             >
               <X className="h-3.5 w-3.5 mr-1" />
-              Réinitialiser
+              {t("page.reset")}
             </Button>
           )}
         </div>
@@ -126,10 +176,10 @@ export function ResourcesFilterBar({
         <div className="flex items-center gap-2 sm:hidden animate-in fade-in duration-200">
           <Select value={selectedFileFormat} onValueChange={onSelectFileFormat}>
             <SelectTrigger className="w-full h-10 rounded-xl text-xs border-border/80 bg-card">
-              <SelectValue placeholder="Format" />
+              <SelectValue placeholder={t("page.formatPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
-              {FILE_FORMATS.map((f) => (
+              {fileFormats.map((f) => (
                 <SelectItem key={f.value} value={f.value} className="text-xs">
                   {f.label}
                 </SelectItem>
@@ -145,7 +195,7 @@ export function ResourcesFilterBar({
               className="text-xs text-muted-foreground hover:text-foreground shrink-0 h-10"
             >
               <X className="h-3.5 w-3.5 mr-1" />
-              Effacer
+              {t("page.clear")}
             </Button>
           )}
         </div>
@@ -153,7 +203,7 @@ export function ResourcesFilterBar({
 
       {/* Bottom Row: Horizontal Type Chips */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pt-1 border-t border-border/40">
-        {RESOURCE_CHIPS.map((chip) => {
+        {chips.map((chip) => {
           const isSelected = selectedType === chip.value;
           return (
             <button

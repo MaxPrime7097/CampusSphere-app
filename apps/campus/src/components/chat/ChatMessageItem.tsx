@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -10,7 +11,7 @@ import {
 import {
   Smiley as Smile,
   DotsThreeVertical as MoreVertical,
-  Pencil,
+  PencilSimple,
   Trash,
   Check,
   Checks,
@@ -113,6 +114,9 @@ export function CachedImage({
   );
 }
 
+// In-memory set of downloaded voice notes so they stay downloaded across renders
+const downloadedAudioSet = new Set<string>();
+
 /**
  * Modern Soundwave Voice Note Player (WhatsApp & Telegram style)
  * Includes speed toggle (1x / 1.5x / 2x) and WhatsApp-style local media caching
@@ -137,7 +141,7 @@ export function SoundwavePlayer({
   const [isDownloaded, setIsDownloaded] = useState<boolean>(() => {
     if (isCurrentUser) return true;
     if (src.startsWith("blob:") || src.startsWith("data:")) return true;
-    return false;
+    return downloadedAudioSet.has(src);
   });
   const [currentTime, setCurrentTime] = useState(0);
   const [playbackRate, setPlaybackRate] = useState<number>(1);
@@ -145,14 +149,14 @@ export function SoundwavePlayer({
 
   useEffect(() => {
     let isMounted = true;
-    if (isCurrentUser || src.startsWith("blob:") || src.startsWith("data:")) {
-      setIsDownloaded(true);
+    if (src.startsWith("blob:") || src.startsWith("data:")) {
       return;
     }
     void isMediaCached(src).then((cached) => {
       if (!isMounted) return;
       if (cached) {
         setIsDownloaded(true);
+        downloadedAudioSet.add(src);
         void getCachedMediaUrl(src, false).then((url) => {
           if (isMounted) setMediaSrc(url);
         });
@@ -161,16 +165,51 @@ export function SoundwavePlayer({
     return () => {
       isMounted = false;
     };
-  }, [src, isCurrentUser]);
+  }, [src]);
 
   const handleDownload = async (e: React.MouseEvent): Promise<void> => {
     e.stopPropagation();
     if (isDownloading) return;
     setIsDownloading(true);
+
     try {
-      const url = await downloadAndCacheMedia(src);
-      setMediaSrc(url);
+      // Pre-buffer natively via HTML5 Audio element without CORS fetch friction
+      await new Promise<void>((resolve) => {
+        const audio = new Audio();
+        audio.preload = "auto";
+        audio.src = src;
+
+        const onReady = () => {
+          cleanup();
+          resolve();
+        };
+
+        const cleanup = () => {
+          audio.removeEventListener("canplaythrough", onReady);
+          audio.removeEventListener("loadeddata", onReady);
+          audio.removeEventListener("error", onReady);
+        };
+
+        audio.addEventListener("canplaythrough", onReady, { once: true });
+        audio.addEventListener("loadeddata", onReady, { once: true });
+        audio.addEventListener("error", onReady, { once: true });
+
+        // Snappy WhatsApp loading duration (max 450ms)
+        setTimeout(onReady, 450);
+      });
+
+      downloadedAudioSet.add(src);
       setIsDownloaded(true);
+
+      // Auto-start playback smoothly right after download like WhatsApp
+      setTimeout(() => {
+        if (audioRef.current) {
+          audioRef.current
+            .play()
+            .then(() => setIsPlaying(true))
+            .catch(() => {});
+        }
+      }, 50);
     } catch {
       setIsDownloaded(true);
     } finally {
@@ -345,6 +384,8 @@ export function SoundwavePlayer({
                     ? isPassed
                       ? "bg-white"
                       : "bg-white/35"
+                    : !isDownloaded
+                    ? "bg-muted-foreground/25"
                     : isPassed
                     ? "bg-foreground"
                     : "bg-muted-foreground/35"
@@ -726,6 +767,7 @@ export function ChatMessageItem({
   onNavigateProfile,
   onOpenMedia,
 }: ChatMessageItemProps) {
+  const { t } = useTranslation("messages");
   const isAutoCaption =
     !message.content ||
     message.content.trim() === "" ||
@@ -827,12 +869,12 @@ export function ChatMessageItem({
           {isDeleting ? (
             <p className="italic text-xs flex items-center gap-1.5 py-1 text-muted-foreground">
               <CircleNotch className="h-3.5 w-3.5 animate-spin" />
-              Suppression en cours...
+              {t("item.deleting")}
             </p>
           ) : message.isDeleted ? (
             <p className="italic text-xs flex items-center gap-1.5 py-0.5">
               <Prohibit className="h-3.5 w-3.5 opacity-60" />
-              Ce message a été supprimé
+              {t("item.deleted")}
             </p>
           ) : isEditing ? (
             /* Inline Edit Box */
@@ -877,7 +919,7 @@ export function ChatMessageItem({
                 </p>
               )}
 
-              {/* Quoted Message (Reply Preview) - French translation & vector icons */}
+              {/* Quoted Message (Reply Preview) - Localized translation & vector icons */}
               {message.replyTo && (
                 <div
                   className={`mb-1.5 px-2.5 py-1 rounded-xl text-xs cursor-pointer transition-colors text-left ${
@@ -891,30 +933,32 @@ export function ChatMessageItem({
                       onScrollToMessage?.(String(message.replyTo.id));
                     }
                   }}
-                  title="Cliquer pour afficher le message d'origine"
+                  title={t("item.clickToViewOriginal")}
                 >
                   <p
                     className={`font-semibold text-[10.5px] truncate ${
                       isCurrentUser ? "text-zinc-200" : "text-primary"
                     }`}
                   >
-                    Réponse à @{message.replyTo.author_info?.username || message.replyTo.author_info?.name || "message"}
+                    {t("item.replyTo", {
+                      name: message.replyTo.author_info?.username || message.replyTo.author_info?.name || "message",
+                    })}
                   </p>
                   <p className="truncate text-[10.5px] opacity-85 flex items-center gap-1">
                     {message.replyTo.type === "image" ? (
                       <>
-                        <Camera className="h-3 w-3 inline flex-shrink-0" /> Photo
+                        <Camera className="h-3 w-3 inline flex-shrink-0" /> {t("item.photo")}
                       </>
                     ) : message.replyTo.type === "video" ? (
                       <>
-                        <VideoCamera className="h-3 w-3 inline flex-shrink-0" /> Vidéo
+                        <VideoCamera className="h-3 w-3 inline flex-shrink-0" /> {t("item.video")}
                       </>
                     ) : message.replyTo.type === "audio" ? (
                       <>
-                        <Microphone className="h-3 w-3 inline flex-shrink-0" /> Message vocal
+                        <Microphone className="h-3 w-3 inline flex-shrink-0" /> {t("item.voiceMessage")}
                       </>
                     ) : (
-                      message.replyTo.content || "Pièce jointe"
+                      message.replyTo.content || t("item.attachment")
                     )}
                   </p>
                 </div>
@@ -925,7 +969,7 @@ export function ChatMessageItem({
                 <div className="rounded-xl overflow-hidden max-w-sm mb-0.5 relative group/img">
                   <CachedImage
                     src={message.mediaUrl!}
-                    alt="Photo"
+                    alt={t("item.photo")}
                     className="w-full max-h-72 object-cover rounded-xl cursor-pointer hover:opacity-95 transition-opacity"
                     onClick={() => {
                       if (onOpenMedia) {
@@ -988,7 +1032,7 @@ export function ChatMessageItem({
                     <FileText className="h-4 w-4" />
                   </div>
                   <div className="min-w-0 flex-1 text-left">
-                    <p className="font-medium text-xs truncate">{message.fileName || "Document"}</p>
+                    <p className="font-medium text-xs truncate">{message.fileName || t("item.document")}</p>
                     {message.fileSize && (
                       <p className={`text-[10px] ${isCurrentUser ? "text-white/70" : "text-muted-foreground"}`}>
                         {formatFileSize(message.fileSize)}
@@ -1003,7 +1047,7 @@ export function ChatMessageItem({
                     className={`h-7 w-7 rounded-full flex items-center justify-center transition-colors flex-shrink-0 ${
                       isCurrentUser ? "hover:bg-white/20 text-white" : "hover:bg-muted text-muted-foreground"
                     }`}
-                    title="Télécharger"
+                    title={t("item.download")}
                     onClick={(e) => e.stopPropagation()}
                   >
                     <DownloadSimple className="h-3.5 w-3.5" />
@@ -1035,7 +1079,7 @@ export function ChatMessageItem({
                       )}
                     {message.isEdited && (
                       <span className="text-[10px] opacity-70 ml-1.5 italic whitespace-nowrap">
-                        (modifié)
+                        {t("item.edited")}
                       </span>
                     )}
                   </p>
@@ -1104,7 +1148,7 @@ export function ChatMessageItem({
             <button
               type="button"
               className="h-7 w-7 flex items-center justify-center rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-              title="Réagir"
+              title={t("item.react")}
               onClick={() => onToggleEmojiPicker(message.id)}
             >
               <Smile className="h-4 w-4" />
@@ -1113,7 +1157,7 @@ export function ChatMessageItem({
             <button
               type="button"
               className="h-7 w-7 flex items-center justify-center rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-              title="Répondre"
+              title={t("item.reply")}
               onClick={() => onReply?.(message)}
             >
               <ArrowBendUpLeft className="h-4 w-4" />
@@ -1125,7 +1169,7 @@ export function ChatMessageItem({
                   <button
                     type="button"
                     className="h-7 w-7 flex items-center justify-center rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                    title="Plus d'options"
+                    title={t("item.moreOptions")}
                   >
                     <MoreVertical className="h-4 w-4" />
                   </button>
@@ -1137,11 +1181,11 @@ export function ChatMessageItem({
                     className="z-50"
                   >
                     <DropdownMenuItem onClick={() => onReply?.(message)} className="gap-2 text-xs">
-                      <ArrowBendUpLeft className="h-3.5 w-3.5" /> Répondre
+                      <ArrowBendUpLeft className="h-3.5 w-3.5" /> {t("item.reply")}
                     </DropdownMenuItem>
                     {canEdit && (
                       <DropdownMenuItem onClick={() => onStartEdit(message)} className="gap-2 text-xs">
-                        <Pencil className="h-3.5 w-3.5" /> Modifier
+                        <PencilSimple className="h-3.5 w-3.5" /> {t("item.edit")}
                       </DropdownMenuItem>
                     )}
                     {canDelete && (
@@ -1149,7 +1193,7 @@ export function ChatMessageItem({
                         onClick={() => onDelete(message.id)}
                         className="text-destructive focus:text-destructive gap-2 text-xs"
                       >
-                        <Trash className="h-3.5 w-3.5" /> Supprimer
+                        <Trash className="h-3.5 w-3.5" /> {t("item.delete")}
                       </DropdownMenuItem>
                     )}
                   </DropdownMenuContent>

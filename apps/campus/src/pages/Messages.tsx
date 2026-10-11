@@ -31,6 +31,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CaretDown as ChevronDown } from "@phosphor-icons/react";
 import type { Conversation, Message, MessageType, ConversationParticipant } from "@/types";
 import { storeMediaInCache } from "@/lib/mediaCache";
+import { parseSlugId, encodeHashId } from "@/lib/hashids";
 import {
   ChatHeader,
   ChatMessageItem,
@@ -44,7 +45,11 @@ import {
   MediaLightbox,
 } from "@/components/chat";
 
-function formatMessageDateSeparator(timestamp?: string | null): string {
+function formatMessageDateSeparator(
+  timestamp: string | null | undefined,
+  t: (key: string) => string,
+  lang: string
+): string {
   if (!timestamp) return "";
   const date = new Date(timestamp);
   if (isNaN(date.getTime())) return "";
@@ -53,7 +58,7 @@ function formatMessageDateSeparator(timestamp?: string | null): string {
     date.getDate() === now.getDate() &&
     date.getMonth() === now.getMonth() &&
     date.getFullYear() === now.getFullYear();
-  if (isToday) return "Aujourd'hui";
+  if (isToday) return t("dates.today");
 
   const yesterday = new Date(now);
   yesterday.setDate(now.getDate() - 1);
@@ -61,9 +66,9 @@ function formatMessageDateSeparator(timestamp?: string | null): string {
     date.getDate() === yesterday.getDate() &&
     date.getMonth() === yesterday.getMonth() &&
     date.getFullYear() === yesterday.getFullYear();
-  if (isYesterday) return "Hier";
+  if (isYesterday) return t("dates.yesterday");
 
-  return date.toLocaleDateString("fr-FR", {
+  return date.toLocaleDateString(lang === "en" ? "en-US" : "fr-FR", {
     day: "numeric",
     month: "long",
     year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
@@ -109,7 +114,9 @@ function mapConversation(rawConv: any, currentUserId?: string): Conversation {
     null;
 
   return {
-    id: String(conv.id),
+    id: String(conv.hash_id || conv.id),
+    hash_id: conv.hash_id ? String(conv.hash_id) : undefined,
+    numericId: conv.id ? Number(conv.id) : undefined,
     type: conv.type || conv.conversation_type || "private",
     participants,
     lastMessage,
@@ -161,10 +168,7 @@ function mapMessage(rawMsg: any, currentUserId?: string): Message {
     senderId,
     content: msg.content || "",
     timestamp: msg.created_at || msg.createdAt || null,
-    isEdited:
-      msg.is_edited ||
-      (msg.updated_at && msg.created_at && msg.updated_at !== msg.created_at) ||
-      false,
+    isEdited: Boolean(msg.is_edited),
     isCurrentUser: senderId === String(currentUserId || ""),
     avatar: author.avatar || "/placeholder-avatar.jpg",
     canEdit: msg.can_edit ?? senderId === String(currentUserId || ""),
@@ -193,12 +197,25 @@ function mapMessage(rawMsg: any, currentUserId?: string): Message {
 }
 
 export function Messages() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation("messages");
   const navigate = useNavigate();
   const { conversationId } = useParams<{ conversationId: string }>();
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
   const queryClient = useQueryClient();
+
+  // Match a conversation by id, hash_id, or numeric id — handles all URL forms
+  const isMatchingConv = (conv: Conversation, id: string | undefined): boolean => {
+    if (!id) return false;
+    if (conv.id === id) return true;
+    if (conv.hash_id && conv.hash_id === id) return true;
+    const numId = parseSlugId(id);
+    if (numId !== null) {
+      if (conv.numericId === numId) return true;
+      if (parseSlugId(conv.id) === numId) return true;
+    }
+    return false;
+  };
 
   const [newMessage, setNewMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -405,8 +422,8 @@ export function Messages() {
     content: z
       .string()
       .trim()
-      .min(1, { message: t("messages.validation.tooShort") })
-      .max(1000, { message: t("messages.validation.tooLong") }),
+      .min(1, { message: t("validation.tooShort") })
+      .max(1000, { message: t("validation.tooLong") }),
   });
 
   useEffect(() => {
@@ -916,7 +933,7 @@ export function Messages() {
       if (!validation.success) {
         toast({
           variant: "destructive",
-          title: t("messages.validation.invalid", { defaultValue: "Message invalide" }),
+          title: t("validation.invalid", { defaultValue: "Message invalide" }),
           description: validation.error.errors[0].message,
         });
         return;
@@ -1042,12 +1059,12 @@ export function Messages() {
                   serverMsg.content ||
                   (file
                     ? isImg
-                      ? "Photo"
+                      ? t("item.photo")
                       : isAud
-                      ? "Message vocal"
+                      ? t("item.voiceMessage")
                       : isVid
-                      ? "Vidéo"
-                      : "Fichier"
+                      ? t("item.video")
+                      : t("item.document")
                     : ""),
                 lastMessageAt: serverMsg.timestamp,
               }
@@ -1061,8 +1078,8 @@ export function Messages() {
       });
       toast({
         variant: "destructive",
-        title: "Échec de l'envoi",
-        description: e?.message || "Impossible d'envoyer le message",
+        title: t("toasts.sendFailed"),
+        description: e?.message || t("toasts.sendFailedDesc"),
       });
     } finally {
       setIsSending(false);
@@ -1098,8 +1115,8 @@ export function Messages() {
     } catch (e: any) {
       toast({
         variant: "destructive",
-        title: "Erreur",
-        description: e?.message || "Impossible de modifier le message",
+        title: t("toasts.error"),
+        description: e?.message || t("toasts.editMessageFailed"),
       });
     }
   };
@@ -1124,13 +1141,13 @@ export function Messages() {
         exact: true,
       });
       toast({
-        title: "Message supprimé",
+        title: t("toasts.messageDeleted"),
       });
     } catch (e: any) {
       toast({
         variant: "destructive",
-        title: "Erreur",
-        description: e?.message || "Impossible de supprimer le message",
+        title: t("toasts.error"),
+        description: e?.message || t("toasts.deleteMessageFailed"),
       });
     } finally {
       setDeletingMessageIds((prev) => {
@@ -1144,8 +1161,8 @@ export function Messages() {
   const handleProfileNavigation = (username?: string, displayName?: string) => {
     if (!username) {
       toast({
-        title: "Profil indisponible",
-        description: `Impossible d'ouvrir le profil de ${displayName || "cet utilisateur"} : username manquant.`,
+        title: t("toasts.profileUnavailable"),
+        description: t("toasts.profileUnavailableDesc", { name: displayName || t("detailsSidebar.user") }),
         variant: "destructive",
       });
       return;
@@ -1178,10 +1195,10 @@ export function Messages() {
 
       const isExistingConversation = String(result?.message || "").toLowerCase().includes("existing");
       toast({
-        title: isExistingConversation ? "Conversation existante" : "Message privé créé",
+        title: isExistingConversation ? t("toasts.existingConversation") : t("toasts.privateConversationCreated"),
         description: isExistingConversation
-          ? "La conversation existante a été ouverte."
-          : "Nouvelle conversation privée créée.",
+          ? t("toasts.existingConversationDesc")
+          : t("toasts.privateConversationCreatedDesc"),
         duration: 2000,
       });
     } catch (error: any) {
@@ -1197,8 +1214,8 @@ export function Messages() {
         setShowNewConversationModal(false);
         setConnectionSearch("");
         toast({
-          title: "Conversation existante",
-          description: "La conversation existante a été ouverte.",
+          title: t("toasts.existingConversation"),
+          description: t("toasts.existingConversationDesc"),
           duration: 2000,
         });
         return;
@@ -1206,8 +1223,8 @@ export function Messages() {
 
       toast({
         variant: "destructive",
-        title: "Erreur",
-        description: error?.message || "Impossible de créer la conversation privée",
+        title: t("toasts.error"),
+        description: error?.message || t("toasts.createPrivateFailed"),
       });
     } finally {
       setIsCreatingPrivate(false);
@@ -1260,7 +1277,26 @@ export function Messages() {
     return () => window.removeEventListener("campus:message_received", handleGlobalMessage);
   }, [conversationId]);
 
-  const selectedConv = conversations.find((c) => c.id === conversationId);
+  const selectedConv =
+    conversations.find((c) => isMatchingConv(c, conversationId)) ??
+    conversations.find(
+      (c) =>
+        c.type === "private" &&
+        (c.participants || []).some((p: any) => String(p.id) === String(conversationId))
+    );
+
+  // Canonicalize URL: redirect numeric or unknown form to hash_id
+  useEffect(() => {
+    if (
+      conversationId &&
+      selectedConv?.hash_id &&
+      conversationId !== selectedConv.hash_id &&
+      (/^\d+$/.test(conversationId) || conversationId !== selectedConv.id)
+    ) {
+      navigate(`/messages/${selectedConv.hash_id}`, { replace: true });
+    }
+  }, [conversationId, selectedConv, navigate]);
+
   const selectedParticipants = selectedConv?.participants || [];
   const isGroupCreator =
     selectedConv?.type === "group" &&
@@ -1269,11 +1305,11 @@ export function Messages() {
   const typingList = Object.values(typingUsers).map((u) => u.username);
   let typingLabel = "";
   if (typingList.length === 1) {
-    typingLabel = `${typingList[0]} est en train d'écrire...`;
+    typingLabel = t("typingOne", { name: typingList[0] });
   } else if (typingList.length === 2) {
-    typingLabel = `${typingList[0]} et ${typingList[1]} écrivent...`;
+    typingLabel = t("typingTwo", { name1: typingList[0], name2: typingList[1] });
   } else if (typingList.length > 2) {
-    typingLabel = "Plusieurs personnes écrivent...";
+    typingLabel = t("typingMany");
   }
 
   const selectedOnlineIds = ((selectedConv as any)?.onlineUserIds as string[]) || [];
@@ -1294,9 +1330,9 @@ export function Messages() {
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Participants indisponibles",
+        title: t("toasts.participantsUnavailable"),
         description:
-          error?.message || "Impossible de récupérer les participants de cette conversation.",
+          error?.message || t("toasts.participantsUnavailableDesc"),
       });
     } finally {
       setLoadingParticipants(false);
@@ -1314,12 +1350,12 @@ export function Messages() {
         )
       );
       setRenameDialogOpen(false);
-      toast({ title: "Groupe renommé", description: `Nouveau nom : ${renameValue.trim()}.` });
+      toast({ title: t("toasts.groupRenamed"), description: t("toasts.groupRenamedDesc", { name: renameValue.trim() }) });
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Renommage refusé",
-        description: error?.message || "Vous n'avez pas le droit de renommer ce groupe.",
+        title: t("toasts.renameRejected"),
+        description: error?.message || t("toasts.renameRejectedDesc"),
       });
     } finally {
       setIsUpdatingConversation(false);
@@ -1339,12 +1375,12 @@ export function Messages() {
           conv.id === conversationId ? { ...conv, participants: updatedParticipants } : conv
         )
       );
-      toast({ title: "Membre ajouté", description: "Le membre a été ajouté à la conversation." });
+      toast({ title: t("toasts.memberAdded"), description: t("toasts.memberAddedDesc") });
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Ajout impossible",
-        description: error?.message || "Impossible d'ajouter ce membre.",
+        title: t("toasts.addMemberFailed"),
+        description: error?.message || t("toasts.addMemberFailedDesc"),
       });
     } finally {
       setPendingParticipantId(null);
@@ -1365,12 +1401,12 @@ export function Messages() {
           conv.id === conversationId ? { ...conv, participants: updatedParticipants } : conv
         )
       );
-      toast({ title: "Membre retiré", description: `${displayName} a été retiré du groupe.` });
+      toast({ title: t("toasts.memberRemoved"), description: t("toasts.memberRemovedDesc", { name: displayName }) });
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Retrait impossible",
-        description: error?.message || `Impossible de retirer ${displayName}.`,
+        title: t("toasts.removeMemberFailed"),
+        description: error?.message || t("toasts.removeMemberFailedDesc", { name: displayName }),
       });
     } finally {
       setPendingParticipantId(null);
@@ -1386,30 +1422,30 @@ export function Messages() {
           conv.id === conversationId ? { ...conv, unread: Math.max(1, conv.unread || 0) } : conv
         )
       );
-      toast({ title: "Non lu", description: `« ${selectedConv.name} » est marquée comme non lue.` });
+      toast({ title: t("toasts.markedUnread"), description: t("toasts.markedUnreadDesc", { name: selectedConv.name }) });
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Marquage impossible",
-        description: error?.message || "Impossible de marquer cette conversation en non lu.",
+        title: t("toasts.markUnreadFailed"),
+        description: error?.message || t("toasts.markUnreadFailedDesc"),
       });
     }
   };
 
   const handleLeaveSelectedConversation = async () => {
     if (!conversationId || !selectedConv) return;
-    if (!window.confirm(`Quitter « ${selectedConv.name} » ?`)) return;
+    if (!window.confirm(t("confirmLeave", { name: selectedConv.name }))) return;
     setIsUpdatingConversation(true);
     try {
       await leaveConversation(conversationId);
       setConversations((prev) => prev.filter((conv) => conv.id !== conversationId));
       navigate("/messages");
-      toast({ title: "Conversation quittée", description: `Vous avez quitté « ${selectedConv.name} ».` });
+      toast({ title: t("toasts.leftConversation"), description: t("toasts.leftConversationDesc", { name: selectedConv.name }) });
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Impossible de quitter",
-        description: error?.message || "Vous ne pouvez pas quitter cette conversation actuellement.",
+        title: t("toasts.leaveFailed"),
+        description: error?.message || t("toasts.leaveFailedDesc"),
       });
     } finally {
       setIsUpdatingConversation(false);
@@ -1418,18 +1454,18 @@ export function Messages() {
 
   const handleDeleteSelectedConversation = async () => {
     if (!conversationId || !selectedConv) return;
-    if (!window.confirm(`Supprimer définitivement « ${selectedConv.name} » ?`)) return;
+    if (!window.confirm(t("confirmDelete", { name: selectedConv.name }))) return;
     setIsUpdatingConversation(true);
     try {
       await deleteConversation(conversationId);
       setConversations((prev) => prev.filter((conv) => conv.id !== conversationId));
       navigate("/messages");
-      toast({ title: "Conversation supprimée", description: `« ${selectedConv.name} » a été supprimée.` });
+      toast({ title: t("toasts.deletedConversation"), description: t("toasts.deletedConversationDesc", { name: selectedConv.name }) });
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Suppression refusée",
-        description: error?.message || "Vous n'avez pas les droits de suppression sur cette conversation.",
+        title: t("toasts.deleteConversationRejected"),
+        description: error?.message || t("toasts.deleteConversationRejectedDesc"),
       });
     } finally {
       setIsUpdatingConversation(false);
@@ -1448,9 +1484,9 @@ export function Messages() {
       }
       void queryClient.invalidateQueries({ queryKey: ["messages", "conversations"] });
       void queryClient.invalidateQueries({ queryKey: ["messages", "conversation", conversationId] });
-      toast({ title: "Photo du groupe mise à jour !" });
+      toast({ title: t("toasts.groupPhotoUpdated") });
     } catch (err: any) {
-      toast({ title: "Erreur", description: err?.message || "Impossible de modifier la photo", variant: "destructive" });
+      toast({ title: t("toasts.error"), description: err?.message || t("toasts.updatePhotoFailed"), variant: "destructive" });
     }
   };
 
@@ -1461,9 +1497,9 @@ export function Messages() {
       setConversations((prev) =>
         prev.map((conv) => (conv.id === conversationId ? { ...conv, avatar: null } : conv))
       );
-      toast({ title: "Avatar supprimé" });
+      toast({ title: t("toasts.avatarDeleted") });
     } catch (err: any) {
-      toast({ title: "Erreur", description: err?.message, variant: "destructive" });
+      toast({ title: t("toasts.error"), description: err?.message, variant: "destructive" });
     }
   };
 
@@ -1522,8 +1558,8 @@ export function Messages() {
               ...prev.filter((item) => item.id !== newConversation.id),
             ]);
             toast({
-              title: "Conversation créée !",
-              description: `Le groupe "${newConversation.name}" a été créé`,
+              title: t("toasts.groupCreatedTitle"),
+              description: t("toasts.groupCreatedDesc", { name: newConversation.name }),
               duration: 2000,
             });
             navigate(`/messages/${newConversation.id}`);
@@ -1588,7 +1624,7 @@ export function Messages() {
                           {showDateSeparator && (
                             <div className="flex justify-center my-3.5 select-none">
                               <span className="bg-slate-200/80 dark:bg-zinc-800/80 backdrop-blur-md text-[11px] font-semibold text-slate-600 dark:text-slate-300 px-3.5 py-1 rounded-full shadow-xs">
-                                {formatMessageDateSeparator(message.timestamp)}
+                                {formatMessageDateSeparator(message.timestamp, t, i18n.language)}
                               </span>
                             </div>
                           )}
@@ -1606,7 +1642,7 @@ export function Messages() {
                         {showDateSeparator && (
                           <div className="flex justify-center my-3.5 select-none">
                             <span className="bg-slate-200/80 dark:bg-zinc-800/80 backdrop-blur-md text-[11px] font-semibold text-slate-600 dark:text-slate-300 px-3.5 py-1 rounded-full shadow-xs">
-                              {formatMessageDateSeparator(message.timestamp)}
+                              {formatMessageDateSeparator(message.timestamp, t, i18n.language)}
                             </span>
                           </div>
                         )}
@@ -1660,8 +1696,8 @@ export function Messages() {
                   type="button"
                   onClick={() => scrollToBottom("smooth")}
                   className="absolute right-6 bottom-24 w-10 h-10 rounded-full bg-card/95 backdrop-blur-md shadow-md border border-border/60 flex items-center justify-center text-muted-foreground hover:text-foreground transition-all duration-200 hover:scale-105 active:scale-95 z-20"
-                  title="Faire défiler vers le bas"
-                  aria-label="Faire défiler vers le bas"
+                  title={t("scrollBottom")}
+                  aria-label={t("scrollBottom")}
                 >
                   <ChevronDown className="h-5 w-5" />
                 </button>
@@ -1672,7 +1708,7 @@ export function Messages() {
                 onChange={handleMessageInputChange}
                 onSend={handleSendMessage}
                 isSending={isSending}
-                placeholder={t("messages.typeMessage")}
+                placeholder={t("input.placeholder")}
                 replyingTo={replyingTo}
                 onCancelReply={handleCancelReply}
               />

@@ -3,9 +3,13 @@ import { PostCard } from "@/components/feed/PostCard";
 import { FriendSuggestions } from "@/components/feed/FriendSuggestions";
 import { ResourceFeedCard } from "@/components/feed/ResourceFeedCard";
 import { FeedSidebar } from "@/components/layout/FeedSidebar";
+import { WelcomeTeamModal } from "@/components/onboarding/WelcomeTeamModal";
+import { FeedVerificationBanner } from "@/components/feed/FeedVerificationBanner";
+import { FeedCertificationModal } from "@/components/feed/FeedCertificationModal";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Suspense, lazy } from "react";
 import { listPosts, listSpheres, listResources } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { House as HomeIcon, ArrowClockwise as RefreshCw, Spinner as Loader2 } from "@phosphor-icons/react";
@@ -13,7 +17,14 @@ import { useToast } from "@/hooks/use-toast";
 import { mapPostToCard } from "@/lib/postCardMapper";
 import { PostSkeleton } from "@/components/ui/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
+
+const VerificationModal = lazy(() =>
+  import("@/components/modals/VerificationModal").then((module) => ({
+    default: module.VerificationModal,
+  }))
+);
+import { useQuery } from "@tanstack/react-query";
 import type { PostCardData, Sphere } from "@/types";
 import type { Resource } from "@/types";
 
@@ -23,11 +34,12 @@ type FeedResource = { kind: "resource"; data: Resource; date: string };
 type FeedItem = FeedPost | FeedResource;
 
 export function Home() {
+  const { t } = useTranslation("feed");
   const isMobile = useIsMobile();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
 
   const spheresQuery = useQuery({
     queryKey: ["home", "popular-spheres"],
@@ -42,28 +54,25 @@ export function Home() {
         .slice(0, 3),
   });
 
-  const [posts, setPosts] = useState<PostCardData[]>(() => {
-    const cached = queryClient.getQueryData<any[]>(["home", "posts"]);
-    return Array.isArray(cached) ? cached.map(mapPostToCard) : [];
-  });
+  const [posts, setPosts] = useState<PostCardData[]>([]);
 
   const postsQuery = useQuery({
     queryKey: ["home", "posts"],
     queryFn: () => listPosts(),
-    staleTime: 60 * 1000,
+    staleTime: 5 * 60 * 1000,
     gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
-    refetchOnMount: true,
+    refetchOnMount: false,
     select: (data) => (data || []).map(mapPostToCard),
   });
 
   const resourcesQuery = useQuery({
     queryKey: ["home", "recent-resources"],
     queryFn: () => listResources({ limit: 10 }),
-    staleTime: 2 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
     gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
-    refetchOnMount: true,
+    refetchOnMount: false,
   });
 
   useEffect(() => {
@@ -94,7 +103,7 @@ export function Home() {
   }, [posts, resourcesQuery.data]);
 
   const loadError = postsQuery.error
-    ? (postsQuery.error as any)?.message || "Erreur de chargement du fil d'actualite"
+    ? (postsQuery.error as any)?.message || t("home.loadError")
     : null;
 
   const isInitialLoading = postsQuery.isLoading && posts.length === 0 && !postsQuery.data;
@@ -116,14 +125,14 @@ export function Home() {
       setLastRefresh(new Date());
 
       toast({
-        title: "Feed actualise",
-        description: "Les contenus ont ete mis a jour",
+        title: t("home.refreshedTitle"),
+        description: t("home.refreshedDesc"),
         duration: 2000,
       });
     } catch (e: any) {
       toast({
-        title: "Erreur",
-        description: e?.message || "Impossible de rafraichir le feed",
+        title: t("home.error"),
+        description: e?.message || t("home.refreshError"),
         variant: "destructive",
       });
     } finally {
@@ -133,19 +142,30 @@ export function Home() {
 
   const handlePostCreated = (createdPost: unknown) => {
     const mappedPost = mapPostToCard(createdPost as Record<string, unknown>);
-    queryClient.setQueryData(["home", "posts"], (old: any) => [
-      createdPost,
-      ...(Array.isArray(old) ? old.filter((p: any) => String(p.id) !== String((createdPost as any)?.id)) : []),
-    ]);
     setPosts((prev) => [mappedPost, ...prev.filter((post) => post.id !== mappedPost.id)]);
   };
 
   return (
     <div className="min-h-screen bg-background">
+      <WelcomeTeamModal />
+      <FeedCertificationModal onOpenVerificationModal={() => setIsVerificationModalOpen(true)} />
+      {isVerificationModalOpen && (
+        <Suspense fallback={<ModalLoadingFallback />}>
+          <VerificationModal
+            open={isVerificationModalOpen}
+            onOpenChange={setIsVerificationModalOpen}
+          />
+        </Suspense>
+      )}
       <div className={isMobile ? "w-full pt-3.5 pb-8" : "container max-w-7xl mx-auto"}>
         <div className={isMobile ? "w-full" : "grid grid-cols-1 lg:grid-cols-12 gap-6 px-4"}>
           {/* Main Feed */}
           <div className={isMobile ? "w-full space-y-4" : "lg:col-span-8 xl:col-span-7 py-6 space-y-4 md:space-y-6"}>
+
+            {/* Verification & Grace Period Banner */}
+            <div className={cn("campus-animate-fade-in", isMobile && "px-3.5 sm:px-4")}>
+              <FeedVerificationBanner onOpenVerificationModal={() => setIsVerificationModalOpen(true)} />
+            </div>
 
             {/* Create Post */}
             <div className={cn("campus-animate-slide-up mb-2", isMobile && "px-3.5 sm:px-4")}>
@@ -176,9 +196,9 @@ export function Home() {
                 <div className={cn(isMobile && "px-3.5 sm:px-4")}>
                   <EmptyState
                     icon={HomeIcon}
-                    title="Fil d'actualite vide"
-                    description="Il n'y a pas encore de contenus a afficher. Soyez le premier a partager quelque chose !"
-                    actionLabel="Creer un post"
+                    title={t("home.emptyTitle")}
+                    description={t("home.emptyDesc")}
+                    actionLabel={t("home.emptyAction")}
                     onAction={() => window.scrollTo({ top: 0, behavior: "smooth" })}
                   />
                 </div>
@@ -209,10 +229,10 @@ export function Home() {
                 {isLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Chargement...
+                    {t("home.loading")}
                   </>
                 ) : (
-                  "Charger plus..."
+                  t("home.loadMore")
                 )}
               </Button>
             </div>

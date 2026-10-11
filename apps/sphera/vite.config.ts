@@ -46,7 +46,7 @@ function prerenderBlogsPlugin(): Plugin {
           '@type': 'Organization',
           name: 'CampusSphere',
           url: 'https://campussphere.app',
-          logo: 'https://sphera.campussphere.app/sphera-logo-dark.png',
+          logo: 'https://sphera.campussphere.app/sphera_logo.svg',
         },
         hasPart: blogPosts.map(p => ({
           '@type': 'BlogPosting',
@@ -133,7 +133,7 @@ function prerenderBlogsPlugin(): Plugin {
             name: 'CampusSphere',
             logo: {
               '@type': 'ImageObject',
-              url: 'https://sphera.campussphere.app/sphera-logo-dark.png',
+              url: 'https://sphera.campussphere.app/sphera_logo.svg',
             },
           },
         };

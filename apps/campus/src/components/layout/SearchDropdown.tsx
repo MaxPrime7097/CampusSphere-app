@@ -1,13 +1,26 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { globalSearch } from "@/services/api";
 import { getEvents } from "@/services/eventService";
-import { Spinner as Loader2, SealCheck as BadgeCheck, FileText, BookOpen, FileCode, Lightning as Zap } from "@phosphor-icons/react";
+import {
+  Spinner as Loader2,
+  SealCheck as BadgeCheck,
+  FileText,
+  BookOpen,
+  GraduationCap,
+  FolderSimple as FolderGit2,
+  BookBookmark,
+  Notepad,
+  Question as QuestionMark,
+  Lightning as Zap,
+} from "@phosphor-icons/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn, getPostUrl, getEventUrl, getResourceUrl, getSphereUrl } from "@/lib/utils";
 import { formatRelativeTime } from "@/lib/date";
 import { getSphereCategoryLabel } from "@/constants/sphereCategories";
+import { normalizeResourceType } from "@/constants/resourceTypes";
 import { useQuery } from "@tanstack/react-query";
 
 interface SearchDropdownProps {
@@ -17,34 +30,40 @@ interface SearchDropdownProps {
 }
 
 const RESOURCE_TYPE_STYLES: Record<string, { icon: string; bg: string }> = {
-  notes: { icon: "text-blue-500", bg: "bg-blue-500/10 border-blue-500/20" },
-  resumes: { icon: "text-sky-500", bg: "bg-sky-500/10 border-sky-500/20" },
-  exercises: { icon: "text-red-500", bg: "bg-red-500/10 border-red-500/20" },
-  exam_papers: { icon: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
-  annales: { icon: "text-purple-500", bg: "bg-purple-500/10 border-purple-500/20" },
-  projects: { icon: "text-pink-500", bg: "bg-pink-500/10 border-pink-500/20" },
-  presentations: { icon: "text-indigo-500", bg: "bg-indigo-500/10 border-indigo-500/20" },
-  other: { icon: "text-muted-foreground", bg: "bg-muted/30 border-border/40" },
+  course_notes: { icon: "text-blue-500", bg: "bg-blue-500/10 border-blue-500/20" },
+  td_tp:        { icon: "text-orange-500", bg: "bg-orange-500/10 border-orange-500/20" },
+  exams:        { icon: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
+  project:      { icon: "text-violet-500", bg: "bg-violet-500/10 border-violet-500/20" },
+  book:         { icon: "text-amber-500", bg: "bg-amber-500/10 border-amber-500/20" },
+  other:        { icon: "text-muted-foreground", bg: "bg-muted/30 border-border/40" },
 };
 
 function getResourceStyle(type?: string) {
   if (!type) return RESOURCE_TYPE_STYLES.other;
-  return RESOURCE_TYPE_STYLES[type.toLowerCase()] || RESOURCE_TYPE_STYLES.other;
+  const canonical = normalizeResourceType(type);
+  return RESOURCE_TYPE_STYLES[canonical] || RESOURCE_TYPE_STYLES.other;
 }
 
 function getResourceIcon(type?: string, className = "h-4 w-4") {
-  const key = (type || "").toLowerCase();
-  switch (key) {
-    case "notes":
+  const canonical = normalizeResourceType(type);
+  switch (canonical) {
+    case "course_notes":
       return <BookOpen className={className} />;
-    case "exercises":
-      return <FileCode className={className} />;
+    case "td_tp":
+      return <Notepad className={className} />;
+    case "exams":
+      return <GraduationCap className={className} />;
+    case "project":
+      return <FolderGit2 className={className} />;
+    case "book":
+      return <BookBookmark className={className} />;
     default:
-      return <FileText className={className} />;
+      return <QuestionMark className={className} />;
   }
 }
 
 export function SearchDropdown({ query, isVisible, onClose }: SearchDropdownProps) {
+  const { t, i18n } = useTranslation("navigation");
   const navigate = useNavigate();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const normalizedQuery = query.trim().toLowerCase();
@@ -134,12 +153,12 @@ export function SearchDropdown({ query, isVisible, onClose }: SearchDropdownProp
         {searchQuery.isLoading ? (
           <div className="flex items-center justify-center py-10 gap-2 text-muted-foreground text-sm">
             <Loader2 className="h-5 w-5 animate-spin text-primary" />
-            <span>Recherche en cours...</span>
+            <span>{t("search.dropdown.searching")}</span>
           </div>
         ) : !hasResults ? (
           <div className="py-8 text-center text-muted-foreground">
-            <p className="text-sm font-medium">Aucun résultat trouvé pour « {query} »</p>
-            <p className="text-xs text-muted-foreground/70 mt-1">Appuyez sur Entrée pour lancer une recherche complète.</p>
+            <p className="text-sm font-medium">{t("search.dropdown.noResults", { query })}</p>
+            <p className="text-xs text-muted-foreground/70 mt-1">{t("search.dropdown.pressEnter")}</p>
           </div>
         ) : (
           <div className="space-y-3.5 pt-1">
@@ -147,7 +166,7 @@ export function SearchDropdown({ query, isVisible, onClose }: SearchDropdownProp
             {results.users.length > 0 && (
               <div className="space-y-1">
                 <div className="px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">
-                  Personnes
+                  {t("search.tabs.users")}
                 </div>
                 <div className="space-y-0.5">
                   {results.users.map((user) => (
@@ -184,7 +203,7 @@ export function SearchDropdown({ query, isVisible, onClose }: SearchDropdownProp
             {results.posts.length > 0 && (
               <div className="space-y-1 pt-2">
                 <div className="px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">
-                  Publications
+                  {t("search.tabs.posts")}
                 </div>
                 <div className="space-y-1">
                   {results.posts.map((post) => (
@@ -198,7 +217,7 @@ export function SearchDropdown({ query, isVisible, onClose }: SearchDropdownProp
                         {post.content}
                       </p>
                       <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                        <span className="truncate">Par {post.author_info?.name || post.author_info?.username || "Auteur"}</span>
+                        <span className="truncate">{t("search.dropdown.byAuthor", { author: post.author_info?.name || post.author_info?.username || t("search.dropdown.author") })}</span>
                         <span>·</span>
                         <span className="inline-flex items-center gap-0.5 text-foreground/80 font-medium">
                           <Zap className="h-3 w-3 text-primary" weight="fill" />
@@ -215,14 +234,15 @@ export function SearchDropdown({ query, isVisible, onClose }: SearchDropdownProp
             {results.events.length > 0 && (
               <div className="space-y-1 pt-2">
                 <div className="px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">
-                  Événements
+                  {t("search.tabs.events")}
                 </div>
                 <div className="space-y-1">
                   {results.events.map((evt) => {
                     const startDate = evt.startDate ? new Date(evt.startDate) : new Date();
                     const day = !isNaN(startDate.getTime()) ? startDate.getDate() : 1;
+                    const dateLocale = i18n.language.startsWith("en") ? "en-US" : "fr-FR";
                     const month = !isNaN(startDate.getTime())
-                      ? startDate.toLocaleDateString("fr-FR", { month: "short" }).toUpperCase()
+                      ? startDate.toLocaleDateString(dateLocale, { month: "short" }).toUpperCase()
                       : "EVT";
 
                     return (
@@ -241,7 +261,7 @@ export function SearchDropdown({ query, isVisible, onClose }: SearchDropdownProp
                             {evt.title}
                           </p>
                           <p className="text-[11px] text-muted-foreground truncate">
-                            {evt.isOnline ? "En ligne" : (evt.location || "Campus")}
+                            {evt.isOnline ? t("search.dropdown.online") : (evt.location || t("search.dropdown.campus"))}
                           </p>
                         </div>
                       </button>
@@ -255,7 +275,7 @@ export function SearchDropdown({ query, isVisible, onClose }: SearchDropdownProp
             {results.resources.length > 0 && (
               <div className="space-y-1 pt-2">
                 <div className="px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">
-                  Ressources
+                  {t("search.tabs.resources")}
                 </div>
                 <div className="space-y-1">
                   {results.resources.map((res) => {
@@ -274,7 +294,7 @@ export function SearchDropdown({ query, isVisible, onClose }: SearchDropdownProp
                           <p className="text-xs font-semibold text-foreground truncate group-hover:underline">
                             {res.title}
                           </p>
-                          <p className="text-[11px] text-muted-foreground truncate">{res.subject || "Document"}</p>
+                          <p className="text-[11px] text-muted-foreground truncate">{res.subject || t("search.dropdown.document")}</p>
                         </div>
                       </button>
                     );
@@ -287,7 +307,7 @@ export function SearchDropdown({ query, isVisible, onClose }: SearchDropdownProp
             {results.spheres.length > 0 && (
               <div className="space-y-1 pt-2">
                 <div className="px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">
-                  Sphères
+                  {t("search.tabs.spheres")}
                 </div>
                 <div className="space-y-1">
                   {results.spheres.map((sphere) => (
@@ -309,8 +329,8 @@ export function SearchDropdown({ query, isVisible, onClose }: SearchDropdownProp
                         </p>
                         <p className="text-[11px] text-muted-foreground truncate">
                           {sphere.category
-                            ? (getSphereCategoryLabel(String(sphere.category).trim().toLowerCase()) || "Sphère")
-                            : "Sphère"} · {sphere.member_count ?? sphere.memberCount ?? 0} membres
+                            ? (getSphereCategoryLabel(String(sphere.category).trim().toLowerCase()) || t("search.dropdown.sphere"))
+                            : t("search.dropdown.sphere")} · {sphere.member_count ?? sphere.memberCount ?? 0} {t("search.dropdown.members")}
                         </p>
                       </div>
                     </button>
@@ -328,10 +348,10 @@ export function SearchDropdown({ query, isVisible, onClose }: SearchDropdownProp
           onClick={() => handleResultClick(`/search?q=${encodeURIComponent(query)}`)}
           className="text-xs font-semibold text-primary hover:underline flex items-center gap-1.5 cursor-pointer"
         >
-          <span>Voir tous les résultats pour « {query} »</span>
+          <span>{t("search.dropdown.seeAll", { query })}</span>
         </button>
         <span className="text-[10px] text-muted-foreground bg-muted border border-border/50 px-1.5 py-0.5 rounded-md font-mono">
-          ↵ Entrée
+          {t("search.dropdown.enterKey")}
         </span>
       </div>
     </div>

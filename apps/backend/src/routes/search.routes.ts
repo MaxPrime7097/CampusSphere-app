@@ -368,8 +368,8 @@ searchRouter.get("/filters/", requireAuth, async (_req, res) => {
       prisma.sphere.groupBy({ by: ["category"], _count: { _all: true } }),
       prisma.sphere.groupBy({ by: ["sphereType"], _count: { _all: true } }),
       prisma.post.findMany({ where: { subject: { not: "" } }, select: { subject: true }, distinct: ["subject"] }),
-      prisma.resource.findMany({ where: { subject: { not: "" } }, select: { subject: true }, distinct: ["subject"] }),
-      prisma.resource.groupBy({ by: ["type"], _count: { _all: true } }),
+      prisma.resource.findMany({ where: { subject: { not: "" }, audience: { not: "sphera_internal" } }, select: { subject: true }, distinct: ["subject"] }),
+      prisma.resource.groupBy({ by: ["type"], where: { audience: { not: "sphera_internal" } }, _count: { _all: true } }),
     ]);
 
   const byCountDesc = <T extends { _count: { _all: number } }>(rows: T[]): T[] =>

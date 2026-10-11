@@ -1,5 +1,6 @@
 import { MagnifyingGlass as Search } from "@phosphor-icons/react";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useTranslation } from "react-i18next";
 import { ConnectionCard } from "./ConnectionCard";
 import { SuggestionCard } from "./SuggestionCard";
 import type { ConnectionUser } from "./types";
@@ -21,11 +22,13 @@ export function ConnectionsFilteredResults({
   onConnect,
   onResetFilters,
 }: ConnectionsFilteredResultsProps) {
+  const { t } = useTranslation("connections");
+
   return (
     <div className="mt-6 space-y-8">
       {connections.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold mb-2 pb-2 border-b border-border/40 px-1">Résultats de vos connexions</h2>
+          <h2 className="text-sm font-semibold mb-2 pb-2 border-b border-border/40 px-1">{t("sections.connectionsResults")}</h2>
           <div className="flex flex-col">
             {connections.map((connection) => (
               <ConnectionCard
@@ -41,7 +44,7 @@ export function ConnectionsFilteredResults({
 
       {suggestions.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold mb-2 pb-2 border-b border-border/40 px-1">Résultats des suggestions</h2>
+          <h2 className="text-sm font-semibold mb-2 pb-2 border-b border-border/40 px-1">{t("sections.suggestionsResults")}</h2>
           <div className="flex flex-col">
             {suggestions.map((suggestion) => (
               <SuggestionCard
@@ -58,9 +61,9 @@ export function ConnectionsFilteredResults({
       {connections.length === 0 && suggestions.length === 0 && (
         <EmptyState
           icon={Search}
-          title="Aucun résultat"
-          description="Essayez de changer les filtres ou la recherche."
-          actionLabel="Réinitialiser"
+          title={t("empty.searchTitle")}
+          description={t("empty.searchDesc")}
+          actionLabel={t("actions.reset")}
           onAction={onResetFilters}
         />
       )}

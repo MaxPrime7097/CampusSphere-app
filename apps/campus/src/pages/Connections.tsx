@@ -7,11 +7,13 @@ import {
   disconnectFromUser,
   getMutualConnectionCounts,
   acceptConnection,
+  createPrivateConversation,
 } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { normalizeFaculty, normalizeUniversity } from "@/lib/profileMetadata";
+import { useTranslation } from "react-i18next";
 import {
   ConnectionsHeader,
   ConnectionsFilterBar,
@@ -23,6 +25,7 @@ import {
 } from "@/components/connections";
 
 export function Connections() {
+  const { t } = useTranslation("connections");
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
@@ -67,7 +70,7 @@ export function Connections() {
         name:
           (conn.requester === currentUser.id
             ? conn.recipient_info?.full_name
-            : conn.requester_info?.full_name) || "Utilisateur",
+            : conn.requester_info?.full_name) || t("defaultUser"),
         username:
           (conn.requester === currentUser.id
             ? conn.recipient_info?.username
@@ -114,7 +117,7 @@ export function Connections() {
       let isMounted = true;
       (async () => {
         try {
-          setMutualCountStatus("Calcul des amis communs...");
+          setMutualCountStatus(t("status.calculatingMutual"));
           const mutualCounts = await getMutualConnectionCounts({
             currentUserId: currentUser.id,
             connectionUserIds: mapped.map((connection) => connection.id),
@@ -127,14 +130,14 @@ export function Connections() {
                 mutualFriends: mutualCounts.counts[String(connection.id)] ?? 0,
               }))
             );
-            setMutualCountStatus("Amis communs mis à jour.");
+            setMutualCountStatus(t("status.mutualUpdated"));
           }
         } catch {
           if (isMounted) {
             setMutualCountStatus(null);
             toast({
-              title: "Information",
-              description: "Le calcul des amis communs n'est pas disponible pour le moment.",
+              title: t("toasts.info"),
+              description: t("toasts.mutualUnavailable"),
               duration: 2000,
             });
           }
@@ -175,12 +178,12 @@ export function Connections() {
             normalizeUniversity(u.university) &&
             normalizeUniversity(currentUser.university) &&
             normalizeUniversity(u.university) === normalizeUniversity(currentUser.university)
-              ? "Même université"
+              ? t("reasons.sameUniversity")
               : normalizeFaculty(u.faculty) &&
                   normalizeFaculty(currentUser.faculty) &&
                   normalizeFaculty(u.faculty) === normalizeFaculty(currentUser.faculty)
-                ? "Même filière"
-                : "Suggéré pour vous",
+                ? t("reasons.sameFaculty")
+                : t("reasons.suggested"),
         }));
       setSuggestions(mapped.slice(0, 20));
     }
@@ -241,15 +244,15 @@ export function Connections() {
     try {
       await acceptConnection(request.id);
       toast({
-        title: "Connexion acceptée",
-        description: "Vous êtes maintenant connecté(e) à " + request.name,
+        title: t("toasts.accepted"),
+        description: t("toasts.acceptedDesc", { name: request.name }),
       });
       setConnections((prev) => [...prev, { ...request, status: "accepted" }]);
       setPendingRequests((prev) => prev.filter((r) => r.id !== request.id));
     } catch (error: any) {
       toast({
-        title: "Erreur",
-        description: error?.message || "Impossible d'accepter la demande",
+        title: t("toasts.error"),
+        description: error?.message || t("toasts.acceptFailed"),
         variant: "destructive",
       });
     }
@@ -259,14 +262,14 @@ export function Connections() {
     try {
       await disconnectFromUser(request.id);
       toast({
-        title: "Demande refusée",
-        description: "Vous avez refusé la demande de " + request.name,
+        title: t("toasts.declined"),
+        description: t("toasts.declinedDesc", { name: request.name }),
       });
       setPendingRequests((prev) => prev.filter((r) => r.id !== request.id));
     } catch (error: any) {
       toast({
-        title: "Erreur",
-        description: error?.message || "Impossible de refuser la demande",
+        title: t("toasts.error"),
+        description: error?.message || t("toasts.declineFailed"),
         variant: "destructive",
       });
     }
@@ -280,19 +283,34 @@ export function Connections() {
     try {
       await createConnection(suggestion.id);
       toast({
-        title: "Demande envoyée",
-        description: "Demande envoyée à " + suggestion.name,
+        title: t("toasts.requestSent"),
+        description: t("toasts.requestSentDesc", { name: suggestion.name }),
         duration: 2000,
       });
       setConnections((prev) => [...prev, suggestion]);
       setSuggestions((prev) => prev.filter((s) => s.id !== suggestion.id));
     } catch (error: any) {
       toast({
-        title: "Erreur",
-        description: error?.message || "Impossible d'envoyer la demande",
+        title: t("toasts.error"),
+        description: error?.message || t("toasts.requestFailed"),
         variant: "destructive",
       });
     }
+  };
+
+  const handleNavigateMessage = async (userId: string) => {
+    try {
+      const res = await createPrivateConversation(userId);
+      const conv = res?.data || res;
+      const convId = conv?.hash_id || (conv?.id ? String(conv.id) : null);
+      if (convId) {
+        navigate(`/messages/${convId}`);
+        return;
+      }
+    } catch {
+      // fallback
+    }
+    navigate("/messages");
   };
 
   return (
@@ -317,7 +335,7 @@ export function Connections() {
             connections={filteredConnections}
             suggestions={filteredSuggestions}
             onNavigateProfile={(username) => navigate("/profile/" + username)}
-            onNavigateMessage={(id) => navigate("/messages/" + id)}
+            onNavigateMessage={handleNavigateMessage}
             onConnect={handleConnectSuggestion}
             onResetFilters={() => {
               setSearchQuery("");
@@ -332,7 +350,7 @@ export function Connections() {
             connections={filteredConnections}
             suggestions={filteredSuggestions}
             onNavigateProfile={(username) => navigate("/profile/" + username)}
-            onNavigateMessage={(id) => navigate("/messages/" + id)}
+            onNavigateMessage={handleNavigateMessage}
             onAcceptRequest={handleAcceptRequest}
             onRejectRequest={handleRejectRequest}
             onConnectSuggestion={handleConnectSuggestion}
@@ -345,7 +363,7 @@ export function Connections() {
             suggestions={filteredSuggestions}
             onViewAll={setViewAllSection}
             onNavigateProfile={(username) => navigate("/profile/" + username)}
-            onNavigateMessage={(id) => navigate("/messages/" + id)}
+            onNavigateMessage={handleNavigateMessage}
             onAcceptRequest={handleAcceptRequest}
             onRejectRequest={handleRejectRequest}
             onConnectSuggestion={handleConnectSuggestion}

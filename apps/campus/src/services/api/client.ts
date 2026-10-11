@@ -263,15 +263,29 @@ export function normalizeUser(user: any): UserProfile | null {
     portfolioLinks: toArray(user.portfolioLinks ?? user.portfolio_links),
     joinedSpheresCount: user.joinedSpheresCount ?? user.joined_spheres_count ?? 0,
     connectionsCount: user.connectionsCount ?? user.connections_count ?? 0,
+    followersCount: toNumber(user.followersCount ?? user.followers_count, 0),
+    isFollowing: Boolean(user.isFollowing ?? user.is_following ?? false),
+    role: (user.role || "student").toLowerCase(),
+    partnerProfile: user.partnerProfile ?? user.partner_profile ?? null,
+    partner_profile: user.partnerProfile ?? user.partner_profile ?? null,
     dateJoined: user.dateJoined ?? user.date_joined ?? null,
     updatedAt: user.updatedAt ?? user.updated_at ?? null,
     phoneNumber: user.phoneNumber ?? user.phone_number ?? "",
     dateOfBirth: user.dateOfBirth ?? user.date_of_birth ?? "",
     isVerified: Boolean(user.is_verified ?? user.isVerified ?? false),
+    is_profile_complete:
+      (user.role || "").toLowerCase() === "impact_partner"
+        ? true
+        : Boolean(
+            user.is_profile_complete ??
+            user.isProfileComplete ??
+            (Boolean(user.university?.trim()) && Boolean(user.faculty?.trim()) && Boolean(user.studyYear?.trim() || user.study_year?.trim()))
+          ),
     stats: {
       posts: toNumber(user.posts_count ?? user.stats?.posts, 0),
       connections: toNumber(user.connections_count ?? user.stats?.connections, 0),
       contributions: toNumber(user.contributions_count ?? user.stats?.contributions, 0),
+      followers: toNumber(user.followersCount ?? user.followers_count, 0),
     },
   };
 }
@@ -452,11 +466,17 @@ export async function performRefreshRaw(refresh: string): Promise<string | null>
       body: JSON.stringify({ refresh }),
       credentials: "include",
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        return null; // genuinely expired or revoked by server
+      }
+      return "TEMPORARY_ERROR";
+    }
     const json = await res.json().catch(() => null as any);
     return json?.access || json?.accessToken || json?.data?.access || null;
   } catch {
-    return null;
+    // Network offline, timeout, server restarting: keep tokens
+    return "TEMPORARY_ERROR";
   }
 }
 
@@ -510,16 +530,22 @@ export async function apiFetch<T>(
             if (!refreshPromise) {
               refreshPromise = performRefreshRaw(refresh);
             }
-            const newAccess = await refreshPromise.catch((): null => null);
+            const refreshRes = await refreshPromise.catch((): null => null);
             refreshPromise = null;
-            if (newAccess) {
-              setTokens(newAccess, refresh);
-              return apiFetch<T>(path, { ...options, token: newAccess, _retry: true });
+            if (refreshRes && refreshRes !== "TEMPORARY_ERROR") {
+              setTokens(refreshRes, refresh);
+              return apiFetch<T>(path, { ...options, token: refreshRes, _retry: true });
+            }
+            if (refreshRes === "TEMPORARY_ERROR") {
+              // Network issue or server hiccup: DO NOT wipe user session!
+              throw new ApiRequestError("Problème temporaire de connexion. Veuillez réessayer.", 401);
             }
           }
+          // Only clear tokens when the refresh token was definitively rejected (401/403)
           clearTokens();
         }
-      } catch {
+      } catch (innerErr) {
+        if (innerErr instanceof ApiRequestError) throw innerErr;
         // parsing json failed, fallback will be used
       }
     } else {

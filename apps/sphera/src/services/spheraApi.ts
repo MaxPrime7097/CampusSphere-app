@@ -50,11 +50,14 @@ async function performRefreshRaw(refresh: string): Promise<string | null> {
       body: JSON.stringify({ refresh }),
       credentials: "include",
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) return null;
+      return "TEMPORARY_ERROR";
+    }
     const json = await res.json().catch(() => null as any);
     return json?.access || json?.accessToken || json?.data?.access || null;
   } catch {
-    return null;
+    return "TEMPORARY_ERROR";
   }
 }
 
@@ -117,6 +120,12 @@ function translateSpheraApiError(errJson: any, status: number): string {
   const lower = String(raw).toLowerCase();
 
   // 2. Erreurs d'authentification et comptes
+
+  // SSO-only account: user registered via Google/Supabase, has no password
+  if (errJson?.error === "sso_account" || lower.includes("sso_account") || lower.includes("uses campussphere sso")) {
+    return "Ce compte a été créé via Google ou CampusSphere SSO. Utilise le bouton « Se connecter avec CampusSphere » ci-dessus — pas besoin de mot de passe !";
+  }
+
   if (
     lower.includes("invalid credentials") ||
     lower.includes("invalid_credentials") ||
@@ -254,10 +263,13 @@ async function apiFetch<T>(
         }
         const newAccess = await refreshPromise.catch(() => null)
         refreshPromise = null
-        if (newAccess) {
+        if (newAccess && newAccess !== "TEMPORARY_ERROR") {
           setTokens(newAccess, refresh)
           // Re-tente la requête avec le nouveau token
           return apiFetch<T>(path, { ...options, _retry: true })
+        }
+        if (newAccess === "TEMPORARY_ERROR") {
+          throw new Error("Problème temporaire de connexion. Veuillez réessayer dans un instant.")
         }
       }
       clearTokens()

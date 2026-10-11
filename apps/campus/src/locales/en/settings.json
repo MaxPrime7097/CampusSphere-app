@@ -1,0 +1,64 @@
+{
+  "about": {
+    "privacyPolicy": "Privacy Policy",
+    "support": "Support",
+    "terms": "Terms of Service",
+    "version": "Version 1.0.0"
+  },
+  "account": {
+    "deleteAccount": "Delete account",
+    "emailAuth": "Email and authentication",
+    "password": "Password",
+    "personalInfo": "Personal information",
+    "title": "Account"
+  },
+  "appearance": {
+    "dark": "Dark",
+    "darkTheme": "Dark theme",
+    "darkThemeDesc": "Toggle between light and dark theme",
+    "language": "Interface language",
+    "light": "Light",
+    "timezone": "Timezone",
+    "title": "Appearance & Language"
+  },
+  "deleteDialog": {
+    "cancel": "Cancel",
+    "confirm": "Delete account",
+    "description": "This action cannot be undone. This will permanently delete your account and remove all your data from our servers.",
+    "title": "Are you absolutely sure?"
+  },
+  "notifications": {
+    "events": "Events",
+    "eventsDesc": "Reminders and new events",
+    "marketing": "Marketing communications",
+    "marketingDesc": "News and usage tips",
+    "messages": "Messages",
+    "messagesDesc": "New private and group messages",
+    "posts": "Posts and interactions",
+    "postsDesc": "Likes, comments and mentions",
+    "title": "Notifications"
+  },
+  "privacy": {
+    "blockedUsers": "Blocked users",
+    "dataDownloads": "Data and downloads",
+    "friends": "Friends only",
+    "onlyMe": "Only me",
+    "postVisibility": "Post visibility",
+    "private": "Private",
+    "profileVisibility": "Profile visibility",
+    "public": "Public",
+    "title": "Privacy",
+    "updated": "Privacy updated"
+  },
+  "subtitle": "Manage your preferences and account",
+  "title": "Settings",
+  "toast": {
+    "accountDeletion": "Account deletion initiated",
+    "accountDeletionDesc": "Your account deletion request has been received",
+    "comingSoon": "Coming soon",
+    "languageChanged": "Interface language has been changed",
+    "languageUpdated": "Language updated",
+    "switchedTo": "Switched to",
+    "themeUpdated": "Theme updated"
+  }
+}

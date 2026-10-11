@@ -1,9 +1,16 @@
+import { useTranslation } from "react-i18next";
+import { FileText } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { ResourceCard } from "@/components/resources/ResourceCard";
 import { ResourceTile } from "@/components/resources/ResourceTile";
 import { ResourceSkeleton } from "@/components/ui/skeletons";
+import { EmptyState } from "@/components/ui/empty-state";
 import { RESOURCE_TYPE_OPTIONS } from "@/constants/resourceTypes";
 import type { ResourceCardData } from "@/types";
+
+const MAX_CAROUSEL_ITEMS = 15;
+const MAX_CAROUSEL_LIST_ITEMS = 8;
+const MAX_SUGGESTIONS_ITEMS = 12;
 
 interface ResourcesCategoryCarouselsProps {
   resources: ResourceCardData[];
@@ -30,12 +37,24 @@ export function ResourcesCategoryCarousels({
   onPreview,
   viewMode = "grid",
 }: ResourcesCategoryCarouselsProps) {
+  const { t } = useTranslation("resources");
+
   // If user selected "Voir tout" on a category
   if (viewAllCategory) {
     const categoryResources =
       viewAllCategory === "all"
         ? resources
         : resources.filter((r) => r.type === viewAllCategory);
+
+    const categoryTitle =
+      viewAllCategory === "all"
+        ? t("carousels.allResources")
+        : t(`page.chips.${viewAllCategory}` as any, {
+            defaultValue:
+              RESOURCE_TYPE_OPTIONS.find((opt) => opt.value === viewAllCategory)?.label ||
+              viewAllCategory,
+          });
+
     return (
       <div className="space-y-4 pt-2">
         <div className="flex items-center gap-3 pb-2 border-b border-border/40">
@@ -45,18 +64,21 @@ export function ResourcesCategoryCarousels({
             onClick={() => onSelectCategory(null)}
             className="rounded-lg text-xs h-7 px-2.5"
           >
-            ← Retour
+            {t("carousels.back")}
           </Button>
           <h2 className="text-base sm:text-lg font-bold text-foreground capitalize">
-            {viewAllCategory === "all"
-              ? "Toutes les ressources"
-              : RESOURCE_TYPE_OPTIONS.find((opt) => opt.value === viewAllCategory)?.label ||
-                viewAllCategory}
+            {categoryTitle}
           </h2>
           <span className="text-xs text-muted-foreground">({categoryResources.length})</span>
         </div>
 
-        {viewMode === "grid" ? (
+        {categoryResources.length === 0 ? (
+          <EmptyState
+            icon={FileText}
+            title={t("page.emptyTitle")}
+            description={t("page.emptyDesc")}
+          />
+        ) : viewMode === "grid" ? (
           <div className="grid grid-cols-1 min-[440px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 pt-2">
             {categoryResources.map((resource) => (
               <ResourceTile
@@ -91,7 +113,7 @@ export function ResourcesCategoryCarousels({
 
   const suggestions = [...resources]
     .sort((a, b) => (b.impactScore || 0) - (a.impactScore || 0))
-    .slice(0, 8);
+    .slice(0, MAX_SUGGESTIONS_ITEMS);
 
   return (
     <div className="space-y-8">
@@ -100,7 +122,7 @@ export function ResourcesCategoryCarousels({
         <section className="space-y-2">
           <div className="flex items-center justify-between pb-2 border-b border-border/40 px-1">
             <h2 className="text-sm font-semibold tracking-wide text-foreground">
-              Ressources recommandées & populaires
+              {t("carousels.recommended")}
             </h2>
             {resources.length > 0 && (
               <Button
@@ -109,7 +131,7 @@ export function ResourcesCategoryCarousels({
                 className="text-xs text-muted-foreground hover:text-foreground font-medium h-7 px-2"
                 onClick={() => onSelectCategory("all")}
               >
-                Voir tout ({resources.length})
+                {t("carousels.viewAllCount", { count: resources.length })}
               </Button>
             )}
           </div>
@@ -162,7 +184,7 @@ export function ResourcesCategoryCarousels({
           <section key={opt.value} className="space-y-2">
             <div className="flex justify-between items-center pb-2 border-b border-border/40 px-1">
               <h2 className="text-sm font-semibold tracking-wide text-foreground">
-                {opt.label}
+                {t(`page.chips.${opt.value}` as any, { defaultValue: opt.label })}
               </h2>
               {categoryResources.length > 0 && (
                 <Button
@@ -171,7 +193,7 @@ export function ResourcesCategoryCarousels({
                   className="text-xs text-muted-foreground hover:text-foreground font-medium h-7 px-2"
                   onClick={() => onSelectCategory(opt.value)}
                 >
-                  Voir tout ({categoryResources.length})
+                  {t("carousels.viewAllCount", { count: categoryResources.length })}
                 </Button>
               )}
             </div>
@@ -195,7 +217,7 @@ export function ResourcesCategoryCarousels({
                     </div>
                   ))
                 ) : (
-                  categoryResources.slice(0, 8).map((resource) => (
+                  categoryResources.slice(0, MAX_CAROUSEL_ITEMS).map((resource) => (
                     <div
                       key={resource.id}
                       className="w-[200px] sm:w-[220px] md:w-[235px] shrink-0 snap-start"
@@ -219,7 +241,7 @@ export function ResourcesCategoryCarousels({
                     <ResourceSkeleton key={i} />
                   ))
                 ) : (
-                  categoryResources.slice(0, 4).map((resource) => (
+                  categoryResources.slice(0, MAX_CAROUSEL_LIST_ITEMS).map((resource) => (
                     <ResourceCard
                       key={resource.id}
                       resource={resource}

@@ -1,10 +1,10 @@
 import { Helmet } from "react-helmet-async";
 import { parseSlugId, encodeHashId } from "@/lib/hashids";
-import { getEventUrl, getSphereUrl } from "@/lib/utils";
+import { getEventUrl, getSphereUrl, formatSlugToLabel } from "@/lib/utils";
 import { useState, useMemo, useEffect, useLayoutEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Calendar, Check, ArrowLeft, Sparkle as Sparkles, Trophy, Code, Microphone as Mic, BookOpen, Compass, WarningCircle as AlertCircle, Ticket, CheckCircle as CheckCircle2, SealCheck as BadgeCheck } from "@phosphor-icons/react";
+import { Calendar, Check, ArrowLeft, Sparkle as Sparkles, Trophy, Code, Microphone as Mic, BookOpen, Compass, WarningCircle as AlertCircle, Ticket, CheckCircle as CheckCircle2, SealCheck as BadgeCheck, ArrowSquareOut } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -24,6 +24,7 @@ import {
 } from "@/services/eventService";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 import type { AttendeeStatus, EventAttendee } from "@/types/events.types";
 
 const CategoryIconMap: Record<string, any> = {
@@ -52,6 +53,8 @@ function getUserInitial(user: any, fallback = "U"): string {
 }
 
 export function EventDetail() {
+  const { t, i18n } = useTranslation("events");
+  const dateLocale = i18n.language === "en" ? "en-US" : "fr-FR";
   const { id: rawParam } = useParams<{ id: string }>();
   const realId = parseSlugId(rawParam) ?? rawParam;
   const id = realId ? String(realId) : undefined;
@@ -132,11 +135,11 @@ export function EventDetail() {
       queryClient.invalidateQueries({ queryKey: ["events"] });
       queryClient.invalidateQueries({ queryKey: ["event-attendees", id] });
       toast({
-        title: status === "going" ? "Inscription confirmée" : "Marqué comme intéressé",
+        title: status === "going" ? t("detail.toasts.registered") : t("detail.toasts.interested"),
         description:
           status === "going"
-            ? "Votre billet d'entrée est maintenant disponible."
-            : "L'événement a été ajouté à votre liste d'intérêts.",
+            ? t("detail.toasts.registeredDesc")
+            : t("detail.toasts.interestedDesc"),
       });
       if (status === "going") {
         setIsTicketOpen(true);
@@ -144,8 +147,8 @@ export function EventDetail() {
     },
     onError: (err: any) => {
       toast({
-        title: "Erreur d'inscription",
-        description: err?.message || "Une erreur est survenue.",
+        title: t("card.toasts.error"),
+        description: err?.message || t("card.toasts.errorDesc"),
         variant: "destructive",
       });
     },
@@ -159,14 +162,14 @@ export function EventDetail() {
       queryClient.invalidateQueries({ queryKey: ["events"] });
       queryClient.invalidateQueries({ queryKey: ["event-attendees", id] });
       toast({
-        title: "Désinscription effectuée",
-        description: "Vous n'êtes plus inscrit à cet événement.",
+        title: t("detail.toasts.unregistered"),
+        description: t("detail.toasts.unregisteredDesc"),
       });
     },
     onError: (err: any) => {
       toast({
-        title: "Erreur de désinscription",
-        description: err?.message || "Impossible d'annuler votre participation.",
+        title: t("card.toasts.error"),
+        description: err?.message || t("card.toasts.errorDesc"),
         variant: "destructive",
       });
     },
@@ -178,15 +181,15 @@ export function EventDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
       toast({
-        title: "Événement supprimé",
-        description: "L'événement a été retiré avec succès.",
+        title: t("detail.toasts.deleted"),
+        description: t("detail.toasts.deletedDesc"),
       });
       navigate("/events");
     },
     onError: (err: any) => {
       toast({
-        title: "Erreur de suppression",
-        description: err?.message || "Impossible de supprimer cet événement.",
+        title: t("card.toasts.error"),
+        description: err?.message || t("detail.toasts.deleteFailed"),
         variant: "destructive",
       });
     },
@@ -196,13 +199,13 @@ export function EventDetail() {
     try {
       await exportAttendeesCsv(id!);
       toast({
-        title: "Export réussi",
-        description: "La liste des participants a été téléchargée.",
+        title: t("attendeesModal.exportSuccess"),
+        description: t("attendeesModal.exportSuccessDesc"),
       });
     } catch {
       toast({
-        title: "Erreur d'export",
-        description: "Impossible d'exporter la liste des participants.",
+        title: t("attendeesModal.exportError"),
+        description: t("attendeesModal.exportErrorDesc"),
         variant: "destructive",
       });
     }
@@ -237,12 +240,12 @@ export function EventDetail() {
         <div className="h-14 w-14 rounded-2xl bg-destructive/10 text-destructive flex items-center justify-center mx-auto">
           <AlertCircle className="h-7 w-7" />
         </div>
-        <h2 className="text-xl font-bold text-foreground">Événement introuvable</h2>
+        <h2 className="text-xl font-bold text-foreground">{t("detail.notFound")}</h2>
         <p className="text-sm text-muted-foreground">
-          Cet événement n'existe pas ou a été supprimé par son organisateur.
+          {t("detail.notFoundDesc")}
         </p>
         <Button onClick={() => navigate("/events")} className="rounded-xl mt-2">
-          Retour aux événements
+          {t("detail.back")}
         </Button>
       </div>
     );
@@ -289,7 +292,7 @@ export function EventDetail() {
           className="rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground self-start gap-1.5"
         >
           <ArrowLeft className="h-4 w-4" />
-          <span>Retour aux événements</span>
+          <span>{t("detail.back")}</span>
         </Button>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -301,7 +304,7 @@ export function EventDetail() {
               className="rounded-xl text-xs font-semibold bg-primary text-primary-foreground shadow-xs gap-1.5"
             >
               <Ticket className="h-3.5 w-3.5" />
-              <span>Mon billet</span>
+              <span>{t("detail.myTicket")}</span>
             </Button>
           )}
 
@@ -314,7 +317,7 @@ export function EventDetail() {
                 onClick={() => setIsScannerOpen(true)}
                 className="rounded-xl text-xs font-medium gap-1.5 text-muted-foreground hover:text-foreground"
               >
-                <span>Scanner entrées</span>
+                <span>{t("detail.scanEntries")}</span>
               </Button>
 
               <Button
@@ -323,7 +326,7 @@ export function EventDetail() {
                 onClick={handleExportAttendees}
                 className="rounded-xl text-xs font-medium gap-1.5 text-muted-foreground hover:text-foreground"
               >
-                <span>Exporter CSV</span>
+                <span>{t("detail.exportCsv")}</span>
               </Button>
 
               <Button
@@ -332,20 +335,20 @@ export function EventDetail() {
                 onClick={() => navigate(`/events/${event.id}/edit`)}
                 className="rounded-xl text-xs font-medium gap-1.5"
               >
-                <span>Modifier</span>
+                <span>{t("detail.editEvent")}</span>
               </Button>
 
               <Button
                 variant="destructive"
                 size="sm"
                 onClick={() => {
-                  if (confirm("Voulez-vous vraiment supprimer cet événement ?")) {
+                  if (confirm(t("detail.deleteConfirm"))) {
                     deleteMutation.mutate();
                   }
                 }}
                 className="rounded-xl text-xs font-semibold gap-1.5"
               >
-                <span>Supprimer</span>
+                <span>{t("detail.deleteEvent")}</span>
               </Button>
             </>
           )}
@@ -356,7 +359,7 @@ export function EventDetail() {
             onClick={() => setIsShareOpen(true)}
             className="rounded-xl text-xs font-medium gap-1.5"
           >
-            <span>Partager</span>
+            <span>{t("detail.share")}</span>
           </Button>
         </div>
       </div>
@@ -382,12 +385,19 @@ export function EventDetail() {
           <Badge
             className="bg-background/90 text-foreground border border-border/40 backdrop-blur-md px-3 py-1 text-xs font-semibold shadow-xs"
           >
-            {meta.label}
+            {t(`categories.${event.category}Short` as any, { defaultValue: meta.label })}
           </Badge>
 
           {event.isOnline && (
             <Badge className="bg-background/80 text-foreground border border-border/40 font-semibold text-xs backdrop-blur-md px-3 py-1">
-              En ligne
+              {t("page.online")}
+            </Badge>
+          )}
+
+          {event.registrationUrl && (
+            <Badge className="bg-background/80 text-foreground border border-border/40 font-semibold text-xs backdrop-blur-md px-3 py-1 flex items-center gap-1">
+              <ArrowSquareOut className="h-3 w-3" />
+              <span>{t("detail.externalRegistration")}</span>
             </Badge>
           )}
         </div>
@@ -396,7 +406,7 @@ export function EventDetail() {
         <div className="absolute bottom-5 left-5 right-5 text-white space-y-1.5">
           <div className="flex items-center gap-2 text-xs font-medium text-white/90 flex-wrap">
             <span className="capitalize">
-              {startDate.toLocaleDateString("fr-FR", {
+              {startDate.toLocaleDateString(dateLocale, {
                 weekday: "long",
                 day: "numeric",
                 month: "long",
@@ -404,9 +414,9 @@ export function EventDetail() {
             </span>
             <span>•</span>
             <span>
-              {startDate.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+              {startDate.toLocaleTimeString(dateLocale, { hour: "2-digit", minute: "2-digit" })}
               {endDate &&
-                ` - ${endDate.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`}
+                ` - ${endDate.toLocaleTimeString(dateLocale, { hour: "2-digit", minute: "2-digit" })}`}
             </span>
           </div>
 
@@ -435,14 +445,14 @@ export function EventDetail() {
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="font-semibold text-foreground text-sm truncate">
-                    {getUserDisplayName(event.organizer, "Organisateur")}
+                    {getUserDisplayName(event.organizer, t("detail.organizer"))}
                   </span>
                   {event.organizer.isVerified && (
                     <BadgeCheck className="h-4 w-4 text-primary shrink-0" weight="fill" />
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground truncate">
-                  Organisateur • {event.organizer.faculty || event.organizer.university || "Membre CampusSphere"}
+                  Organisateur • {formatSlugToLabel(event.organizer.faculty) || formatSlugToLabel(event.organizer.university) || "Membre CampusSphere"}
                 </p>
               </div>
             </Link>
@@ -453,18 +463,18 @@ export function EventDetail() {
               onClick={() => navigate(`/profile/${event.organizer.username}`)}
               className="rounded-lg text-xs font-medium shrink-0"
             >
-              Voir le profil
+              {t("detail.viewProfile")}
             </Button>
           </div>
 
           {/* Description Section */}
           <div className="pb-6 border-b border-border/30 space-y-3">
             <h2 className="text-base font-bold text-foreground">
-              À propos de cet événement
+              {t("detail.description")}
             </h2>
 
             <div className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line space-y-3 font-normal">
-              {event.description || "Aucune description fournie pour cet événement."}
+              {event.description || t("detail.noDescription")}
             </div>
           </div>
 
@@ -481,7 +491,7 @@ export function EventDetail() {
                   </Avatar>
                   <div className="min-w-0">
                     <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
-                      Sphère organisatrice
+                      {t("detail.organizingSphere")}
                     </span>
                     <h3 className="text-sm font-semibold text-foreground truncate">{event.sphere.name}</h3>
                   </div>
@@ -496,7 +506,7 @@ export function EventDetail() {
                   }}
                   className="rounded-lg text-xs font-medium shrink-0"
                 >
-                  Visiter la sphère
+                  {t("detail.visitSphere")}
                 </Button>
               </div>
             </div>
@@ -506,7 +516,7 @@ export function EventDetail() {
           <div className="pb-6 border-b border-border/30 space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-foreground">
-                Participants ({event.attendeesCount || confirmedAttendees.length})
+                {t("detail.attendeesTitle", { count: event.attendeesCount || confirmedAttendees.length })}
               </h3>
               {confirmedAttendees.length > 0 && (
                 <button
@@ -514,7 +524,7 @@ export function EventDetail() {
                   onClick={() => setIsAttendeesOpen(true)}
                   className="text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer"
                 >
-                  Voir tout
+                  {t("detail.viewAll")}
                 </button>
               )}
             </div>
@@ -550,12 +560,12 @@ export function EventDetail() {
                     onClick={() => setIsAttendeesOpen(true)}
                     className="inline-flex items-center px-3 py-1 rounded-full bg-muted/20 hover:bg-muted border border-border/40 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                   >
-                    +{confirmedAttendees.length - 8} autre{confirmedAttendees.length - 8 > 1 ? "s" : ""}
+                    +{confirmedAttendees.length - 8} {t("card.attendees", { count: confirmedAttendees.length - 8 })}
                   </button>
                 )}
               </div>
             ) : (
-              <p className="text-xs text-muted-foreground">Soyez le premier à vous inscrire !</p>
+              <p className="text-xs text-muted-foreground">{t("detail.beFirstToJoin")}</p>
             )}
           </div>
         </div>
@@ -565,7 +575,7 @@ export function EventDetail() {
           <div className="sticky top-20 p-5 rounded-2xl border border-border/40 bg-card shadow-xs space-y-5">
             <div>
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Statut de participation
+                {t("detail.rsvpStatus")}
               </span>
               <div className="mt-2 flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
@@ -573,7 +583,7 @@ export function EventDetail() {
                     {event.attendeesCount}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    {event.attendeesCount > 1 ? "inscrits" : "inscrit"}
+                    {t("card.attendees", { count: event.attendeesCount })}
                   </span>
                 </div>
 
@@ -582,7 +592,7 @@ export function EventDetail() {
                   onClick={() => setIsAttendeesOpen(true)}
                   className="text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer"
                 >
-                  Voir la liste
+                  {t("detail.viewList")}
                 </button>
               </div>
 
@@ -590,9 +600,9 @@ export function EventDetail() {
               {event.maxAttendees && (
                 <div className="mt-3 space-y-1.5">
                   <div className="flex justify-between text-[11px] text-muted-foreground font-medium">
-                    <span>Places restantes</span>
+                    <span>{t("detail.spotsRemaining")}</span>
                     <span>
-                      {Math.max(0, event.maxAttendees - event.attendeesCount)} sur {event.maxAttendees}
+                      {t("detail.spotsRemainingOf", { left: Math.max(0, event.maxAttendees - event.attendeesCount), total: event.maxAttendees })}
                     </span>
                   </div>
                   <Progress value={capacityPercent || 0} className="h-1.5 rounded-full" />
@@ -604,22 +614,77 @@ export function EventDetail() {
             <div className="space-y-2 pt-2 border-t border-border/40">
               {isPast ? (
                 <Button disabled className="w-full rounded-xl text-xs" variant="outline">
-                  Événement terminé
+                  {t("detail.eventFinished")}
                 </Button>
+              ) : event.registrationUrl ? (
+                /* External Registration Flow */
+                <div className="space-y-3">
+                  <Button
+                    asChild
+                    size="lg"
+                    className="w-full rounded-xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs transition-all py-5 text-sm gap-2"
+                  >
+                    <a href={event.registrationUrl} target="_blank" rel="noopener noreferrer">
+                      <span>{t("detail.registerExternal")}</span>
+                      <ArrowSquareOut className="h-4 w-4 shrink-0" />
+                    </a>
+                  </Button>
+
+                  {isRegistered ? (
+                    <div className="space-y-2 pt-1">
+                      <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center justify-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                        <span>{t("detail.youAreAttendingExternal")}</span>
+                      </div>
+
+                      {Boolean(event.hasTicketing) && (
+                        <Button
+                          onClick={() => setIsTicketOpen(true)}
+                          variant="secondary"
+                          className="w-full rounded-xl font-semibold text-xs py-3.5 gap-1.5"
+                        >
+                          <Ticket className="h-3.5 w-3.5" />
+                          <span>{t("detail.viewTicketAndQr")}</span>
+                        </Button>
+                      )}
+
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => unregisterMutation.mutate()}
+                        disabled={unregisterMutation.isPending}
+                        className="w-full rounded-xl text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      >
+                        {t("detail.cancelAttendanceExternal")}
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      onClick={() => registerMutation.mutate("going")}
+                      disabled={registerMutation.isPending}
+                      className="w-full rounded-xl font-medium text-xs py-3.5 gap-1.5"
+                    >
+                      <Check className="h-3.5 w-3.5 text-primary" />
+                      <span>{registerMutation.isPending ? t("detail.updating") : t("detail.markPresenceExternal")}</span>
+                    </Button>
+                  )}
+                </div>
               ) : isRegistered ? (
+                /* Internal Registration: Registered State */
                 <div className="space-y-2.5">
                   <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center justify-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                    <span>{isCheckedIn ? "Présence validée au check-in" : "Vous participez à cet événement"}</span>
+                    <span>{isCheckedIn ? t("detail.checkedInBadge") : t("detail.youAreAttending")}</span>
                   </div>
 
-                  {event.hasTicketing !== false && (
+                  {Boolean(event.hasTicketing) && (
                     <Button
                       onClick={() => setIsTicketOpen(true)}
                       className="w-full rounded-xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs transition-all py-5 text-xs gap-1.5"
                     >
                       <Ticket className="h-4 w-4" />
-                      <span>Afficher mon billet & QR Code</span>
+                      <span>{t("detail.viewTicketAndQr")}</span>
                     </Button>
                   )}
 
@@ -630,10 +695,11 @@ export function EventDetail() {
                     disabled={unregisterMutation.isPending}
                     className="w-full rounded-xl text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                   >
-                    Annuler ma participation
+                    {t("detail.cancelParticipation")}
                   </Button>
                 </div>
               ) : (
+                /* Internal Registration: Not Registered State */
                 <div className="space-y-2">
                   <Button
                     onClick={() => registerMutation.mutate("going")}
@@ -643,10 +709,10 @@ export function EventDetail() {
                     <Check className="h-4 w-4" />
                     <span>
                       {registerMutation.isPending
-                        ? "Inscription en cours..."
-                        : event.hasTicketing !== false
-                        ? "Obtenir mon billet"
-                        : "Je participe"}
+                        ? t("detail.registering")
+                        : Boolean(event.hasTicketing)
+                        ? t("detail.gettingTicket")
+                        : t("detail.iParticipate")}
                     </span>
                   </Button>
                 </div>
@@ -658,10 +724,10 @@ export function EventDetail() {
               {/* Date & Time */}
               <div className="space-y-0.5">
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80 block">
-                  Date & heure
+                  {t("detail.dateAndTime")}
                 </span>
                 <span className="font-medium text-foreground block capitalize">
-                  {startDate.toLocaleDateString("fr-FR", {
+                  {startDate.toLocaleDateString(dateLocale, {
                     weekday: "long",
                     day: "numeric",
                     month: "long",
@@ -669,9 +735,9 @@ export function EventDetail() {
                   })}
                 </span>
                 <span className="text-[11px] text-muted-foreground block">
-                  {startDate.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+                  {startDate.toLocaleTimeString(dateLocale, { hour: "2-digit", minute: "2-digit" })}
                   {endDate &&
-                    ` - ${endDate.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`}
+                    ` - ${endDate.toLocaleTimeString(dateLocale, { hour: "2-digit", minute: "2-digit" })}`}
                 </span>
                 <div>
                   <a
@@ -680,7 +746,7 @@ export function EventDetail() {
                     rel="noopener noreferrer"
                     className="inline-block text-[11px] font-medium text-muted-foreground hover:text-foreground hover:underline mt-0.5"
                   >
-                    Ajouter à Google Agenda
+                    {t("detail.addToGcal")}
                   </a>
                 </div>
               </div>
@@ -688,10 +754,10 @@ export function EventDetail() {
               {/* Location */}
               <div className="space-y-0.5 pt-2">
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80 block">
-                  {event.isOnline ? "En ligne" : "Lieu"}
+                  {event.isOnline ? t("page.online") : t("detail.locationTitle")}
                 </span>
                 <span className="font-medium text-foreground block truncate">
-                  {event.location || (event.isOnline ? "Visioconférence" : "Campus")}
+                  {event.location || (event.isOnline ? t("detail.onlineMeeting") : t("page.campus"))}
                 </span>
 
                 {event.isOnline && event.onlineLink && (
@@ -703,12 +769,30 @@ export function EventDetail() {
                       className="rounded-lg text-xs font-medium"
                     >
                       <a href={event.onlineLink} target="_blank" rel="noopener noreferrer">
-                        Rejoindre la réunion
+                        {t("detail.joinMeeting")}
                       </a>
                     </Button>
                   </div>
                 )}
               </div>
+
+              {/* External Registration Link in Logistics */}
+              {event.registrationUrl && (
+                <div className="space-y-0.5 pt-2">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80 block">
+                    {t("detail.externalRegistration")}
+                  </span>
+                  <a
+                    href={event.registrationUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline break-all pt-0.5"
+                  >
+                    <span>{t("detail.accessRegistrationSite")}</span>
+                    <ArrowSquareOut className="h-3.5 w-3.5 shrink-0" />
+                  </a>
+                </div>
+              )}
             </div>
           </div>
         </div>

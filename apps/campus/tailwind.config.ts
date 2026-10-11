@@ -8,6 +8,7 @@ export default {
     "./app/**/*.{ts,tsx}",
     "./src/**/*.{ts,tsx}",
     "../../packages/ui/src/**/*.{ts,tsx}",
+    "../../packages/i18n/src/**/*.{ts,tsx}",
   ],
   prefix: "",
   theme: {

@@ -1,5 +1,5 @@
 import type { AdminNavigationItem } from "../types/common";
-import { SquaresFour as LayoutDashboard, UsersThree as Users, ShieldCheck, Sphere, FileText, ShieldWarning as ShieldAlert, Pulse as Activity, Envelope as Mail, Sparkle as Sparkles } from "@phosphor-icons/react";
+import { SquaresFour as LayoutDashboard, UsersThree as Users, ShieldCheck, Sphere, FileText, ShieldWarning as ShieldAlert, Pulse as Activity, Envelope as Mail, Sparkle as Sparkles, Buildings } from "@phosphor-icons/react";
 
 export const ADMIN_NAVIGATION: AdminNavigationItem[] = [
   {
@@ -16,6 +16,14 @@ export const ADMIN_NAVIGATION: AdminNavigationItem[] = [
     to: "/admin/users",
     description: "Gestion des comptes & rôles",
     icon: Users,
+    group: "Communauté & Contenu",
+  },
+  {
+    key: "partners",
+    label: "Impact Partners",
+    to: "/admin/partners",
+    description: "Candidatures & validation",
+    icon: Buildings,
     group: "Communauté & Contenu",
   },
   {

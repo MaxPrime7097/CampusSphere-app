@@ -14,8 +14,12 @@ import { issueAccessToken, verifyToken } from "../lib/jwt.js";
 import { unauthenticated } from "../lib/errors.js";
 import { requireAdmin, requireAuth } from "../middleware/auth.js";
 import { supabaseCompleteProfile, supabaseDebug, supabaseExchange } from "./supabaseAuth.js";
+import { getCampusStatus } from "./campusStatus.js";
 
 export const authRouter: Router = Router();
+
+/** @status ACTIVE — web & waitlist */
+authRouter.get("/campus-status/", getCampusStatus);
 
 const refreshSchema = z.object({ refresh: z.string().min(1) });
 

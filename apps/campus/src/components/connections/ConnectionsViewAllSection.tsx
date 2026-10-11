@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 import { ConnectionCard } from "./ConnectionCard";
 import { SuggestionCard } from "./SuggestionCard";
 import { PendingRequestCard } from "./PendingRequestCard";
@@ -29,16 +30,18 @@ export function ConnectionsViewAllSection({
   onRejectRequest,
   onConnectSuggestion,
 }: ConnectionsViewAllSectionProps) {
+  const { t } = useTranslation("connections");
+
   return (
     <div className="mt-6 space-y-4">
       <div className="ml-2 flex items-center gap-4 mb-4">
         <Button variant="outline" size="sm" onClick={onBack}>
-          Retour
+          {t("actions.back")}
         </Button>
         <h2 className="text-lg font-semibold">
-          {viewAllSection === "requests" && `Demandes en attente (${pendingRequests.length})`}
-          {viewAllSection === "connections" && `Mes Connexions (${connections.length})`}
-          {viewAllSection === "suggestions" && `Suggestions (${suggestions.length})`}
+          {viewAllSection === "requests" && `${t("sections.pendingRequests")} (${pendingRequests.length})`}
+          {viewAllSection === "connections" && `${t("sections.myConnections")} (${connections.length})`}
+          {viewAllSection === "suggestions" && `${t("sections.suggestions")} (${suggestions.length})`}
         </h2>
       </div>
 

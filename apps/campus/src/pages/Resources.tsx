@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   listResources,
   listFolders,
@@ -9,12 +10,14 @@ import {
   getSavedResources,
   deleteFolder,
   downloadFolderZip,
+  removeResourceFromFolder,
 } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { openVerificationModal } from "@/lib/events";
 import { Button } from "@/components/ui/button";
 import { normalizeResourceType } from "@/constants/resourceTypes";
 import { useAuth } from "@/contexts/AuthContext";
+import { getVerificationAccessStatus } from "@/utils/verification";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { GridFour as LayoutGrid, List } from "@phosphor-icons/react";
 import { cn, getResourceUrl } from "@/lib/utils";
@@ -50,8 +53,10 @@ function mapResourceCard(r: Resource | any): ResourceCardData {
 
 export function Resources() {
   const navigate = useNavigate();
+  const { t } = useTranslation("resources");
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
+  const { canPerformAction } = getVerificationAccessStatus(currentUser);
   const queryClient = useQueryClient();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -72,21 +77,13 @@ export function Resources() {
 
   // Action states
   const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
-  const [savedResources, setSavedResources] = useState<Set<string>>(() => {
-    const cached = queryClient.getQueryData<any[]>(["saved-resources"]);
-    const raw = Array.isArray(cached) ? cached : (cached as any)?.data || [];
-    return new Set(raw.map((r: any) => String(r.id)));
-  });
-  const [resources, setResources] = useState<ResourceCardData[]>(() => {
-    const cached = queryClient.getQueryData<any[]>(["resources"]);
-    const raw = Array.isArray(cached) ? cached : (cached as any)?.data || [];
-    return raw.map(mapResourceCard);
-  });
+  const [savedResources, setSavedResources] = useState<Set<string>>(new Set());
+  const [resources, setResources] = useState<ResourceCardData[]>([]);
 
   // Fetch Resources
   const resourcesQuery = useQuery({
     queryKey: ["resources"],
-    queryFn: () => listResources(),
+    queryFn: () => listResources({ all: "true" }),
     staleTime: 5 * 60 * 1000,
     gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -143,10 +140,40 @@ export function Resources() {
     setSelectedFolder(folder);
     try {
       const res = await getFolderDetail(folder.id);
+      setSelectedFolder((prev) => (prev ? { ...prev, ...res } : res));
       const items = Array.isArray(res) ? res : (res as any)?.resources || (res as any)?.data || [];
       setFolderResources(items.map(mapResourceCard));
     } catch {
       setFolderResources([]);
+    }
+  };
+
+  const handleRemoveResourceFromFolder = async (folderId: string | number, resourceId: string) => {
+    try {
+      await removeResourceFromFolder(folderId, resourceId);
+      setFolderResources((prev) => prev.filter((r) => String(r.id) !== String(resourceId)));
+      setSelectedFolder((prev) =>
+        prev
+          ? {
+              ...prev,
+              resource_count: Math.max(0, (prev.resource_count || 1) - 1),
+            }
+          : prev
+      );
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["resource-folders"] }),
+        queryClient.invalidateQueries({ queryKey: ["user-resource-folders", String(resourceId)] }),
+      ]);
+      toast({
+        title: "Ressource retirée",
+        description: "La ressource a été retirée du dossier.",
+      });
+    } catch (e: any) {
+      toast({
+        title: "Erreur",
+        description: e?.message || "Impossible de retirer la ressource du dossier.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -158,22 +185,22 @@ export function Resources() {
         setSelectedFolder(null);
         setFolderResources([]);
       }
-      toast({ title: "Dossier supprimé", description: "Le dossier a bien été supprimé." });
+      toast({ title: t("page.toasts.folderDeleted"), description: t("page.toasts.folderDeletedDesc") });
     } catch (e: any) {
-      toast({ title: "Erreur", description: e?.message || "Impossible de supprimer le dossier", variant: "destructive" });
+      toast({ title: t("page.toasts.error"), description: e?.message || t("page.toasts.deleteFolderError"), variant: "destructive" });
     }
   };
 
   const handleDownload = async (e: React.MouseEvent, resourceId: string) => {
     e.stopPropagation();
-    if (!currentUser?.isVerified) {
+    if (!canPerformAction) {
       toast({
-        title: "Compte non certifié",
-        description: "Certifiez votre compte pour télécharger des ressources.",
+        title: t("page.toasts.uncertifiedTitle"),
+        description: t("page.toasts.uncertifiedDownloadDesc"),
         variant: "destructive",
         action: (
           <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>
-            Vérifier
+            {t("page.toasts.certify")}
           </Button>
         ),
       });
@@ -183,9 +210,9 @@ export function Resources() {
     setDownloadingIds((prev) => new Set(prev).add(resourceId));
     try {
       await downloadResource(resourceId);
-      toast({ title: "Téléchargement réussi", description: "La ressource a été téléchargée." });
+      toast({ title: t("page.toasts.downloadSuccess"), description: t("page.toasts.downloadSuccessDesc") });
     } catch (error: any) {
-      toast({ title: "Erreur", description: error?.message || "Impossible de télécharger la ressource", variant: "destructive" });
+      toast({ title: t("page.toasts.error"), description: error?.message || t("page.toasts.downloadError"), variant: "destructive" });
     } finally {
       setDownloadingIds((prev) => {
         const next = new Set(prev);
@@ -211,11 +238,11 @@ export function Resources() {
         prev.map((r) => (r.id === resourceId ? { ...r, isSaved } : r))
       );
       toast({
-        title: isSaved ? "Ressource enregistrée" : "Ressource retirée",
-        description: isSaved ? "Ajoutée à vos favoris." : "Retirée de vos favoris.",
+        title: isSaved ? t("page.toasts.saved") : t("page.toasts.unsaved"),
+        description: isSaved ? t("page.toasts.savedDesc") : t("page.toasts.unsavedDesc"),
       });
     } catch (error: any) {
-      toast({ title: "Erreur", description: error?.message || "Action impossible", variant: "destructive" });
+      toast({ title: t("page.toasts.error"), description: error?.message || t("page.toasts.actionError"), variant: "destructive" });
     }
   };
 
@@ -244,9 +271,9 @@ export function Resources() {
         foldersQuery.refetch(),
         savedResourcesQuery.refetch(),
       ]);
-      toast({ title: "Ressources actualisées", description: "La bibliothèque est à jour." });
+      toast({ title: t("page.toasts.refreshed"), description: t("page.toasts.refreshedDesc") });
     } catch {
-      toast({ title: "Erreur", description: "Impossible d'actualiser", variant: "destructive" });
+      toast({ title: t("page.toasts.error"), description: t("page.toasts.refreshError"), variant: "destructive" });
     } finally {
       setIsRefreshing(false);
     }
@@ -269,8 +296,11 @@ export function Resources() {
       const matchesType =
         selectedType === "all" ||
         r.type === selectedType ||
-        (selectedType === "notes" && (r.type === "notes" || r.type === "resumes")) ||
-        (selectedType === "annales" && (r.type === "annales" || r.type === "exam_papers"));
+        (selectedType === "course_notes" && (r.type === "course_notes" || r.type === "notes" || r.type === "resumes")) ||
+        (selectedType === "exams" && (r.type === "exams" || r.type === "annales" || r.type === "exam_papers")) ||
+        (selectedType === "td_tp" && (r.type === "td_tp" || r.type === "exercises")) ||
+        (selectedType === "project" && (r.type === "project" || r.type === "projects")) ||
+        (selectedType === "book" && (r.type === "book" || r.type === "books"));
 
       const ext = r.fileUrl?.split(".").pop()?.toLowerCase() || "";
       const matchesFormat =
@@ -294,12 +324,12 @@ export function Resources() {
 
   const handlePromptVerification = () => {
     toast({
-      title: "Compte non certifié",
-      description: "Certifiez votre compte pour partager des ressources.",
+      title: t("page.toasts.uncertifiedTitle"),
+      description: t("page.toasts.uncertifiedUploadDesc"),
       variant: "destructive",
       action: (
         <Button variant="outline" size="sm" onClick={() => openVerificationModal()}>
-          Vérifier
+          {t("page.toasts.verify")}
         </Button>
       ),
     });
@@ -313,7 +343,7 @@ export function Resources() {
           isRefreshing={isRefreshing}
           isFetching={resourcesQuery.isFetching}
           onRefresh={handleRefresh}
-          isVerified={Boolean(currentUser?.isVerified)}
+          isVerified={canPerformAction}
           isUploadOpen={isUploadResourceOpen}
           setIsUploadOpen={setIsUploadResourceOpen}
           onResourceUploaded={handleResourceUploaded}
@@ -338,8 +368,12 @@ export function Resources() {
         <div className="flex items-center justify-between pt-1 pb-1">
           <span className="text-xs text-muted-foreground font-medium">
             {isFiltering
-              ? `${filteredResources.length} ${filteredResources.length > 1 ? "ressources trouvées" : "ressource trouvée"}`
-              : `${resources.length} ${resources.length > 1 ? "ressources disponibles" : "ressource disponible"}`}
+              ? (filteredResources.length > 1
+                  ? t("page.found_other", { count: filteredResources.length })
+                  : t("page.found_one", { count: filteredResources.length }))
+              : (resources.length > 1
+                  ? t("page.available_other", { count: resources.length })
+                  : t("page.available_one", { count: resources.length }))}
           </span>
           <div className="flex items-center gap-1 bg-muted/40 p-0.5 rounded-lg border border-border/40">
             <Button
@@ -354,7 +388,7 @@ export function Resources() {
               onClick={() => setViewMode("grid")}
             >
               <LayoutGrid className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Grille</span>
+              <span className="hidden sm:inline">{t("page.grid")}</span>
             </Button>
             <Button
               variant="ghost"
@@ -368,7 +402,7 @@ export function Resources() {
               onClick={() => setViewMode("list")}
             >
               <List className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Liste</span>
+              <span className="hidden sm:inline">{t("page.list")}</span>
             </Button>
           </div>
         </div>
@@ -403,10 +437,10 @@ export function Resources() {
                 onOpenFolder={handleOpenFolder}
                 onCloseFolder={() => setSelectedFolder(null)}
                 onDownloadZip={async (f) => {
-                  if (!currentUser?.isVerified) {
+                  if (!canPerformAction) {
                     toast({
-                      title: "Compte non certifié",
-                      description: "Certifiez votre compte pour télécharger des dossiers ZIP.",
+                      title: t("page.toasts.uncertifiedTitle"),
+                      description: t("page.toasts.uncertifiedZipDesc"),
                       variant: "destructive",
                       action: (
                         <Button
@@ -414,14 +448,14 @@ export function Resources() {
                           size="sm"
                           onClick={() => openVerificationModal()}
                         >
-                          Vérifier
+                          {t("page.toasts.certify")}
                         </Button>
                       ),
                     });
                     return;
                   }
                   await downloadFolderZip(f.id, f.name);
-                  toast({ title: "Téléchargement en cours..." });
+                  toast({ title: t("page.toasts.downloadingZip") });
                 }}
                 onEditFolder={(f) => {
                   setEditingFolder(f);
@@ -443,6 +477,7 @@ export function Resources() {
                 onDownloadResource={handleDownload}
                 onSaveResource={handleSave}
                 onPreviewResource={handlePreview}
+                onRemoveResourceFromFolder={handleRemoveResourceFromFolder}
               />
             )}
 

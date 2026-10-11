@@ -1,0 +1,236 @@
+{
+  "createGroup": {
+    "cancel": "Cancel",
+    "categories": {
+      "academic": "Academic",
+      "arts": "Arts",
+      "other": "Other",
+      "social": "Social",
+      "sports": "Sports",
+      "tech": "Technology"
+    },
+    "category": "Category",
+    "categoryRequired": "Category is required",
+    "create": "Create sphere",
+    "description": "Description",
+    "descriptionTooLong": "Description cannot exceed 200 characters",
+    "name": "Sphere name",
+    "nameRequired": "Name is required",
+    "nameTooLong": "Name cannot exceed 50 characters",
+    "privateGroup": "Private sphere",
+    "requireApproval": "Requires approval",
+    "title": "Create a new sphere",
+    "toast": {
+      "created": "Sphere created",
+      "createdDesc": "Your sphere has been created successfully"
+    }
+  },
+  "createModal": {
+    "validation": {
+      "nameMin": "Name must contain at least 3 characters",
+      "descriptionMin": "Description must contain at least 10 characters",
+      "typeRequired": "Please select a sphere type"
+    },
+    "types": {
+      "cours": {
+        "label": "Course Sphere",
+        "description": "Courses, labs, past exams & revision with integrated Sphera"
+      },
+      "projet": {
+        "label": "Project Sphere",
+        "description": "Kanban, assigned tasks & shared files"
+      },
+      "communaute": {
+        "label": "Community",
+        "description": "Open space for a major, student club or cohort"
+      }
+    },
+    "step0Title": "What type of sphere?",
+    "step0Subtitle": "Choose the type of space that fits your usage:",
+    "defaultTitle": "Create a sphere",
+    "changeType": "Change type",
+    "nameLabel": "Sphere Name *",
+    "namePlaceholder": "e.g., Algorithms L2, Web Project 2025...",
+    "descriptionLabel": "Description *",
+    "descriptionPlaceholder": "Describe your sphere and its context...",
+    "objectiveLabel": "Objective",
+    "objectivePlaceholder": "e.g., Pass final exam, Build an MVP...",
+    "optional": "(optional)",
+    "options": "Options",
+    "targetAudienceLabel": "Target audience",
+    "expectedDurationLabel": "Expected duration",
+    "collaborationLabel": "Collaboration",
+    "back": "Back",
+    "cancel": "Cancel",
+    "create": "Create Sphere",
+    "creating": "Creating...",
+    "targetAudiences": {
+      "all": "All students",
+      "cs": "Computer Science students",
+      "business": "Business students",
+      "science": "Science students",
+      "arts": "Arts students",
+      "medicine": "Medicine students",
+      "engineering": "Engineering students",
+      "law": "Law students",
+      "economics": "Economics students",
+      "other": "Other"
+    },
+    "durations": {
+      "short": "Short term (1-3 months)",
+      "medium": "Medium term (3-6 months)",
+      "long": "Long term (6-12 months)",
+      "permanent": "Permanent",
+      "flexible": "Flexible"
+    },
+    "collaborationTypes": {
+      "resources": "Resource sharing",
+      "projects": "Project collaboration",
+      "discussion": "Discussion & exchanges",
+      "mentorship": "Mentorship",
+      "study": "Group study",
+      "events": "Events",
+      "research": "Collaborative research"
+    },
+    "toasts": {
+      "successTitle": "Sphere created successfully!",
+      "successDesc": "{{name}} is now available.",
+      "validationError": "Validation error",
+      "createError": "Unable to create sphere",
+      "error": "Error"
+    }
+  },
+  "title": "Spheres",
+  "card": {
+    "cours": "Course",
+    "projet": "Project",
+    "communaute": "Community",
+    "defaultDesc": "Exchange and collaborative workspace sphere.",
+    "member": "Member",
+    "pending": "Pending",
+    "requested": "Requested",
+    "open": "Open",
+    "join": "Join",
+    "members_one": "{{count}} member",
+    "members_other": "{{count}} members",
+    "byCreator": "By {{name}}",
+    "defaultCreator": "Creator"
+  },
+  "page": {
+    "title": "Collaborative Spheres",
+    "subtitle": "Join projects, study together and collaborate within the student community",
+    "refresh": "Refresh",
+    "create": "Create",
+    "searchPlaceholder": "Search a sphere by name, description or project...",
+    "allAudiences": "All audiences",
+    "filters": "Filters",
+    "reset": "Reset",
+    "clear": "Clear",
+    "allSpheres": "All spheres",
+    "found_one": "{{count}} sphere found",
+    "found_other": "{{count}} spheres found",
+    "available_one": "{{count}} sphere available",
+    "available_other": "{{count}} spheres available",
+    "grid": "Grid",
+    "list": "List",
+    "emptyTitle": "No spheres found",
+    "emptyDesc": "Try adjusting your filters to find what you're looking for.",
+    "emptyReset": "Reset all filters",
+    "sections": {
+      "mySpheres": "My Spheres ({{count}})",
+      "trending": "Trending & Popular Spheres",
+      "academic": "Courses, Labs & Academic",
+      "projects": "Projects & Working Groups",
+      "community": "Communities & Discussions",
+      "clubs": "Clubs & Associations",
+      "revision": "Exam Prep & Past Papers",
+      "viewAllCount": "View all ({{count}})"
+    },
+    "toasts": {
+      "uncertifiedTitle": "Uncertified account",
+      "uncertifiedDesc": "Your 24h discovery period has ended. Certify your account to create spheres.",
+      "verify": "Verify",
+      "joinedTitle": "Welcome to {{name}}!",
+      "joinedDesc": "You are now a member of this sphere",
+      "requestedTitle": "Request sent",
+      "requestedDesc": "Your request to join {{name}} has been sent to moderators",
+      "joinError": "Unable to join sphere",
+      "refreshedTitle": "Spheres updated",
+      "refreshedDesc": "List has been refreshed"
+    }
+  },
+  "detail": {
+    "back": "Back",
+    "loading": "Loading your sphere...",
+    "errorTitle": "Oops! An error occurred",
+    "retry": "Try again",
+    "bannerModalTitle": "Sphere cover photo",
+    "bannerModalDesc": "Upload a new banner for this sphere.",
+    "bannerUpdated": "Banner updated!",
+    "changeBanner": "Change banner",
+    "members_one": "{{count}} member",
+    "members_other": "{{count}} members",
+    "files_one": "{{count}} file",
+    "files_other": "{{count}} files",
+    "viewMembersList": "View member list",
+    "settings": "Settings",
+    "members": "Members",
+    "invite": "Invite",
+    "share": "Share",
+    "pendingRequests": "Pending requests",
+    "joinSphere": "Join Sphere",
+    "cancelRequest": "Cancel request",
+    "backToOverview": "Back to overview",
+    "protectedTitle": "Protected Content",
+    "protectedPendingDesc": "Your request is pending. You will be able to access the content once an administrator approves it.",
+    "protectedNonMemberDesc": "Join this sphere to access chat, tasks, and shared files.",
+    "shareText": "Join my sphere \"{{name}}\" on CampusSphere!",
+    "tabs": {
+      "overview": "Overview",
+      "announcements": "Announcements",
+      "files": "Files",
+      "tasks": "Tasks",
+      "chat": "Chat",
+      "sphera": "Sphera",
+      "pending": "Requests"
+    },
+    "membership": {
+      "member": "Member",
+      "pending": "Request pending",
+      "nonMember": "Not a member",
+      "creator": "Creator",
+      "teacher": "Teacher",
+      "admin": "Admin"
+    },
+    "toasts": {
+      "alreadyMember": "Already a member",
+      "alreadyMemberDesc": "You are already an active member of this sphere.",
+      "alreadyPending": "Request already pending",
+      "alreadyPendingDesc": "Your membership request is already under review.",
+      "uncertifiedTitle": "Account not verified",
+      "uncertifiedDesc": "Your 24h discovery period has expired. You must be verified to join a sphere.",
+      "verifyAction": "Verify",
+      "joinedTitle": "Welcome to the sphere!",
+      "requestedTitle": "Request sent",
+      "taskDeleted": "Task deleted",
+      "memberRemoved": "Member removed",
+      "requestCancelled": "Request cancelled",
+      "memberApproved": "Member approved",
+      "requestRejected": "Request rejected",
+      "linkCopied": "Link copied!",
+      "linkCopiedDesc": "Sphere link copied to clipboard.",
+      "copyLinkError": "Unable to copy link.",
+      "fileDeleted": "File deleted",
+      "error": "Error"
+    }
+  },
+  "membersTab": {
+    "title": "Sphere members",
+    "searchPlaceholder": "Search a member...",
+    "outOf": "{{filtered}} out of {{total}}",
+    "remove": "Remove from sphere",
+    "promote": "Promote to admin",
+    "demote": "Demote to member",
+    "empty": "No members found"
+  }
+}

@@ -36,6 +36,8 @@ export const SUPPORTED_EXTENSIONS = [
   ".pdf",
   ".docx",
   ".txt",
+  ".md",
+  ".markdown",
   ".png",
   ".jpg",
   ".jpeg",
@@ -222,7 +224,7 @@ export async function extractText(buffer: Buffer, filename: string): Promise<str
 
   if (ext === ".docx") return extractDocx(buffer);
 
-  if (ext === ".txt" || ext === "") {
+  if (ext === ".txt" || ext === ".md" || ext === ".markdown" || ext === "") {
     return clamp(buffer.toString("utf8"));
   }
 

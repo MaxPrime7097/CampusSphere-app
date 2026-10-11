@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -68,6 +69,7 @@ export function ChatHeader({
   onRemoveAvatar,
   onNavigateProfile,
 }: ChatHeaderProps) {
+  const { t } = useTranslation("messages");
   const [isAvatarModalOpen, setIsAvatarModalOpen] = React.useState(false);
   const isGroup = conversation.type === "group";
   const isGroupCreator =
@@ -97,8 +99,8 @@ export function ChatHeader({
             size="icon"
             className="md:hidden h-9 w-9 rounded-full text-foreground hover:bg-muted active:scale-95 transition-transform flex-shrink-0 -ml-1"
             onClick={onBack}
-            aria-label="Retour aux discussions"
-            title="Retour"
+            aria-label={t("header.backToDiscussions")}
+            title={t("header.back")}
           >
             <CaretLeft className="h-5 w-5" weight="bold" />
           </Button>
@@ -109,7 +111,7 @@ export function ChatHeader({
                 !isGroup && !otherParticipant?.username ? "opacity-70" : ""
               }`}
               onClick={handleAvatarClick}
-              title={isGroup ? "Changer la photo du groupe" : otherParticipant?.name || conversation.name}
+              title={isGroup ? t("header.changeGroupPhoto") : otherParticipant?.name || conversation.name}
             >
               <AvatarImage src={conversation.avatar ?? undefined} />
               <AvatarFallback className="bg-muted text-muted-foreground font-semibold text-sm">
@@ -131,8 +133,8 @@ export function ChatHeader({
                   setIsAvatarModalOpen(true);
                 }}
                 className="absolute -bottom-1 -right-1 h-5 w-5 bg-primary rounded-full flex items-center justify-center cursor-pointer hover:bg-primary/80 transition-transform active:scale-95 shadow-xs"
-                title="Changer la photo du groupe"
-                aria-label="Changer la photo du groupe"
+                title={t("header.changeGroupPhoto")}
+                aria-label={t("header.changeGroupPhoto")}
               >
                 <Camera className="h-3 w-3 text-white" />
               </button>
@@ -144,7 +146,7 @@ export function ChatHeader({
             onClick={onToggleDetails}
           >
             <h3 className="font-semibold text-sm md:text-base truncate pr-2 max-w-[160px] md:max-w-none text-foreground hover:opacity-80 transition-opacity">
-              {conversation.name || "Utilisateur"}
+              {conversation.name || t("header.user")}
             </h3>
             {typingText ? (
               <p className="text-xs text-primary font-medium truncate flex items-center gap-1.5 animate-pulse">
@@ -153,15 +155,14 @@ export function ChatHeader({
             ) : isGroup ? (
               <p className="text-xs text-muted-foreground truncate flex items-center gap-1.5">
                 <span>
-                  {conversation.participants?.length || 0} membre
-                  {(conversation.participants?.length || 0) > 1 ? "s" : ""}
+                  {t("header.members", { count: conversation.participants?.length || 0 })}
                 </span>
                 {onlineCount !== undefined && onlineCount > 0 && (
                   <>
                     <span className="opacity-40">•</span>
                     <span className="text-emerald-500 font-medium flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      {onlineCount} en ligne
+                      {t("header.onlineCount", { count: onlineCount })}
                     </span>
                   </>
                 )}
@@ -169,13 +170,13 @@ export function ChatHeader({
             ) : conversation.isOnline ? (
               <p className="text-xs text-emerald-500 font-medium truncate flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                En ligne
+                {t("header.online")}
               </p>
             ) : (
               <p className="text-xs text-muted-foreground truncate">
                 {otherParticipant?.username
                   ? `@${otherParticipant.username}`
-                  : "Conversation privée"}
+                  : t("header.privateConversation")}
               </p>
             )}
           </div>
@@ -188,14 +189,14 @@ export function ChatHeader({
                 variant="ghost"
                 size="sm"
                 className="h-9 w-9 sm:h-10 sm:w-10 p-0 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted"
-                aria-label="Appel audio"
+                aria-label={t("header.audioCall")}
                 disabled
               >
                 <Phone className="h-5 w-5" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Bientôt disponible</p>
+              <p>{t("header.soonAvailable")}</p>
             </TooltipContent>
           </Tooltip>
 
@@ -205,14 +206,14 @@ export function ChatHeader({
                 variant="ghost"
                 size="sm"
                 className="h-9 w-9 sm:h-10 sm:w-10 p-0 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted"
-                aria-label="Appel vidéo"
+                aria-label={t("header.videoCall")}
                 disabled
               >
                 <Video className="h-5 w-5" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Bientôt disponible</p>
+              <p>{t("header.soonAvailable")}</p>
             </TooltipContent>
           </Tooltip>
 
@@ -225,9 +226,9 @@ export function ChatHeader({
                   ? "bg-muted text-foreground"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"
               }`}
-              aria-label="Infos de la conversation"
+              aria-label={t("header.conversationInfo")}
               onClick={onToggleDetails}
-              title="Infos de la conversation"
+              title={t("header.conversationInfo")}
             >
               <Info className="h-5 w-5" />
             </Button>
@@ -239,7 +240,7 @@ export function ChatHeader({
                 variant="ghost"
                 size="sm"
                 className="h-9 w-9 sm:h-10 sm:w-10 p-0 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted"
-                aria-label="More options"
+                aria-label={t("header.moreOptions")}
               >
                 <EllipsisVertical className="h-5 w-5" />
               </Button>
@@ -250,12 +251,12 @@ export function ChatHeader({
                   {onToggleDetails && (
                     <DropdownMenuItem onClick={onToggleDetails} className="gap-2.5 text-xs">
                       <Info className="h-4 w-4 text-muted-foreground" />
-                      Infos du groupe
+                      {t("header.groupInfo")}
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem onClick={onOpenParticipants} className="gap-2.5 text-xs">
                     <Users className="h-4 w-4 text-muted-foreground" />
-                    Membres ({conversation.participants?.length || 0})
+                    {t("header.groupMembers", { count: conversation.participants?.length || 0 })}
                   </DropdownMenuItem>
                   {canRenameGroup && (
                     <DropdownMenuItem
@@ -264,22 +265,22 @@ export function ChatHeader({
                       className="gap-2.5 text-xs"
                     >
                       <PencilSimple className="h-4 w-4 text-muted-foreground" />
-                      Renommer le groupe
+                      {t("header.renameGroup")}
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem onClick={() => setIsAvatarModalOpen(true)} className="gap-2.5 text-xs">
                     <Camera className="h-4 w-4 text-muted-foreground" />
-                    Changer la photo
+                    {t("header.changePhoto")}
                   </DropdownMenuItem>
                   {isGroupCreator && conversation.avatar && (
                     <DropdownMenuItem onClick={onRemoveAvatar} className="gap-2.5 text-xs">
                       <Camera className="h-4 w-4 text-muted-foreground" />
-                      Supprimer la photo
+                      {t("header.removePhoto")}
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem onClick={onMarkUnread} className="gap-2.5 text-xs">
                     <Check className="h-4 w-4 text-muted-foreground" />
-                    Marquer comme non lu
+                    {t("header.markUnread")}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={onLeaveConversation}
@@ -287,7 +288,7 @@ export function ChatHeader({
                     className="gap-2.5 text-xs text-rose-500 focus:text-rose-500"
                   >
                     <SignOut className="h-4 w-4" />
-                    Quitter le groupe
+                    {t("header.leaveGroup")}
                   </DropdownMenuItem>
                   {canDeleteConversation && (
                     <DropdownMenuItem
@@ -296,7 +297,7 @@ export function ChatHeader({
                       className="gap-2.5 text-xs text-destructive focus:text-destructive"
                     >
                       <Trash className="h-4 w-4" />
-                      Supprimer le groupe
+                      {t("header.deleteGroup")}
                     </DropdownMenuItem>
                   )}
                 </>
@@ -305,7 +306,7 @@ export function ChatHeader({
                   {onToggleDetails && (
                     <DropdownMenuItem onClick={onToggleDetails} className="gap-2.5 text-xs">
                       <Info className="h-4 w-4 text-muted-foreground" />
-                      Infos du contact
+                      {t("header.contactInfo")}
                     </DropdownMenuItem>
                   )}
                   {otherParticipant?.username && (
@@ -319,12 +320,12 @@ export function ChatHeader({
                       className="gap-2.5 text-xs"
                     >
                       <User className="h-4 w-4 text-muted-foreground" />
-                      Voir le profil
+                      {t("header.viewProfile")}
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem onClick={onMarkUnread} className="gap-2.5 text-xs">
                     <Check className="h-4 w-4 text-muted-foreground" />
-                    Marquer comme non lu
+                    {t("header.markUnread")}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={onDeleteConversation}
@@ -332,7 +333,7 @@ export function ChatHeader({
                     className="gap-2.5 text-xs text-destructive focus:text-destructive"
                   >
                     <Trash className="h-4 w-4" />
-                    Supprimer la discussion
+                    {t("header.deleteConversation")}
                   </DropdownMenuItem>
                 </>
               )}
@@ -348,8 +349,8 @@ export function ChatHeader({
           await onAvatarUpload(file);
           setIsAvatarModalOpen(false);
         }}
-        title="Photo du groupe"
-        description="Recadrez et ajustez la photo de profil du groupe."
+        title={t("header.groupPhotoTitle")}
+        description={t("header.groupPhotoDesc")}
         currentImage={conversation.avatar ?? undefined}
         shape="round"
         aspectRatio={1}

@@ -1,11 +1,27 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Download, BookmarkSimple, FileCode, Archive, Spinner as Loader2, BookOpen, GraduationCap, Sparkle as Sparkles } from "@phosphor-icons/react";
+import {
+  Download,
+  BookmarkSimple,
+  Spinner as Loader2,
+  BookOpen,
+  GraduationCap,
+  FolderSimple as FolderGit2,
+  BookBookmark,
+  Notepad,
+  Question as QuestionMark,
+  FolderPlus,
+  X,
+} from "@phosphor-icons/react";
 import { SpheraIcon } from "@/components/ui/sphera-icon";
 import { formatFileSize, cn, getResourceUrl } from "@/lib/utils";
 import { StudyToolsModal } from "@/sphera/components/study/StudyToolsModal";
+import { AddToFolderModal } from "@/components/modals/AddToFolderModal";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import type { ResourceCardData, Resource } from "@/types";
 
 interface ResourceCardProps {
@@ -15,75 +31,62 @@ interface ResourceCardProps {
   onDownload?: (e: React.MouseEvent) => void;
   onSave?: (e: React.MouseEvent) => void;
   onPreview?: (e: React.MouseEvent) => void;
+  onRemoveFromFolder?: (e: React.MouseEvent) => void;
   className?: string;
 }
 
 const TYPE_STYLES: Record<string, { icon: string; bg: string; label: string }> = {
-  notes: {
+  course_notes: {
     icon: "text-blue-500",
     bg: "bg-blue-500/10 border-blue-500/20",
-    label: "Notes",
+    label: "Cours",
   },
-  resumes: {
-    icon: "text-sky-500",
-    bg: "bg-sky-500/10 border-sky-500/20",
-    label: "Fiche & Résumé",
+  td_tp: {
+    icon: "text-orange-500",
+    bg: "bg-orange-500/10 border-orange-500/20",
+    label: "TD / TP",
   },
-  exercises: {
-    icon: "text-red-500",
-    bg: "bg-red-500/10 border-red-500/20",
-    label: "Exercices",
-  },
-  exam_papers: {
+  exams: {
     icon: "text-emerald-500",
     bg: "bg-emerald-500/10 border-emerald-500/20",
-    label: "Anciennes Épreuves",
+    label: "Anciennes épreuves",
   },
-  annales: {
-    icon: "text-purple-500",
-    bg: "bg-purple-500/10 border-purple-500/20",
-    label: "Annale",
-  },
-  projects: {
-    icon: "text-pink-500",
-    bg: "bg-pink-500/10 border-pink-500/20",
+  project: {
+    icon: "text-violet-500",
+    bg: "bg-violet-500/10 border-violet-500/20",
     label: "Projet",
   },
-  presentations: {
-    icon: "text-indigo-500",
-    bg: "bg-indigo-500/10 border-indigo-500/20",
-    label: "Slides",
+  book: {
+    icon: "text-amber-500",
+    bg: "bg-amber-500/10 border-amber-500/20",
+    label: "Livre",
   },
   other: {
     icon: "text-muted-foreground",
     bg: "bg-muted/30 border-border/40",
-    label: "Document",
+    label: "Autre",
   },
 };
 
 function getTypeStyle(type?: string) {
   if (!type) return TYPE_STYLES.other;
-  const key = type.toLowerCase();
-  return TYPE_STYLES[key] || TYPE_STYLES.other;
+  return TYPE_STYLES[type.toLowerCase()] || TYPE_STYLES.other;
 }
 
 function getFileIcon(type?: string, className = "h-3.5 w-3.5") {
-  const key = (type || "").toLowerCase();
-  switch (key) {
-    case "notes":
+  switch ((type || "").toLowerCase()) {
+    case "course_notes":
       return <BookOpen className={className} />;
-    case "resumes":
-      return <FileText className={className} />;
-    case "exercises":
-      return <FileCode className={className} />;
-    case "exam_papers":
+    case "td_tp":
+      return <Notepad className={className} />;
+    case "exams":
       return <GraduationCap className={className} />;
-    case "annales":
-      return <Sparkles className={className} />;
-    case "projects":
-      return <Archive className={className} />;
+    case "project":
+      return <FolderGit2 className={className} />;
+    case "book":
+      return <BookBookmark className={className} />;
     default:
-      return <FileText className={className} />;
+      return <QuestionMark className={className} />;
   }
 }
 
@@ -95,11 +98,18 @@ export const ResourceCard = React.memo(
     onDownload,
     onSave,
     onPreview,
+    onRemoveFromFolder,
     className,
   }: ResourceCardProps) => {
     const navigate = useNavigate();
+    const { t } = useTranslation("resources");
+    const { user } = useAuth();
+    const { toast } = useToast();
     const style = getTypeStyle(resource.type);
     const [studyOpen, setStudyOpen] = React.useState(false);
+    const [folderModalOpen, setFolderModalOpen] = React.useState(false);
+
+    const typeLabel = t(`page.chips.${resource.type}` as any, { defaultValue: style.label });
 
     return (
       <>
@@ -128,7 +138,7 @@ export const ResourceCard = React.memo(
                   {resource.title}
                 </h3>
                 <Badge variant="muted" size="sm" className="hidden sm:inline-flex text-[10px] shrink-0 font-normal">
-                  {style.label}
+                  {typeLabel}
                 </Badge>
               </div>
 
@@ -139,7 +149,7 @@ export const ResourceCard = React.memo(
                     <span>·</span>
                   </>
                 )}
-                <span className="truncate max-w-[100px]">{(resource as any).authorName || (resource as any).author?.name || "Étudiant"}</span>
+                <span className="truncate max-w-[100px]">{(resource as any).authorName || (resource as any).author?.name || t("card.student")}</span>
                 {((resource as any).fileSize || (resource as any).file_size) && (
                   <>
                     <span>·</span>
@@ -155,6 +165,38 @@ export const ResourceCard = React.memo(
             className="flex items-center gap-1 shrink-0"
             onClick={(e) => e.stopPropagation()}
           >
+            {onRemoveFromFolder ? (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                onClick={onRemoveFromFolder}
+                title={t("folders.removeFromFolder", { defaultValue: "Retirer du dossier" })}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!user) {
+                    toast({
+                      title: "Connexion requise",
+                      description: "Connectez-vous pour ajouter cette ressource à vos dossiers.",
+                    });
+                    return;
+                  }
+                  setFolderModalOpen(true);
+                }}
+                title={t("folders.addToFolder", { defaultValue: "Ajouter à un dossier" })}
+              >
+                <FolderPlus className="h-4 w-4" />
+              </Button>
+            )}
+
             <Button
               size="icon"
               variant="ghost"
@@ -163,7 +205,7 @@ export const ResourceCard = React.memo(
                 isSaved && "text-foreground fill-foreground"
               )}
               onClick={onSave}
-              title="Sauvegarder"
+              title={t("card.save")}
             >
               <BookmarkSimple className="h-4 w-4" weight={isSaved ? "fill" : "regular"} />
             </Button>
@@ -176,7 +218,7 @@ export const ResourceCard = React.memo(
                 e.stopPropagation();
                 setStudyOpen(true);
               }}
-              title="Réviser avec l'IA"
+              title={t("card.reviseAi")}
             >
               <SpheraIcon size="sm" />
             </Button>
@@ -193,7 +235,7 @@ export const ResourceCard = React.memo(
               ) : (
                 <Download className="h-3 w-3" />
               )}
-              <span className="hidden sm:inline">Télécharger</span>
+              <span className="hidden sm:inline">{t("card.download")}</span>
             </Button>
           </div>
         </div>
@@ -202,6 +244,14 @@ export const ResourceCard = React.memo(
         <StudyToolsModal
           isOpen={studyOpen}
           onClose={() => setStudyOpen(false)}
+          resourceId={resource.id}
+          resourceTitle={resource.title}
+        />
+
+        {/* Modal Ajouter à un dossier */}
+        <AddToFolderModal
+          isOpen={folderModalOpen}
+          onClose={() => setFolderModalOpen(false)}
           resourceId={resource.id}
           resourceTitle={resource.title}
         />

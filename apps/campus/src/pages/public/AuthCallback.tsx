@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
-import { exchangeSupabaseToken } from "@/services/api";
+import { exchangeSupabaseToken, getCampusStatus } from "@/services/api";
+import { getAccessToken } from "@/services/api/client";
 import { Spinner as Loader2 } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,11 +11,9 @@ import { useAuth } from "@/contexts/AuthContext";
 // which is university + faculty + study_year only. Drop "username" and "student_id" so the client-side
 // fallback matches needs_profile_completion. — documentation/FRONTEND_CHANGES.md
 const REQUIRED_PROFILE_FIELDS = [
-  "username",
   "university",
   "faculty",
   "study_year",
-  "student_id",
 ] as const;
 
 const isFieldFilled = (value: unknown) => {
@@ -29,9 +28,6 @@ const hasCompleteProfile = (profile: Record<string, unknown> | null | undefined)
   return REQUIRED_PROFILE_FIELDS.every((field) => {
     if (field === "study_year") {
       return isFieldFilled(profile.study_year ?? profile.studyYear);
-    }
-    if (field === "student_id") {
-      return isFieldFilled(profile.student_id ?? profile.studentId);
     }
     return isFieldFilled(profile[field]);
   });
@@ -82,14 +78,14 @@ export function AuthCallback() {
           debugRoutingDecision({
             source: "is_new_user",
             isNewUser: true,
-            destination: "/complete-profile",
+            destination: "/onboarding",
           });
         } else if (typeof needsProfileCompletion === "boolean") {
           shouldCompleteProfile = needsProfileCompletion;
           debugRoutingDecision({
             source: "needs_profile_completion",
             needsProfileCompletion,
-            destination: shouldCompleteProfile ? "/complete-profile" : "/",
+            destination: shouldCompleteProfile ? "/onboarding" : "/",
           });
         } else {
           // Fallback: check profile data manually
@@ -98,14 +94,31 @@ export function AuthCallback() {
             source: "fallback_profile_check",
             profile_completion_required: shouldCompleteProfile,
             profile_data: user,
-            destination: shouldCompleteProfile ? "/complete-profile" : "/",
+            destination: shouldCompleteProfile ? "/onboarding" : "/",
           });
         }
 
         if (shouldCompleteProfile) {
-          console.info("[AuthCallback] Redirecting to profile completion");
-          navigate("/complete-profile", { replace: true });
+          console.info("[AuthCallback] Redirecting to onboarding");
+          navigate("/onboarding", { replace: true });
         } else {
+          const authUser = (data?.user || user) as Record<string, any> | undefined;
+          const rawUniversity = (authUser?.university || "").toLowerCase().trim();
+          const isPilot = rawUniversity === "iuc" || rawUniversity.includes("côte") || rawUniversity.includes("cote");
+
+          if (!isPilot && rawUniversity) {
+            try {
+              const campusStatus = await getCampusStatus(rawUniversity);
+              if (!campusStatus || !campusStatus.isOpen) {
+                navigate(`/campus-unlock?campus=${encodeURIComponent(rawUniversity)}`, { replace: true });
+                return;
+              }
+            } catch {
+              navigate(`/campus-unlock?campus=${encodeURIComponent(rawUniversity)}`, { replace: true });
+              return;
+            }
+          }
+
           console.info("[AuthCallback] Login successful, redirecting to home");
           toast({ title: "Connexion réussie !", duration: 2000 });
           navigate("/", { replace: true });
@@ -113,6 +126,20 @@ export function AuthCallback() {
       } catch (err: any) {
         if (!isMounted) return;
         console.error('AuthCallback error:', err);
+
+        // Si des tokens ont déjà été enregistrés (ex: via un échange concurrent réussi),
+        // on tente de restaurer l'utilisateur pour ne pas le bloquer sur la page de login
+        const existingToken = getAccessToken();
+        if (existingToken) {
+          try {
+            await refreshUser();
+            navigate("/onboarding", { replace: true });
+            return;
+          } catch {
+            // continuer vers le flux d'erreur standard
+          }
+        }
+
         toast({
           title: "Erreur de connexion",
           description: err?.message || "Impossible de finaliser la connexion",
