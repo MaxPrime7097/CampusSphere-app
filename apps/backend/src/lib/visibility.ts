@@ -37,12 +37,21 @@ export async function memberSphereIds(userId: number): Promise<number[]> {
  * A null viewer is anonymous and sees public posts only.
  */
 export async function postsVisibleTo(userId: number | null): Promise<Prisma.PostWhereInput> {
-  if (userId === null) return { visibility: "PUBLIC" };
+  const partnerCondition: Prisma.PostWhereInput = {
+    author: { role: "IMPACT_PARTNER" },
+  };
+
+  if (userId === null) {
+    return {
+      OR: [{ visibility: "PUBLIC" }, partnerCondition],
+    };
+  }
 
   const [friends, spheres] = await Promise.all([friendIds(userId), memberSphereIds(userId)]);
   return {
     OR: [
       { visibility: "PUBLIC" },
+      partnerCondition,
       { authorId: userId },
       { visibility: "SPHERE", sphereId: { in: spheres } },
       { visibility: "FRIENDS", authorId: { in: friends } },

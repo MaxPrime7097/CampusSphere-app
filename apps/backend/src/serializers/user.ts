@@ -12,7 +12,7 @@
  *    `normalizeUser` still sees a stable key set.
  */
 
-import type { Prisma } from "@prisma/client";
+import type { Prisma, UserRole } from "@prisma/client";
 
 /** Everything the serialiser needs; keeps `select` honest at call sites. */
 export const userSelect = {
@@ -181,12 +181,11 @@ export function serializeUser(
   return payload;
 }
 
-/** Compact shape for search results — API_CONTRACT §3.2. */
 export function serializeUserSummary(
   user: Pick<
     SerializableUser,
     "id" | "firstName" | "lastName" | "username" | "avatar" | "bio" | "university" | "faculty" | "studyYear" | "impactScore" | "isVerified"
-  >,
+  > & { role?: UserRole; partnerProfile?: any },
 ): Record<string, unknown> {
   return {
     id: user.id,
@@ -201,5 +200,14 @@ export function serializeUserSummary(
     study_year: user.studyYear,
     impact_score: user.impactScore,
     is_verified: user.isVerified,
+    role: (user.role || "student").toLowerCase(),
+    partner_profile: user.partnerProfile
+      ? {
+          organization_name: user.partnerProfile.organizationName,
+          organization_type: user.partnerProfile.organizationType.toLowerCase(),
+          sector: user.partnerProfile.sector,
+          website: user.partnerProfile.website,
+        }
+      : null,
   };
 }
