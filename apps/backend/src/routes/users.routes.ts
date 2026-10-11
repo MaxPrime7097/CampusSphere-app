@@ -601,7 +601,12 @@ usersRouter.get("/by-username/:username/", async (req, res) => {
   });
   if (!user) throw notFound("User not found.");
 
-  ok(res, serializeUser(user, { viewerId: req.user?.id ?? null, counts: await loadUserCounts(user.id) }));
+  const viewerId = req.user?.id ?? null;
+  const isFollowing = viewerId
+    ? Boolean(await prisma.follow.findUnique({ where: { followerId_partnerId: { followerId: viewerId, partnerId: user.id } } }))
+    : false;
+
+  ok(res, serializeUser(user, { viewerId, counts: await loadUserCounts(user.id), isFollowing }));
 });
 
 // ── Privacy ─────────────────────────────────────────────────────────────────
@@ -1020,5 +1025,10 @@ usersRouter.get("/:id/", async (req, res) => {
   const user = await prisma.user.findUnique({ where: { id }, select: userSelect });
   if (!user) throw notFound("User not found.");
 
-  ok(res, serializeUser(user, { viewerId: req.user?.id ?? null, counts: await loadUserCounts(user.id) }));
+  const viewerId = req.user?.id ?? null;
+  const isFollowing = viewerId
+    ? Boolean(await prisma.follow.findUnique({ where: { followerId_partnerId: { followerId: viewerId, partnerId: user.id } } }))
+    : false;
+
+  ok(res, serializeUser(user, { viewerId, counts: await loadUserCounts(user.id), isFollowing }));
 });

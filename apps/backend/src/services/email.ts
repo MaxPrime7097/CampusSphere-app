@@ -238,3 +238,36 @@ export async function sendPasswordResetEmail(to: string, resetLink: string): Pro
     ),
   });
 }
+
+export async function sendPartnerWelcomeEmail(
+  to: string,
+  organizationName: string,
+  temporaryPassword?: string,
+): Promise<boolean> {
+  const loginUrl = `${env.frontendUrl}/login`;
+  const credsHtml = temporaryPassword
+    ? `<div style="background:#f3f4f6;padding:16px;border-radius:8px;margin:20px 0;font-family:monospace">
+        <strong>Identifiants de connexion :</strong><br>
+        Identifiant / Email : <b>${escapeHtml(to)}</b><br>
+        Mot de passe provisoire : <b>${escapeHtml(temporaryPassword)}</b>
+      </div>
+      <p style="color:#6b7280;font-size:13px">Nous vous invitons à changer votre mot de passe dans les paramètres de votre compte dès votre première connexion.</p>`
+    : "";
+
+  const body = `
+    <p>Bonjour,</p>
+    <p>Nous avons le plaisir de vous annoncer que la candidature de <strong>${escapeHtml(organizationName)}</strong> pour rejoindre le programme <strong>Impact Partners</strong> de CampusSphere a été validée avec succès !</p>
+    <p>Votre page Impact Partner officielle est maintenant en ligne. Vous pouvez y publier vos offres et opportunités, organiser vos événements et créer vos Sphères officielles pour interagir avec l'ensemble des Spherians.</p>
+    ${credsHtml}
+    <p>Toute l'équipe CampusSphere vous souhaite la bienvenue !</p>
+  `;
+
+  return send({
+    to,
+    subject: `🚀 Bienvenue sur CampusSphere — Activation de votre profil Impact Partner`,
+    html: layout(`Bienvenue sur CampusSphere, ${organizationName} !`, body, {
+      label: "Accéder à mon espace Impact Partner",
+      url: loginUrl,
+    }),
+  });
+}

@@ -32,6 +32,26 @@ datasource db {
 // Enums
 // ─────────────────────────────────────────────────────────────
 
+enum UserRole {
+  STUDENT
+  TEACHER
+  IMPACT_PARTNER
+  ADMIN
+}
+
+enum PartnerOrgType {
+  ENTREPRISE
+  CLUB
+  ASSOCIATION
+  INSTITUTION
+}
+
+enum PartnerApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum ProfileVisibility {
   PUBLIC
   CONNECTIONS
@@ -279,6 +299,7 @@ model User {
   isVerified Boolean @default(false) @map("is_verified")
   cardImage  String? @map("card_image")
 
+  role        UserRole @default(STUDENT)
   isActive    Boolean  @default(true) @map("is_active")
   isStaff     Boolean  @default(false) @map("is_staff")
   isSuperuser Boolean  @default(false) @map("is_superuser")
@@ -286,6 +307,12 @@ model User {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   dataExportRequestedAt DateTime? @map("data_export_requested_at")
+
+  partnerProfile      PartnerProfile?
+  followsGiven        Follow[]                  @relation("FollowerRelation")
+  followsReceived     Follow[]                  @relation("PartnerRelation")
+  partnerApplicationsReviewed PartnerApplication[] @relation("ApplicationReviewer")
+  partnersVerified    PartnerProfile[]          @relation("PartnerVerifier")
 
   sentConnections     Connection[]              @relation("ConnectionRequester")
   receivedConnections Connection[]              @relation("ConnectionRecipient")
@@ -1296,5 +1323,58 @@ model SpheraPreferences {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("sphera_preferences")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Impact Partners & Follows
+// ─────────────────────────────────────────────────────────────
+
+model PartnerProfile {
+  id               Int            @id @default(autoincrement())
+  userId           Int            @unique @map("user_id")
+  organizationName String         @map("organization_name")
+  organizationType PartnerOrgType @map("organization_type")
+  sector           String         @default("")
+  website          String         @default("")
+  isVerified       Boolean        @default(true) @map("is_verified")
+  verifiedAt       DateTime?      @map("verified_at")
+  verifiedById     Int?           @map("verified_by_id")
+
+  user       User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verifiedBy User? @relation("PartnerVerifier", fields: [verifiedById], references: [id], onDelete: SetNull)
+
+  @@map("partner_profiles")
+}
+
+model Follow {
+  id         Int      @id @default(autoincrement())
+  followerId Int      @map("follower_id")
+  partnerId  Int      @map("partner_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  follower User @relation("FollowerRelation", fields: [followerId], references: [id], onDelete: Cascade)
+  partner  User @relation("PartnerRelation", fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, partnerId])
+  @@index([partnerId])
+  @@index([followerId])
+  @@map("follows")
+}
+
+model PartnerApplication {
+  id               Int                      @id @default(autoincrement())
+  organizationName String                   @map("organization_name")
+  organizationType PartnerOrgType           @map("organization_type")
+  contactEmail     String                   @map("contact_email")
+  description      String                   @default("")
+  status           PartnerApplicationStatus @default(PENDING)
+  reviewedById     Int?                     @map("reviewed_by_id")
+  reviewedAt       DateTime?                @map("reviewed_at")
+  createdAt        DateTime                 @default(now()) @map("created_at")
+
+  reviewedBy User? @relation("ApplicationReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@map("partner_applications")
 }
 

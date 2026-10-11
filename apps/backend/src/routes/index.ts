@@ -26,6 +26,8 @@ import { quizLiveRouter } from "./quizLive.routes.js";
 import { uploadsRouter } from "./uploads.routes.js";
 import { searchRouter } from "./search.routes.js";
 import { adminRouter } from "./admin.routes.js";
+import { partnerApplicationsRouter } from "./partnerApplications.routes.js";
+import { partnersRouter } from "./partners.routes.js";
 
 export const apiRouter: Router = Router();
 
@@ -39,6 +41,9 @@ apiRouter.use("/auth", authRouter);
 apiRouter.use("/", uploadsRouter);
 apiRouter.use("/", searchRouter);
 apiRouter.use("/admin", adminRouter);
+apiRouter.use("/partner-applications", partnerApplicationsRouter);
+apiRouter.use("/admin/partner-applications", partnerApplicationsRouter);
+apiRouter.use("/partners", partnersRouter);
 
 apiRouter.use("/users", usersRouter);
 apiRouter.use("/spheres", spheresRouter);

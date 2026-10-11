@@ -43,6 +43,8 @@ export const RESOURCE_MIME_TYPES = [
   "text/plain",
   "text/markdown",
   "text/x-markdown",
+  "text/x-web-markdown",
+  "text/md",
   "text/x-python",
   "application/javascript",
   "application/zip",
@@ -92,6 +94,12 @@ export function singleUpload(field: string, kind: UploadKind) {
     limits: { fileSize: MAX_SIZES[kind], files: 1 },
     fileFilter(_req, file, cb) {
       const allowed = ALLOWED[kind];
+      // Special allowance for Markdown & text files whose mime type might be blank or generic on Windows/Linux
+      const isMarkdownOrText = /\.(md|markdown|txt)$/i.test(file.originalname);
+      if (kind === "resource" && isMarkdownOrText) {
+        cb(null, true);
+        return;
+      }
       if (allowed && !allowed.includes(file.mimetype)) {
         cb(badRequest(`File type '${file.mimetype}' is not allowed for ${kind} uploads.`));
         return;

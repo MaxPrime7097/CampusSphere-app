@@ -110,8 +110,18 @@ const hasSupportedExtension = (filename: string): boolean =>
 
 function assertSupportedUpload(filename: string): void {
   if (!hasSupportedExtension(filename)) {
-    throw badRequest("Seuls les fichiers PDF, DOCX, TXT et images (PNG, JPG, WEBP) sont acceptés.");
+    throw badRequest("Seuls les fichiers PDF, DOCX, TXT, MD (Markdown) et images (PNG, JPG, WEBP) sont acceptés.");
   }
+}
+
+function getUploadMimeType(file: Express.Multer.File): string {
+  if (file.mimetype && file.mimetype !== "application/octet-stream") {
+    return file.mimetype;
+  }
+  const ext = file.originalname.toLowerCase();
+  if (ext.endsWith(".md") || ext.endsWith(".markdown")) return "text/markdown";
+  if (ext.endsWith(".txt")) return "text/plain";
+  return file.mimetype || "application/octet-stream";
 }
 
 /** Fetch a stored file's bytes. Rows carry a key; older rows only a URL. */
@@ -756,7 +766,7 @@ spheraRouter.post("/generate/from-upload/", singleUpload("file", "resource"), as
   const stored = await storage.put({
     buffer: file.buffer,
     originalName: file.originalname,
-    contentType: file.mimetype,
+    contentType: getUploadMimeType(file),
     prefix: "resources",
   });
 
@@ -767,7 +777,7 @@ spheraRouter.post("/generate/from-upload/", singleUpload("file", "resource"), as
       fileUrl: stored.url,
       storageKey: stored.key,
       fileSize: file.size,
-      fileType: file.mimetype || "application/octet-stream",
+      fileType: getUploadMimeType(file),
       type: "COURSE_NOTES",
       visibility: "FRIENDS",
       audience: "sphera_internal",
@@ -836,7 +846,7 @@ spheraRouter.post("/generate/annale/", checkGenerationQuota, singleUpload("file"
       const stored = await storage.put({
         buffer: file.buffer,
         originalName: file.originalname,
-        contentType: file.mimetype,
+        contentType: getUploadMimeType(file),
         prefix: "resources",
       });
 
@@ -847,7 +857,7 @@ spheraRouter.post("/generate/annale/", checkGenerationQuota, singleUpload("file"
           fileUrl: stored.url,
           storageKey: stored.key,
           fileSize: file.size,
-          fileType: file.mimetype || "application/octet-stream",
+          fileType: getUploadMimeType(file),
           type: "EXAMS",
           visibility: "FRIENDS",
           audience: "sphera_internal",
@@ -931,7 +941,7 @@ async function handleSingleToolGeneration(
     const stored = await storage.put({
       buffer: file.buffer,
       originalName: file.originalname,
-      contentType: file.mimetype,
+      contentType: getUploadMimeType(file),
       prefix: "resources",
     });
 
@@ -942,7 +952,7 @@ async function handleSingleToolGeneration(
         fileUrl: stored.url,
         storageKey: stored.key,
         fileSize: file.size,
-        fileType: file.mimetype || "application/octet-stream",
+        fileType: getUploadMimeType(file),
         type: "COURSE_NOTES",
         visibility: "FRIENDS",
         audience: "sphera_internal",
