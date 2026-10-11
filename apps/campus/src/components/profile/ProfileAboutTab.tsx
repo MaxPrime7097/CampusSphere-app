@@ -44,6 +44,15 @@ const EditPortfolioModal = lazy(() =>
 );
 
 export interface ProfileAboutUser {
+  role?: string;
+  partnerProfile?: {
+    organizationName?: string;
+    organizationType?: string;
+    sector?: string;
+    website?: string;
+    isVerified?: boolean;
+  } | null;
+  bio?: string;
   university?: string;
   faculty?: string;
   studyYear?: string;
@@ -90,6 +99,104 @@ export function ProfileAboutTab({
   const handleModalSuccess = () => {
     window.location.reload();
   };
+
+  const isPartner = (user.role || "").toLowerCase() === "impact_partner";
+
+  if (isPartner) {
+    return (
+      <section className="mt-6">
+        <div className="rounded-2xl border border-border/40 bg-card divide-y divide-border/30 overflow-hidden shadow-xs">
+          {/* 1. Informations sur l'organisation */}
+          <div className="p-5 sm:p-6 space-y-4">
+            <h3 className="text-sm font-semibold text-foreground">Informations sur l'organisation</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
+              <div>
+                <p className="text-xs text-muted-foreground">Type d'organisation</p>
+                <p className="font-medium text-sm mt-0.5 capitalize">
+                  {user.partnerProfile?.organizationType || <EmptyField />}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Secteur d'activité</p>
+                <p className="font-medium text-sm mt-0.5">
+                  {user.partnerProfile?.sector || "Technologie / Enseignement / Partenariats"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Site web officiel</p>
+                {user.partnerProfile?.website ? (
+                  <a
+                    href={user.partnerProfile.website.startsWith("http") ? user.partnerProfile.website : `https://${user.partnerProfile.website}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-sm mt-0.5 text-primary hover:underline flex items-center gap-1"
+                  >
+                    {user.partnerProfile.website}
+                    <ExternalLink className="h-3.5 w-3.5 inline" />
+                  </a>
+                ) : (
+                  <EmptyField />
+                )}
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Email de contact</p>
+                <p className="font-medium text-sm mt-0.5">{user.email || <EmptyField />}</p>
+              </div>
+              {user.town && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Localisation</p>
+                  <p className="font-medium text-sm mt-0.5">{user.town}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 2. Présentation détaillée */}
+          <div className="p-5 sm:p-6 space-y-3">
+            <h3 className="text-sm font-semibold text-foreground">Présentation & Mission</h3>
+            <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line">
+              {user.bio || "Impact Partner officiel sur CampusSphere."}
+            </p>
+          </div>
+
+          {/* 3. Liens et réseaux */}
+          {user.portfolioLinks && user.portfolioLinks.length > 0 && (
+            <div className="p-5 sm:p-6 space-y-4">
+              <h3 className="text-sm font-semibold text-foreground">Liens et réseaux</h3>
+              <div className="flex flex-wrap gap-2.5">
+                {user.portfolioLinks.map((link, idx) => (
+                  <a
+                    key={idx}
+                    href={link.url?.startsWith("http") ? link.url : `https://${link.url}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/50 bg-muted/40 hover:bg-muted text-xs font-medium transition-colors"
+                  >
+                    <span>{link.title || link.label || link.url}</span>
+                    <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 4. Domaines et technologies */}
+          {user.skills && user.skills.length > 0 && (
+            <div className="p-5 sm:p-6 space-y-4">
+              <h3 className="text-sm font-semibold text-foreground">Domaines d'expertise</h3>
+              <div className="flex flex-wrap gap-2">
+                {user.skills.map((skill: any, idx: number) => (
+                  <Badge key={idx} variant="secondary">
+                    {typeof skill === "string" ? skill : skill.name || skill.label}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="mt-6">

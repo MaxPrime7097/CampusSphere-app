@@ -76,6 +76,8 @@ const AdminLogsPage = lazy(() => import("./admin/pages/AdminLogsPage").then(m =>
 const AdminVerificationPage = lazy(() => import("./admin/pages/AdminVerificationPage").then(m => ({ default: m.AdminVerificationPage })));
 const AdminContactMessagesPage = lazy(() => import("./admin/pages/AdminContactMessagesPage").then(m => ({ default: m.AdminContactMessagesPage })));
 const AdminSpheraPage = lazy(() => import("./admin/pages/AdminSpheraPage").then(m => ({ default: m.AdminSpheraPage })));
+const AdminPartnerApplicationsPage = lazy(() => import("./admin/pages/AdminPartnerApplicationsPage").then(m => ({ default: m.AdminPartnerApplicationsPage })));
+const BecomePartner = lazy(() => import("./pages/public/BecomePartner").then(m => ({ default: m.BecomePartner })));
 
 const PageLoader = () => (
   <div className="min-h-screen w-full flex items-center justify-center bg-background">
@@ -132,12 +134,14 @@ const Protected = ({ children, requireCompleteProfile = true }: { children: Reac
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
 
-  if (requireCompleteProfile && user && (!user.is_profile_complete || !user.university)) {
+  const isPartner = (user?.role || "").toLowerCase() === "impact_partner";
+
+  if (!isPartner && requireCompleteProfile && user && (!user.is_profile_complete || !user.university)) {
     return <Navigate to="/onboarding" replace />;
   }
 
   // Campus unlock waitlist: Non-pilot universities stay locked until 50 registered
-  if (user && location.pathname !== "/campus-unlock" && location.pathname !== "/onboarding") {
+  if (!isPartner && user && location.pathname !== "/campus-unlock" && location.pathname !== "/onboarding") {
     const rawUniversity = (user.university || "").toLowerCase().trim();
     if (!rawUniversity) {
       return <Navigate to="/onboarding" replace />;
@@ -382,6 +386,7 @@ const App = (): React.ReactElement => (
             }>
               <Route path="dashboard" element={<AdminDashboardPage />} />
               <Route path="users" element={<AdminUsersPage />} />
+              <Route path="partners" element={<AdminPartnerApplicationsPage />} />
               <Route path="verification" element={<AdminVerificationPage />} />
               <Route path="spheres" element={<AdminSpheresPage />} />
               <Route path="moderation" element={<AdminModerationPage />} />
@@ -404,6 +409,8 @@ const App = (): React.ReactElement => (
             {/* Public pages */}
             <Route path="/cs-inc" element={<Landing />} />
             <Route path="/cs-inc/about" element={<About />} />
+            <Route path="/become-partner" element={<BecomePartner />} />
+            <Route path="/cs-inc/become-partner" element={<BecomePartner />} />
             <Route path="/cs-inc/impact-score" element={<ImpactScoreInfo />} />
             <Route path="/impact-score" element={<Navigate to="/cs-inc/impact-score" replace />} />
             <Route path="/contact" element={<Navigate to="/cs-inc/contact" replace />} />

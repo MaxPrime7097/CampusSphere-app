@@ -263,20 +263,29 @@ export function normalizeUser(user: any): UserProfile | null {
     portfolioLinks: toArray(user.portfolioLinks ?? user.portfolio_links),
     joinedSpheresCount: user.joinedSpheresCount ?? user.joined_spheres_count ?? 0,
     connectionsCount: user.connectionsCount ?? user.connections_count ?? 0,
+    followersCount: toNumber(user.followersCount ?? user.followers_count, 0),
+    isFollowing: Boolean(user.isFollowing ?? user.is_following ?? false),
+    role: (user.role || "student").toLowerCase(),
+    partnerProfile: user.partnerProfile ?? user.partner_profile ?? null,
+    partner_profile: user.partnerProfile ?? user.partner_profile ?? null,
     dateJoined: user.dateJoined ?? user.date_joined ?? null,
     updatedAt: user.updatedAt ?? user.updated_at ?? null,
     phoneNumber: user.phoneNumber ?? user.phone_number ?? "",
     dateOfBirth: user.dateOfBirth ?? user.date_of_birth ?? "",
     isVerified: Boolean(user.is_verified ?? user.isVerified ?? false),
-    is_profile_complete: Boolean(
-      user.is_profile_complete ??
-      user.isProfileComplete ??
-      (user.university?.trim() && user.faculty?.trim() && (user.studyYear?.trim() || user.study_year?.trim()))
-    ),
+    is_profile_complete:
+      (user.role || "").toLowerCase() === "impact_partner"
+        ? true
+        : Boolean(
+            user.is_profile_complete ??
+            user.isProfileComplete ??
+            (Boolean(user.university?.trim()) && Boolean(user.faculty?.trim()) && Boolean(user.studyYear?.trim() || user.study_year?.trim()))
+          ),
     stats: {
       posts: toNumber(user.posts_count ?? user.stats?.posts, 0),
       connections: toNumber(user.connections_count ?? user.stats?.connections, 0),
       contributions: toNumber(user.contributions_count ?? user.stats?.contributions, 0),
+      followers: toNumber(user.followersCount ?? user.followers_count, 0),
     },
   };
 }

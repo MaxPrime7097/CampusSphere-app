@@ -182,7 +182,7 @@ export const SpheraHome: React.FC = () => {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".pdf,.docx,.txt,.png,.jpg,.jpeg,.webp"
+                accept=".pdf,.docx,.txt,.md,.markdown,text/markdown,.png,.jpg,.jpeg,.webp"
                 onChange={handleFileSelected}
                 className="hidden"
               />

@@ -48,7 +48,7 @@ export const ACCEPTED_RESOURCE_FILE_EXTENSIONS =
   ".jpeg,.jpg,.png,.webp," +
 
   // Documents
-  ".pdf,.doc,.docx,.odt,.txt," +
+  ".pdf,.doc,.docx,.odt,.txt,.md,.markdown," +
 
   // Présentations
   ".ppt,.pptx," +

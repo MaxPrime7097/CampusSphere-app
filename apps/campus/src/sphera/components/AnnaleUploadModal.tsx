@@ -123,7 +123,7 @@ export function AnnaleUploadModal({ open, onClose }: AnnaleUploadModalProps) {
             <input
               ref={inputRef}
               type="file"
-              accept=".pdf,.docx,.txt,.png,.jpg,.jpeg,.webp"
+              accept=".pdf,.docx,.txt,.md,.markdown,text/markdown,.png,.jpg,.jpeg,.webp"
               className="hidden"
               onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
             />
