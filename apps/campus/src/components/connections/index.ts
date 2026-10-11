@@ -6,4 +6,5 @@ export { ConnectionsFilterBar } from "./ConnectionsFilterBar";
 export { ConnectionsFilteredResults } from "./ConnectionsFilteredResults";
 export { ConnectionsViewAllSection } from "./ConnectionsViewAllSection";
 export { ConnectionsDashboardSections } from "./ConnectionsDashboardSections";
+export { PartnerCard } from "./PartnerCard";
 export type { ConnectionFilter, ConnectionUser } from "./types";

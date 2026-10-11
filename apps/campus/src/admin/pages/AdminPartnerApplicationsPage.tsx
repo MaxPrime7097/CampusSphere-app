@@ -11,7 +11,9 @@ import {
   ShieldCheck,
   Check,
   X,
-  FileText,
+  Copy,
+  CheckFat,
+  Key,
 } from "@phosphor-icons/react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,12 +34,28 @@ import {
 } from "@/services/api";
 import type { PartnerApplication } from "@/types";
 
+interface ApprovedCredentials {
+  organizationName: string;
+  email: string;
+  username: string;
+  tempPassword: string;
+}
+
 export function AdminPartnerApplicationsPage(): JSX.Element {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedApp, setSelectedApp] = useState<PartnerApplication | null>(null);
   const [actionType, setActionType] = useState<"approve" | "reject" | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
+  const [approvedCredentials, setApprovedCredentials] = useState<ApprovedCredentials | null>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(label);
+    toast({ title: "Copié !", description: `${label} copié dans le presse-papier.` });
+    setTimeout(() => setCopiedField(null), 2500);
+  };
 
   const { data: applications = [], isLoading, isFetching, refetch } = useQuery({
     queryKey: ["admin-partner-applications"],
@@ -47,13 +65,20 @@ export function AdminPartnerApplicationsPage(): JSX.Element {
   const approveMutation = useMutation({
     mutationFn: (id: number) => approvePartnerApplication(id),
     onSuccess: (res) => {
-      toast({
-        title: "Candidature approuvée !",
-        description: `Le compte Impact Partner a été activé. Mot de passe provisoire : ${res?.data?.tempPassword || "Envoyé par email"}`,
-      });
       queryClient.invalidateQueries({ queryKey: ["admin-partner-applications"] });
+      const creds: ApprovedCredentials = {
+        organizationName: selectedApp?.organizationName || res?.data?.user?.firstName || "Organisation",
+        email: res?.data?.email || selectedApp?.contactEmail || res?.data?.user?.email || "",
+        username: res?.data?.username || res?.data?.user?.username || "",
+        tempPassword: res?.data?.tempPassword || "",
+      };
       setSelectedApp(null);
       setActionType(null);
+      setApprovedCredentials(creds);
+      toast({
+        title: "Candidature approuvée !",
+        description: "Compte Impact Partner activé.",
+      });
     },
     onError: (err: any) => {
       toast({
@@ -141,7 +166,7 @@ export function AdminPartnerApplicationsPage(): JSX.Element {
             Candidatures Impact Partners
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Examinez et validez les organisations candidates (IdemIA, CamerInd, AWS SBG, etc.).
+            Examinez et validez les organisations candidates (entreprises, clubs, associations, institutions).
           </p>
         </div>
 
@@ -320,6 +345,95 @@ export function AdminPartnerApplicationsPage(): JSX.Element {
                 Rejeter la demande
               </Button>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialogue des identifiants générés */}
+      <Dialog open={approvedCredentials !== null} onOpenChange={(open) => !open && setApprovedCredentials(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-emerald-600 font-automata">
+              <CheckCircle className="h-6 w-6 text-emerald-600" />
+              Compte Impact Partner activé !
+            </DialogTitle>
+            <DialogDescription>
+              Voici les identifiants d'accès créés pour <strong>{approvedCredentials?.organizationName}</strong>. Copiez-les pour les lui transmettre.
+            </DialogDescription>
+          </DialogHeader>
+
+          {approvedCredentials && (
+            <div className="space-y-3.5 my-2">
+              <div className="p-3 bg-muted/40 rounded-xl border border-border/60 space-y-3">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground font-medium">Email de connexion :</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-foreground select-all">{approvedCredentials.email}</span>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6"
+                      onClick={() => copyToClipboard(approvedCredentials.email, "Email")}
+                    >
+                      {copiedField === "Email" ? <CheckFat className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground font-medium">Nom d'utilisateur :</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-foreground select-all">@{approvedCredentials.username}</span>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6"
+                      onClick={() => copyToClipboard(approvedCredentials.username, "Nom d'utilisateur")}
+                    >
+                      {copiedField === "Nom d'utilisateur" ? <CheckFat className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-border/40 flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+                      <Key className="h-3.5 w-3.5 text-primary" /> Mot de passe provisoire :
+                    </span>
+                    <span className="font-mono font-bold text-sm tracking-wide text-primary select-all mt-0.5">
+                      {approvedCredentials.tempPassword}
+                    </span>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 text-xs gap-1 border-primary/30 hover:bg-primary/10 text-primary"
+                    onClick={() => copyToClipboard(approvedCredentials.tempPassword, "Mot de passe")}
+                  >
+                    {copiedField === "Mot de passe" ? <CheckFat className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+                    Copier
+                  </Button>
+                </div>
+              </div>
+
+              <Button
+                variant="secondary"
+                className="w-full text-xs font-medium gap-2"
+                onClick={() => {
+                  const fullText = `CampusSphere - Vos accès Impact Partner\nOrganisation : ${approvedCredentials.organizationName}\nEmail : ${approvedCredentials.email}\nIdentifiant : @${approvedCredentials.username}\nMot de passe temporaire : ${approvedCredentials.tempPassword}\nLien de connexion : https://campussphere.app/login`;
+                  copyToClipboard(fullText, "Pack d'identifiants complet");
+                }}
+              >
+                {copiedField === "Pack d'identifiants complet" ? <CheckFat className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+                Copier le pack d'accès complet (pour message/email)
+              </Button>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button className="w-full" onClick={() => setApprovedCredentials(null)}>
+              Terminer
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
