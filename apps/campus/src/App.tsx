@@ -241,6 +241,27 @@ const App = (): React.ReactElement => (
                 </AppLayout>
               </Protected>
             } />
+            <Route path="/profile/partner/:username" element={
+              <Protected>
+                <AppLayout>
+                  <Profile />
+                </AppLayout>
+              </Protected>
+            } />
+            <Route path="/profile/impact-partner/:username" element={
+              <Protected>
+                <AppLayout>
+                  <Profile />
+                </AppLayout>
+              </Protected>
+            } />
+            <Route path="/partner/:username" element={
+              <Protected>
+                <AppLayout>
+                  <Profile />
+                </AppLayout>
+              </Protected>
+            } />
             <Route path="/messages" element={
               <Protected>
                 <AppLayout>

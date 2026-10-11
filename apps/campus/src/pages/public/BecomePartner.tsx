@@ -172,7 +172,7 @@ export function BecomePartner(): JSX.Element {
                     <Label htmlFor="orgName">Nom de l'organisation *</Label>
                     <Input
                       id="orgName"
-                      placeholder="Ex : IdemIA, AWS Student Builder Group IUC, CamerInd..."
+                      placeholder="Ex : Tech Solutions, Club Informatique, Association IA..."
                       value={formData.organizationName}
                       onChange={(e) => setFormData({ ...formData, organizationName: e.target.value })}
                       required

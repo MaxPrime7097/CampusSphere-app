@@ -9,7 +9,99 @@ import { sendPartnerWelcomeEmail } from "../services/email.js";
 import { serializeUser, userSelect } from "../serializers/user.js";
 import { PartnerOrgType, PartnerApplicationStatus } from "@prisma/client";
 
+import { env } from "../config/env.js";
+
 export const partnerApplicationsRouter: Router = Router();
+
+async function syncSupabaseAuthUser(
+  email: string,
+  password: string,
+  name: string,
+  existingSupabaseUid?: string | null
+): Promise<string | null> {
+  const url = env.supabase.url;
+  const key = env.supabase.serviceRoleKey;
+  if (!url || !key) return null;
+
+  try {
+    // 1. If we already have the Supabase UID, update the password directly
+    if (existingSupabaseUid) {
+      const updateRes = await fetch(`${url.replace(/\/$/, "")}/auth/v1/admin/users/${existingSupabaseUid}`, {
+        method: "PUT",
+        headers: {
+          apikey: key,
+          Authorization: `Bearer ${key}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          password,
+          email_confirm: true,
+          user_metadata: { name, role: "impact_partner" },
+        }),
+      });
+      if (updateRes.ok) {
+        return existingSupabaseUid;
+      }
+    }
+
+    // 2. Try creating the user in Supabase Auth
+    const createRes = await fetch(`${url.replace(/\/$/, "")}/auth/v1/admin/users`, {
+      method: "POST",
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { name, role: "impact_partner" },
+      }),
+    });
+
+    if (createRes.ok) {
+      const data = (await createRes.json()) as any;
+      return data?.id ?? null;
+    }
+
+    // 3. If email already exists in Supabase Auth, find user and update password
+    const errData = (await createRes.json().catch(() => null)) as any;
+    if (createRes.status === 422 || errData?.error_code === "email_exists") {
+      const listRes = await fetch(`${url.replace(/\/$/, "")}/auth/v1/admin/users?per_page=500`, {
+        headers: {
+          apikey: key,
+          Authorization: `Bearer ${key}`,
+        },
+      });
+      if (listRes.ok) {
+        const listData = (await listRes.json()) as any;
+        const found = (listData?.users || []).find(
+          (u: any) => String(u.email || "").toLowerCase() === email.toLowerCase()
+        );
+        if (found?.id) {
+          await fetch(`${url.replace(/\/$/, "")}/auth/v1/admin/users/${found.id}`, {
+            method: "PUT",
+            headers: {
+              apikey: key,
+              Authorization: `Bearer ${key}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              password,
+              email_confirm: true,
+              user_metadata: { name, role: "impact_partner" },
+            }),
+          });
+          return found.id;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("[partner-approval] Failed to sync user to Supabase Auth:", err);
+  }
+  return null;
+}
 
 const orgTypeSchema = z.enum(["entreprise", "club", "association", "institution"]);
 
@@ -119,6 +211,19 @@ partnerApplicationsRouter.patch("/:id/approve", requireAuth, requireAdmin, async
   const tempPassword = `Partner-${crypto.randomBytes(4).toString("hex")}!`;
   const passwordHash = await hashPassword(tempPassword);
 
+  // Synchronize user to Supabase Auth so standard login works immediately
+  const existingUserRecord = await prisma.user.findUnique({
+    where: { email: application.contactEmail },
+    select: { id: true, supabaseUid: true },
+  });
+
+  const supabaseUid = await syncSupabaseAuthUser(
+    application.contactEmail,
+    tempPassword,
+    application.organizationName,
+    existingUserRecord?.supabaseUid
+  );
+
   // Check if an account with this email already exists
   let user = await prisma.user.findUnique({
     where: { email: application.contactEmail },
@@ -132,6 +237,8 @@ partnerApplicationsRouter.patch("/:id/approve", requireAuth, requireAdmin, async
       data: {
         role: "IMPACT_PARTNER",
         isVerified: true,
+        passwordHash,
+        ...(supabaseUid ? { supabaseUid } : {}),
       },
     });
 
@@ -166,6 +273,7 @@ partnerApplicationsRouter.patch("/:id/approve", requireAuth, requireAdmin, async
         role: "IMPACT_PARTNER",
         isVerified: true,
         bio: application.description.slice(0, 500),
+        ...(supabaseUid ? { supabaseUid } : {}),
         partnerProfile: {
           create: {
             organizationName: application.organizationName,
@@ -204,6 +312,8 @@ partnerApplicationsRouter.patch("/:id/approve", requireAuth, requireAdmin, async
     data: {
       application: updatedApp,
       user: serializeUser(user, { viewerId: admin.id }),
+      email: application.contactEmail,
+      username: user.username,
       tempPassword,
     },
   });

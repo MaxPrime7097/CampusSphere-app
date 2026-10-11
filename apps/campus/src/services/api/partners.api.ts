@@ -12,7 +12,7 @@ export interface CreatePartnerApplicationInput {
 export async function submitPartnerApplication(data: CreatePartnerApplicationInput): Promise<any> {
   return apiFetch("api/partner-applications/", {
     method: "POST",
-    body: JSON.stringify(data),
+    body: data,
   });
 }
 

@@ -8,6 +8,7 @@ import {
   getMutualConnectionCounts,
   acceptConnection,
   createPrivateConversation,
+  getImpactPartners,
 } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -52,6 +53,14 @@ export function Connections() {
     enabled: Boolean(currentUser?.id),
     staleTime: 60 * 1000,
   });
+
+  const partnersQuery = useQuery({
+    queryKey: ["impact-partners"],
+    queryFn: () => getImpactPartners(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const impactPartners = partnersQuery.data || [];
 
   useEffect(() => {
     if (connectionsQuery.isLoading) {
@@ -361,6 +370,7 @@ export function Connections() {
             pendingRequests={pendingRequests}
             connections={filteredConnections}
             suggestions={filteredSuggestions}
+            impactPartners={impactPartners}
             onViewAll={setViewAllSection}
             onNavigateProfile={(username) => navigate("/profile/" + username)}
             onNavigateMessage={handleNavigateMessage}
