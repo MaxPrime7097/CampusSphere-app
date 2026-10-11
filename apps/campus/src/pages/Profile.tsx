@@ -15,6 +15,8 @@ import {
   getUserConnectionRelation,
   isApiRequestErrorStatus,
   acceptConnection,
+  followPartner,
+  unfollowPartner,
 } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -105,30 +107,35 @@ function mapProfileToViewModel({
       phoneNumber: "",
       dateOfBirth: "",
       avatar: "/placeholder-avatar.jpg",
-      coverPhoto: null,
+      coverPhoto: null as string | null,
       bio: "",
       town: "",
       language: "",
-      impactScore: null,
+      impactScore: null as number | null,
       currentMood: "",
       university: "",
       faculty: "",
       studyYear: "",
       studentId: "",
       campus: "",
-      previousEducation: [],
-      experiences: [],
-      skills: [],
-      interests: [],
-      portfolioLinks: [],
-      sharedFiles: [],
+      previousEducation: [] as any[],
+      experiences: [] as any[],
+      skills: [] as any[],
+      interests: [] as any[],
+      portfolioLinks: [] as any[],
+      sharedFiles: [] as any[],
       stats: {
         posts: 0,
         connections: 0,
         contributions: null as number | null,
+        followers: 0,
       },
-      badges: [],
+      badges: [] as any[],
       isVerified: false,
+      role: "student",
+      partnerProfile: null as any,
+      followersCount: 0,
+      isFollowing: false,
     };
   }
 
@@ -173,10 +180,18 @@ function mapProfileToViewModel({
       posts: posts?.length || 0,
       connections: connections?.length || 0,
       contributions: resourcesAvailable ? resources.length : null,
+      followers: profile.followersCount ?? profile.followers_count ?? 0,
     },
+    role: (profile.role || "student").toLowerCase(),
+    partnerProfile: profile.partnerProfile ?? profile.partner_profile ?? null,
+    followersCount: profile.followersCount ?? profile.followers_count ?? 0,
+    isFollowing: Boolean(profile.isFollowing ?? profile.is_following ?? false),
     badges: [
       ...(profile.is_staff || profile.isStaff
         ? [{ id: "admin", label: "CampusSphere Admin", color: "bg-gradient-to-r from-primary to-accent text-white" }]
+        : []),
+      ...((profile.role || "").toLowerCase() === "impact_partner"
+        ? [{ id: "impact_partner", label: "Impact Partner Vérifié", color: "bg-primary/10 text-primary border border-primary/20" }]
         : []),
     ],
   };
@@ -411,6 +426,15 @@ export function Profile() {
       return;
     }
 
+    if ((targetUser?.role || "").toLowerCase() === "impact_partner") {
+      setIsFollowing(Boolean(targetUser.isFollowing ?? targetUser.is_following));
+      setConnectionStatus(null);
+      setIsRecipient(false);
+      setCurrentConnectionId(null);
+      setRelationActionUnavailable(false);
+      return;
+    }
+
     if (relationQuery.data) {
       const relation = relationQuery.data;
       setRelationActionUnavailable(false);
@@ -424,7 +448,7 @@ export function Profile() {
       setCurrentConnectionId(null);
       setRelationActionUnavailable(isApiRequestErrorStatus(relationQuery.error, 403));
     }
-  }, [currentUser?.id, targetUser?.id, isOwnProfile, relationQuery.data, relationQuery.error]);
+  }, [currentUser?.id, targetUser?.id, targetUser?.role, targetUser?.isFollowing, targetUser?.is_following, isOwnProfile, relationQuery.data, relationQuery.error]);
 
   useEffect(() => {
     if (isOwnProfile && currentUser) {
@@ -465,8 +489,53 @@ export function Profile() {
     [user.studyYear]
   );
 
+  const isTargetPartner = (targetUser?.role || "").toLowerCase() === "impact_partner";
+
+  useEffect(() => {
+    if (isTargetPartner && (activeTab === "connections" || activeTab === "contributions")) {
+      setActiveTab("posts");
+    }
+  }, [isTargetPartner, activeTab]);
+
   const handleFollow = async () => {
     if (!currentUser?.id || !targetUser?.id || isFollowingLoading) return;
+
+    if (isTargetPartner) {
+      const previousIsFollowing = isFollowing;
+      setIsFollowing(!previousIsFollowing);
+      setIsFollowingLoading(true);
+
+      try {
+        if (previousIsFollowing) {
+          await unfollowPartner(targetUser.id);
+          setIsFollowing(false);
+          toast({
+            title: "Désabonnement",
+            description: `Vous ne suivez plus ${user.name}.`,
+            duration: 2000,
+          });
+        } else {
+          await followPartner(targetUser.id);
+          setIsFollowing(true);
+          toast({
+            title: "Abonnement réussi",
+            description: `Vous suivez désormais ${user.name}.`,
+            duration: 2000,
+          });
+        }
+        queryClient.invalidateQueries({ queryKey: ["profile-user", username] });
+      } catch (error: any) {
+        setIsFollowing(previousIsFollowing);
+        toast({
+          title: t("toasts.error"),
+          description: error?.message || "Une erreur est survenue lors de l'action de suivi.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsFollowingLoading(false);
+      }
+      return;
+    }
 
     const previousIsFollowing = isFollowing;
     const previousConnectionId = currentConnectionId;
@@ -714,12 +783,18 @@ export function Profile() {
         {/* Custom Tabs Bar */}
         <div className="mt-4 campus-animate-slide-up w-full overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <ul className="inline-grid grid-flow-col text-center border-b border-border/40 text-muted-foreground min-w-full">
-            {[
-              { id: "posts", label: t("tabs.posts") },
-              { id: "about", label: t("tabs.about") },
-              { id: "connections", label: t("tabs.connections") },
-              { id: "contributions", label: t("tabs.contributions") },
-            ].map((tab) => (
+            {(isTargetPartner
+              ? [
+                  { id: "posts", label: t("tabs.posts") },
+                  { id: "about", label: t("tabs.about") },
+                ]
+              : [
+                  { id: "posts", label: t("tabs.posts") },
+                  { id: "about", label: t("tabs.about") },
+                  { id: "connections", label: t("tabs.connections") },
+                  { id: "contributions", label: t("tabs.contributions") },
+                ]
+            ).map((tab) => (
               <li key={tab.id}>
                 <button
                   onClick={() => setActiveTab(tab.id)}
