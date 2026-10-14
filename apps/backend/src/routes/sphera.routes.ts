@@ -1548,9 +1548,10 @@ spheraRouter.get("/chat/threads/", async (req, res) => {
     where: {
       ownerId: me.id,
       session: {
-        sourceFilename: { in: ["Discussion libre", "Chat libre", ""] },
-        resourceId: null,
-        sphereFileId: null,
+        OR: [
+          { sourceFilename: { in: ["Discussion libre", "Chat libre", "", "__sphera_standalone_chat__"] } },
+          { AND: [{ resourceId: null }, { sphereFileId: null }, { toolTypes: { equals: [] } }] },
+        ],
       },
     },
     include: {
