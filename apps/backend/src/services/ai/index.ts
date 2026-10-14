@@ -8,7 +8,7 @@
 
 import { badRequest, serviceUnavailable } from "../../lib/errors.js";
 import { parseJsonWithFallback, UnparseableModelOutputError } from "./json.js";
-import { annalePrompt, qaPrompt, suggestionsPrompt, toolPrompt, quizFromSelectionPrompt, flashcardFromSelectionPrompt, type AnnaleMode, type ToolType } from "./prompts.js";
+import { annalePrompt, qaPrompt, freeChatPrompt, suggestionsPrompt, toolPrompt, quizFromSelectionPrompt, flashcardFromSelectionPrompt, type AnnaleMode, type ToolType } from "./prompts.js";
 import { AllProvidersFailedError, callWithFallback, TOKENS_ANNALE, TOKENS_DEFAULT, TOKENS_FLASHCARDS, TOKENS_QUIZ } from "./providers.js";
 import { buildContextPrefix, buildStyleInstructions, getUserAcademicContext, getUserPreferences } from "./userContext.js";
 import { extractRelevantPassages, type QaEntry } from "./rag.js";
@@ -151,20 +151,29 @@ export async function generateTool(
   }
 }
 
-/** Answer a question grounded in the course text, with adaptive RAG and conversational memory. */
+/** Answer a question grounded in the course text (RAG), or general academic tutor chat if sourceText is empty. */
 export async function generateQaAnswer(
   sourceText: string,
   question: string,
   userId?: number,
   history?: QaEntry[],
 ): Promise<string> {
-  assertUsableSource(sourceText, "Le texte du cours");
   const prefix = await resolveContextPrefix(userId);
 
-  // 1. Adaptive RAG for large documents (> 25k chars)
-  const { text: processedText, isFiltered } = extractRelevantPassages(sourceText, question, history);
+  // If no source text is provided (Free / General Academic Chat mode)
+  if (!sourceText || sourceText.trim().length < MIN_SOURCE_CHARS) {
+    const prompt = prefix + freeChatPrompt(question, history);
+    try {
+      return (
+        await callWithFallback(prompt, TOKENS_DEFAULT, { toolType: "qa", userId })
+      ).trim();
+    } catch (error) {
+      throw asApiError(error);
+    }
+  }
 
-  // 2. Build prompt with conversational memory (sliding window)
+  // Course-grounded RAG mode
+  const { text: processedText, isFiltered } = extractRelevantPassages(sourceText, question, history);
   const prompt = prefix + qaPrompt(processedText, question, history, isFiltered);
   try {
     return (

@@ -315,7 +315,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
     try {
       if (type === 'annale') await deleteAnnale(id as string)
       else await deleteSession(id as string)
-      navigate('/dashboard')
+      navigate('/app')
     } catch (e: any) {
       showFeedback(e?.message || t('sessionDetail.deleteError'), 'error')
     }
@@ -977,7 +977,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
       {/* Mobile Top Bar with Segmented View Switcher */}
       <div className="md:hidden flex items-center justify-between px-3 py-2 bg-sphera-surface-2 border-b border-sphera-border shrink-0 z-30">
         <button
-          onClick={() => navigate('/dashboard')}
+          onClick={() => navigate('/app')}
           className="p-1.5 text-sphera-text-muted hover:bg-sphera-surface hover:text-white rounded-md transition-colors shrink-0"
           title={t('sessionDetail.backToDashboard')}
         >
@@ -1015,7 +1015,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
         <div className="h-14 border-b border-sphera-border flex items-center justify-between px-4 bg-sphera-bg">
           <div className="flex items-center gap-3 min-w-0">
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/app')}
               className="hidden md:inline-flex p-1.5 text-sphera-text-muted hover:bg-sphera-surface hover:text-white rounded-md transition-colors shrink-0"
               title={t('sessionDetail.backToDashboard')}
             >

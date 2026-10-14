@@ -49,7 +49,7 @@ export const MindMapView: React.FC<MindMapViewProps> = ({ data, sessionId }) => 
   const envUrl = (import.meta.env.VITE_SPHERA_STANDALONE_URL as string)?.trim();
   const isLocal = ["localhost", "127.0.0.1"].some((host) => window.location.hostname.includes(host));
   const spheraBase = envUrl || (isLocal ? "http://localhost:5174" : SPHERA_ORIGINS[0]);
-  const spheraLink = sessionId ? `${spheraBase}/sessions/${sessionId}` : `${spheraBase}/dashboard`;
+  const spheraLink = sessionId ? `${spheraBase}/sessions/${sessionId}` : `${spheraBase}/app`;
 
   return (
     <div className="space-y-6 w-full max-w-4xl mx-auto">

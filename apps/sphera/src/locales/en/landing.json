@@ -54,33 +54,30 @@
     "cta": "Explore CampusSphere"
   },
   "socialProof": {
-    "title": "Join the Spherians",
-    "subtitle": "Thousands of students from IUC Douala and beyond are already using it.",
-    "statSessions": "Generated sessions",
-    "statRating": "Average rating",
-    "statFields": "Fields covered",
-    "statSpeed": "Avg generation time",
-    "testimonials": {
-      "marc": {
-        "text": "I used to spend hours summarizing my law lectures. With Sphera, it's done while I go grab a coffee.",
-        "author": "Marc B.",
-        "role": "3rd Year Law"
+    "title": "Academic Rigor at the Heart of Sphera",
+    "subtitle": "An active learning methodology based on cognitive science and strict fidelity to your study materials.",
+    "pillars": {
+      "fidelity": {
+        "title": "Strict Source Fidelity",
+        "desc": "The AI relies exclusively on the documents you import. Summaries, flashcards, and quizzes are directly rooted in your actual coursework, free of hallucinations."
       },
-      "ines": {
-        "text": "We launched a Sphera Live in the amphitheater before exams, everyone was buzzing on their phones. The vibe and retention were incredible!",
-        "author": "Inès M.",
-        "role": "2nd Year Computer Science"
+      "activeRecall": {
+        "title": "Active Recall Methodology",
+        "desc": "Moving from passive reading to active testing boosts long-term retention through adaptive quizzes and spaced repetition flashcards."
       },
-      "sarah": {
-        "text": "The generated quizzes literally saved me for my biology finals. It is the best learning tool out there.",
-        "author": "Sarah N.",
-        "role": "Master's Year 1"
+      "privacy": {
+        "title": "Complete Privacy",
+        "desc": "Your lecture notes, theses, and documents remain strictly private. Your materials are never sold or used to train public AI models."
       },
-      "kevin": {
-        "text": "Solving last year's past papers with one click is an absolute cheat code for exam prep.",
-        "author": "Kevin T.",
-        "role": "Engineering Prep"
+      "multidisciplinary": {
+        "title": "Built for Every Discipline",
+        "desc": "Medicine, Law, Engineering, Business, Computer Science... Sphera synthesizes complex chapters to save you hours every semester."
       }
+    },
+    "banner": {
+      "title": "Built by students, for students",
+      "desc": "Seamlessly connected to the CampusSphere ecosystem to support your entire academic journey.",
+      "cta": "Start for free"
     }
   },
   "faq": {

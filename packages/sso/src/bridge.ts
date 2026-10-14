@@ -89,7 +89,13 @@ export function attemptSilentSso(): Promise<{ access: string; refresh: string } 
   });
 }
 
-export function openSsoPopup(): Promise<{ access: string; refresh: string } | null> {
+export interface OpenSsoPopupOptions {
+  provider?: "google";
+}
+
+export function openSsoPopup(
+  options?: OpenSsoPopupOptions
+): Promise<{ access: string; refresh: string } | null> {
   return new Promise((resolve, reject) => {
     if (typeof window === "undefined") {
       resolve(null);
@@ -98,9 +104,13 @@ export function openSsoPopup(): Promise<{ access: string; refresh: string } | nu
 
     const isLocal = ["localhost", "127.0.0.1"].some((h) => window.location.hostname.includes(h));
     const myOrigin = window.location.origin;
-    const popupUrl = isLocal
+    let popupUrl = isLocal
       ? `http://localhost:5173/sso/popup?origin=${encodeURIComponent(myOrigin)}`
       : `https://campussphere.app/sso/popup?origin=${encodeURIComponent(myOrigin)}`;
+
+    if (options?.provider) {
+      popupUrl += `&provider=${encodeURIComponent(options.provider)}`;
+    }
 
     const w = 420;
     const h = 540;
