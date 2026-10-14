@@ -233,10 +233,18 @@ export function SidebarLayout() {
     setMobileDrawerOpen(false)
   }, [location.pathname, location.search])
 
+  // Listen to open mobile sidebar requests from full-height views like Chat
+  useEffect(() => {
+    const handleOpenMobile = () => setMobileDrawerOpen(true)
+    window.addEventListener('sphera:open-mobile-sidebar', handleOpenMobile)
+    return () => window.removeEventListener('sphera:open-mobile-sidebar', handleOpenMobile)
+  }, [])
+
   const isSessionPage =
     location.pathname.startsWith('/sessions/') ||
     location.pathname.startsWith('/annales/') ||
-    location.pathname.startsWith('/create')
+    location.pathname.startsWith('/create') ||
+    location.pathname.startsWith('/chat')
 
   return (
     <div className="flex h-[100dvh] bg-sphera-bg overflow-hidden font-sans">
