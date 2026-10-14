@@ -48,7 +48,7 @@ export function SpheraHeader() {
           {isAuthenticated && user ? (
             <div className="hidden sm:flex items-center gap-4">
               <QuotaIndicator />
-              <Link to="/dashboard" className="text-sm font-medium text-sphera-text-muted hover:text-white transition-colors">
+              <Link to="/app" className="text-sm font-medium text-sphera-text-muted hover:text-white transition-colors">
                 {t('header.dashboard')}
               </Link>
               <div className="flex items-center gap-3 pl-4 border-l border-sphera-border">
@@ -111,7 +111,7 @@ export function SpheraHeader() {
                     <Zap className="w-4 h-4 fill-sphera-green" /> {t('header.spheraLive')}
                   </Link>
                   <Link
-                    to="/dashboard"
+                    to="/app"
                     onClick={closeMenu}
                     className="block rounded-xl px-3 py-2 text-sm font-medium text-sphera-text-muted hover:bg-sphera-surface hover:text-white transition-colors"
                   >

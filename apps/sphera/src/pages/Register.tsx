@@ -6,6 +6,7 @@ import { registerOnSphera, getCurrentUser, setTokens, clearTokens } from '../ser
 import { useSpheraAuth } from '../contexts/SpheraAuthContext'
 import { SpheraAuthSidePanel } from '../components/auth/SpheraAuthSidePanel'
 import { openSsoPopup } from '@cs/sso'
+import { GoogleIcon } from '../components/icons/GoogleIcon'
 import { Eye, EyeSlash as EyeOff, Spinner as Loader2, User, Envelope as Mail, Lock, WarningCircle as AlertCircle } from "@phosphor-icons/react";
 
 export default function Register() {
@@ -21,6 +22,7 @@ export default function Register() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [ssoLoading, setSsoLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
@@ -51,7 +53,7 @@ export default function Register() {
       const res = await registerOnSphera(formData)
       if (res) {
         setUser(res)
-        navigate('/dashboard')
+        navigate('/app')
       } else {
         navigate('/login?registered=true')
       }
@@ -77,7 +79,7 @@ export default function Register() {
       setTokens(tokens.access, tokens.refresh || "")
       const user = await getCurrentUser()
       setUser(user)
-      navigate("/dashboard")
+      navigate("/app")
     } catch (err: any) {
       clearTokens()
       const msg = err?.message || ''
@@ -89,6 +91,36 @@ export default function Register() {
         setError(msg || t('register.ssoError'))
       }
       setSsoLoading(false)
+    }
+  }
+
+  // ─── 1-Click Google Direct SSO ────────────────────────────────
+  const handleGoogleSSO = async () => {
+    setGoogleLoading(true)
+    setError(null)
+
+    try {
+      const tokens = await openSsoPopup({ provider: 'google' })
+      if (!tokens) {
+        setGoogleLoading(false)
+        return
+      }
+
+      setTokens(tokens.access, tokens.refresh || "")
+      const user = await getCurrentUser()
+      setUser(user)
+      navigate("/app")
+    } catch (err: any) {
+      clearTokens()
+      const msg = err?.message || ''
+      if (msg.includes('blocked') || msg.includes('popup')) {
+        setError("La fenêtre d'inscription Google a été bloquée par votre navigateur. Veuillez autoriser les fenêtres pop-up pour continuer.")
+      } else if (msg.includes('cancelled') || msg.includes('closed')) {
+        setError("L'inscription via Google a été annulée.")
+      } else {
+        setError(msg || t('register.ssoError'))
+      }
+      setGoogleLoading(false)
     }
   }
 
@@ -132,13 +164,13 @@ export default function Register() {
             </div>
           )}
 
-          {/* ── 1-Click CampusSphere SSO Button ─────────────────── */}
-          <div className="space-y-2 mb-6">
+          {/* ── SSO Buttons (CampusSphere & Google) ─────────── */}
+          <div className="space-y-2.5 mb-6">
             <button
               type="button"
               onClick={handleCampusSphereSSO}
-              disabled={ssoLoading}
-              className="w-full bg-white hover:bg-slate-100 text-slate-900 font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-3 transition-all shadow-md hover:shadow-lg active:scale-[0.99] disabled:opacity-70 group border border-slate-200"
+              disabled={ssoLoading || googleLoading}
+              className="w-full bg-white hover:bg-slate-100 text-slate-900 font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-3 transition-all shadow-md hover:shadow-lg active:scale-[0.99] disabled:opacity-70 group border border-slate-200 cursor-pointer"
             >
               {ssoLoading ? (
                 <>
@@ -152,7 +184,27 @@ export default function Register() {
                 </>
               )}
             </button>
-            <p className="text-center text-[11px] text-sphera-text-muted">
+
+            <button
+              type="button"
+              onClick={handleGoogleSSO}
+              disabled={googleLoading || ssoLoading}
+              className="w-full bg-sphera-surface hover:bg-sphera-surface-2 text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-3 transition-all shadow-md hover:shadow-lg active:scale-[0.99] disabled:opacity-70 group border border-sphera-border cursor-pointer"
+            >
+              {googleLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin text-white" />
+                  <span className="text-xs sm:text-sm font-semibold">{t('register.googleLoading', { defaultValue: 'Inscription Google en cours…' })}</span>
+                </>
+              ) : (
+                <>
+                  <GoogleIcon className="h-5 w-5 shrink-0 group-hover:scale-105 transition-transform" />
+                  <span className="text-xs sm:text-sm font-semibold">{t('register.googleButton', { defaultValue: 'Continuer avec Google' })}</span>
+                </>
+              )}
+            </button>
+
+            <p className="text-center text-[11px] text-sphera-text-muted pt-1">
               {t('register.ssoHint')}
             </p>
           </div>

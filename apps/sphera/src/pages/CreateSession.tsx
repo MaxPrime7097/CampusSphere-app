@@ -393,7 +393,7 @@ export default function CreateSession() {
 
   useEffect(() => {
     if (!currentFile) {
-      navigate('/dashboard', { replace: true })
+      navigate('/app', { replace: true })
       return
     }
 
@@ -1149,7 +1149,7 @@ export default function CreateSession() {
       {/* Mobile Top Bar with Segmented View Switcher */}
       <div className="md:hidden flex items-center justify-between px-3 py-2 bg-sphera-surface-2 border-b border-sphera-border shrink-0 z-30">
         <button 
-          onClick={() => navigate('/dashboard')} 
+          onClick={() => navigate('/app')} 
           title={t('createSession.backToDashboard')}
           aria-label={t('createSession.backToDashboard')}
           className="p-1.5 text-sphera-text-muted hover:bg-sphera-surface hover:text-white rounded-md transition-colors"
@@ -1188,7 +1188,7 @@ export default function CreateSession() {
         <div className="h-14 border-b border-sphera-border flex items-center justify-between px-4 bg-sphera-bg">
           <div className="flex items-center gap-3 min-w-0">
             <button 
-              onClick={() => navigate('/dashboard')} 
+              onClick={() => navigate('/app')} 
               title={t('createSession.backToDashboard')}
               aria-label={t('createSession.backToDashboard')}
               className="p-1.5 text-sphera-text-muted hover:bg-sphera-surface hover:text-white rounded-md transition-colors shrink-0"

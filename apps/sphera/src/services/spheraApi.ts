@@ -599,6 +599,30 @@ export async function deleteChatThread(threadId: number | string) {
   return apiFetch(`api/sphera/threads/${threadId}/`, { method: 'DELETE', requireAuth: true });
 }
 
+export async function renameChatThread(threadId: number | string, title: string) {
+  return apiFetch<{ success: boolean; data: ChatThreadItem }>(`api/sphera/threads/${threadId}/`, {
+    method: 'PATCH',
+    body: { title },
+    requireAuth: true,
+  });
+}
+
+export async function getStandaloneChatThreads() {
+  return apiFetch<{ success: boolean; data: ChatThreadItem[] }>('api/sphera/chat/threads/', { requireAuth: true });
+}
+
+export async function getStandaloneChatThread(threadId: number | string) {
+  return apiFetch<{ success: boolean; data: ChatThreadItem }>(`api/sphera/chat/threads/${threadId}/`, { requireAuth: true });
+}
+
+export async function createStandaloneChatThread(params?: { question?: string; title?: string }) {
+  return apiFetch<{ success: boolean; data: ChatThreadItem }>('api/sphera/chat/threads/', {
+    method: 'POST',
+    body: params || {},
+    requireAuth: true,
+  });
+}
+
 // ─── Annales (auth requis) ───────────────────────────────────────
 
 export async function getAnnales() {

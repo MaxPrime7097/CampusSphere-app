@@ -32,8 +32,8 @@ function hydrateSpheraTokensFromUrl() {
     window.history.replaceState(null, '', window.location.pathname)
   }
 
-  // Redirect immediately to the dashboard to complete the SSO authentication flow
-  window.location.href = '/dashboard'
+  // Redirect immediately to the app to complete the SSO authentication flow
+  window.location.href = '/app'
 }
 
 hydrateSpheraTokensFromUrl()

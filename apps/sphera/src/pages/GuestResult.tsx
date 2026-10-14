@@ -59,7 +59,7 @@ export default function GuestResult() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-sphera-border">
           <div>
             <button 
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/app')}
               className="text-sm text-sphera-text-muted hover:text-white flex items-center gap-2 mb-3 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" /> {t('guestResult.back')}

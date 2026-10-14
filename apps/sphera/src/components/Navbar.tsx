@@ -58,7 +58,7 @@ export function Navbar() {
 
           {isAuthenticated && user ? (
             <>
-              <Link to="/dashboard" className="btn btn-ghost btn-sm hide-mobile">
+              <Link to="/app" className="btn btn-ghost btn-sm hide-mobile">
                 {t('mySessions')}
               </Link>
               <div style={{ position: 'relative' }}>
@@ -100,7 +100,7 @@ export function Navbar() {
                     width: 200, zIndex: 50, padding: '0.5rem',
                   }}>
                     <Link
-                      to="/dashboard"
+                      to="/app"
                       onClick={() => setMenuOpen(false)}
                       style={{ display: 'block', padding: '0.5rem 0.75rem', color: 'var(--text)', textDecoration: 'none', borderRadius: 8, fontSize: '0.875rem' }}
                     >

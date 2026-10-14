@@ -54,33 +54,30 @@
     "cta": "Explorer CampusSphere"
   },
   "socialProof": {
-    "title": "Rejoins les Spherians",
-    "subtitle": "Des milliers d'étudiants de l'IUC Douala et d'ailleurs l'utilisent déjà.",
-    "statSessions": "Sessions générées",
-    "statRating": "Note moyenne",
-    "statFields": "Filières couvertes",
-    "statSpeed": "Temps de génération moyen",
-    "testimonials": {
-      "marc": {
-        "text": "Je mettais des heures à ficher mes cours de droit. Avec Sphera, c'est fait pendant que je vais me chercher un café.",
-        "author": "Marc B.",
-        "role": "L3 Droit"
+    "title": "L'exigence académique au cœur de Sphera",
+    "subtitle": "Une méthodologie d'apprentissage active fondée sur les sciences cognitives et le respect strict de vos cours.",
+    "pillars": {
+      "fidelity": {
+        "title": "Fidélité stricte aux sources",
+        "desc": "L'IA analyse exclusivement les supports que vous importez. Vos fiches, flashcards et quiz sont directement ancrés dans vos cours réels, sans divagation."
       },
-      "ines": {
-        "text": "On a lancé un Sphera Live en amphi avant les examens, tout le monde était sur son téléphone à buzzer. L'ambiance et la mémorisation étaient folles !",
-        "author": "Inès M.",
-        "role": "L2 Informatique"
+      "activeRecall": {
+        "title": "Méthode Active Recall",
+        "desc": "Passer de la lecture passive à l'interrogation active stimule la mémorisation durable grâce aux quiz adaptatifs et répétitions espacées."
       },
-      "sarah": {
-        "text": "Les quiz générés m'ont littéralement sauvé pour mes partiels de biologie. C'est le meilleur outil d'apprentissage.",
-        "author": "Sarah N.",
-        "role": "Master 1"
+      "privacy": {
+        "title": "Confidentialité totale",
+        "desc": "Vos polycopiés, mémoires et notes restent votre propriété exclusive. Vos données ne sont jamais utilisées pour entraîner des modèles publics."
       },
-      "kevin": {
-        "text": "Corriger les annales de l'année dernière en un clic, c'est un cheat code absolu pour les révisions.",
-        "author": "Kevin T.",
-        "role": "Prépa Ingé"
+      "multidisciplinary": {
+        "title": "Adapté à toutes les filières",
+        "desc": "Médecine, Droit, Ingénierie, Économie, Informatique... Sphera synthétise vos cours les plus denses pour optimiser votre temps de révision."
       }
+    },
+    "banner": {
+      "title": "Conçu par des étudiants, pour des étudiants",
+      "desc": "Connecté à l'écosystème CampusSphere pour vous accompagner tout au long de votre parcours universitaire.",
+      "cta": "Commencer gratuitement"
     }
   },
   "faq": {

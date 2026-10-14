@@ -27,7 +27,7 @@ export default function AnnaleDetail() {
         setAnnale(annaleData)
         if (annaleData.qa_history) setChatHistory(annaleData.qa_history)
       })
-      .catch(() => navigate('/dashboard'))
+      .catch(() => navigate('/app'))
       .finally(() => setLoading(false))
   }, [id, navigate])
 
@@ -84,7 +84,7 @@ export default function AnnaleDetail() {
   return (
     <div style={{ padding: '2rem 1.25rem 4rem', maxWidth: 860, margin: '0 auto' }}>
       <div className="animate-in" style={{ marginBottom: '2rem' }}>
-        <button onClick={() => navigate('/dashboard')} className="btn btn-ghost btn-sm" style={{ marginBottom: '0.75rem' }}>
+        <button onClick={() => navigate('/app')} className="btn btn-ghost btn-sm" style={{ marginBottom: '0.75rem' }}>
           {t('annaleDetail.backToDashboard')}
         </button>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>

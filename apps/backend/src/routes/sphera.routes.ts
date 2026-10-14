@@ -1499,6 +1499,124 @@ spheraRouter.delete("/threads/:threadId/", async (req, res) => {
 });
 
 /**
+ * PATCH /threads/<threadId>/
+ * Renames a chat thread.
+ */
+spheraRouter.patch("/threads/:threadId/", async (req, res) => {
+  const me = currentUser(req);
+  const threadId = idParam(req, "threadId");
+  const { title } = z.object({ title: z.string().trim().min(1).max(120) }).parse(req.body ?? {});
+  const thread = await prisma.chatThread.findFirst({
+    where: { id: threadId, ownerId: me.id },
+  });
+  if (!thread) throw notFound("Fil de discussion introuvable.");
+
+  const updated = await prisma.chatThread.update({
+    where: { id: thread.id },
+    data: { title },
+  });
+  ok(res, updated);
+});
+
+/**
+ * GET /chat/threads/
+ * Lists all standalone chat threads (free chat without document).
+ */
+spheraRouter.get("/chat/threads/", async (req, res) => {
+  const me = currentUser(req);
+  const threads = await prisma.chatThread.findMany({
+    where: {
+      ownerId: me.id,
+      session: {
+        sourceFilename: { in: ["Discussion libre", "Chat libre", ""] },
+        resourceId: null,
+        sphereFileId: null,
+      },
+    },
+    include: {
+      messages: { orderBy: { createdAt: "asc" } },
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+  list(res, threads);
+});
+
+/**
+ * POST /chat/threads/
+ * Creates a standalone chat thread (free chat). If `question` is passed, generates first answer.
+ */
+spheraRouter.post("/chat/threads/", async (req, res) => {
+  const me = currentUser(req);
+  const { title, question } = z
+    .object({
+      title: z.string().trim().optional(),
+      question: z.string().trim().optional(),
+    })
+    .parse(req.body ?? {});
+
+  // Create an unattached study session for standalone chat
+  const session = await prisma.studySession.create({
+    data: {
+      ownerId: me.id,
+      sourceFilename: "Discussion libre",
+      extractedText: "",
+      toolTypes: [],
+    },
+  });
+
+  const threadTitle =
+    title ||
+    (question
+      ? question.length > 40
+        ? question.slice(0, 40) + "…"
+        : question
+      : "Nouvelle discussion");
+
+  const thread = await prisma.chatThread.create({
+    data: {
+      sessionId: session.id,
+      ownerId: me.id,
+      title: threadTitle,
+    },
+    include: {
+      messages: true,
+    },
+  });
+
+  if (question) {
+    const answer = await generateQaAnswer("", question, me.id, []);
+    await prisma.chatMessage.create({
+      data: { threadId: thread.id, role: "user", content: question },
+    });
+    await prisma.chatMessage.create({
+      data: { threadId: thread.id, role: "assistant", content: answer },
+    });
+  }
+
+  const threadWithMessages = await prisma.chatThread.findUnique({
+    where: { id: thread.id },
+    include: { messages: { orderBy: { createdAt: "asc" } } },
+  });
+
+  created(res, threadWithMessages);
+});
+
+/**
+ * GET /chat/threads/<threadId>/
+ * Fetches a single standalone chat thread with its messages.
+ */
+spheraRouter.get("/chat/threads/:threadId/", async (req, res) => {
+  const me = currentUser(req);
+  const threadId = idParam(req, "threadId");
+  const thread = await prisma.chatThread.findFirst({
+    where: { id: threadId, ownerId: me.id },
+    include: { messages: { orderBy: { createdAt: "asc" } } },
+  });
+  if (!thread) throw notFound("Discussion introuvable.");
+  ok(res, thread);
+});
+
+/**
  * GET /sessions/<id>/suggestions/ — generated once, then served from the row.
  *
  * A session whose source text is gone returns [] rather than erroring; the client

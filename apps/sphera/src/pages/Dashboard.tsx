@@ -1,10 +1,31 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { FileText, Calendar, ArrowRight, NotePencil as FilePenLine, ShareNetwork as Share2, Trash as Trash2, BookOpen, Exam } from "@phosphor-icons/react";
+import {
+  FileText,
+  Calendar,
+  ArrowRight,
+  NotePencil as FilePenLine,
+  ShareNetwork as Share2,
+  Trash as Trash2,
+  BookOpen,
+  Exam,
+  UploadSimple,
+  ClipboardText,
+  ArrowUp,
+  Sparkle,
+  Spinner as Loader2
+} from "@phosphor-icons/react";
 import { useSpheraAuth } from '../contexts/SpheraAuthContext'
-import { getSessions, getAnnales, deleteSession, deleteAnnale, shareSession, shareAnnale } from '../services/spheraApi'
-import { UploadZone } from '../components/app/UploadZone'
+import {
+  getSessions,
+  getAnnales,
+  deleteSession,
+  deleteAnnale,
+  shareSession,
+  shareAnnale,
+  createStandaloneChatThread
+} from '../services/spheraApi'
 import { setPendingUploadFile } from '../store/fileStore'
 import { QuotaIndicator } from '../components/app/QuotaIndicator'
 import { PasteTextModal } from '../components/app/PasteTextModal'
@@ -18,9 +39,13 @@ export default function Dashboard() {
   const { user } = useSpheraAuth()
   const navigate = useNavigate()
   
-  // Upload State
+  // Upload & Chat State
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState<string | null>(null)
   const [isPasteModalOpen, setIsPasteModalOpen] = useState(false)
+  const [chatPrompt, setChatPrompt] = useState('')
+  const [isStartingChat, setIsStartingChat] = useState(false)
+  const [isDraggingFile, setIsDraggingFile] = useState(false)
 
   // Quick Action Modals State
   const [itemToDelete, setItemToDelete] = useState<{ id: string | number; type: 'session' | 'annale'; title: string } | null>(null)
@@ -97,50 +122,148 @@ export default function Dashboard() {
     }
   }
 
+  const handleChatSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+    const trimmed = chatPrompt.trim()
+    if (!trimmed || isStartingChat) return
+    setIsStartingChat(true)
+    try {
+      const res = await createStandaloneChatThread({ question: trimmed })
+      const threadId = res?.data?.id
+      if (threadId) {
+        navigate(`/chat/${threadId}`)
+      } else {
+        navigate('/chat', { state: { initialQuestion: trimmed } })
+      }
+    } catch (err) {
+      console.error('Erreur création discussion:', err)
+      navigate('/chat', { state: { initialQuestion: trimmed } })
+    } finally {
+      setIsStartingChat(false)
+    }
+  }
+
   return (
     <div className="flex flex-col h-full overflow-y-auto pb-12">
       <main className="flex-1 w-full max-w-5xl mx-auto py-8 px-0 sm:px-4">
         
         {/* Welcome Area */}
-        <div className="text-center mb-10 mt-10 px-4 sm:px-0">
+        <div className="text-center mb-8 mt-6 px-4 sm:px-0">
           <h1 className="font-display text-3xl sm:text-4xl font-bold text-white mb-2">
-            {t('dashboard.welcome', { name: user?.first_name || user?.username || 'Spherian' })}
+            Salut {user?.first_name || user?.username || 'Spherian'}, prêt à apprendre ?
           </h1>
-          <p className="text-sphera-text-muted">{t('dashboard.subtitle1')}</p>
-          <div className="flex justify-center mt-4">
+          <p className="text-sphera-text-muted text-sm sm:text-base max-w-xl mx-auto">
+            Génère des fiches & quiz à partir de tes cours, ou échange directement avec ton tuteur IA.
+          </p>
+          <div className="flex justify-center mt-3">
             <QuotaIndicator />
           </div>
         </div>
 
-        {/* Upload Area (Simplified) */}
-        <div className="max-w-2xl mx-auto mb-16 px-4 sm:px-0">
-          <div className="bg-sphera-surface-2 border border-sphera-border rounded-2xl p-6 shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-sphera-green to-transparent opacity-50" />
-            <UploadZone 
-              onFileSelect={handleFileSelect} 
-              selectedFile={null} 
-            />
+        {/* ─── Action Cards (Télécharger / Coller) ─────────────── */}
+        <div className="max-w-2xl mx-auto mb-4 px-4 sm:px-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            
+            {/* Card 1: Télécharger */}
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => {
+                e.preventDefault()
+                setIsDraggingFile(true)
+              }}
+              onDragLeave={() => setIsDraggingFile(false)}
+              onDrop={(e) => {
+                e.preventDefault()
+                setIsDraggingFile(false)
+                const f = e.dataTransfer.files?.[0]
+                if (f) handleFileSelect(f)
+              }}
+              className={`relative bg-sphera-surface-2 border rounded-2xl p-5 transition-all cursor-pointer group flex flex-col justify-between overflow-hidden shadow-sm hover:shadow-lg ${
+                isDraggingFile
+                  ? 'border-sphera-green bg-sphera-green/5 ring-2 ring-sphera-green/20'
+                  : 'border-sphera-border hover:border-sphera-green/40 hover:bg-sphera-surface'
+              }`}
+            >
+              {/* Popular Badge */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 rounded-xl bg-sphera-surface border border-sphera-border group-hover:border-sphera-green/40 flex items-center justify-center text-sphera-green transition-all shadow-sm">
+                  <UploadSimple className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                </div>
+                <span className="text-[10px] font-bold text-sphera-green bg-sphera-green/10 border border-sphera-green/25 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                  Populaire
+                </span>
+              </div>
 
-            {/* Divider with "OU" */}
-            <div className="relative my-4 flex items-center justify-center">
-              <div className="border-t border-sphera-border w-full" />
-              <span className="bg-sphera-surface-2 px-3 text-xs text-sphera-text-muted uppercase tracking-wider font-semibold">
-                {t('dashboard.or')}
-              </span>
-              <div className="border-t border-sphera-border w-full" />
+              <div>
+                <h3 className="text-sm font-semibold text-white group-hover:text-sphera-green transition-colors mb-0.5">
+                  Télécharger
+                </h3>
+                <p className="text-xs text-sphera-text-muted">
+                  PDF, DOCX, TXT, MD ou Images
+                </p>
+              </div>
 
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                accept=".pdf,.docx,.txt,.md,.markdown,text/markdown,.png,.jpg,.jpeg,.webp"
+                onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
+              />
             </div>
 
-            {/* Paste Text Button */}
-            <button
-              type="button"
+            {/* Card 2: Coller */}
+            <div
               onClick={() => setIsPasteModalOpen(true)}
-              className="w-full py-3 px-4 rounded-xl bg-sphera-surface hover:bg-sphera-bg border border-sphera-border hover:border-sphera-green/50 text-white transition-all flex items-center justify-center gap-2.5 text-sm font-semibold group shadow-sm"
+              className="relative bg-sphera-surface-2 border border-sphera-border hover:border-sphera-green/40 hover:bg-sphera-surface rounded-2xl p-5 transition-all cursor-pointer group flex flex-col justify-between shadow-sm hover:shadow-lg"
             >
-              <FileText className="w-4 h-4 text-sphera-green group-hover:scale-110 transition-transform" />
-              <span>{t('dashboard.pasteOrWrite')}</span>
-            </button>
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 rounded-xl bg-sphera-surface border border-sphera-border group-hover:border-sphera-green/40 flex items-center justify-center text-sphera-green transition-all shadow-sm">
+                  <ClipboardText className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-semibold text-white group-hover:text-sphera-green transition-colors mb-0.5">
+                  Coller
+                </h3>
+                <p className="text-xs text-sphera-text-muted">
+                  Texte copié ou rédigé directement
+                </p>
+              </div>
+            </div>
+
           </div>
+        </div>
+
+        {/* ─── Universal Chat Input Bar ────────────────────────── */}
+        <div className="max-w-2xl mx-auto mb-14 px-4 sm:px-0">
+          <form
+            onSubmit={handleChatSubmit}
+            className="relative flex items-center gap-2 bg-sphera-surface-2 border border-sphera-border hover:border-sphera-border/90 focus-within:border-sphera-green/60 rounded-full p-2 pl-5 shadow-lg transition-all"
+          >
+            <input
+              type="text"
+              value={chatPrompt}
+              onChange={(e) => setChatPrompt(e.target.value)}
+              placeholder="Apprendre quoi que ce soit ou poser une question..."
+              disabled={isStartingChat}
+              className="flex-1 bg-transparent border-none text-sm text-white placeholder-sphera-text-muted outline-none focus:ring-0 pr-2"
+            />
+            <button
+              type="submit"
+              disabled={!chatPrompt.trim() || isStartingChat}
+              className="w-9 h-9 rounded-full bg-sphera-green hover:bg-sphera-green-hover disabled:opacity-40 disabled:hover:bg-sphera-green text-black flex items-center justify-center shrink-0 shadow-md active:scale-95 transition-all cursor-pointer"
+              title="Poser la question à Sphera"
+            >
+              {isStartingChat ? (
+                <Loader2 className="w-4 h-4 animate-spin text-black" />
+              ) : (
+                <ArrowUp className="w-4 h-4 font-bold" />
+              )}
+            </button>
+          </form>
         </div>
 
         {/* Paste Text Modal */}
