@@ -3,6 +3,7 @@ import * as Dialog from '@radix-ui/react-dialog'
 import { useNavigate } from 'react-router-dom'
 import { MagnifyingGlass as Search, X, FileText, Brain as BrainCircuit, NotePencil as FilePenLine, Lightning as Zap, Calendar, ArrowRight, Stack as SquareStack } from "@phosphor-icons/react";
 import { useTranslation } from 'react-i18next'
+import { encodeHashId } from '../../lib/hashids'
 
 interface SearchModalProps {
   isOpen: boolean
@@ -56,10 +57,13 @@ export function SearchModal({ isOpen, onClose, items }: SearchModalProps) {
     onClose()
     if (item.roomCode) {
       navigate(`/live/host?code=${item.roomCode}&reset=1`)
-    } else if (item._type === 'annale') {
-      navigate(`/annales/${item.id}`)
     } else {
-      navigate(`/sessions/${item.id}`)
+      const hashId = encodeHashId(item.id) || item.id
+      if (item._type === 'annale') {
+        navigate(`/annales/${hashId}`)
+      } else {
+        navigate(`/sessions/${hashId}`)
+      }
     }
   }
 

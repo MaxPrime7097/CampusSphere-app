@@ -5,10 +5,13 @@ import { getAnnale, askQuestion } from '../services/spheraApi'
 import { normalizeAiResponse } from '../utils/normalizeAiResponse'
 import { ChatCircle as MessageSquare, Robot as Bot, User, PaperPlaneTilt as Send, ArrowUp, Download, Spinner as Loader2 } from "@phosphor-icons/react";
 import { useDownloadPDF } from '../hooks/useDownloadPDF'
+import { parseSlugId } from '../lib/hashids'
 
 export default function AnnaleDetail() {
   const { t, i18n } = useTranslation('study')
-  const { id } = useParams<{ id: string }>()
+  const { id: rawId } = useParams<{ id: string }>()
+  const parsedId = parseSlugId(rawId)
+  const id = parsedId ? String(parsedId) : rawId
   const navigate = useNavigate()
   const [annale, setAnnale] = useState<any>(null)
   const [loading, setLoading] = useState(true)

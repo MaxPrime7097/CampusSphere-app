@@ -8,6 +8,7 @@ import { QuotaIndicator } from '../app/QuotaIndicator'
 import { SearchModal } from '../app/SearchModal'
 import { SpheraSettingsModal } from '../settings/SpheraSettingsModal'
 import { useSessionsQuery, useAnnalesQuery, useQuizSessionsQuery, invalidateSpheraSessions } from '../../hooks/useSpheraQueries'
+import { encodeHashId } from '../../lib/hashids'
 
 interface UserProfileMenuProps {
   isOpen: boolean
@@ -372,12 +373,15 @@ export function SidebarLayout() {
                     </Link>
                   )
                 } else {
+                  const encodedId = encodeHashId(session.id) || session.id
+                  const sessionPath = `/${session._type === 'annale' ? 'annales' : 'sessions'}/${encodedId}`
+                  const isActive = location.pathname === sessionPath || location.pathname === `/${session._type === 'annale' ? 'annales' : 'sessions'}/${session.id}`
                   return (
                     <Link
                       key={`sess-m-${session._type}-${session.id}`}
-                      to={`/${session._type === 'annale' ? 'annales' : 'sessions'}/${session.id}`}
+                      to={sessionPath}
                       className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors truncate ${
-                        location.pathname === `/${session._type === 'annale' ? 'annales' : 'sessions'}/${session.id}`
+                        isActive
                           ? 'bg-sphera-surface text-white'
                           : 'text-sphera-text-muted hover:bg-sphera-surface hover:text-white'
                       }`}
@@ -630,12 +634,15 @@ export function SidebarLayout() {
                         </Link>
                       )
                     } else {
+                      const encodedId = encodeHashId(session.id) || session.id
+                      const sessionPath = `/${session._type === 'annale' ? 'annales' : 'sessions'}/${encodedId}`
+                      const isActive = location.pathname === sessionPath || location.pathname === `/${session._type === 'annale' ? 'annales' : 'sessions'}/${session.id}`
                       return (
                         <Link
                           key={`${session._type}-${session.id}`}
-                          to={`/${session._type === 'annale' ? 'annales' : 'sessions'}/${session.id}`}
+                          to={sessionPath}
                           className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs transition-colors truncate ${
-                            location.pathname === `/${session._type === 'annale' ? 'annales' : 'sessions'}/${session.id}`
+                            isActive
                               ? 'bg-sphera-surface text-white'
                               : 'text-sphera-text-muted hover:bg-sphera-surface hover:text-white'
                           }`}
@@ -662,12 +669,14 @@ export function SidebarLayout() {
                 ))
               ) : (
                 recentSessions.slice(0, 10).map(session => {
+                  const encodedId = encodeHashId(session.id) || session.id
+                  const sessionPath = `/${session._type === 'annale' ? 'annales' : 'sessions'}/${encodedId}`
                   const isCurrent = isLivePage
                     ? location.search.includes(`code=${session.roomCode}`)
-                    : location.pathname === `/${session._type === 'annale' ? 'annales' : 'sessions'}/${session.id}`
+                    : (location.pathname === sessionPath || location.pathname === `/${session._type === 'annale' ? 'annales' : 'sessions'}/${session.id}`)
                   const link = isLivePage
                     ? `/live/host?code=${session.roomCode}&reset=1`
-                    : `/${session._type === 'annale' ? 'annales' : 'sessions'}/${session.id}`
+                    : sessionPath
                   const title = session.resource_title || session.title || session.source_filename || session.source_title || t('sidebar.docItem', { id: session.id })
 
                   return (
