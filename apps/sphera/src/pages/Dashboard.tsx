@@ -32,6 +32,7 @@ import { PasteTextModal } from '../components/app/PasteTextModal'
 import { DeleteConfirmModal } from '../components/app/DeleteConfirmModal'
 import { ShareModal } from '../components/app/ShareModal'
 import { useSessionsQuery, useAnnalesQuery, invalidateSpheraSessions } from '../hooks/useSpheraQueries'
+import { encodeHashId } from '../lib/hashids'
 
 // Force Vite HMR reload
 export default function Dashboard() {
@@ -111,7 +112,8 @@ export default function Dashboard() {
         if (isAnnale) await shareAnnale(item.id)
         else await shareSession(item.id)
       }
-      const sharePath = isAnnale ? `/annales/${item.id}` : `/sessions/${item.id}`
+      const hashId = encodeHashId(item.id) || item.id
+      const sharePath = isAnnale ? `/annales/${hashId}` : `/sessions/${hashId}`
       const url = `${window.location.origin}${sharePath}`
       setShareModalData({
         url,
@@ -131,7 +133,7 @@ export default function Dashboard() {
       const res = await createStandaloneChatThread({ question: trimmed })
       const threadId = res?.data?.id
       if (threadId) {
-        navigate(`/chat/${threadId}`)
+        navigate(`/chat/${encodeHashId(threadId) || threadId}`)
       } else {
         navigate('/chat', { state: { initialQuestion: trimmed } })
       }
@@ -336,7 +338,7 @@ export default function Dashboard() {
                 {displayedItems.map(item => (
                   <Link 
                     key={item.id} 
-                    to={`/${activeTab === 'annales' ? 'annales' : 'sessions'}/${item.id}`}
+                    to={`/${activeTab === 'annales' ? 'annales' : 'sessions'}/${encodeHashId(item.id) || item.id}`}
                     className="sphera-card p-5 group hover:-translate-y-1 hover:border-sphera-border/80 hover:bg-sphera-surface-2 transition-all block rounded-none sm:rounded-2xl border-x-0 sm:border-x"
                   >
                     <div className="flex items-center justify-between mb-4">
