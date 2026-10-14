@@ -58,6 +58,7 @@ import {
   type SerializableStudySession,
 } from "../serializers/sphera.js";
 import { httpCache, autoInvalidate } from "../lib/cache.js";
+import { parseSlugId } from "../lib/hashids.js";
 
 export const spheraRouter: Router = Router();
 spheraRouter.use(autoInvalidate("sphera"));
@@ -65,7 +66,8 @@ spheraRouter.use(autoInvalidate("sphera"));
 // ── Shared helpers ──────────────────────────────────────────────────────────
 
 function idParam(req: Request, name = "id"): number {
-  const id = Number(req.params[name]);
+  const raw = req.params[name];
+  const id = parseSlugId(raw) ?? Number(raw);
   if (!Number.isInteger(id) || id < 1) throw notFound("Session introuvable.");
   return id;
 }
