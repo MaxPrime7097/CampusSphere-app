@@ -10,10 +10,11 @@ interface AiMessageItemProps {
   onEdit?: (index: number, newQuestion: string) => void
   onRegenerate?: (index: number) => void
   onCreateNote?: (question: string, answer: string) => void
+  onSelectSuggestion?: (question: string) => void
   disabled?: boolean
 }
 
-export function AiMessageItem({ question, answer, index, onEdit, onRegenerate, onCreateNote, disabled }: AiMessageItemProps) {
+export function AiMessageItem({ question, answer, index, onEdit, onRegenerate, onCreateNote, onSelectSuggestion, disabled }: AiMessageItemProps) {
   const { t } = useTranslation('study')
   const [copied, setCopied] = useState(false)
   const [noteSaved, setNoteSaved] = useState(false)
@@ -21,12 +22,25 @@ export function AiMessageItem({ question, answer, index, onEdit, onRegenerate, o
   const [isEditing, setIsEditing] = useState(false)
   const [editText, setEditText] = useState(question)
 
+  const { cleanAnswer, suggestions } = React.useMemo(() => {
+    if (!answer) return { cleanAnswer: '', suggestions: [] as string[] }
+    const match = answer.match(/\[SUGGESTIONS\]([\s\S]*?)\[\/SUGGESTIONS\]/i)
+    if (!match) return { cleanAnswer: answer, suggestions: [] as string[] }
+    const clean = answer.replace(/\[SUGGESTIONS\][\s\S]*?\[\/SUGGESTIONS\]/i, '').trim()
+    const list = match[1]
+      .split('\n')
+      .map(s => s.trim().replace(/^[-*•\d.]+\s*/, ''))
+      .filter(Boolean)
+      .slice(0, 2)
+    return { cleanAnswer: clean, suggestions: list }
+  }, [answer])
+
   useEffect(() => {
     setEditText(question)
   }, [question])
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(answer)
+    navigator.clipboard.writeText(cleanAnswer)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -120,7 +134,7 @@ export function AiMessageItem({ question, answer, index, onEdit, onRegenerate, o
           </div>
         ) : (
           <div className="w-full space-y-3">
-            <MarkdownRenderer content={answer} className="text-white/95" />
+            <MarkdownRenderer content={cleanAnswer} className="text-white/95" />
 
             {/* Action Toolbar: Copy, Thumbs Up, Thumbs Down */}
             <div className="flex items-center gap-1 pt-2 text-sphera-text-muted">
@@ -180,7 +194,7 @@ export function AiMessageItem({ question, answer, index, onEdit, onRegenerate, o
                   <button
                     type="button"
                     onClick={() => {
-                      onCreateNote(question, answer)
+                      onCreateNote(question, cleanAnswer)
                       setNoteSaved(true)
                       setTimeout(() => setNoteSaved(false), 2200)
                     }}
@@ -219,6 +233,23 @@ export function AiMessageItem({ question, answer, index, onEdit, onRegenerate, o
                 </>
               )}
             </div>
+
+            {/* Rebound Follow-up Suggestions (No icons, clean text pills) */}
+            {suggestions.length > 0 && onSelectSuggestion && !isLoading && (
+              <div className="mt-4 pt-3 border-t border-sphera-border/50 flex flex-col gap-2">
+                {suggestions.map((sug, sIdx) => (
+                  <button
+                    key={sIdx}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => onSelectSuggestion(sug)}
+                    className="w-full text-left px-3.5 py-2.5 rounded-xl border border-sphera-border/70 hover:border-sphera-green/50 bg-sphera-surface-2/40 hover:bg-sphera-surface-2 text-xs text-sphera-text hover:text-white transition-all cursor-pointer leading-relaxed disabled:opacity-50"
+                  >
+                    <span>{sug}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
