@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import { Plus, SignOut as LogOut, FileText, ArrowSquareOut as ExternalLink, Lightning as Zap, NotePencil as FilePenLine, CaretLeft as ChevronLeft, CaretRight as ChevronRight, MagnifyingGlass as Search, X, List as Menu, Sliders, Question as HelpCircle, DotsThreeVertical as MoreVertical, BookOpen, Exam } from "@phosphor-icons/react";
+import { Plus, SignOut as LogOut, FileText, ArrowSquareOut as ExternalLink, Lightning as Zap, NotePencil as FilePenLine, CaretLeft as ChevronLeft, CaretRight as ChevronRight, MagnifyingGlass as Search, X, List as Menu, Sliders, Question as HelpCircle, DotsThreeVertical as MoreVertical, BookOpen, Exam, ChatCircle } from "@phosphor-icons/react";
 import { useTranslation } from 'react-i18next'
 import { useSpheraAuth } from '../../contexts/SpheraAuthContext'
 import { getMyQuizSessions, getSessions, getAnnales } from '../../services/spheraApi'
@@ -238,7 +238,7 @@ export function SidebarLayout() {
       {/* Mobile Top Header (Screens < md) - Hidden inside sessions so we don't have 3 stacked headers */}
       {!isSessionPage && (
         <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-sphera-surface-2 border-b border-sphera-border px-4 flex items-center justify-between z-30">
-          <Link to="/dashboard" className="flex items-center gap-2.5">
+          <Link to="/app" className="flex items-center gap-2.5">
             <img src="/sphera_logo.svg" alt="Sphera logo" className="h-7 w-auto dark-logo" />
             <img src="/sphera_logo.svg" alt="Sphera logo" className="h-7 w-auto light-logo" />
             <span className="font-display font-bold text-lg text-white tracking-tight">Sphera</span>
@@ -270,7 +270,7 @@ export function SidebarLayout() {
       >
         {/* Mobile Drawer Header */}
         <div className="h-16 flex items-center justify-between px-5 border-b border-sphera-border shrink-0">
-          <Link to="/dashboard" className="flex items-center gap-2.5">
+          <Link to="/app" className="flex items-center gap-2.5">
             <img src="/sphera_logo.svg" alt="Sphera logo" className="h-7 w-auto dark-logo" />
             <img src="/sphera_logo.svg" alt="Sphera logo" className="h-7 w-auto light-logo" />
             <span className="font-display font-bold text-lg text-white tracking-tight">Sphera</span>
@@ -306,7 +306,7 @@ export function SidebarLayout() {
           </button>
 
           <Link
-            to="/dashboard"
+            to="/app"
             className="flex items-center gap-2.5 w-full px-3.5 py-2.5 bg-sphera-green text-black font-semibold rounded-xl text-xs hover:bg-sphera-green-hover transition-colors shadow-sm"
           >
             <Plus className="w-4 h-4 shrink-0" />
@@ -318,6 +318,14 @@ export function SidebarLayout() {
           >
             <Zap className="w-4 h-4 shrink-0" />
             <span>{t('sidebar.spheraLive')}</span>
+          </Link>
+          <Link
+            to="/chat"
+            onClick={() => setMobileDrawerOpen(false)}
+            className="flex items-center gap-2.5 w-full px-3.5 py-2 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-white transition-all text-xs font-medium"
+          >
+            <ChatCircle className="w-4 h-4 shrink-0 text-sphera-green" />
+            <span>Discussion IA</span>
           </Link>
           <QuotaIndicator className="w-full justify-center" align="left" />
         </div>
@@ -438,7 +446,7 @@ export function SidebarLayout() {
         {/* Header (Logo + Collapse Button) */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-sphera-border shrink-0">
           {!isCollapsed ? (
-            <Link to="/dashboard" className="flex items-center gap-3 min-w-0">
+            <Link to="/app" className="flex items-center gap-3 min-w-0">
               <img src="/sphera_logo.svg" alt="Sphera logo" className="h-8 w-auto shrink-0 dark-logo" />
               <img src="/sphera_logo.svg" alt="Sphera logo" className="h-8 w-auto shrink-0 light-logo" />
               <div className="flex flex-col min-w-0">
@@ -451,7 +459,7 @@ export function SidebarLayout() {
               </div>
             </Link>
           ) : (
-            <Link to="/dashboard" className="mx-auto" title="Sphera Dashboard">
+            <Link to="/app" className="mx-auto" title="Sphera App">
               <img src="/sphera_logo.svg" alt="Sphera logo" className="h-7 w-auto dark-logo" />
               <img src="/sphera_logo.svg" alt="Sphera logo" className="h-7 w-auto light-logo" />
             </Link>
@@ -506,7 +514,7 @@ export function SidebarLayout() {
 
               {/* Action Buttons (Compact height) */}
               <Link
-                to="/dashboard"
+                to="/app"
                 className="flex items-center justify-center gap-2 w-full px-3 py-2 bg-sphera-green text-black font-semibold rounded-xl text-xs hover:bg-sphera-green-hover transition-colors shadow-sm"
               >
                 <Plus className="w-4 h-4 shrink-0" />
@@ -519,6 +527,18 @@ export function SidebarLayout() {
               >
                 <Zap className="w-3.5 h-3.5 shrink-0" />
                 <span>{t('sidebar.spheraLive')}</span>
+              </Link>
+
+              <Link
+                to="/chat"
+                className={`flex items-center justify-center gap-2 w-full px-3 py-1.5 rounded-lg border transition-all text-xs font-medium ${
+                  location.pathname.startsWith('/chat')
+                    ? 'border-sphera-green/50 bg-sphera-surface text-white'
+                    : 'border-sphera-border text-sphera-text-muted hover:text-white hover:bg-sphera-surface'
+                }`}
+              >
+                <ChatCircle className="w-3.5 h-3.5 shrink-0 text-sphera-green" />
+                <span>Discussion IA</span>
               </Link>
 
               <QuotaIndicator className="w-full" align="left" />
@@ -535,11 +555,23 @@ export function SidebarLayout() {
               </button>
 
               <Link
-                to="/dashboard"
+                to="/app"
                 className="w-10 h-10 rounded-xl bg-sphera-green hover:bg-sphera-green-hover text-black flex items-center justify-center shadow-sm transition-colors"
                 title={t('sidebar.generateSession')}
               >
                 <Plus className="w-5 h-5" />
+              </Link>
+
+              <Link
+                to="/chat"
+                className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-colors ${
+                  location.pathname.startsWith('/chat')
+                    ? 'border-sphera-green/50 bg-sphera-surface text-white'
+                    : 'border-sphera-border text-sphera-text-muted hover:text-white hover:bg-sphera-surface'
+                }`}
+                title="Discussion IA"
+              >
+                <ChatCircle className="w-4 h-4 text-sphera-green" />
               </Link>
 
               <Link

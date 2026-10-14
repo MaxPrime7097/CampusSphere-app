@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { LanguageSwitcher } from '@cs/i18n'
@@ -6,6 +6,7 @@ import { loginWithCS, getCurrentUser, setTokens, clearTokens } from '../services
 import { useSpheraAuth } from '../contexts/SpheraAuthContext'
 import { SpheraAuthSidePanel } from '../components/auth/SpheraAuthSidePanel'
 import { openSsoPopup } from '@cs/sso'
+import { GoogleIcon } from '../components/icons/GoogleIcon'
 import { Eye, EyeSlash as EyeOff, Spinner as Loader2, Envelope as Mail, Lock, CheckCircle as CheckCircle2, WarningCircle as AlertCircle } from "@phosphor-icons/react";
 
 export default function Login() {
@@ -16,6 +17,7 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [ssoLoading, setSsoLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
 
   const navigate = useNavigate()
@@ -23,6 +25,26 @@ export default function Login() {
   const { setUser } = useSpheraAuth()
 
   const isRegisteredSuccess = new URLSearchParams(location.search).get('registered') === 'true'
+
+  // ─── Catch direct OAuth return with tokens in URL ─────────────
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const ssoAccess = params.get('sso_access')
+    const ssoRefresh = params.get('sso_refresh')
+
+    if (ssoAccess) {
+      setTokens(ssoAccess, ssoRefresh || '')
+      getCurrentUser()
+        .then(u => {
+          setUser(u)
+          navigate('/app', { replace: true })
+        })
+        .catch(err => {
+          clearTokens()
+          setError(err?.message || t('login.ssoError'))
+        })
+    }
+  }, [location.search, navigate, setUser, t])
 
   // ─── Classic email/password login ─────────────────────────────
   const handleLogin = async (e: React.FormEvent) => {
@@ -35,7 +57,7 @@ export default function Login() {
       if (rememberMe) {
         localStorage.setItem("sphera_remember_email", email)
       }
-      navigate('/dashboard')
+      navigate('/app')
     } catch (err: any) {
       setError(err.message || t('login.defaultError'))
     } finally {
@@ -43,11 +65,10 @@ export default function Login() {
     }
   }
 
-  // ─── Popup SSO (Google-style) ─────────────────────────────────
+  // ─── Popup SSO (CampusSphere) ─────────────────────────────────
   const handleCampusSphereSSO = async () => {
     setSsoLoading(true)
     setError(null)
-
     try {
       const tokens = await openSsoPopup()
       if (!tokens) {
@@ -58,7 +79,7 @@ export default function Login() {
       setTokens(tokens.access, tokens.refresh || "")
       const user = await getCurrentUser()
       setUser(user)
-      navigate("/dashboard")
+      navigate("/app")
     } catch (err: any) {
       clearTokens()
       const msg = err?.message || ''
@@ -70,6 +91,36 @@ export default function Login() {
         setError(msg || t('login.ssoError'))
       }
       setSsoLoading(false)
+    }
+  }
+
+  // ─── Popup SSO (Google Direct) ────────────────────────────────
+  const handleGoogleSSO = async () => {
+    setGoogleLoading(true)
+    setError(null)
+
+    try {
+      const tokens = await openSsoPopup({ provider: 'google' })
+      if (!tokens) {
+        setGoogleLoading(false)
+        return
+      }
+
+      setTokens(tokens.access, tokens.refresh || "")
+      const user = await getCurrentUser()
+      setUser(user)
+      navigate("/app")
+    } catch (err: any) {
+      clearTokens()
+      const msg = err?.message || ''
+      if (msg.includes('blocked') || msg.includes('popup')) {
+        setError("La fenêtre de connexion Google a été bloquée par votre navigateur. Veuillez autoriser les fenêtres pop-up.")
+      } else if (msg.includes('cancelled') || msg.includes('closed')) {
+        setError("La tentative de connexion Google a été interrompue.")
+      } else {
+        setError(msg || t('login.ssoError'))
+      }
+      setGoogleLoading(false)
     }
   }
 
@@ -121,13 +172,13 @@ export default function Login() {
             </div>
           )}
 
-          {/* ── CampusSphere SSO Button (Primary Action) ─────────── */}
-          <div className="space-y-2 mb-6">
+          {/* ── SSO Buttons (CampusSphere & Google) ─────────── */}
+          <div className="space-y-2.5 mb-6">
             <button
               type="button"
               onClick={handleCampusSphereSSO}
-              disabled={ssoLoading}
-              className="w-full bg-white hover:bg-slate-100 text-slate-900 font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-3 transition-all shadow-md hover:shadow-lg active:scale-[0.99] disabled:opacity-70 group border border-slate-200"
+              disabled={ssoLoading || googleLoading}
+              className="w-full bg-white hover:bg-slate-100 text-slate-900 font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-3 transition-all shadow-md hover:shadow-lg active:scale-[0.99] disabled:opacity-70 group border border-slate-200 cursor-pointer"
             >
               {ssoLoading ? (
                 <>
@@ -141,7 +192,27 @@ export default function Login() {
                 </>
               )}
             </button>
-            <p className="text-center text-[11px] text-sphera-text-muted">
+
+            <button
+              type="button"
+              onClick={handleGoogleSSO}
+              disabled={googleLoading || ssoLoading}
+              className="w-full bg-sphera-surface hover:bg-sphera-surface-2 text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-3 transition-all shadow-md hover:shadow-lg active:scale-[0.99] disabled:opacity-70 group border border-sphera-border cursor-pointer"
+            >
+              {googleLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin text-white" />
+                  <span className="text-xs sm:text-sm font-semibold">{t('login.googleLoading', { defaultValue: 'Connexion Google en cours…' })}</span>
+                </>
+              ) : (
+                <>
+                  <GoogleIcon className="h-5 w-5 shrink-0 group-hover:scale-105 transition-transform" />
+                  <span className="text-xs sm:text-sm font-semibold">{t('login.googleButton', { defaultValue: 'Continuer avec Google' })}</span>
+                </>
+              )}
+            </button>
+
+            <p className="text-center text-[11px] text-sphera-text-muted pt-1">
               {t('login.ssoHint')}
             </p>
           </div>

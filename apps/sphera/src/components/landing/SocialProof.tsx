@@ -1,83 +1,104 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { ShieldCheck, Brain, LockKey, GraduationCap, ArrowRight, Sparkle } from "@phosphor-icons/react";
 
 export function SocialProof() {
   const { t } = useTranslation('landing')
 
-  const testimonials = [
+  const pillars = [
     {
-      text: t('socialProof.testimonials.marc.text'),
-      author: t('socialProof.testimonials.marc.author'),
-      role: t('socialProof.testimonials.marc.role')
+      icon: ShieldCheck,
+      color: 'text-emerald-400',
+      bg: 'bg-emerald-500/10 border-emerald-500/20',
+      title: t('socialProof.pillars.fidelity.title'),
+      desc: t('socialProof.pillars.fidelity.desc')
     },
     {
-      text: t('socialProof.testimonials.ines.text'),
-      author: t('socialProof.testimonials.ines.author'),
-      role: t('socialProof.testimonials.ines.role')
+      icon: Brain,
+      color: 'text-sphera-green',
+      bg: 'bg-sphera-green/10 border-sphera-green/20',
+      title: t('socialProof.pillars.activeRecall.title'),
+      desc: t('socialProof.pillars.activeRecall.desc')
     },
     {
-      text: t('socialProof.testimonials.sarah.text'),
-      author: t('socialProof.testimonials.sarah.author'),
-      role: t('socialProof.testimonials.sarah.role')
+      icon: LockKey,
+      color: 'text-cyan-400',
+      bg: 'bg-cyan-500/10 border-cyan-500/20',
+      title: t('socialProof.pillars.privacy.title'),
+      desc: t('socialProof.pillars.privacy.desc')
     },
     {
-      text: t('socialProof.testimonials.kevin.text'),
-      author: t('socialProof.testimonials.kevin.author'),
-      role: t('socialProof.testimonials.kevin.role')
+      icon: GraduationCap,
+      color: 'text-amber-400',
+      bg: 'bg-amber-500/10 border-amber-500/20',
+      title: t('socialProof.pillars.multidisciplinary.title'),
+      desc: t('socialProof.pillars.multidisciplinary.desc')
     }
   ]
 
   return (
-    <section className="py-24 bg-sphera-surface relative overflow-hidden border-t border-sphera-border">
-      <div className="container mx-auto max-w-5xl px-4 text-center">
+    <section className="py-20 md:py-28 bg-sphera-surface relative overflow-hidden border-t border-sphera-border">
+      {/* Subtle background glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-[radial-gradient(circle,rgba(34,197,94,0.04)_0%,transparent_70%)] blur-3xl pointer-events-none -z-0" />
+
+      <div className="container mx-auto max-w-5xl px-4 text-center relative z-10">
         
-        <div className="inline-flex flex-col items-center mb-12">
-          <h2 className="font-display text-3xl font-bold text-white mb-4">
+        <div className="inline-flex flex-col items-center mb-14">
+          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full border border-sphera-border bg-sphera-surface-2 text-xs text-sphera-green font-medium mb-3">
+            <Sparkle className="w-3.5 h-3.5" />
+            <span>Excellence académique</span>
+          </div>
+          <h2 className="font-display text-3xl md:text-4xl font-bold text-white mb-4">
             {t('socialProof.title')}
           </h2>
-          <p className="text-sphera-text-muted text-lg">
+          <p className="text-sphera-text-muted text-base md:text-lg max-w-2xl leading-relaxed">
             {t('socialProof.subtitle')}
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16">
-          <div className="p-6 rounded-2xl bg-sphera-bg border border-sphera-border text-center">
-            <div className="font-display text-3xl font-bold text-sphera-green mb-1">12K+</div>
-            <div className="text-sm text-sphera-text-muted">{t('socialProof.statSessions')}</div>
-          </div>
-          <div className="p-6 rounded-2xl bg-sphera-bg border border-sphera-border text-center">
-            <div className="font-display text-3xl font-bold text-sphera-green mb-1">4.8/5</div>
-            <div className="text-sm text-sphera-text-muted">{t('socialProof.statRating')}</div>
-          </div>
-          <div className="p-6 rounded-2xl bg-sphera-bg border border-sphera-border text-center">
-            <div className="font-display text-3xl font-bold text-sphera-green mb-1">50+</div>
-            <div className="text-sm text-sphera-text-muted">{t('socialProof.statFields')}</div>
-          </div>
-          <div className="p-6 rounded-2xl bg-sphera-bg border border-sphera-border text-center">
-            <div className="font-display text-3xl font-bold text-sphera-green mb-1">30s</div>
-            <div className="text-sm text-sphera-text-muted">{t('socialProof.statSpeed')}</div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
-          {testimonials.map((quote, idx) => (
-            <div 
-              key={idx} 
-              className="p-6 rounded-2xl bg-sphera-surface-2 border border-sphera-border hover:border-sphera-green/40 transition-all relative group"
-            >
-              <div className="text-4xl text-sphera-green/20 absolute top-4 right-4 font-serif">"</div>
-              <p className="text-white text-sm leading-relaxed mb-6 relative z-10">"{quote.text}"</p>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-sphera-border group-hover:border-sphera-green/40 transition-colors flex items-center justify-center text-xs font-bold text-white">
-                  {quote.author[0]}
-                </div>
+        {/* 4 Value Pillars */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-left mb-12">
+          {pillars.map((pillar, idx) => {
+            const Icon = pillar.icon
+            return (
+              <div 
+                key={idx} 
+                className="p-6 rounded-2xl bg-sphera-bg border border-sphera-border hover:border-sphera-border/80 transition-all group flex flex-col justify-between"
+              >
                 <div>
-                  <div className="text-sm font-semibold text-white">{quote.author}</div>
-                  <div className="text-xs text-sphera-text-muted">{quote.role}</div>
+                  <div className={`w-11 h-11 rounded-xl border flex items-center justify-center mb-4 ${pillar.bg}`}>
+                    <Icon className={`w-5 h-5 ${pillar.color}`} />
+                  </div>
+                  <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-sphera-green transition-colors">
+                    {pillar.title}
+                  </h3>
+                  <p className="text-sm text-sphera-text-muted leading-relaxed">
+                    {pillar.desc}
+                  </p>
                 </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
+        </div>
+
+        {/* Bottom Banner */}
+        <div className="p-8 rounded-2xl bg-gradient-to-r from-sphera-surface-2 via-sphera-bg to-sphera-surface-2 border border-sphera-border flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left">
+          <div>
+            <h4 className="text-base font-semibold text-white mb-1">
+              {t('socialProof.banner.title')}
+            </h4>
+            <p className="text-xs sm:text-sm text-sphera-text-muted">
+              {t('socialProof.banner.desc')}
+            </p>
+          </div>
+          <Link
+            to="/app"
+            className="sphera-primary-btn px-6 py-2.5 text-sm font-semibold shrink-0 inline-flex items-center gap-2 group"
+          >
+            <span>{t('socialProof.banner.cta')}</span>
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </Link>
         </div>
 
       </div>

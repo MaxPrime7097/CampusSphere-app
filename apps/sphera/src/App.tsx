@@ -12,6 +12,7 @@ import Dashboard from './pages/Dashboard';
 import SessionDetail from './pages/SessionDetail';
 import AnnaleDetail from './pages/AnnaleDetail';
 import CreateSession from './pages/CreateSession';
+import ChatPage from './pages/ChatPage';
 import Pricing from './pages/Pricing';
 import Blogs from './pages/Blogs';
 import BlogDetail from './pages/BlogDetail';
@@ -60,7 +61,7 @@ function SSOCatcher() {
           })
           .catch(() => { /* token invalid — leave boot() to handle it */ })
           .finally(() => {
-            navigate('/dashboard', { replace: true });
+            navigate('/app', { replace: true });
           });
       });
     }
@@ -137,13 +138,15 @@ export default function App() {
           <Route path="/mentions-legales" element={<Navigate to="/legal-notice" replace />} />
           <Route path="/terms-of-sale" element={<TermsOfSale />} />
           <Route path="/cgv" element={<Navigate to="/terms-of-sale" replace />} />
-          <Route path="/app" element={localStorage.getItem('sphera_access') ? <Navigate to="/dashboard" replace /> : <AppPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/result" element={<GuestResult />} />
           {/* Protected */}
           <Route element={<ProtectedRoute><SidebarLayout /></ProtectedRoute>}> 
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/app" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Navigate to="/app" replace />} />
+            <Route path="/chat" element={<ChatPage />} />
+            <Route path="/chat/:threadId" element={<ChatPage />} />
             <Route path="/create" element={<CreateSession />} />
             <Route path="/sessions/:id" element={<SessionDetail type="session" />} />
             <Route path="/annales/:id" element={<SessionDetail type="annale" />} />

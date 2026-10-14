@@ -4,6 +4,7 @@ export default {
     content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
+    "../../packages/i18n/src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
   	extend: {
