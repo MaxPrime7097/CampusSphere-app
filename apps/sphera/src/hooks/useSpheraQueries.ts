@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { getSessions, getAnnales, getMyQuizSessions, getQuota, getSession, getAnnale, type GenerationQuota } from '../services/spheraApi'
+import { getSessions, getAnnales, getMyQuizSessions, getQuota, getSession, getAnnale, getStandaloneChatThreads, type GenerationQuota } from '../services/spheraApi'
 import { getCached, setCached, getOngoingGenerations } from '../utils/sessionCache'
 import { queryClient } from '../lib/queryClient'
 
@@ -12,6 +12,7 @@ export const spheraKeys = {
   sessions: () => ['sphera', 'sessions'] as const,
   annales: () => ['sphera', 'annales'] as const,
   quizSessions: () => ['sphera', 'quiz_sessions'] as const,
+  chatThreads: () => ['sphera', 'chat_threads'] as const,
   quota: () => ['sphera', 'quota'] as const,
   detail: (id: string | number, type: 'session' | 'annale' = 'session') => ['sphera', 'detail', String(id), type] as const,
 }
@@ -63,6 +64,20 @@ export function useQuizSessionsQuery(enabled = true) {
     initialData: () => getCached<any[]>('quiz_sessions_list') || undefined,
     enabled,
     staleTime: 5 * 60 * 1000,
+  })
+}
+
+export function useChatThreadsQuery(enabled = true) {
+  return useQuery({
+    queryKey: spheraKeys.chatThreads(),
+    queryFn: async () => {
+      const res = await getStandaloneChatThreads()
+      const d = (res as any)?.data
+      const list = Array.isArray(d) ? d : Array.isArray(res) ? (res as any) : []
+      return list
+    },
+    enabled,
+    staleTime: 2 * 60 * 1000,
   })
 }
 
@@ -129,6 +144,7 @@ export function invalidateSpheraSessions() {
   queryClient.invalidateQueries({ queryKey: spheraKeys.sessions() })
   queryClient.invalidateQueries({ queryKey: spheraKeys.annales() })
   queryClient.invalidateQueries({ queryKey: spheraKeys.quizSessions() })
+  queryClient.invalidateQueries({ queryKey: spheraKeys.chatThreads() })
 }
 
 export function invalidateSpheraQuota() {

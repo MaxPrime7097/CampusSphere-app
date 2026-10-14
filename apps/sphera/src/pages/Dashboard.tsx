@@ -14,6 +14,7 @@ import {
   ClipboardText,
   ArrowUp,
   Sparkle,
+  ChatCircle,
   Spinner as Loader2
 } from "@phosphor-icons/react";
 import { useSpheraAuth } from '../contexts/SpheraAuthContext'
@@ -22,6 +23,7 @@ import {
   getAnnales,
   deleteSession,
   deleteAnnale,
+  deleteChatThread,
   shareSession,
   shareAnnale,
   createStandaloneChatThread
@@ -31,7 +33,7 @@ import { QuotaIndicator } from '../components/app/QuotaIndicator'
 import { PasteTextModal } from '../components/app/PasteTextModal'
 import { DeleteConfirmModal } from '../components/app/DeleteConfirmModal'
 import { ShareModal } from '../components/app/ShareModal'
-import { useSessionsQuery, useAnnalesQuery, invalidateSpheraSessions } from '../hooks/useSpheraQueries'
+import { useSessionsQuery, useAnnalesQuery, useChatThreadsQuery, invalidateSpheraSessions } from '../hooks/useSpheraQueries'
 import { encodeHashId } from '../lib/hashids'
 
 // Force Vite HMR reload
@@ -49,24 +51,49 @@ export default function Dashboard() {
   const [isDraggingFile, setIsDraggingFile] = useState(false)
 
   // Quick Action Modals State
-  const [itemToDelete, setItemToDelete] = useState<{ id: string | number; type: 'session' | 'annale'; title: string } | null>(null)
+  const [itemToDelete, setItemToDelete] = useState<{ id: string | number; type: 'session' | 'annale' | 'chat'; title: string } | null>(null)
   const [shareModalData, setShareModalData] = useState<{ url: string; title: string } | null>(null)
 
-  // Tabs State
-  const [activeTab, setActiveTab] = useState<'sessions' | 'annales' | 'live'>('sessions')
+  // Pagination for Récents (8 per page + view all toggle)
+  const [displayLimit, setDisplayLimit] = useState(8)
+  const [showAll, setShowAll] = useState(false)
 
-  // TanStack Query Sessions & Annales
+  // TanStack Query Sessions, Annales & Chats
   const { data: sessions = [], isLoading: isLoadingSessions } = useSessionsQuery()
   const { data: annales = [], isLoading: isLoadingAnnales } = useAnnalesQuery()
-  const loadingSessions = activeTab === 'annales' ? isLoadingAnnales : isLoadingSessions
-  const displayedItems = activeTab === 'annales' ? annales : sessions;
-  const showSkeleton = loadingSessions && displayedItems.length === 0;
+  const { data: chatThreads = [], isLoading: isLoadingChats } = useChatThreadsQuery()
 
-  const getItemIcon = (isAnnale: boolean) => {
-    if (isAnnale) {
+  const allItems = React.useMemo(() => {
+    const sess = (sessions || []).map((s: any) => ({ ...s, _type: 'session' }))
+    const ann = (annales || []).map((a: any) => ({ ...a, _type: 'annale' }))
+    const chats = (chatThreads || []).map((c: any) => ({ ...c, _type: 'chat' }))
+
+    return [...sess, ...ann, ...chats].sort((a, b) => {
+      const da = new Date(a.updatedAt || a.updated_at || a.created_at || a.createdAt || 0).getTime()
+      const db = new Date(b.updatedAt || b.updated_at || b.created_at || b.createdAt || 0).getTime()
+      return db - da
+    })
+  }, [sessions, annales, chatThreads])
+
+  const isLoadingAll = (isLoadingSessions || isLoadingAnnales || isLoadingChats)
+  const showSkeleton = isLoadingAll && allItems.length === 0
+  const displayedItems = showAll ? allItems : allItems.slice(0, displayLimit)
+
+  const getItemIcon = (type: string) => {
+    if (type === 'chat') {
+      return <ChatCircle className="w-5 h-5 text-sky-400" />
+    }
+    if (type === 'annale') {
       return <Exam className="w-5 h-5 text-orange-400" />
     }
     return <BookOpen className="w-5 h-5 text-sphera-green" />
+  }
+
+  const getItemPath = (item: any) => {
+    const hashId = encodeHashId(item.id) || item.id
+    if (item._type === 'chat') return `/chat/${hashId}`
+    if (item._type === 'annale') return `/annales/${hashId}`
+    return `/sessions/${hashId}`
   }
 
   const handleFileSelect = (f: File | null) => {
@@ -91,6 +118,8 @@ export default function Dashboard() {
     try {
       if (itemToDelete.type === 'annale') {
         await deleteAnnale(itemToDelete.id)
+      } else if (itemToDelete.type === 'chat') {
+        await deleteChatThread(itemToDelete.id)
       } else {
         await deleteSession(itemToDelete.id)
       }
@@ -106,18 +135,19 @@ export default function Dashboard() {
   const handleShareClick = async (e: React.MouseEvent, item: any) => {
     e.preventDefault()
     e.stopPropagation()
-    const isAnnale = activeTab === 'annales'
+    const isChat = item._type === 'chat'
+    const isAnnale = item._type === 'annale'
     try {
-      if (!item.is_shared) {
+      if (!isChat && !item.is_shared) {
         if (isAnnale) await shareAnnale(item.id)
         else await shareSession(item.id)
       }
       const hashId = encodeHashId(item.id) || item.id
-      const sharePath = isAnnale ? `/annales/${hashId}` : `/sessions/${hashId}`
+      const sharePath = isChat ? `/chat/${hashId}` : isAnnale ? `/annales/${hashId}` : `/sessions/${hashId}`
       const url = `${window.location.origin}${sharePath}`
       setShareModalData({
         url,
-        title: item.resource_title || (isAnnale ? 'Annale partagée' : 'Session partagée')
+        title: item.title || item.resource_title || (isChat ? 'Discussion partagée' : isAnnale ? 'Annale partagée' : 'Session partagée')
       })
     } catch (e) {
       console.error("Erreur partage:", e)
@@ -186,14 +216,11 @@ export default function Dashboard() {
                   : 'border-sphera-border hover:border-sphera-green/40 hover:bg-sphera-surface'
               }`}
             >
-              {/* Popular Badge */}
+              {/* Upload Card */}
               <div className="flex items-center justify-between mb-4">
                 <div className="w-10 h-10 rounded-xl bg-sphera-surface border border-sphera-border group-hover:border-sphera-green/40 flex items-center justify-center text-sphera-green transition-all shadow-sm">
                   <UploadSimple className="w-5 h-5 group-hover:scale-110 transition-transform" />
                 </div>
-                <span className="text-[10px] font-bold text-sphera-green bg-sphera-green/10 border border-sphera-green/25 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                  Populaire
-                </span>
               </div>
 
               <div>
@@ -249,7 +276,7 @@ export default function Dashboard() {
               type="text"
               value={chatPrompt}
               onChange={(e) => setChatPrompt(e.target.value)}
-              placeholder="Apprendre quoi que ce soit ou poser une question..."
+              placeholder="Demande n'importe quoi..."
               disabled={isStartingChat}
               className="flex-1 bg-transparent border-none text-sm text-white placeholder-sphera-text-muted outline-none focus:ring-0 pr-2"
             />
@@ -275,75 +302,75 @@ export default function Dashboard() {
           onConfirm={handlePasteConfirm}
         />
 
-        {/* Tabs */}
-        <div className="flex items-center w-full mb-8 border-b border-sphera-border px-4 sm:px-0">
-          <button
-            onClick={() => setActiveTab('sessions')}
-            className={`w-1/2 pb-3 text-sm font-medium transition-colors border-b-2 flex items-center justify-center gap-2 ${
-              activeTab === 'sessions' 
-                ? 'border-sphera-green text-sphera-green' 
-                : 'border-transparent text-sphera-text-muted hover:text-white'
-            }`}
-          >
-            <BookOpen className="w-4 h-4" /> {t('dashboard.tabs.sessions')}
-          </button>
-          <button
-            onClick={() => setActiveTab('annales')}
-            className={`w-1/2 pb-3 text-sm font-medium transition-colors border-b-2 flex items-center justify-center gap-2 ${
-              activeTab === 'annales' 
-                ? 'border-sphera-green text-sphera-green' 
-                : 'border-transparent text-sphera-text-muted hover:text-white'
-            }`}
-          >
-            <Exam className="w-4 h-4" /> {t('dashboard.tabs.annales')}
-          </button>
+        {/* Section Header: Récents + Voir tout */}
+        <div className="flex items-center justify-between mb-6 px-4 sm:px-0">
+          <div className="flex items-center gap-2">
+            <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">Récents</h2>
+            {allItems.length > 0 && (
+              <span className="text-xs text-sphera-text-muted">({allItems.length})</span>
+            )}
+          </div>
+          {allItems.length > 8 && (
+            <button
+              type="button"
+              onClick={() => setShowAll(prev => !prev)}
+              className="text-xs font-semibold text-sphera-green hover:underline cursor-pointer transition-colors"
+            >
+              {showAll ? 'Réduire' : 'Voir tout'}
+            </button>
+          )}
         </div>
 
-        {/* Grid content */}
+        {/* Unified Récents Grid */}
         <>
-            {showSkeleton ? (
-              <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-1 sm:gap-4">
-                {[1, 2, 3, 4, 5, 6].map(idx => (
-                  <div key={idx} className="sphera-card p-5 block rounded-none sm:rounded-2xl border-x-0 sm:border-x animate-pulse">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="w-10 h-10 rounded-lg bg-sphera-surface-2" />
-                      <div className="flex gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-sphera-surface-2" />
-                        <div className="w-7 h-7 rounded-lg bg-sphera-surface-2" />
-                      </div>
-                    </div>
-                    <div className="h-4 bg-sphera-surface-2 rounded w-3/4 mb-2" />
-                    <div className="h-3 bg-sphera-surface-2/60 rounded w-1/2 mb-4" />
-                    <div className="flex items-center justify-between pt-2 border-t border-sphera-border/40">
-                      <div className="h-3 bg-sphera-surface-2 rounded w-20" />
-                      <div className="h-4 bg-sphera-surface-2 rounded w-16" />
+          {showSkeleton ? (
+            <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-1 sm:gap-4">
+              {[1, 2, 3, 4, 5, 6].map(idx => (
+                <div key={idx} className="sphera-card p-5 block rounded-none sm:rounded-2xl border-x-0 sm:border-x animate-pulse">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-10 h-10 rounded-lg bg-sphera-surface-2" />
+                    <div className="flex gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-sphera-surface-2" />
+                      <div className="w-7 h-7 rounded-lg bg-sphera-surface-2" />
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : displayedItems.length === 0 ? (
-              <div className="text-center p-12 bg-sphera-surface-2 rounded-2xl border border-sphera-border mx-4 sm:mx-0">
-                {activeTab === 'annales' ? (
-                  <Exam className="w-12 h-12 text-orange-400/50 mx-auto mb-4" />
-                ) : (
-                  <BookOpen className="w-12 h-12 text-sphera-green/50 mx-auto mb-4" />
-                )}
-                <p className="text-white font-medium mb-1">
-                  {t('dashboard.empty.title', { type: activeTab === 'annales' ? t('dashboard.annaleType') : t('dashboard.sessionType') })}
-                </p>
-                <p className="text-sm text-sphera-text-muted">{t('dashboard.empty.desc')}</p>
-              </div>
-            ) : (
-              <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-1 sm:gap-4">
-                {displayedItems.map(item => (
+                  <div className="h-4 bg-sphera-surface-2 rounded w-3/4 mb-2" />
+                  <div className="h-3 bg-sphera-surface-2/60 rounded w-1/2 mb-4" />
+                  <div className="flex items-center justify-between pt-2 border-t border-sphera-border/40">
+                    <div className="h-3 bg-sphera-surface-2 rounded w-20" />
+                    <div className="h-4 bg-sphera-surface-2 rounded w-16" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : displayedItems.length === 0 ? (
+            <div className="text-center p-12 bg-sphera-surface-2 rounded-2xl border border-sphera-border mx-4 sm:mx-0">
+              <BookOpen className="w-12 h-12 text-sphera-green/50 mx-auto mb-4" />
+              <p className="text-white font-medium mb-1">Aucune activité récente</p>
+              <p className="text-sm text-sphera-text-muted">Importez un cours, une annale ou posez une question pour commencer vos révisions !</p>
+            </div>
+          ) : (
+            <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-1 sm:gap-4">
+              {displayedItems.map(item => {
+                const itemTitle = item.title || item.resource_title || (item._type === 'chat' ? 'Discussion' : `Session #${item.id}`)
+                const itemSubtitle = item._type === 'chat'
+                  ? (item.messages?.length ? `${item.messages.length} message(s)` : 'Discussion libre')
+                  : `Extrait de ${item.source_filename || 'document'}`
+                const itemBadge = item._type === 'chat'
+                  ? 'Chat'
+                  : item._type === 'annale'
+                    ? 'Annale'
+                    : (item.tool_types?.join(', ') || 'Cours')
+
+                return (
                   <Link 
-                    key={item.id} 
-                    to={`/${activeTab === 'annales' ? 'annales' : 'sessions'}/${encodeHashId(item.id) || item.id}`}
+                    key={`${item._type}-${item.id}`} 
+                    to={getItemPath(item)}
                     className="sphera-card p-5 group hover:-translate-y-1 hover:border-sphera-border/80 hover:bg-sphera-surface-2 transition-all block rounded-none sm:rounded-2xl border-x-0 sm:border-x"
                   >
                     <div className="flex items-center justify-between mb-4">
                       <div className="w-10 h-10 rounded-lg bg-sphera-bg border border-sphera-border flex items-center justify-center">
-                        {getItemIcon(activeTab === 'annales')}
+                        {getItemIcon(item._type)}
                       </div>
                       <div className="flex items-center gap-1">
                         <button
@@ -361,8 +388,8 @@ export default function Dashboard() {
                             e.stopPropagation();
                             setItemToDelete({
                               id: item.id,
-                              type: activeTab === 'annales' ? 'annale' : 'session',
-                              title: item.resource_title || `Session #${item.id}`
+                              type: item._type,
+                              title: itemTitle
                             });
                           }}
                           className="p-1.5 rounded-lg text-sphera-text-muted hover:text-red-400 hover:bg-red-500/10 transition-colors"
@@ -373,23 +400,43 @@ export default function Dashboard() {
                         <ArrowRight className="w-4 h-4 text-sphera-text-muted opacity-0 group-hover:opacity-100 transition-opacity ml-1" />
                       </div>
                     </div>
-                    <h3 className="text-white font-medium mb-1 line-clamp-1">{item.resource_title || `Session #${item.id}`}</h3>
-                    <p className="text-xs text-sphera-text-muted mb-4 line-clamp-1">Extrait de {item.source_filename || 'document inconnu'}</p>
+                    <h3 className="text-white font-medium mb-1 line-clamp-1">{itemTitle}</h3>
+                    <p className="text-xs text-sphera-text-muted mb-4 line-clamp-1">{itemSubtitle}</p>
                     
                     <div className="flex items-center justify-between text-xs text-sphera-text-muted">
                       <span className="flex items-center gap-2">
                         <Calendar className="w-3.5 h-3.5" />
-                        {new Date(item.created_at).toLocaleDateString('fr-FR')}
+                        {new Date(item.updatedAt || item.updated_at || item.created_at || item.createdAt || Date.now()).toLocaleDateString('fr-FR')}
                       </span>
-                      <span className="px-2 py-0.5 rounded bg-sphera-surface border border-sphera-border text-[10px] uppercase tracking-wider">
-                        {item.tool_types?.join(', ') || 'Document'}
+                      <span className={`px-2 py-0.5 rounded text-[10px] uppercase tracking-wider border ${
+                        item._type === 'chat'
+                          ? 'bg-sky-500/10 border-sky-500/30 text-sky-400'
+                          : item._type === 'annale'
+                            ? 'bg-orange-500/10 border-orange-500/30 text-orange-400'
+                            : 'bg-sphera-surface border-sphera-border text-sphera-text-muted'
+                      }`}>
+                        {itemBadge}
                       </span>
                     </div>
                   </Link>
-                ))}
-              </div>
-            )}
-          </>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Button Voir plus (+8) */}
+          {!showAll && allItems.length > displayLimit && (
+            <div className="flex justify-center mt-8 px-4 sm:px-0">
+              <button
+                type="button"
+                onClick={() => setDisplayLimit(prev => prev + 8)}
+                className="px-6 py-2.5 rounded-full border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-white text-xs font-semibold transition-all shadow-sm hover:border-sphera-green/40 cursor-pointer"
+              >
+                Voir plus (+{Math.min(8, allItems.length - displayLimit)})
+              </button>
+            </div>
+          )}
+        </>
       </main>
 
       <DeleteConfirmModal
@@ -398,7 +445,7 @@ export default function Dashboard() {
           if (!open) setItemToDelete(null)
         }}
         onConfirm={handleDeleteConfirm}
-        title={itemToDelete?.type === 'annale' ? "Supprimer l'annale ?" : "Supprimer la session ?"}
+        title={itemToDelete?.type === 'annale' ? "Supprimer l'annale ?" : itemToDelete?.type === 'chat' ? "Supprimer la discussion ?" : "Supprimer la session ?"}
         description="Cette action est irréversible. Toutes les données associées seront définitivement supprimées."
       />
 
