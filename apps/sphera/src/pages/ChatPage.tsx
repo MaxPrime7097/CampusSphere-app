@@ -14,6 +14,7 @@ import {
   BookOpen,
   Lightbulb,
   GraduationCap,
+  List as Menu,
   Spinner as Loader2
 } from '@phosphor-icons/react'
 import { useTranslation } from 'react-i18next'
@@ -385,12 +386,22 @@ export default function ChatPage() {
       {/* ─── TOP HEADER ────────────────────────────────────────── */}
       <header className="h-14 border-b border-sphera-border px-3 sm:px-6 flex items-center justify-between bg-sphera-surface-2/80 backdrop-blur-md shrink-0 z-10">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('sphera:open-mobile-sidebar'))}
+            className="md:hidden p-1.5 -ml-1 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors shrink-0"
+            title="Ouvrir le menu"
+            aria-label="Ouvrir le menu"
+          >
+            <Menu className="w-4 h-4" />
+          </button>
+
           <Link
             to="/app"
             className="flex items-center gap-1.5 text-xs font-medium text-sphera-text-muted hover:text-white transition-colors shrink-0"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Accueil</span>
+            <span className="hidden xs:inline">Accueil</span>
           </Link>
 
           <span className="text-sphera-border text-sm">/</span>
@@ -474,135 +485,132 @@ export default function ChatPage() {
         </div>
       </header>
 
-      {/* ─── MAIN CONVERSATION AREA ────────────────────────────── */}
-      <main className="flex-1 flex flex-col h-full min-w-0 bg-sphera-bg relative">
-        {/* Messages Scroll Area */}
-        <div
-          ref={messagesScrollRef}
-          onScroll={handleMessagesScroll}
-          className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 pb-28 sm:pb-32 custom-scrollbar min-h-0"
-        >
-          <div className="max-w-3xl mx-auto w-full">
-            {isLoadingMessages ? (
-              <div className="flex flex-col items-center justify-center py-20 gap-3 text-sphera-text-muted">
-                <Loader2 className="w-8 h-8 animate-spin text-sphera-green" />
-                <p className="text-xs">Chargement de la discussion…</p>
+      {/* ─── MESSAGES SCROLL AREA ────────────────────────────── */}
+      <main
+        ref={messagesScrollRef}
+        onScroll={handleMessagesScroll}
+        className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 custom-scrollbar min-h-0 relative select-text"
+      >
+        <div className="max-w-3xl mx-auto w-full">
+          {isLoadingMessages ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-3 text-sphera-text-muted">
+              <Loader2 className="w-8 h-8 animate-spin text-sphera-green" />
+              <p className="text-xs">Chargement de la discussion…</p>
+            </div>
+          ) : messages.length === 0 ? (
+            /* Empty Hero State */
+            <div className="flex flex-col items-center justify-center py-10 sm:py-16 text-center animate-in fade-in duration-500">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-sphera-surface-2 border border-sphera-border/70 flex items-center justify-center mb-5 shadow-xl relative group">
+                <div className="absolute inset-0 bg-sphera-green/10 rounded-2xl blur-xl group-hover:bg-sphera-green/20 transition-all" />
+                <img src="/sphera_logo.svg" alt="Sphera" className="w-8 h-8 sm:w-10 sm:h-10 relative z-10" />
               </div>
-            ) : messages.length === 0 ? (
-              /* Empty Hero State */
-              <div className="flex flex-col items-center justify-center py-10 sm:py-16 text-center animate-in fade-in duration-500">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-sphera-surface-2 border border-sphera-border/70 flex items-center justify-center mb-5 shadow-xl relative group">
-                  <div className="absolute inset-0 bg-sphera-green/10 rounded-2xl blur-xl group-hover:bg-sphera-green/20 transition-all" />
-                  <img src="/sphera_logo.svg" alt="Sphera" className="w-8 h-8 sm:w-10 sm:h-10 relative z-10" />
-                </div>
 
-                <h2 className="text-xl sm:text-3xl font-bold font-display text-white mb-2 px-2">
-                  Que souhaites-tu explorer ?
-                </h2>
-                <p className="text-xs sm:text-sm text-sphera-text-muted max-w-md mb-8 px-4">
-                  Sphera est ton tuteur académique universel. Pose une question libre, résous un problème ou approfondis un sujet de cours.
-                </p>
+              <h2 className="text-xl sm:text-3xl font-bold font-display text-white mb-2 px-2">
+                Que souhaites-tu explorer ?
+              </h2>
+              <p className="text-xs sm:text-sm text-sphera-text-muted max-w-md mb-8 px-4">
+                Sphera est ton tuteur académique universel. Pose une question libre, résous un problème ou approfondis un sujet de cours.
+              </p>
 
-                {/* Starter Suggestions Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 w-full max-w-2xl text-left px-2 sm:px-0">
-                  {STARTER_SUGGESTIONS.map((item, idx) => {
-                    const Icon = item.icon
-                    return (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => handleSendMessageWithText(item.prompt)}
-                        className="p-3.5 sm:p-4 rounded-xl border border-sphera-border bg-sphera-surface/60 hover:bg-sphera-surface-2 hover:border-sphera-green/40 transition-all text-left flex flex-col gap-1.5 group cursor-pointer shadow-sm hover:shadow-md"
-                      >
-                        <div className="flex items-center gap-2 text-sphera-green">
-                          <Icon className="w-4 h-4 shrink-0" />
-                          <span className="text-xs font-semibold text-white group-hover:text-sphera-green transition-colors">
-                            {item.title}
-                          </span>
-                        </div>
-                        <p className="text-xs text-sphera-text-muted line-clamp-2 leading-relaxed">
-                          {item.prompt}
-                        </p>
-                      </button>
-                    )
-                  })}
-                </div>
+              {/* Starter Suggestions Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 w-full max-w-2xl text-left px-2 sm:px-0">
+                {STARTER_SUGGESTIONS.map((item, idx) => {
+                  const Icon = item.icon
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleSendMessageWithText(item.prompt)}
+                      className="p-3.5 sm:p-4 rounded-xl border border-sphera-border bg-sphera-surface/60 hover:bg-sphera-surface-2 hover:border-sphera-green/40 transition-all text-left flex flex-col gap-1.5 group cursor-pointer shadow-sm hover:shadow-md"
+                    >
+                      <div className="flex items-center gap-2 text-sphera-green">
+                        <Icon className="w-4 h-4 shrink-0" />
+                        <span className="text-xs font-semibold text-white group-hover:text-sphera-green transition-colors">
+                          {item.title}
+                        </span>
+                      </div>
+                      <p className="text-xs text-sphera-text-muted line-clamp-2 leading-relaxed">
+                        {item.prompt}
+                      </p>
+                    </button>
+                  )
+                })}
               </div>
-            ) : (
-              /* Messages List */
-              <div className="flex flex-col gap-4 pb-6">
-                {messages.map((msg, i) => (
-                  <AiMessageItem
-                    key={i}
-                    index={i}
-                    question={msg.question}
-                    answer={msg.answer}
-                    onEdit={handleEditMessage}
-                    onRegenerate={handleRegenerate}
-                    onCreateNote={handleCreateNote}
-                    onSelectSuggestion={(sug) => handleSendMessageWithText(sug)}
-                    disabled={isSending}
-                  />
-                ))}
-                <div ref={chatBottomRef} />
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* ─── FLOATING ROUNDED INPUT PILL (Matches Accueil/Dashboard) ─── */}
-        <div className="absolute bottom-0 inset-x-0 pb-3 sm:pb-4 pt-10 px-3 sm:px-4 bg-gradient-to-t from-sphera-bg via-sphera-bg/95 to-transparent pointer-events-none z-20">
-          <div className="max-w-2xl mx-auto w-full pointer-events-auto">
-            {/* Floating scroll to bottom button */}
-            {showScrollBottom && (
-              <div className="flex justify-center mb-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                <button
-                  type="button"
-                  onClick={() => scrollToBottom('smooth')}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sphera-surface-2/95 border border-sphera-border text-white text-xs font-medium shadow-2xl hover:border-sphera-green/50 hover:bg-sphera-surface backdrop-blur-md transition-all cursor-pointer"
-                  title="Revenir aux derniers messages"
-                >
-                  <ArrowDown className="w-3.5 h-3.5 text-sphera-green" />
-                  <span>Derniers messages</span>
-                </button>
-              </div>
-            )}
-
-            <form
-              onSubmit={handleSendMessage}
-              className="relative flex items-center gap-2 bg-sphera-surface-2/95 hover:bg-sphera-surface-2 border border-sphera-border hover:border-sphera-border/90 focus-within:border-sphera-green/60 rounded-full p-1.5 pl-4 sm:pl-5 shadow-2xl backdrop-blur-xl transition-all"
-            >
-              <textarea
-                ref={textareaRef}
-                value={inputMessage}
-                onChange={handleTextareaChange}
-                onKeyDown={handleKeyDown}
-                rows={1}
-                placeholder="Demande n'importe quoi..."
-                disabled={isSending}
-                className="flex-1 bg-transparent border-0 text-xs sm:text-sm text-white placeholder-sphera-text-muted outline-none focus:ring-0 resize-none max-h-32 py-1.5 leading-relaxed"
-              />
-
-              <button
-                type="submit"
-                disabled={!inputMessage.trim() || isSending}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-sphera-green hover:bg-sphera-green-hover disabled:opacity-40 text-black flex items-center justify-center shrink-0 transition-transform active:scale-95 shadow-md shadow-sphera-green/20 cursor-pointer"
-                title="Envoyer la question"
-              >
-                {isSending ? (
-                  <Loader2 className="w-4 h-4 animate-spin text-black" />
-                ) : (
-                  <ArrowUp className="w-4 h-4 font-bold" />
-                )}
-              </button>
-            </form>
-
-            <p className="text-center text-[10px] text-sphera-text-muted/60 mt-1.5 block">
-              Sphera peut faire des erreurs. Vérifie les informations avec tes cours.
-            </p>
-          </div>
+            </div>
+          ) : (
+            /* Messages List */
+            <div className="flex flex-col gap-4 pb-6">
+              {messages.map((msg, i) => (
+                <AiMessageItem
+                  key={i}
+                  index={i}
+                  question={msg.question}
+                  answer={msg.answer}
+                  onEdit={handleEditMessage}
+                  onRegenerate={handleRegenerate}
+                  onCreateNote={handleCreateNote}
+                  onSelectSuggestion={(sug) => handleSendMessageWithText(sug)}
+                  disabled={isSending}
+                />
+              ))}
+              <div ref={chatBottomRef} />
+            </div>
+          )}
         </div>
       </main>
+
+      {/* ─── PINNED BOTTOM INPUT BAR (Rounded Pill) ─── */}
+      <footer className="shrink-0 w-full px-3 sm:px-4 pb-3 sm:pb-4 pt-2 bg-sphera-bg relative z-20">
+        <div className="max-w-2xl mx-auto w-full relative">
+          {/* Floating scroll to bottom button */}
+          {showScrollBottom && (
+            <div className="absolute -top-11 inset-x-0 flex justify-center pointer-events-none animate-in fade-in slide-in-from-bottom-2 duration-200">
+              <button
+                type="button"
+                onClick={() => scrollToBottom('smooth')}
+                className="pointer-events-auto flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sphera-surface-2/95 border border-sphera-border text-white text-xs font-medium shadow-2xl hover:border-sphera-green/50 hover:bg-sphera-surface backdrop-blur-md transition-all cursor-pointer"
+                title="Revenir aux derniers messages"
+              >
+                <ArrowDown className="w-3.5 h-3.5 text-sphera-green" />
+                <span>Derniers messages</span>
+              </button>
+            </div>
+          )}
+
+          <form
+            onSubmit={handleSendMessage}
+            className="relative flex items-center gap-2 bg-sphera-surface-2/95 hover:bg-sphera-surface-2 border border-sphera-border hover:border-sphera-border/90 focus-within:border-sphera-green/60 rounded-full p-1.5 pl-4 sm:pl-5 shadow-2xl backdrop-blur-xl transition-all"
+          >
+            <textarea
+              ref={textareaRef}
+              value={inputMessage}
+              onChange={handleTextareaChange}
+              onKeyDown={handleKeyDown}
+              rows={1}
+              placeholder="Demande n'importe quoi..."
+              disabled={isSending}
+              className="flex-1 bg-transparent border-0 text-xs sm:text-sm text-white placeholder-sphera-text-muted outline-none focus:ring-0 resize-none max-h-32 py-1.5 leading-relaxed"
+            />
+
+            <button
+              type="submit"
+              disabled={!inputMessage.trim() || isSending}
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-sphera-green hover:bg-sphera-green-hover disabled:opacity-40 text-black flex items-center justify-center shrink-0 transition-transform active:scale-95 shadow-md shadow-sphera-green/20 cursor-pointer"
+              title="Envoyer la question"
+            >
+              {isSending ? (
+                <Loader2 className="w-4 h-4 animate-spin text-black" />
+              ) : (
+                <ArrowUp className="w-4 h-4 font-bold" />
+              )}
+            </button>
+          </form>
+
+          <p className="text-center text-[10px] text-sphera-text-muted/60 mt-1.5 block">
+            Sphera peut faire des erreurs. Vérifie les informations avec tes cours.
+          </p>
+        </div>
+      </footer>
     </div>
   )
 }
