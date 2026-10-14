@@ -469,7 +469,11 @@ const getStatsHandler = async (req: Request, res: Response) => {
 
   const [studySessions, annaleSessions, allUserStudySessions] = await Promise.all([
     prisma.studySession.findMany({
-      where: { ownerId: me.id, createdAt: { gte: past90Days } },
+      where: {
+        ownerId: me.id,
+        createdAt: { gte: past90Days },
+        sourceFilename: { notIn: ["Discussion libre", "__sphera_standalone_chat__"] },
+      },
       select: { createdAt: true, toolTypes: true },
     }),
     prisma.annaleSession.findMany({
@@ -477,7 +481,10 @@ const getStatsHandler = async (req: Request, res: Response) => {
       select: { createdAt: true },
     }),
     prisma.studySession.findMany({
-      where: { ownerId: me.id },
+      where: {
+        ownerId: me.id,
+        sourceFilename: { notIn: ["Discussion libre", "__sphera_standalone_chat__"] },
+      },
       select: { createdAt: true, toolTypes: true },
     }),
   ]);
@@ -1026,7 +1033,18 @@ spheraRouter.post("/generate/audio", checkGenerationQuota, singleUpload("file", 
 
 spheraRouter.get("/sessions/", httpCache({ namespace: "sphera", ttlSeconds: 60 }), async (req, res) => {
   const me = currentUser(req);
-  const where: Prisma.StudySessionWhereInput = { ownerId: me.id };
+  const where: Prisma.StudySessionWhereInput = {
+    ownerId: me.id,
+    sourceFilename: {
+      notIn: ["Discussion libre", "__sphera_standalone_chat__"],
+    },
+    NOT: {
+      AND: [
+        { toolTypes: { equals: [] } },
+        { extractedText: "" },
+      ],
+    },
+  };
 
   const toolType = String(req.query.tool_type ?? "").trim().toLowerCase();
   if (toolType && isToolType(toolType)) where.toolTypes = { has: toPrismaTool(toolType) };
@@ -1556,15 +1574,30 @@ spheraRouter.post("/chat/threads/", async (req, res) => {
     })
     .parse(req.body ?? {});
 
-  // Create an unattached study session for standalone chat
-  const session = await prisma.studySession.create({
-    data: {
+  // Find or reuse a single container study session for standalone chats of this user
+  let session = await prisma.studySession.findFirst({
+    where: {
       ownerId: me.id,
-      sourceFilename: "Discussion libre",
-      extractedText: "",
-      toolTypes: [],
+      sourceFilename: { in: ["__sphera_standalone_chat__", "Discussion libre"] },
     },
   });
+
+  if (!session) {
+    session = await prisma.studySession.create({
+      data: {
+        ownerId: me.id,
+        sourceFilename: "__sphera_standalone_chat__",
+        extractedText: "",
+        toolTypes: [],
+      },
+    });
+  } else if (session.sourceFilename === "Discussion libre") {
+    // Migrate legacy container session name
+    await prisma.studySession.update({
+      where: { id: session.id },
+      data: { sourceFilename: "__sphera_standalone_chat__" },
+    });
+  }
 
   const threadTitle =
     title ||
