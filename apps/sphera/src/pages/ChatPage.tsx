@@ -5,6 +5,7 @@ import {
   Plus,
   ArrowLeft,
   ArrowUp,
+  ArrowDown,
   Trash,
   PencilSimple,
   Check,
@@ -78,6 +79,29 @@ export default function ChatPage() {
 
   const chatBottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const messagesScrollRef = useRef<HTMLDivElement>(null)
+  const [showScrollBottom, setShowScrollBottom] = useState(false)
+
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    if (messagesScrollRef.current) {
+      messagesScrollRef.current.scrollTo({
+        top: messagesScrollRef.current.scrollHeight,
+        behavior,
+      })
+    } else {
+      chatBottomRef.current?.scrollIntoView({ behavior })
+    }
+  }
+
+  const handleMessagesScroll = () => {
+    if (!messagesScrollRef.current) {
+      if (showScrollBottom) setShowScrollBottom(false)
+      return
+    }
+    const { scrollTop, scrollHeight, clientHeight } = messagesScrollRef.current
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight
+    setShowScrollBottom(distanceFromBottom > 120)
+  }
 
   const formatThreadMessages = (rawMsgs: any[] = []) => {
     const formatted: Array<{ question: string; answer: string; id?: number }> = []
@@ -149,9 +173,11 @@ export default function ChatPage() {
     }
   }, [activeThreadId])
 
-  // Scroll to bottom on new messages
+  // Scroll to bottom on new messages (unless user scrolled up)
   useEffect(() => {
-    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (!showScrollBottom) {
+      scrollToBottom('smooth')
+    }
   }, [messages, isSending])
 
   // ─── 4. Send Message / Create Thread ─────────────────────────
@@ -451,7 +477,11 @@ export default function ChatPage() {
       {/* ─── MAIN CONVERSATION AREA ────────────────────────────── */}
       <main className="flex-1 flex flex-col h-full min-w-0 bg-sphera-bg relative">
         {/* Messages Scroll Area */}
-        <div className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 pb-28 sm:pb-32 custom-scrollbar min-h-0">
+        <div
+          ref={messagesScrollRef}
+          onScroll={handleMessagesScroll}
+          className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 pb-28 sm:pb-32 custom-scrollbar min-h-0"
+        >
           <div className="max-w-3xl mx-auto w-full">
             {isLoadingMessages ? (
               <div className="flex flex-col items-center justify-center py-20 gap-3 text-sphera-text-muted">
@@ -523,6 +553,21 @@ export default function ChatPage() {
         {/* ─── FLOATING ROUNDED INPUT PILL (Matches Accueil/Dashboard) ─── */}
         <div className="absolute bottom-0 inset-x-0 pb-3 sm:pb-4 pt-10 px-3 sm:px-4 bg-gradient-to-t from-sphera-bg via-sphera-bg/95 to-transparent pointer-events-none z-20">
           <div className="max-w-2xl mx-auto w-full pointer-events-auto">
+            {/* Floating scroll to bottom button */}
+            {showScrollBottom && (
+              <div className="flex justify-center mb-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                <button
+                  type="button"
+                  onClick={() => scrollToBottom('smooth')}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sphera-surface-2/95 border border-sphera-border text-white text-xs font-medium shadow-2xl hover:border-sphera-green/50 hover:bg-sphera-surface backdrop-blur-md transition-all cursor-pointer"
+                  title="Revenir aux derniers messages"
+                >
+                  <ArrowDown className="w-3.5 h-3.5 text-sphera-green" />
+                  <span>Derniers messages</span>
+                </button>
+              </div>
+            )}
+
             <form
               onSubmit={handleSendMessage}
               className="relative flex items-center gap-2 bg-sphera-surface-2/95 hover:bg-sphera-surface-2 border border-sphera-border hover:border-sphera-border/90 focus-within:border-sphera-green/60 rounded-full p-1.5 pl-4 sm:pl-5 shadow-2xl backdrop-blur-xl transition-all"

@@ -54,8 +54,8 @@ export default function Dashboard() {
   const [itemToDelete, setItemToDelete] = useState<{ id: string | number; type: 'session' | 'annale' | 'chat'; title: string } | null>(null)
   const [shareModalData, setShareModalData] = useState<{ url: string; title: string } | null>(null)
 
-  // Pagination for Récents (8 per page + view all toggle)
-  const [displayLimit, setDisplayLimit] = useState(8)
+  // Pagination for Récents (6 per page + view all toggle)
+  const [displayLimit, setDisplayLimit] = useState(6)
   const [showAll, setShowAll] = useState(false)
 
   // TanStack Query Sessions, Annales & Chats
@@ -64,7 +64,9 @@ export default function Dashboard() {
   const { data: chatThreads = [], isLoading: isLoadingChats } = useChatThreadsQuery()
 
   const allItems = React.useMemo(() => {
-    const sess = (sessions || []).map((s: any) => ({ ...s, _type: 'session' }))
+    const sess = (sessions || [])
+      .filter((s: any) => s.source_filename !== 'Discussion libre' && s.sourceFilename !== 'Discussion libre' && s.source_filename !== '__sphera_standalone_chat__' && s.sourceFilename !== '__sphera_standalone_chat__')
+      .map((s: any) => ({ ...s, _type: 'session' }))
     const ann = (annales || []).map((a: any) => ({ ...a, _type: 'annale' }))
     const chats = (chatThreads || []).map((c: any) => ({ ...c, _type: 'chat' }))
 
@@ -424,15 +426,15 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Button Voir plus (+8) */}
+          {/* Button Voir plus (+6) */}
           {!showAll && allItems.length > displayLimit && (
             <div className="flex justify-center mt-8 px-4 sm:px-0">
               <button
                 type="button"
-                onClick={() => setDisplayLimit(prev => prev + 8)}
+                onClick={() => setDisplayLimit(prev => prev + 6)}
                 className="px-6 py-2.5 rounded-full border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-white text-xs font-semibold transition-all shadow-sm hover:border-sphera-green/40 cursor-pointer"
               >
-                Voir plus (+{Math.min(8, allItems.length - displayLimit)})
+                Voir plus (+{Math.min(6, allItems.length - displayLimit)})
               </button>
             </div>
           )}
